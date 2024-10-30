@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.ResultRowContainer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -124,7 +125,19 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
           statement.getQuery(),
           statement.getPositionalValues());
     }
-    return queryExecutor.executeRead(statement);
+    if (inMemorySort()) {
+      return queryExecutor.executePaginatedRead(statement, inMemoryResultSetContainer());
+    } else {
+      return queryExecutor.executeRead(statement);
+    }
+  }
+
+  protected boolean inMemorySort() {
+    return false;
+  }
+
+  protected ResultRowContainer inMemoryResultSetContainer() {
+    return ResultRowContainer.DEFAULT;
   }
 
   @Override

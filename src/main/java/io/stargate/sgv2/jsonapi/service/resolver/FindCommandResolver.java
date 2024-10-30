@@ -18,12 +18,15 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOper
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.InMemorySortOption;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.sort.InMemorySortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.SortClauseResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.sort.TableInmemorySortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.TableSortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
@@ -45,6 +48,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   private final FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver;
   private final FilterResolver<FindCommand, TableSchemaObject> tableFilterResolver;
   private final SortClauseResolver<FindCommand, TableSchemaObject> tableSortClauseResolver;
+  private final InMemorySortClauseResolver<FindCommand, TableSchemaObject>
+      tableInmemorySortClauseResolver;
 
   @Inject
   public FindCommandResolver(
@@ -64,6 +69,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
     this.tableSortClauseResolver =
         new TableSortClauseResolver<>(operationsConfig, JSONCodecRegistries.DEFAULT_REGISTRY);
+    this.tableInmemorySortClauseResolver = new TableInmemorySortClauseResolver<>(operationsConfig);
   }
 
   @Override
@@ -73,27 +79,48 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
 
   @Override
   public Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, FindCommand command) {
+    var inmemorySortClause = tableInmemorySortClauseResolver.resolve(ctx, command);
 
-    var limit =
+    boolean inMemorySort = inmemorySortClause != null;
+    var operationConfig = ctx.getConfig(OperationsConfig.class);
+    int limit =
         Optional.ofNullable(command.options())
             .map(FindCommand.Options::limit)
-            .orElse(Integer.MAX_VALUE);
+            .orElse(inMemorySort ? operationsConfig.defaultPageSize() : Integer.MAX_VALUE);
+
+    var selectLimit = inMemorySort ? operationConfig.maxDocumentSortCount() + 1 : limit;
 
     var cqlPageState =
-        Optional.ofNullable(command.options())
-            .map(options -> CqlPagingState.from(options.pageState()))
-            .orElse(CqlPagingState.EMPTY);
+        inMemorySort
+            ? CqlPagingState.EMPTY
+            : Optional.ofNullable(command.options())
+                .map(options -> CqlPagingState.from(options.pageState()))
+                .orElse(CqlPagingState.EMPTY);
+
+    int pageSize =
+        inMemorySort ? operationsConfig.defaultSortPageSize() : operationsConfig.defaultPageSize();
+
+    var orderBy = tableSortClauseResolver.resolve(ctx, command);
+
+    int skip = Optional.ofNullable(command.options()).map(FindCommand.Options::skip).orElse(0);
+
+    InMemorySortOption inMemorySortOption =
+        inMemorySort ? InMemorySortOption.from(limit, skip, selectLimit) : null;
 
     var projection =
         TableRowProjection.fromDefinition(
             objectMapper, command.tableProjectionDefinition(), ctx.schemaObject());
 
-    var orderBy = tableSortClauseResolver.resolve(ctx, command);
-
     var builder =
-        new TableReadAttemptBuilder(ctx.schemaObject(), projection, projection, orderBy)
-            .addBuilderOption(CQLOption.ForSelect.limit(limit))
-            .addStatementOption(CQLOption.ForStatement.pageSize(operationsConfig.defaultPageSize()))
+        new TableReadAttemptBuilder(
+                ctx.schemaObject(),
+                projection,
+                projection,
+                orderBy,
+                inmemorySortClause,
+                inMemorySortOption)
+            .addBuilderOption(CQLOption.ForSelect.limit(selectLimit))
+            .addStatementOption(CQLOption.ForStatement.pageSize(pageSize))
             .addPagingState(cqlPageState);
 
     var where =

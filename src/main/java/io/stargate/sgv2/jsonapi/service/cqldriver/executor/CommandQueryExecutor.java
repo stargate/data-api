@@ -1,15 +1,20 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
+import com.datastax.oss.driver.api.core.AsyncPagingIterable;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.google.common.annotations.VisibleForTesting;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.PaginatedRowsAsyncResultSet;
+import io.stargate.sgv2.jsonapi.service.cqldriver.ResultRowContainer;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,6 +77,40 @@ public class CommandQueryExecutor {
 
     statement = withExecutionProfile(statement, QueryType.READ);
     return executeAndWrap(statement);
+  }
+
+  public Uni<AsyncResultSet> executePaginatedRead(
+      SimpleStatement statement, ResultRowContainer resultRowContainer) {
+    PaginatedRowsAsyncResultSet paginatedRowsAsyncResultSet =
+        new PaginatedRowsAsyncResultSet(resultRowContainer);
+
+    Objects.requireNonNull(statement, "statement must not be null");
+    return Multi.createBy()
+        .repeating()
+        .uni(
+            () -> new AtomicReference<AsyncResultSet>(null),
+            stateRef -> {
+              Uni<AsyncResultSet> result =
+                  stateRef.get() == null
+                      ? executeRead(statement) // First page
+                      : Uni.createFrom()
+                          .completionStage(stateRef.get().fetchNextPage()); // Next page
+              // returning result for looping
+              return result
+                  .onItem()
+                  .invoke(
+                      rs -> {
+                        paginatedRowsAsyncResultSet.add(rs);
+                        paginatedRowsAsyncResultSet.addColumDefinitions(rs.getColumnDefinitions());
+                        stateRef.set(rs);
+                      });
+            })
+        // Documents read until pageState available, max records read is deleteLimit + 1
+        .whilst(AsyncPagingIterable::hasMorePages)
+        .collect()
+        .asList()
+        .onItem()
+        .transformToUni(resultSets -> Uni.createFrom().item(paginatedRowsAsyncResultSet));
   }
 
   public Uni<AsyncResultSet> executeWrite(SimpleStatement statement) {

@@ -79,7 +79,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     var orderBy = tableSortClauseResolver.resolve(ctx, command);
 
     var builder =
-        new TableReadAttemptBuilder(ctx.schemaObject(), projection, projection, orderBy)
+        new TableReadAttemptBuilder(ctx.schemaObject(), projection, projection, orderBy, null, null)
             .addBuilderOption(CQLOption.ForSelect.limit(1));
 
     // TODO, we may want the ability to resolve API filter clause into multiple

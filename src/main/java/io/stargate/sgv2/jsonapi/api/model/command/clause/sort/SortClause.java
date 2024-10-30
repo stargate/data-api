@@ -36,6 +36,15 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) implements
     return sortExpressions.stream().filter(SortExpression::isTableVectorSort).toList();
   }
 
+  public List<SortExpression> tableNonVectorSorts() {
+    return sortExpressions.stream()
+        .filter(
+            sortExpression -> {
+              return !sortExpression.isTableVectorSort();
+            })
+        .toList();
+  }
+
   public boolean hasVsearchClause() {
     return sortExpressions != null
         && !sortExpressions.isEmpty()
