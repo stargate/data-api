@@ -1,6 +1,0 @@
-#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Oct 15 22:58:30 CDT 2024
-java-driver-core-4.19.0-preview1-sources.jar>=
-java-driver-core-4.19.0-preview1.jar>=
-java-driver-core-4.19.0-preview1-tests.jar>=
-java-driver-core-4.19.0-preview1.pom>=
