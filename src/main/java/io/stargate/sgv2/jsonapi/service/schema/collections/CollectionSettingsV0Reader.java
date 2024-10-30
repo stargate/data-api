@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.List;
@@ -32,7 +33,7 @@ public class CollectionSettingsV0Reader implements CollectionSettingsReader {
         vectorEnabled
             ? VectorConfig.fromColumnDefinitions(
                 List.of(
-                    new VectorConfig.ColumnVectorDefinition(
+                    new VectorColumnDefinition(
                         DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                         vectorSize,
                         function,

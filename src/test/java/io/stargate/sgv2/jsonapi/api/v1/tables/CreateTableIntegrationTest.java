@@ -4,13 +4,11 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertN
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -213,8 +211,6 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   null)));
 
       // invalidPrimaryKeyTable
-      SchemaException missingDefinition =
-          SchemaException.Code.COLUMN_DEFINITION_MISSING.get(Map.of("column_name", "error_column"));
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
@@ -239,8 +235,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidPrimaryKeyTable",
                   true,
-                  missingDefinition.code,
-                  missingDefinition.body)));
+                  SchemaException.Code.UNKNOWN_PARTITION_COLUMNS.name(),
+                  "The partition includes the unknown columns: error_column.")));
 
       // invalidPartitionByTable
       testCases.add(
@@ -268,8 +264,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidPartitionByTable",
                   true,
-                  missingDefinition.code,
-                  missingDefinition.body)));
+                  SchemaException.Code.UNKNOWN_PARTITION_COLUMNS.name(),
+                  "The partition includes the unknown columns: error_column.")));
 
       // invalidPartitionSortTable
       testCases.add(
@@ -297,252 +293,230 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidPartitionSortTable",
                   true,
-                  missingDefinition.code,
-                  missingDefinition.body)));
+                  SchemaException.Code.UNKNOWN_PARTITION_SORT_COLUMNS.name(),
+                  "The partition sort includes the unknown columns: error_column.")));
 
-      SchemaException se = SchemaException.Code.PRIMARY_KEY_DEFINITION_INCORRECT.get();
       // invalidPartitionSortOrderingValueTable
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
                   """
-                                                      {
-                                                        "name": "invalidPartitionSortOrderingValueTable",
-                                                        "definition": {
-                                                          "columns": {
-                                                            "id": "text",
-                                                            "age": "int",
-                                                            "name": "text"
-                                                          },
-                                                          "primaryKey": {
-                                                            "partitionBy": [
-                                                              "id"
-                                                            ],
-                                                            "partitionSort" : {
-                                                              "id" : 1, "age" : 0
-                                                            }
-                                                          }
-                                                        }
-                                                      }
-                                                      """,
+                          {
+                            "name": "invalidPartitionSortOrderingValueTable",
+                            "definition": {
+                              "columns": {
+                                "id": "text",
+                                "age": "int",
+                                "name": "text"
+                              },
+                              "primaryKey": {
+                                "partitionBy": [
+                                  "id"
+                                ],
+                                "partitionSort" : {
+                                  "id" : 1, "age" : 0
+                                }
+                              }
+                            }
+                          }
+                          """,
                   "invalidPartitionSortOrderingValueTable",
                   true,
-                  se.code,
-                  se.body)));
+                  ErrorCodeV1.INVALID_REQUEST_NOT_JSON.name(),
+                  " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
 
       // invalidPartitionSortOrderingValueTable
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
                   """
-                                                      {
-                                                          "name": "invalidPartitionSortOrderingValueTypeTable",
-                                                          "definition": {
-                                                            "columns": {
-                                                              "id": "text",
-                                                              "age": "int",
-                                                              "name": "text"
-                                                            },
-                                                            "primaryKey": {
-                                                              "partitionBy": [
-                                                                "id"
-                                                              ],
-                                                              "partitionSort" : {
-                                                                "id" : 1, "age" : "invalid"
-                                                              }
-                                                            }
-                                                          }
-                                                        }
-                                                      """,
+                          {
+                              "name": "invalidPartitionSortOrderingValueTypeTable",
+                              "definition": {
+                                "columns": {
+                                  "id": "text",
+                                  "age": "int",
+                                  "name": "text"
+                                },
+                                "primaryKey": {
+                                  "partitionBy": [
+                                    "id"
+                                  ],
+                                  "partitionSort" : {
+                                    "id" : 1, "age" : "invalid"
+                                  }
+                                }
+                              }
+                            }
+                          """,
                   "invalidPartitionSortOrderingValueTypeTable",
                   true,
-                  se.code,
-                  se.body)));
+                  ErrorCodeV1.INVALID_REQUEST_NOT_JSON.name(),
+                  " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
 
       // invalidColumnTypeTable
-      Map<String, String> errorMessageFormattingValues =
-          Map.of(
-              "type",
-              "invalid_type",
-              "supported_types",
-              "[" + String.join(", ", ColumnType.getSupportedTypes()) + "]");
-      SchemaException invalidType =
-          SchemaException.Code.COLUMN_TYPE_UNSUPPORTED.get(errorMessageFormattingValues);
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
                   """
-                                                      {
-                                                        "name": "invalidColumnTypeTable",
-                                                        "definition": {
-                                                          "columns": {
-                                                            "id": "invalid_type",
-                                                            "age": "int",
-                                                            "name": "text"
-                                                          },
-                                                          "primaryKey": {
-                                                            "partitionBy": [
-                                                                "id"
-                                                            ],
-                                                            "partitionSort": {
-                                                                "id": 1,
-                                                                "age": -1
-                                                            }
-                                                          }
-                                                        }
-                                                      }
-                                                      """,
+                          {
+                            "name": "invalidColumnTypeTable",
+                            "definition": {
+                              "columns": {
+                                "id": "invalid_type",
+                                "age": "int",
+                                "name": "text"
+                              },
+                              "primaryKey": {
+                                "partitionBy": [
+                                    "id"
+                                ],
+                                "partitionSort": {
+                                    "id": 1,
+                                    "age": -1
+                                }
+                              }
+                            }
+                          }
+                          """,
                   "invalidColumnTypeTable",
                   true,
-                  invalidType.code,
-                  invalidType.body)));
+                  SchemaException.Code.UNKNOWN_PRIMITIVE_DATA_TYPE.name(),
+                  "The command used the unsupported data type: invalid_type.")));
       // Column type not provided
-      SchemaException columnTypeInvalid =
-          SchemaException.Code.COLUMN_TYPE_INCORRECT.get(errorMessageFormattingValues);
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
                   """
-                                                                  {
-                                                                    "name": "invalidColumnTypeTable",
-                                                                    "definition": {
-                                                                      "columns": {
-                                                                        "id": null,
-                                                                        "age": "int",
-                                                                        "name": "text"
-                                                                      },
-                                                                      "primaryKey": {
-                                                                        "partitionBy": [
-                                                                            "id"
-                                                                        ],
-                                                                        "partitionSort": {
-                                                                            "id": 1,
-                                                                            "age": -1
-                                                                        }
-                                                                      }
-                                                                    }
-                                                                  }
-                                                                  """,
-                  "invalidColumnTypeTable",
+                          {
+                            "name": "nullColumnTypeTable",
+                            "definition": {
+                              "columns": {
+                                "id": null,
+                                "age": "int",
+                                "name": "text"
+                              },
+                              "primaryKey": {
+                                "partitionBy": [
+                                    "id"
+                                ],
+                                "partitionSort": {
+                                    "id": 1,
+                                    "age": -1
+                                }
+                              }
+                            }
+                          }
+                          """,
+                  "nullColumnTypeTable",
                   true,
-                  columnTypeInvalid.code,
-                  columnTypeInvalid.body)));
+                  ErrorCodeV1.INVALID_REQUEST_NOT_JSON.name(),
+                  "The Long Form type definition must be a JSON Object with at least a `type` field that is a String (value is null)")));
 
       // Map type tests
-      SchemaException invalidMapType =
-          SchemaException.Code.MAP_TYPE_INVALID_DEFINITION.get(
-              Map.of("reason", "`keyType` or `valueType` is null"));
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
                   """
-                                                          {
-                                                            "name": "invalidMapType",
-                                                            "definition": {
-                                                              "columns": {
-                                                                "id": "text",
-                                                                "age": "int",
-                                                                "name": "text",
-                                                                "map_type": {
-                                                                  "type": "map",
-                                                                  "keyType": "text"
-                                                                }
-                                                              },
-                                                              "primaryKey": "id"
-                                                            }
-                                                          }
-                                                                              """,
-                  "invalidMapType value type not provided",
+                          {
+                            "name": "mapTypeMissingValue",
+                            "definition": {
+                              "columns": {
+                                "id": "text",
+                                "age": "int",
+                                "name": "text",
+                                "map_type": {
+                                  "type": "map",
+                                  "keyType": "text"
+                                }
+                              },
+                              "primaryKey": "id"
+                            }
+                          }""",
+                  "mapTypeMissingValue value type not provided",
                   true,
-                  invalidMapType.code,
-                  invalidMapType.body)));
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  "The command used the value type: [MISSING].")));
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
                   """
-                                                          {
-                                                            "name": "invalidMapType",
-                                                            "definition": {
-                                                              "columns": {
-                                                                "id": "text",
-                                                                "age": "int",
-                                                                "name": "text",
-                                                                "map_type": {
-                                                                  "type": "map",
-                                                                  "valueType": "text"
-                                                                }
-                                                              },
-                                                              "primaryKey": "id"
-                                                            }
-                                                          }
-                                                                              """,
-                  "invalidMapType key type not provided",
+                          {
+                            "name": "mapTypeMissingKey",
+                            "definition": {
+                              "columns": {
+                                "id": "text",
+                                "age": "int",
+                                "name": "text",
+                                "map_type": {
+                                  "type": "map",
+                                  "valueType": "text"
+                                }
+                              },
+                              "primaryKey": "id"
+                            }
+                          }""",
+                  "mapTypeMissingKey key type not provided",
                   true,
-                  invalidMapType.code,
-                  invalidMapType.body)));
-      invalidMapType =
-          SchemaException.Code.MAP_TYPE_INVALID_DEFINITION.get(
-              Map.of("reason", "Data types used for `keyType` or `valueType` are not supported"));
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  "The command used the key type: [MISSING].")));
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
                   """
-                                                          {
-                                                            "name": "invalidMapType",
-                                                            "definition": {
-                                                              "columns": {
-                                                                "id": "text",
-                                                                "age": "int",
-                                                                "name": "text",
-                                                                "map_type": {
-                                                                  "type": "map",
-                                                                  "valueType": "list",
-                                                                  "keyType": "text"
-                                                                }
-                                                              },
-                                                              "primaryKey": "id"
-                                                            }
-                                                          }
-                                                                              """,
-                  "invalidMapType not primitive type provided",
+                          {
+                            "name": "mapTypeListValueType",
+                            "definition": {
+                              "columns": {
+                                "id": "text",
+                                "age": "int",
+                                "name": "text",
+                                "map_type": {
+                                  "type": "map",
+                                  "valueType": "list",
+                                  "keyType": "text"
+                                }
+                              },
+                              "primaryKey": "id"
+                            }
+                          }
+                          """,
+                  "mapTypeListValueType not primitive type provided",
                   true,
-                  invalidMapType.code,
-                  invalidMapType.body)));
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  "The command used the value type: list.")));
 
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
                   """
-                                                          {
-                                                            "name": "invalidMapType",
-                                                            "definition": {
-                                                              "columns": {
-                                                                "id": "text",
-                                                                "age": "int",
-                                                                "name": "text",
-                                                                "map_type": {
-                                                                  "type": "map",
-                                                                  "valueType": "text",
-                                                                  "keyType": "list"
-                                                                }
-                                                              },
-                                                              "primaryKey": "id"
-                                                            }
-                                                          }
-                                                                              """,
-                  "invalidMapType not primitive type provided",
+                          {
+                            "name": "mapTypeListKeyType",
+                            "definition": {
+                              "columns": {
+                                "id": "text",
+                                "age": "int",
+                                "name": "text",
+                                "map_type": {
+                                  "type": "map",
+                                  "valueType": "text",
+                                  "keyType": "list"
+                                }
+                              },
+                              "primaryKey": "id"
+                            }
+                          }""",
+                  "mapTypeListKeyType not primitive type provided",
                   true,
-                  invalidMapType.code,
-                  invalidMapType.body)));
-      invalidMapType =
-          SchemaException.Code.MAP_TYPE_INVALID_DEFINITION.get(
-              Map.of("reason", "`keyType` must be `text` or `ascii`, but was int"));
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  "The command used the value type: text.")));
+
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
                   """
                               {
-                                "name": "invalidMapType",
+                                "name": "mapTypeNonStringKeyType",
                                 "definition": {
                                   "columns": {
                                     "id": "text",
@@ -558,164 +532,160 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                 }
                               }
                               """,
-                  "invalidMapType not primitive type provided",
+                  "mapTypeNonStringKeyType not primitive type provided",
                   true,
-                  invalidMapType.code,
-                  invalidMapType.body)));
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  "The command used the key type: int.")));
 
       // List type tests
-      SchemaException invalidListType = SchemaException.Code.LIST_TYPE_INVALID_DEFINITION.get();
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
                   """
-                                                          {
-                                                            "name": "invalidListType",
-                                                            "definition": {
-                                                              "columns": {
-                                                                "id": "text",
-                                                                "age": "int",
-                                                                "name": "text",
-                                                                "list_type": {
-                                                                  "type": "list"
-                                                                }
-                                                              },
-                                                              "primaryKey": "id"
-                                                            }
-                                                          }
-                                                                              """,
-                  "invalidListType value type not provided",
+                            {
+                              "name": "listTypeMissingValueType",
+                              "definition": {
+                                "columns": {
+                                  "id": "text",
+                                  "age": "int",
+                                  "name": "text",
+                                  "list_type": {
+                                    "type": "list"
+                                  }
+                                },
+                                "primaryKey": "id"
+                              }
+                            }
+                            """,
+                  "listTypeMissingValueType value type not provided",
                   true,
-                  invalidListType.code,
-                  invalidListType.body)));
+                  SchemaException.Code.UNSUPPORTED_LIST_DEFINITION.name(),
+                  "The command used the value type: [MISSING].")));
 
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
                   """
-                                                          {
-                                                            "name": "invalidListType",
-                                                            "definition": {
-                                                              "columns": {
-                                                                "id": "text",
-                                                                "age": "int",
-                                                                "name": "text",
-                                                                "list_type": {
-                                                                  "type": "list",
-                                                                  "valueType": "list"
-                                                                }
-                                                              },
-                                                              "primaryKey": "id"
-                                                            }
-                                                          }
-                                                                              """,
-                  "invalidListType not primitive type provided",
+                              {
+                                "name": "listTypeListValueType",
+                                "definition": {
+                                  "columns": {
+                                    "id": "text",
+                                    "age": "int",
+                                    "name": "text",
+                                    "list_type": {
+                                      "type": "list",
+                                      "valueType": "list"
+                                    }
+                                  },
+                                  "primaryKey": "id"
+                                }
+                              }
+                              """,
+                  "listTypeListValueType not primitive type provided",
                   true,
-                  invalidListType.code,
-                  invalidListType.body)));
+                  SchemaException.Code.UNSUPPORTED_LIST_DEFINITION.name(),
+                  "The command used the value type: list.")));
 
       // Set type tests
-      SchemaException invalidSetType = SchemaException.Code.SET_TYPE_INVALID_DEFINITION.get();
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
                   """
-                                                          {
-                                                            "name": "invalidSetType",
-                                                            "definition": {
-                                                              "columns": {
-                                                                "id": "text",
-                                                                "age": "int",
-                                                                "name": "text",
-                                                                "set_type": {
-                                                                  "type": "set"
-                                                                }
-                                                              },
-                                                              "primaryKey": "id"
-                                                            }
-                                                          }
-                                                                              """,
-                  "invalidSetType value type not provided",
+                          {
+                            "name": "listTypeMissingValueType",
+                            "definition": {
+                              "columns": {
+                                "id": "text",
+                                "age": "int",
+                                "name": "text",
+                                "set_type": {
+                                  "type": "set"
+                                }
+                              },
+                              "primaryKey": "id"
+                            }
+                          }""",
+                  "listTypeMissingValueType value type not provided",
                   true,
-                  invalidSetType.code,
-                  invalidSetType.body)));
+                  SchemaException.Code.UNSUPPORTED_SET_DEFINITION.name(),
+                  "The command used the value type: [MISSING].")));
 
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
                   """
-                                                          {
-                                                            "name": "invalidSetType",
-                                                            "definition": {
-                                                              "columns": {
-                                                                "id": "text",
-                                                                "age": "int",
-                                                                "name": "text",
-                                                                "set_type": {
-                                                                  "type": "set",
-                                                                  "valueType": "list"
-                                                                }
-                                                              },
-                                                              "primaryKey": "id"
-                                                            }
-                                                          }
-                                                                              """,
-                  "invalidSetType not primitive type provided",
+                            {
+                              "name": "listTypeListValueType",
+                              "definition": {
+                                "columns": {
+                                  "id": "text",
+                                  "age": "int",
+                                  "name": "text",
+                                  "set_type": {
+                                    "type": "set",
+                                    "valueType": "list"
+                                  }
+                                },
+                                "primaryKey": "id"
+                              }
+                            }
+                            """,
+                  "listTypeListValueType not primitive type provided",
                   true,
-                  invalidSetType.code,
-                  invalidSetType.body)));
+                  SchemaException.Code.UNSUPPORTED_SET_DEFINITION.name(),
+                  "The command used the value type: list.")));
 
       // Vector type tests
-      SchemaException invalidVectorType = SchemaException.Code.VECTOR_TYPE_INVALID_DEFINITION.get();
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
                   """
-                                                          {
-                                                            "name": "invalidVectorType",
-                                                            "definition": {
-                                                              "columns": {
-                                                                "id": "text",
-                                                                "age": "int",
-                                                                "name": "text",
-                                                                "vector_type": {
-                                                                  "type": "vector",
-                                                                  "dimension": -5
-                                                                }
-                                                              },
-                                                              "primaryKey": "id"
-                                                            }
-                                                          }
-                                                                              """,
+                            {
+                              "name": "invalidVectorType",
+                              "definition": {
+                                "columns": {
+                                  "id": "text",
+                                  "age": "int",
+                                  "name": "text",
+                                  "vector_type": {
+                                    "type": "vector",
+                                    "dimension": -5
+                                  }
+                                },
+                                "primaryKey": "id"
+                              }
+                            }
+                            """,
                   "invalidVectorType value type not provided",
                   true,
-                  invalidVectorType.code,
-                  invalidVectorType.body)));
+                  SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.name(),
+                  "The command used the dimension: -5.")));
 
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
                   """
-                                                          {
-                                                            "name": "invalidVectorType",
-                                                            "definition": {
-                                                              "columns": {
-                                                                "id": "text",
-                                                                "age": "int",
-                                                                "name": "text",
-                                                                "vector_type": {
-                                                                  "type": "vector",
-                                                                  "dimension": "aaa"
-                                                                }
-                                                              },
-                                                              "primaryKey": "id"
-                                                            }
-                                                          }
-                                                                              """,
+                          {
+                            "name": "invalidVectorType",
+                            "definition": {
+                              "columns": {
+                                "id": "text",
+                                "age": "int",
+                                "name": "text",
+                                "vector_type": {
+                                  "type": "vector",
+                                  "dimension": "aaa"
+                                }
+                              },
+                              "primaryKey": "id"
+                            }
+                          }
+                          """,
                   "invalidVectorType not primitive type provided",
                   true,
-                  invalidVectorType.code,
-                  invalidVectorType.body)));
+                  SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.name(),
+                  "The command used the dimension: aaa.")));
       // vector type with vectorize
       testCases.add(
           Arguments.of(

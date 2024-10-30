@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import jakarta.validation.Valid;
@@ -17,20 +18,20 @@ public record VectorizeConfig(
             description = "Registered Embedding service provider",
             type = SchemaType.STRING,
             implementation = String.class)
-        @JsonProperty("provider")
+        @JsonProperty(VectorConstants.Vectorize.PROVIDER)
         String provider,
     @Schema(
             description = "Registered Embedding service model",
             type = SchemaType.STRING,
             implementation = String.class)
-        @JsonProperty("modelName")
+        @JsonProperty(VectorConstants.Vectorize.MODEL_NAME)
         String modelName,
     @Valid
         @Nullable
         @Schema(
             description = "Authentication config for chosen embedding service",
             type = SchemaType.OBJECT)
-        @JsonProperty("authentication")
+        @JsonProperty(VectorConstants.Vectorize.AUTHENTICATION)
         @JsonInclude(JsonInclude.Include.NON_NULL)
         Map<String, String> authentication,
     @Nullable
@@ -38,7 +39,7 @@ public record VectorizeConfig(
             description =
                 "Optional parameters that match the messageTemplate provided for the provider",
             type = SchemaType.OBJECT)
-        @JsonProperty("parameters")
+        @JsonProperty(VectorConstants.Vectorize.PARAMETERS)
         @JsonInclude(JsonInclude.Include.NON_NULL)
         Map<String, Object> parameters) {
 

@@ -75,7 +75,7 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
       // do not
       // the insertIds status will not be included. When we have per doc responses, we add the
       // schema in all cases.
-      maybeAddSchema();
+      maybeAddSchema(CommandStatus.PRIMARY_KEY_SCHEMA);
     }
   }
 
@@ -125,7 +125,7 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
 
     seenErrors.forEach(resultBuilder::addCommandResultError);
     resultBuilder.addStatus(CommandStatus.DOCUMENT_RESPONSES, Arrays.asList(results));
-    maybeAddSchema();
+    maybeAddSchema(CommandStatus.PRIMARY_KEY_SCHEMA);
   }
 
   /**
@@ -147,24 +147,6 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
       }
     }
     return -1;
-  }
-
-  /**
-   * Adds the schema for the first insert attempt to the status map, if the first insert attempt has
-   * schema to report.
-   *
-   * <p>Uses the first, not the first successful, because we may fail to do an insert but will still
-   * have the _id or PK to report.
-   */
-  private void maybeAddSchema() {
-    if (attempts.isEmpty()) {
-      return;
-    }
-
-    attempts
-        .getFirst()
-        .schemaDescription()
-        .ifPresent(object -> resultBuilder.addStatus(CommandStatus.PRIMARY_KEY_SCHEMA, object));
   }
 
   enum InsertionStatus {
