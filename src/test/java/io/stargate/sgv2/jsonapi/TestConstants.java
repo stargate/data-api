@@ -38,7 +38,7 @@ public final class TestConstants {
           IdConfig.defaultIdConfig(),
           VectorConfig.fromColumnDefinitions(
               List.of(
-                  new VectorConfig.ColumnVectorDefinition(
+                  new VectorColumnDefinition(
                       DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                       -1,
                       SimilarityFunction.COSINE,

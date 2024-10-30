@@ -78,7 +78,7 @@ public record InsertCollectionOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-    final boolean vectorEnabled = commandContext().schemaObject().isVectorEnabled();
+    final boolean vectorEnabled = commandContext().schemaObject().vectorConfig().vectorEnabled();
     if (!vectorEnabled && insertions.stream().anyMatch(insertion -> insertion.hasVectorValues())) {
       throw ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
           commandContext().schemaObject().name().table());

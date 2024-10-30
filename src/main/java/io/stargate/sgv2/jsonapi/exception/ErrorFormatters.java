@@ -1,12 +1,16 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToStringForUser;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.TemplateVars;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,12 +49,44 @@ public abstract class ErrorFormatters {
     return errFmtJoin(identifiers, ErrorFormatters::errFmt);
   }
 
+  public static String errFmtApiColumnDef(ApiColumnDefContainer apiColumnDefs) {
+    return errFmtApiColumnDef(apiColumnDefs.values());
+  }
+
+  public static String errFmtApiColumnDef(Collection<ApiColumnDef> apiColumnDefs) {
+    return errFmtJoin(apiColumnDefs, ErrorFormatters::errFmt);
+  }
+
+  public static String errFmtColumnDesc(Collection<ColumnDesc> columnDescs) {
+    return errFmtJoin(columnDescs, ErrorFormatters::errFmt);
+  }
+
   public static String errFmt(ColumnMetadata column) {
     return String.format("%s(%s)", errFmt(column.getName()), errFmt(column.getType()));
   }
 
   public static String errFmt(CqlIdentifier identifier) {
-    return cqlIdentifierToStringForUser(identifier);
+    return cqlIdentifierToMessageString(identifier);
+  }
+
+  public static String errFmt(ApiColumnDef apiColumnDef) {
+    return String.format("%s(%s)", errFmt(apiColumnDef.name()), errFmt(apiColumnDef.type()));
+  }
+
+  public static String errFmt(ColumnDesc columnDesc) {
+    // NOTE: call apiName on the ColumnDesc so unsupported types can return a string
+    return columnDesc.getApiName();
+  }
+
+  /**
+   * NOTE: no formatter for a ApiTypeName because unsupported types, so we want to call apiName on
+   * the ApDataType
+   *
+   * @param apiDataType
+   * @return
+   */
+  public static String errFmt(ApiDataType apiDataType) {
+    return apiDataType.apiName();
   }
 
   public static String errFmt(DataType dataType) {
