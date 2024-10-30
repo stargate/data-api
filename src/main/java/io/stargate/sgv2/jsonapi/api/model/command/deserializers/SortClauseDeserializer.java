@@ -101,11 +101,12 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         }
 
         // TODO: HACK: quick support for tables, if the value is an array we will assume the column
-        // is a vector then need to check on both the collection and table pathways that the sort is correct.
-        // also needs a refactor, too many break and continue in a loop
+        // is a vector then need to check on table pathway that the sort is correct.
+        // the code above checks for $vector and $vectorize
         if (inner.getValue().isArray()) {
           sortExpressions.add(
-              SortExpression.tableVectorSort(path, arrayNodeToVector((ArrayNode) inner.getValue())));
+              SortExpression.tableVectorSort(
+                  path, arrayNodeToVector((ArrayNode) inner.getValue())));
           continue;
 
         } else if (!inner.getValue().isInt()

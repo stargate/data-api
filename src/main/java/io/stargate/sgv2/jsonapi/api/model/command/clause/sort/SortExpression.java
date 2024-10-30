@@ -1,13 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import jakarta.validation.constraints.NotBlank;
-import javax.annotation.Nullable;
-
-import java.util.Objects;
-
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
+
+import jakarta.validation.constraints.NotBlank;
+import java.util.Objects;
+import javax.annotation.Nullable;
 
 public record SortExpression(
 
@@ -34,16 +32,22 @@ public record SortExpression(
     return new SortExpression(VECTOR_EMBEDDING_TEXT_FIELD, false, null, vectorize);
   }
 
+  /**
+   * Create a sort that is used when sorting a table column by a vector.
+   *
+   * <p>aaron -30-oct, this is a bit of a hack, but it is a quick way to support sorting by a vector
+   * for tables
+   */
   public static SortExpression tableVectorSort(String path, float[] vector) {
-    return new SortExpression(
-        path, false, vector, null);
+    return new SortExpression(path, false, vector, null);
   }
 
   public boolean isTableVectorSort() {
-    return !pathIs$Name() && vector != null;
+    return !pathIs$VectorNames() && vector != null;
   }
 
-  private boolean pathIs$Name() {
-    return (!Objects.equals(path, VECTOR_EMBEDDING_FIELD) && !Objects.equals(path, VECTOR_EMBEDDING_TEXT_FIELD));
+  private boolean pathIs$VectorNames() {
+    return (Objects.equals(path, VECTOR_EMBEDDING_FIELD)
+        || Objects.equals(path, VECTOR_EMBEDDING_TEXT_FIELD));
   }
 }

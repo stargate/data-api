@@ -46,7 +46,9 @@
 #       new line after each entry, using the `|-` to trim trailing newlines.
 
 # ================================================================================================================
-# Snippets
+# ================================================================================================================
+#                                           SNIPPETS
+# ================================================================================================================
 # ================================================================================================================
 
 snippets:
@@ -68,10 +70,21 @@ snippets:
     body: |-
       Resend the request using only defined columns.
 
-
+  - name: VECTOR_SORT_EXPLANATION
+    body: |-
+      A vector sort in the sort clause identifies the vector column by name and then provides either:  
+      - The vector as an array of decimal numbers.
+      - The vector as a base64 encoded `{"$binary": "base64-encoded-vector"}` object.
+      - A string to be vectorized if enabled for the column.
 
 # ================================================================================================================
-# Request Errors
+# ================================================================================================================
+#                                           REQUEST Errors
+# ================================================================================================================
+# ================================================================================================================
+
+# ================================================================================================================
+# Family: REQUEST         Scope: NONE
 # ================================================================================================================
 
 request-errors:
@@ -83,6 +96,10 @@ request-errors:
       big long message with ${vars} in it.
       
       ${SNIPPET.CONTACT_SUPPORT}
+
+# ================================================================================================================
+# Family: REQUEST         Scope: DOCUMENT
+# ================================================================================================================
 
  # DOCUMENT request errors
   - scope: DOCUMENT
@@ -132,7 +149,10 @@ request-errors:
       
       Resend the request using only supported column values.
 
-  # FILTER request errors
+# ================================================================================================================
+# Family: REQUEST         Scope: FILTER
+# ================================================================================================================
+
   - scope: FILTER
     code: INVALID_FILTER
     title: Invalid filter
@@ -223,7 +243,10 @@ request-errors:
         - Missing Partition Keys: ${missingPartitionKeys}.
         - Out of order Partition Sort Keys: ${outOfOrderClusteringKeys}.
 
-  # UPDATE clause errors
+# ================================================================================================================
+# Family: REQUEST         Scope: UPDATE
+# ================================================================================================================
+
   - scope: UPDATE
     code: UNKNOWN_TABLE_COLUMNS
     title: Cannot update on unknown table columns
@@ -259,7 +282,9 @@ request-errors:
       
       Supported update operations are ${supportedUpdateOperations}.
 
-  # Warnings
+  # ================================================================================================================
+  # Family: REQUEST         Scope: WARNING
+  # ================================================================================================================
 
   - scope: WARNING
     code: MISSING_INDEX
@@ -354,7 +379,9 @@ request-errors:
       
       ${SNIPPET.INEFFICIENT_QUERY}
 
-  # Schema Errors
+  # ================================================================================================================
+  # Family: REQUEST         Scope: SCHEMA
+  # ================================================================================================================
 
   # aaron errors
   - scope: SCHEMA
@@ -619,12 +646,51 @@ request-errors:
     body: |-
       Column `${column}` doesn't exist in the table.
 
+# ================================================================================================================
+# Family: REQUEST         Scope: SORT
+# ================================================================================================================
 
+  - scope: SORT
+    code: MORE_THAN_ONE_VECTOR_SORT
+    title: More than one vector sort provided
+    body: |-
+      The command used a sort clause with more than one vector sort, only one vector sort is allowed.
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
+      The command attempted to sort on the columns: ${sortColumns}.
+      
+      Resend the command with only one vector sort.
 
+  - scope: SORT
+    code: CANNOT_SORT_UNKNOWN_COLUMNS
+    title: Sorted columns are not present in the table schema
+    body: |-
+      The command attempted to sort using columns that are not in the table schema.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to sort the unknown columns: ${unknownColumns}.  
+      
+      Resend the command using only columns that are defined in the table schema.
 
+  - scope: SORT
+    code: CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS
+    title: Vector sort requested for non-vector columns
+    body: |-
+      The command attemtped to vector sort columns that are not of vector type. 
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} defines the columns: ${vectorColumns}.
+      The command attempted to sort the non vector columns: ${sortColumns}.  
+      
+      Resend the command using only vector columns for vector sorting.
 
 # ================================================================================================================
-# Server Errors
+# ================================================================================================================
+#                                           Server Errors
+# ================================================================================================================
 # ================================================================================================================
 
 server-errors:

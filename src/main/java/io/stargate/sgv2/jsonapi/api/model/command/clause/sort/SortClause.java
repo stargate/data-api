@@ -33,10 +33,9 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) implements
   }
 
   public List<SortExpression> tableVectorSorts() {
-    return sortExpressions.stream()
-        .filter(SortExpression::isTableVectorSort)
-        .toList();
+    return sortExpressions.stream().filter(SortExpression::isTableVectorSort).toList();
   }
+
   public boolean hasVsearchClause() {
     return sortExpressions != null
         && !sortExpressions.isEmpty()
