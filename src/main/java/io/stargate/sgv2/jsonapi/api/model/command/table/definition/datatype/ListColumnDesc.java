@@ -32,9 +32,8 @@ public class ListColumnDesc extends ComplexColumnDesc {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ListColumnDesc listType =
-        (io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ListColumnDesc) o;
-    return Objects.equals(valueType, listType.valueType);
+    var listDesc = (ListColumnDesc) o;
+    return Objects.equals(valueType, listDesc.valueType);
   }
 
   @Override

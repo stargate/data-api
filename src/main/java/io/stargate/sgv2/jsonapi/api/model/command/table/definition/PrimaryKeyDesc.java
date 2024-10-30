@@ -24,15 +24,14 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * is a guarantee that the keys are properly formatted.
  *
  * @param keys
- * @param orderingKeyDescs
+ * @param orderingKeys
  */
 @JsonDeserialize(using = PrimaryKeyDescDeserializer.class)
-// TODO, hide table feature detail before it goes public,
 // https://github.com/stargate/data-api/pull/1360
-// @Schema(
-//    type = SchemaType.OBJECT,
-//    implementation = Object.class,
-//    description = "Represents the table primary key")
+@Schema(
+    type = SchemaType.OBJECT,
+    implementation = Object.class,
+    description = "Represents the table primary key")
 public record PrimaryKeyDesc(
     @NotNull
         @Schema(description = "Columns that make the partition keys", type = SchemaType.ARRAY)

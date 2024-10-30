@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.VectorType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.VectorColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
@@ -26,12 +27,21 @@ public class ApiVectorType extends CollectionApiDataType {
         ApiTypeName.VECTOR,
         ApiDataTypeDefs.FLOAT,
         new ExtendedVectorType(ApiDataTypeDefs.FLOAT.cqlType(), dimensions),
-        new VectorColumnDesc(
-            dimensions,
-            vectorizeDefinition == null ? null : vectorizeDefinition.toVectorizeConfig()));
-
+        null);
+    // passes null for the columnDesc, the vector type is not cached and we only need the column
+    // desc
+    // when returning metadata so may not need it for general read and write (i.e. we will create
+    // the column def
+    // for the table even if we dont read / write the vector
+    // create the column dec on demand
     this.dimension = dimensions;
     this.vectorizeDefinition = vectorizeDefinition;
+  }
+
+  @Override
+  public ColumnDesc columnDesc() {
+    return new VectorColumnDesc(
+        dimension, vectorizeDefinition == null ? null : vectorizeDefinition.toVectorizeConfig());
   }
 
   public int getDimension() {
@@ -79,8 +89,6 @@ public class ApiVectorType extends CollectionApiDataType {
       }
 
       var vectorDefn = VectorizeDefinition.from(columnDesc, validateVectorize);
-      // TODO:  aaron mahesh - NOT SURE WHAT IS HAPPENING with VectorizeConfigValidator
-      // It validates AND gets a new dimension
       var dimensions =
           columnDesc.getVectorizeConfig() == null
               ? columnDesc.getDimensions()

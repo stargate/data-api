@@ -15,6 +15,8 @@ public abstract class CollectionApiDataType implements ApiDataType {
       PrimitiveApiDataTypeDef valueType,
       DataType cqlType,
       ColumnDesc columnDesc) {
+    // no null checks here, so subclasses can pass null and then override to create on demand if
+    // they want to.
     this.typeName = typeName;
     this.valueType = valueType;
     this.cqlType = cqlType;

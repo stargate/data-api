@@ -39,9 +39,8 @@ public class MapColumnDesc extends ComplexColumnDesc {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapColumnDesc mapType =
-        (io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapColumnDesc) o;
-    return Objects.equals(keyType, mapType.keyType) && Objects.equals(valueType, mapType.valueType);
+    var mapDesc = (MapColumnDesc) o;
+    return Objects.equals(keyType, mapDesc.keyType) && Objects.equals(valueType, mapDesc.valueType);
   }
 
   @Override

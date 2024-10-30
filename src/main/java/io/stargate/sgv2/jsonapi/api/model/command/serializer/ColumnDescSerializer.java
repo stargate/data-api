@@ -21,25 +21,28 @@ public class ColumnDescSerializer extends JsonSerializer<ColumnDesc> {
     jsonGenerator.writeStartObject();
     jsonGenerator.writeStringField(TableDescConstants.ColumnDesc.TYPE, columnDesc.getApiName());
 
-    if (columnDesc instanceof MapColumnDesc mt) {
-      jsonGenerator.writeStringField(
-          TableDescConstants.ColumnDesc.KEY_TYPE, mt.keyType().getApiName());
-      jsonGenerator.writeStringField(
-          TableDescConstants.ColumnDesc.VALUE_TYPE, mt.valueType().getApiName());
-
-    } else if (columnDesc instanceof ListColumnDesc lt) {
-      jsonGenerator.writeStringField(
-          TableDescConstants.ColumnDesc.VALUE_TYPE, lt.valueType().getApiName());
-
-    } else if (columnDesc instanceof SetColumnDesc st) {
-      jsonGenerator.writeStringField(
-          TableDescConstants.ColumnDesc.VALUE_TYPE, st.valueType().getApiName());
-
-    } else if (columnDesc instanceof VectorColumnDesc vt) {
-      jsonGenerator.writeNumberField(TableDescConstants.ColumnDesc.DIMENSION, vt.getDimensions());
-      if (vt.getVectorizeConfig() != null)
-        jsonGenerator.writeObjectField(
-            TableDescConstants.ColumnDesc.SERVICE, vt.getVectorizeConfig());
+    switch (columnDesc) {
+      case MapColumnDesc mt -> {
+        jsonGenerator.writeStringField(
+            TableDescConstants.ColumnDesc.KEY_TYPE, mt.keyType().getApiName());
+        jsonGenerator.writeStringField(
+            TableDescConstants.ColumnDesc.VALUE_TYPE, mt.valueType().getApiName());
+      }
+      case ListColumnDesc lt ->
+          jsonGenerator.writeStringField(
+              TableDescConstants.ColumnDesc.VALUE_TYPE, lt.valueType().getApiName());
+      case SetColumnDesc st ->
+          jsonGenerator.writeStringField(
+              TableDescConstants.ColumnDesc.VALUE_TYPE, st.valueType().getApiName());
+      case VectorColumnDesc vt -> {
+        jsonGenerator.writeNumberField(TableDescConstants.ColumnDesc.DIMENSION, vt.getDimensions());
+        if (vt.getVectorizeConfig() != null)
+          jsonGenerator.writeObjectField(
+              TableDescConstants.ColumnDesc.SERVICE, vt.getVectorizeConfig());
+      }
+      default -> {
+        // nothing extra to do , an unsupported type will be picked up below checking aipSupport()
+      }
     }
 
     if (columnDesc.apiSupport().anyUnsupported()) {

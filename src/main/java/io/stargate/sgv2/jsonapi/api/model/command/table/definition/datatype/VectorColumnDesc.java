@@ -45,11 +45,10 @@ public class VectorColumnDesc extends ComplexColumnDesc {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.VectorColumnDesc that =
-        (io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.VectorColumnDesc) o;
-    return dimensions == that.dimensions
-        && Objects.equals(valueType, that.valueType)
-        && Objects.equals(vectorizeConfig, that.vectorizeConfig);
+    var vectDesc = (VectorColumnDesc) o;
+    return dimensions == vectDesc.dimensions
+        && Objects.equals(valueType, vectDesc.valueType)
+        && Objects.equals(vectorizeConfig, vectDesc.vectorizeConfig);
   }
 
   @Override
@@ -72,9 +71,6 @@ public class VectorColumnDesc extends ComplexColumnDesc {
         throw SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.get(
             Map.of("unsupportedValue", String.valueOf(dimensionString)));
       }
-
-      // TODO: AARON / MAHESH Where is the vector config valdiated?
-
       // aaron- not calling ApiVectorType isSupported because the value type is locked to float
       return new VectorColumnDesc(dimension, vectorConfig);
     }

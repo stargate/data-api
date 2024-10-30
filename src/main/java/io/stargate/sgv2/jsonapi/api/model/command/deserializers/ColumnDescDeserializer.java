@@ -107,7 +107,6 @@ public class ColumnDescDeserializer extends StdDeserializer<ColumnDesc> {
             serviceNode.isMissingNode()
                 ? null
                 : deserializationContext.readTreeAsValue(serviceNode, VectorizeConfig.class);
-        // TODO: AARON MAHESH - where is the vector config validated
         yield VectorColumnDesc.FROM_JSON_FACTORY.create(dimensionString, vectorConfig);
       }
         // should not get here, because we checked the API type name above
@@ -118,7 +117,6 @@ public class ColumnDescDeserializer extends StdDeserializer<ColumnDesc> {
 
   @Override
   public ColumnDesc getNullValue(DeserializationContext ctxt) throws JsonMappingException {
-    // TODO: AARON / MAHESH - changed to say this is mapping error
     throw new JsonMappingException(ctxt.getParser(), ERR_OBJECT_WITH_TYPE + " (value is null)");
   }
 }
