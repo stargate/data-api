@@ -24,6 +24,7 @@ import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
@@ -87,7 +88,7 @@ public class CommandResolverWithVectorizerTest {
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(
-                        new VectorConfig.ColumnVectorDefinition(
+                        new VectorColumnDefinition(
                             DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                             -1,
                             SimilarityFunction.COSINE,

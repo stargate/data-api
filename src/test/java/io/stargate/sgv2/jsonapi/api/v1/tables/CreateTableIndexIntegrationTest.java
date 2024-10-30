@@ -7,7 +7,7 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
-import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.ArrayList;
@@ -404,7 +404,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     @Test
     public void invalidSourceModel() {
       List<String> supportedSourceModel =
-          new ArrayList<>(VectorConstant.SUPPORTED_SOURCES.keySet());
+          new ArrayList<>(VectorConstants.SUPPORTED_SOURCES.keySet());
       Collections.sort(supportedSourceModel);
       final SchemaException schemaException =
           SchemaException.Code.INVALID_INDEX_DEFINITION.get(

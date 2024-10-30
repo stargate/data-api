@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,7 +25,7 @@ public abstract class VectorCodecs {
   public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> arrayToCQLFloatVectorCodec(
       VectorType vectorType) {
     // Unfortunately we cannot simply construct and return a single Codec instance here
-    // because VectorType's dimensions vary, and we need to know the expected dimensions
+    // because ApiVectorType's dimensions vary, and we need to know the expected dimensions
     // (unless we want to rely on DB validating dimension as part of write and catch failure)
     return (JSONCodec<JavaT, CqlT>)
         new JSONCodec<>(

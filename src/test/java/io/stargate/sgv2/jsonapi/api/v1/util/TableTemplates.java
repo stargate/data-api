@@ -1,9 +1,15 @@
 package io.stargate.sgv2.jsonapi.api.v1.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class TableTemplates extends TemplateRunner {
+
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private DataApiTableCommandSender sender;
 
@@ -12,19 +18,55 @@ public class TableTemplates extends TemplateRunner {
   }
 
   // ==================================================================================================================
-  // DML - INSERT / DELETE / UPDATE / FIND
+  // DML - FIND
   // ==================================================================================================================
+
+  private String findClause(Map<String, Object> filter, List<String> columns) {
+    var projection = columns.stream().collect(Collectors.toMap(col -> col, col -> 1));
+
+    var clause =
+        Map.of(
+            "filter", filter,
+            "projection", projection);
+
+    try {
+      return MAPPER.writeValueAsString(clause);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public DataApiResponseValidator find(
+      Command.CommandName commandName, Map<String, Object> filter, List<String> columns) {
+    return switch (commandName) {
+      case FIND_ONE -> findOne(filter, columns);
+      case FIND -> find(filter, columns);
+      default -> throw new IllegalArgumentException("Unexpected command for find: " + commandName);
+    };
+  }
+
+  public DataApiResponseValidator findOne(Map<String, Object> filter, List<String> columns) {
+    return sender.postFindOne(findClause(filter, columns));
+  }
+
+  public DataApiResponseValidator find(Map<String, Object> filter, List<String> columns) {
+    return sender.postFind(findClause(filter, columns));
+  }
 
   public DataApiResponseValidator find(String filter) {
     var json =
             """
-             {
-              "filter": %s
-             }
-          """
+         {
+          "filter": %s
+         }
+      """
             .formatted(filter);
     return sender.postFind(json);
   }
+
+  // ==================================================================================================================
+  // DML - INSERT / DELETE / UPDATE
+  // ==================================================================================================================
 
   public DataApiResponseValidator updateOne(String filter, String update) {
     var json =

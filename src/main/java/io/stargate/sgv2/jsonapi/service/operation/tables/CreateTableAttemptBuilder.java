@@ -1,9 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
-import java.util.List;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import java.util.Map;
 
 /** Builds a {@link CreateTableAttempt}. */
@@ -12,12 +10,9 @@ public class CreateTableAttemptBuilder {
   private KeyspaceSchemaObject schemaObject;
   private int retryDelayMillis;
   private int maxRetries;
-  private String tableName;
-  private Map<String, ApiDataType> columnTypes;
-  private List<String> partitionKeys;
-  private List<PrimaryKey.OrderingKey> clusteringKeys;
   private Map<String, String> customProperties;
   private boolean ifNotExists;
+  private ApiTableDef tableDef;
 
   public CreateTableAttemptBuilder(int position, KeyspaceSchemaObject schemaObject) {
     this.position = position;
@@ -35,23 +30,8 @@ public class CreateTableAttemptBuilder {
     return this;
   }
 
-  public CreateTableAttemptBuilder tableName(String tableName) {
-    this.tableName = tableName;
-    return this;
-  }
-
-  public CreateTableAttemptBuilder columnTypes(Map<String, ApiDataType> columnTypes) {
-    this.columnTypes = columnTypes;
-    return this;
-  }
-
-  public CreateTableAttemptBuilder partitionKeys(List<String> partitionKeys) {
-    this.partitionKeys = partitionKeys;
-    return this;
-  }
-
-  public CreateTableAttemptBuilder clusteringKeys(List<PrimaryKey.OrderingKey> clusteringKeys) {
-    this.clusteringKeys = clusteringKeys;
+  public CreateTableAttemptBuilder tableDef(ApiTableDef tableDef) {
+    this.tableDef = tableDef;
     return this;
   }
 
@@ -72,10 +52,7 @@ public class CreateTableAttemptBuilder {
         schemaObject,
         retryDelayMillis,
         maxRetries,
-        tableName,
-        columnTypes,
-        partitionKeys,
-        clusteringKeys,
+        tableDef,
         ifNotExists,
         customProperties);
   }

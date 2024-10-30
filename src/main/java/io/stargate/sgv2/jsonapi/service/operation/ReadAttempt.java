@@ -1,8 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtApiColumnDef;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
@@ -12,10 +14,11 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
@@ -24,6 +27,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * An attempt to read from a table, runs the query, holds the result set, and then builds the
  * documents on demand.
  */
-public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
+public class ReadAttempt<SchemaT extends TableSchemaObject>
     extends OperationAttempt<ReadAttempt<SchemaT>, SchemaT> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ReadAttempt.class);
@@ -172,6 +176,30 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
     return cqlOptions.applyStatementOptions(statement);
   }
 
+  @Override
+  public Optional<ColumnsDescContainer> schemaDescription() {
+
+    // need to check because otherwise we do not have the read result
+    if (!checkStatus("schemaDescription()", OperationStatus.COMPLETED)) {
+      return Optional.empty();
+    }
+
+    // result set has ColumnDefinitions not ColumnMetadata kind of weird
+    List<CqlIdentifier> readIdentifiers =
+        new ArrayList<>(readResult.resultSet.getColumnDefinitions().size());
+    for (var columnDef : readResult.resultSet.getColumnDefinitions()) {
+      readIdentifiers.add(columnDef.getName());
+    }
+
+    var readApiColumns = schemaObject.apiTableDef().allColumns().filterBy(readIdentifiers);
+    if (!readApiColumns.filterByUnsupported().isEmpty()) {
+      throw new IllegalStateException(
+          "Unsupported columns in the result set: %s"
+              .formatted(errFmtApiColumnDef(readApiColumns.filterByUnsupported())));
+    }
+    return Optional.of(readApiColumns.toColumnsDef());
+  }
+
   // This is a simple container for the result set so we can set one variable in the onSuccess
   // method
   static class ReadResult {
@@ -187,7 +215,7 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
     }
   }
 
-  static class ReadAttemptRetryPolicy<T extends TableBasedSchemaObject> extends RetryPolicy {
+  static class ReadAttemptRetryPolicy<T extends TableSchemaObject> extends RetryPolicy {
 
     private RetryContext<T> retryContext = null;
 
@@ -239,7 +267,7 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
       return false;
     }
 
-    record RetryContext<T extends TableBasedSchemaObject>(
+    record RetryContext<T extends TableSchemaObject>(
         SimpleStatement lastStatement, ReadAttempt<T> attempt) {}
   }
 }
