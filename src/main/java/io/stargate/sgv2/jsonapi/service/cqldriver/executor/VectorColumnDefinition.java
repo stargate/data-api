@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 
 /**
  * Configuration vector column with the extra info we need for vectors
@@ -12,12 +13,14 @@ import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
  * @param fieldName Is still a string because this is also used by collections
  * @param vectorSize
  * @param similarityFunction
+ * @param sourceModel
  * @param vectorizeDefinition
  */
 public record VectorColumnDefinition(
     String fieldName,
     int vectorSize,
     SimilarityFunction similarityFunction,
+    SourceModel sourceModel,
     VectorizeDefinition vectorizeDefinition) {
 
   /**
@@ -34,11 +37,16 @@ public record VectorColumnDefinition(
     int dimension = jsonNode.get(VectorConstants.VectorColumn.DIMENSION).asInt();
     var similarityFunction =
         SimilarityFunction.fromString(jsonNode.get(VectorConstants.VectorColumn.METRIC).asText());
+    // sourceModel doesn't exist if the collection was created before supporting sourceModel; if
+    // missing, it will be an empty string and sourceModel becomes OTHER.
+    var sourceModel =
+        SourceModel.fromString(jsonNode.path(VectorConstants.VectorColumn.SOURCE_MODEL).asText());
 
     return fromJson(
         DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
         dimension,
         similarityFunction,
+        sourceModel,
         jsonNode,
         objectMapper);
   }
@@ -48,6 +56,7 @@ public record VectorColumnDefinition(
       String fieldName,
       int dimension,
       SimilarityFunction similarityFunction,
+      SourceModel sourceModel,
       JsonNode jsonNode,
       ObjectMapper objectMapper) {
 
@@ -58,6 +67,6 @@ public record VectorColumnDefinition(
             : VectorizeDefinition.fromJson(vectorizeServiceNode, objectMapper);
 
     return new VectorColumnDefinition(
-        fieldName, dimension, similarityFunction, vectorizeDefinition);
+        fieldName, dimension, similarityFunction, sourceModel, vectorizeDefinition);
   }
 }

@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import static io.stargate.sgv2.jsonapi.config.constants.VectorConstant.SUPPORTED_SOURCES;
+import static io.stargate.sgv2.jsonapi.config.constants.VectorConstants.SUPPORTED_SOURCES;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;

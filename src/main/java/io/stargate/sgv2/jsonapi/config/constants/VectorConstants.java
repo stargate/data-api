@@ -31,6 +31,7 @@ public interface VectorConstants {
   interface VectorColumn {
     String DIMENSION = "dimension";
     String METRIC = "metric";
+    String SOURCE_MODEL = "sourceModel";
     String SERVICE = "service";
   }
 
