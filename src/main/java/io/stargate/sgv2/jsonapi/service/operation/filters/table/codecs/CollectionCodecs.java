@@ -23,7 +23,7 @@ public abstract class CollectionCodecs {
    * codecs (since we have one per input JSON type) and will dynamically select the right one based
    * on the actual element values.
    */
-  public static JSONCodec<?, ?> buildToCQLListCodec(
+  public static JSONCodec<?, ?> buildToCqlListCodec(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType) {
     return new JSONCodec<>(
         GENERIC_LIST,
@@ -38,7 +38,7 @@ public abstract class CollectionCodecs {
    * codecs (since we have one per input JSON type) and will dynamically select the right one based
    * on the actual element values.
    */
-  public static JSONCodec<?, ?> buildToCQLSetCodec(
+  public static JSONCodec<?, ?> buildToCqlSetCodec(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType) {
     return new JSONCodec<>(
         // NOTE: although we convert to CQL Set, RowShredder.java binds to Lists
@@ -55,7 +55,8 @@ public abstract class CollectionCodecs {
         elementCodec.targetCQLType(), // not exactly correct, but close enough
         // This code only for to-json case, not to-cql, so we don't need this
         null,
-        (objectMapper, cqlType, value) -> toJsonNode(elementCodec, objectMapper, value));
+        (objectMapper, cqlType, value) ->
+            cqlCollectionToJsonNode(elementCodec, objectMapper, value));
   }
 
   public static JSONCodec<?, ?> buildToJsonSetCodec(JSONCodec<?, ?> elementCodec) {
@@ -65,7 +66,8 @@ public abstract class CollectionCodecs {
         elementCodec.targetCQLType(), // not exactly correct, but close enough
         // This code only for to-json case, not to-cql, so we don't need this
         null,
-        (objectMapper, cqlType, value) -> toJsonNode(elementCodec, objectMapper, value));
+        (objectMapper, cqlType, value) ->
+            cqlCollectionToJsonNode(elementCodec, objectMapper, value));
   }
 
   static List<Object> toCQLList(
@@ -82,7 +84,7 @@ public abstract class CollectionCodecs {
         continue;
       }
       if (elementCodec == null || !elementCodec.handlesJavaValue(element)) {
-        elementCodec = findElementCodec(valueCodecs, elementType, element);
+        elementCodec = findCollectionElementCodec(valueCodecs, elementType, element);
       }
       result.add(elementCodec.toCQL(element));
     }
@@ -103,14 +105,14 @@ public abstract class CollectionCodecs {
         continue;
       }
       if (elementCodec == null || !elementCodec.handlesJavaValue(element)) {
-        elementCodec = findElementCodec(valueCodecs, elementType, element);
+        elementCodec = findCollectionElementCodec(valueCodecs, elementType, element);
       }
       result.add(elementCodec.toCQL(element));
     }
     return result;
   }
 
-  private static JSONCodec<Object, Object> findElementCodec(
+  private static JSONCodec<Object, Object> findCollectionElementCodec(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Object element)
       throws ToCQLCodecException {
     for (JSONCodec<?, ?> codec : valueCodecs) {
@@ -118,17 +120,19 @@ public abstract class CollectionCodecs {
         return (JSONCodec<Object, Object>) codec;
       }
     }
+    List<String> codecDescs =
+        valueCodecs.stream().map(codec -> codec.javaType().toString()).toList();
     String msg =
         String.format(
-            "no codec matching (list/set) declared element type `%s`, actual value type `%s`",
-            elementType, element.getClass());
+            "no codec matching (list/set) declared element type `%s`, actual value type `%s` (checked %d codecs: %s)",
+            elementType, element.getClass().getName(), codecDescs.size(), codecDescs);
     throw new ToCQLCodecException(element, elementType, msg);
   }
 
   /**
    * Method that will convert from driver-provided CQL collection (list, set) type into JSON output.
    */
-  static JsonNode toJsonNode(
+  static JsonNode cqlCollectionToJsonNode(
       JSONCodec<?, ?> elementCodec0, ObjectMapper objectMapper, Object collectionValue)
       throws ToJSONCodecException {
     JSONCodec<?, Object> elementCodec = (JSONCodec<?, Object>) elementCodec0;
