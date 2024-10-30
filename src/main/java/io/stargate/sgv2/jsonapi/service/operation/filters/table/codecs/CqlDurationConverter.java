@@ -2,11 +2,21 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 
 import com.datastax.oss.driver.api.core.data.CqlDuration;
 
+/**
+ * Helper class for converting {@link CqlDuration} to ISO-8601 duration string ("PnYnMnDTnHnMnS"),
+ * translation not supported by {@link CqlDuration} itself even tho it can parse such strings.
+ */
 abstract class CqlDurationConverter {
   private static final long NANOS_PER_SECOND = 1_000_000_000L;
   private static final long NANOS_PER_MINUTE = 60 * NANOS_PER_SECOND;
   private static final long NANOS_PER_HOUR = 60 * NANOS_PER_MINUTE;
 
+  /**
+   * Convert {@link CqlDuration} to ISO-8601 duration string ("PnYnMnDTnHnMnS").
+   *
+   * @param value CqlDuration to convert to ISO-8601 duration string
+   * @return ISO-8601 compliant duration string
+   */
   public static String toISO8601Duration(CqlDuration value) {
     int months = value.getMonths();
     int days = value.getDays();
