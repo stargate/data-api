@@ -186,6 +186,8 @@ request-errors:
       The table ${keyspace}.${table} defines the primaryKeys: ${primaryKeyColumns}.
       
       Resend the request with an updated filter.
+      
+      Note, DeleteMany works as truncate when filter is empty.
 
   - scope: FILTER
     code: NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE
