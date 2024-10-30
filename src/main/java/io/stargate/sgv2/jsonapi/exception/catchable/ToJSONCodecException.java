@@ -14,12 +14,20 @@ public class ToJSONCodecException extends CheckedApiException {
   public final DataType fromCqlType;
 
   public ToJSONCodecException(Object value, DataType fromCqlType, Exception cause) {
-    super(
-        String.format(
-            "Error trying to convert fromCqlType `%s` from value.class `%s` and value: %s",
-            fromCqlType, value.getClass().getName(), value),
-        cause);
+    super(formatMessage(value, fromCqlType, (cause == null) ? "NULL" : cause.getMessage()), cause);
     this.value = value;
     this.fromCqlType = fromCqlType;
+  }
+
+  public ToJSONCodecException(Object value, DataType fromCqlType, String rootCauseMessage) {
+    super(formatMessage(value, fromCqlType, rootCauseMessage));
+    this.value = value;
+    this.fromCqlType = fromCqlType;
+  }
+
+  private static String formatMessage(Object value, DataType fromCqlType, String rootCauseMessage) {
+    return String.format(
+        "Error trying to convert fromCqlType `%s` from value.class `%s` and value: %s. Root cause: %s",
+        fromCqlType, className(value), value);
   }
 }

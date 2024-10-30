@@ -112,11 +112,9 @@ public class RowShredder {
           yield new JsonLiteral<>(wrapper, JsonType.EJSON_WRAPPER);
         }
         // If not, treat as a regular sub-document
-        Map<JsonPath, JsonLiteral<?>> map = new HashMap<>();
+        Map<String, JsonLiteral<?>> map = new HashMap<>();
         for (var entry : objectNode.properties()) {
-          map.put(
-              JsonPath.rootBuilder().property(entry.getKey()).build(),
-              shredValue(entry.getValue()));
+          map.put(entry.getKey(), shredValue(entry.getValue()));
         }
         yield new JsonLiteral<>(map, JsonType.SUB_DOC);
       }
