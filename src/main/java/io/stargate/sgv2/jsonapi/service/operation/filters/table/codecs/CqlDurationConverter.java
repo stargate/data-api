@@ -10,13 +10,12 @@ abstract class CqlDurationConverter {
   public static String toISO8601Duration(CqlDuration value) {
     int months = value.getMonths();
     int days = value.getDays();
-    long nanoseconds = value.getNanoseconds();
+    long nanoSeconds = value.getNanoseconds();
 
-    StringBuilder sb;
+    final StringBuilder sb = new StringBuilder("P");
 
     // Do we have date part?
-    if (months > 0 || days > 0) {
-      sb = new StringBuilder("P");
+    if (months > 0 || days > 0) { // yes
       final int years = months / 12;
       months = months % 12;
 
@@ -29,42 +28,41 @@ abstract class CqlDurationConverter {
       if (days > 0) {
         sb.append(days).append("D");
       }
-
-      // Are we done?
-      if (nanoseconds == 0L) {
-        return sb.toString();
+    }
+    // Check if we have time part
+    if (nanoSeconds == 0L) {
+      if (sb.length() == 1) {
+        return "PT0S"; // All zeroes case
       }
-
-    } else { // No date part
-      // Minor optimization: if all fields are zero, return the smallest possible duration
-      if (nanoseconds == 0L) {
-        return "PT0S";
-      }
-      sb = new StringBuilder("P");
+      return sb.toString(); // Only date part exists
     }
 
-    // At this point we know we have a time part, i.e. nanoseconds > 0
     sb.append('T');
-
-    long hours = nanoseconds / NANOS_PER_HOUR;
+    long hours = nanoSeconds / NANOS_PER_HOUR;
     if (hours > 0L) {
       sb.append(hours).append('H');
-      nanoseconds -= hours * NANOS_PER_HOUR; // faster than modulo
+      nanoSeconds -= hours * NANOS_PER_HOUR; // faster than modulo
     }
 
-    long minutes = nanoseconds / NANOS_PER_MINUTE;
+    long minutes = nanoSeconds / NANOS_PER_MINUTE;
     if (minutes > 0L) {
       sb.append(minutes).append('M');
-      nanoseconds -= minutes * NANOS_PER_MINUTE;
+      nanoSeconds -= minutes * NANOS_PER_MINUTE;
     }
 
-    if (nanoseconds > 0L) {
-      long seconds = nanoseconds / NANOS_PER_SECOND;
-      if (seconds > 0L) {
-        sb.append(seconds).append('S');
-        nanoseconds -= seconds * NANOS_PER_SECOND;
+    // Seconds more challenging due to possibility of fractional seconds
+    if (nanoSeconds > 0L) {
+      long seconds = nanoSeconds / NANOS_PER_SECOND;
+      sb.append(seconds);
+      final long fractionalNanos = nanoSeconds - (seconds * NANOS_PER_SECOND);
+      if (fractionalNanos > 0L) {
+        String nanoString = String.format("%09d", fractionalNanos);
+        if (nanoString.endsWith("0")) {
+          nanoString = nanoString.replaceAll("0+$", "");
+        }
+        sb.append('.').append(nanoString);
       }
-      // !!! TODO: fractions
+      sb.append('S');
     }
     return sb.toString();
   }
