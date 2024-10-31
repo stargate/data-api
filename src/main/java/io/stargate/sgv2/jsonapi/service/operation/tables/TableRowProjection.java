@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.querybuilder.select.OngoingSelection;
@@ -16,15 +17,20 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
 import io.stargate.sgv2.jsonapi.service.projection.TableProjectionDefinition;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Projection used for Table Rows (as opposed to Collection Documents), built from command API
  * projection definitions (expressed in JSON).
  */
 public record TableRowProjection(
-    ObjectMapper objectMapper, TableSchemaObject table, List<ColumnMetadata> columns)
+    ObjectMapper objectMapper,
+    TableSchemaObject table,
+    List<ColumnMetadata> columns,
+    List<CqlIdentifier> orderByColumns)
     implements SelectCQLClause, DocumentSourceSupplier {
   /**
    * Factory method for construction projection instance, given a projection definition and table
@@ -33,7 +39,8 @@ public record TableRowProjection(
   public static TableRowProjection fromDefinition(
       ObjectMapper objectMapper,
       TableProjectionDefinition projectionDefinition,
-      TableSchemaObject table) {
+      TableSchemaObject table,
+      List<CqlIdentifier> orderByColumns) {
     Map<String, ColumnMetadata> columnsByName = new HashMap<>();
     // TODO: This can also be cached as part of TableSchemaObject than resolving it for every query.
     table
@@ -49,12 +56,17 @@ public record TableRowProjection(
           "did not include any Table columns");
     }
 
-    return new TableRowProjection(objectMapper, table, columns);
+    return new TableRowProjection(objectMapper, table, columns, orderByColumns);
   }
 
   @Override
   public Select apply(OngoingSelection ongoingSelection) {
-    return ongoingSelection.columnsIds(columns.stream().map(ColumnMetadata::getName).toList());
+    Set<CqlIdentifier> readColumns = new LinkedHashSet<>();
+    readColumns.addAll(columns.stream().map(ColumnMetadata::getName).toList());
+    if (orderByColumns != null) {
+      readColumns.addAll(orderByColumns);
+    }
+    return ongoingSelection.columnsIds(readColumns);
   }
 
   @Override

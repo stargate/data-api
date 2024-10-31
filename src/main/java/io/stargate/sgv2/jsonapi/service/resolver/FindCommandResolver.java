@@ -29,6 +29,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.sort.SortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.TableInMemorySortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.TableSortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -79,9 +80,9 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
 
   @Override
   public Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, FindCommand command) {
-    var inmemorySortClause = tableInMemorySortClauseResolver.resolve(ctx, command);
+    var inMemorySortClause = tableInMemorySortClauseResolver.resolve(ctx, command);
 
-    boolean inMemorySort = inmemorySortClause != null;
+    boolean inMemorySort = inMemorySortClause != null;
     var operationConfig = ctx.getConfig(OperationsConfig.class);
     int limit =
         Optional.ofNullable(command.options())
@@ -109,7 +110,12 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
 
     var projection =
         TableRowProjection.fromDefinition(
-            objectMapper, command.tableProjectionDefinition(), ctx.schemaObject());
+            objectMapper,
+            command.tableProjectionDefinition(),
+            ctx.schemaObject(),
+            inMemorySort
+                ? inMemorySortClause.getOrderingColumns().stream().map(ApiColumnDef::name).toList()
+                : null);
 
     var builder =
         new TableReadAttemptBuilder(
@@ -117,7 +123,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
                 projection,
                 projection,
                 orderBy,
-                inmemorySortClause,
+                inMemorySortClause,
                 inMemorySortOption)
             .addBuilderOption(CQLOption.ForSelect.limit(selectLimit))
             .addStatementOption(CQLOption.ForStatement.pageSize(pageSize))

@@ -27,9 +27,11 @@ import io.stargate.sgv2.jsonapi.service.resolver.sort.SortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.TableInMemorySortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.TableSortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
 
 /** Resolves the {@link FindOneCommand } */
@@ -77,13 +79,18 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   @Override
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, FindOneCommand command) {
-    var inmemorySortClause = tableInMemorySortClauseResolver.resolve(ctx, command);
+    var inMemorySortClause = tableInMemorySortClauseResolver.resolve(ctx, command);
 
-    boolean inMemorySort = inmemorySortClause != null;
+    boolean inMemorySort = inMemorySortClause != null;
     var operationConfig = ctx.getConfig(OperationsConfig.class);
     var projection =
         TableRowProjection.fromDefinition(
-            objectMapper, command.tableProjectionDefinition(), ctx.schemaObject());
+            objectMapper,
+            command.tableProjectionDefinition(),
+            ctx.schemaObject(),
+            inMemorySort
+                ? inMemorySortClause.getOrderingColumns().stream().map(ApiColumnDef::name).toList()
+                : new ArrayList<>());
 
     var orderBy = tableSortClauseResolver.resolve(ctx, command);
     var selectLimit = inMemorySort ? operationConfig.maxDocumentSortCount() + 1 : 1;
@@ -97,7 +104,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
                 projection,
                 projection,
                 orderBy,
-                inmemorySortClause,
+                inMemorySortClause,
                 inMemorySortOption)
             .addBuilderOption(CQLOption.ForSelect.limit(selectLimit))
             .addStatementOption(CQLOption.ForStatement.pageSize(pageSize));

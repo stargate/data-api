@@ -15,6 +15,10 @@ public class TableInMemorySortClause implements Comparator<ValueCachedRow> {
     this.orderBy = orderBy;
   }
 
+  public List<ApiColumnDef> getOrderingColumns() {
+    return orderBy.stream().map(OrderBy::apiColumnDef).toList();
+  }
+
   @Override
   public int compare(ValueCachedRow o1, ValueCachedRow o2) {
     for (OrderBy sortColumn : orderBy) {
