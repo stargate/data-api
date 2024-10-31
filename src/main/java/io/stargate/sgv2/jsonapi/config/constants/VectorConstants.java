@@ -9,7 +9,7 @@ public interface VectorConstants {
   /*
   Supported Source Models and suggested function for Vector Index in Cassandra
    */
-  Map<String, SimilarityFunction> SUPPORTED_SOURCES =
+  Map<String, SimilarityFunction> SUPPORTED_SOURCE_MODELS =
       Map.of(
           "ada002",
           SimilarityFunction.DOT_PRODUCT,

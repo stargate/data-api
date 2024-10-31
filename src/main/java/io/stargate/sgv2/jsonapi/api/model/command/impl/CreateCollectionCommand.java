@@ -98,9 +98,9 @@ public record CreateCollectionCommand(
         @Nullable
             @Pattern(
                 regexp =
-                    "(openai-v3-large|openai-v3-small|ada002|gecko|nv-qa-4|cohere-v3|bert|other)",
+                    "(ada002|bert|cohere-v3|gecko|nv-qa-4|openai-v3-large|openai-v3-small|other)",
                 message =
-                    "sourceModel options are 'openai-v3-large', 'openai-v3-small', 'ada002', 'gecko', 'nv-qa-4', 'cohere-v3', 'bert', and 'other'")
+                    "sourceModel options are 'ada002', 'bert', 'cohere-v3', 'gecko', 'nv-qa-4', 'openai-v3-large', 'openai-v3-small', and 'other'")
             @Schema(
                 description =
                     "The 'sourceModel' option configures the index with the fastest settings for a given source of embeddings vectors",

@@ -404,7 +404,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     @Test
     public void invalidSourceModel() {
       List<String> supportedSourceModel =
-          new ArrayList<>(VectorConstants.SUPPORTED_SOURCES.keySet());
+          new ArrayList<>(VectorConstants.SUPPORTED_SOURCE_MODELS.keySet());
       Collections.sort(supportedSourceModel);
       final SchemaException schemaException =
           SchemaException.Code.INVALID_INDEX_DEFINITION.get(

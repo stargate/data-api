@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import static io.stargate.sgv2.jsonapi.config.constants.VectorConstants.SUPPORTED_SOURCES;
+import static io.stargate.sgv2.jsonapi.config.constants.VectorConstants.SUPPORTED_SOURCE_MODELS;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -205,17 +205,17 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       if (metric == null) {
         // (1) sourceModel is provided but metric is not - set metric to cosine or dot_product based
         // on the map
-        metric = SUPPORTED_SOURCES.get(sourceModel).getMetric();
+        metric = SUPPORTED_SOURCE_MODELS.get(sourceModel).getMetric();
       }
       // (2) both sourceModel and metric are provided - do nothing
     } else {
       if (metric != null) {
         // (3) sourceModel is not provided but metric is - set sourceModel to 'other'
-        sourceModel = SourceModel.OTHER.getSourceModel();
+        sourceModel = SourceModel.OTHER.getName();
       } else {
         // (4) both sourceModel and metric are not provided - set sourceModel to 'other' and metric
         // to 'cosine'
-        sourceModel = SourceModel.OTHER.getSourceModel();
+        sourceModel = SourceModel.OTHER.getName();
         metric = SimilarityFunction.COSINE.getMetric();
       }
     }

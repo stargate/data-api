@@ -62,9 +62,9 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     }
 
     if (definitionOptions != null) {
-      if (sourceModel != null && VectorConstants.SUPPORTED_SOURCES.get(sourceModel) == null) {
+      if (sourceModel != null && VectorConstants.SUPPORTED_SOURCE_MODELS.get(sourceModel) == null) {
         List<String> supportedSourceModel =
-            new ArrayList<>(VectorConstants.SUPPORTED_SOURCES.keySet());
+            new ArrayList<>(VectorConstants.SUPPORTED_SOURCE_MODELS.keySet());
         Collections.sort(supportedSourceModel);
         throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
             Map.of(
