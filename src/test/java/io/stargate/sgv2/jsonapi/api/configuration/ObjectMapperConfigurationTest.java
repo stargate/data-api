@@ -631,7 +631,8 @@ class ObjectMapperConfigurationTest {
                 assertThat(createCollection.options()).isNotNull();
                 assertThat(createCollection.options().vector()).isNotNull();
                 assertThat(createCollection.options().vector().dimension()).isEqualTo(5);
-                assertThat(createCollection.options().vector().metric()).isEqualTo("cosine");
+                assertThat(createCollection.options().vector().metric()).isNull();
+                assertThat(createCollection.options().vector().sourceModel()).isNull();
               });
     }
   }
