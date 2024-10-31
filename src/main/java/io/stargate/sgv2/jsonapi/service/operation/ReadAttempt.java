@@ -130,7 +130,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
           statement.getPositionalValues());
     }
     if (rowsContainer.readAllPages()) {
-      return queryExecutor.executePaginatedRead(statement, rowsContainer);
+      return queryExecutor.executeReadAllPages(statement, rowsContainer);
     } else {
       return queryExecutor.executeRead(statement);
     }

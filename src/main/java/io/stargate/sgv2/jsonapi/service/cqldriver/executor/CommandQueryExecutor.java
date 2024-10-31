@@ -85,7 +85,7 @@ public class CommandQueryExecutor {
    * @param statement The statement to execute.
    * @param rowsContainer The container to hold the rows.
    */
-  public Uni<AsyncResultSet> executePaginatedRead(
+  public Uni<AsyncResultSet> executeReadAllPages(
       SimpleStatement statement, RowsContainer rowsContainer) {
     AllRowsAsyncResultSet paginatedRowsAsyncResultSet = new AllRowsAsyncResultSet(rowsContainer);
 
