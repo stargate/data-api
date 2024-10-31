@@ -165,6 +165,17 @@ request-errors:
       Resend the request using only supported column types.  
 
   - scope: FILTER
+    code: FILTER_ON_COMPLEX_COLUMNS
+    title: Unsupported complex columns for filter
+    body: |-
+      Complex type is not supported for filter.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The request included the following columns that have unsupported complex columns: ${complexColumns}.
+      
+      Resend the request using only supported column types.  
+
+  - scope: FILTER
     code: COMPARISON_FILTER_AGAINST_DURATION
     title: Cannot perform comparison filter against duration data type
     body: |-
@@ -304,7 +315,7 @@ request-errors:
     code: ZERO_FILTER_OPERATIONS
     title: Zero operations provided in query filter
     body: |-
-      Zero filters were provided in the filer for this query. 
+      Zero filters were provided in the filter for this query. 
       
       Providing zero filters will return all rows in the table, which may have poor performance when the table is large. For the best performance, include one or more filters using the primary key or indexes.
       

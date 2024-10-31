@@ -51,7 +51,9 @@ public class WhereCQLClauseAnalyzer {
         case SELECT ->
             new AnalysisStrategy(
                 List.of(
-                    analyzer::checkAllColumnsExist, analyzer::checkComparisonFilterAgainstDuration),
+                    analyzer::checkAllColumnsExist,
+                    analyzer::checkComparisonFilterAgainstDuration,
+                    analyzer::checkFilteringOnComplexColumns),
                 List.of(
                     analyzer::warnMissingIndexOnScalar,
                     analyzer::warnNotEqUnsupportedByIndexing,
@@ -64,7 +66,8 @@ public class WhereCQLClauseAnalyzer {
                     analyzer::checkNoFilters,
                     analyzer::checkAllColumnsExist,
                     analyzer::checkNonPrimaryKeyFilters,
-                    analyzer::checkFullPrimaryKey),
+                    analyzer::checkFullPrimaryKey,
+                    analyzer::checkFilteringOnComplexColumns),
                 List.of());
         case DELETE_MANY ->
             new AnalysisStrategy(
@@ -72,7 +75,8 @@ public class WhereCQLClauseAnalyzer {
                     analyzer::checkNoFilters,
                     analyzer::checkAllColumnsExist,
                     analyzer::checkNonPrimaryKeyFilters,
-                    analyzer::checkValidPrimaryKey),
+                    analyzer::checkValidPrimaryKey,
+                    analyzer::checkFilteringOnComplexColumns),
                 List.of());
       };
     }
@@ -205,6 +209,25 @@ public class WhereCQLClauseAnalyzer {
     }
   }
 
+  /** In first tables feature preview, only scalar column types are supported for filter */
+  private void checkFilteringOnComplexColumns(Map<CqlIdentifier, TableFilter> identifierToFilter) {
+
+    var filterOnComplexColumns =
+        identifierToFilter.keySet().stream()
+            .filter(identifier -> !apiTableDef.allColumns().get(identifier).type().isPrimitive())
+            .toList();
+
+    if (!filterOnComplexColumns.isEmpty()) {
+      throw FilterException.Code.FILTER_ON_COMPLEX_COLUMNS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
+                map.put("complexColumns", errFmtCqlIdentifier(filterOnComplexColumns));
+              }));
+    }
+  }
+
   /**
    * Check if all primary keys components (partition keys, clustering keys) are specified in filter.
    *
@@ -314,7 +337,6 @@ public class WhereCQLClauseAnalyzer {
                 .toList()
             : identifierToFilter.keySet().stream().toList();
 
-    // TODO: better check if identifier is not found in all columns
     var scalarTypeFilters =
         filtersToCheck.stream()
             .filter(identifier -> apiTableDef.allColumns().get(identifier).type().isPrimitive())

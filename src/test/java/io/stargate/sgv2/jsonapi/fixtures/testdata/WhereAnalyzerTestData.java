@@ -159,6 +159,14 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
       return assertExceptionContains(warning);
     }
 
+    public WhereAnalyzerFixture assertExceptionOnComplexColumns(CqlIdentifier... columns) {
+      var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
+      var warning =
+          "The request included the following columns that have unsupported complex columns: %s."
+              .formatted(errFmtCqlIdentifier(identifiers));
+      return assertExceptionContains(warning);
+    }
+
     public WhereAnalyzerFixture assertExceptionOnDurationColumns(CqlIdentifier... columns) {
       var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
       var warning =

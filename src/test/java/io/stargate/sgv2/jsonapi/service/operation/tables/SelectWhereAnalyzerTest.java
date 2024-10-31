@@ -8,15 +8,19 @@ import io.stargate.sgv2.jsonapi.fixtures.testdata.LogicalExpressionTestData;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestDataNames;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /** Tests for the {@link WhereCQLClauseAnalyzer}. Focus on Select Statement type */
 public class SelectWhereAnalyzerTest {
 
   private static final TestData TEST_DATA = new TestData();
 
-  private TestDataNames names() {
+  private static TestDataNames names() {
     return TEST_DATA.names;
   }
 
@@ -456,7 +460,7 @@ public class SelectWhereAnalyzerTest {
     @Test
     public void eq_indexed_column() {
 
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)
             || cqlDatatypeColumn.equals(names().CQL_DURATION_COLUMN)) {
           continue;
@@ -488,7 +492,7 @@ public class SelectWhereAnalyzerTest {
 
     @Test
     public void eq_not_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
           continue;
         }
@@ -518,7 +522,7 @@ public class SelectWhereAnalyzerTest {
     public void ne_indexed_column() {
       // If column is on SAI index, perform $ne on it.
       // -> For TEXT, ASCII, BOOLEAN, DURATION, BLOB. ALLOW FILTERING is needed.
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
           continue;
         }
@@ -569,7 +573,7 @@ public class SelectWhereAnalyzerTest {
 
     @Test
     public void ne_not_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
           continue;
         }
@@ -597,7 +601,7 @@ public class SelectWhereAnalyzerTest {
 
     @Test
     public void in_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
           continue;
         }
@@ -629,7 +633,7 @@ public class SelectWhereAnalyzerTest {
 
     @Test
     public void in_not_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
           continue;
         }
@@ -657,7 +661,7 @@ public class SelectWhereAnalyzerTest {
 
     @Test
     public void comparison_api_filter_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
           continue;
         }
@@ -705,7 +709,7 @@ public class SelectWhereAnalyzerTest {
 
     @Test
     public void comparison_api_filter_not_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
           continue;
         }
@@ -723,6 +727,35 @@ public class SelectWhereAnalyzerTest {
             .assertOneWarning(WarningException.Code.MISSING_INDEX)
             .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
       }
+    }
+  }
+
+  @Nested
+  class ComplexDataType {
+
+    // ==================================================================================================================
+    // Currently, only PrimitiveApiDataType(Scalar) is supported for table filter
+    // ==================================================================================================================
+
+    private static Stream<Arguments> complexDataTypes() {
+      return names().ALL_COLLECTION_DATATYPE_COLUMNS.stream().map((Arguments::of));
+    }
+
+    @ParameterizedTest
+    @MethodSource("complexDataTypes")
+    public void eq_complex_column(CqlIdentifier complexColumnIdentifier) {
+      var fixture =
+          TEST_DATA
+              .whereAnalyzer()
+              .tableAllColumnDatatypesIndexed(
+                  "$eq_on_%s".formatted(complexColumnIdentifier.asInternal()),
+                  WhereCQLClauseAnalyzer.StatementType.SELECT);
+      fixture
+          .expression()
+          .eqOn(complexColumnIdentifier)
+          .analyzeThrows(FilterException.class)
+          .assertFilterExceptionCode(FilterException.Code.FILTER_ON_COMPLEX_COLUMNS)
+          .assertExceptionOnComplexColumns(complexColumnIdentifier);
     }
   }
 }
