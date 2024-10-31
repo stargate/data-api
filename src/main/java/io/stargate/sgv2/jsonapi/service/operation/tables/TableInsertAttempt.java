@@ -51,6 +51,6 @@ public class TableInsertAttempt extends InsertAttempt<TableSchemaObject> {
           "Unsupported columns primary key: %s" + apiColumns.filterByUnsupported());
     }
 
-    return Optional.of(apiColumns.toColumnsDef());
+    return Optional.of(apiColumns.toColumnsDesc());
   }
 }

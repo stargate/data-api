@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
@@ -22,6 +23,8 @@ import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.sort.SortClauseResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.sort.TableSortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -41,6 +44,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
 
   private final FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver;
   private final FilterResolver<FindCommand, TableSchemaObject> tableFilterResolver;
+  private final SortClauseResolver<FindCommand, TableSchemaObject> tableSortClauseResolver;
 
   @Inject
   public FindCommandResolver(
@@ -58,6 +62,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
     this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
+    this.tableSortClauseResolver =
+        new TableSortClauseResolver<>(operationsConfig, JSONCodecRegistries.DEFAULT_REGISTRY);
   }
 
   @Override
@@ -72,6 +78,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
         Optional.ofNullable(command.options())
             .map(FindCommand.Options::limit)
             .orElse(Integer.MAX_VALUE);
+
     var cqlPageState =
         Optional.ofNullable(command.options())
             .map(options -> CqlPagingState.from(options.pageState()))
@@ -81,8 +88,12 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
         TableRowProjection.fromDefinition(
             objectMapper, command.tableProjectionDefinition(), ctx.schemaObject());
 
+    var orderBy = tableSortClauseResolver.resolve(ctx, command);
+
+    // make the Sorter resolver and pass ing the order by clause
+
     var builder =
-        new TableReadAttemptBuilder(ctx.schemaObject(), projection, projection)
+        new TableReadAttemptBuilder(ctx.schemaObject(), projection, projection, orderBy)
             .addBuilderOption(CQLOption.ForSelect.limit(limit))
             .addStatementOption(CQLOption.ForStatement.pageSize(operationsConfig.defaultPageSize()))
             .addPagingState(cqlPageState);

@@ -9,7 +9,7 @@ public abstract class TemplateRunner {
 
   protected TemplateRunner() {}
 
-  protected static String asJSON(Object ob) {
+  public static String asJSON(Object ob) {
     try {
       return MAPPER.writeValueAsString(ob);
     } catch (IOException e) { // should never happen
