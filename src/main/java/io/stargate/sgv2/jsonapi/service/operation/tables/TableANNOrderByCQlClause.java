@@ -34,4 +34,9 @@ public class TableANNOrderByCQlClause implements OrderByCqlClause {
   public Select apply(Select select) {
     return select.orderByAnnOf(apiColumnDef.name(), vector);
   }
+
+  @Override
+  public boolean inMemorySortNeeded() {
+    return false;
+  }
 }

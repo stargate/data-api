@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.exception.*;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import java.util.Map;
 import org.hamcrest.Matcher;
@@ -232,6 +233,10 @@ public class DataApiResponseValidator {
     return body("data.document", is(notNullValue()));
   }
 
+  public DataApiResponseValidator hasSingleDocument(String documentJSON) {
+    return body("data.document", jsonEquals(documentJSON));
+  }
+
   public DataApiResponseValidator hasEmptyDataDocuments() {
     return body("data.documents", is(empty()));
   }
@@ -243,6 +248,10 @@ public class DataApiResponseValidator {
   // // // Projection Schema // // //
   public DataApiResponseValidator hasProjectionSchema() {
     return hasField("status." + CommandStatus.PROJECTION_SCHEMA);
+  }
+
+  public DataApiResponseValidator hasProjectionSchemaWith(ApiColumnDef columnDef) {
+    return hasProjectionSchemaWith(columnDef.name().asInternal(), columnDef.type());
   }
 
   public DataApiResponseValidator hasProjectionSchemaWith(String columnName, ApiDataType type) {

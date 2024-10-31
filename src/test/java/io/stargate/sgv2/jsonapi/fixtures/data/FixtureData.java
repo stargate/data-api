@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.fixtures.data;
 import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import java.util.List;
 
 /**
@@ -28,6 +30,14 @@ public interface FixtureData {
 
   /** Data for types that are not supported by the API. */
   List<FixtureData> UNSUPPORTED_TYPES = List.of(new UnsupportedTypesData());
+
+  default JsonLiteral<?> fromJSON(ApiColumnDef columnDef) {
+    return fromJSON(columnDef.type());
+  }
+
+  default JsonLiteral<?> fromJSON(ApiDataType apiDataType) {
+    return fromJSON(apiDataType.cqlType());
+  }
 
   /**
    * Returns a Java value that we want we would have read from Jackson.

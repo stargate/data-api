@@ -16,6 +16,8 @@ public class SortException extends RequestException {
   public enum Code implements ErrorCode<SortException> {
     CANNOT_SORT_UNKNOWN_COLUMNS,
     CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS,
+    CANNOT_VECTOR_SORT_NON_INDEXED_VECTOR_COLUMNS,
+    CANNOT_MIX_VECTOR_AND_NON_VECTOR_SORT,
     MORE_THAN_ONE_VECTOR_SORT,
     ;
 

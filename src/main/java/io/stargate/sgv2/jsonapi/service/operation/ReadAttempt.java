@@ -194,7 +194,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
           "Unsupported columns in the result set: %s"
               .formatted(errFmtApiColumnDef(readApiColumns.filterByUnsupported())));
     }
-    return Optional.of(readApiColumns.toColumnsDef());
+    return Optional.of(readApiColumns.toColumnsDesc());
   }
 
   // This is a simple container for the result set so we can set one variable in the onSuccess

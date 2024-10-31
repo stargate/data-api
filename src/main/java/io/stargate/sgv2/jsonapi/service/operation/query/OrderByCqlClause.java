@@ -23,4 +23,14 @@ public interface OrderByCqlClause extends Function<Select, Select>, CQLClause {
 
   // No Op implementation just returns the select, use this when no order by is needed
   OrderByCqlClause NO_OP = select -> select;
+
+  /**
+   * If true, this means that the query will need to be sorted in memory after the query is
+   * executed.
+   *
+   * @return true if the query needs to be sorted in memory
+   */
+  default boolean inMemorySortNeeded() {
+    return true;
+  }
 }

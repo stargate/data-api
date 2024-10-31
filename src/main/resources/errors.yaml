@@ -678,7 +678,7 @@ request-errors:
     code: CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS
     title: Vector sort requested for non-vector columns
     body: |-
-      The command attemtped to vector sort columns that are not of vector type. 
+      The command attempted to vector sort columns that are not of vector type. 
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
@@ -686,6 +686,38 @@ request-errors:
       The command attempted to sort the non vector columns: ${sortColumns}.  
       
       Resend the command using only vector columns for vector sorting.
+
+  - scope: SORT
+    code: CANNOT_VECTOR_SORT_NON_INDEXED_VECTOR_COLUMNS
+    title: Vector sort requested for vector columns that are not indexed
+    body: |-
+      The command attempted to vector sort vector columns that are not indexed.
+      
+      Vector sorting is only supported on vector columns that have been indexed.
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
+      And has indexes on the vector columns: ${indexedColumns}.
+      The command attempted to sort vector columns: ${sortColumns}.  
+      
+      Resend the command using only vector columns that have been indexed.
+
+  - scope: SORT
+    code: CANNOT_MIX_VECTOR_AND_NON_VECTOR_SORT
+    title: Vector sort requested for vector column and non vector columns
+    body: |-
+      The command attempted to vector sort vector columns and other non vector columns.
+      
+      Vector sorts must use a single vector column, and cannot include any other sort columns.
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
+      The command attempted to sort the vector columns: ${sortVectorColumns}.
+      The command attempted to sort the non-vector columns: ${sortNonVectorColumns}.
+      
+      Resend the command using only vector columns that have been indexed.
 
 # ================================================================================================================
 # ================================================================================================================

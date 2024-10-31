@@ -90,6 +90,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
 
     var orderBy = tableSortClauseResolver.resolve(ctx, command);
 
+    // make the Sorter resolver and pass ing the order by clause
+
     var builder =
         new TableReadAttemptBuilder(ctx.schemaObject(), projection, projection, orderBy)
             .addBuilderOption(CQLOption.ForSelect.limit(limit))
