@@ -60,7 +60,8 @@ public class AnnSortTableIntegrationTest extends AbstractTableIntegrationTestBas
             SortException.Code.CANNOT_VECTOR_SORT_NON_INDEXED_VECTOR_COLUMNS,
             SortException.class,
             "And has indexes on the vector columns: %s.\nThe command attempted to sort vector columns: %s"
-                .formatted(SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL),
+                .formatted(
+                    SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL),
                     SCENARIO.fieldName(VectorDimension5TableScenario.UNINDEXED_VECTOR_COL)));
   }
 
