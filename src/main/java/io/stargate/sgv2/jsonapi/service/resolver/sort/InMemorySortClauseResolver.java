@@ -4,7 +4,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableInmemorySortClause;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableInMemorySortClause;
 import io.stargate.sgv2.jsonapi.service.resolver.ClauseResolver;
 
 /**
@@ -17,7 +17,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.ClauseResolver;
  */
 public abstract class InMemorySortClauseResolver<
         CmdT extends Command & Sortable, SchemaT extends SchemaObject>
-    extends ClauseResolver<CmdT, SchemaT, TableInmemorySortClause> {
+    extends ClauseResolver<CmdT, SchemaT, TableInMemorySortClause> {
 
   protected InMemorySortClauseResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);

@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.ResultRowContainer;
+import io.stargate.sgv2.jsonapi.service.cqldriver.RowsContainer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -51,6 +51,8 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
   private ReadAttemptRetryPolicy<SchemaT> readAttemptRetryPolicy;
   private ReadResult readResult;
 
+  private final RowsContainer rowsContainer;
+
   public ReadAttempt(
       int position,
       SchemaT schemaObject,
@@ -59,7 +61,8 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
       OrderByCqlClause orderByCqlClause,
       CqlOptions<Select> cqlOptions,
       CqlPagingState pagingState,
-      DocumentSourceSupplier documentSourceSupplier) {
+      DocumentSourceSupplier documentSourceSupplier,
+      RowsContainer rowsContainer) {
     super(position, schemaObject, new ReadAttemptRetryPolicy<SchemaT>());
 
     // nullable because the subclass may want to implement methods to build the statement itself
@@ -69,6 +72,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     this.cqlOptions = cqlOptions;
     this.pagingState = pagingState;
     this.documentSourceSupplier = documentSourceSupplier;
+    this.rowsContainer = rowsContainer;
 
     downcastRetryPolicy();
     setStatus(OperationStatus.READY);
@@ -125,19 +129,11 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
           statement.getQuery(),
           statement.getPositionalValues());
     }
-    if (inMemorySort()) {
-      return queryExecutor.executePaginatedRead(statement, inMemoryResultSetContainer());
+    if (rowsContainer.readAllPages()) {
+      return queryExecutor.executePaginatedRead(statement, rowsContainer);
     } else {
       return queryExecutor.executeRead(statement);
     }
-  }
-
-  protected boolean inMemorySort() {
-    return false;
-  }
-
-  protected ResultRowContainer inMemoryResultSetContainer() {
-    return ResultRowContainer.DEFAULT;
   }
 
   @Override

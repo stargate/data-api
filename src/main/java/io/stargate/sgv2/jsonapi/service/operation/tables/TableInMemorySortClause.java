@@ -5,15 +5,15 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import java.util.Comparator;
 import java.util.List;
 
-public class TableInmemorySortClause implements Comparator<Row> {
+public class TableInMemorySortClause implements Comparator<Row> {
 
   private final List<OrderBy> orderBy;
 
-  public TableInmemorySortClause(List<OrderBy> orderBy) {
+  public TableInMemorySortClause(List<OrderBy> orderBy) {
     this.orderBy = orderBy;
   }
 
-  public static TableInmemorySortClause DEFAULT = new TableInmemorySortClause(List.of());
+  public static TableInMemorySortClause DEFAULT = new TableInMemorySortClause(List.of());
 
   @Override
   public int compare(Row o1, Row o2) {

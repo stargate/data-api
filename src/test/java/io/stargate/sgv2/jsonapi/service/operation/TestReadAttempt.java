@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import io.stargate.sgv2.jsonapi.service.cqldriver.RowsContainer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
@@ -31,7 +32,8 @@ public class TestReadAttempt extends ReadAttempt<TableSchemaObject> {
         orderByCqlClause,
         cqlOptions,
         pagingState,
-        documentSourceSupplier);
+        documentSourceSupplier,
+        RowsContainer.DEFAULT);
     this.resultSet = resultSet;
   }
 }

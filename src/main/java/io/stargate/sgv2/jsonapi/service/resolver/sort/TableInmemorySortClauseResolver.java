@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableInmemorySortClause;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableInMemorySortClause;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +26,7 @@ public class TableInmemorySortClauseResolver<CmdT extends Command & Sortable>
   }
 
   @Override
-  public TableInmemorySortClause resolve(
+  public TableInMemorySortClause resolve(
       CommandContext<TableSchemaObject> commandContext, CmdT command) {
     Objects.requireNonNull(commandContext, "commandContext is required");
     Objects.requireNonNull(command, "command is required");
@@ -41,11 +41,11 @@ public class TableInmemorySortClauseResolver<CmdT extends Command & Sortable>
   }
 
   // Verify and resolve to a TableInMemoryOrderByCQLClause
-  private TableInmemorySortClause resolveToTableInMemorySort(
+  private TableInMemorySortClause resolveToTableInMemorySort(
       List<SortExpression> inMemorySorts,
       TableSchemaObject tableSchemaObject,
       ApiTableDef apiTableDef) {
-    List<TableInmemorySortClause.OrderBy> orderByList = new ArrayList<>();
+    List<TableInMemorySortClause.OrderBy> orderByList = new ArrayList<>();
     for (SortExpression sortExpression : inMemorySorts) {
       var sortIdentifier = cqlIdentifierFromUserInput(sortExpression.path());
       var apiColumnDef = apiTableDef.allColumns().get(sortIdentifier);
@@ -59,8 +59,8 @@ public class TableInmemorySortClauseResolver<CmdT extends Command & Sortable>
                 }));
       }
       orderByList.add(
-          new TableInmemorySortClause.OrderBy(apiColumnDef, sortExpression.ascending()));
+          new TableInMemorySortClause.OrderBy(apiColumnDef, sortExpression.ascending()));
     }
-    return new TableInmemorySortClause(orderByList);
+    return new TableInMemorySortClause(orderByList);
   }
 }

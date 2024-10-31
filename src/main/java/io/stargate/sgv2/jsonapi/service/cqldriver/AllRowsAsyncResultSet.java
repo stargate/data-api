@@ -4,15 +4,15 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.Row;
-import io.stargate.sgv2.jsonapi.service.operation.SortableReadAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.ReadAttempt;
 import java.util.concurrent.CompletionStage;
 
 /**
- * AsyncResultSet implementation to be used only for in memory sort in the {@link
- * SortableReadAttempt} attempt where no cql query is run.
+ * AsyncResultSet implementation to be used only for in memory sort in the {@link ReadAttempt}
+ * attempt where no cql query is run.
  */
-public class PaginatedRowsAsyncResultSet implements AsyncResultSet {
-  private final ResultRowContainer container;
+public class AllRowsAsyncResultSet implements AsyncResultSet {
+  private final RowsContainer rowsContainer;
   private ColumnDefinitions columnDefinitions;
 
   /*
@@ -23,8 +23,8 @@ public class PaginatedRowsAsyncResultSet implements AsyncResultSet {
    * @param errorLimit - If more rows than the errorLimit is read, error out
    * @param comparator - comparator for sorting rows
    */
-  public PaginatedRowsAsyncResultSet(ResultRowContainer container) {
-    this.container = container;
+  public AllRowsAsyncResultSet(RowsContainer rowsContainer) {
+    this.rowsContainer = rowsContainer;
   }
 
   public void add(AsyncResultSet resultSet) {
@@ -32,7 +32,7 @@ public class PaginatedRowsAsyncResultSet implements AsyncResultSet {
         .currentPage()
         .forEach(
             row -> {
-              if (!container.add(row)) {
+              if (!rowsContainer.add(row)) {
                 throw new IllegalStateException("Error adding row to container");
               }
             });
@@ -54,7 +54,7 @@ public class PaginatedRowsAsyncResultSet implements AsyncResultSet {
 
   @Override
   public Iterable<Row> currentPage() {
-    return container.getRequiredPage();
+    return rowsContainer.getRequiredPage();
   }
 
   @Override

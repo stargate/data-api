@@ -8,9 +8,9 @@ import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.service.cqldriver.AllRowsAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.PaginatedRowsAsyncResultSet;
-import io.stargate.sgv2.jsonapi.service.cqldriver.ResultRowContainer;
+import io.stargate.sgv2.jsonapi.service.cqldriver.RowsContainer;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Objects;
 import java.util.Optional;
@@ -80,9 +80,8 @@ public class CommandQueryExecutor {
   }
 
   public Uni<AsyncResultSet> executePaginatedRead(
-      SimpleStatement statement, ResultRowContainer resultRowContainer) {
-    PaginatedRowsAsyncResultSet paginatedRowsAsyncResultSet =
-        new PaginatedRowsAsyncResultSet(resultRowContainer);
+      SimpleStatement statement, RowsContainer rowsContainer) {
+    AllRowsAsyncResultSet paginatedRowsAsyncResultSet = new AllRowsAsyncResultSet(rowsContainer);
 
     Objects.requireNonNull(statement, "statement must not be null");
     return Multi.createBy()
