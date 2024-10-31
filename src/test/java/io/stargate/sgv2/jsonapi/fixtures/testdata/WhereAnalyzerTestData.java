@@ -213,6 +213,15 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
       return assertWarningContains(warning);
     }
 
+    public WhereAnalyzerFixture assertWarnOnNotInColumns(CqlIdentifier... columns) {
+
+      var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
+      var warning =
+          "The request applied $nin to the indexed columns: %s."
+              .formatted(errFmtCqlIdentifier(identifiers));
+      return assertWarningContains(warning);
+    }
+
     public WhereAnalyzerFixture assertWarnOnComparisonFilterColumns(CqlIdentifier... columns) {
       var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
       var warning =
@@ -254,7 +263,6 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     }
 
     public WhereAnalyzerFixture assertWarningContains(String contains) {
-
       assertThat(analysisResult.warningExceptions())
           .as("Warning message contains expected when: %s".formatted(message))
           .hasSize(1)
