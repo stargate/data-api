@@ -77,7 +77,9 @@ public enum SourceModel {
    * @return The similarity function
    */
   public static SimilarityFunction getSimilarityFunction(String sourceModelName) {
-    return getSimilarityFunction(fromString(sourceModelName));
+    return SOURCE_MODEL_NAME_MAP.get(sourceModelName) == null
+        ? null
+        : getSimilarityFunction(SOURCE_MODEL_NAME_MAP.get(sourceModelName));
   }
 
   /**
