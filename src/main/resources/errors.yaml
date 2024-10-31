@@ -188,15 +188,17 @@ request-errors:
 
   - scope: FILTER
     code: FILTER_REQUIRED_FOR_UPDATE_DELETE
-    title: A filter is required for Update and Delete commands
+    title: A filter is required for Update and DeleteOne commands
     body: |-
-      An Update or Delete command was issued without a filter.
+      An Update or DeleteOne command was issued without a filter.
       
       These commands require a valid filter that identifies a either a single row (for Update and to Delete one row) or a partition and a sequence or rows (for Delete many). 
 
       The table ${keyspace}.${table} defines the primaryKeys: ${primaryKeyColumns}.
       
       Resend the request with an updated filter.
+      
+      Note, DeleteMany without a filter truncates the table.
 
   - scope: FILTER
     code: NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE
@@ -308,6 +310,19 @@ request-errors:
       
       The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
       The request applied $lt, $gt, $lte, $gte to the indexed columns: ${inefficientFilterColumns}.
+      
+      ${SNIPPET.INEFFICIENT_QUERY}
+
+  - scope: WARNING
+    code: NOT_IN_FILTER_UNSUPPORTED_BY_INDEXING
+    title: Use of $nin on indexed columns
+    body: |-
+      The filter uses $nin on columns that, while indexed, are still inefficient to filter on.  
+      
+      Filtering using $nin on columns of type ${inefficientDataTypes} is inefficient, even when the columns are indexed.
+      
+      The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
+      The request applied $nin to the indexed columns: ${inefficientFilterColumns}.
       
       ${SNIPPET.INEFFICIENT_QUERY}
 
