@@ -49,7 +49,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   private final FilterResolver<FindCommand, TableSchemaObject> tableFilterResolver;
   private final SortClauseResolver<FindCommand, TableSchemaObject> tableSortClauseResolver;
   private final InMemorySortClauseResolver<FindCommand, TableSchemaObject>
-      tableInmemorySortClauseResolver;
+      tableInMemorySortClauseResolver;
 
   @Inject
   public FindCommandResolver(
@@ -69,7 +69,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
     this.tableSortClauseResolver =
         new TableSortClauseResolver<>(operationsConfig, JSONCodecRegistries.DEFAULT_REGISTRY);
-    this.tableInmemorySortClauseResolver = new TableInmemorySortClauseResolver<>(operationsConfig);
+    this.tableInMemorySortClauseResolver = new TableInmemorySortClauseResolver<>(operationsConfig);
   }
 
   @Override
@@ -79,7 +79,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
 
   @Override
   public Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, FindCommand command) {
-    var inmemorySortClause = tableInmemorySortClauseResolver.resolve(ctx, command);
+    var inmemorySortClause = tableInMemorySortClauseResolver.resolve(ctx, command);
 
     boolean inMemorySort = inmemorySortClause != null;
     var operationConfig = ctx.getConfig(OperationsConfig.class);

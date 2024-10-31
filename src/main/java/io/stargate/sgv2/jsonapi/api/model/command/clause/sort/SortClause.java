@@ -36,6 +36,7 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) implements
     return sortExpressions.stream().filter(SortExpression::isTableVectorSort).toList();
   }
 
+  /** Returns all non vector columns sorts. */
   public List<SortExpression> tableNonVectorSorts() {
     return sortExpressions.stream()
         .filter(

@@ -9,19 +9,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+/*
+ * RowsContainer implementation which sorts the added rows
+ */
 public class SortedRowsContainer implements RowsContainer {
   private final MinMaxPriorityQueue<ValueCachedRow> rows;
   private final InMemorySortOption inMemorySortOption;
   private int counter;
 
-  /*
-   * Constructor to initialize the SortedRowsAsyncResultSet with skip, limit, errorLimit and
-   * comparator for sorting rows.
-   * @param skip - number of rows to skip
-   * @param limit - maximum number of rows to return
-   * @param errorLimit - If more rows than the errorLimit is read, error out
-   * @param comparator - comparator for sorting rows
-   */
   public SortedRowsContainer(
       InMemorySortOption inMemorySortOption, Comparator<ValueCachedRow> comparator) {
     this.inMemorySortOption = inMemorySortOption;
@@ -31,6 +26,7 @@ public class SortedRowsContainer implements RowsContainer {
             .create();
   }
 
+  @Override
   public List<Row> getRequiredPage() {
     if (inMemorySortOption.skip() == 0 && inMemorySortOption.returnLimit() == Integer.MAX_VALUE) {
       return rows.stream().map(ValueCachedRow::getRow).toList();

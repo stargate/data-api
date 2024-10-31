@@ -8,21 +8,13 @@ import io.stargate.sgv2.jsonapi.service.operation.ReadAttempt;
 import java.util.concurrent.CompletionStage;
 
 /**
- * AsyncResultSet implementation to be used only for in memory sort in the {@link ReadAttempt}
- * attempt where no cql query is run.
+ * AllRowsAsyncResultSet implementation to return {@link Row} for multipage reads in {@link
+ * ReadAttempt} This is used in memory sorting.
  */
 public class AllRowsAsyncResultSet implements AsyncResultSet {
   private final RowsContainer rowsContainer;
   private ColumnDefinitions columnDefinitions;
 
-  /*
-   * Constructor to initialize the SortedRowsAsyncResultSet with skip, limit, errorLimit and
-   * comparator for sorting rows.
-   * @param skip - number of rows to skip
-   * @param limit - maximum number of rows to return
-   * @param errorLimit - If more rows than the errorLimit is read, error out
-   * @param comparator - comparator for sorting rows
-   */
   public AllRowsAsyncResultSet(RowsContainer rowsContainer) {
     this.rowsContainer = rowsContainer;
   }

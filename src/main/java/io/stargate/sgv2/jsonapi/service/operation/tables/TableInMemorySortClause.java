@@ -4,6 +4,9 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import java.util.Comparator;
 import java.util.List;
 
+/*
+ * Comparator implementation to do in-memory sorting of rows read.
+ */
 public class TableInMemorySortClause implements Comparator<ValueCachedRow> {
 
   private final List<OrderBy> orderBy;

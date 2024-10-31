@@ -79,6 +79,12 @@ public class CommandQueryExecutor {
     return executeAndWrap(statement);
   }
 
+  /**
+   * Query executor to do paginated read. It will keep fetching pages until there are no more
+   *
+   * @param statement The statement to execute.
+   * @param rowsContainer The container to hold the rows.
+   */
   public Uni<AsyncResultSet> executePaginatedRead(
       SimpleStatement statement, RowsContainer rowsContainer) {
     AllRowsAsyncResultSet paginatedRowsAsyncResultSet = new AllRowsAsyncResultSet(rowsContainer);

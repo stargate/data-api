@@ -16,12 +16,15 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOper
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.InMemorySortOption;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.sort.InMemorySortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.SortClauseResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.sort.TableInmemorySortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.TableSortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
@@ -41,6 +44,8 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   private final FilterResolver<FindOneCommand, CollectionSchemaObject> collectionFilterResolver;
   private final FilterResolver<FindOneCommand, TableSchemaObject> tableFilterResolver;
   private final SortClauseResolver<FindOneCommand, TableSchemaObject> tableSortClauseResolver;
+  private final InMemorySortClauseResolver<FindOneCommand, TableSchemaObject>
+      tableInMemorySortClauseResolver;
 
   @Inject
   public FindOneCommandResolver(
@@ -61,6 +66,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
     this.tableSortClauseResolver =
         new TableSortClauseResolver<>(operationsConfig, JSONCodecRegistries.DEFAULT_REGISTRY);
+    this.tableInMemorySortClauseResolver = new TableInmemorySortClauseResolver<>(operationsConfig);
   }
 
   @Override
@@ -71,16 +77,30 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   @Override
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, FindOneCommand command) {
+    var inmemorySortClause = tableInMemorySortClauseResolver.resolve(ctx, command);
 
+    boolean inMemorySort = inmemorySortClause != null;
+    var operationConfig = ctx.getConfig(OperationsConfig.class);
     var projection =
         TableRowProjection.fromDefinition(
             objectMapper, command.tableProjectionDefinition(), ctx.schemaObject());
 
     var orderBy = tableSortClauseResolver.resolve(ctx, command);
+    var selectLimit = inMemorySort ? operationConfig.maxDocumentSortCount() + 1 : 1;
+    int pageSize =
+        inMemorySort ? operationsConfig.defaultSortPageSize() : operationsConfig.defaultPageSize();
+    var inMemorySortOption = inMemorySort ? InMemorySortOption.from(1, 0, selectLimit) : null;
 
     var builder =
-        new TableReadAttemptBuilder(ctx.schemaObject(), projection, projection, orderBy, null, null)
-            .addBuilderOption(CQLOption.ForSelect.limit(1));
+        new TableReadAttemptBuilder(
+                ctx.schemaObject(),
+                projection,
+                projection,
+                orderBy,
+                inmemorySortClause,
+                inMemorySortOption)
+            .addBuilderOption(CQLOption.ForSelect.limit(selectLimit))
+            .addStatementOption(CQLOption.ForStatement.pageSize(pageSize));
 
     // TODO, we may want the ability to resolve API filter clause into multiple
     // dbLogicalExpressions, which will map into multiple readAttempts
