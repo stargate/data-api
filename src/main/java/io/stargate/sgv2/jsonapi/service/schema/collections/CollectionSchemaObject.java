@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
@@ -165,9 +166,9 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       SourceModel sourceModel = SourceModel.OTHER;
       if (vectorIndex != null) {
         final String functionName =
-            vectorIndex.getOptions().get(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME);
+            vectorIndex.getOptions().get(VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION);
         final String sourceModelName =
-            vectorIndex.getOptions().get(DocumentConstants.Fields.VECTOR_INDEX_SOURCE_MODEL_NAME);
+            vectorIndex.getOptions().get(VectorConstants.CQLAnnIndex.SOURCE_MODEL);
         if (functionName != null) {
           function = SimilarityFunction.fromString(functionName);
         }

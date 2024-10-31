@@ -27,12 +27,6 @@ public interface DocumentConstants {
     /** Document field name that will have text value for which vectorize method in called */
     String VECTOR_EMBEDDING_TEXT_FIELD = "$vectorize";
 
-    /** Key for vector function name definition in cql index. */
-    String VECTOR_INDEX_FUNCTION_NAME = "similarity_function";
-
-    /** Key for vector source model name definition in cql index. */
-    String VECTOR_INDEX_SOURCE_MODEL_NAME = "source_model";
-
     /** Field name used in projection clause to get similarity score in response. */
     String VECTOR_FUNCTION_SIMILARITY_FIELD = "$similarity";
 

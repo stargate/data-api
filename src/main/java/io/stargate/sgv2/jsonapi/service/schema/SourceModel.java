@@ -25,6 +25,7 @@ public enum SourceModel {
   private static final Map<String, SourceModel> SOURCE_MODELS_MAP =
       Stream.of(SourceModel.values())
           .collect(Collectors.toMap(SourceModel::getName, sourceModel -> sourceModel));
+  public static final SourceModel DEFAULT_SOURCE_MODEL = OTHER;
 
   SourceModel(String name) {
     this.name = name;

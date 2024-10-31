@@ -13,7 +13,7 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateIndex;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexOnTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexStart;
 import com.datastax.oss.driver.internal.querybuilder.schema.DefaultCreateIndex;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedCreateIndex;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
@@ -92,10 +92,10 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
       Map<String, Object> options = new HashMap<>();
       if (similarityFunction != null) {
         options.put(
-            DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME, similarityFunction.getMetric());
+            VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION, similarityFunction.getMetric());
       }
       if (sourceModel != null) {
-        options.put(DocumentConstants.Fields.VECTOR_INDEX_SOURCE_MODEL_NAME, sourceModel);
+        options.put(VectorConstants.CQLAnnIndex.SOURCE_MODEL, sourceModel);
       }
       return options;
     }

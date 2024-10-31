@@ -215,8 +215,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       } else {
         // (4) both sourceModel and metric are not provided - set sourceModel to 'other' and metric
         // to 'cosine'
-        sourceModel = SourceModel.OTHER.getName();
-        metric = SimilarityFunction.COSINE.getMetric();
+        sourceModel = SourceModel.DEFAULT_SOURCE_MODEL.getName();
+        metric = SimilarityFunction.DEFAULT_SIMILARITY_FUNCTION.getMetric();
       }
     }
 
