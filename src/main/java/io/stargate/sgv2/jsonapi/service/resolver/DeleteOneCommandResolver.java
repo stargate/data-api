@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -9,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
@@ -65,6 +68,12 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
   @Override
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, DeleteOneCommand command) {
+
+    // Sort clause is not supported for table deleteOne command.
+    if (command.sortClause() != null) {
+      throw SortException.Code.CANNOT_SORT_TABLE_DELETE_UPDATE_COMMAND.get(
+          errVars(ctx.schemaObject(), map -> {}));
+    }
 
     var builder = new DeleteAttemptBuilder<>(ctx.schemaObject(), true);
 
