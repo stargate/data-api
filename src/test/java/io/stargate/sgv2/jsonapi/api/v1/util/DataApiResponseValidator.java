@@ -172,15 +172,12 @@ public class DataApiResponseValidator {
     return validator;
   }
 
-  public <T extends APIException> DataApiResponseValidator mayHasSingleApiError(
+  public <T extends APIException> DataApiResponseValidator mayHaveSingleApiError(
       ErrorCode<T> errorCode, Class<T> errorClass) {
     if (errorCode == null) {
       return hasNoErrors();
     }
-    return body("$", responseIsError)
-        .body("errors", hasSize(1))
-        .body("errors[0].exceptionClass", is(errorClass.getSimpleName()))
-        .body("errors[0].errorCode", is(errorCode.toString()));
+    return hasSingleApiError(errorCode, errorClass);
   }
 
   public <T extends APIException> DataApiResponseValidator hasSingleApiError(

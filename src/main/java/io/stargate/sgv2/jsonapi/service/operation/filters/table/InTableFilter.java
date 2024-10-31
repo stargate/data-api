@@ -16,7 +16,6 @@ import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
-import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import java.util.ArrayList;
@@ -31,14 +30,10 @@ public class InTableFilter extends TableFilter {
   public final Operator operator;
 
   public enum Operator {
-    IN(BuiltConditionPredicate.IN),
-    NIN(BuiltConditionPredicate.NIN);
+    IN,
+    NIN;
 
-    public final BuiltConditionPredicate predicate;
-
-    Operator(BuiltConditionPredicate predicate) {
-      this.predicate = predicate;
-    }
+    Operator() {}
 
     public static InTableFilter.Operator from(ValueComparisonOperator operator) {
       return switch (operator) {

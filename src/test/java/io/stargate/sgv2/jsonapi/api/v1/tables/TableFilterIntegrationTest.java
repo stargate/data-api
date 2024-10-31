@@ -253,7 +253,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       // Target column has index.
       assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
           .postFindOne(filter)
-          .mayHasSingleApiError(expectedFilterException, FilterException.class)
+          .mayHaveSingleApiError(expectedFilterException, FilterException.class)
           .mayHasSingleWarning(expectedWarningException)
           .mayFoundSingleDocumentIdByFindOne(expectedFilterException, expectedDocId);
     }
@@ -300,7 +300,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       // Target column has index.
       assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
           .postFindOne(filter)
-          .mayHasSingleApiError(expectedFilterException, FilterException.class)
+          .mayHaveSingleApiError(expectedFilterException, FilterException.class)
           .mayHasSingleWarning(expectedWarningException)
           .mayFoundSingleDocumentIdByFindOne(expectedFilterException, expectedDocId);
     }
@@ -343,7 +343,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       // Target column has index.
       assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
           .postFindOne(filter)
-          .mayHasSingleApiError(expectedFilterException, FilterException.class)
+          .mayHaveSingleApiError(expectedFilterException, FilterException.class)
           .mayHasSingleWarning(expectedWarningException)
           .mayFoundSingleDocumentIdByFindOne(expectedFilterException, expectedDocId);
     }
@@ -390,7 +390,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       // Target column has index.
       assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
           .postFindOne(filter)
-          .mayHasSingleApiError(expectedFilterException, FilterException.class)
+          .mayHaveSingleApiError(expectedFilterException, FilterException.class)
           .mayHasSingleWarning(expectedWarningException)
           .mayFoundSingleDocumentIdByFindOne(expectedFilterException, expectedDocId);
     }
@@ -511,7 +511,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
         // Target column has index.
         assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
             .postFindOne(filter)
-            .mayHasSingleApiError(expectedFilterException, FilterException.class)
+            .mayHaveSingleApiError(expectedFilterException, FilterException.class)
             .mayHasSingleWarning(expectedWarningException)
             .mayFoundSingleDocumentIdByFindOne(expectedFilterException, expectedDocId);
       }
@@ -561,7 +561,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
     if (expectedFilterException != null) {
       assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(filter)
-          .mayHasSingleApiError(expectedFilterException, FilterException.class)
+          .mayHaveSingleApiError(expectedFilterException, FilterException.class)
           .hasNoWarnings()
           .hasNoField("data");
       return;

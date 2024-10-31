@@ -8,7 +8,6 @@ public enum BuiltConditionPredicate {
   LTE("<="),
   GTE(">="),
   IN("IN"),
-  NIN("NOT IN"),
   CONTAINS("CONTAINS"),
   NOT_CONTAINS("NOT CONTAINS"),
   CONTAINS_KEY("CONTAINS KEY");
