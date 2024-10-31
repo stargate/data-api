@@ -303,6 +303,19 @@ request-errors:
       ${SNIPPET.INEFFICIENT_QUERY}
 
   - scope: WARNING
+    code: NOT_IN_FILTER_UNSUPPORTED_BY_INDEXING
+    title: Use of $nin on indexed columns
+    body: |-
+      The filter uses $nin on columns that, while indexed, are still inefficient to filter on.  
+      
+      Filtering using $nin on columns of type ${inefficientDataTypes} is inefficient, even when the columns are indexed.
+      
+      The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
+      The request applied $nin to the indexed columns: ${inefficientFilterColumns}.
+      
+      ${SNIPPET.INEFFICIENT_QUERY}
+
+  - scope: WARNING
     code: ZERO_FILTER_OPERATIONS
     title: Zero operations provided in query filter
     body: |-
