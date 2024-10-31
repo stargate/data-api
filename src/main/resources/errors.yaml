@@ -675,6 +675,13 @@ request-errors:
       Resend the command using only columns that are defined in the table schema.
 
   - scope: SORT
+    code: CANNOT_SORT_TOO_MUCH_DATA
+    title: Sort cannot be performed because query returned more than in-memory sortable rows.
+    body: |-
+      Sort cannot be performed because query returned more than in-memory sortable rows.
+      Add more filters to reduce the number of rows returned.
+
+  - scope: SORT
     code: CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS
     title: Vector sort requested for non-vector columns
     body: |-

@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.Row;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.operation.ReadAttempt;
 import java.util.concurrent.CompletionStage;
 
@@ -25,7 +26,7 @@ public class AllRowsAsyncResultSet implements AsyncResultSet {
         .forEach(
             row -> {
               if (!rowsContainer.add(row)) {
-                throw new IllegalStateException("Error adding row to container");
+                throw SortException.Code.CANNOT_SORT_TOO_MUCH_DATA.get();
               }
             });
   }
