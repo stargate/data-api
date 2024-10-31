@@ -173,6 +173,14 @@ public class DataApiResponseValidator {
     return validator;
   }
 
+  public <T extends APIException> DataApiResponseValidator mayHaveSingleApiError(
+      ErrorCode<T> errorCode, Class<T> errorClass) {
+    if (errorCode == null) {
+      return hasNoErrors();
+    }
+    return hasSingleApiError(errorCode, errorClass);
+  }
+
   public <T extends APIException> DataApiResponseValidator hasSingleApiError(
       ErrorCode<T> errorCode, Class<T> errorClass, Matcher<String> messageMatcher) {
     return hasSingleApiError(errorCode, errorClass).body("errors[0].message", messageMatcher);
@@ -218,6 +226,22 @@ public class DataApiResponseValidator {
         .body("status.warnings[0]", hasEntry(ErrorObjectV2Constants.Fields.CODE, code));
   }
 
+  public DataApiResponseValidator mayHasSingleWarning(WarningException.Code warningExceptionCode) {
+    if (warningExceptionCode == null) {
+      return hasNoWarnings();
+    }
+    return body("status.warnings", hasSize(1))
+        .body(
+            "status.warnings[0]",
+            hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+        .body(
+            "status.warnings[0]",
+            hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+        .body(
+            "status.warnings[0]",
+            hasEntry(ErrorObjectV2Constants.Fields.CODE, warningExceptionCode.name()));
+  }
+
   public DataApiResponseValidator hasStatusOK() {
     return body("status.ok", is(1));
   }
@@ -239,6 +263,10 @@ public class DataApiResponseValidator {
 
   public DataApiResponseValidator hasEmptyDataDocuments() {
     return body("data.documents", is(empty()));
+  }
+
+  public DataApiResponseValidator hasEmptyDataDocument() {
+    return body("data.document", is(nullValue()));
   }
 
   public DataApiResponseValidator hasDocuments(int size) {
@@ -271,5 +299,16 @@ public class DataApiResponseValidator {
 
   public DataApiResponseValidator hasDocumentInPosition(int position, String documentJSON) {
     return body("data.documents[%s]".formatted(position), jsonEquals(documentJSON));
+  }
+
+  public DataApiResponseValidator mayFoundSingleDocumentIdByFindOne(
+      FilterException.Code expectedFilterException, String sampleId) {
+    if (expectedFilterException != null) {
+      return hasNoField("data");
+    }
+    if (sampleId == null) {
+      return hasEmptyDataDocument();
+    }
+    return body("data.document.id", is(sampleId));
   }
 }
