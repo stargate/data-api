@@ -126,6 +126,10 @@ public interface EmbeddingProvidersConfig {
       @Nullable
       @JsonProperty
       Optional<Boolean> deprecated();
+
+      @Nullable
+      @JsonProperty
+      Optional<String> serviceUrl();
     }
 
     interface ParameterConfig {
