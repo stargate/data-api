@@ -22,7 +22,7 @@ public enum SourceModel {
   UNDEFINED("undefined");
 
   private final String name;
-  public static final Map<String, SourceModel> SOURCE_MODEL_NAME_MAP =
+  private static final Map<String, SourceModel> SOURCE_MODEL_NAME_MAP =
       Stream.of(SourceModel.values())
           .collect(Collectors.toMap(SourceModel::getName, sourceModel -> sourceModel));
 
@@ -54,6 +54,10 @@ public enum SourceModel {
 
   public String getName() {
     return name;
+  }
+
+  public static String getAllSourceModelNames() {
+    return SOURCE_MODEL_NAME_MAP.keySet().stream().sorted().collect(Collectors.joining(", "));
   }
 
   /**

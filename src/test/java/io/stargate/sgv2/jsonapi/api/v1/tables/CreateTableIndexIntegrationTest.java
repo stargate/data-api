@@ -2,17 +2,14 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
-import static io.stargate.sgv2.jsonapi.service.schema.SourceModel.SOURCE_MODEL_NAME_MAP;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.*;
 
@@ -403,14 +400,12 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void invalidSourceModel() {
-      List<String> supportedSourceModel = new ArrayList<>(SOURCE_MODEL_NAME_MAP.keySet());
-      Collections.sort(supportedSourceModel);
       final SchemaException schemaException =
           SchemaException.Code.INVALID_INDEX_DEFINITION.get(
               Map.of(
                   "reason",
                   "sourceModel `%s` used in request is invalid. Supported source models are: %s"
-                      .formatted("invalid_source_model", supportedSourceModel)));
+                      .formatted("invalid_source_model", SourceModel.getAllSourceModelNames())));
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCreateVectorIndex(
               """

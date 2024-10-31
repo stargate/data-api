@@ -94,7 +94,7 @@ public class VectorConfig {
       // if now index, or we could not work out the function, default
       var similarityFunction =
           indexFunction.map(Map.Entry::getKey).orElse(SimilarityFunction.COSINE);
-      var sourModel = indexFunction.map(Map.Entry::getValue).orElse(SourceModel.OTHER);
+      var sourceModel = indexFunction.map(Map.Entry::getValue).orElse(SourceModel.OTHER);
       int dimensions = ((VectorType) column.getType()).getDimensions();
 
       // NOTE: need to keep the column name as a string in the VectorColumnDefinition
@@ -105,7 +105,7 @@ public class VectorConfig {
               cqlIdentifierToJsonKey(column.getName()),
               dimensions,
               similarityFunction,
-              sourModel,
+              sourceModel,
               vectorizeDefs.get(column.getName().asInternal())));
     }
     return VectorConfig.fromColumnDefinitions(columnDefs);
