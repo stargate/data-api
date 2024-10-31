@@ -6,7 +6,4 @@ public record InMemorySortOption(int returnLimit, int skip, int errorLimit) {
   public static InMemorySortOption from(int returnLimit, int skip, int errorLimit) {
     return new InMemorySortOption(returnLimit, skip, errorLimit);
   }
-
-  public static InMemorySortOption DEFAULT =
-      new InMemorySortOption(Integer.MAX_VALUE, 0, Integer.MAX_VALUE);
 }

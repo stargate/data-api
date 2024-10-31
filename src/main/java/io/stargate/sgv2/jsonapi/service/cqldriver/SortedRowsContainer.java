@@ -3,13 +3,14 @@ package io.stargate.sgv2.jsonapi.service.cqldriver;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.google.common.collect.MinMaxPriorityQueue;
 import io.stargate.sgv2.jsonapi.service.operation.query.InMemorySortOption;
+import io.stargate.sgv2.jsonapi.service.operation.tables.ValueCachedRow;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
 public class SortedRowsContainer implements RowsContainer {
-  private final MinMaxPriorityQueue<Row> rows;
+  private final MinMaxPriorityQueue<ValueCachedRow> rows;
   private final InMemorySortOption inMemorySortOption;
   private int counter;
 
@@ -21,7 +22,8 @@ public class SortedRowsContainer implements RowsContainer {
    * @param errorLimit - If more rows than the errorLimit is read, error out
    * @param comparator - comparator for sorting rows
    */
-  public SortedRowsContainer(InMemorySortOption inMemorySortOption, Comparator<Row> comparator) {
+  public SortedRowsContainer(
+      InMemorySortOption inMemorySortOption, Comparator<ValueCachedRow> comparator) {
     this.inMemorySortOption = inMemorySortOption;
     this.rows =
         MinMaxPriorityQueue.orderedBy(comparator)
@@ -31,7 +33,7 @@ public class SortedRowsContainer implements RowsContainer {
 
   public List<Row> getRequiredPage() {
     if (inMemorySortOption.skip() == 0 && inMemorySortOption.returnLimit() == Integer.MAX_VALUE) {
-      return new ArrayList<>(rows);
+      return rows.stream().map(ValueCachedRow::getRow).toList();
     }
     // begin value to read from the sorted list
     int begin = inMemorySortOption.skip();
@@ -45,9 +47,9 @@ public class SortedRowsContainer implements RowsContainer {
     List<Row> subList = new ArrayList<>(inMemorySortOption.returnLimit());
     int i = 0;
     while (i < end) {
-      Row row = rows.poll();
+      var cachedRow = rows.poll();
       if (i >= begin) {
-        subList.add(row);
+        subList.add(cachedRow.getRow());
       }
       i++;
     }
@@ -60,7 +62,7 @@ public class SortedRowsContainer implements RowsContainer {
     if (counter >= inMemorySortOption.errorLimit()) {
       return false;
     }
-    rows.add(row);
+    rows.add(new ValueCachedRow(row));
     return true;
   }
 

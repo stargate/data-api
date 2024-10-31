@@ -1,11 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import com.datastax.oss.driver.api.core.cql.Row;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import java.util.Comparator;
 import java.util.List;
 
-public class TableInMemorySortClause implements Comparator<Row> {
+public class TableInMemorySortClause implements Comparator<ValueCachedRow> {
 
   private final List<OrderBy> orderBy;
 
@@ -13,10 +12,8 @@ public class TableInMemorySortClause implements Comparator<Row> {
     this.orderBy = orderBy;
   }
 
-  public static TableInMemorySortClause DEFAULT = new TableInMemorySortClause(List.of());
-
   @Override
-  public int compare(Row o1, Row o2) {
+  public int compare(ValueCachedRow o1, ValueCachedRow o2) {
     for (OrderBy sortColumn : orderBy) {
       int compareValue = compareValues(o1, o2, sortColumn.apiColumnDef(), sortColumn.ascending());
       if (compareValue != 0) {
@@ -26,7 +23,8 @@ public class TableInMemorySortClause implements Comparator<Row> {
     return 0; // All compared values are equal
   }
 
-  private int compareValues(Row o1, Row o2, ApiColumnDef apiColumnDef, boolean ascending) {
+  private int compareValues(
+      ValueCachedRow o1, ValueCachedRow o2, ApiColumnDef apiColumnDef, boolean ascending) {
     final Object value1 = o1.getObject(apiColumnDef.name());
     final Object value2 = o2.getObject(apiColumnDef.name());
 

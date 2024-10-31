@@ -94,7 +94,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
     var rowsContainer =
         tableInmemorySortClause != null
             ? new SortedRowsContainer(inMemorySortOption, tableInmemorySortClause)
-            : RowsContainer.DEFAULT;
+            : RowsContainer.defaultRowsContainer();
 
     ReadAttempt tableReadAttempt =
         new ReadAttempt<>(

@@ -33,7 +33,7 @@ public class TestReadAttempt extends ReadAttempt<TableSchemaObject> {
         cqlOptions,
         pagingState,
         documentSourceSupplier,
-        RowsContainer.DEFAULT);
+        RowsContainer.defaultRowsContainer());
     this.resultSet = resultSet;
   }
 }

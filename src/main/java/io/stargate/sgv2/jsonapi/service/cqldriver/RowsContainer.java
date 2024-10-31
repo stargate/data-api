@@ -13,18 +13,19 @@ public interface RowsContainer {
     return false;
   }
 
-  public static RowsContainer DEFAULT =
-      new RowsContainer() {
-        private final List<Row> rows = new ArrayList<>();
+  static RowsContainer defaultRowsContainer() {
+    return new RowsContainer() {
+      private final List<Row> rows = new ArrayList<>();
 
-        @Override
-        public List<Row> getRequiredPage() {
-          return new ArrayList<>(rows);
-        }
+      @Override
+      public List<Row> getRequiredPage() {
+        return new ArrayList<>(rows);
+      }
 
-        @Override
-        public boolean add(Row row) {
-          return rows.add(row);
-        }
-      };
+      @Override
+      public boolean add(Row row) {
+        return rows.add(row);
+      }
+    };
+  }
 }
