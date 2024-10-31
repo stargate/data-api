@@ -84,7 +84,7 @@ public class VectorConfig {
                   // if similarity function is not set, use the source model to determine it
                   similarityFunction =
                       similarityFunction == null
-                          ? VectorConstants.SUPPORTED_SOURCE_MODELS.get(sourceModelStr)
+                          ? SourceModel.getSimilarityFunction(sourceModelStr)
                           : similarityFunction;
                   sourceModel = SourceModel.fromString(sourceModelStr);
                 }

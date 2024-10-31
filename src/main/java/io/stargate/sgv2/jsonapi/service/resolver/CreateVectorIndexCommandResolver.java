@@ -1,12 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.service.schema.SourceModel.SOURCE_MODEL_NAME_MAP;
+
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
@@ -17,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
@@ -62,9 +64,8 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     }
 
     if (definitionOptions != null) {
-      if (sourceModel != null && VectorConstants.SUPPORTED_SOURCE_MODELS.get(sourceModel) == null) {
-        List<String> supportedSourceModel =
-            new ArrayList<>(VectorConstants.SUPPORTED_SOURCE_MODELS.keySet());
+      if (sourceModel != null && SourceModel.getSimilarityFunction(sourceModel) == null) {
+        List<String> supportedSourceModel = new ArrayList<>(SOURCE_MODEL_NAME_MAP.keySet());
         Collections.sort(supportedSourceModel);
         throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
             Map.of(

@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import static io.stargate.sgv2.jsonapi.config.constants.VectorConstants.SUPPORTED_SOURCE_MODELS;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -205,7 +203,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       if (metric == null) {
         // (1) sourceModel is provided but metric is not - set metric to cosine or dot_product based
         // on the map
-        metric = SUPPORTED_SOURCE_MODELS.get(sourceModel).getMetric();
+        metric = SourceModel.getSimilarityFunction(sourceModel).getMetric();
       }
       // (2) both sourceModel and metric are provided - do nothing
     } else {

@@ -22,9 +22,30 @@ public enum SourceModel {
   UNDEFINED("undefined");
 
   private final String name;
-  private static final Map<String, SourceModel> SOURCE_MODELS_MAP =
+  public static final Map<String, SourceModel> SOURCE_MODEL_NAME_MAP =
       Stream.of(SourceModel.values())
           .collect(Collectors.toMap(SourceModel::getName, sourceModel -> sourceModel));
+
+  /** Supported Source Models and suggested similarity function for Vector Index in Cassandra */
+  private static final Map<SourceModel, SimilarityFunction> SOURCE_MODEL_METRIC_MAP =
+      Map.of(
+          ADA002,
+          SimilarityFunction.DOT_PRODUCT,
+          BERT,
+          SimilarityFunction.DOT_PRODUCT,
+          COHERE_V3,
+          SimilarityFunction.DOT_PRODUCT,
+          GECKO,
+          SimilarityFunction.DOT_PRODUCT,
+          NV_QA_4,
+          SimilarityFunction.DOT_PRODUCT,
+          OPENAI_V3_LARGE,
+          SimilarityFunction.DOT_PRODUCT,
+          OPENAI_V3_SMALL,
+          SimilarityFunction.DOT_PRODUCT,
+          OTHER,
+          SimilarityFunction.COSINE);
+
   public static final SourceModel DEFAULT_SOURCE_MODEL = OTHER;
 
   SourceModel(String name) {
@@ -33,6 +54,26 @@ public enum SourceModel {
 
   public String getName() {
     return name;
+  }
+
+  /**
+   * Get the recommended similarity function for the given source model.
+   *
+   * @param sourceModel The source model
+   * @return The similarity function
+   */
+  public static SimilarityFunction getSimilarityFunction(SourceModel sourceModel) {
+    return SOURCE_MODEL_METRIC_MAP.get(sourceModel);
+  }
+
+  /**
+   * Get the recommended similarity function for the given source model name.
+   *
+   * @param sourceModelName The source model name
+   * @return The similarity function
+   */
+  public static SimilarityFunction getSimilarityFunction(String sourceModelName) {
+    return getSimilarityFunction(fromString(sourceModelName));
   }
 
   /**
@@ -52,10 +93,10 @@ public enum SourceModel {
     if (name == null) return UNDEFINED;
     // The string may be empty if the collection was created before supporting source models
     if (name.isEmpty()) return OTHER;
-    SourceModel model = SOURCE_MODELS_MAP.get(name);
+    SourceModel model = SOURCE_MODEL_NAME_MAP.get(name);
     if (model == null) {
       String acceptedModels =
-          SOURCE_MODELS_MAP.keySet().stream()
+          SOURCE_MODEL_NAME_MAP.keySet().stream()
               .filter(key -> !key.equals(UNDEFINED.getName()))
               .collect(Collectors.joining(", "));
       throw ErrorCodeV1.VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME.toApiException(
