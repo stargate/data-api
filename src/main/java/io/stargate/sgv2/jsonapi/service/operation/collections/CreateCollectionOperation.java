@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.time.Duration;
@@ -41,6 +42,7 @@ public record CreateCollectionOperation(
     boolean vectorSearch,
     int vectorSize,
     String vectorFunction,
+    String sourceModel,
     String comment,
     int ddlDelayMillis,
     boolean tooManyIndexesRollbackEnabled,
@@ -60,6 +62,7 @@ public record CreateCollectionOperation(
       String name,
       int vectorSize,
       String vectorFunction,
+      String sourceModel,
       String comment,
       int ddlDelayMillis,
       boolean tooManyIndexesRollbackEnabled,
@@ -73,6 +76,7 @@ public record CreateCollectionOperation(
         true,
         vectorSize,
         vectorFunction,
+        sourceModel,
         comment,
         ddlDelayMillis,
         tooManyIndexesRollbackEnabled,
@@ -97,6 +101,7 @@ public record CreateCollectionOperation(
         name,
         false,
         0,
+        null,
         null,
         comment,
         ddlDelayMillis,
@@ -142,6 +147,7 @@ public record CreateCollectionOperation(
             vectorSearch,
             vectorSize,
             SimilarityFunction.fromString(vectorFunction),
+            SourceModel.fromString(sourceModel),
             comment,
             objectMapper);
     // if table exists we have to choices:
@@ -492,6 +498,8 @@ public record CreateCollectionOperation(
           appender
               + " \"%s_query_vector_value\" ON \"%s\".\"%s\" (query_vector_value) USING 'StorageAttachedIndex' WITH OPTIONS = { 'similarity_function': '"
               + vectorFunction()
+              + "', 'source_model': '"
+              + sourceModel()
               + "'}";
       statements.add(
           SimpleStatement.newInstance(String.format(vectorSearch, table, keyspace, table)));
