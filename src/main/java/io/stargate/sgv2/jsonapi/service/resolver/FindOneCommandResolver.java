@@ -24,7 +24,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.InMemorySortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.SortClauseResolver;
-import io.stargate.sgv2.jsonapi.service.resolver.sort.TableInmemorySortClauseResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.sort.TableInMemorySortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.TableSortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
@@ -66,7 +66,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
     this.tableSortClauseResolver =
         new TableSortClauseResolver<>(operationsConfig, JSONCodecRegistries.DEFAULT_REGISTRY);
-    this.tableInMemorySortClauseResolver = new TableInmemorySortClauseResolver<>(operationsConfig);
+    this.tableInMemorySortClauseResolver = new TableInMemorySortClauseResolver<>(operationsConfig);
   }
 
   @Override

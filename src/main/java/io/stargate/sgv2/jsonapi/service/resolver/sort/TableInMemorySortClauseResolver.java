@@ -21,10 +21,10 @@ import java.util.Objects;
 /*
  * Resolves a sort clause to determine expressions to apply for in-memory sorting to the operation.
  */
-public class TableInmemorySortClauseResolver<CmdT extends Command & Sortable>
+public class TableInMemorySortClauseResolver<CmdT extends Command & Sortable>
     extends InMemorySortClauseResolver<CmdT, TableSchemaObject> {
 
-  public TableInmemorySortClauseResolver(OperationsConfig operationsConfig) {
+  public TableInMemorySortClauseResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
   }
 
