@@ -3,7 +3,9 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -183,7 +185,7 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
 
       assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .templated()
-          .find(Map.of("activeUser", true), List.of(), Map.of("age", 1), Map.of())
+          .find(Map.of("active_user", true), List.of(), Map.of("age", 1), Map.of())
           .wasSuccessful()
           .body("data.documents", hasSize(datas.size()))
           .body("data.documents", jsonEquals(arrayNode.toString()));
@@ -206,7 +208,7 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
           .templated()
           .find(Map.of(), List.of(), Map.of("name", 1, "age", 1), Map.of())
           .wasSuccessful()
-          .body("data.documents", hasSize(testDatas.size()))
+          .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
@@ -226,9 +228,9 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
       }
       assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .templated()
-          .find(Map.of("activeUser", true), List.of(), Map.of("name", 1, "age", -1), Map.of())
+          .find(Map.of("active_user", true), List.of(), Map.of("name", 1, "age", -1), Map.of())
           .wasSuccessful()
-          .body("data.documents", hasSize(testDatas.size()))
+          .body("data.documents", hasSize(datas.size()))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
@@ -307,6 +309,8 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
                   Map.of("type", "int"),
                   "name",
                   Map.of("type", "text"),
+                  "city",
+                  Map.of("type", "text"),
                   "active_user",
                   Map.of("type", "boolean")),
               "id")
@@ -320,9 +324,11 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
       assertTableCommand(keyspaceName, biggerTableName)
           .templated()
           .find(Map.of(), List.of(), Map.of("name", 1), Map.of())
-          .hasSingleApiError(
-              "CANNOT_SORT_TOO_MUCH_DATA",
-              "Sort cannot be performed because query returned more than in-memory sortable rows.");
+          .body("errors[0].errorCode", is("CANNOT_SORT_TOO_MUCH_DATA"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Sort cannot be performed because query returned more than in-memory sortable rows."));
     }
   }
 
@@ -333,13 +339,6 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
       if (td.name() == null) return objectMapper.getNodeFactory().nullNode();
       return objectMapper.getNodeFactory().textNode(td.name());
     }
-    if (data instanceof TestDataMissingCity td) {
-      return objectMapper.getNodeFactory().textNode(td.name());
-    }
-
-    if (data instanceof TestDataMissingAge td) {
-      return objectMapper.getNodeFactory().textNode(td.name());
-    }
 
     return objectMapper.getNodeFactory().missingNode();
   }
@@ -348,22 +347,11 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
     if (data instanceof TestData td) {
       return objectMapper.getNodeFactory().textNode(td.id());
     }
-    if (data instanceof TestDataMissingCity td) {
-      return objectMapper.getNodeFactory().textNode(td.id());
-    }
-
-    if (data instanceof TestDataMissingAge td) {
-      return objectMapper.getNodeFactory().textNode(td.id());
-    }
-
     return objectMapper.getNodeFactory().missingNode();
   }
 
   private JsonNode getUserIdAsJsonNode(Object data) {
     if (data instanceof TestData td) {
-      return objectMapper.getNodeFactory().numberNode(td.age());
-    }
-    if (data instanceof TestDataMissingCity td) {
       return objectMapper.getNodeFactory().numberNode(td.age());
     }
 
@@ -376,23 +364,12 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
     for (int docId = 1; docId <= countOfDocuments - 3; docId++) {
       data.add(
           new TestData(
-              "doc" + docId, "user" + docId, countOfDocuments - 2, "city" + docId, docId % 2 == 0));
+              "doc" + docId,
+              "user" + docId,
+              countOfDocuments - docId,
+              "city" + docId,
+              docId % 2 == 0));
     }
-    data.add(
-        new TestData(
-            "doc" + (countOfDocuments - 2),
-            null,
-            countOfDocuments - 2,
-            "city" + (countOfDocuments - 2),
-            false));
-    data.add(
-        new TestDataMissingCity(
-            "doc" + (countOfDocuments - 1),
-            "user" + (countOfDocuments - 1),
-            (countOfDocuments - 1)));
-    data.add(
-        new TestDataMissingAge(
-            "doc" + (countOfDocuments), "user" + (countOfDocuments), "city" + 1));
     return data;
   }
 
@@ -411,8 +388,4 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
   }
 
   record TestData(String id, String name, int age, String city, boolean active_user) {}
-
-  record TestDataMissingCity(String id, String name, int age) {}
-
-  record TestDataMissingAge(String id, String name, String city) {}
 }
