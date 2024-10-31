@@ -123,9 +123,8 @@ public interface EmbeddingProvidersConfig {
       Map<String, String> properties();
 
       /** Flag to mark if support for the model is deprecated. */
-      @Nullable
       @JsonProperty
-      Optional<Boolean> deprecated();
+      boolean deprecated();
 
       @Nullable
       @JsonProperty
