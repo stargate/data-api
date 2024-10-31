@@ -2017,7 +2017,43 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'command.options.vector.sourceModel' value \"invalidName\" not valid. Problem: sourceModel options are 'openai-v3-large', 'openai-v3-small', 'ada002', 'gecko', 'nv-qa-4', 'cohere-v3', 'bert', and 'other'."));
+                  "Request invalid: field 'command.options.vector.sourceModel' value \"invalidName\" not valid."));
+    }
+
+    @Test
+    public void failWithInvalidSourceModelObject() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                              {
+                                  "createCollection": {
+                                      "name": "collection_with_sourceModel",
+                                      "options": {
+                                          "vector": {
+                                              "sourceModel": "invalidName",
+                                              "dimension": 1536,
+                                              "service": {
+                                                  "provider": "openai",
+                                                  "modelName": "text-embedding-3-small"
+                                              }
+                                          }
+                                      }
+                                  }
+                              }
+                              """)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsError())
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Request invalid: field 'command.options.vector.sourceModel' value \"invalidName\" not valid."));
     }
   }
 
