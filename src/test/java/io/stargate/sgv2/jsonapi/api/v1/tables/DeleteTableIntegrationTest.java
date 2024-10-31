@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -86,10 +87,6 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE,
-            0),
-        Arguments.of(
-            WhereCQLClauseAnalyzer.StatementType.DELETE_MANY,
             FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE,
             0));
   }
@@ -466,6 +463,20 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
         .hasSingleApiError(expectedCode, FilterException.class)
         .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
+  }
+
+  @Test
+  public void truncateTable() {
+    deleteAllDefaultRows();
+    insertDefaultRows();
+    var filterJSON = "{}";
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .delete(toCommandName(WhereCQLClauseAnalyzer.StatementType.DELETE_MANY), filterJSON)
+        .hasNoErrors()
+        .hasNoWarnings();
+    checkDataHasBeenDeleted(
+        WhereCQLClauseAnalyzer.StatementType.DELETE_MANY, null, DEFAULT_ROWS.size());
   }
 
   // ==================================================================================================================
