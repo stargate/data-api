@@ -122,7 +122,7 @@ public class ProjectionSchemaIntegrationTest extends AbstractTableIntegrationTes
     // Select a column that does not exist, should not be in the projection schema
     assertTableCommand(keyspaceName, TABLE_NAME)
         .templated()
-        .find(Map.of("id", "row-1"), List.of("id", "MISSING_COLUMN"))
+        .find(Map.of("id", "row-1"), List.of("id", "MISSING_COLUMN"), Map.of(), Map.of())
         .wasSuccessful()
         .hasProjectionSchema()
         .hasDocuments(1)

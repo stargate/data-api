@@ -21,13 +21,15 @@ public class TableTemplates extends TemplateRunner {
   // DML - FIND
   // ==================================================================================================================
 
-  private String findClause(Map<String, Object> filter, List<String> columns) {
+  private String findClause(
+      Map<String, Object> filter,
+      List<String> columns,
+      Map<String, Integer> sort,
+      Map<String, Object> options) {
     var projection = columns.stream().collect(Collectors.toMap(col -> col, col -> 1));
 
     var clause =
-        Map.of(
-            "filter", filter,
-            "projection", projection);
+        Map.of("filter", filter, "projection", projection, "sort", sort, "options", options);
 
     try {
       return MAPPER.writeValueAsString(clause);
@@ -39,18 +41,26 @@ public class TableTemplates extends TemplateRunner {
   public DataApiResponseValidator find(
       Command.CommandName commandName, Map<String, Object> filter, List<String> columns) {
     return switch (commandName) {
-      case FIND_ONE -> findOne(filter, columns);
-      case FIND -> find(filter, columns);
+      case FIND_ONE -> findOne(filter, columns, Map.of(), Map.of());
+      case FIND -> find(filter, columns, Map.of(), Map.of());
       default -> throw new IllegalArgumentException("Unexpected command for find: " + commandName);
     };
   }
 
-  public DataApiResponseValidator findOne(Map<String, Object> filter, List<String> columns) {
-    return sender.postFindOne(findClause(filter, columns));
+  public DataApiResponseValidator findOne(
+      Map<String, Object> filter,
+      List<String> columns,
+      Map<String, Integer> sort,
+      Map<String, Object> options) {
+    return sender.postFindOne(findClause(filter, columns, sort, options));
   }
 
-  public DataApiResponseValidator find(Map<String, Object> filter, List<String> columns) {
-    return sender.postFind(findClause(filter, columns));
+  public DataApiResponseValidator find(
+      Map<String, Object> filter,
+      List<String> columns,
+      Map<String, Integer> sort,
+      Map<String, Object> options) {
+    return sender.postFind(findClause(filter, columns, sort, options));
   }
 
   public DataApiResponseValidator find(String filter) {
