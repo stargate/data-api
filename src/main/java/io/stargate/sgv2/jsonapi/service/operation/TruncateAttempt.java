@@ -27,7 +27,7 @@ public class TruncateAttempt<SchemaT extends TableBasedSchemaObject>
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("execute() - {}, cql={}", positionAndAttemptId(), statement);
     }
-    return queryExecutor.executeWrite(statement);
+    return queryExecutor.executeTruncate(statement);
   }
 
   protected SimpleStatement buildTruncateStatement() {

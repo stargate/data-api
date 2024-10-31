@@ -177,9 +177,9 @@ request-errors:
 
   - scope: FILTER
     code: FILTER_REQUIRED_FOR_UPDATE_DELETE
-    title: A filter is required for Update and Delete commands
+    title: A filter is required for Update and DeleteOne commands
     body: |-
-      An Update or Delete command was issued without a filter.
+      An Update or DeleteOne command was issued without a filter.
       
       These commands require a valid filter that identifies a either a single row (for Update and to Delete one row) or a partition and a sequence or rows (for Delete many). 
 
@@ -187,7 +187,7 @@ request-errors:
       
       Resend the request with an updated filter.
       
-      Note, DeleteMany works as truncate when filter is empty.
+      Note, DeleteMany without a filter truncates the table.
 
   - scope: FILTER
     code: NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE
