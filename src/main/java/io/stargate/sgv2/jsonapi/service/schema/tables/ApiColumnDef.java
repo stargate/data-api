@@ -43,9 +43,9 @@ public class ApiColumnDef {
   private final CqlIdentifier name;
   private final ApiDataType type;
 
-  private ApiColumnDef(CqlIdentifier name, ApiDataType type) {
-    this.name = name;
-    this.type = type;
+  public ApiColumnDef(CqlIdentifier name, ApiDataType type) {
+    this.name = Objects.requireNonNull(name, "name is must not be null");
+    this.type = Objects.requireNonNull(type, "type is must not be null");
   }
 
   /**

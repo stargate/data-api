@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.util;
 
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
 import java.util.Map;
 
 public class KeyspaceTemplates extends TemplateRunner {
@@ -13,6 +15,25 @@ public class KeyspaceTemplates extends TemplateRunner {
   // ===================================================================================================================
   // DDL - TABLES
   // ===================================================================================================================
+
+  public DataApiResponseValidator createTable(
+      String tableName, ApiColumnDefContainer columns, ApiColumnDef primaryKeyDef) {
+    var json =
+            """
+        {
+            "name": "%s",
+            "definition": {
+                "columns": %s,
+                "primaryKey": %s
+            }
+        }
+        """
+            .formatted(
+                tableName,
+                asJSON(columns.toColumnsDesc()),
+                asJSON(primaryKeyDef.name().asInternal()));
+    return sender.postCreateTable(json);
+  }
 
   public DataApiResponseValidator createTable(
       String tableName, Map<String, Object> columns, Object primaryKeyDef) {

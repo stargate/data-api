@@ -8,10 +8,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSourceSupplier;
 import io.stargate.sgv2.jsonapi.service.operation.ReadAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.ReadAttemptBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
-import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
-import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
-import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.query.*;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +30,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
   private final SelectCQLClause selectCQLClause;
   private final DocumentSourceSupplier documentSourceSupplier;
   private final WhereCQLClauseAnalyzer whereCQLClauseAnalyzer;
+  private final OrderByCqlClause orderByCqlClause;
 
   private CqlPagingState pagingState = CqlPagingState.EMPTY;
   private final CqlOptions<Select> cqlOptions = new CqlOptions<>();
@@ -40,13 +38,15 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
   public TableReadAttemptBuilder(
       TableSchemaObject tableSchemaObject,
       SelectCQLClause selectCQLClause,
-      DocumentSourceSupplier documentSourceSupplier) {
+      DocumentSourceSupplier documentSourceSupplier,
+      OrderByCqlClause orderByCqlClause) {
 
     this.tableSchemaObject = tableSchemaObject;
     this.selectCQLClause = selectCQLClause;
     this.documentSourceSupplier = documentSourceSupplier;
     this.whereCQLClauseAnalyzer =
         new WhereCQLClauseAnalyzer(tableSchemaObject, WhereCQLClauseAnalyzer.StatementType.SELECT);
+    this.orderByCqlClause = orderByCqlClause;
   }
 
   public TableReadAttemptBuilder addBuilderOption(CQLOption<Select> option) {
@@ -90,6 +90,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
             tableSchemaObject,
             selectCQLClause,
             whereCQLClause,
+            orderByCqlClause,
             atttemptCqlOptions,
             pagingState,
             documentSourceSupplier);

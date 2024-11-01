@@ -59,6 +59,10 @@ public class ApiVectorType extends CollectionApiDataType {
     return vectorizeDefinition;
   }
 
+  public static ApiVectorType from(int dimension) {
+    return from(dimension, null);
+  }
+
   public static ApiVectorType from(int dimension, VectorizeDefinition vectorizeDefinition) {
 
     // Sanity check
