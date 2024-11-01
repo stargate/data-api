@@ -10,6 +10,7 @@ import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -43,6 +44,7 @@ public class VectorConfig {
     return new VectorConfig(vectorColumnDefinitions);
   }
 
+  /** Get table schema object from table metadata */
   public static VectorConfig from(TableMetadata tableMetadata, ObjectMapper objectMapper) {
 
     Map<String, VectorizeDefinition> vectorizeDefs =
@@ -67,22 +69,32 @@ public class VectorConfig {
       var indexFunction =
           columnIndex.map(
               index -> {
-                String similarityFunction =
+                String similarityFunctionStr =
                     index.getOptions().get(VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION);
-                if (similarityFunction != null) {
-                  return SimilarityFunction.fromString(similarityFunction);
-                }
+                // if similarity function is set, use it
+                SimilarityFunction similarityFunction =
+                    similarityFunctionStr != null
+                        ? SimilarityFunction.fromString(similarityFunctionStr)
+                        : null;
 
-                String sourceModel =
+                String sourceModelStr =
                     index.getOptions().get(VectorConstants.CQLAnnIndex.SOURCE_MODEL);
-                if (sourceModel != null) {
-                  return VectorConstants.SUPPORTED_SOURCES.get(sourceModel);
+                SourceModel sourceModel = null;
+                if (sourceModelStr != null) {
+                  // if similarity function is not set, use the source model to determine it
+                  similarityFunction =
+                      similarityFunction == null
+                          ? SourceModel.getSimilarityFunction(sourceModelStr)
+                          : similarityFunction;
+                  sourceModel = SourceModel.fromString(sourceModelStr);
                 }
-                return null;
+                return new AbstractMap.SimpleEntry<>(similarityFunction, sourceModel);
               });
 
       // if now index, or we could not work out the function, default
-      var similarityFunction = indexFunction.orElse(SimilarityFunction.COSINE);
+      var similarityFunction =
+          indexFunction.map(Map.Entry::getKey).orElse(SimilarityFunction.COSINE);
+      var sourceModel = indexFunction.map(Map.Entry::getValue).orElse(SourceModel.OTHER);
       int dimensions = ((VectorType) column.getType()).getDimensions();
 
       // NOTE: need to keep the column name as a string in the VectorColumnDefinition
@@ -93,6 +105,7 @@ public class VectorConfig {
               cqlIdentifierToJsonKey(column.getName()),
               dimensions,
               similarityFunction,
+              sourceModel,
               vectorizeDefs.get(column.getName().asInternal())));
     }
     return VectorConfig.fromColumnDefinitions(columnDefs);
