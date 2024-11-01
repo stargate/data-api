@@ -47,7 +47,6 @@ public class WithWarnings<T> implements Consumer<OperationAttempt<?, ?>> {
    *
    * @return The list of warnings, never null.
    */
-  @NonNull
   public List<WarningException> warnings() {
     return warnings;
   }
@@ -71,7 +70,7 @@ public class WithWarnings<T> implements Consumer<OperationAttempt<?, ?>> {
    *
    * @param target the target object that has the warning
    * @param warning the warning to add
-   * @return an instance with the warning
+   * @return An instance with the warning
    * @param <T> Type of the target object the warnings are about.
    */
   public static <T> WithWarnings<T> of(T target, WarningException warning) {
