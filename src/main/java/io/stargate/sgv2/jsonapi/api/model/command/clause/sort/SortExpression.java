@@ -49,8 +49,8 @@ public record SortExpression(
   }
 
   /**
-   * Check if the sort expression is trying to vector sort columns on a table, the sort is trying to do this if
-   * it is not using $vector or $vectorize and it has a vector array to sort on
+   * Check if the sort expression is trying to vector sort columns on a table, the sort is trying to
+   * do this if it is not using $vector or $vectorize and it has a vector array to sort on
    */
   public boolean isTableVectorSort() {
     return !pathIs$VectorNames() && vector != null;

@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.exception;
 
 import com.google.common.base.Preconditions;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import io.stargate.sgv2.jsonapi.service.operation.OperationAttempt;
 import java.util.ArrayList;
 import java.util.List;

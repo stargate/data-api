@@ -11,12 +11,12 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A CQL clause that adds an ORDER BY clause to a SELECT statement to ANN sort.
+ * A CQL clause that adds an ORDER BY clause to a SELECT for clustering keys
  *
- * <p>Note: Only supports sorting on vector columns a single column, if there is a secondary sort
- * that would be in memory sorting.
+ * <p>Note: Does not check if the columns are clustering columns, or that the order is correct that
+ * is up to the builder.
  */
-public class TableClusteringOrderByCqlClause implements OrderByCqlClause {
+public class TableOrderByClusteringCqlClause implements OrderByCqlClause {
 
   public enum Order {
     ASC(ClusteringOrder.ASC),
@@ -31,7 +31,7 @@ public class TableClusteringOrderByCqlClause implements OrderByCqlClause {
 
   private final List<OrderByTerm> orderByTerms;
 
-  public TableClusteringOrderByCqlClause(List<OrderByTerm> orderByTerms) {
+  public TableOrderByClusteringCqlClause(List<OrderByTerm> orderByTerms) {
     this.orderByTerms =
         Collections.unmodifiableList(
             Objects.requireNonNull(orderByTerms, "orderByTerms must not be null"));
@@ -58,7 +58,7 @@ public class TableClusteringOrderByCqlClause implements OrderByCqlClause {
 
   @Override
   public String toString() {
-    return "TableClusteringOrderByCqlClause{" + "orderByTerms=" + orderByTerms + '}';
+    return "TableOrderByClusteringCqlClause{" + "orderByTerms=" + orderByTerms + '}';
   }
 
   public record OrderByTerm(ApiColumnDef apiColumnDef, Order order) {

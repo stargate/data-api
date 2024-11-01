@@ -33,18 +33,14 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) implements
     return sortExpressions == null || sortExpressions.isEmpty();
   }
 
-  /**
-   * Get the sort expressions that are trying to vector sort columns on a table
-   */
+  /** Get the sort expressions that are trying to vector sort columns on a table */
   public List<SortExpression> tableVectorSorts() {
     return sortExpressions == null
         ? List.of()
         : sortExpressions.stream().filter(SortExpression::isTableVectorSort).toList();
   }
 
-  /**
-   * Get the sort expressions that are not trying to vector sort columns on a table
-   */
+  /** Get the sort expressions that are not trying to vector sort columns on a table */
   public List<SortExpression> nonTableVectorSorts() {
     return sortExpressions == null
         ? List.of()

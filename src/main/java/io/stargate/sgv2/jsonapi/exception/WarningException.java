@@ -24,8 +24,7 @@ public class WarningException extends RequestException {
     NOT_EQUALS_UNSUPPORTED_BY_INDEXING,
     NOT_IN_FILTER_UNSUPPORTED_BY_INDEXING,
     QUERY_RETRIED_DUE_TO_INDEXING,
-    ZERO_FILTER_OPERATIONS
-    ;
+    ZERO_FILTER_OPERATIONS;
 
     private final ErrorTemplate<WarningException> template;
 

@@ -13,12 +13,12 @@ import java.util.Objects;
  * <p>Note: Only supports sorting on vector columns a single column, if there is a secondary sort
  * that would be in memory sorting.
  */
-public class TableANNOrderByCQlClause implements OrderByCqlClause {
+public class TableOrderByANNCqlClause implements OrderByCqlClause {
 
   private final ApiColumnDef apiColumnDef;
   private final CqlVector<Float> vector;
 
-  public TableANNOrderByCQlClause(ApiColumnDef apiColumnDef, CqlVector<Float> vector) {
+  public TableOrderByANNCqlClause(ApiColumnDef apiColumnDef, CqlVector<Float> vector) {
     this.apiColumnDef = Objects.requireNonNull(apiColumnDef, "apiColumnDef must not be null");
     this.vector = Objects.requireNonNull(vector, "vector must not be null");
 

@@ -28,7 +28,7 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class NonAnnSortingIntegrationTest extends AbstractTableIntegrationTestBase {
+public class SortByClusteringTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   private static final String TABLE_NAME = "nonANNSortTableTest";
   private static final ThreeClusteringKeysTableScenario SCENARIO =

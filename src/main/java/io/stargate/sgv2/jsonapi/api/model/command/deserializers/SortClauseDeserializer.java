@@ -76,7 +76,8 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
           SortExpression exp = SortExpression.vsearch(arrayVals);
           sortExpressions.clear();
           sortExpressions.add(exp);
-          // TODO: aaron 17-oct-2024 - this break seems unneeded as above it checks if there is only 1
+          // TODO: aaron 17-oct-2024 - this break seems unneeded as above it checks if there is only
+          // 1
           // field, leaving for now
           break;
         }

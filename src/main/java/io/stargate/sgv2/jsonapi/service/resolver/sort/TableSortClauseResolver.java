@@ -18,8 +18,8 @@ import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableANNOrderByCQlClause;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableClusteringOrderByCqlClause;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByANNCqlClause;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByClusteringCqlClause;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
@@ -72,7 +72,7 @@ public class TableSortClauseResolver<CmdT extends Command & Sortable>
    *
    * <p>If the sort uses the clustering keys in the correct way according to CQL, then we can use
    * the CQL Order By to push the sorting to the database. See {@link
-   * TableClusteringOrderByCqlClause}. If not then we return a {@link OrderByCqlClause#NO_OP} to
+   * TableOrderByClusteringCqlClause}. If not then we return a {@link OrderByCqlClause#NO_OP} to
    * indicate that we cannot push the sorting to the database and need to do it in memory.
    */
   private WithWarnings<OrderByCqlClause> resolveNonVectorSort(
@@ -139,14 +139,14 @@ public class TableSortClauseResolver<CmdT extends Command & Sortable>
                 sortExpression -> {
                   var apiColumnDef =
                       apiTableDef.allColumns().get(sortExpression.pathAsCqlIdentifier());
-                  return new TableClusteringOrderByCqlClause.OrderByTerm(
+                  return new TableOrderByClusteringCqlClause.OrderByTerm(
                       apiColumnDef,
                       sortExpression.ascending()
-                          ? TableClusteringOrderByCqlClause.Order.ASC
-                          : TableClusteringOrderByCqlClause.Order.DESC);
+                          ? TableOrderByClusteringCqlClause.Order.ASC
+                          : TableOrderByClusteringCqlClause.Order.DESC);
                 })
             .toList();
-    var cqlOrderBy = new TableClusteringOrderByCqlClause(orderByTerms);
+    var cqlOrderBy = new TableOrderByClusteringCqlClause(orderByTerms);
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
           "Sort covered by clustering keys, using CQL ORDER BY. cqlOrderBy: {}", cqlOrderBy);
@@ -158,7 +158,7 @@ public class TableSortClauseResolver<CmdT extends Command & Sortable>
    * We have at least one vector sort in the sort clause.
    *
    * <p>This is always implemented by using a CQL Order By to push the ANN search to the database.
-   * See {@link TableANNOrderByCQlClause}
+   * See {@link TableOrderByANNCqlClause}
    */
   private WithWarnings<OrderByCqlClause> resolveVectorSort(
       CommandContext<TableSchemaObject> commandContext,
@@ -240,7 +240,7 @@ public class TableSortClauseResolver<CmdT extends Command & Sortable>
     LOGGER.debug(
         "Vector sorting on column {}", cqlIdentifierToMessageString(vectorSortColumn.name()));
     var cqlVector = CqlVectorUtil.floatsToCqlVector(vectorSortExpression.vector());
-    return WithWarnings.of(new TableANNOrderByCQlClause(vectorSortColumn, cqlVector));
+    return WithWarnings.of(new TableOrderByANNCqlClause(vectorSortColumn, cqlVector));
   }
 
   private void checkUnknownSortColumns(
