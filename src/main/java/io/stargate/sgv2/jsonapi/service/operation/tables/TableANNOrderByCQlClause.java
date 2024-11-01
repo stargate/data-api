@@ -21,7 +21,6 @@ public class TableANNOrderByCQlClause implements OrderByCqlClause {
   public TableANNOrderByCQlClause(ApiColumnDef apiColumnDef, CqlVector<Float> vector) {
     this.apiColumnDef = Objects.requireNonNull(apiColumnDef, "apiColumnDef must not be null");
     this.vector = Objects.requireNonNull(vector, "vector must not be null");
-    ;
 
     // sanity check
     if (apiColumnDef.type().typeName() != ApiTypeName.VECTOR) {
