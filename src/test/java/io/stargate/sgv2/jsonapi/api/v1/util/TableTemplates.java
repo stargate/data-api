@@ -1,15 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.v1.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class TableTemplates extends TemplateRunner {
-
-  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private DataApiTableCommandSender sender;
 
@@ -21,36 +18,87 @@ public class TableTemplates extends TemplateRunner {
   // DML - FIND
   // ==================================================================================================================
 
-  private String findClause(Map<String, Object> filter, List<String> columns) {
-    var projection = columns.stream().collect(Collectors.toMap(col -> col, col -> 1));
+  private String findClause(
+      Map<String, Object> filter,
+      List<String> projection,
+      Map<String, Object> sort,
+      Map<String, Object> options) {
 
-    var clause =
-        Map.of(
-            "filter", filter,
-            "projection", projection);
-
-    try {
-      return MAPPER.writeValueAsString(clause);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
+    var clause = new LinkedHashMap<>();
+    if (filter != null) {
+      clause.put("filter", filter);
     }
+    if (projection != null) {
+      // this is for the positive projection of selecting columns
+      clause.put("projection", projection.stream().collect(Collectors.toMap(col -> col, col -> 1)));
+    }
+    if (sort != null) {
+      clause.put("sort", sort);
+    }
+    if (sort != null) {
+      clause.put("options", options);
+    }
+    return asJSON(clause);
   }
 
   public DataApiResponseValidator find(
       Command.CommandName commandName, Map<String, Object> filter, List<String> columns) {
+    return find(commandName, filter, columns, null);
+  }
+
+  public DataApiResponseValidator find(
+      Command.CommandName commandName,
+      Map<String, Object> filter,
+      List<String> columns,
+      Map<String, Object> sort) {
+    return find(commandName, filter, columns, sort, null);
+  }
+
+  public DataApiResponseValidator find(
+      Command.CommandName commandName,
+      Map<String, Object> filter,
+      List<String> columns,
+      Map<String, Object> sort,
+      Map<String, Object> options) {
     return switch (commandName) {
-      case FIND_ONE -> findOne(filter, columns);
-      case FIND -> find(filter, columns);
+      case FIND_ONE -> findOne(filter, columns, sort, options);
+      case FIND -> find(filter, columns, sort, options);
       default -> throw new IllegalArgumentException("Unexpected command for find: " + commandName);
     };
   }
 
   public DataApiResponseValidator findOne(Map<String, Object> filter, List<String> columns) {
-    return sender.postFindOne(findClause(filter, columns));
+    return findOne(filter, columns, null, null);
   }
 
-  public DataApiResponseValidator find(Map<String, Object> filter, List<String> columns) {
-    return sender.postFind(findClause(filter, columns));
+  public DataApiResponseValidator findOne(
+      Map<String, Object> filter, List<String> columns, Map<String, Object> sort) {
+    return findOne(filter, columns, sort, null);
+  }
+
+  public DataApiResponseValidator findOne(
+      Map<String, Object> filter,
+      List<String> columns,
+      Map<String, Object> sort,
+      Map<String, Object> options) {
+    return sender.postFindOne(findClause(filter, columns, sort, options));
+  }
+
+  public DataApiResponseValidator find(Map<String, Object> filter, List<String> projection) {
+    return find(filter, projection, null);
+  }
+
+  public DataApiResponseValidator find(
+      Map<String, Object> filter, List<String> projection, Map<String, Object> sort) {
+    return find(filter, projection, sort, null);
+  }
+
+  public DataApiResponseValidator find(
+      Map<String, Object> filter,
+      List<String> projection,
+      Map<String, Object> sort,
+      Map<String, Object> options) {
+    return sender.postFind(findClause(filter, projection, sort, options));
   }
 
   public DataApiResponseValidator find(String filter) {
@@ -122,6 +170,10 @@ public class TableTemplates extends TemplateRunner {
     return sender.postInsertOne(json);
   }
 
+  public DataApiResponseValidator insertManyMap(List<Map<String, Object>> documents) {
+    return insertMany(documents.stream().map(TemplateRunner::asJSON).collect(Collectors.toList()));
+  }
+
   public DataApiResponseValidator insertMany(String... documents) {
     return insertMany(List.of(documents));
   }
@@ -151,6 +203,18 @@ public class TableTemplates extends TemplateRunner {
         """
             .formatted(indexName, column);
     return sender.postCreateIndex(json);
+  }
+
+  public DataApiResponseValidator createVectorIndex(String indexName, String column) {
+    var json =
+            """
+          {
+            "name": "%s",
+            "definition": {"column": "%s"}
+          }
+        """
+            .formatted(indexName, column);
+    return sender.postCreateVectorIndex(json);
   }
 
   public DataApiResponseValidator alterTable(String alterOperation, Object columns) {

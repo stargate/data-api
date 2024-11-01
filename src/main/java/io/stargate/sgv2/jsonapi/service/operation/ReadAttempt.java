@@ -19,10 +19,7 @@ import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
-import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
-import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
-import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.query.*;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +39,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
 
   private final SelectCQLClause selectCQLClause;
   private final WhereCQLClause<Select> whereCQLClause;
+  private final OrderByCqlClause orderByCqlClause;
   private final CqlOptions<Select> cqlOptions;
   private final CqlPagingState pagingState;
   // DocumentSourceSupplier is an old idea that needs refactoring at some point, is a supplier of a
@@ -57,6 +55,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
       SchemaT schemaObject,
       SelectCQLClause selectCQLClause,
       WhereCQLClause<Select> whereCQLClause,
+      OrderByCqlClause orderByCqlClause,
       CqlOptions<Select> cqlOptions,
       CqlPagingState pagingState,
       DocumentSourceSupplier documentSourceSupplier) {
@@ -65,6 +64,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     // nullable because the subclass may want to implement methods to build the statement itself
     this.selectCQLClause = selectCQLClause;
     this.whereCQLClause = whereCQLClause;
+    this.orderByCqlClause = orderByCqlClause;
     this.cqlOptions = cqlOptions;
     this.pagingState = pagingState;
     this.documentSourceSupplier = documentSourceSupplier;
@@ -153,12 +153,15 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
   protected Select applySelect(SelectFrom selectFrom, List<Object> positionalValues) {
     Objects.requireNonNull(selectCQLClause, "selectFrom must not be null");
     Objects.requireNonNull(whereCQLClause, "whereCQLClause must not be null");
+    Objects.requireNonNull(orderByCqlClause, "orderByCqlClause must not be null");
 
     // Add the columns we want to select
     Select select = selectCQLClause.apply(selectFrom);
-
     // Add the where clause
     select = whereCQLClause.apply(select, positionalValues);
+    // and finally order by
+    select = orderByCqlClause.apply(select);
+
     return select;
   }
 
@@ -191,7 +194,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
           "Unsupported columns in the result set: %s"
               .formatted(errFmtApiColumnDef(readApiColumns.filterByUnsupported())));
     }
-    return Optional.of(readApiColumns.toColumnsDef());
+    return Optional.of(readApiColumns.toColumnsDesc());
   }
 
   // This is a simple container for the result set so we can set one variable in the onSuccess
