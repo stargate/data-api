@@ -246,7 +246,11 @@ public abstract class JSONCodecs {
           // CqlDuration.from() accepts 2 formats; ISO-8601 ("P1H30M") and "1h30m" (Cassandra
           // compact) format
           JSONCodec.ToCQL.safeFromString(CqlDuration::from),
-          JSONCodec.ToJSON.toJSONUsingToString());
+          // But since we must produce ISO-8601, need custom JSON serialization
+          (objectMapper, fromCQLType, value) ->
+              objectMapper
+                  .getNodeFactory()
+                  .textNode(CqlDurationConverter.toISO8601Duration(value)));
 
   public static final JSONCodec<String, LocalTime> TIME_FROM_STRING =
       new JSONCodec<>(

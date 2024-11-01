@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.fixtures.testdata.LogicalExpressionTestData;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestDataNames;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -451,28 +452,45 @@ public class SelectWhereAnalyzerTest {
   @Nested
   class DataTypesSanityCheck {
 
+    private static Stream<Arguments> allScalarDatatype() {
+      return names().ALL_CQL_DATATYPE_COLUMNS.stream().map(Arguments::of);
+    }
+
+    private static final Set<CqlIdentifier> allow_filtering_needed_for_comparison =
+        Set.of(
+            names().CQL_TEXT_COLUMN,
+            names().CQL_ASCII_COLUMN,
+            names().CQL_BOOLEAN_COLUMN,
+            names().CQL_UUID_COLUMN);
+
+    private static final Set<CqlIdentifier> allow_filtering_needed_for_not_in =
+        Set.of(
+            names().CQL_TEXT_COLUMN,
+            names().CQL_ASCII_COLUMN,
+            names().CQL_BOOLEAN_COLUMN,
+            names().CQL_UUID_COLUMN);
+
     // ==================================================================================================================
     // $eq on scalar column
     // -> column is indexed.
     // -> column is not indexed.
     // ==================================================================================================================
 
-    @Test
-    public void eq_indexed_column() {
+    @ParameterizedTest
+    @MethodSource("allScalarDatatype")
+    public void eq_indexed_column(CqlIdentifier cqlDatatypeColumn) {
 
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
-        if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)
-            || cqlDatatypeColumn.equals(names().CQL_DURATION_COLUMN)) {
-          continue;
-        }
-        var fixture =
-            TEST_DATA
-                .whereAnalyzer()
-                .tableAllColumnDatatypesIndexed(
-                    "$eq_on_indexed_" + cqlDatatypeColumn.asInternal(),
-                    WhereCQLClauseAnalyzer.StatementType.SELECT);
-        fixture.expression().eqOn(cqlDatatypeColumn).analyze().assertNoFilteringNoWarnings();
+      if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)
+          || cqlDatatypeColumn.equals(names().CQL_DURATION_COLUMN)) {
+        return;
       }
+      var fixture =
+          TEST_DATA
+              .whereAnalyzer()
+              .tableAllColumnDatatypesIndexed(
+                  "$eq_on_indexed_" + cqlDatatypeColumn.asInternal(),
+                  WhereCQLClauseAnalyzer.StatementType.SELECT);
+      fixture.expression().eqOn(cqlDatatypeColumn).analyze().assertNoFilteringNoWarnings();
 
       // Duration Column can not be indexed
       var durationFixture =
@@ -490,26 +508,25 @@ public class SelectWhereAnalyzerTest {
           .assertWarnOnUnindexedColumns(names().CQL_DURATION_COLUMN);
     }
 
-    @Test
-    public void eq_not_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
-        if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
-          continue;
-        }
-        var fixture =
-            TEST_DATA
-                .whereAnalyzer()
-                .tableAllColumnDatatypesNotIndexed(
-                    "$eq_on_not_indexed_" + cqlDatatypeColumn.asInternal(),
-                    WhereCQLClauseAnalyzer.StatementType.SELECT);
-        fixture
-            .expression()
-            .eqOn(cqlDatatypeColumn)
-            .analyze()
-            .assertAllowFilteringEnabled()
-            .assertOneWarning(WarningException.Code.MISSING_INDEX)
-            .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
+    @ParameterizedTest
+    @MethodSource("allScalarDatatype")
+    public void eq_not_indexed_column(CqlIdentifier cqlDatatypeColumn) {
+      if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
+        return;
       }
+      var fixture =
+          TEST_DATA
+              .whereAnalyzer()
+              .tableAllColumnDatatypesNotIndexed(
+                  "$eq_on_not_indexed_" + cqlDatatypeColumn.asInternal(),
+                  WhereCQLClauseAnalyzer.StatementType.SELECT);
+      fixture
+          .expression()
+          .eqOn(cqlDatatypeColumn)
+          .analyze()
+          .assertAllowFilteringEnabled()
+          .assertOneWarning(WarningException.Code.MISSING_INDEX)
+          .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
     }
 
     // ==================================================================================================================
@@ -518,70 +535,20 @@ public class SelectWhereAnalyzerTest {
     // -> column is not indexed.
     // ==================================================================================================================
 
-    @Test
-    public void ne_indexed_column() {
+    @ParameterizedTest
+    @MethodSource("allScalarDatatype")
+    public void ne_indexed_column(CqlIdentifier cqlDatatypeColumn) {
       // If column is on SAI index, perform $ne on it.
       // -> For TEXT, ASCII, BOOLEAN, DURATION, BLOB. ALLOW FILTERING is needed.
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
-        if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
-          continue;
-        }
-        if (cqlDatatypeColumn.equals(names().CQL_DURATION_COLUMN)) {
-          var fixture =
-              TEST_DATA
-                  .whereAnalyzer()
-                  .tableAllColumnDatatypesIndexed(
-                      "$ne_on_" + cqlDatatypeColumn.asInternal(),
-                      WhereCQLClauseAnalyzer.StatementType.SELECT);
-          fixture
-              .expression()
-              .notEqOn(cqlDatatypeColumn)
-              .analyze()
-              .assertAllowFilteringEnabled()
-              .assertOneWarning(WarningException.Code.MISSING_INDEX)
-              .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
-          continue;
-        }
-        if (cqlDatatypeColumn.equals(names().CQL_TEXT_COLUMN)
-            || cqlDatatypeColumn.equals(names().CQL_BOOLEAN_COLUMN)
-            || cqlDatatypeColumn.equals(names().CQL_ASCII_COLUMN)
-            || cqlDatatypeColumn.equals(names().CQL_UUID_COLUMN)) {
-          var fixture =
-              TEST_DATA
-                  .whereAnalyzer()
-                  .tableAllColumnDatatypesIndexed(
-                      "$ne_on_indexed_" + cqlDatatypeColumn.asInternal(),
-                      WhereCQLClauseAnalyzer.StatementType.SELECT);
-          fixture
-              .expression()
-              .notEqOn(cqlDatatypeColumn)
-              .analyze()
-              .assertAllowFilteringEnabled()
-              .assertOneWarning(WarningException.Code.NOT_EQUALS_UNSUPPORTED_BY_INDEXING)
-              .assertWarnOnNotEqColumns(cqlDatatypeColumn);
-          continue;
-        }
+      if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
+        return;
+      }
+      if (cqlDatatypeColumn.equals(names().CQL_DURATION_COLUMN)) {
         var fixture =
             TEST_DATA
                 .whereAnalyzer()
                 .tableAllColumnDatatypesIndexed(
-                    "$ne_on_indexed_" + cqlDatatypeColumn.asInternal(),
-                    WhereCQLClauseAnalyzer.StatementType.SELECT);
-        fixture.expression().notEqOn(cqlDatatypeColumn).analyze().assertNoFilteringNoWarnings();
-      }
-    }
-
-    @Test
-    public void ne_not_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
-        if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
-          continue;
-        }
-        var fixture =
-            TEST_DATA
-                .whereAnalyzer()
-                .tableAllColumnDatatypesNotIndexed(
-                    "$ne_on_not_indexed_" + cqlDatatypeColumn.asInternal(),
+                    "$ne_on_" + cqlDatatypeColumn.asInternal(),
                     WhereCQLClauseAnalyzer.StatementType.SELECT);
         fixture
             .expression()
@@ -590,7 +557,56 @@ public class SelectWhereAnalyzerTest {
             .assertAllowFilteringEnabled()
             .assertOneWarning(WarningException.Code.MISSING_INDEX)
             .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
+        return;
       }
+      if (cqlDatatypeColumn.equals(names().CQL_TEXT_COLUMN)
+          || cqlDatatypeColumn.equals(names().CQL_BOOLEAN_COLUMN)
+          || cqlDatatypeColumn.equals(names().CQL_ASCII_COLUMN)
+          || cqlDatatypeColumn.equals(names().CQL_UUID_COLUMN)) {
+        var fixture =
+            TEST_DATA
+                .whereAnalyzer()
+                .tableAllColumnDatatypesIndexed(
+                    "$ne_on_indexed_" + cqlDatatypeColumn.asInternal(),
+                    WhereCQLClauseAnalyzer.StatementType.SELECT);
+        fixture
+            .expression()
+            .notEqOn(cqlDatatypeColumn)
+            .analyze()
+            .assertAllowFilteringEnabled()
+            .assertOneWarning(WarningException.Code.NOT_EQUALS_UNSUPPORTED_BY_INDEXING)
+            .assertWarnOnNotEqColumns(cqlDatatypeColumn);
+        return;
+      }
+      var fixture =
+          TEST_DATA
+              .whereAnalyzer()
+              .tableAllColumnDatatypesIndexed(
+                  "$ne_on_indexed_" + cqlDatatypeColumn.asInternal(),
+                  WhereCQLClauseAnalyzer.StatementType.SELECT);
+      fixture.expression().notEqOn(cqlDatatypeColumn).analyze().assertNoFilteringNoWarnings();
+    }
+
+    @ParameterizedTest
+    @MethodSource("allScalarDatatype")
+    public void ne_not_indexed_column(CqlIdentifier cqlDatatypeColumn) {
+
+      if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
+        return;
+      }
+      var fixture =
+          TEST_DATA
+              .whereAnalyzer()
+              .tableAllColumnDatatypesNotIndexed(
+                  "$ne_on_not_indexed_" + cqlDatatypeColumn.asInternal(),
+                  WhereCQLClauseAnalyzer.StatementType.SELECT);
+      fixture
+          .expression()
+          .notEqOn(cqlDatatypeColumn)
+          .analyze()
+          .assertAllowFilteringEnabled()
+          .assertOneWarning(WarningException.Code.MISSING_INDEX)
+          .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
     }
 
     // ==================================================================================================================
@@ -599,49 +615,19 @@ public class SelectWhereAnalyzerTest {
     // -> column is not indexed.
     // ==================================================================================================================
 
-    @Test
-    public void in_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
-        if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
-          continue;
-        }
-        if (cqlDatatypeColumn.equals(names().CQL_DURATION_COLUMN)) {
-          var fixture =
-              TEST_DATA
-                  .whereAnalyzer()
-                  .tableAllColumnDatatypesIndexed(
-                      "$ne_on_" + cqlDatatypeColumn.asInternal(),
-                      WhereCQLClauseAnalyzer.StatementType.SELECT);
-          fixture
-              .expression()
-              .notEqOn(cqlDatatypeColumn)
-              .analyze()
-              .assertAllowFilteringEnabled()
-              .assertOneWarning(WarningException.Code.MISSING_INDEX)
-              .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
-          continue;
-        }
+    @ParameterizedTest
+    @MethodSource("allScalarDatatype")
+    public void in_indexed_column(CqlIdentifier cqlDatatypeColumn) {
+
+      if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
+        return;
+      }
+      if (cqlDatatypeColumn.equals(names().CQL_DURATION_COLUMN)) {
         var fixture =
             TEST_DATA
                 .whereAnalyzer()
                 .tableAllColumnDatatypesIndexed(
-                    "$in_on_indexed_" + cqlDatatypeColumn.asInternal(),
-                    WhereCQLClauseAnalyzer.StatementType.SELECT);
-        fixture.expression().inOn(cqlDatatypeColumn).analyze().assertNoFilteringNoWarnings();
-      }
-    }
-
-    @Test
-    public void in_not_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
-        if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
-          continue;
-        }
-        var fixture =
-            TEST_DATA
-                .whereAnalyzer()
-                .tableAllColumnDatatypesNotIndexed(
-                    "$in_on_not_indexed_" + cqlDatatypeColumn.asInternal(),
+                    "$in_on_" + cqlDatatypeColumn.asInternal(),
                     WhereCQLClauseAnalyzer.StatementType.SELECT);
         fixture
             .expression()
@@ -650,7 +636,113 @@ public class SelectWhereAnalyzerTest {
             .assertAllowFilteringEnabled()
             .assertOneWarning(WarningException.Code.MISSING_INDEX)
             .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
+        return;
       }
+      var fixture =
+          TEST_DATA
+              .whereAnalyzer()
+              .tableAllColumnDatatypesIndexed(
+                  "$in_on_indexed_" + cqlDatatypeColumn.asInternal(),
+                  WhereCQLClauseAnalyzer.StatementType.SELECT);
+      fixture.expression().inOn(cqlDatatypeColumn).analyze().assertNoFilteringNoWarnings();
+    }
+
+    @ParameterizedTest
+    @MethodSource("allScalarDatatype")
+    public void in_not_indexed_column(CqlIdentifier cqlDatatypeColumn) {
+
+      if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
+        return;
+      }
+      var fixture =
+          TEST_DATA
+              .whereAnalyzer()
+              .tableAllColumnDatatypesNotIndexed(
+                  "$in_on_not_indexed_" + cqlDatatypeColumn.asInternal(),
+                  WhereCQLClauseAnalyzer.StatementType.SELECT);
+      fixture
+          .expression()
+          .inOn(cqlDatatypeColumn)
+          .analyze()
+          .assertAllowFilteringEnabled()
+          .assertOneWarning(WarningException.Code.MISSING_INDEX)
+          .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
+    }
+
+    // ==================================================================================================================
+    // $nin on scalar column
+    // -> column is indexed.
+    // -> column is not indexed.
+    // ==================================================================================================================
+
+    @ParameterizedTest
+    @MethodSource("allScalarDatatype")
+    public void nin_indexed_column(CqlIdentifier cqlDatatypeColumn) {
+
+      if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
+        return;
+      }
+      if (cqlDatatypeColumn.equals(names().CQL_DURATION_COLUMN)) {
+        var fixture =
+            TEST_DATA
+                .whereAnalyzer()
+                .tableAllColumnDatatypesIndexed(
+                    "$nin_on_" + cqlDatatypeColumn.asInternal(),
+                    WhereCQLClauseAnalyzer.StatementType.SELECT);
+        fixture
+            .expression()
+            .notInOn(cqlDatatypeColumn)
+            .analyze()
+            .assertAllowFilteringEnabled()
+            .assertOneWarning(WarningException.Code.MISSING_INDEX)
+            .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
+        return;
+      }
+      if (allow_filtering_needed_for_not_in.contains(cqlDatatypeColumn)) {
+        var fixture =
+            TEST_DATA
+                .whereAnalyzer()
+                .tableAllColumnDatatypesIndexed(
+                    "$nin_on_" + cqlDatatypeColumn.asInternal(),
+                    WhereCQLClauseAnalyzer.StatementType.SELECT);
+        fixture
+            .expression()
+            .notInOn(cqlDatatypeColumn)
+            .analyze()
+            .assertAllowFilteringEnabled()
+            .assertOneWarning(WarningException.Code.NOT_IN_FILTER_UNSUPPORTED_BY_INDEXING)
+            .assertWarnOnNotInColumns(cqlDatatypeColumn);
+        return;
+      }
+      var fixture =
+          TEST_DATA
+              .whereAnalyzer()
+              .tableAllColumnDatatypesIndexed(
+                  "$nin_on_indexed_" + cqlDatatypeColumn.asInternal(),
+                  WhereCQLClauseAnalyzer.StatementType.SELECT);
+      fixture.expression().notInOn(cqlDatatypeColumn).analyze().assertNoFilteringNoWarnings();
+    }
+
+    @ParameterizedTest
+    @MethodSource("allScalarDatatype")
+    public void not_in_not_indexed_column(CqlIdentifier cqlDatatypeColumn) {
+
+      if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
+        return;
+      }
+      var fixture =
+          TEST_DATA
+              .whereAnalyzer()
+              .tableAllColumnDatatypesNotIndexed(
+                  "$nin_on_not_indexed_" + cqlDatatypeColumn.asInternal(),
+                  WhereCQLClauseAnalyzer.StatementType.SELECT);
+      fixture
+          .expression()
+          .notInOn(cqlDatatypeColumn)
+          .analyze()
+          .assertAllowFilteringEnabled()
+          .assertOneWarning(WarningException.Code.MISSING_INDEX)
+          .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
     }
 
     // ==================================================================================================================
@@ -659,103 +751,74 @@ public class SelectWhereAnalyzerTest {
     // 2.Can not apply to indexed UUID column, index does not support operator
     // ==================================================================================================================
 
-    @Test
-    public void comparison_api_filter_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
-        if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
-          continue;
-        }
-        if (cqlDatatypeColumn.equals(names().CQL_DURATION_COLUMN)) {
-          var fixture =
-              TEST_DATA
-                  .whereAnalyzer()
-                  .tableAllColumnDatatypesIndexed(
-                      "$gt_on_" + cqlDatatypeColumn.asInternal(),
-                      WhereCQLClauseAnalyzer.StatementType.SELECT);
-          fixture
-              .expression()
-              .gtOn(cqlDatatypeColumn)
-              .analyzeThrows(FilterException.class)
-              .assertFilterExceptionCode(FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION)
-              .assertExceptionOnDurationColumns(cqlDatatypeColumn);
-          continue;
-        }
+    @ParameterizedTest
+    @MethodSource("allScalarDatatype")
+    public void comparison_api_filter_indexed_column(CqlIdentifier cqlDatatypeColumn) {
 
-        if (names().COMPARISON_WITH_INDEX_WARN_COLUMNS.contains(cqlDatatypeColumn)) {
-          var fixture =
-              TEST_DATA
-                  .whereAnalyzer()
-                  .tableAllColumnDatatypesIndexed(
-                      "$gt_on_" + cqlDatatypeColumn.asInternal(),
-                      WhereCQLClauseAnalyzer.StatementType.SELECT);
-          fixture
-              .expression()
-              .gtOn(cqlDatatypeColumn)
-              .analyze()
-              .assertAllowFilteringEnabled()
-              .assertOneWarning(WarningException.Code.COMPARISON_FILTER_UNSUPPORTED_BY_INDEXING)
-              .assertWarnOnComparisonFilterColumns(cqlDatatypeColumn);
-          continue;
-        }
+      if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
+        return;
+      }
+      if (cqlDatatypeColumn.equals(names().CQL_DURATION_COLUMN)) {
         var fixture =
             TEST_DATA
                 .whereAnalyzer()
                 .tableAllColumnDatatypesIndexed(
-                    "$gt_on_indexed_" + cqlDatatypeColumn.asInternal(),
-                    WhereCQLClauseAnalyzer.StatementType.SELECT);
-        fixture.expression().gtOn(cqlDatatypeColumn).analyze().assertNoFilteringNoWarnings();
-      }
-    }
-
-    @Test
-    public void comparison_api_filter_not_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
-        if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
-          continue;
-        }
-        var fixture =
-            TEST_DATA
-                .whereAnalyzer()
-                .tableAllColumnDatatypesNotIndexed(
-                    "$gt_on_not_indexed_" + cqlDatatypeColumn.asInternal(),
+                    "$gt_on_" + cqlDatatypeColumn.asInternal(),
                     WhereCQLClauseAnalyzer.StatementType.SELECT);
         fixture
             .expression()
-            .inOn(cqlDatatypeColumn)
+            .gtOn(cqlDatatypeColumn)
+            .analyzeThrows(FilterException.class)
+            .assertFilterExceptionCode(FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION)
+            .assertExceptionOnDurationColumns(cqlDatatypeColumn);
+        return;
+      }
+
+      if (names().COMPARISON_WITH_INDEX_WARN_COLUMNS.contains(cqlDatatypeColumn)) {
+        var fixture =
+            TEST_DATA
+                .whereAnalyzer()
+                .tableAllColumnDatatypesIndexed(
+                    "$gt_on_" + cqlDatatypeColumn.asInternal(),
+                    WhereCQLClauseAnalyzer.StatementType.SELECT);
+        fixture
+            .expression()
+            .gtOn(cqlDatatypeColumn)
             .analyze()
             .assertAllowFilteringEnabled()
-            .assertOneWarning(WarningException.Code.MISSING_INDEX)
-            .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
+            .assertOneWarning(WarningException.Code.COMPARISON_FILTER_UNSUPPORTED_BY_INDEXING)
+            .assertWarnOnComparisonFilterColumns(cqlDatatypeColumn);
+        return;
       }
-    }
-  }
-
-  @Nested
-  class ComplexDataType {
-
-    // ==================================================================================================================
-    // Currently, only PrimitiveApiDataType(Scalar) is supported for table filter
-    // ==================================================================================================================
-
-    private static Stream<Arguments> complexDataTypes() {
-      return names().ALL_COLLECTION_DATATYPE_COLUMNS.stream().map((Arguments::of));
-    }
-
-    @ParameterizedTest
-    @MethodSource("complexDataTypes")
-    public void eq_complex_column(CqlIdentifier complexColumnIdentifier) {
       var fixture =
           TEST_DATA
               .whereAnalyzer()
               .tableAllColumnDatatypesIndexed(
-                  "$eq_on_%s".formatted(complexColumnIdentifier.asInternal()),
+                  "$gt_on_indexed_" + cqlDatatypeColumn.asInternal(),
+                  WhereCQLClauseAnalyzer.StatementType.SELECT);
+      fixture.expression().gtOn(cqlDatatypeColumn).analyze().assertNoFilteringNoWarnings();
+    }
+
+    @ParameterizedTest
+    @MethodSource("allScalarDatatype")
+    public void comparison_api_filter_not_indexed_column(CqlIdentifier cqlDatatypeColumn) {
+
+      if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
+        return;
+      }
+      var fixture =
+          TEST_DATA
+              .whereAnalyzer()
+              .tableAllColumnDatatypesNotIndexed(
+                  "$gt_on_not_indexed_" + cqlDatatypeColumn.asInternal(),
                   WhereCQLClauseAnalyzer.StatementType.SELECT);
       fixture
           .expression()
-          .eqOn(complexColumnIdentifier)
-          .analyzeThrows(FilterException.class)
-          .assertFilterExceptionCode(FilterException.Code.FILTER_ON_COMPLEX_COLUMNS)
-          .assertExceptionOnComplexColumns(complexColumnIdentifier);
+          .inOn(cqlDatatypeColumn)
+          .analyze()
+          .assertAllowFilteringEnabled()
+          .assertOneWarning(WarningException.Code.MISSING_INDEX)
+          .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
     }
   }
 }

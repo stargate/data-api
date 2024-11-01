@@ -173,6 +173,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               5,
               "cosine",
               "",
+              "",
               10,
               false,
               false);
@@ -290,6 +291,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               COLLECTION_NAME,
               5,
               "cosine",
+              "",
               "",
               10,
               false,

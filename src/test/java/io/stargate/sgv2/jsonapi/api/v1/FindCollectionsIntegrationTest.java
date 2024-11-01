@@ -152,7 +152,8 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                   "options": {
                     "vector": {
                       "dimension": 5,
-                      "metric": "cosine"
+                      "metric": "cosine",
+                      "sourceModel": "other"
                     },"indexing": {
                       "deny" : ["comment"]
                     }
@@ -375,7 +376,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
               """;
       String expected3 =
           """
-      {"name":"collection2", "options": {"vector": {"dimension":5, "metric":"cosine"}, "indexing":{"deny":["comment"]}}}
+      {"name":"collection2", "options": {"vector": {"dimension":5, "metric":"cosine", "sourceModel": "other"}, "indexing":{"deny":["comment"]}}}
       """;
       String expected4 =
           """

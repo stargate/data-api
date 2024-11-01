@@ -61,6 +61,11 @@ public class LogicalExpressionTestData extends TestDataSuplier {
       return fixture;
     }
 
+    public FixtureT notInOn(CqlIdentifier column) {
+      expression.addFilter(nin(tableMetadata.getColumn(column).orElseThrow()));
+      return fixture;
+    }
+
     public FixtureT eqAllPrimaryKeys() {
       eqAllPartitionKeys();
       return eqAllClusteringKeys();
@@ -176,6 +181,13 @@ public class LogicalExpressionTestData extends TestDataSuplier {
     public static TableFilter in(ColumnMetadata columnMetadata) {
       return new InTableFilter(
           InTableFilter.Operator.IN,
+          columnMetadata.getName().asInternal(),
+          List.of(value(columnMetadata.getType()), value(columnMetadata.getType())));
+    }
+
+    public static TableFilter nin(ColumnMetadata columnMetadata) {
+      return new InTableFilter(
+          InTableFilter.Operator.NIN,
           columnMetadata.getName().asInternal(),
           List.of(value(columnMetadata.getType()), value(columnMetadata.getType())));
     }
