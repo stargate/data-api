@@ -746,10 +746,16 @@ request-errors:
       Resend the command using only vector columns that have been indexed.
 
   - scope: SORT
-    code: CANNOT_SORT_TABLE_DELETE_UPDATE_COMMAND
-    title: Sort is not support for table DELETE and UPDATE command
+    code: CANNOT_SORT_TABLE_DELETE_COMMAND
+    title: Sort is not support for table DELETE command
     body: |-
-      Table DELETE and UPDATE command do not support sort.
+      Table UPDATE command does not support sort.
+
+  - scope: SORT
+    code: CANNOT_SORT_TABLE_UPDATE_COMMAND
+    title: Sort is not support for table UPDATE command
+    body: |-
+      Table DELETE command does not support sort.
 
 
 # ================================================================================================================
