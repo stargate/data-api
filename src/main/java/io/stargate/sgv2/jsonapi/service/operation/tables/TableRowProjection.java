@@ -24,10 +24,7 @@ import java.util.Map;
  * projection definitions (expressed in JSON).
  */
 public record TableRowProjection(
-    ObjectMapper objectMapper,
-    TableSchemaObject table,
-    List<ColumnMetadata> columns,
-    boolean returnNull)
+    ObjectMapper objectMapper, TableSchemaObject table, List<ColumnMetadata> columns)
     implements SelectCQLClause, DocumentSourceSupplier {
   /**
    * Factory method for construction projection instance, given a projection definition and table
@@ -36,8 +33,7 @@ public record TableRowProjection(
   public static TableRowProjection fromDefinition(
       ObjectMapper objectMapper,
       TableProjectionDefinition projectionDefinition,
-      TableSchemaObject table,
-      boolean returnNull) {
+      TableSchemaObject table) {
     Map<String, ColumnMetadata> columnsByName = new HashMap<>();
     // TODO: This can also be cached as part of TableSchemaObject than resolving it for every query.
     table
@@ -53,7 +49,7 @@ public record TableRowProjection(
           "did not include any Table columns");
     }
 
-    return new TableRowProjection(objectMapper, table, columns, returnNull);
+    return new TableRowProjection(objectMapper, table, columns);
   }
 
   @Override
@@ -78,11 +74,9 @@ public record TableRowProjection(
       }
       try {
         final Object columnValue = row.getObject(i);
-        if (columnValue == null) {
-          if (returnNull) {
-            result.putNull(columnName);
-          }
-        } else {
+        // By default, null value will not be returned.
+        // https://github.com/stargate/data-api/issues/1636 issue for adding nullOption
+        if (columnValue != null) {
           result.put(columnName, codec.toJSON(objectMapper, columnValue));
         }
       } catch (ToJSONCodecException e) {

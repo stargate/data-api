@@ -56,10 +56,6 @@ public record FindCommand(
           @JsonAlias("pagingState") // old name, 1.0.0-BETA-3 and prior
           String pageState,
 
-      // include null values in returned documents
-      @Schema(description = "Include null values in returned documents.", type = SchemaType.BOOLEAN)
-          boolean includeNull,
-
       // include similarity function score
       @Schema(
               description = "Include similarity function score in response.",

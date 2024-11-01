@@ -24,10 +24,6 @@ public record FindOneCommand(
     implements ReadCommand, Filterable, Projectable, Sortable {
   public record Options(
 
-      // include null values in returned documents
-      @Schema(description = "Include null values in returned documents.", type = SchemaType.BOOLEAN)
-          boolean includeNull,
-
       // include similarity function score
       @Schema(
               description = "Include similarity function score in response.",
