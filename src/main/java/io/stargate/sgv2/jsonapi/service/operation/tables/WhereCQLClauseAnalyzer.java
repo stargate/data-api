@@ -222,6 +222,7 @@ public class WhereCQLClauseAnalyzer {
     var filterOnComplexColumns =
         identifierToFilter.keySet().stream()
             .filter(identifier -> !apiTableDef.allColumns().get(identifier).type().isPrimitive())
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
     if (!filterOnComplexColumns.isEmpty()) {
