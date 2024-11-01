@@ -60,11 +60,17 @@ snippets:
     body: |-
       It is safe to retry this request.
 
-  - name: INEFFICIENT_QUERY
+  - name: INEFFICIENT_FILTER
     body: |-
       The query was executed without taking advantage of the primary key or indexes on the table, this can have performance implications on large tables.
       
       See documentation at XXXX for best practices for filtering.
+
+  - name: INEFFICIENT_SORT
+    body: |-
+      The command was executed using in memory sorting rather than taking advantage of the partition sorting on disk. This can have performance implications on large tables.
+      
+      See documentation at XXXX for best practices for sorting.
 
   - name: RESEND_USING_ONLY_DEFINED_COLUMNS
     body: |-
@@ -298,7 +304,7 @@ request-errors:
       And has indexes on the columns: ${indexedColumns}.
       The request filtered on the un-indexed columns: ${unindexedFilters}.
       
-      ${SNIPPET.INEFFICIENT_QUERY}
+      ${SNIPPET.INEFFICIENT_FILTER}
 
   - scope: WARNING
     code: NOT_EQUALS_UNSUPPORTED_BY_INDEXING
@@ -311,7 +317,7 @@ request-errors:
       The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
       The request applied $ne to the columns: ${inefficientFilters}.
       
-      ${SNIPPET.INEFFICIENT_QUERY}
+      ${SNIPPET.INEFFICIENT_FILTER}
 
 
   - scope: WARNING
@@ -325,7 +331,7 @@ request-errors:
       The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
       The request applied $lt, $gt, $lte, $gte to the indexed columns: ${inefficientFilterColumns}.
       
-      ${SNIPPET.INEFFICIENT_QUERY}
+      ${SNIPPET.INEFFICIENT_FILTER}
 
   - scope: WARNING
     code: NOT_IN_FILTER_UNSUPPORTED_BY_INDEXING
@@ -338,7 +344,7 @@ request-errors:
       The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
       The request applied $nin to the indexed columns: ${inefficientFilterColumns}.
       
-      ${SNIPPET.INEFFICIENT_QUERY}
+      ${SNIPPET.INEFFICIENT_FILTER}
 
   - scope: WARNING
     code: ZERO_FILTER_OPERATIONS
@@ -351,7 +357,7 @@ request-errors:
       The table ${keyspace}.${table} has the primary key: ${primaryKey}.
       And has indexes on the columns: ${indexedColumns}.
       
-      ${SNIPPET.INEFFICIENT_QUERY}
+      ${SNIPPET.INEFFICIENT_FILTER}
 
   - scope: WARNING
     code: INCOMPLETE_PRIMARY_KEY_FILTER
@@ -366,7 +372,7 @@ request-errors:
       
       For the best performance, filter on all partition columns and optionally on clustering columns in the order they are specified. 
       
-      ${SNIPPET.INEFFICIENT_QUERY}      
+      ${SNIPPET.INEFFICIENT_FILTER}      
 
   - scope: WARNING
     code: DEPRECATED_COMMAND
@@ -392,7 +398,45 @@ request-errors:
       
       The API appended the CQL optional `ALLOW FILTERING` to the query and retried.
       
-      ${SNIPPET.INEFFICIENT_QUERY}
+      ${SNIPPET.INEFFICIENT_FILTER}
+
+
+  - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_TO_NON_PARTITION_SORTING
+    title: Sorting by non partition sorting columns
+    body: |-
+      The command used columns in the sort clause that are not part of the partition sorting, and so the query was sorted in memory.
+            
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The command sorted on the columns: ${sortColumns}.
+      
+      ${SNIPPET.INEFFICIENT_SORT}
+
+  - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_TO_MISSING_PARTITION_SORTING
+    title: Sorting with missing partition sorting columns
+    body: |-
+      The command used columns in the sort clause that are all part of the partition sorting, however the sort clause was missing some of the partition sorting columns.
+      
+      When sorting by the partition sorting columns, if a column is skipped then all following columns must also be skipped.
+      
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The sort clause skipped a column and then included the columns : ${outOfOrderClusteringKeys}.
+      
+      ${SNIPPET.INEFFICIENT_SORT}
+
+  - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_TO_OUT_OF_ORDER_PARTITION_SORTING
+    title: Sorting on out of order partition sorting columns
+    body: |-
+      The command used columns in the sort clause that are all part of the partition sorting, however the sort clause used a different column order to the partition sorting.
+
+      When sorting by the partition sorting columns, the columns must be in the same order as the partition sorting.
+
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The sort clause used the columns (in order) : ${sortColumns}.
+      
+      ${SNIPPET.INEFFICIENT_SORT}
 
   # ================================================================================================================
   # Family: REQUEST         Scope: SCHEMA

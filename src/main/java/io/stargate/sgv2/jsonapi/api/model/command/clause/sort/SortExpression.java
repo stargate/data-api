@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Objects;
 import javax.annotation.Nullable;
@@ -40,6 +42,10 @@ public record SortExpression(
    */
   public static SortExpression tableVectorSort(String path, float[] vector) {
     return new SortExpression(path, false, vector, null);
+  }
+
+  public CqlIdentifier pathAsCqlIdentifier() {
+    return CqlIdentifierUtil.cqlIdentifierFromUserInput(path);
   }
 
   public boolean isTableVectorSort() {

@@ -5,17 +5,23 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKeyDes
 import java.util.Objects;
 
 public enum ApiClusteringOrder {
-  ASC(ClusteringOrder.ASC),
-  DESC(ClusteringOrder.DESC);
+  ASC(ClusteringOrder.ASC, PrimaryKeyDesc.OrderingKeyDesc.Order.ASC),
+  DESC(ClusteringOrder.DESC, PrimaryKeyDesc.OrderingKeyDesc.Order.DESC);
 
   private ClusteringOrder cqlOrder;
+  private PrimaryKeyDesc.OrderingKeyDesc.Order orderDesc;
 
-  ApiClusteringOrder(ClusteringOrder cqlOrder) {
+  ApiClusteringOrder(ClusteringOrder cqlOrder, PrimaryKeyDesc.OrderingKeyDesc.Order orderDesc) {
     this.cqlOrder = cqlOrder;
+    this.orderDesc = orderDesc;
   }
 
   public ClusteringOrder getCqlOrder() {
     return cqlOrder;
+  }
+
+  public PrimaryKeyDesc.OrderingKeyDesc.Order getOrderDesc() {
+    return orderDesc;
   }
 
   public static ApiClusteringOrder from(ClusteringOrder order) {

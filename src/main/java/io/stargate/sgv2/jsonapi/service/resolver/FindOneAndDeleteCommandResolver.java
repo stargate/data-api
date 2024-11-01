@@ -12,7 +12,6 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
@@ -71,8 +70,7 @@ public class FindOneAndDeleteCommandResolver implements CommandResolver<FindOneA
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> commandContext, FindOneAndDeleteCommand command) {
-    DBLogicalExpression dbLogicalExpression =
-        collectionFilterResolver.resolve(commandContext, command);
+    var dbLogicalExpression = collectionFilterResolver.resolve(commandContext, command).target();
 
     final SortClause sortClause = command.sortClause();
     SchemaValidatable.maybeValidate(commandContext, sortClause);

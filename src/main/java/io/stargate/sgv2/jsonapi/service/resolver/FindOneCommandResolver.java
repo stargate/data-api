@@ -86,7 +86,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     // dbLogicalExpressions, which will map into multiple readAttempts
     var where =
         TableWhereCQLClause.forSelect(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command));
+            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
 
     var attempts = new OperationAttemptContainer<>(builder.build(where));
 
@@ -104,7 +104,8 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, FindOneCommand command) {
 
-    final DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
+    final DBLogicalExpression dbLogicalExpression =
+        collectionFilterResolver.resolve(ctx, command).target();
     final SortClause sortClause = command.sortClause();
     SchemaValidatable.maybeValidate(ctx, sortClause);
 

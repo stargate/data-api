@@ -44,7 +44,7 @@ public class DeleteAttemptBuilder<SchemaT extends TableSchemaObject> {
 
     // TODO: this may be common for creating a read / delete / where attempt will look at how to
     // refactor once all done
-    WhereCQLClauseAnalyzer.WhereClauseAnalysis analyzedResult = null;
+    WhereCQLClauseAnalyzer.WhereClauseWithWarnings analyzedResult = null;
     Exception exception = null;
     try {
       analyzedResult = whereCQLClauseAnalyzer.analyse(whereCQLClause);

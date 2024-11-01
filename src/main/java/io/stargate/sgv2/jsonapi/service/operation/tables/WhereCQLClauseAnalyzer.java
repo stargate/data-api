@@ -11,6 +11,7 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
+import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.InTableFilter;
@@ -120,10 +121,10 @@ public class WhereCQLClauseAnalyzer {
    * warnings where needed.
    *
    * @param whereCQLClause the where clause to analyse
-   * @return A {@link WhereClauseAnalysis} object containing the results of the analysis, including
-   *     whether the query requires ALLOW FILTERING and any warnings generated.
+   * @return A {@link WhereClauseWithWarnings} object containing the results of the analysis,
+   *     including whether the query requires ALLOW FILTERING and any warnings generated.
    */
-  public WhereClauseAnalysis analyse(WhereCQLClause<?> whereCQLClause) {
+  public WhereClauseWithWarnings analyse(WhereCQLClause<?> whereCQLClause) {
 
     Objects.requireNonNull(whereCQLClause, "whereCQLClause cannot be null");
 
@@ -145,7 +146,7 @@ public class WhereCQLClauseAnalyzer {
     strategy.warningCheckRules.forEach(
         warningRule -> warningRule.apply(identifierToFilter).ifPresent(warnings::add));
 
-    return new WhereClauseAnalysis(!warnings.isEmpty(), warnings);
+    return new WhereClauseWithWarnings(whereCQLClause, warnings, !warnings.isEmpty());
   }
 
   /**
@@ -626,28 +627,33 @@ public class WhereCQLClauseAnalyzer {
         .toList();
   }
 
-  /**
-   * The result of the where clause analysis.
-   *
-   * @param requiresAllowFiltering TRUE if the query requires ALLOW FILTERING, FALSE otherwise.
-   * @param warningExceptions List of warning exceptions that should be outputted with the query,
-   *     NOTE there may be warnings without needing ALLOW FILTERING.
-   */
-  public record WhereClauseAnalysis(
-      boolean requiresAllowFiltering, List<WarningException> warningExceptions) {
+  /** The result of the where clause analysis. */
+  public static class WhereClauseWithWarnings extends WithWarnings<WhereCQLClause<?>> {
 
-    public WhereClauseAnalysis {
-      warningExceptions =
-          warningExceptions == null ? List.of() : Collections.unmodifiableList(warningExceptions);
+    private final boolean requiresAllowFiltering;
+
+    public WhereClauseWithWarnings(
+        WhereCQLClause<?> target,
+        List<WarningException> warningExceptions,
+        boolean requiresAllowFiltering) {
+      super(target, warningExceptions);
+      this.requiresAllowFiltering = requiresAllowFiltering;
     }
 
-    /**
-     * Helper to check if the analysis is empty
-     *
-     * @return TRUE if allow filtering is not required and there are no warnings, FALSE otherwise.
-     */
-    public boolean isEmpty() {
-      return !requiresAllowFiltering && warningExceptions.isEmpty();
+    public boolean requiresAllowFiltering() {
+      return requiresAllowFiltering;
+    }
+
+    @Override
+    public String toString() {
+      return new StringBuilder()
+          .append("WhereClauseWithWarnings{")
+          .append("requiresAllowFiltering=")
+          .append(requiresAllowFiltering)
+          .append(", warnings=")
+          .append(warnings())
+          .append('}')
+          .toString();
     }
   }
 
