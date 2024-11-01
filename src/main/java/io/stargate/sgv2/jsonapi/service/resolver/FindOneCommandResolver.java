@@ -68,7 +68,11 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
 
     var projection =
         TableRowProjection.fromDefinition(
-            objectMapper, command.tableProjectionDefinition(), ctx.schemaObject());
+            objectMapper,
+            command.tableProjectionDefinition(),
+            ctx.schemaObject(),
+            resolveTableReturnNullOption(command.options()));
+
     var builder =
         new TableReadAttemptBuilder(ctx.schemaObject(), projection, projection)
             .addBuilderOption(CQLOption.ForSelect.limit(1));
@@ -154,5 +158,10 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
           objectMapper,
           includeSortVector);
     }
+  }
+
+  // By default, we return sparse data for table reads, meaning do NOT return null values.
+  private boolean resolveTableReturnNullOption(FindOneCommand.Options options) {
+    return options != null && options.includeNull();
   }
 }

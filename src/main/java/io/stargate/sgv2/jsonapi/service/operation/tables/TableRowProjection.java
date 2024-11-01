@@ -24,7 +24,10 @@ import java.util.Map;
  * projection definitions (expressed in JSON).
  */
 public record TableRowProjection(
-    ObjectMapper objectMapper, TableSchemaObject table, List<ColumnMetadata> columns)
+    ObjectMapper objectMapper,
+    TableSchemaObject table,
+    List<ColumnMetadata> columns,
+    boolean returnNull)
     implements SelectCQLClause, DocumentSourceSupplier {
   /**
    * Factory method for construction projection instance, given a projection definition and table
@@ -33,7 +36,8 @@ public record TableRowProjection(
   public static TableRowProjection fromDefinition(
       ObjectMapper objectMapper,
       TableProjectionDefinition projectionDefinition,
-      TableSchemaObject table) {
+      TableSchemaObject table,
+      boolean returnNull) {
     Map<String, ColumnMetadata> columnsByName = new HashMap<>();
     // TODO: This can also be cached as part of TableSchemaObject than resolving it for every query.
     table
@@ -49,7 +53,7 @@ public record TableRowProjection(
           "did not include any Table columns");
     }
 
-    return new TableRowProjection(objectMapper, table, columns);
+    return new TableRowProjection(objectMapper, table, columns, returnNull);
   }
 
   @Override
@@ -74,10 +78,10 @@ public record TableRowProjection(
       }
       try {
         final Object columnValue = row.getObject(i);
-        // We have a choice here: convert into JSON null (explicit) or drop (save space)?
-        // For now, do former: may change or make configurable later.
         if (columnValue == null) {
-          result.putNull(columnName);
+          if (returnNull) {
+            result.putNull(columnName);
+          }
         } else {
           result.put(columnName, codec.toJSON(objectMapper, columnValue));
         }
