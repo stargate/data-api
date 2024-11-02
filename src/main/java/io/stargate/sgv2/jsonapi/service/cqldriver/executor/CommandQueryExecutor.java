@@ -47,9 +47,10 @@ public class CommandQueryExecutor {
   }
 
   private enum QueryType {
+    CREATE_SCHEMA,
     READ,
-    WRITE,
-    CREATE_SCHEMA;
+    TRUNCATE,
+    WRITE;
 
     final String profileSuffix;
 
@@ -119,6 +120,13 @@ public class CommandQueryExecutor {
   }
 
   public Uni<AsyncResultSet> executeWrite(SimpleStatement statement) {
+    Objects.requireNonNull(statement, "statement must not be null");
+
+    statement = withExecutionProfile(statement, QueryType.WRITE);
+    return executeAndWrap(statement);
+  }
+
+  public Uni<AsyncResultSet> executeTruncate(SimpleStatement statement) {
     Objects.requireNonNull(statement, "statement must not be null");
 
     statement = withExecutionProfile(statement, QueryType.WRITE);

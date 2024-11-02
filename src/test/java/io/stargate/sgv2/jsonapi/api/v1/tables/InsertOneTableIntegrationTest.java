@@ -507,19 +507,21 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     void insertValidDateTimeValues() {
       // NOTE: While `CqlDuration.from()` accepts both ISO-8601 "P"-notation (like "PT2H45M")
       //   and Cassandra's standard compact/readable notation (like "2h45m"),
-      //   `CqlDuration.toString()` returns canonical representation so we use the latter here
-      //   to verify round-tripping
-      final String docJSON =
+      //   Output value will be ISO-8601 duration ("P"-notation)
+      final String inputJSON =
           datetimeDoc(
               "datetimeValid", "2024-09-24", "2h45m", "12:45:01.005", "2024-09-24T14:06:59Z");
+      final String outputJSON =
+          datetimeDoc(
+              "datetimeValid", "2024-09-24", "PT2H45M", "12:45:01.005", "2024-09-24T14:06:59Z");
       assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
           .templated()
-          .insertOne(docJSON)
+          .insertOne(inputJSON)
           .wasSuccessful();
       assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"datetimeValid\" } }")
           .wasSuccessful()
-          .hasJSONField("data.document", docJSON);
+          .hasJSONField("data.document", outputJSON);
     }
 
     @Test

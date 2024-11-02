@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.RowsContainer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.SortedRowsContainer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
@@ -32,7 +33,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
   private final SelectCQLClause selectCQLClause;
   private final DocumentSourceSupplier documentSourceSupplier;
   private final WhereCQLClauseAnalyzer whereCQLClauseAnalyzer;
-  private final OrderByCqlClause orderByCqlClause;
+  private final WithWarnings<OrderByCqlClause> orderByCqlClause;
 
   private CqlPagingState pagingState = CqlPagingState.EMPTY;
   private final TableInMemorySortClause tableInmemorySortClause;
@@ -43,7 +44,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
       TableSchemaObject tableSchemaObject,
       SelectCQLClause selectCQLClause,
       DocumentSourceSupplier documentSourceSupplier,
-      OrderByCqlClause orderByCqlClause,
+      WithWarnings<OrderByCqlClause> orderByCqlClause,
       TableInMemorySortClause tableInmemorySortClause,
       InMemorySortOption inMemorySortOption) {
 
@@ -77,16 +78,16 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
 
     readPosition += 1;
 
-    WhereCQLClauseAnalyzer.WhereClauseAnalysis analyzedResult = null;
+    WhereCQLClauseAnalyzer.WhereClauseWithWarnings whereClauseWithWarnings = null;
     Exception exception = null;
     try {
-      analyzedResult = whereCQLClauseAnalyzer.analyse(whereCQLClause);
+      whereClauseWithWarnings = whereCQLClauseAnalyzer.analyse(whereCQLClause);
     } catch (FilterException filterException) {
       exception = filterException;
     }
 
     var atttemptCqlOptions = cqlOptions;
-    if (analyzedResult != null && analyzedResult.requiresAllowFiltering()) {
+    if (whereClauseWithWarnings != null && whereClauseWithWarnings.requiresAllowFiltering()) {
       // Create a copy of cqlOptions, so we do not impact other attempts
       atttemptCqlOptions = new CqlOptions<>(atttemptCqlOptions);
       atttemptCqlOptions.addBuilderOption(CQLOption.ForSelect.allowFiltering());
@@ -102,7 +103,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
             tableSchemaObject,
             selectCQLClause,
             whereCQLClause,
-            orderByCqlClause,
+            orderByCqlClause.target(),
             atttemptCqlOptions,
             pagingState,
             documentSourceSupplier,
@@ -111,24 +112,25 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
     // ok to pass null exception, will be ignored
     tableReadAttempt.maybeAddFailure(exception);
 
-    if (analyzedResult != null) {
+    if (whereClauseWithWarnings != null) {
       if (LOGGER.isDebugEnabled()) {
-        if (analyzedResult.requiresAllowFiltering()) {
+        if (whereClauseWithWarnings.requiresAllowFiltering()) {
           LOGGER.debug(
               "build() - enabled ALLOW FILTERING for attempt {}",
               tableReadAttempt.positionAndAttemptId());
         }
-        if (!analyzedResult.warningExceptions().isEmpty()) {
+        if (!whereClauseWithWarnings.isEmpty()) {
           LOGGER.debug(
               "build() - adding warnings for attempt {}, warnings={}",
               tableReadAttempt.positionAndAttemptId(),
-              analyzedResult.warningExceptions());
+              whereClauseWithWarnings.warnings());
         }
       }
 
-      analyzedResult.warningExceptions().forEach(tableReadAttempt::addWarning);
+      whereClauseWithWarnings.accept(tableReadAttempt);
     }
 
+    orderByCqlClause.accept(tableReadAttempt);
     return tableReadAttempt;
   }
 }

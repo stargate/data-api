@@ -21,7 +21,6 @@ public class TableANNOrderByCQlClause implements OrderByCqlClause {
   public TableANNOrderByCQlClause(ApiColumnDef apiColumnDef, CqlVector<Float> vector) {
     this.apiColumnDef = Objects.requireNonNull(apiColumnDef, "apiColumnDef must not be null");
     this.vector = Objects.requireNonNull(vector, "vector must not be null");
-    ;
 
     // sanity check
     if (apiColumnDef.type().typeName() != ApiTypeName.VECTOR) {
@@ -33,5 +32,10 @@ public class TableANNOrderByCQlClause implements OrderByCqlClause {
   @Override
   public Select apply(Select select) {
     return select.orderByAnnOf(apiColumnDef.name(), vector);
+  }
+
+  @Override
+  public boolean inMemorySortNeeded() {
+    return false;
   }
 }

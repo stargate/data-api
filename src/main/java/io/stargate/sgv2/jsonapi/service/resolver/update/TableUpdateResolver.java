@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
+import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.DefaultUpdateValuesCQLClause;
@@ -54,7 +55,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
   }
 
   @Override
-  public UpdateValuesCQLClause resolve(
+  public WithWarnings<UpdateValuesCQLClause> resolve(
       CommandContext<TableSchemaObject> commandContext, CmdT command) {
 
     var updateClause = command.updateClause();
@@ -99,7 +100,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
     // Analyze table update columnAssignments before create CQLClause
     new TableUpdateAnalyzer(commandContext.schemaObject()).analyze(assignments);
 
-    return new DefaultUpdateValuesCQLClause(assignments);
+    return WithWarnings.of(new DefaultUpdateValuesCQLClause(assignments));
   }
 
   /**

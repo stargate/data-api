@@ -23,7 +23,8 @@ public class ApiTableDef {
   private final CqlIdentifier name;
   private final ApiColumnDefContainer primaryKeys;
   private final ApiColumnDefContainer partitionkeys;
-  private final List<ApiClusteringDef> clusteringkeys;
+  private final List<ApiClusteringDef> clusteringDefs;
+  private final ApiColumnDefContainer clusteringKeys;
   private final ApiColumnDefContainer allColumns;
   private final ApiColumnDefContainer nonPKColumns;
   private final ApiColumnDefContainer unsupportedColumns;
@@ -32,13 +33,15 @@ public class ApiTableDef {
       CqlIdentifier name,
       ApiColumnDefContainer primaryKeys,
       ApiColumnDefContainer partitionkeys,
-      List<ApiClusteringDef> clusteringkeys,
+      List<ApiClusteringDef> clusteringDefs,
       ApiColumnDefContainer allColumns) {
 
     this.name = name;
     this.primaryKeys = primaryKeys.toUnmodifiable();
     this.partitionkeys = partitionkeys.toUnmodifiable();
-    this.clusteringkeys = Collections.unmodifiableList(clusteringkeys);
+    this.clusteringDefs = Collections.unmodifiableList(clusteringDefs);
+    this.clusteringKeys =
+        ApiColumnDefContainer.of(clusteringDefs.stream().map(ApiClusteringDef::columnDef).toList());
     this.allColumns = allColumns.toUnmodifiable();
 
     var workingNonPKColumns = new ApiColumnDefContainer(allColumns().size() - primaryKeys.size());
@@ -60,7 +63,7 @@ public class ApiTableDef {
 
     var partitionKeys = partitionkeys.values().stream().map(ApiColumnDef::name).toList();
     var orderingKeys =
-        clusteringkeys.stream()
+        clusteringDefs.stream()
             .map(
                 clusteringDef ->
                     PrimaryKeyDesc.OrderingKeyDesc.from(
@@ -89,8 +92,12 @@ public class ApiTableDef {
     return partitionkeys;
   }
 
-  public List<ApiClusteringDef> clusteringKeys() {
-    return clusteringkeys;
+  public List<ApiClusteringDef> clusteringDefs() {
+    return clusteringDefs;
+  }
+
+  public ApiColumnDefContainer clusteringKeys() {
+    return clusteringKeys;
   }
 
   public ApiColumnDefContainer allColumns() {

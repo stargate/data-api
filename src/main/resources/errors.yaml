@@ -60,11 +60,17 @@ snippets:
     body: |-
       It is safe to retry this request.
 
-  - name: INEFFICIENT_QUERY
+  - name: INEFFICIENT_FILTER
     body: |-
       The query was executed without taking advantage of the primary key or indexes on the table, this can have performance implications on large tables.
       
       See documentation at XXXX for best practices for filtering.
+
+  - name: INEFFICIENT_SORT
+    body: |-
+      The command was executed using in memory sorting rather than taking advantage of the partition sorting on disk. This can have performance implications on large tables.
+      
+      See documentation at XXXX for best practices for sorting.
 
   - name: RESEND_USING_ONLY_DEFINED_COLUMNS
     body: |-
@@ -197,15 +203,17 @@ request-errors:
 
   - scope: FILTER
     code: FILTER_REQUIRED_FOR_UPDATE_DELETE
-    title: A filter is required for Update and Delete commands
+    title: A filter is required for Update and DeleteOne commands
     body: |-
-      An Update or Delete command was issued without a filter.
+      An Update or DeleteOne command was issued without a filter.
       
       These commands require a valid filter that identifies a either a single row (for Update and to Delete one row) or a partition and a sequence or rows (for Delete many). 
 
       The table ${keyspace}.${table} defines the primaryKeys: ${primaryKeyColumns}.
       
       Resend the request with an updated filter.
+      
+      Note, DeleteMany without a filter truncates the table.
 
   - scope: FILTER
     code: NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE
@@ -296,7 +304,7 @@ request-errors:
       And has indexes on the columns: ${indexedColumns}.
       The request filtered on the un-indexed columns: ${unindexedFilters}.
       
-      ${SNIPPET.INEFFICIENT_QUERY}
+      ${SNIPPET.INEFFICIENT_FILTER}
 
   - scope: WARNING
     code: NOT_EQUALS_UNSUPPORTED_BY_INDEXING
@@ -309,7 +317,7 @@ request-errors:
       The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
       The request applied $ne to the columns: ${inefficientFilters}.
       
-      ${SNIPPET.INEFFICIENT_QUERY}
+      ${SNIPPET.INEFFICIENT_FILTER}
 
 
   - scope: WARNING
@@ -323,7 +331,20 @@ request-errors:
       The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
       The request applied $lt, $gt, $lte, $gte to the indexed columns: ${inefficientFilterColumns}.
       
-      ${SNIPPET.INEFFICIENT_QUERY}
+      ${SNIPPET.INEFFICIENT_FILTER}
+
+  - scope: WARNING
+    code: NOT_IN_FILTER_UNSUPPORTED_BY_INDEXING
+    title: Use of $nin on indexed columns
+    body: |-
+      The filter uses $nin on columns that, while indexed, are still inefficient to filter on.  
+      
+      Filtering using $nin on columns of type ${inefficientDataTypes} is inefficient, even when the columns are indexed.
+      
+      The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
+      The request applied $nin to the indexed columns: ${inefficientFilterColumns}.
+      
+      ${SNIPPET.INEFFICIENT_FILTER}
 
   - scope: WARNING
     code: ZERO_FILTER_OPERATIONS
@@ -336,7 +357,7 @@ request-errors:
       The table ${keyspace}.${table} has the primary key: ${primaryKey}.
       And has indexes on the columns: ${indexedColumns}.
       
-      ${SNIPPET.INEFFICIENT_QUERY}
+      ${SNIPPET.INEFFICIENT_FILTER}
 
   - scope: WARNING
     code: INCOMPLETE_PRIMARY_KEY_FILTER
@@ -351,7 +372,7 @@ request-errors:
       
       For the best performance, filter on all partition columns and optionally on clustering columns in the order they are specified. 
       
-      ${SNIPPET.INEFFICIENT_QUERY}      
+      ${SNIPPET.INEFFICIENT_FILTER}      
 
   - scope: WARNING
     code: DEPRECATED_COMMAND
@@ -377,7 +398,45 @@ request-errors:
       
       The API appended the CQL optional `ALLOW FILTERING` to the query and retried.
       
-      ${SNIPPET.INEFFICIENT_QUERY}
+      ${SNIPPET.INEFFICIENT_FILTER}
+
+
+  - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_TO_NON_PARTITION_SORTING
+    title: Sorting by non partition sorting columns
+    body: |-
+      The command used columns in the sort clause that are not part of the partition sorting, and so the query was sorted in memory.
+            
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The command sorted on the columns: ${sortColumns}.
+      
+      ${SNIPPET.INEFFICIENT_SORT}
+
+  - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_TO_MISSING_PARTITION_SORTING
+    title: Sorting with missing partition sorting columns
+    body: |-
+      The command used columns in the sort clause that are all part of the partition sorting, however the sort clause was missing some of the partition sorting columns.
+      
+      When sorting by the partition sorting columns, if a column is skipped then all following columns must also be skipped.
+      
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The sort clause skipped a column and then included the columns : ${outOfOrderClusteringKeys}.
+      
+      ${SNIPPET.INEFFICIENT_SORT}
+
+  - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_TO_OUT_OF_ORDER_PARTITION_SORTING
+    title: Sorting on out of order partition sorting columns
+    body: |-
+      The command used columns in the sort clause that are all part of the partition sorting, however the sort clause used a different column order to the partition sorting.
+
+      When sorting by the partition sorting columns, the columns must be in the same order as the partition sorting.
+
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The sort clause used the columns (in order) : ${sortColumns}.
+      
+      ${SNIPPET.INEFFICIENT_SORT}
 
   # ================================================================================================================
   # Family: REQUEST         Scope: SCHEMA
@@ -685,7 +744,7 @@ request-errors:
     code: CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS
     title: Vector sort requested for non-vector columns
     body: |-
-      The command attemtped to vector sort columns that are not of vector type. 
+      The command attempted to vector sort columns that are not of vector type. 
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
@@ -693,6 +752,38 @@ request-errors:
       The command attempted to sort the non vector columns: ${sortColumns}.  
       
       Resend the command using only vector columns for vector sorting.
+
+  - scope: SORT
+    code: CANNOT_VECTOR_SORT_NON_INDEXED_VECTOR_COLUMNS
+    title: Vector sort requested for vector columns that are not indexed
+    body: |-
+      The command attempted to vector sort vector columns that are not indexed.
+      
+      Vector sorting is only supported on vector columns that have been indexed.
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
+      And has indexes on the vector columns: ${indexedColumns}.
+      The command attempted to sort vector columns: ${sortColumns}.  
+      
+      Resend the command using only vector columns that have been indexed.
+
+  - scope: SORT
+    code: CANNOT_MIX_VECTOR_AND_NON_VECTOR_SORT
+    title: Vector sort requested for vector column and non vector columns
+    body: |-
+      The command attempted to vector sort vector columns and other non vector columns.
+      
+      Vector sorts must use a single vector column, and cannot include any other sort columns.
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
+      The command attempted to sort the vector columns: ${sortVectorColumns}.
+      The command attempted to sort the non-vector columns: ${sortNonVectorColumns}.
+      
+      Resend the command using only vector columns that have been indexed.
 
 # ================================================================================================================
 # ================================================================================================================

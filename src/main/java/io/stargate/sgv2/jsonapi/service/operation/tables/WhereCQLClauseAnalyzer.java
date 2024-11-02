@@ -11,8 +11,10 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
+import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.InTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
@@ -56,6 +58,7 @@ public class WhereCQLClauseAnalyzer {
                     analyzer::warnMissingIndexOnScalar,
                     analyzer::warnNotEqUnsupportedByIndexing,
                     analyzer::warnComparisonUnsupportedByIndexing,
+                    analyzer::warnNotInUnsupportedByIndexing,
                     analyzer::warnNoFilters,
                     analyzer::warnPkNotFullySpecified));
         case DELETE_ONE, UPDATE ->
@@ -94,6 +97,11 @@ public class WhereCQLClauseAnalyzer {
   private static final Set<DataType> ALLOW_FILTERING_NEEDED_FOR_COMPARISON =
       Set.of(DataTypes.TEXT, DataTypes.ASCII, DataTypes.BOOLEAN, DataTypes.UUID);
 
+  // Datatypes that need ALLOW FILTERING even when there is a SAI on the column when NOT IN is
+  // used
+  private static final Set<DataType> ALLOW_FILTERING_NEEDED_FOR_NOT_IN =
+      Set.of(DataTypes.TEXT, DataTypes.ASCII, DataTypes.BOOLEAN, DataTypes.UUID);
+
   private final TableBasedSchemaObject tableSchemaObject;
   private final TableMetadata tableMetadata;
   private final ApiTableDef apiTableDef;
@@ -113,10 +121,10 @@ public class WhereCQLClauseAnalyzer {
    * warnings where needed.
    *
    * @param whereCQLClause the where clause to analyse
-   * @return A {@link WhereClauseAnalysis} object containing the results of the analysis, including
-   *     whether the query requires ALLOW FILTERING and any warnings generated.
+   * @return A {@link WhereClauseWithWarnings} object containing the results of the analysis,
+   *     including whether the query requires ALLOW FILTERING and any warnings generated.
    */
-  public WhereClauseAnalysis analyse(WhereCQLClause<?> whereCQLClause) {
+  public WhereClauseWithWarnings analyse(WhereCQLClause<?> whereCQLClause) {
 
     Objects.requireNonNull(whereCQLClause, "whereCQLClause cannot be null");
 
@@ -138,7 +146,7 @@ public class WhereCQLClauseAnalyzer {
     strategy.warningCheckRules.forEach(
         warningRule -> warningRule.apply(identifierToFilter).ifPresent(warnings::add));
 
-    return new WhereClauseAnalysis(!warnings.isEmpty(), warnings);
+    return new WhereClauseWithWarnings(whereCQLClause, warnings, !warnings.isEmpty());
   }
 
   /**
@@ -454,6 +462,60 @@ public class WhereCQLClauseAnalyzer {
                 })));
   }
 
+  /**
+   * Warn if a filter is on a column that, while it has an index still needs ALLOW FILTERING because
+   * NOT IN operator is used.
+   *
+   * <p>E.G. [perform $nin against a TEXT column 'name' that has SAI index on it] <br>
+   * Error from Driver: "Column 'name' has an index but does not support the operators specified in
+   * the query. If you want to execute this query despite the performance unpredictability, use
+   * ALLOW FILTERING" <br>
+   * NOTE, TIMEUUID column does not have above constraint.
+   */
+  private Optional<WarningException> warnNotInUnsupportedByIndexing(
+      Map<CqlIdentifier, TableFilter> identifierToFilter) {
+
+    var inefficientFilters =
+        identifierToFilter.entrySet().stream()
+            .filter(
+                entry -> {
+                  TableFilter tableFilter = entry.getValue();
+                  return (tableFilter instanceof InTableFilter inTableFilter
+                      && inTableFilter.operator == InTableFilter.Operator.NIN
+                      && isIndexOnColumn(entry.getKey()));
+                })
+            .map(Map.Entry::getKey)
+            .filter(
+                column ->
+                    ALLOW_FILTERING_NEEDED_FOR_NOT_IN.contains(
+                        tableMetadata.getColumns().get(column).getType()))
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
+            .toList();
+
+    if (inefficientFilters.isEmpty()) {
+      return Optional.empty();
+    }
+
+    var inefficientDataTypes =
+        ALLOW_FILTERING_NEEDED_FOR_NOT_IN.stream().map(DataType::toString).toList();
+
+    var inefficientColumns =
+        tableMetadata.getColumns().values().stream()
+            .filter(column -> ALLOW_FILTERING_NEEDED_FOR_NOT_IN.contains(column.getType()))
+            .sorted(COLUMN_METADATA_COMPARATOR)
+            .toList();
+
+    return Optional.of(
+        WarningException.Code.NOT_IN_FILTER_UNSUPPORTED_BY_INDEXING.get(
+            errVars(
+                tableSchemaObject,
+                map -> {
+                  map.put("inefficientDataTypes", errFmtJoin(inefficientDataTypes));
+                  map.put("inefficientColumns", errFmtColumnMetadata(inefficientColumns));
+                  map.put("inefficientFilterColumns", errFmtCqlIdentifier(inefficientFilters));
+                })));
+  }
+
   private Optional<WarningException> warnNoFilters(
       Map<CqlIdentifier, TableFilter> identifierToFilter) {
 
@@ -565,28 +627,33 @@ public class WhereCQLClauseAnalyzer {
         .toList();
   }
 
-  /**
-   * The result of the where clause analysis.
-   *
-   * @param requiresAllowFiltering TRUE if the query requires ALLOW FILTERING, FALSE otherwise.
-   * @param warningExceptions List of warning exceptions that should be outputted with the query,
-   *     NOTE there may be warnings without needing ALLOW FILTERING.
-   */
-  public record WhereClauseAnalysis(
-      boolean requiresAllowFiltering, List<WarningException> warningExceptions) {
+  /** The result of the where clause analysis. */
+  public static class WhereClauseWithWarnings extends WithWarnings<WhereCQLClause<?>> {
 
-    public WhereClauseAnalysis {
-      warningExceptions =
-          warningExceptions == null ? List.of() : Collections.unmodifiableList(warningExceptions);
+    private final boolean requiresAllowFiltering;
+
+    public WhereClauseWithWarnings(
+        WhereCQLClause<?> target,
+        List<WarningException> warningExceptions,
+        boolean requiresAllowFiltering) {
+      super(target, warningExceptions);
+      this.requiresAllowFiltering = requiresAllowFiltering;
     }
 
-    /**
-     * Helper to check if the analysis is empty
-     *
-     * @return TRUE if allow filtering is not required and there are no warnings, FALSE otherwise.
-     */
-    public boolean isEmpty() {
-      return !requiresAllowFiltering && warningExceptions.isEmpty();
+    public boolean requiresAllowFiltering() {
+      return requiresAllowFiltering;
+    }
+
+    @Override
+    public String toString() {
+      return new StringBuilder()
+          .append("WhereClauseWithWarnings{")
+          .append("requiresAllowFiltering=")
+          .append(requiresAllowFiltering)
+          .append(", warnings=")
+          .append(warnings())
+          .append('}')
+          .toString();
     }
   }
 

@@ -59,15 +59,28 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         }
         if (!inner.getValue().isArray()) {
           throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
-        }
+        } else {
+          ArrayNode arrayNode = (ArrayNode) inner.getValue();
+          float[] arrayVals = new float[arrayNode.size()];
+          if (arrayNode.size() == 0) {
+            throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+          }
+          for (int i = 0; i < arrayNode.size(); i++) {
+            JsonNode element = arrayNode.get(i);
+            if (!element.isNumber()) {
+              throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
+            }
+            arrayVals[i] = element.floatValue();
+          }
 
-        SortExpression exp =
-            SortExpression.vsearch(arrayNodeToVector((ArrayNode) inner.getValue()));
-        sortExpressions.clear();
-        sortExpressions.add(exp);
-        // TODO: aaron 17-oct-2024 - this break seems unneeded as above it checks if there is only 1
-        // field, leaving for now
-        break;
+          SortExpression exp = SortExpression.vsearch(arrayVals);
+          sortExpressions.clear();
+          sortExpressions.add(exp);
+          // TODO: aaron 17-oct-2024 - this break seems unneeded as above it checks if there is only
+          // 1
+          // field, leaving for now
+          break;
+        }
 
       } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
         // Vector search can't be used with other sort clause
@@ -88,7 +101,14 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         // TODO: aaron 17-oct-2024 - this break seems unneeded as above it checks if there is only 1
         // field, leaving for now
         break;
-
+      } else if (inner.getValue().isArray()) {
+        // TODO: HACK: quick support for tables, if the value is an array we will assume the column
+        // is a vector then need to check on table pathway that the sort is correct.
+        // NOTE: does not check if there are more than one sort expression, the
+        // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
+        // this is also why we do not break the look here
+        sortExpressions.add(
+            SortExpression.tableVectorSort(path, arrayNodeToVector((ArrayNode) inner.getValue())));
       } else {
         if (path.isBlank()) {
           throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
@@ -100,16 +120,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
               "sort clause path ('%s') contains character(s) not allowed", path);
         }
 
-        // TODO: HACK: quick support for tables, if the value is an array we will assume the column
-        // is a vector then need to check on table pathway that the sort is correct.
-        // the code above checks for $vector and $vectorize
-        if (inner.getValue().isArray()) {
-          sortExpressions.add(
-              SortExpression.tableVectorSort(
-                  path, arrayNodeToVector((ArrayNode) inner.getValue())));
-          continue;
-
-        } else if (!inner.getValue().isInt()
+        if (!inner.getValue().isInt()
             || !(inner.getValue().intValue() == 1 || inner.getValue().intValue() == -1)) {
           throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
               "Sort ordering value can only be `1` for ascending or `-1` for descending (not `%s`)",

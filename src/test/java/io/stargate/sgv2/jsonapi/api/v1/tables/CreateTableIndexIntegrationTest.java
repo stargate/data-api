@@ -7,12 +7,9 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
-import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.*;
 
@@ -279,7 +276,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                             "definition": {
                                               "column": "vector_type_2",
                                               "options": {
-                                                "sourceModel": "openai_v3_small"
+                                                "sourceModel": "openai-v3-small"
                                               }
                                             }
                                           }
@@ -316,7 +313,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                   "column": "vector_type_4",
                                   "options": {
                                     "metric": "cosine",
-                                    "sourceModel": "openai_v3_small"
+                                    "sourceModel": "openai-v3-small"
                                   }
                                 }
                               }
@@ -403,15 +400,12 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void invalidSourceModel() {
-      List<String> supportedSourceModel =
-          new ArrayList<>(VectorConstants.SUPPORTED_SOURCES.keySet());
-      Collections.sort(supportedSourceModel);
       final SchemaException schemaException =
           SchemaException.Code.INVALID_INDEX_DEFINITION.get(
               Map.of(
                   "reason",
                   "sourceModel `%s` used in request is invalid. Supported source models are: %s"
-                      .formatted("invalid_source_model", supportedSourceModel)));
+                      .formatted("invalid_source_model", SourceModel.getAllSourceModelNames())));
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCreateVectorIndex(
               """

@@ -20,6 +20,9 @@ import org.slf4j.LoggerFactory;
 public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColumnDef> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ApiColumnDefContainer.class);
 
+  private static final ApiColumnDefContainer IMMUTABLE_EMPTY =
+      new ApiColumnDefContainer(0).toUnmodifiable();
+
   public static final CqlColumnFactory FROM_CQL_FACTORY = new CqlColumnFactory();
   public static final ColumnDescFactory FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
 
@@ -44,6 +47,35 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     columnDefs.forEach(this::put);
   }
 
+  public static ApiColumnDefContainer of(ApiColumnDefContainer container) {
+    return new ApiColumnDefContainer(container).toUnmodifiable();
+  }
+
+  public static ApiColumnDefContainer of(List<ApiColumnDef> columnDefs) {
+    return new ApiColumnDefContainer(columnDefs).toUnmodifiable();
+  }
+
+  public static ApiColumnDefContainer of() {
+    return IMMUTABLE_EMPTY;
+  }
+
+  public static ApiColumnDefContainer of(ApiColumnDef col1) {
+    return new ApiColumnDefContainer(List.of(col1)).toUnmodifiable();
+  }
+
+  public static ApiColumnDefContainer of(ApiColumnDef col1, ApiColumnDef col2) {
+    return new ApiColumnDefContainer(List.of(col1, col2)).toUnmodifiable();
+  }
+
+  public static ApiColumnDefContainer of(ApiColumnDef col1, ApiColumnDef col2, ApiColumnDef col3) {
+    return new ApiColumnDefContainer(List.of(col1, col2, col3)).toUnmodifiable();
+  }
+
+  public static ApiColumnDefContainer of(
+      ApiColumnDef col1, ApiColumnDef col2, ApiColumnDef col3, ApiColumnDef col4) {
+    return new ApiColumnDefContainer(List.of(col1, col2, col3, col4)).toUnmodifiable();
+  }
+
   public ApiColumnDefContainer toUnmodifiable() {
     return this instanceof UnmodifiableApiColumnDefContainer
         ? this
@@ -58,6 +90,10 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
   public boolean contains(ApiColumnDef columnDef) {
     Objects.requireNonNull(columnDef, "columnDef cannot be null");
     return containsKey(columnDef.name());
+  }
+
+  public List<CqlIdentifier> identifiers() {
+    return keySet().stream().toList();
   }
 
   public List<ApiColumnDef> filterByTypeToList(ApiTypeName type) {
@@ -91,7 +127,7 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
                 columnDef -> ((ApiVectorType) columnDef.type()).getVectorizeDefinition()));
   }
 
-  public ColumnsDescContainer toColumnsDef() {
+  public ColumnsDescContainer toColumnsDesc() {
     ColumnsDescContainer columnsDesc = new ColumnsDescContainer(size());
     forEach((name, columnDef) -> columnsDesc.put(name, columnDef.type().columnDesc()));
     return columnsDesc;

@@ -35,6 +35,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
@@ -89,6 +90,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
                             DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                             -1,
                             SimilarityFunction.COSINE,
+                            SourceModel.OTHER,
                             null))),
                 null),
             null,
