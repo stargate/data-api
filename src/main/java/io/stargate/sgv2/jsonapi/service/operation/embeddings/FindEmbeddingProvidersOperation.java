@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
  * Operation that list all available and enabled vector providers into the {@link
  * CommandStatus#EXISTING_VECTOR_PROVIDERS} command status.
  */
-public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
-    implements Operation {
+public record FindEmbeddingProvidersOperation(
+    EmbeddingProvidersConfig config, boolean returnDeprecatedModels) implements Operation {
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
@@ -29,7 +29,9 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
                       .collect(
                           Collectors.toMap(
                               Map.Entry::getKey,
-                              entry -> EmbeddingProviderResponse.provider(entry.getValue())));
+                              entry ->
+                                  EmbeddingProviderResponse.provider(
+                                      entry.getValue(), returnDeprecatedModels)));
               return new Result(embeddingProviders);
             });
   }
@@ -57,7 +59,7 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
    * @param parameters Customizable parameters for the provider's service.
    * @param models Model configurations available from the provider.
    */
-  private record EmbeddingProviderResponse(
+  protected record EmbeddingProviderResponse(
       String displayName,
       Optional<String> url,
       Map<
@@ -67,10 +69,16 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
       List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
       List<ModelConfigResponse> models) {
     private static EmbeddingProviderResponse provider(
-        EmbeddingProvidersConfig.EmbeddingProviderConfig embeddingProviderConfig) {
+        EmbeddingProvidersConfig.EmbeddingProviderConfig embeddingProviderConfig,
+        boolean returnDeprecatedModels) {
       ArrayList<ModelConfigResponse> modelsRemoveProperties = new ArrayList<>();
       for (EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model :
           embeddingProviderConfig.models()) {
+        if (!returnDeprecatedModels) {
+          if (model.deprecated().isPresent() && model.deprecated().get()) {
+            continue;
+          }
+        }
         ModelConfigResponse returnModel =
             ModelConfigResponse.returnModelConfigResponse(
                 model.name(), model.vectorDimension(), model.parameters());
@@ -94,7 +102,7 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
    * @param vectorDimension vector dimension of the model.
    * @param parameters Parameters for customizing the model.
    */
-  private record ModelConfigResponse(
+  protected record ModelConfigResponse(
       String name, Optional<Integer> vectorDimension, List<ParameterConfigResponse> parameters) {
     private static ModelConfigResponse returnModelConfigResponse(
         String name,
