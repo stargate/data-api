@@ -97,7 +97,9 @@ public class TableSortClauseResolver<CmdT extends Command & Sortable>
                     map.put(
                         "partitionSorting",
                         errFmtApiColumnDef(apiTableDef.clusteringKeys().values()));
-                    map.put("sortColumns", errFmtCqlIdentifier(sortColumns)); // want all columns not just non cluster
+                    map.put(
+                        "sortColumns",
+                        errFmtCqlIdentifier(sortColumns)); // want all columns not just non cluster
                   }));
 
       return WithWarnings.of(OrderByCqlClause.NO_OP, warn);
