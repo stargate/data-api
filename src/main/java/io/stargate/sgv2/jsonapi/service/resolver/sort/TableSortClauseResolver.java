@@ -97,7 +97,7 @@ public class TableSortClauseResolver<CmdT extends Command & Sortable>
                     map.put(
                         "partitionSorting",
                         errFmtApiColumnDef(apiTableDef.clusteringKeys().values()));
-                    map.put("sortColumns", errFmtCqlIdentifier(nonClusteringKeySorts));
+                    map.put("sortColumns", errFmtCqlIdentifier(sortColumns)); // want all columns not just non cluster
                   }));
 
       return WithWarnings.of(OrderByCqlClause.NO_OP, warn);
@@ -251,6 +251,7 @@ public class TableSortClauseResolver<CmdT extends Command & Sortable>
             .filter(
                 sortIdentifier ->
                     !tableSchemaObject.apiTableDef().allColumns().containsKey(sortIdentifier))
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
     if (!unknownColumns.isEmpty()) {
