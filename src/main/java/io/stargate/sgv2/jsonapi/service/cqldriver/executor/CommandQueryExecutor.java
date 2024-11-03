@@ -8,9 +8,8 @@ import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.service.cqldriver.AllRowsAsyncResultSet;
+import io.stargate.sgv2.jsonapi.service.cqldriver.AccumulatingAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.RowsContainer;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Objects;
 import java.util.Optional;
@@ -81,42 +80,49 @@ public class CommandQueryExecutor {
   }
 
   /**
-   * Query executor to do paginated read. It will keep fetching pages until there are no more
+   * Query executor to read all the pages that satisfy the query, it will keep fetching pages until
+   * there are no more.
+   *
+   * <p>It needs to do this without blocking on the reactive thread.
    *
    * @param statement The statement to execute.
-   * @param rowsContainer The container to hold the rows.
+   * @param rowAccumulator The accumulator to hold the rows that are read as we go through the
+   *     pages. The accumulator can keep them all or discard some / all as they are read.
    */
   public Uni<AsyncResultSet> executeReadAllPages(
-      SimpleStatement statement, RowsContainer rowsContainer) {
-    AllRowsAsyncResultSet paginatedRowsAsyncResultSet = new AllRowsAsyncResultSet(rowsContainer);
-
+      SimpleStatement statement, RowAccumulator rowAccumulator) {
     Objects.requireNonNull(statement, "statement must not be null");
+
+    var accumulator = new AccumulatingAsyncResultSet(rowAccumulator);
+
+    // TODO AARON MAHESH can we change the atomic to be of type AccumulatingAsyncResultSet instance
+    // ?
     return Multi.createBy()
         .repeating()
         .uni(
-            () -> new AtomicReference<AsyncResultSet>(null),
+            () -> new AtomicReference<AsyncResultSet>(null), // the state passed to the producer
             stateRef -> {
               Uni<AsyncResultSet> result =
                   stateRef.get() == null
-                      ? executeRead(statement) // First page
+                      ? executeRead(statement) // AsyncResultSet is null so first page
                       : Uni.createFrom()
-                          .completionStage(stateRef.get().fetchNextPage()); // Next page
-              // returning result for looping
+                          .completionStage(stateRef.get().fetchNextPage()); // After first page
+              // returning result for looping, this is remembering the rows as we page through them
               return result
                   .onItem()
                   .invoke(
                       rs -> {
-                        paginatedRowsAsyncResultSet.add(rs);
-                        paginatedRowsAsyncResultSet.addColumDefinitions(rs.getColumnDefinitions());
+                        accumulator.accumulate(rs);
                         stateRef.set(rs);
                       });
             })
-        // Documents read until pageState available, max records read is deleteLimit + 1
+        // Documents read until pageState available, max records read is deleteLimit + 1 TODO
+        // COMMENTS
         .whilst(AsyncPagingIterable::hasMorePages)
         .collect()
         .asList()
         .onItem()
-        .transformToUni(resultSets -> Uni.createFrom().item(paginatedRowsAsyncResultSet));
+        .transformToUni(resultSets -> Uni.createFrom().item(accumulator));
   }
 
   public Uni<AsyncResultSet> executeWrite(SimpleStatement statement) {

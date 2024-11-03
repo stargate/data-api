@@ -5,7 +5,7 @@ import com.datastax.oss.driver.api.querybuilder.schema.Drop;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
-import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
+import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 
 /** Builds a {@link DropTableAttempt}. */
@@ -14,7 +14,7 @@ public class DropTableAttemptBuilder {
   private final KeyspaceSchemaObject schemaObject;
   private final CqlIdentifier name;
   private final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy;
-  private final CqlOptions<Drop> cqlOptions = new CqlOptions<>();
+  private final CQLOptions<Drop> cqlOptions = new CQLOptions<>();
 
   public DropTableAttemptBuilder(
       KeyspaceSchemaObject schemaObject,

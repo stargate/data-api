@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
+import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 
@@ -43,7 +43,7 @@ public class ReadAttemptTestData extends OperationAttemptTestData {
                 testData.selectCQLClause().selectAllFromTable(),
                 testData.whereCQLClause().emptySelect(),
                 OrderByCqlClause.NO_OP,
-                new CqlOptions<>(),
+                new CQLOptions<>(),
                 CqlPagingState.EMPTY,
                 null,
                 resultSet));

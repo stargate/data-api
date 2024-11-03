@@ -52,8 +52,8 @@ public class TableOrderByClusteringCqlClause implements OrderByCqlClause {
   }
 
   @Override
-  public boolean inMemorySortNeeded() {
-    return false;
+  public boolean fullyCoversCommand() {
+    return true;
   }
 
   @Override
