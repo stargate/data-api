@@ -94,6 +94,23 @@ public class SortByClusteringTableIntegrationTest extends AbstractTableIntegrati
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
+  public void sortNonPartitionAndPartition(Command.CommandName commandName) {
+
+    Map<String, Object> sort =
+        ImmutableMap.of(
+            fieldName(ThreeClusteringKeysTableScenario.CLUSTER_COL_1), 1,
+            fieldName(ThreeClusteringKeysTableScenario.OFFSET_COL), 1);
+
+    assertTableCommand(keyspaceName, TABLE_NAME)
+        .templated()
+        .find(commandName, FILTER_ID, null, sort)
+        .hasSingleWarning(
+            WarningException.Code.IN_MEMORY_SORTING_DUE_TO_NON_PARTITION_SORTING,
+            "The command sorted on the columns: %s.".formatted(errFmtJoin(sort.keySet())));
+  }
+
+  @ParameterizedTest
+  @MethodSource("findCommandNames")
   public void sortLastOnlyClusteringFirst(Command.CommandName commandName) {
 
     Map<String, Object> sort =
