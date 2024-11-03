@@ -71,7 +71,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable>
   }
 
   /**
-   * We have atleast one sort expression, and non of them are vector sorts.
+   * We have atleast one sort expression, and none of them are vector sorts.
    *
    * <p>If the sort uses the clustering keys in the correct way according to CQL, then we can use
    * the CQL Order By to push the sorting to the database. See {@link
