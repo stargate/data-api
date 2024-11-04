@@ -7,21 +7,23 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.fixtures.data.DefaultData;
-import io.stargate.sgv2.jsonapi.fixtures.types.ApiDataTypesForTesting;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
- * Creates a table with: - PK of the single field column {@link TestDataScenario#ID_COL} - a column
- * for each scalar type in {@link ApiDataTypesForTesting#ALL_SCALAR_TYPES_FOR_CREATE} - the non PK
- * columns are named with the prefix {@link #COL_NAME_PREFIX} then the data type name - gets data
- * from the {@link DefaultData} class - inserts row with the PK prefix "row" - the row "row-1" (-1)
- * has a value for every column - the row "row-0" and beyond have a null for a single column in each
- * row, one column at a time - call {@link #columnForDatatype(ApiDataType)} to get the column for a
- * specific data type
+ * Creates a table for testing vectors with:
+ *
+ * <ul>
+ *   <li>PK of the single field column {@link TestDataScenario#ID_COL}
+ *   <li>A text column {@link #CONTENT_COL}
+ *   <li>Two vector columns {@link #INDEXED_VECTOR_COL} that is indexed and {@link
+ *       #UNINDEXED_VECTOR_COL} that is not, both have dimension 5
+ *   <li>20 rows with ID "row${number}" where number is 0+ that have a random vector, same in each
+ *       vector col
+ *   <li>One row with a vector all set to 1.0 , that has id row-1, so you can check to get a vector
+ *       that is expected
+ *   <li>The well known vector row availanle in {@link #KNOWN_VECTOR_ROW_JSON}
+ * </ul>
  */
 public class VectorDimension5TableScenario extends TestDataScenario {
 
@@ -51,7 +53,7 @@ public class VectorDimension5TableScenario extends TestDataScenario {
   }
 
   public VectorDimension5TableScenario(String keyspaceName, String tableName) {
-    super(keyspaceName, tableName, ID_COL, createColumns(), new DefaultData());
+    super(keyspaceName, tableName, ID_COL, List.of(), createColumns(), new DefaultData());
   }
 
   private static ApiColumnDefContainer createColumns() {

@@ -47,6 +47,14 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     columnDefs.forEach(this::put);
   }
 
+  public static ApiColumnDefContainer of(ApiColumnDefContainer container) {
+    return new ApiColumnDefContainer(container).toUnmodifiable();
+  }
+
+  public static ApiColumnDefContainer of(List<ApiColumnDef> columnDefs) {
+    return new ApiColumnDefContainer(columnDefs).toUnmodifiable();
+  }
+
   public static ApiColumnDefContainer of() {
     return IMMUTABLE_EMPTY;
   }
@@ -82,6 +90,10 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
   public boolean contains(ApiColumnDef columnDef) {
     Objects.requireNonNull(columnDef, "columnDef cannot be null");
     return containsKey(columnDef.name());
+  }
+
+  public List<CqlIdentifier> identifiers() {
+    return keySet().stream().toList();
   }
 
   public List<ApiColumnDef> filterByTypeToList(ApiTypeName type) {

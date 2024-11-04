@@ -14,7 +14,6 @@ import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -68,9 +67,10 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
 
     var builder = new DeleteAttemptBuilder<>(ctx.schemaObject(), true);
 
+    // need to update so we use WithWarnings correctly
     var where =
         TableWhereCQLClause.forDelete(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command));
+            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
 
     var attempts = new OperationAttemptContainer<>(builder.build(where));
 
@@ -99,8 +99,7 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> commandContext, DeleteOneCommand command) {
 
-    final DBLogicalExpression dbLogicalExpression =
-        collectionFilterResolver.resolve(commandContext, command);
+    var dbLogicalExpression = collectionFilterResolver.resolve(commandContext, command).target();
 
     final SortClause sortClause = command.sortClause();
     SchemaValidatable.maybeValidate(commandContext, sortClause);
