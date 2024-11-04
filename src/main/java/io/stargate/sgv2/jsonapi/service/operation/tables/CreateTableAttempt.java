@@ -78,7 +78,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
               : createTable.withPartitionKey(partitionDef.name(), partitionDef.type().cqlType());
     }
 
-    for (var clusteringDef : tableDef.clusteringKeys()) {
+    for (var clusteringDef : tableDef.clusteringDefs()) {
       createTable =
           createTable.withClusteringColumn(
               clusteringDef.columnDef().name(), clusteringDef.columnDef().type().cqlType());
@@ -92,7 +92,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
 
   private CreateTableWithOptions addClusteringOrder(CreateTableWithOptions createTableWithOptions) {
 
-    for (var clusteringDef : tableDef.clusteringKeys()) {
+    for (var clusteringDef : tableDef.clusteringDefs()) {
       createTableWithOptions =
           createTableWithOptions.withClusteringOrder(
               clusteringDef.columnDef().name(), clusteringDef.order().getCqlOrder());

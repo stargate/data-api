@@ -570,7 +570,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
     assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_NOT_INDEXED)
         .postFindOne(filter)
         .hasNoErrors()
-        .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
+        .hasSingleWarning(WarningException.Code.MISSING_INDEX)
         .body("data.document.id", is(expectedRowId));
   }
 
