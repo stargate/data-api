@@ -6,23 +6,31 @@ import io.stargate.sgv2.jsonapi.fixtures.types.ApiDataTypesForTesting;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Creates a table with: - PK of the single field column {@link TestDataScenario#ID_COL} - a column
- * for each scalar type in {@link ApiDataTypesForTesting#ALL_SCALAR_TYPES_FOR_CREATE} - the non PK
- * columns are named with the prefix {@link #COL_NAME_PREFIX} then the data type name - gets data
- * from the {@link DefaultData} class - inserts row with the PK prefix "row" - the row "row-1" (-1)
- * has a value for every column - the row "row-0" and beyond have a null for a single column in each
- * row, one column at a time - call {@link #columnForDatatype(ApiDataType)} to get the column for a
- * specific data type
+ * Creates a table with:
+ *
+ * <ul>
+ *   <li>PK of the single field column {@link TestDataScenario#ID_COL}
+ *   <li>a column for each scalar type in {@link ApiDataTypesForTesting#ALL_SCALAR_TYPES_FOR_CREATE}
+ *   <li>the non-PK columns are named with the prefix {@link #COL_NAME_PREFIX} then the data type
+ *       name
+ *   <li>gets data from the {@link DefaultData} class
+ *   <li>inserts row with the PK prefix "row"
+ *   <li>the row "row-1" (-1) has a value for every column
+ *   <li>the row "row-0" and beyond have a null for a single column in each row, one column at a
+ *       time
+ *   <li>call {@link #columnForDatatype(ApiDataType)} to get the column for a specific data type
+ * </ul>
  */
 public class AllScalarTypesTableScenario extends TestDataScenario {
 
   public static final String COL_NAME_PREFIX = "col_";
 
   public AllScalarTypesTableScenario(String keyspaceName, String tableName) {
-    super(keyspaceName, tableName, ID_COL, createColumns(), new DefaultData());
+    super(keyspaceName, tableName, ID_COL, List.of(), createColumns(), new DefaultData());
   }
 
   public ApiColumnDef columnForDatatype(ApiDataType type) {
