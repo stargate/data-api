@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 
 /**
@@ -37,5 +38,5 @@ public abstract class ClauseResolver<CmdT extends Command, SchemaT extends Schem
     this.operationsConfig = operationsConfig;
   }
 
-  public abstract R resolve(CommandContext<SchemaT> commandContext, CmdT command);
+  public abstract WithWarnings<R> resolve(CommandContext<SchemaT> commandContext, CmdT command);
 }

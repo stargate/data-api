@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.SortClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -27,6 +28,32 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
               {"user.age" : -1, "user.name" : 1}
               """)
 public record SortClause(@Valid List<SortExpression> sortExpressions) implements SchemaValidatable {
+
+  public boolean isEmpty() {
+    return sortExpressions == null || sortExpressions.isEmpty();
+  }
+
+  /** Get the sort expressions that are trying to vector sort columns on a table */
+  public List<SortExpression> tableVectorSorts() {
+    return sortExpressions == null
+        ? List.of()
+        : sortExpressions.stream().filter(SortExpression::isTableVectorSort).toList();
+  }
+
+  /** Get the sort expressions that are not trying to vector sort columns on a table */
+  public List<SortExpression> nonTableVectorSorts() {
+    return sortExpressions == null
+        ? List.of()
+        : sortExpressions.stream()
+            .filter(sortExpression -> !sortExpression.isTableVectorSort())
+            .toList();
+  }
+
+  public List<CqlIdentifier> sortColumnIdentifiers() {
+    return sortExpressions == null
+        ? List.of()
+        : sortExpressions.stream().map(SortExpression::pathAsCqlIdentifier).toList();
+  }
 
   public boolean hasVsearchClause() {
     return sortExpressions != null
