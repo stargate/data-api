@@ -283,7 +283,7 @@ public class DataApiResponseValidator {
 
   // // // Projection Schema // // //
   public DataApiResponseValidator hasProjectionSchema() {
-    return hasField("status." + CommandStatus.PROJECTION_SCHEMA);
+    return hasField("status." + CommandStatus.PROJECTION_SCHEMA.apiName());
   }
 
   public DataApiResponseValidator hasProjectionSchemaWith(ApiColumnDef columnDef) {
