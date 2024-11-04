@@ -15,7 +15,6 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
@@ -104,7 +103,8 @@ public class FindOneAndReplaceCommandResolver implements CommandResolver<FindOne
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> ctx, FindOneAndReplaceCommand command) {
-    final DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
+
+    var dbLogicalExpression = collectionFilterResolver.resolve(ctx, command).target();
 
     final SortClause sortClause = command.sortClause();
     SchemaValidatable.maybeValidate(ctx, sortClause);

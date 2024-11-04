@@ -15,7 +15,6 @@ import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -82,9 +81,10 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
 
     var builder = new UpdateAttemptBuilder<>(ctx.schemaObject());
 
+    // need to update so we use WithWarnings correctly
     var where =
         TableWhereCQLClause.forUpdate(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command));
+            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
 
     var attempts =
         new OperationAttemptContainer<>(
@@ -126,7 +126,8 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> ctx, UpdateOneCommand command) {
-    final DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
+
+    var dbLogicalExpression = collectionFilterResolver.resolve(ctx, command).target();
 
     final SortClause sortClause = command.sortClause();
     SchemaValidatable.maybeValidate(ctx, sortClause);

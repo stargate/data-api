@@ -27,6 +27,7 @@ public abstract class TestDataScenario {
 
   public final FixtureData dataSource;
   public final ApiColumnDef primaryKey;
+  public final List<ApiClusteringDef> clusteringDefs;
   public final ApiColumnDefContainer allColumns;
   public final ApiColumnDefContainer nonPkColumns;
 
@@ -34,6 +35,7 @@ public abstract class TestDataScenario {
       String keyspaceName,
       String tableName,
       ApiColumnDef primaryKey,
+      List<ApiClusteringDef> clusteringDefs,
       ApiColumnDefContainer allColumns,
       FixtureData dataSource) {
     this.keyspaceName = keyspaceName;
@@ -41,6 +43,10 @@ public abstract class TestDataScenario {
     this.dataSource = dataSource;
 
     this.primaryKey = primaryKey;
+    this.clusteringDefs =
+        clusteringDefs == null
+            ? Collections.emptyList()
+            : Collections.unmodifiableList(clusteringDefs);
     this.allColumns = allColumns.toUnmodifiable();
     var workingNonPkColumns = new ApiColumnDefContainer(allColumns);
     workingNonPkColumns.remove(primaryKey.name());
@@ -71,7 +77,7 @@ public abstract class TestDataScenario {
   }
 
   protected void createTable() {
-    createTableWithTypes(keyspaceName, tableName, primaryKey, allColumns);
+    createTableWithTypes(keyspaceName, tableName, primaryKey, clusteringDefs, allColumns);
   }
 
   protected void createIndexes() {}
@@ -86,12 +92,13 @@ public abstract class TestDataScenario {
       String keyspaceName,
       String tableName,
       ApiColumnDef primaryKey,
+      List<ApiClusteringDef> clusteringDefs,
       ApiColumnDefContainer columns) {
 
     LOGGER.warn("Creating table {}.{} with columns {}", keyspaceName, tableName, columns);
     assertNamespaceCommand(keyspaceName)
         .templated()
-        .createTable(tableName, columns, primaryKey)
+        .createTable(tableName, columns, ApiColumnDefContainer.of(primaryKey), clusteringDefs)
         .wasSuccessful();
   }
 
