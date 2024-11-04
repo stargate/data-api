@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.util.JsonNodeComparator;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -203,10 +204,12 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
                     .writerWithDefaultPrettyPrinter()
                     .writeValueAsString(testDatas.get(i))));
       }
-
+      final LinkedHashMap ordering = new LinkedHashMap<>();
+      ordering.put("name", 1);
+      ordering.put("age", 1);
       assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .templated()
-          .find(Map.of(), List.of(), Map.of("name", 1, "age", 1), Map.of())
+          .find(Map.of(), List.of(), ordering, Map.of())
           .wasSuccessful()
           .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
