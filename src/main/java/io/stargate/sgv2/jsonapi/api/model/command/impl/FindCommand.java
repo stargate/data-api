@@ -8,12 +8,14 @@ import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
 import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
+import io.stargate.sgv2.jsonapi.api.model.command.Windowable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.validation.CheckFindOption;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -26,7 +28,7 @@ public record FindCommand(
     @JsonProperty("projection") JsonNode projectionDefinition,
     @Valid @JsonProperty("sort") SortClause sortClause,
     @Valid @Nullable Options options)
-    implements ReadCommand, Filterable, Projectable, Sortable {
+    implements ReadCommand, Filterable, Projectable, Sortable, Windowable {
 
   public record Options(
 
@@ -72,5 +74,15 @@ public record FindCommand(
   @Override
   public CommandName commandName() {
     return CommandName.FIND;
+  }
+
+  @Override
+  public Optional<Integer> limit() {
+    return options() != null ? Optional.of(options().limit()) : Optional.empty();
+  }
+
+  @Override
+  public Optional<Integer> skip() {
+    return Optional.ofNullable(options()).map(Options::skip).filter(skip -> skip > 0);
   }
 }

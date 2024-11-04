@@ -9,6 +9,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
+import io.stargate.sgv2.jsonapi.api.model.command.Windowable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -31,7 +32,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Resolves a sort clause to determine if we want to apply a CQL ORDER BY clause to the operation.
  */
-public class TableCqlSortClauseResolver<CmdT extends Command & Sortable>
+public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Windowable>
     extends TableSortClauseResolver<CmdT, TableSchemaObject, OrderByCqlClause> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TableCqlSortClauseResolver.class);
@@ -65,9 +66,10 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable>
     checkUnknownSortColumns(commandContext.schemaObject(), sortColumns);
 
     var vectorSorts = sortClause.tableVectorSorts();
+
     return vectorSorts.isEmpty()
-        ? resolveNonVectorSort(commandContext, sortClause, sortColumns)
-        : resolveVectorSort(commandContext, sortClause, vectorSorts);
+        ? resolveNonVectorSort(commandContext, sortClause, sortColumns, command.skip())
+        : resolveVectorSort(commandContext, sortClause, vectorSorts, command.skip());
   }
 
   /**
@@ -81,16 +83,21 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable>
   private WithWarnings<OrderByCqlClause> resolveNonVectorSort(
       CommandContext<TableSchemaObject> commandContext,
       SortClause sortClause,
-      List<CqlIdentifier> sortColumns) {
+      List<CqlIdentifier> sortColumns,
+      Optional<Integer> skip) {
 
     var apiTableDef = commandContext.schemaObject().apiTableDef();
-
+    if (skip.isPresent()) {
+      var warn = WarningException.Code.IN_MEMORY_SORTING_DUE_SKIP_OPTIONS.get();
+      return WithWarnings.of(OrderByCqlClause.NO_OP, warn);
+    }
     // If there is any sorting on non partition sorting columns, we cannot use CQL ORDER BY
     var nonClusteringKeySorts =
         sortColumns.stream()
             .filter(sortColumn -> !apiTableDef.clusteringKeys().containsKey(sortColumn))
             .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
+
     if (!nonClusteringKeySorts.isEmpty()) {
       var warn =
           WarningException.Code.IN_MEMORY_SORTING_DUE_TO_NON_PARTITION_SORTING.get(
@@ -102,7 +109,6 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable>
                         errFmtApiColumnDef(apiTableDef.clusteringKeys().values()));
                     map.put("sortColumns", errFmtCqlIdentifier(nonClusteringKeySorts));
                   }));
-
       return WithWarnings.of(OrderByCqlClause.NO_OP, warn);
     }
 
@@ -163,11 +169,15 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable>
   private WithWarnings<OrderByCqlClause> resolveVectorSort(
       CommandContext<TableSchemaObject> commandContext,
       SortClause sortClause,
-      List<SortExpression> vectorSorts) {
+      List<SortExpression> vectorSorts,
+      Optional<Integer> skip) {
 
     var apiTableDef = commandContext.schemaObject().apiTableDef();
 
     if (vectorSorts.size() > 1) {
+      if (skip.isPresent()) {
+        throw SortException.Code.CANNOT_VECTOR_SORT_WITH_SKIP_OPTION.get();
+      }
       throw SortException.Code.MORE_THAN_ONE_VECTOR_SORT.get(
           errVars(
               commandContext.schemaObject(),

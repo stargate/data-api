@@ -28,7 +28,8 @@ import io.stargate.sgv2.jsonapi.service.resolver.sort.TableMemorySortClauseResol
  *
  * @param <CmdT>
  */
-class ReadCommandResolver<CmdT extends ReadCommand & Filterable & Projectable & Sortable> {
+class ReadCommandResolver<
+    CmdT extends ReadCommand & Filterable & Projectable & Sortable & Windowable> {
 
   private final ObjectMapper objectMapper;
   private final OperationsConfig operationsConfig;
