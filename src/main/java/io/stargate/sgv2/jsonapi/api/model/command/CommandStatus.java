@@ -118,12 +118,11 @@ public enum CommandStatus {
    */
   @JsonProperty(Names.PROJECTION_SCHEMA)
   PROJECTION_SCHEMA;
-  ;
 
   /**
-   * Actual String constants used in the JSON response for {@link CommandStatus} elements.
-   * Have to be defined here as String Constants to be used in the {@link JsonProperty} annotation
-   * and other direct references.
+   * Actual String constants used in the JSON response for {@link CommandStatus} elements. Have to
+   * be defined here as String Constants to be used in the {@link JsonProperty} annotation and other
+   * direct references.
    */
   interface Names {
     String COUNTED_DOCUMENT = "count";
