@@ -14,11 +14,9 @@ import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
-import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
-import io.stargate.sgv2.jsonapi.service.resolver.sort.*;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -64,12 +62,10 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, FindOneCommand command) {
 
-    var pageBuilder =
-        ReadAttemptPage.<TableSchemaObject>builder().singleResponse(true).includeSortVector(false);
+    var pageBuilder = ReadAttemptPage.builder().singleResponse(true).includeSortVector(false);
 
     // the skip is 0 and the limit is 1 always for findOne
-    return readCommandResolver.buildReadOperation(
-        ctx, command, 0, 1, CqlPagingState.EMPTY, pageBuilder);
+    return readCommandResolver.buildReadOperation(ctx, command, CqlPagingState.EMPTY, pageBuilder);
 
     // TODO: AARON MAHESH - this is what was here before, leaving until we confirm all good
 

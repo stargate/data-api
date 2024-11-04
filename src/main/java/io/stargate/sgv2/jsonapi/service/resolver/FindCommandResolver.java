@@ -63,17 +63,6 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   @Override
   public Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, FindCommand command) {
 
-    int commandSkip =
-        (command.options() == null || command.options().skip() == null)
-            ? 0
-            : command.options().skip();
-
-    int commandLimit =
-        (command.options() == null || command.options().limit() == null)
-            ? operationsConfig
-                .defaultPageSize() // even though this says page, it is the default limit
-            : command.options().limit();
-
     // TODO: if we are doing in memory sorting how do we get a paging state working ?
     // The in memory sorting will blank out the paging state so we need to handle this
     var cqlPageState =
@@ -84,8 +73,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     var pageBuilder =
         ReadAttemptPage.<TableSchemaObject>builder().singleResponse(false).includeSortVector(false);
 
-    return readCommandResolver.buildReadOperation(
-        ctx, command, commandSkip, commandLimit, cqlPageState, pageBuilder);
+    return readCommandResolver.buildReadOperation(ctx, command, cqlPageState, pageBuilder);
 
     // TODO: AARON MAHESH this is what was here before, leaving until we confirm all good
 

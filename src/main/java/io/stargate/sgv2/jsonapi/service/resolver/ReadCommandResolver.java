@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
 import io.stargate.sgv2.jsonapi.service.operation.ReadAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.ReadAttemptPage;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
+import io.stargate.sgv2.jsonapi.service.operation.query.RowSorter;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableProjection;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableReadAttemptBuilder;
@@ -51,8 +52,6 @@ class ReadCommandResolver<
    *
    * @param commandContext
    * @param command
-   * @param commandSkip Number of rows the command wants to skip
-   * @param commandLimit Number of rows the command wants to return
    * @param cqlPageState The CQL paging state, if any, must be non null
    * @param pageBuilder The page builder to use, the caller should configure this with any command
    *     specific options before passing, such as single document mode
@@ -61,14 +60,11 @@ class ReadCommandResolver<
   protected GenericOperation<TableSchemaObject, ReadAttempt<TableSchemaObject>> buildReadOperation(
       CommandContext<TableSchemaObject> commandContext,
       CmdT command,
-      int commandSkip,
-      int commandLimit,
       CqlPagingState cqlPageState,
       ReadAttemptPage.Builder<TableSchemaObject> pageBuilder) {
 
     var attemptBuilder = new TableReadAttemptBuilder(commandContext.schemaObject());
 
-    attemptBuilder.addBuilderOption(CQLOption.ForSelect.limit(commandLimit));
     if (cqlPageState != null) {
       attemptBuilder.addPagingState(cqlPageState);
     }
@@ -76,17 +72,32 @@ class ReadCommandResolver<
     var orderByWithWarnings = tableCqlSortClauseResolver.resolve(commandContext, command);
     attemptBuilder.addOrderBy(orderByWithWarnings);
 
+    // if the user did not provide a limit, we will use the default page size as read limit
+    int commandLimit = command.limit().orElseGet(operationsConfig::defaultPageSize);
+
+    int commandSkip = command.skip().orElse(0);
+
     // and then if we need to do in memory sorting
-    attemptBuilder.addSorter(
+    var inMemorySort =
         new TableMemorySortClauseResolver<>(
                 operationsConfig, orderByWithWarnings.target(), commandSkip, commandLimit)
-            .resolve(commandContext, command));
+            .resolve(commandContext, command);
+    attemptBuilder.addSorter(inMemorySort);
+
+    // if in memory sory the limit to use in select query will be
+    // `operationsConfig.maxDocumentSortCount() + 1`
+    var selectLimit =
+        inMemorySort.target() == RowSorter.NO_OP
+            ? commandLimit
+            : operationsConfig.maxDocumentSortCount() + 1;
+    attemptBuilder.addBuilderOption(CQLOption.ForSelect.limit(selectLimit));
 
     // the columns the user wants
     // NOTE: the TableProjection is doing double duty as the select and the operation projection
     var projection =
         TableProjection.fromDefinition(
             objectMapper, command.tableProjectionDefinition(), commandContext.schemaObject());
+
     attemptBuilder.addSelect(WithWarnings.of(projection));
     attemptBuilder.addProjection(projection);
 
