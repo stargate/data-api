@@ -95,8 +95,6 @@ public class CommandQueryExecutor {
 
     var accumulator = new AccumulatingAsyncResultSet(rowAccumulator);
 
-    // TODO AARON MAHESH can we change the atomic to be of type AccumulatingAsyncResultSet instance
-    // ?
     return Multi.createBy()
         .repeating()
         .uni(

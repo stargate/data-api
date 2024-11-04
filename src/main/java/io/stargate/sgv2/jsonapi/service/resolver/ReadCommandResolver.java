@@ -24,8 +24,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.sort.TableMemorySortClauseResol
 /**
  * NOTE: This was intended to be a base class for the Find and FindOne resolvers, but I could not
  * work out how to get subclassing to work with the dependency injection framework. So, I have left
- * it as a standalone class for now. - aaron 4 nov 2024 TODO: AARON / MAHESH can we make this a base
- * class for FindOneCommandResolver and FindCommandResolver?
+ * it as a standalone class for now. - aaron 4 nov 2024
  *
  * @param <CmdT>
  */
