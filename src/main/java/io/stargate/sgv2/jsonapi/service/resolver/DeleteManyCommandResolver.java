@@ -14,7 +14,6 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.TruncateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DeleteAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
@@ -78,9 +77,10 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
     }
 
     var deleteAttemptBuilder = new DeleteAttemptBuilder<>(ctx.schemaObject(), false);
+    // need to update so we use WithWarnings correctly
     var where =
         TableWhereCQLClause.forDelete(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command));
+            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
     var deletePageBuilder =
         DeleteAttemptPage.<TableSchemaObject>builder()
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
@@ -112,7 +112,7 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> ctx, DeleteManyCommand command) {
-    final DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
+    var dbLogicalExpression = collectionFilterResolver.resolve(ctx, command).target();
     // Read One extra document than delete limit so return moreData flag
     addToMetrics(
         meterRegistry,

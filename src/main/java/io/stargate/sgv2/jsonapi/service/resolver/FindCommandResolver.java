@@ -17,7 +17,6 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
@@ -100,7 +99,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
 
     var where =
         TableWhereCQLClause.forSelect(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command));
+            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
     var attempts = new OperationAttemptContainer<>(builder.build(where));
 
     var pageBuilder =
@@ -116,8 +115,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   @Override
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, FindCommand command) {
-    final DBLogicalExpression resolvedDbLogicalExpression =
-        collectionFilterResolver.resolve(ctx, command);
+
+    var resolvedDbLogicalExpression = collectionFilterResolver.resolve(ctx, command).target();
     // limit and page state defaults
     int limit = Integer.MAX_VALUE;
     int skip = 0;
