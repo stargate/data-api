@@ -23,7 +23,9 @@ abstract class CqlDurationConverter {
     long nanoSeconds = value.getNanoseconds();
 
     // Negative value? To detect see if any value negative (all must be 0 or negative
-    // if one is -- but `CqlDuration` ensures that invariant)
+    // if one is -- but `CqlDuration` ensures that invariant). Bit silly there's no
+    // `CqlDuration.isNegative()` (or `CqlDuration.negate()` to create opposite value)
+    // or such but it is what it is.
     final StringBuilder sb;
     boolean negative = (months < 0) || (days < 0) || (nanoSeconds < 0L);
     if (negative) {
