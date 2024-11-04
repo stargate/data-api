@@ -5,29 +5,29 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /** Enum with it's json property name which is returned in api response inside status */
 public enum CommandStatus {
   /** The element has the count of document */
-  @JsonProperty("count")
+  @JsonProperty(Names.COUNTED_DOCUMENT)
   COUNTED_DOCUMENT,
   /** The element has the count of deleted documents */
-  @JsonProperty("deletedCount")
+  @JsonProperty(Names.DELETED_COUNT)
   DELETED_COUNT,
   /**
    * Status for reporting existing namespaces. findNamespaces command is deprecated, keep this
    * jsonProperty to support backwards-compatibility. Use "namespaces" when old command name used
    * and "keyspaces" for new one.
    */
-  @JsonProperty("namespaces")
+  @JsonProperty(Names.EXISTING_NAMESPACES)
   EXISTING_NAMESPACES,
   /** Status for reporting existing keyspaces. */
-  @JsonProperty("keyspaces")
+  @JsonProperty(Names.EXISTING_KEYSPACES)
   EXISTING_KEYSPACES,
   /** Status for reporting existing embedding services. */
-  @JsonProperty("embeddingProviders")
+  @JsonProperty(Names.EXISTING_VECTOR_PROVIDERS)
   EXISTING_VECTOR_PROVIDERS,
   /** Status for reporting existing collections. */
-  @JsonProperty("collections")
+  @JsonProperty(Names.EXISTING_COLLECTIONS)
   EXISTING_COLLECTIONS,
   /** Status for reporting existing collections. */
-  @JsonProperty("tables")
+  @JsonProperty(Names.EXISTING_TABLES)
   EXISTING_TABLES,
 
   /**
@@ -36,57 +36,57 @@ public enum CommandStatus {
    * of {@code OK}, {@code ERROR} or {@code SKIP}; {@code ERROR} entries also have {@code errorsIdx}
    * field that refers to position of the error in the root level {@code errors} List.
    */
-  @JsonProperty("documentResponses")
+  @JsonProperty(Names.DOCUMENT_RESPONSES)
   DOCUMENT_RESPONSES,
   /** The element has the list of inserted ids */
-  @JsonProperty("insertedIds")
+  @JsonProperty(Names.INSERTED_IDS)
   INSERTED_IDS,
   /** The element has the count of document read for the update operation */
-  @JsonProperty("matchedCount")
+  @JsonProperty(Names.MATCHED_COUNT)
   MATCHED_COUNT,
 
   /** The element has the count of document modified for the update operation */
-  @JsonProperty("modifiedCount")
+  @JsonProperty(Names.MODIFIED_COUNT)
   MODIFIED_COUNT,
   /**
    * The element with boolean 'true' represents if more document to be processed for updateMany and
    * deleteMany commands
    */
-  @JsonProperty("moreData")
+  @JsonProperty(Names.MORE_DATA)
   MORE_DATA,
   /**
    * The element has the session id of offline writer, which is used to write the data offline to
    * the SSTable files for example
    */
-  @JsonProperty("offlineWriterSessionId")
+  @JsonProperty(Names.OFFLINE_WRITER_SESSION_ID)
   OFFLINE_WRITER_SESSION_ID,
 
   /**
    * The element has the status of offline writer session, which is used to write the data offline
    * to
    */
-  @JsonProperty("offlineWriterSessionStatus")
+  @JsonProperty(Names.OFFLINE_WRITER_SESSION_STATUS)
   OFFLINE_WRITER_SESSION_STATUS,
   /** The element has value 1 if collection is created */
-  @JsonProperty("ok")
+  @JsonProperty(Names.OK)
   OK,
 
   /** Next page state value that can be used in client side for pagination */
-  @JsonProperty("nextPageState")
+  @JsonProperty(Names.PAGE_STATE)
   PAGE_STATE,
 
   /** Sort vector value used for the ANN seatch */
-  @JsonProperty("sortVector")
+  @JsonProperty(Names.SORT_VECTOR)
   SORT_VECTOR,
   /**
    * The element has the document id of newly inserted document part of update, when upserted option
    * is 'true' and no document available in DB for matching condition
    */
-  @JsonProperty("upsertedId")
+  @JsonProperty(Names.UPSERTED_ID)
   UPSERTED_ID,
 
   /** warning value used for commandResult status */
-  @JsonProperty("warnings")
+  @JsonProperty(Names.WARNINGS)
   WARNINGS,
 
   /**
@@ -101,7 +101,7 @@ public enum CommandStatus {
    * The schema tells the client what the structure of the array is using the same layout for field
    * definitions as the is used in createTable command.
    */
-  @JsonProperty("primaryKeySchema")
+  @JsonProperty(Names.PRIMARY_KEY_SCHEMA)
   PRIMARY_KEY_SCHEMA,
 
   /**
@@ -116,7 +116,36 @@ public enum CommandStatus {
    * <p>Clients can use the schema returned here to understand where null values were ommitted and
    * what the actual type of the column is.
    */
-  @JsonProperty("projectionSchema")
+  @JsonProperty(Names.PROJECTION_SCHEMA)
   PROJECTION_SCHEMA;
   ;
+
+  /**
+   * Actual String constants used in the JSON response for {@link CommandStatus} elements.
+   * Have to be defined here as String Constants to be used in the {@link JsonProperty} annotation
+   * and other direct references.
+   */
+  interface Names {
+    String COUNTED_DOCUMENT = "count";
+    String DELETED_COUNT = "deletedCount";
+    String EXISTING_NAMESPACES = "namespaces";
+    String EXISTING_KEYSPACES = "keyspaces";
+    String EXISTING_VECTOR_PROVIDERS = "embeddingProviders";
+    String EXISTING_COLLECTIONS = "collections";
+    String EXISTING_TABLES = "tables";
+    String DOCUMENT_RESPONSES = "documentResponses";
+    String INSERTED_IDS = "insertedIds";
+    String MATCHED_COUNT = "matchedCount";
+    String MODIFIED_COUNT = "modifiedCount";
+    String MORE_DATA = "moreData";
+    String OFFLINE_WRITER_SESSION_ID = "offlineWriterSessionId";
+    String OFFLINE_WRITER_SESSION_STATUS = "offlineWriterSessionStatus";
+    String OK = "ok";
+    String PAGE_STATE = "nextPageState";
+    String SORT_VECTOR = "sortVector";
+    String UPSERTED_ID = "upsertedId";
+    String WARNINGS = "warnings";
+    String PRIMARY_KEY_SCHEMA = "primaryKeySchema";
+    String PROJECTION_SCHEMA = "projectionSchema";
+  }
 }
