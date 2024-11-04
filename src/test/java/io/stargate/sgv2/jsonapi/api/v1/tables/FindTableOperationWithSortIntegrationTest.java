@@ -237,9 +237,12 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
             objectMapper.readTree(
                 objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(data)));
       }
+      final LinkedHashMap ordering = new LinkedHashMap<>();
+      ordering.put("name", 1);
+      ordering.put("age", -1);
       assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .templated()
-          .find(Map.of("active_user", true), List.of(), Map.of("name", 1, "age", -1), Map.of())
+          .find(Map.of("active_user", true), List.of(), ordering, Map.of())
           .wasSuccessful()
           .body("data.documents", hasSize(datas.size()))
           .body("data.documents", jsonEquals(arrayNode.toString()));
