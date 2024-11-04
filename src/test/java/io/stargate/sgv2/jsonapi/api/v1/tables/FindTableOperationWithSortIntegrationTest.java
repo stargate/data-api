@@ -64,6 +64,7 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
   class FindTableOperationWithSort {
 
     @Test
+    @Order(1)
     public void sortByTextAndNullValue() throws Exception {
       sortByName(testDatas, true);
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
@@ -85,6 +86,7 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
     }
 
     @Test
+    @Order(2)
     public void sortWithSkipLimit() throws Exception {
       sortByName(testDatas, true);
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
@@ -107,6 +109,7 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
     }
 
     @Test
+    @Order(3)
     public void sortDescendingTextValue() throws Exception {
       sortByName(testDatas, false);
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
@@ -128,6 +131,7 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
     }
 
     @Test
+    @Order(4)
     public void sortNumericField() throws Exception {
       sortByAge(testDatas, true);
 
@@ -150,6 +154,7 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
     }
 
     @Test
+    @Order(5)
     public void sortNumericFieldDescending() throws Exception {
       sortByAge(testDatas, false);
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
@@ -170,6 +175,7 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
     }
 
     @Test
+    @Order(6)
     public void sortNumericFieldAndFilter() throws Exception {
       List<Object> datas =
           testDatas.stream()
@@ -193,6 +199,7 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
     }
 
     @Test
+    @Order(7)
     public void sortMultiColumns() throws Exception {
       sortByUserNameUserId(testDatas, true, true);
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
@@ -216,6 +223,7 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
     }
 
     @Test
+    @Order(8)
     public void sortMultiColumnsMixedOrder() throws Exception {
       List<Object> datas =
           testDatas.stream()
