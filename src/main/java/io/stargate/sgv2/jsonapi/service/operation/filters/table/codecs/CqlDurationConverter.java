@@ -22,7 +22,19 @@ abstract class CqlDurationConverter {
     int days = value.getDays();
     long nanoSeconds = value.getNanoseconds();
 
-    final StringBuilder sb = new StringBuilder("P");
+    // Negative value? To detect see if any value negative (all must be 0 or negative
+    // if one is -- but `CqlDuration` ensures that invariant)
+    final StringBuilder sb;
+    boolean negative = (months < 0) || (days < 0) || (nanoSeconds < 0L);
+    if (negative) {
+      // and if we do have negative value, we need to prepend minus sign, negate all parts
+      sb = new StringBuilder("-P");
+      months = -months;
+      days = -days;
+      nanoSeconds = -nanoSeconds;
+    } else {
+      sb = new StringBuilder("P");
+    }
 
     // Do we have date part?
     if (months > 0 || days > 0) { // yes
