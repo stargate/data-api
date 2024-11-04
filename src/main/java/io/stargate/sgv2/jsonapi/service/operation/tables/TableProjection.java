@@ -35,20 +35,29 @@ import org.slf4j.LoggerFactory;
 public class TableProjection implements SelectCQLClause, OperationProjection {
   private static final Logger LOGGER = LoggerFactory.getLogger(TableProjection.class);
 
+  // Make a unique constant string as similarity score function alias in cql statement
+  // E.G. SELECT id,similarity_euclidean(vector_type,[0.2, 0.15, 0.3]) AS
+  // similarityScore1699123456789 from xxx;
+  public static final String SIMILARITY_SCORE_ALIAS =
+      "similarityScore" + System.currentTimeMillis();
+
   private ObjectMapper objectMapper;
   private TableSchemaObject table;
   private List<ColumnMetadata> columns;
   private ColumnsDescContainer columnsDesc;
+  private boolean includeSimilarity;
 
   private TableProjection(
       ObjectMapper objectMapper,
       TableSchemaObject table,
       List<ColumnMetadata> columns,
-      ColumnsDescContainer columnsDesc) {
+      ColumnsDescContainer columnsDesc,
+      boolean includeSimilarity) {
     this.objectMapper = objectMapper;
     this.table = table;
     this.columns = columns;
     this.columnsDesc = columnsDesc;
+    this.includeSimilarity = includeSimilarity;
   }
 
   /**
@@ -58,7 +67,8 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
   public static TableProjection fromDefinition(
       ObjectMapper objectMapper,
       TableProjectionDefinition projectionDefinition,
-      TableSchemaObject table) {
+      TableSchemaObject table,
+      boolean includeSimilarity) {
 
     Map<String, ColumnMetadata> columnsByName = new HashMap<>();
     // TODO: This can also be cached as part of TableSchemaObject than resolving it for every query.
@@ -88,7 +98,8 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
               .formatted(errFmtApiColumnDef(readApiColumns.filterByUnsupported())));
     }
 
-    return new TableProjection(objectMapper, table, columns, readApiColumns.toColumnsDesc());
+    return new TableProjection(
+        objectMapper, table, columns, readApiColumns.toColumnsDesc(), includeSimilarity);
   }
 
   @Override
@@ -134,6 +145,16 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
             columnName,
             column.getType().toString(),
             e.getMessage());
+      }
+    }
+
+    // If user specify includeSimilarity, but no ANN sort clause, then we won't generate
+    // similarity_score function in the cql statement
+    if (includeSimilarity) {
+      try {
+        final float aFloat = row.getFloat(SIMILARITY_SCORE_ALIAS);
+        result.put("$similarity", aFloat);
+      } catch (IllegalArgumentException ignored) {
       }
     }
 

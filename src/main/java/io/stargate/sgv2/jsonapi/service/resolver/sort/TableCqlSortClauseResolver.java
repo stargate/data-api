@@ -11,11 +11,14 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByANNCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByClusteringCqlClause;
@@ -51,6 +54,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable>
   @Override
   public WithWarnings<OrderByCqlClause> resolve(
       CommandContext<TableSchemaObject> commandContext, CmdT command) {
+
     Objects.requireNonNull(commandContext, "commandContext is required");
     Objects.requireNonNull(command, "command is required");
 
@@ -67,7 +71,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable>
     var vectorSorts = sortClause.tableVectorSorts();
     return vectorSorts.isEmpty()
         ? resolveNonVectorSort(commandContext, sortClause, sortColumns)
-        : resolveVectorSort(commandContext, sortClause, vectorSorts);
+        : resolveVectorSort(commandContext, command, sortClause, vectorSorts);
   }
 
   /**
@@ -162,8 +166,21 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable>
    */
   private WithWarnings<OrderByCqlClause> resolveVectorSort(
       CommandContext<TableSchemaObject> commandContext,
+      CmdT command,
       SortClause sortClause,
       List<SortExpression> vectorSorts) {
+
+    // I know instance of is ugly, but hard to find a solution to avoid that.
+    // basically, we define TableSortClauseResolver with CmdT, and we want to
+    // know the includeSimilarity option inside of FindOne and Find command
+    boolean includeSimilarity = false;
+    if (command instanceof FindOneCommand findOneCommand) {
+      includeSimilarity =
+          findOneCommand.options() != null && findOneCommand.options().includeSimilarity();
+    } else if (command instanceof FindCommand findCommand) {
+      includeSimilarity =
+          findCommand.options() != null && findCommand.options().includeSimilarity();
+    }
 
     var apiTableDef = commandContext.schemaObject().apiTableDef();
 
@@ -240,7 +257,14 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable>
     LOGGER.debug(
         "Vector sorting on column {}", cqlIdentifierToMessageString(vectorSortColumn.name()));
     var cqlVector = CqlVectorUtil.floatsToCqlVector(vectorSortExpression.vector());
-    return WithWarnings.of(new TableOrderByANNCqlClause(vectorSortColumn, cqlVector));
+
+    // At this point, we should have the target vector in the vectorConfig
+    Optional<VectorColumnDefinition> columnDefinition =
+        commandContext.schemaObject().vectorConfig().getColumnDefinition(vectorSortColumn.name());
+
+    return WithWarnings.of(
+        new TableOrderByANNCqlClause(
+            vectorSortColumn, cqlVector, includeSimilarity, columnDefinition.orElse(null)));
   }
 
   private Optional<IndexMetadata> findIndexMetadata(

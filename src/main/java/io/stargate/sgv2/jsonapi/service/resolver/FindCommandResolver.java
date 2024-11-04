@@ -74,6 +74,9 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
                 .defaultPageSize() // even though this says page, it is the default limit
             : command.options().limit();
 
+    boolean commandIncludeSimilarity =
+        command.options() != null && command.options().includeSimilarity();
+
     // TODO: if we are doing in memory sorting how do we get a paging state working ?
     // The in memory sorting will blank out the paging state so we need to handle this
     var cqlPageState =
@@ -85,7 +88,13 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
         ReadAttemptPage.<TableSchemaObject>builder().singleResponse(false).includeSortVector(false);
 
     return readCommandResolver.buildReadOperation(
-        ctx, command, commandSkip, commandLimit, cqlPageState, pageBuilder);
+        ctx,
+        command,
+        commandSkip,
+        commandLimit,
+        commandIncludeSimilarity,
+        cqlPageState,
+        pageBuilder);
 
     // TODO: AARON MAHESH this is what was here before, leaving until we confirm all good
 

@@ -67,9 +67,12 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     var pageBuilder =
         ReadAttemptPage.<TableSchemaObject>builder().singleResponse(true).includeSortVector(false);
 
+    boolean commandIncludeSimilarity =
+        command.options() != null && command.options().includeSimilarity();
+
     // the skip is 0 and the limit is 1 always for findOne
     return readCommandResolver.buildReadOperation(
-        ctx, command, 0, 1, CqlPagingState.EMPTY, pageBuilder);
+        ctx, command, 0, 1, commandIncludeSimilarity, CqlPagingState.EMPTY, pageBuilder);
 
     // TODO: AARON MAHESH - this is what was here before, leaving until we confirm all good
 

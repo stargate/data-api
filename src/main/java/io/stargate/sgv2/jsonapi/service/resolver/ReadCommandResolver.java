@@ -63,6 +63,7 @@ class ReadCommandResolver<CmdT extends ReadCommand & Filterable & Projectable & 
       CmdT command,
       int commandSkip,
       int commandLimit,
+      boolean commandIncludeSimilarity,
       CqlPagingState cqlPageState,
       ReadAttemptPage.Builder<TableSchemaObject> pageBuilder) {
 
@@ -86,7 +87,10 @@ class ReadCommandResolver<CmdT extends ReadCommand & Filterable & Projectable & 
     // NOTE: the TableProjection is doing double duty as the select and the operation projection
     var projection =
         TableProjection.fromDefinition(
-            objectMapper, command.tableProjectionDefinition(), commandContext.schemaObject());
+            objectMapper,
+            command.tableProjectionDefinition(),
+            commandContext.schemaObject(),
+            commandIncludeSimilarity);
     attemptBuilder.addSelect(WithWarnings.of(projection));
     attemptBuilder.addProjection(projection);
 

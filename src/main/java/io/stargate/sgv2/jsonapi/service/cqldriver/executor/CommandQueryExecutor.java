@@ -76,6 +76,7 @@ public class CommandQueryExecutor {
     Objects.requireNonNull(statement, "statement must not be null");
 
     statement = withExecutionProfile(statement, QueryType.READ);
+
     return executeAndWrap(statement);
   }
 
