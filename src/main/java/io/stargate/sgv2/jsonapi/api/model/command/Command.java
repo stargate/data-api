@@ -28,6 +28,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.CommandResolver;
   @JsonSubTypes.Type(value = CollectionCommand.class),
 })
 public interface Command {
+  String ALTER_TABLE_NAME = "alterTable";
 
   /**
    * commandName that refers to the api command name
@@ -39,7 +40,7 @@ public interface Command {
 
   /** Enum class for API command name. This is what user uses for command json body. */
   enum CommandName {
-    ALTER_TABLE("alterTable", CommandType.DDL),
+    ALTER_TABLE(ALTER_TABLE_NAME, CommandType.DDL),
     COUNT_DOCUMENTS("countDocuments", CommandType.DML),
     CREATE_COLLECTION("createCollection", CommandType.DDL),
     CREATE_INDEX("createIndex", CommandType.DDL),
