@@ -1,11 +1,34 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.v1.AbstractKeyspaceIntegrationTestBase;
 
 /** Abstract class for all table int tests that needs a collection to execute tests in. */
 public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegrationTestBase {
   private static final ObjectMapper MAPPER = new ObjectMapper();
+
+  String removeNullValues(String doc) {
+    ObjectNode newNode = MAPPER.createObjectNode();
+    JsonNode oldNode = null;
+    try {
+      oldNode = MAPPER.readTree(doc);
+    } catch (JsonProcessingException e) {
+      throw new IllegalArgumentException("Failed to parse JSON: " + doc, e);
+    }
+    oldNode
+        .fields()
+        .forEachRemaining(
+            entry -> {
+              JsonNode value = entry.getValue();
+              if (!value.isNull()) {
+                newNode.putIfAbsent(entry.getKey(), value);
+              }
+            });
+    return newNode.toString();
+  }
 
   //  protected DataApiResponseValidator createTableWithColumns(
   //      String tableName, Map<String, Object> columns, Object primaryKeyDef) {

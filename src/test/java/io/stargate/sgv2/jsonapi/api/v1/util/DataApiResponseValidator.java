@@ -215,15 +215,23 @@ public class DataApiResponseValidator {
     return body("status.warnings", is(nullValue()));
   }
 
-  public DataApiResponseValidator hasSingleWarning(String code) {
-    return body("status.warnings", hasSize(1))
-        .body(
-            "status.warnings[0]",
-            hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
-        .body(
-            "status.warnings[0]",
-            hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
-        .body("status.warnings[0]", hasEntry(ErrorObjectV2Constants.Fields.CODE, code));
+  public DataApiResponseValidator hasSingleWarning(
+      WarningException.Code code, String... messageSnippet) {
+    var validator =
+        body("status.warnings", hasSize(1))
+            .body(
+                "status.warnings[0]",
+                hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+            .body(
+                "status.warnings[0]",
+                hasEntry(
+                    ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+            .body("status.warnings[0]", hasEntry(ErrorObjectV2Constants.Fields.CODE, code.name()));
+
+    for (String snippet : messageSnippet) {
+      validator = validator.body("status.warnings[0].message", containsString(snippet));
+    }
+    return validator;
   }
 
   public DataApiResponseValidator mayHasSingleWarning(WarningException.Code warningExceptionCode) {

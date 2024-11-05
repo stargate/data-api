@@ -13,7 +13,7 @@ public class ApiClusteringDef {
   private final ApiColumnDef columnDef;
   private final ApiClusteringOrder order;
 
-  private ApiClusteringDef(ApiColumnDef columnDef, ApiClusteringOrder order) {
+  public ApiClusteringDef(ApiColumnDef columnDef, ApiClusteringOrder order) {
     this.columnDef = Objects.requireNonNull(columnDef, "columnDef cannot be null");
     this.order = Objects.requireNonNull(order, "order cannot be null");
   }
