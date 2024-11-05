@@ -16,6 +16,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.time.DateTimeException;
+import java.time.Instant;
 import java.util.function.Function;
 
 /**
@@ -336,13 +337,7 @@ public record JSONCodec<JavaT, CqlT>(
 
     static byte[] byteArrayFromEJSON(DataType targetCQLType, EJSONWrapper wrapper)
         throws ToCQLCodecException {
-      if (wrapper.type() != EJSONWrapper.EJSONType.BINARY) {
-        throw new ToCQLCodecException(
-            wrapper,
-            targetCQLType,
-            "Unsupported EJSON type '%s': only '%s' supported"
-                .formatted(wrapper.type().key(), EJSONWrapper.EJSONType.BINARY.key()));
-      }
+      verifyEJSONType(wrapper, targetCQLType, EJSONWrapper.EJSONType.BINARY);
       JsonNode value = wrapper.value();
       byte[] binaryPayload;
 
@@ -381,6 +376,33 @@ public record JSONCodec<JavaT, CqlT>(
         return InetAddress.getByName(value);
       } catch (UnknownHostException e) {
         throw new IllegalArgumentException("Invalid IP address value '%s'".formatted(value));
+      }
+    }
+
+    static Instant instantFromEJSON(DataType targetCQLType, EJSONWrapper wrapper)
+        throws ToCQLCodecException {
+      verifyEJSONType(wrapper, targetCQLType, EJSONWrapper.EJSONType.DATE);
+      JsonNode value = wrapper.value();
+
+      if (!value.isNumber()) {
+        throw new ToCQLCodecException(
+            wrapper,
+            targetCQLType,
+            "Unsupported JSON value type in EJSON $date wrapper (%s): only NUMBER allowed"
+                .formatted(value.getNodeType()));
+      }
+      return Instant.ofEpochMilli(value.longValue());
+    }
+
+    private static void verifyEJSONType(
+        EJSONWrapper wrapper, DataType targetCQLType, EJSONWrapper.EJSONType expectedType)
+        throws ToCQLCodecException {
+      if (wrapper.type() != expectedType) {
+        throw new ToCQLCodecException(
+            wrapper,
+            targetCQLType,
+            "Unsupported EJSON type '%s': only '%s' supported"
+                .formatted(wrapper.type().key(), expectedType.key()));
       }
     }
   }

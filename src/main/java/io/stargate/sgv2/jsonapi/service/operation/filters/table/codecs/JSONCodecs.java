@@ -266,6 +266,13 @@ public abstract class JSONCodecs {
           JSONCodec.ToCQL.safeFromString(Instant::parse),
           JSONCodec.ToJSON.toJSONUsingToString());
 
+  public static final JSONCodec<EJSONWrapper, Instant> TIMESTAMP_FROM_EJSON =
+      new JSONCodec<>(
+          GenericType.of(EJSONWrapper.class),
+          DataTypes.TIMESTAMP,
+          JSONCodec.ToCQL::instantFromEJSON,
+          JSONCodec.ToJSON.toJSONUsingToString());
+
   // Text Codecs
   public static final JSONCodec<String, String> ASCII =
       new JSONCodec<>(
