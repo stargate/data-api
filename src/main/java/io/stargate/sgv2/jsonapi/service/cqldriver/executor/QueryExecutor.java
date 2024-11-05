@@ -248,29 +248,26 @@ public class QueryExecutor {
    */
   protected Uni<Optional<TableMetadata>> getSchema(
       DataApiRequestInfo dataApiRequestInfo, String namespace, String collectionName) {
-    KeyspaceMetadata keyspaceMetadata;
     try {
-      cqlSessionCache.getSession(dataApiRequestInfo).refreshSchema();
-      keyspaceMetadata =
-          cqlSessionCache
-              .getSession(dataApiRequestInfo)
-              .getMetadata()
-              .getKeyspaces()
-              .get(cqlIdentifierFromUserInput(namespace));
+      var session = cqlSessionCache.getSession(dataApiRequestInfo);
+      return Uni.createFrom()
+          .completionStage(session.refreshSchemaAsync())
+          .onItem()
+          .transformToUni(
+              v -> {
+                KeyspaceMetadata keyspaceMetadata =
+                    session.getMetadata().getKeyspaces().get(cqlIdentifierFromUserInput(namespace));
+                if (keyspaceMetadata == null) {
+                  return Uni.createFrom()
+                      .failure(ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException("%s", namespace));
+                }
+                return Uni.createFrom()
+                    .item(keyspaceMetadata.getTable(cqlIdentifierFromUserInput(collectionName)));
+              });
     } catch (Exception e) {
       // TODO: this ^^ is a very wide error catch, confirm what it should actually be catching
       return Uni.createFrom().failure(e);
     }
-    // if namespace does not exist, throw error
-    if (keyspaceMetadata == null) {
-      return Uni.createFrom()
-          .failure(ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException("%s", namespace));
-    }
-    // else get the table
-    // TODO: this should probably use CqlIdentifier.fromCql() (or .fromInternal())
-    // if we want to support case-sensitive names
-    return Uni.createFrom()
-        .item(keyspaceMetadata.getTable(cqlIdentifierFromUserInput(collectionName)));
   }
 
   /**
