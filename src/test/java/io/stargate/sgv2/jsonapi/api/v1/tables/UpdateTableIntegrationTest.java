@@ -289,7 +289,7 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
         .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
         .wasSuccessful()
         .hasNoWarnings();
-    checkUpdatedData(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, expectedUpdatedRow);
+    checkUpdatedData(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, removeNullValues(expectedUpdatedRow));
   }
 
   @Test
