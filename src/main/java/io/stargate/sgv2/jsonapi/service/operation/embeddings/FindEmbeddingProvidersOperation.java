@@ -75,7 +75,7 @@ public record FindEmbeddingProvidersOperation(
       for (EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model :
           embeddingProviderConfig.models()) {
         if (!returnDeprecatedModels) {
-          if (model.deprecated().isPresent() && model.deprecated().get()) {
+          if (model.deprecated().orElse(false)) {
             continue;
           }
         }
