@@ -569,6 +569,35 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     }
 
     @Test
+    void insertValidNegativeDurationValue() {
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .templated()
+          .insertOne(
+                  """
+                    {
+                        "id": "%s",
+                        "durationValue": "%s"
+                    }
+                    """
+                  .formatted("datetimeNegDuration", "-8h10m"))
+          .wasSuccessful();
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .postFindOne(
+              """
+                                  { "filter": { "id": "datetimeNegDuration" },
+                                    "projection": { "durationValue": 1 }
+                                  }
+                              """)
+          .wasSuccessful()
+          .hasJSONField(
+              "data.document",
+                  """
+                    { "durationValue": "%s" }
+                    """
+                  .formatted("-PT8H10M"));
+    }
+
+    @Test
     void failOnInvalidDateValue() {
       assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
           .templated()
