@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.service.operation;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.VectorSortable;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import java.util.*;
@@ -92,13 +94,25 @@ public class ReadAttemptPage<SchemaT extends TableSchemaObject>
       return this;
     }
 
-    public Builder<SchemaT> includeSortVector(boolean includeSortVector) {
+    private Builder<SchemaT> includeSortVector(boolean includeSortVector) {
       this.includeSortVector = includeSortVector;
       return this;
     }
 
-    public Builder<SchemaT> sortVector(float[] sortVector) {
+    private Builder<SchemaT> sortVector(float[] sortVector) {
       this.sortVector = sortVector;
+      return this;
+    }
+
+    public <CmdT extends VectorSortable> Builder<SchemaT> mayReturnVector(CmdT command) {
+      var includeVector = command.includeSortVector().orElse(false);
+      if (includeVector) {
+        var requestedVector = command.sortExpression().map(SortExpression::vector).orElse(null);
+        if (requestedVector != null) {
+          this.includeSortVector = true;
+          this.sortVector = requestedVector;
+        }
+      }
       return this;
     }
 

@@ -30,7 +30,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.sort.TableMemorySortClauseResol
  * @param <CmdT>
  */
 class ReadCommandResolver<
-    CmdT extends ReadCommand & Filterable & Projectable & Sortable & Windowable> {
+    CmdT extends ReadCommand & Filterable & Projectable & Sortable & Windowable & VectorSortable> {
 
   private final ObjectMapper objectMapper;
   private final OperationsConfig operationsConfig;
@@ -84,7 +84,7 @@ class ReadCommandResolver<
             .resolve(commandContext, command);
     attemptBuilder.addSorter(inMemorySort);
 
-    // if in memory sory the limit to use in select query will be
+    // if in memory sort the limit to use in select query will be
     // `operationsConfig.maxDocumentSortCount() + 1`
     var selectLimit =
         inMemorySort.target() == RowSorter.NO_OP
@@ -95,8 +95,7 @@ class ReadCommandResolver<
     // the columns the user wants
     // NOTE: the TableProjection is doing double duty as the select and the operation projection
     var projection =
-        TableProjection.fromDefinition(
-            objectMapper, command.tableProjectionDefinition(), commandContext.schemaObject());
+        TableProjection.fromDefinition(objectMapper, command, commandContext.schemaObject());
 
     attemptBuilder.addSelect(WithWarnings.of(projection));
     attemptBuilder.addProjection(projection);

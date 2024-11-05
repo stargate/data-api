@@ -35,7 +35,7 @@ public class TableTemplates extends TemplateRunner {
     if (sort != null) {
       clause.put("sort", sort);
     }
-    if (sort != null) {
+    if (options != null) {
       clause.put("options", options);
     }
     return asJSON(clause);
