@@ -141,14 +141,13 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
           .hasJSONField(
               "data.document",
               // By default, null values are not returned
-              removeNullValues(
-                  """
-                              {
-                                  "id": "c",
-                                  "age": null,
-                                  "name": null
-                              }
-                              """));
+              """
+                                  {
+                                      "id": "c",
+                                      "age": null,
+                                      "name": null
+                                  }
+                                  """);
     }
 
     @Test
@@ -257,7 +256,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
               }
               """)
           .wasSuccessful()
-          .hasJSONField("data.document", removeNullValues(DOC_B_JSON));
+          .hasJSONField("data.document", DOC_B_JSON);
     }
   }
 
