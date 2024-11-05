@@ -799,6 +799,26 @@ request-errors:
       
       Resend the command using only vector columns that have been indexed.
 
+  - scope: SORT
+    code: CANNOT_SORT_TABLE_DELETE_COMMAND
+    title: Sort supplied for non sortable delete Table command
+    body: |-
+      The command attempted to sort a delete command running against a table. 
+
+      Deleting rows in a table does not support sorting, rows can only be deleted by specifying the partition key(s) and optionally the clustering key(s) for the row(s) to be deleted.
+      
+      Resend the command without the sort clause.
+
+  - scope: SORT
+    code: CANNOT_SORT_TABLE_UPDATE_COMMAND
+    title: Sort supplied for non sortable update Table command
+    body: |-
+      The command attempted to sort a update command running against a table. 
+
+      Updating row in a table does not support sorting, a row can only be updated by specifying full primary key(s).
+      
+      Resend the command without the sort clause.
+
 # ================================================================================================================
 # ================================================================================================================
 #                                           Server Errors
