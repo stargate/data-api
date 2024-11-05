@@ -780,7 +780,7 @@ request-errors:
 
   - scope: SORT
     code: CANNOT_SORT_TABLE_DELETE_COMMAND
-    title: Sort supplier for non sortable delete Table command
+    title: Sort supplied for non sortable delete Table command
     body: |-
       The command attempted to sort a delete command running against a table. 
 
@@ -790,11 +790,11 @@ request-errors:
 
   - scope: SORT
     code: CANNOT_SORT_TABLE_UPDATE_COMMAND
-    title: Sort supplier for non sortable UPDATE Table command
+    title: Sort supplied for non sortable update Table command
     body: |-
       The command attempted to sort a update command running against a table. 
 
-      Updating row in a table does not support sorting, row can only be updated by specifying full primary key(s).
+      Updating row in a table does not support sorting, a row can only be updated by specifying full primary key(s).
       
       Resend the command without the sort clause.
 
