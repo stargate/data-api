@@ -136,16 +136,6 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
             e.getMessage());
       }
     }
-
-    if (LOGGER.isDebugEnabled()) {
-      double durationMs = (System.nanoTime() - startNano) / 1_000_000.0;
-      LOGGER.debug(
-          "projectRow() row build durationMs={}, columns.size={}, nonNullCount={}, skippedNullCount={}",
-          durationMs,
-          columns.size(),
-          nonNullCount,
-          skippedNullCount);
-    }
     return result;
   }
 
