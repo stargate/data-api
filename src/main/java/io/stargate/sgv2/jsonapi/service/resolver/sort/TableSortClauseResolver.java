@@ -71,7 +71,7 @@ public class TableSortClauseResolver<CmdT extends Command & Sortable>
     }
 
     // we have one vector sort - cannot have any other sorting
-    var nonVectorSorts = sortClause.nonTableVectorSorts();
+    var nonVectorSorts = sortClause.tableNonVectorSorts();
     if (!nonVectorSorts.isEmpty()) {
       throw SortException.Code.CANNOT_MIX_VECTOR_AND_NON_VECTOR_SORT.get(
           errVars(

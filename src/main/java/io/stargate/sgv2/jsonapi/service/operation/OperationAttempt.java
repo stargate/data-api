@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.data.CqlVector;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
@@ -504,6 +506,57 @@ public abstract class OperationAttempt<
   /** helper method to build a string with the position and attemptId, used in logging. */
   public String positionAndAttemptId() {
     return String.format("position=%d, attemptId=%s", position, attemptId);
+  }
+
+  protected void logStatement(Logger logger, String prefix, SimpleStatement statement) {
+
+    //  vectors are very big, so we do not log them at debug they will blow up the logs
+    if (logger.isDebugEnabled()) {
+      var vectorTrimmedValues =
+          statement.getPositionalValues().stream()
+              .map(
+                  value -> {
+                    if (value instanceof CqlVector<?> vector) {
+                      var i = vector.size();
+                      return Arrays.asList(
+                          vector.get(Math.min(0, i)),
+                          vector.get(Math.min(1, i)),
+                          vector.get(Math.min(2, i)),
+                          vector.get(Math.min(3, i)),
+                          vector.get(Math.min(4, i)),
+                          "<vector<%s> trimmed, log at trace to get full value>"
+                              .formatted(vector.size()));
+                    }
+                    return value;
+                  })
+              .toList();
+
+      // ANN OF [-0.042139724, 0.020535178, 0.06071997, 0.042741243, ... ]
+      var cql = statement.getQuery();
+      int start = cql.indexOf("ANN OF [");
+      if (start > -1) {
+        var floatPos = start;
+        for (int i = 0; i < 5; i++) {
+          floatPos = cql.indexOf(",", floatPos + 1);
+        }
+        int end = cql.indexOf("]", floatPos);
+        cql =
+            cql.substring(0, floatPos)
+                + ", <vector<unknown> trimmed, log at trace to get full value>"
+                + cql.substring(end);
+      }
+      logger.debug(
+          "{} - {}, cql={}, values={}", prefix, positionAndAttemptId(), cql, vectorTrimmedValues);
+    }
+
+    if (logger.isTraceEnabled()) {
+      logger.trace(
+          "{} - {}, cql={}, values={}",
+          prefix,
+          positionAndAttemptId(),
+          statement.getQuery(),
+          statement.getPositionalValues());
+    }
   }
 
   /**

@@ -31,6 +31,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
@@ -212,12 +213,17 @@ public class CollectionResource {
                 // for
                 // the $vector column in a collection
 
-                var vectorColDef =
-                    schemaObject
-                        .vectorConfig()
-                        .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
-                        .orElse(null);
-
+                VectorColumnDefinition vectorColDef = null;
+                if (schemaObject.type() == SchemaObject.SchemaObjectType.COLLECTION) {
+                  vectorColDef =
+                      schemaObject
+                          .vectorConfig()
+                          .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
+                          .orElse(null);
+                } else if (schemaObject.type() == SchemaObject.SchemaObjectType.TABLE) {
+                  vectorColDef =
+                      schemaObject.vectorConfig().getFirstColumnDefinition().orElse(null);
+                }
                 EmbeddingProvider embeddingProvider =
                     (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)
                         ? null

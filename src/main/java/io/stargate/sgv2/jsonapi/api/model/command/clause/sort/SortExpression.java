@@ -2,7 +2,9 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Objects;
 import javax.annotation.Nullable;
@@ -42,8 +44,26 @@ public record SortExpression(
     return new SortExpression(path, false, vector, null);
   }
 
+  /**
+   * Create a sort that is used when sorting a table column by a vectorize string .
+   *
+   * <p>aaron -4-nov, this is a bit of a hack, but it is a quick way to support sorting by a
+   * vectorize for tables
+   */
+  public static SortExpression tableVectorizeSort(String path, String vectorize) {
+    return new SortExpression(path, false, null, vectorize);
+  }
+
+  public CqlIdentifier pathAsIdentifer() {
+    return cqlIdentifierFromUserInput(path);
+  }
+
   public boolean isTableVectorSort() {
     return !pathIs$VectorNames() && vector != null;
+  }
+
+  public boolean isTableVectorizeSort() {
+    return !pathIs$VectorNames() && vectorize != null;
   }
 
   private boolean pathIs$VectorNames() {

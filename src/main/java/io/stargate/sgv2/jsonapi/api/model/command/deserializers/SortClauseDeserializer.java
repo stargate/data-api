@@ -96,6 +96,14 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         // this is also why we do not break the look here
         sortExpressions.add(
             SortExpression.tableVectorSort(path, arrayNodeToVector((ArrayNode) inner.getValue())));
+      } else if (inner.getValue().isTextual()) {
+        // TODO: HACK: quick support for tables, if the value is an text  we will assume the column
+        // is a vector and the user wants to do vectorize then need to check on table pathway that
+        // the sort is correct.
+        // NOTE: does not check if there are more than one sort expression, the
+        // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
+        // this is also why we do not break the look here
+        sortExpressions.add(SortExpression.tableVectorizeSort(path, inner.getValue().textValue()));
       } else {
         if (path.isBlank()) {
           throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(

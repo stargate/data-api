@@ -38,7 +38,13 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) implements
         : sortExpressions.stream().filter(SortExpression::isTableVectorSort).toList();
   }
 
-  public List<SortExpression> nonTableVectorSorts() {
+  public List<SortExpression> tableVectorizeSorts() {
+    return sortExpressions == null
+        ? List.of()
+        : sortExpressions.stream().filter(SortExpression::isTableVectorizeSort).toList();
+  }
+
+  public List<SortExpression> tableNonVectorSorts() {
     return sortExpressions == null
         ? List.of()
         : sortExpressions.stream()
