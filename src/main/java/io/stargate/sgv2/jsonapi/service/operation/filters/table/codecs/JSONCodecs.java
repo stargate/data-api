@@ -244,7 +244,7 @@ public abstract class JSONCodecs {
           GenericType.STRING,
           DataTypes.DURATION,
           // CqlDuration.from() accepts 2 formats; ISO-8601 ("P1H30M") and "1h30m" (Cassandra
-          // compact) format
+          // compact) format. Note: negative values (preceding "-") also accepted
           JSONCodec.ToCQL.safeFromString(CqlDuration::from),
           // But since we must produce ISO-8601, need custom JSON serialization
           (objectMapper, fromCQLType, value) ->
