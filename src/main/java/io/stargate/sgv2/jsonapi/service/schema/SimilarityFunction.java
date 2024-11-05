@@ -17,6 +17,7 @@ public enum SimilarityFunction {
 
   private String metric;
   private static Map<String, SimilarityFunction> FUNCTIONS_MAP = new HashMap<>();
+  public static final SimilarityFunction DEFAULT_SIMILARITY_FUNCTION = COSINE;
 
   static {
     for (SimilarityFunction similarityFunction : SimilarityFunction.values()) {

@@ -13,7 +13,7 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateIndex;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexOnTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexStart;
 import com.datastax.oss.driver.internal.querybuilder.schema.DefaultCreateIndex;
-import io.stargate.sgv2.jsonapi.config.constants.TableIndexConstants;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedCreateIndex;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
@@ -72,13 +72,13 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
     public Map<String, Object> getOptions() {
       Map<String, Object> options = new HashMap<>();
       if (caseSensitive != null) {
-        options.put(TableIndexConstants.IndexOptionKeys.CASE_SENSITIVE_OPTION, caseSensitive);
+        options.put("case_sensitive", caseSensitive);
       }
       if (normalize != null) {
-        options.put(TableIndexConstants.IndexOptionKeys.NORMALIZE_OPTION, normalize);
+        options.put("normalize", normalize);
       }
       if (ascii != null) {
-        options.put(TableIndexConstants.IndexOptionKeys.ASCII_OPTION, ascii);
+        options.put("ascii", ascii);
       }
       return options;
     }
@@ -92,11 +92,10 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
       Map<String, Object> options = new HashMap<>();
       if (similarityFunction != null) {
         options.put(
-            TableIndexConstants.IndexOptionKeys.SIMILARITY_FUNCTION_OPTION,
-            similarityFunction.getMetric());
+            VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION, similarityFunction.getMetric());
       }
       if (sourceModel != null) {
-        options.put(TableIndexConstants.IndexOptionKeys.SOURCE_MODEL_OPTION, sourceModel);
+        options.put(VectorConstants.CQLAnnIndex.SOURCE_MODEL, sourceModel);
       }
       return options;
     }

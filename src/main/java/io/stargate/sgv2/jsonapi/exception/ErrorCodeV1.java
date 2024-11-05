@@ -141,6 +141,8 @@ public enum ErrorCodeV1 {
 
   VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name"),
 
+  VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME("Unrecognized vector search source model name"),
+
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
   VECTOR_SIZE_MISMATCH("Length of vector parameter different from declared '$vector' dimension"),
 
@@ -151,7 +153,7 @@ public enum ErrorCodeV1 {
   VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
 
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
-  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail"),
+  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
 
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   COLLECTION_CREATION_ERROR(

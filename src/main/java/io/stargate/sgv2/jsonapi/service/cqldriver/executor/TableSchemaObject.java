@@ -1,31 +1,24 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.config.constants.TableIndexConstants;
-import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
-import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TableSchemaObject extends TableBasedSchemaObject {
+  private static final Logger LOGGER = LoggerFactory.getLogger(TableSchemaObject.class);
 
   public static final SchemaObjectType TYPE = SchemaObjectType.TABLE;
 
   private final VectorConfig vectorConfig;
-
-  private final IndexConfig indexConfigs;
+  private final ApiTableDef apiTableDef;
 
   private TableSchemaObject(
-      TableMetadata tableMetadata, VectorConfig vectorConfig, IndexConfig indexConfig) {
+      TableMetadata tableMetadata, VectorConfig vectorConfig, ApiTableDef apiTableDef) {
     super(TYPE, tableMetadata);
     this.vectorConfig = vectorConfig;
-    this.indexConfigs = indexConfig;
+    this.apiTableDef = apiTableDef;
   }
 
   @Override
@@ -38,51 +31,15 @@ public class TableSchemaObject extends TableBasedSchemaObject {
     return IndexUsage.NO_OP;
   }
 
-  public IndexConfig indexConfig() {
-    return indexConfigs;
+  public ApiTableDef apiTableDef() {
+    return apiTableDef;
   }
 
   /** Get table schema object from table metadata */
   public static TableSchemaObject from(TableMetadata tableMetadata, ObjectMapper objectMapper) {
-    Map<String, String> extensions = TableMetadataUtils.getExtensions(tableMetadata);
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
-        TableMetadataUtils.getVectorizeMap(extensions, objectMapper);
-    IndexConfig indexConfig = IndexConfig.from(tableMetadata);
-    VectorConfig vectorConfig;
-    List<VectorConfig.ColumnVectorDefinition> columnVectorDefinitions = new ArrayList<>();
-    for (Map.Entry<CqlIdentifier, ColumnMetadata> column : tableMetadata.getColumns().entrySet()) {
-      var indexDefinition = indexConfig.get(column.getKey());
-      // indexDefinition can be null if the column is not indexed
-      if (column.getValue().getType() instanceof VectorType vectorType) {
-        SimilarityFunction similarityFunction = SimilarityFunction.COSINE;
-        if (indexDefinition != null) {
-          var sourceModel =
-              indexDefinition.getOption(TableIndexConstants.IndexOptionKeys.SOURCE_MODEL_OPTION);
-          var similarityFunctionValue =
-              indexDefinition.getOption(
-                  TableIndexConstants.IndexOptionKeys.SIMILARITY_FUNCTION_OPTION);
-          if (similarityFunctionValue != null) {
-            similarityFunction = SimilarityFunction.fromString(similarityFunctionValue);
-          } else if (sourceModel != null) {
-            similarityFunction = VectorConstant.SUPPORTED_SOURCES.get(sourceModel);
-          }
-        }
-        int dimension = vectorType.getDimensions();
-        VectorConfig.ColumnVectorDefinition columnVectorDefinition =
-            new VectorConfig.ColumnVectorDefinition(
-                column.getKey().asInternal(),
-                dimension,
-                similarityFunction,
-                vectorizeConfigMap.get(column.getKey().asInternal()));
-        columnVectorDefinitions.add(columnVectorDefinition);
-      }
-    }
-    if (columnVectorDefinitions.isEmpty()) {
-      vectorConfig = VectorConfig.NOT_ENABLED_CONFIG;
-    } else {
-      vectorConfig =
-          VectorConfig.fromColumnDefinitions(Collections.unmodifiableList(columnVectorDefinitions));
-    }
-    return new TableSchemaObject(tableMetadata, vectorConfig, indexConfig);
+
+    var vectorConfig = VectorConfig.from(tableMetadata, objectMapper);
+    var apiTableDef = ApiTableDef.FROM_CQL_FACTORY.create(tableMetadata, vectorConfig);
+    return new TableSchemaObject(tableMetadata, vectorConfig, apiTableDef);
   }
 }

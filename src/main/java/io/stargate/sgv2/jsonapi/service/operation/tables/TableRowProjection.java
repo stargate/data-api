@@ -7,8 +7,8 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.exception.catchable.ToJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.ToJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSourceSupplier;
@@ -74,11 +74,9 @@ public record TableRowProjection(
       }
       try {
         final Object columnValue = row.getObject(i);
-        // We have a choice here: convert into JSON null (explicit) or drop (save space)?
-        // For now, do former: may change or make configurable later.
-        if (columnValue == null) {
-          result.putNull(columnName);
-        } else {
+        // By default, null value will not be returned.
+        // https://github.com/stargate/data-api/issues/1636 issue for adding nullOption
+        if (columnValue != null) {
           result.put(columnName, codec.toJSON(objectMapper, columnValue));
         }
       } catch (ToJSONCodecException e) {

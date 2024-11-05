@@ -7,8 +7,11 @@ import static org.hamcrest.Matchers.hasEntry;
 
 import io.restassured.response.ValidatableResponse;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.exception.*;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import java.util.Map;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -26,7 +29,7 @@ public class DataApiResponseValidator {
 
     this.responseIsError =
         switch (commandName) {
-          case DROP_TABLE, DROP_INDEX, CREATE_INDEX, CREATE_TABLE, ALTER_TABLE, LIST_INDEXES ->
+          case DROP_TABLE, DROP_INDEX, CREATE_INDEX, CREATE_TABLE, ALTER_TABLE ->
               responseIsErrorWithOptionalStatus();
           default -> responseIsError();
         };
@@ -41,8 +44,7 @@ public class DataApiResponseValidator {
                   CREATE_INDEX,
                   DROP_INDEX,
                   CREATE_VECTOR_INDEX,
-                  LIST_TABLES,
-                  LIST_INDEXES ->
+                  LIST_TABLES ->
               responseIsDDLSuccess();
           case CREATE_COLLECTION -> responseIsDDLSuccess();
           default ->
@@ -102,9 +104,6 @@ public class DataApiResponseValidator {
         return hasNoErrors().hasStatusOK();
       }
       case LIST_TABLES -> {
-        return hasNoErrors();
-      }
-      case LIST_INDEXES -> {
         return hasNoErrors();
       }
       case CREATE_COLLECTION -> {
@@ -174,6 +173,14 @@ public class DataApiResponseValidator {
     return validator;
   }
 
+  public <T extends APIException> DataApiResponseValidator mayHaveSingleApiError(
+      ErrorCode<T> errorCode, Class<T> errorClass) {
+    if (errorCode == null) {
+      return hasNoErrors();
+    }
+    return hasSingleApiError(errorCode, errorClass);
+  }
+
   public <T extends APIException> DataApiResponseValidator hasSingleApiError(
       ErrorCode<T> errorCode, Class<T> errorClass, Matcher<String> messageMatcher) {
     return hasSingleApiError(errorCode, errorClass).body("errors[0].message", messageMatcher);
@@ -196,6 +203,10 @@ public class DataApiResponseValidator {
     return body(path, is(nullValue()));
   }
 
+  public DataApiResponseValidator hasField(String path) {
+    return body(path, is(anything()));
+  }
+
   public DataApiResponseValidator hasJSONField(String path, String rawJson) {
     return body(path, jsonEquals(rawJson));
   }
@@ -204,7 +215,29 @@ public class DataApiResponseValidator {
     return body("status.warnings", is(nullValue()));
   }
 
-  public DataApiResponseValidator hasSingleWarning(String code) {
+  public DataApiResponseValidator hasSingleWarning(
+      WarningException.Code code, String... messageSnippet) {
+    var validator =
+        body("status.warnings", hasSize(1))
+            .body(
+                "status.warnings[0]",
+                hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+            .body(
+                "status.warnings[0]",
+                hasEntry(
+                    ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+            .body("status.warnings[0]", hasEntry(ErrorObjectV2Constants.Fields.CODE, code.name()));
+
+    for (String snippet : messageSnippet) {
+      validator = validator.body("status.warnings[0].message", containsString(snippet));
+    }
+    return validator;
+  }
+
+  public DataApiResponseValidator mayHasSingleWarning(WarningException.Code warningExceptionCode) {
+    if (warningExceptionCode == null) {
+      return hasNoWarnings();
+    }
     return body("status.warnings", hasSize(1))
         .body(
             "status.warnings[0]",
@@ -212,7 +245,9 @@ public class DataApiResponseValidator {
         .body(
             "status.warnings[0]",
             hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
-        .body("status.warnings[0]", hasEntry(ErrorObjectV2Constants.Fields.CODE, code));
+        .body(
+            "status.warnings[0]",
+            hasEntry(ErrorObjectV2Constants.Fields.CODE, warningExceptionCode.name()));
   }
 
   public DataApiResponseValidator hasStatusOK() {
@@ -226,28 +261,62 @@ public class DataApiResponseValidator {
 
   // // // Read Command Validation // // //
 
+  public DataApiResponseValidator hasSingleDocument() {
+    return body("data.document", is(notNullValue()));
+  }
+
+  public DataApiResponseValidator hasSingleDocument(String documentJSON) {
+    return body("data.document", jsonEquals(documentJSON));
+  }
+
   public DataApiResponseValidator hasEmptyDataDocuments() {
     return body("data.documents", is(empty()));
+  }
+
+  public DataApiResponseValidator hasEmptyDataDocument() {
+    return body("data.document", is(nullValue()));
   }
 
   public DataApiResponseValidator hasDocuments(int size) {
     return body("data.documents", hasSize(size));
   }
 
+  // // // Projection Schema // // //
+  public DataApiResponseValidator hasProjectionSchema() {
+    return hasField("status." + CommandStatus.PROJECTION_SCHEMA);
+  }
+
+  public DataApiResponseValidator hasProjectionSchemaWith(ApiColumnDef columnDef) {
+    return hasProjectionSchemaWith(columnDef.name().asInternal(), columnDef.type());
+  }
+
+  public DataApiResponseValidator hasProjectionSchemaWith(String columnName, ApiDataType type) {
+    // expected format
+    /**
+     * "projectionSchema": { "country": { "type": "text" }, "name": { "type": "text" }, "human": {
+     * "type": "boolean" }, "email": { "type": "text" }, "age": { "type": "tinyint" } }
+     */
+    // NOTE: no way to get the json field name from the data type enum
+    return body(
+        "status.projectionSchema." + columnName + ".type", equalTo(type.typeName().apiName()));
+  }
+
+  public DataApiResponseValidator doesNotHaveProjectionSchemaWith(String columnName) {
+    return body("$", not(hasKey("status.projectionSchema." + columnName)));
+  }
+
   public DataApiResponseValidator hasDocumentInPosition(int position, String documentJSON) {
     return body("data.documents[%s]".formatted(position), jsonEquals(documentJSON));
   }
 
-  public DataApiResponseValidator hasIndexes(String... indexes) {
-    return body("status.indexes", hasSize(indexes.length))
-        .body("status.indexes", containsInAnyOrder(indexes));
-  }
-
-  public DataApiResponseValidator constainsNoneOf(String... indexes) {
-    DataApiResponseValidator toReturn = this;
-    for (String index : indexes) {
-      toReturn = body("status.indexes", not(contains(index)));
+  public DataApiResponseValidator mayFoundSingleDocumentIdByFindOne(
+      FilterException.Code expectedFilterException, String sampleId) {
+    if (expectedFilterException != null) {
+      return hasNoField("data");
     }
-    return toReturn;
+    if (sampleId == null) {
+      return hasEmptyDataDocument();
+    }
+    return body("data.document.id", is(sampleId));
   }
 }

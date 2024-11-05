@@ -2,7 +2,8 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.querybuilder.update.Update;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.exception.WithWarnings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer;
@@ -13,7 +14,7 @@ import org.slf4j.LoggerFactory;
  * Builds an attempt to delete a row from an API Table, create a single instance and then call
  * {@link #build(WhereCQLClause)} for each different where clause the command creates.
  */
-public class UpdateAttemptBuilder<SchemaT extends TableBasedSchemaObject> {
+public class UpdateAttemptBuilder<SchemaT extends TableSchemaObject> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UpdateAttemptBuilder.class);
 
@@ -31,22 +32,23 @@ public class UpdateAttemptBuilder<SchemaT extends TableBasedSchemaObject> {
   }
 
   public UpdateAttempt<SchemaT> build(
-      WhereCQLClause<Update> whereCQLClause, UpdateValuesCQLClause updateCQLClause) {
+      WhereCQLClause<Update> whereCQLClause, WithWarnings<UpdateValuesCQLClause> updateCQLClause) {
 
     readPosition += 1;
 
     // TODO: this may be common for creating a read / delete / where attempt will look at how to
     // refactor once all done
-    WhereCQLClauseAnalyzer.WhereClauseAnalysis analyzedResult = null;
+    WhereCQLClauseAnalyzer.WhereClauseWithWarnings whereClauseWithWarnings = null;
     Exception exception = null;
     try {
-      analyzedResult = whereCQLClauseAnalyzer.analyse(whereCQLClause);
+      whereClauseWithWarnings = whereCQLClauseAnalyzer.analyse(whereCQLClause);
     } catch (FilterException filterException) {
       exception = filterException;
     }
 
     var attempt =
-        new UpdateAttempt<>(readPosition, tableBasedSchema, updateCQLClause, whereCQLClause);
+        new UpdateAttempt<>(
+            readPosition, tableBasedSchema, updateCQLClause.target(), whereCQLClause);
 
     // ok to pass null exception, will be ignored
     attempt.maybeAddFailure(exception);
@@ -54,11 +56,16 @@ public class UpdateAttemptBuilder<SchemaT extends TableBasedSchemaObject> {
     // There should not be any warnings, we cannot turn on allow filtering for delete
     // and we should not be turning on  allow filtering for delete
     // sanity check
-    if (analyzedResult != null && !analyzedResult.isEmpty()) {
+    if (whereClauseWithWarnings != null
+        && (whereClauseWithWarnings.requiresAllowFiltering()
+            || !whereClauseWithWarnings.isEmpty())) {
       throw new IllegalStateException(
-          "Where clause analysis for update was not empty, analysis:%s".formatted(analyzedResult));
+          "Where clause analysis for update was not empty, analysis:%s"
+              .formatted(whereClauseWithWarnings));
     }
 
+    // add warnings from the CQL clauses to the attempt
+    updateCQLClause.accept(attempt);
     return attempt;
   }
 }

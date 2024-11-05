@@ -26,10 +26,7 @@ public enum CommandStatus {
   /** Status for reporting existing collections. */
   @JsonProperty("collections")
   EXISTING_COLLECTIONS,
-  /** Status for reporting existing indexes. */
-  @JsonProperty("indexes")
-  EXISTING_INDEXES,
-  /** Status for reporting existing tables. */
+  /** Status for reporting existing collections. */
   @JsonProperty("tables")
   EXISTING_TABLES,
 
@@ -105,5 +102,21 @@ public enum CommandStatus {
    * definitions as the is used in createTable command.
    */
   @JsonProperty("primaryKeySchema")
-  PRIMARY_KEY_SCHEMA
+  PRIMARY_KEY_SCHEMA,
+
+  /**
+   * The element contains the schema that describes the schema of the columns that were requested in
+   * the projection.
+   *
+   * <p>When doing a read, the result of the read by default does not columns that have null values.
+   * Additionaly in the default JSON representation multiple Column types may be represented as a
+   * single JSON type, such as dates, timestamps, duration all represented as a string. Or all
+   * numeric types as a JSON number.
+   *
+   * <p>Clients can use the schema returned here to understand where null values were ommitted and
+   * what the actual type of the column is.
+   */
+  @JsonProperty("projectionSchema")
+  PROJECTION_SCHEMA;
+  ;
 }

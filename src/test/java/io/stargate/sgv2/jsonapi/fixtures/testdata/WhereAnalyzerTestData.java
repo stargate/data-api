@@ -79,7 +79,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     private final WhereCQLClauseAnalyzer analyzer;
     private final LogicalExpressionTestData.ExpressionBuilder<WhereAnalyzerFixture> expression;
 
-    private WhereCQLClauseAnalyzer.WhereClauseAnalysis analysisResult = null;
+    private WhereCQLClauseAnalyzer.WhereClauseWithWarnings analysisResult = null;
     public Throwable exception = null;
 
     public WhereAnalyzerFixture(
@@ -198,7 +198,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
 
     public WhereAnalyzerFixture assertOneWarning(WarningException.Code warningCode) {
 
-      assertThat(analysisResult.warningExceptions())
+      assertThat(analysisResult.warnings())
           .as("One warning when: %s".formatted(message))
           .hasSize(1)
           .allMatch(exception -> exception.code.equals(warningCode.name()));
@@ -210,6 +210,15 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
       var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
       var warning =
           "The request applied $ne to the columns: %s.".formatted(errFmtCqlIdentifier(identifiers));
+      return assertWarningContains(warning);
+    }
+
+    public WhereAnalyzerFixture assertWarnOnNotInColumns(CqlIdentifier... columns) {
+
+      var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
+      var warning =
+          "The request applied $nin to the indexed columns: %s."
+              .formatted(errFmtCqlIdentifier(identifiers));
       return assertWarningContains(warning);
     }
 
@@ -254,8 +263,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     }
 
     public WhereAnalyzerFixture assertWarningContains(String contains) {
-
-      assertThat(analysisResult.warningExceptions())
+      assertThat(analysisResult.warnings())
           .as("Warning message contains expected when: %s".formatted(message))
           .hasSize(1)
           .first()
@@ -267,9 +275,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     }
 
     public WhereAnalyzerFixture assertNoWarnings() {
-      assertThat(analysisResult.warningExceptions())
-          .as("No warnings when: %s".formatted(message))
-          .isEmpty();
+      assertThat(analysisResult.warnings()).as("No warnings when: %s".formatted(message)).isEmpty();
       return this;
     }
 

@@ -9,6 +9,7 @@ public abstract class CqlIdentifierUtil {
 
   public static final Comparator<CqlIdentifier> CQL_IDENTIFIER_COMPARATOR =
       Comparator.comparing(CqlIdentifier::asInternal);
+
   public static final Comparator<ColumnMetadata> COLUMN_METADATA_COMPARATOR =
       Comparator.comparing(m -> m.getName().asInternal());
 
@@ -23,12 +24,12 @@ public abstract class CqlIdentifierUtil {
     return CqlIdentifier.fromInternal(name);
   }
 
-  public static String cqlIdentifierToStringForUser(CqlIdentifier identifier) {
+  public static String cqlIdentifierToMessageString(CqlIdentifier identifier) {
     return identifier.asCql(true);
   }
 
   /** Remove the quotes from the identifier */
-  public static String externalRepresentation(CqlIdentifier identifier) {
+  public static String cqlIdentifierToJsonKey(CqlIdentifier identifier) {
     return identifier.asInternal();
   }
 }
