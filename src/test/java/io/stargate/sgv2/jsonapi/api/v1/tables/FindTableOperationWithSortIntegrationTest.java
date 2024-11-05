@@ -397,7 +397,6 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
             throw new RuntimeException(e);
           }
           assertTableCommand(keyspaceName, tableName).templated().insertOne(json).wasSuccessful();
-          System.out.println("Inserted: " + json);
         });
   }
 
