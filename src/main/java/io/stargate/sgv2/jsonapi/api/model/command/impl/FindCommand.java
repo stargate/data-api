@@ -78,7 +78,9 @@ public record FindCommand(
 
   @Override
   public Optional<Integer> limit() {
-    return options() != null ? Optional.of(options().limit()) : Optional.empty();
+    return options() != null && options().limit() != null
+        ? Optional.of(options().limit())
+        : Optional.empty();
   }
 
   @Override
