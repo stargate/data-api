@@ -138,12 +138,15 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
       }
       try {
         final Object columnValue = row.getObject(i);
-        // We have a choice here: convert into JSON null (explicit) or drop (save space)?
-        // For now, do former: may change or make configurable later.
-        if (columnValue != null) {
+        // By default, null value will not be returned.
+        // https://github.com/stargate/data-api/issues/1636 issue for adding nullOption
+        if (columnValue == null) {
+          skippedNullCount++;
+        } else {
           nonNullCount++;
           result.put(columnName, codec.toJSON(objectMapper, columnValue));
         }
+
       } catch (ToJSONCodecException e) {
         throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
             e,
@@ -152,6 +155,16 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
             column.getType().toString(),
             e.getMessage());
       }
+    }
+
+    if (LOGGER.isDebugEnabled()) {
+      double durationMs = (System.nanoTime() - startNano) / 1_000_000.0;
+      LOGGER.debug(
+          "projectRow() row build durationMs={}, columns.size={}, nonNullCount={}, skippedNullCount={}",
+          durationMs,
+          columns.size(),
+          nonNullCount,
+          skippedNullCount);
     }
 
     // If user specify includeSimilarity, but no ANN sort clause, then we won't generate

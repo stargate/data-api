@@ -10,15 +10,18 @@ import java.util.Objects;
 
 /**
  * Intermediate type for further processing: used with {@link JsonLiteral} and {@link
- * JsonType#EJSON_WRAPPER} to store special types in JSON (e.g. binary data). Currently only one
- * type is supported but this can be extended in the future.
+ * JsonType#EJSON_WRAPPER} to store special types in JSON (e.g. binary data).
  */
 public class EJSONWrapper {
   // Actual DRY keys
   public static final String $BINARY = "$binary";
 
+  public static final String $DATE = "$date";
+
   public enum EJSONType {
-    BINARY($BINARY);
+    BINARY($BINARY),
+    DATE($DATE);
+    ;
 
     private final String key;
 
@@ -26,11 +29,17 @@ public class EJSONWrapper {
       this.key = key;
     }
 
+    /**
+     * Lookup method to find enum value from key
+     *
+     * @param key String key to look up
+     * @return Actual EJSONType enum value (if found) or {@code null} (if not found).
+     */
     public static EJSONType fromKey(String key) {
-      // With very few entries just do this: can build lookup Map if needed
-      // in future
+      // With few entries just switch: build lookup Map if needed in future
       return switch (key) {
         case $BINARY -> BINARY;
+        case $DATE -> DATE;
         default -> null;
       };
     }
@@ -62,12 +71,22 @@ public class EJSONWrapper {
     return (type == null) ? null : new EJSONWrapper(type, value);
   }
 
+  /** Factory method for constructing "$binary" EJSON Wrapper with given contents */
   public static EJSONWrapper binaryWrapper(ByteBuffer value) {
     return binaryWrapper(bytesFromByteBuffer(value));
   }
 
+  /** Factory method for constructing "$binary" EJSON Wrapper with given contents */
   public static EJSONWrapper binaryWrapper(byte[] value) {
     return new EJSONWrapper(EJSONType.BINARY, JsonNodeFactory.instance.binaryNode(value));
+  }
+
+  /**
+   * Factory method for constructing "$date" EJSON Wrapper to wrap given milliseconds (since epoch,
+   * Java standard) timestamp: for compatibility with Collections
+   */
+  public static EJSONWrapper timestampWrapper(long timestamp) {
+    return new EJSONWrapper(EJSONType.DATE, JsonNodeFactory.instance.numberNode(timestamp));
   }
 
   public EJSONType type() {
