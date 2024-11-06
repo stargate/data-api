@@ -413,6 +413,12 @@ request-errors:
       ${SNIPPET.INEFFICIENT_SORT}
 
   - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_SKIP_OPTIONS
+    title: Sorting uses skip option, performing as inmemory sory
+    body: |-
+      Sorting uses skip option, performing as inmemory sory
+
+  - scope: WARNING
     code: IN_MEMORY_SORTING_DUE_TO_MISSING_PARTITION_SORTING
     title: Sorting with missing partition sorting columns
     body: |-
@@ -734,6 +740,13 @@ request-errors:
       Resend the command using only columns that are defined in the table schema.
 
   - scope: SORT
+    code: CANNOT_SORT_TOO_MUCH_DATA
+    title: Sort cannot be performed because query returned more than in-memory sortable rows.
+    body: |-
+      Sort cannot be performed because query returned more than in-memory sortable rows.
+      Add more filters to reduce the number of rows returned.
+
+  - scope: SORT
     code: CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS
     title: Vector sort requested for non-vector columns
     body: |-
@@ -745,6 +758,14 @@ request-errors:
       The command attempted to sort the non vector columns: ${sortColumns}.  
       
       Resend the command using only vector columns for vector sorting.
+
+  - scope: SORT
+    code: CANNOT_VECTOR_SORT_WITH_SKIP_OPTION
+    title: Vector sort requested with skip option
+    body: |-
+      The command attempted to vector sort columns along with skip option set. 
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
 
   - scope: SORT
     code: CANNOT_VECTOR_SORT_NON_INDEXED_VECTOR_COLUMNS
