@@ -1,10 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtApiColumnDef;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
@@ -40,13 +38,12 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
   private final SelectCQLClause selectCQLClause;
   private final WhereCQLClause<Select> whereCQLClause;
   private final OrderByCqlClause orderByCqlClause;
-  private final CqlOptions<Select> cqlOptions;
+  private final CQLOptions<Select> cqlOptions;
   private final CqlPagingState pagingState;
-  // DocumentSourceSupplier is an old idea that needs refactoring at some point, is a supplier of a
-  // supplier
-  // but this class encapsulates the idea of how to convert a row into a document.
-  private final DocumentSourceSupplier documentSourceSupplier;
+  private final RowSorter rowSorter;
+  private final OperationProjection projection;
 
+  // Need to have this downcast reference so we can call read specific methods
   private ReadAttemptRetryPolicy<SchemaT> readAttemptRetryPolicy;
   private ReadResult readResult;
 
@@ -56,9 +53,10 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
       SelectCQLClause selectCQLClause,
       WhereCQLClause<Select> whereCQLClause,
       OrderByCqlClause orderByCqlClause,
-      CqlOptions<Select> cqlOptions,
+      CQLOptions<Select> cqlOptions,
       CqlPagingState pagingState,
-      DocumentSourceSupplier documentSourceSupplier) {
+      RowSorter rowSorter,
+      OperationProjection projection) {
     super(position, schemaObject, new ReadAttemptRetryPolicy<SchemaT>());
 
     // nullable because the subclass may want to implement methods to build the statement itself
@@ -67,9 +65,11 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     this.orderByCqlClause = orderByCqlClause;
     this.cqlOptions = cqlOptions;
     this.pagingState = pagingState;
-    this.documentSourceSupplier = documentSourceSupplier;
+    this.projection = Objects.requireNonNull(projection, "projection must not be null");
+    this.rowSorter = Objects.requireNonNull(rowSorter, "rowSorter must not be null");
 
     downcastRetryPolicy();
+    Objects.requireNonNull(readAttemptRetryPolicy, "readAttemptRetryPolicy must not be null");
     setStatus(OperationStatus.READY);
   }
 
@@ -91,8 +91,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
 
     List<JsonNode> documents = new ArrayList<>();
     if (readResult != null) {
-      readResult.currentPage.forEach(
-          row -> documents.add(documentSourceSupplier.documentSource(row).get()));
+      readResult.currentPage.forEach(row -> documents.add(projection.projectRow(row)));
     }
     return documents;
   }
@@ -117,13 +116,19 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     readAttemptRetryPolicy.setRetryContext(
         new ReadAttemptRetryPolicy.RetryContext<>(statement, this));
 
-    logStatement(LOGGER, "executeStatement()", statement);
-    return queryExecutor.executeRead(statement);
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug(
+          "execute() - {}, cql={}, values={}",
+          positionAndAttemptId(),
+          statement.getQuery(),
+          statement.getPositionalValues());
+    }
+    return rowSorter.executeRead(queryExecutor, statement);
   }
 
   @Override
   protected ReadAttempt<SchemaT> onSuccess(AsyncResultSet resultSet) {
-    readResult = new ReadResult(resultSet);
+    readResult = new ReadResult(rowSorter, resultSet);
     // call to make sure status is set
     return super.onSuccess(resultSet);
   }
@@ -141,7 +146,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     // these are options that go on the statement, such as page size
     statement = applyOptions(statement);
 
-    return pagingState.addToStatement(statement);
+    return rowSorter.updatePagingState(pagingState).addToStatement(statement);
   }
 
   protected Select applySelect(SelectFrom selectFrom, List<Object> positionalValues) {
@@ -151,6 +156,8 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
 
     // Add the columns we want to select
     Select select = selectCQLClause.apply(selectFrom);
+    // Row sorting may need to add columns to the select to do sorting by
+    select = rowSorter.addToSelect(select);
     // Add the where clause
     select = whereCQLClause.apply(select, positionalValues);
     // and finally order by
@@ -160,7 +167,9 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
   }
 
   protected BuildableQuery applyOptions(Select select) {
-    return cqlOptions.applyBuilderOptions(select);
+    // The sorter may need to update the options that are applied, e.g. to change the limit or page
+    // size
+    return rowSorter.updateCqlOptions(cqlOptions).applyBuilderOptions(select);
   }
 
   protected SimpleStatement applyOptions(SimpleStatement statement) {
@@ -174,21 +183,17 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     if (!checkStatus("schemaDescription()", OperationStatus.COMPLETED)) {
       return Optional.empty();
     }
+    return Optional.of(projection.getSchemaDescription());
+  }
 
-    // result set has ColumnDefinitions not ColumnMetadata kind of weird
-    List<CqlIdentifier> readIdentifiers =
-        new ArrayList<>(readResult.resultSet.getColumnDefinitions().size());
-    for (var columnDef : readResult.resultSet.getColumnDefinitions()) {
-      readIdentifiers.add(columnDef.getName());
-    }
-
-    var readApiColumns = schemaObject.apiTableDef().allColumns().filterBy(readIdentifiers);
-    if (!readApiColumns.filterByUnsupported().isEmpty()) {
-      throw new IllegalStateException(
-          "Unsupported columns in the result set: %s"
-              .formatted(errFmtApiColumnDef(readApiColumns.filterByUnsupported())));
-    }
-    return Optional.of(readApiColumns.toColumnsDesc());
+  /**
+   * Gets the total number of rows that were sorted, that is all the rows that were read from the
+   * database.
+   *
+   * @return
+   */
+  public Optional<Integer> sortedRowCount() {
+    return rowSorter.sortedRowCount();
   }
 
   // This is a simple container for the result set so we can set one variable in the onSuccess
@@ -199,13 +204,18 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     final Iterable<Row> currentPage;
     final CqlPagingState pagingState;
 
-    ReadResult(AsyncResultSet resultSet) {
+    ReadResult(RowSorter rowSorter, AsyncResultSet resultSet) {
       this.resultSet = Objects.requireNonNull(resultSet, "resultSet must not be null");
       this.currentPage = resultSet.currentPage();
-      this.pagingState = CqlPagingState.from(resultSet);
+      this.pagingState = rowSorter.buildPagingState(resultSet);
     }
   }
 
+  /**
+   * Retry policy that will retry a read attempt if the query fails due to missing Allow Filtering
+   *
+   * @param <T>
+   */
   static class ReadAttemptRetryPolicy<T extends TableSchemaObject> extends RetryPolicy {
 
     private RetryContext<T> retryContext = null;

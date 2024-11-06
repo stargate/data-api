@@ -52,6 +52,22 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) implements
             .toList();
   }
 
+  public List<CqlIdentifier> sortColumnIdentifiers() {
+    return sortExpressions == null
+        ? List.of()
+        : sortExpressions.stream().map(SortExpression::pathAsCqlIdentifier).toList();
+  }
+
+  /** Returns all non vector columns sorts. */
+  public List<SortExpression> tableNonVectorSorts() {
+    return sortExpressions.stream()
+        .filter(
+            sortExpression -> {
+              return !sortExpression.isTableVectorSort();
+            })
+        .toList();
+  }
+
   public boolean hasVsearchClause() {
     return sortExpressions != null
         && !sortExpressions.isEmpty()

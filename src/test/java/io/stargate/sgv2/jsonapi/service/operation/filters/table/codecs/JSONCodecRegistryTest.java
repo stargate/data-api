@@ -264,7 +264,11 @@ public class JSONCodecRegistryTest {
         Arguments.of(
             DataTypes.TIMESTAMP,
             TEST_DATA.TIMESTAMP_VALID_STR,
-            Instant.parse(TEST_DATA.TIMESTAMP_VALID_STR)));
+            Instant.parse(TEST_DATA.TIMESTAMP_VALID_STR)),
+        Arguments.of(
+            DataTypes.TIMESTAMP,
+            EJSONWrapper.timestampWrapper(TEST_DATA.TIMESTAMP_VALID_NUM),
+            Instant.ofEpochMilli(TEST_DATA.TIMESTAMP_VALID_NUM)));
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesUuid() {
