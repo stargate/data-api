@@ -155,6 +155,18 @@ request-errors:
       
       Resend the request using only supported column values.
 
+  - scope: DOCUMENT
+    code: INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION
+    title: Can not vectorize on column without vectorize definition
+    body: |-
+      Vectorize only supports on vector column that has vectorize definition.
+      
+      The table ${keyspace}.${table} defines the vector columns with vectorize definition: ${validVectorizeColumns}.
+      The request included the following vector columns without vectorize definition: ${invalidVectorizeColumns}.
+      
+      Resend the vectorize request using only vector column with vectorize definition.
+      
+
 # ================================================================================================================
 # Family: REQUEST         Scope: FILTER
 # ================================================================================================================
@@ -818,6 +830,39 @@ request-errors:
       Updating row in a table does not support sorting, a row can only be updated by specifying full primary key(s).
       
       Resend the command without the sort clause.
+
+  - scope: SORT
+    code: MORE_THAN_ONE_VECTORIZE_SORT
+    title: Can not have more than one vectorize in sort clause
+    body: |-
+      Sort clause does not support more than one vectorize sort.
+
+      Request has vectorize sort on vector columns: ${sortVectorizeOnVectorColumns}
+
+  - scope: SORT
+    code: VECTORIZE_SORT_WITH_OTHER_SORT_EXPRESSION
+    title: Can not combine vectorize sort with other sort expression
+    body: |-
+      No other sort expression is allowed when vectorize sort is specified in sort clause.
+
+  - scope: SORT
+    code: VECTORIZE_SORT_ON_NON_VECTOR_COLUMN
+    title: Can not vectorize on non-vector column
+    body: |-
+      Can not vectorize on non-vector column. 
+      
+      Request has vectorize sort on non-vector column: ${sortVectorizeOnNonVectorColumn}
+
+  - scope: SORT
+    code: VECTORIZE_SORT_ON_VECTOR_COLUMN_WITHOUT_VECTORIZE_DEFINITION
+    title: Can not vectorize on vector column without vectorize definition
+    body: |-
+      Can not vectorize on vector column that has no vectorize definition. 
+      
+      Request has vectorize sort on vector column that has no vectorize definition: ${vectorColumnWithoutVectorizeDefinition}
+      
+
+
 
 # ================================================================================================================
 # ================================================================================================================

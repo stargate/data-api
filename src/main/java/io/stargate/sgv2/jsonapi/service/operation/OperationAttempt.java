@@ -512,7 +512,6 @@ public abstract class OperationAttempt<
   }
 
   protected void logStatement(Logger logger, String prefix, SimpleStatement statement) {
-
     //  vectors are very big, so we do not log them at debug they will blow up the logs
     if (logger.isDebugEnabled()) {
       var vectorTrimmedValues =
@@ -525,8 +524,6 @@ public abstract class OperationAttempt<
                           vector.get(Math.min(0, i)),
                           vector.get(Math.min(1, i)),
                           vector.get(Math.min(2, i)),
-                          vector.get(Math.min(3, i)),
-                          vector.get(Math.min(4, i)),
                           "<vector<%s> trimmed, log at trace to get full value>"
                               .formatted(vector.size()));
                     }
@@ -534,12 +531,12 @@ public abstract class OperationAttempt<
                   })
               .toList();
 
-      // ANN OF [-0.042139724, 0.020535178, 0.06071997, 0.042741243, ... ]
+      // ANN OF [-0.042139724, 0.020535178, 0.06071997, ... ]
       var cql = statement.getQuery();
       int start = cql.indexOf("ANN OF [");
       if (start > -1) {
         var floatPos = start;
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 3; i++) {
           floatPos = cql.indexOf(",", floatPos + 1);
         }
         int end = cql.indexOf("]", floatPos);

@@ -54,7 +54,7 @@ public record SortExpression(
     return new SortExpression(path, false, null, vectorize);
   }
 
-  public CqlIdentifier pathAsIdentifer() {
+  public CqlIdentifier pathAsCqlIdentifier() {
     return cqlIdentifierFromUserInput(path);
   }
 

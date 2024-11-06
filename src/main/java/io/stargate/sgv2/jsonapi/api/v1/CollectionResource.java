@@ -222,7 +222,10 @@ public class CollectionResource {
                           .orElse(null);
                 } else if (schemaObject.type() == SchemaObject.SchemaObjectType.TABLE) {
                   vectorColDef =
-                      schemaObject.vectorConfig().getFirstColumnDefinition().orElse(null);
+                      schemaObject
+                          .vectorConfig()
+                          .getFirstVectorColumnWithVectorizeDefinition()
+                          .orElse(null);
                 }
                 EmbeddingProvider embeddingProvider =
                     (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)

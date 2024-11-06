@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.SortClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -32,19 +33,15 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) implements
     return sortExpressions == null || sortExpressions.isEmpty();
   }
 
+  /** Get the sort expressions that are trying to vector sort columns on a table */
   public List<SortExpression> tableVectorSorts() {
     return sortExpressions == null
         ? List.of()
         : sortExpressions.stream().filter(SortExpression::isTableVectorSort).toList();
   }
 
-  public List<SortExpression> tableVectorizeSorts() {
-    return sortExpressions == null
-        ? List.of()
-        : sortExpressions.stream().filter(SortExpression::isTableVectorizeSort).toList();
-  }
-
-  public List<SortExpression> tableNonVectorSorts() {
+  /** Get the sort expressions that are not trying to vector sort columns on a table */
+  public List<SortExpression> nonTableVectorSorts() {
     return sortExpressions == null
         ? List.of()
         : sortExpressions.stream()
@@ -56,6 +53,12 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) implements
     return sortExpressions == null
         ? List.of()
         : sortExpressions.stream().map(SortExpression::pathAsCqlIdentifier).toList();
+  }
+
+  public List<SortExpression> tableVectorizeSorts() {
+    return sortExpressions == null
+        ? List.of()
+        : sortExpressions.stream().filter(SortExpression::isTableVectorizeSort).toList();
   }
 
   /** Returns all non vector columns sorts. */

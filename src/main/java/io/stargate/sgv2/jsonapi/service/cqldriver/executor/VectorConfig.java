@@ -115,12 +115,13 @@ public class VectorConfig {
     return vectorEnabled;
   }
 
-  public Optional<VectorColumnDefinition> getFirstColumnDefinition() {
+  public Optional<VectorColumnDefinition> getFirstVectorColumnWithVectorizeDefinition() {
     // HACK - aaron - here so we can get the first definition when processing a table, need to
     // refactor so we
     // not need to know this in the GeneralResource
-    var iter = columnVectorDefinitions.values().iterator();
-    return Optional.ofNullable(iter.hasNext() ? iter.next() : null);
+    return columnVectorDefinitions.values().stream()
+        .filter(vectorColumnDefinition -> vectorColumnDefinition.vectorizeDefinition() != null)
+        .findFirst();
   }
 
   public Optional<VectorColumnDefinition> getColumnDefinition(String columnName) {

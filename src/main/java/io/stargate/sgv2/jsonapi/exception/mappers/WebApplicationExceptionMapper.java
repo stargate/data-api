@@ -50,6 +50,7 @@ public class WebApplicationExceptionMapper {
     }
 
     CommandResult commandResult = new ThrowableCommandResultSupplier(toReport).get();
+
     if (toReport instanceof JsonApiException jae) {
       return RestResponse.status(jae.getHttpStatus(), commandResult);
     }
