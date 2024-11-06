@@ -122,6 +122,7 @@ public class EJSONWrapper {
     return bytes;
   }
 
+  // Returns the float array value from the binary EJSON wrapper
   public float[] getVectorValueForBinary() {
     if (type != EJSONType.BINARY) {
       throw new RuntimeException("Vector value can only be extracted from binary EJSON wrapper");
@@ -148,6 +149,7 @@ public class EJSONWrapper {
     }
   }
 
+  // Utility method for converting float array to binary vector value
   public static String binaryFormatString(float[] vector) {
     ByteBuffer byteBuffer = ByteBuffer.allocate(vector.length * 4); // 4 bytes per float
 
