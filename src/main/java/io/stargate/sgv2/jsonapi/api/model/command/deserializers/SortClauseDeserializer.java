@@ -71,6 +71,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
           || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path))) {
         if (arrayVals != null) {
           sortExpressions.add(SortExpression.tableVectorSort(path, arrayVals));
+          continue;
         } else if (inner.getValue().isArray()) {
           // TODO: HACK: quick support for tables, if the value is an array we will assume the
           // column
@@ -81,7 +82,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
           sortExpressions.add(
               SortExpression.tableVectorSort(
                   path, arrayNodeToVector((ArrayNode) inner.getValue())));
-          break;
+          continue;
         }
       }
       if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
