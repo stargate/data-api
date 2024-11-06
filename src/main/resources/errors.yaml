@@ -191,13 +191,15 @@ request-errors:
       Resend the request using only supported column types.  
 
   - scope: FILTER
-    code: FILTER_ON_COMPLEX_COLUMNS
-    title: Unsupported complex columns for filter
+    code: FILTERING_NOT_SUPPORTED_FOR_TYPE
+    title: The column type does not support filtering
     body: |-
-      Complex type is not supported for filter.
+      Filtering is only supported on primitive data types such as `text` not on container types such as `list`, `set`, `map`, or `vector`.
+      
+      NOTE: This restriction will be removed at a later date.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      The request included the following columns that have unsupported complex columns: ${complexColumns}.
+      The request included unsupported filters on the columns: ${complexColumns}.
       
       Resend the request using only supported column types.  
 

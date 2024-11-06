@@ -227,7 +227,7 @@ public class WhereCQLClauseAnalyzer {
             .toList();
 
     if (!filterOnComplexColumns.isEmpty()) {
-      throw FilterException.Code.FILTER_ON_COMPLEX_COLUMNS.get(
+      throw FilterException.Code.FILTERING_NOT_SUPPORTED_FOR_TYPE.get(
           errVars(
               tableSchemaObject,
               map -> {

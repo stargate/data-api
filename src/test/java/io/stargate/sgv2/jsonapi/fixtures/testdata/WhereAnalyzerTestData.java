@@ -162,7 +162,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     public WhereAnalyzerFixture assertExceptionOnComplexColumns(CqlIdentifier... columns) {
       var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
       var warning =
-          "The request included the following columns that have unsupported complex columns: %s."
+          "The request included unsupported filters on the columns: %s."
               .formatted(errFmtCqlIdentifier(identifiers));
       return assertExceptionContains(warning);
     }
