@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.core.Base64Variants;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -145,5 +146,19 @@ public class EJSONWrapper {
       throw new RuntimeException(
           "Invalid content in EJSON $binary wrapper, problem: %s".formatted(e.getMessage()));
     }
+  }
+
+  public static String binaryFormatString(float[] vector) {
+    ByteBuffer byteBuffer = ByteBuffer.allocate(vector.length * 4); // 4 bytes per float
+
+    for (float val : vector) {
+      byteBuffer.putInt(Float.floatToIntBits(val)); // Convert float to raw int bits
+    }
+
+    // Get the byte array from the ByteBuffer
+    byte[] byteArray = byteBuffer.array();
+
+    // Encode the byte array into a Base64 string
+    return Base64Variants.MIME_NO_LINEFEEDS.encode(byteArray);
   }
 }

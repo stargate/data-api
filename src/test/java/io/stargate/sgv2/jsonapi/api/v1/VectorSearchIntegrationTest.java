@@ -778,6 +778,42 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
 
     @Test
     @Order(2)
+    public void happyPathBinaryVector() {
+      String vectorString =
+          generateBase64EncodedBinaryVector(new float[] {0.15f, 0.1f, 0.1f, 0.35f, 0.55f});
+      String json =
+              """
+            {
+              "find": {
+                "sort" : {"$vector" : {"$binary" : "%s" } },
+                "projection" : {"_id" : 1, "$vector" : 1},
+                "options" : {
+                    "limit" : 5
+                }
+              }
+            }
+            """
+              .formatted(vectorString);
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]._id", is("3"))
+          .body("data.documents[0].$vector", is(notNullValue()))
+          .body("data.documents[1]._id", is("2"))
+          .body("data.documents[1].$vector", is(notNullValue()))
+          .body("data.documents[2]._id", is("1"))
+          .body("data.documents[2].$vector", is(notNullValue()));
+    }
+
+    @Test
+    @Order(2)
     public void happyPathWithIncludeSortVectorOption() {
       String json =
           """

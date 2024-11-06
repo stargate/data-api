@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -56,6 +57,46 @@ class SortClauseDeserializerTest {
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions()).hasSize(1);
       assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("$vector");
+      assertThat(sortClause.sortExpressions().get(0).vector())
+          .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
+    }
+
+    @Test
+    public void vectorSearchBinaryObject() throws Exception {
+      String vectorString = EJSONWrapper.binaryFormatString(new float[] {0.11f, 0.22f, 0.33f});
+      String json =
+              """
+            {
+             "$vector" : { "$binary" : "%s"}
+            }
+            """
+              .formatted(vectorString);
+
+      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions()).hasSize(1);
+      assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("$vector");
+      assertThat(sortClause.sortExpressions().get(0).vector())
+          .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
+    }
+
+    @Test
+    public void binaryVectorSearchTableColumn() throws Exception {
+      String vectorString = EJSONWrapper.binaryFormatString(new float[] {0.11f, 0.22f, 0.33f});
+      String json =
+              """
+            {
+             "test" : { "$binary" : "%s"}
+            }
+            """
+              .formatted(vectorString);
+
+      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions()).hasSize(1);
+      assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("test");
       assertThat(sortClause.sortExpressions().get(0).vector())
           .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
     }
