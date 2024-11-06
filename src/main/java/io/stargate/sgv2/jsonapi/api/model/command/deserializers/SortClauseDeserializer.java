@@ -56,14 +56,14 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       if (inner.getValue().isObject()) {
         var ejsonWrapped = EJSONWrapper.maybeFrom((ObjectNode) inner.getValue());
         if (ejsonWrapped == null) {
-          throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-              "Invalid data type: only binary vector values are supported for sorting. Path: %s, Value: %s.",
+          throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
+              "Only binary vector object values is supported for sorting. Path: %s, Value: %s.",
               path, inner.getValue().toString());
         }
         try {
           arrayVals = ejsonWrapped.getVectorValueForBinary();
         } catch (RuntimeException e) {
-          throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(e.getMessage());
+          throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(e.getMessage());
         }
       }
       // handle table vector sort

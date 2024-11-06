@@ -102,7 +102,9 @@ class SortClauseDeserializerTest {
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable.getMessage()).contains("$vector value needs to be array of numbers");
+      assertThat(throwable.getMessage())
+          .contains(
+              "Invalid sort clause value: Only binary vector object values is supported for sorting. Path: $vector, Value: {}.");
     }
 
     public void vectorSearchInvalidData() {
@@ -181,7 +183,8 @@ class SortClauseDeserializerTest {
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage())
-          .contains("$vectorize search clause needs to be non-blank text value");
+          .contains(
+              "Invalid sort clause value: Only binary vector object values is supported for sorting. Path: $vectorize, Value: {}.");
     }
 
     @Test
