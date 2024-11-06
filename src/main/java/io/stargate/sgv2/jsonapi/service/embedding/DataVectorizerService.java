@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -55,16 +56,18 @@ public class DataVectorizerService {
   public <T extends SchemaObject> Uni<Command> vectorize(
       DataApiRequestInfo dataApiRequestInfo, CommandContext<T> commandContext, Command command) {
 
-    //    if(true){
-    //      throw SortException.Code.CANNOT_SORT_TABLE_UPDATE_COMMAND.get();
-    //    }
-
     final DataVectorizer dataVectorizer =
         constructDataVectorizer(dataApiRequestInfo, commandContext);
 
-    if (commandContext.schemaObject() instanceof TableSchemaObject) {
-      return vectorizeTableCommand(dataVectorizer, commandContext.asTableContext(), command);
+    // TODO, This is the hack to make table vectorize failure goes into command process flow
+    try {
+      if (commandContext.schemaObject() instanceof TableSchemaObject) {
+        return vectorizeTableCommand(dataVectorizer, commandContext.asTableContext(), command);
+      }
+    } catch (APIException e) {
+      return Uni.createFrom().failure(e);
     }
+
     return vectorizeSortClause(dataVectorizer, commandContext, command)
         .onItem()
         .transformToUni(flag -> vectorizeDocument(dataVectorizer, commandContext, command))

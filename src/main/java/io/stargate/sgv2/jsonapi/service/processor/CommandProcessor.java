@@ -71,13 +71,9 @@ public class CommandProcessor {
     // vectorize the data
     return dataVectorizerService
         .vectorize(dataApiRequestInfo, commandContext, command)
-        .onItemOrFailure()
+        .onItem()
         .transformToUni(
-            // pass down the failure from vectorize, so we can recover later
-            (vectorizedCommand, t) -> {
-              if (t != null) {
-                return Uni.createFrom().failure(t);
-              }
+            vectorizedCommand -> {
               // start by resolving the command, get resolver
               return commandResolverService
                   .resolverForCommand(vectorizedCommand)
