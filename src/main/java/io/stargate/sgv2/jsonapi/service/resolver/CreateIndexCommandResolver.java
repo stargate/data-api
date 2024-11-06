@@ -31,7 +31,6 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
   public Class<CreateIndexCommand> getCommandClass() {
     return CreateIndexCommand.class;
   }
-  ;
 
   @Override
   public Operation resolveTableCommand(
@@ -77,11 +76,11 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
     }
 
     // Command level option for ifNotExists
-    boolean ifNotExists = false;
-    final CreateIndexCommand.Options commandOptions = command.options();
-    if (commandOptions != null && commandOptions.ifNotExists() != null) {
-      ifNotExists = commandOptions.ifNotExists();
-    }
+    boolean ifNotExists =
+        Optional.ofNullable(command.options())
+            .map(CreateIndexCommand.Options::ifNotExists)
+            .orElse(false);
+
     final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
         new SchemaAttempt.SchemaRetryPolicy(
             ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),

@@ -23,7 +23,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperationImpl;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.DropIndexCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
@@ -633,6 +637,261 @@ class ObjectMapperConfigurationTest {
                 assertThat(createCollection.options().vector().dimension()).isEqualTo(5);
                 assertThat(createCollection.options().vector().metric()).isNull();
                 assertThat(createCollection.options().vector().sourceModel()).isNull();
+              });
+    }
+  }
+
+  @Nested
+  class CreateTable {
+    @Test
+    public void happyPathWithOption() throws Exception {
+      String json =
+          """
+                            {
+                                 "createTable": {
+                                     "name": "person",
+                                     "definition": {
+                                         "columns": {
+                                             "id": "text",
+                                             "age": "int",
+                                             "name": "text",
+                                             "city": "text"
+                                         },
+                                         "primaryKey": "id"
+                                     },
+                                     "options" : {
+                                         "ifNotExists" : true
+                                     }
+                                 }
+                             }
+                            """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateTableCommand.class,
+              createTableCommand -> {
+                String name = createTableCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(createTableCommand.options().ifNotExists()).isTrue();
+              });
+    }
+
+    @Test
+    public void happyPathWithEmptyOption() throws Exception {
+      String json =
+          """
+                                    {
+                                         "createTable": {
+                                             "name": "person",
+                                             "definition": {
+                                                 "columns": {
+                                                     "id": "text",
+                                                     "age": "int",
+                                                     "name": "text",
+                                                     "city": "text"
+                                                 },
+                                                 "primaryKey": "id"
+                                             },
+                                             "options" : {}
+                                         }
+                                     }
+                                    """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateTableCommand.class,
+              createTableCommand -> {
+                String name = createTableCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(createTableCommand.options()).isNotNull();
+                assertThat(createTableCommand.options().ifNotExists()).isNull();
+              });
+    }
+  }
+
+  @Nested
+  class CreateIndex {
+    @Test
+    public void happyPathWithOption() throws Exception {
+      String json =
+          """
+                            {
+                                  "createIndex": {
+                                      "name": "name_idx",
+                                      "definition": {
+                                          "column": "name",
+                                          "options": {
+                                              "caseSensitive": false,
+                                              "normalize": true,
+                                              "ascii": true
+                                          }
+                                      },
+                                      "options" : {
+                                         "ifNotExists" : true
+                                      }
+                                  }
+                              }
+                                      """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateIndexCommand.class,
+              createIndexCommand -> {
+                String name = createIndexCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(createIndexCommand.definition().column()).isNotNull();
+                assertThat(createIndexCommand.options().ifNotExists()).isTrue();
+                assertThat(createIndexCommand.definition().options().caseSensitive()).isFalse();
+                assertThat(createIndexCommand.definition().options().normalize()).isTrue();
+                assertThat(createIndexCommand.definition().options().ascii()).isTrue();
+              });
+    }
+
+    @Test
+    public void happyPathWithEmptyOption() throws Exception {
+      String json =
+          """
+                            {
+                                  "createIndex": {
+                                      "name": "name_idx",
+                                      "definition": {
+                                          "column": "name",
+                                          "options": {
+                                              "caseSensitive": false,
+                                              "normalize": true,
+                                              "ascii": true
+                                          }
+                                      },
+                                      "options" : {}
+                                  }
+                              }
+                                      """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateIndexCommand.class,
+              createIndexCommand -> {
+                String name = createIndexCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(createIndexCommand.definition().column()).isNotNull();
+                assertThat(createIndexCommand.options().ifNotExists()).isNull();
+                assertThat(createIndexCommand.definition().options().caseSensitive()).isFalse();
+                assertThat(createIndexCommand.definition().options().normalize()).isTrue();
+                assertThat(createIndexCommand.definition().options().ascii()).isTrue();
+              });
+    }
+  }
+
+  @Nested
+  class DropTable {
+    @Test
+    public void happyPathWithOption() throws Exception {
+      String json =
+          """
+                            {
+                                   "dropTable": {
+                                       "name": "allTypesTable",
+                                       "options" : {
+                                          "ifExists" : true
+                                       }
+                                   }
+                               }
+                                                """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              DropTableCommand.class,
+              dropTableCommand -> {
+                String name = dropTableCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(dropTableCommand.options().ifExists()).isTrue();
+              });
+    }
+
+    @Test
+    public void happyPathWithEmptyOption() throws Exception {
+      String json =
+          """
+                       {
+                                   "dropTable": {
+                                       "name": "allTypesTable",
+                                       "options" : {}
+                                   }
+                               }
+                               """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              DropTableCommand.class,
+              dropTableCommand -> {
+                String name = dropTableCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(dropTableCommand.options().ifExists()).isNull();
+              });
+    }
+  }
+
+  @Nested
+  class DropIndex {
+    @Test
+    public void happyPathWithOption() throws Exception {
+      String json =
+          """
+                                      {
+                                             "dropIndex": {
+                                                 "name": "text_index",
+                                                 "options" : {
+                                                    "ifExists" : true
+                                                 }
+                                             }
+                                         }
+                                                          """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              DropIndexCommand.class,
+              dropIndexCommand -> {
+                String name = dropIndexCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(dropIndexCommand.options().ifExists()).isTrue();
+              });
+    }
+
+    @Test
+    public void happyPathWithEmptyOption() throws Exception {
+      String json =
+          """
+                                 {
+                                             "dropIndex": {
+                                                 "name": "text_index",
+                                                 "options" : {}
+                                             }
+                                         }
+                                         """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              DropIndexCommand.class,
+              dropIndexCommand -> {
+                String name = dropIndexCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(dropIndexCommand.options().ifExists()).isNull();
               });
     }
   }
