@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.util.Base64Util;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Objects;
@@ -117,5 +119,31 @@ public class EJSONWrapper {
     byte[] bytes = new byte[buffer.remaining()];
     buffer.get(bytes);
     return bytes;
+  }
+
+  public float[] getVectorValueForBinary() {
+    if (type != EJSONType.BINARY) {
+      throw new RuntimeException("Vector value can only be extracted from binary EJSON wrapper");
+    }
+    return toFloatArray(value.textValue());
+  }
+
+  // Utility method for converting binary wrapped value to float array
+  public static float[] toFloatArray(String base64Vector) {
+    byte[] binaryPayload;
+    try {
+      binaryPayload = Base64Util.decodeFromMimeBase64(base64Vector);
+    } catch (IllegalArgumentException e) {
+      throw new RuntimeException(
+          "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String, problem: %s"
+              .formatted(e.getMessage()));
+    }
+
+    try {
+      return CqlVectorUtil.bytesToFloats(binaryPayload);
+    } catch (IllegalArgumentException e) {
+      throw new RuntimeException(
+          "Invalid content in EJSON $binary wrapper, problem: %s".formatted(e.getMessage()));
+    }
   }
 }

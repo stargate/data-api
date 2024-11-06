@@ -5,7 +5,6 @@ import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 
-import com.fasterxml.jackson.core.Base64Variants;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
@@ -13,7 +12,6 @@ import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.junit.jupiter.api.*;
 
@@ -2061,32 +2059,6 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
       sb.append(nums[ix]);
     }
     return sb.toString();
-  }
-
-  private String generateBase64EncodedBinaryVector(float[] vector) {
-    ByteBuffer byteBuffer = ByteBuffer.allocate(vector.length * 4); // 4 bytes per float
-
-    for (float val : vector) {
-      byteBuffer.putInt(Float.floatToIntBits(val)); // Convert float to raw int bits
-    }
-
-    // Get the byte array from the ByteBuffer
-    byte[] byteArray = byteBuffer.array();
-
-    // Encode the byte array into a Base64 string
-    return Base64Variants.MIME_NO_LINEFEEDS.encode(byteArray);
-  }
-
-  private float[] decodeBase64BinaryVectorToFloatArray(String binaryVector) {
-    // Decode the Base64 string to a byte array
-    byte[] decodedBytes = Base64Variants.MIME_NO_LINEFEEDS.decode(binaryVector);
-
-    float[] floats = new float[decodedBytes.length / 4];
-    ByteBuffer byteBuffer = ByteBuffer.wrap(decodedBytes);
-    for (int i = 0; i < floats.length; i++) {
-      floats[i] = byteBuffer.getFloat();
-    }
-    return floats;
   }
 
   @Nested

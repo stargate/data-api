@@ -7,11 +7,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
+import com.fasterxml.jackson.core.Base64Variants;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
+import java.nio.ByteBuffer;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -251,5 +253,31 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   /** Utility method for reducing boilerplate code for sending JSON commands */
   protected RequestSpecification givenHeadersAndJson(String json) {
     return given().headers(getHeaders()).contentType(ContentType.JSON).body(json);
+  }
+
+  protected String generateBase64EncodedBinaryVector(float[] vector) {
+    ByteBuffer byteBuffer = ByteBuffer.allocate(vector.length * 4); // 4 bytes per float
+
+    for (float val : vector) {
+      byteBuffer.putInt(Float.floatToIntBits(val)); // Convert float to raw int bits
+    }
+
+    // Get the byte array from the ByteBuffer
+    byte[] byteArray = byteBuffer.array();
+
+    // Encode the byte array into a Base64 string
+    return Base64Variants.MIME_NO_LINEFEEDS.encode(byteArray);
+  }
+
+  protected float[] decodeBase64BinaryVectorToFloatArray(String binaryVector) {
+    // Decode the Base64 string to a byte array
+    byte[] decodedBytes = Base64Variants.MIME_NO_LINEFEEDS.decode(binaryVector);
+
+    float[] floats = new float[decodedBytes.length / 4];
+    ByteBuffer byteBuffer = ByteBuffer.wrap(decodedBytes);
+    for (int i = 0; i < floats.length; i++) {
+      floats[i] = byteBuffer.getFloat();
+    }
+    return floats;
   }
 }
