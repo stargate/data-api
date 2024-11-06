@@ -83,6 +83,13 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) implements
         throw ErrorCodeV1.UNINDEXED_SORT_PATH.toApiException(
             "sort path '%s' is not indexed", sortExpression.path());
       }
+      if (!(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(sortExpression.path())
+              || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(sortExpression.path()))
+          && sortExpression.vector() != null) {
+        throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
+            "Vector sort for collection can be done only using `%s` field, field name used: `%s`  ",
+            DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, sortExpression.path());
+      }
     }
   }
 }
