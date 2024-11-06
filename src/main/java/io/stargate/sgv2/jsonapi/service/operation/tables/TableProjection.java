@@ -16,7 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
-
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
@@ -27,10 +26,11 @@ import io.stargate.sgv2.jsonapi.service.operation.OperationProjection;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.util.*;
 import java.util.function.Function;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +70,7 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
    * Factory method for construction projection instance, given a projection definition and table
    * schema.
    */
-  public static <CmdT extends Projectable & VectorSortable> TableProjection fromDefinition(
+  public static <CmdT extends Projectable> TableProjection fromDefinition(
       ObjectMapper objectMapper, CmdT command, TableSchemaObject table) {
 
     Map<String, ColumnMetadata> columnsByName = new HashMap<>();
@@ -204,28 +204,45 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
     private static final String SIMILARITY_SCORE_ALIAS =
         "similarityScore" + System.currentTimeMillis();
 
-    static <CmdT extends VectorSortable> SimilarityScoreFunction from(
-        CmdT command, TableSchemaObject table) {
+    static SimilarityScoreFunction from(Command command, TableSchemaObject table) {
+
+      if (!(command instanceof VectorSortable)) {
+        return NO_OP;
+      }
+      var vectorSortable = (VectorSortable) command;
+
       // SimilarityScore is only included when
       // 1. tableSchemaObject has vector enabled
       // 2. includeSimilarityScore is set
       // 3. there is a vector sort clause
-      var requestedSimilarityScore = command.includeSimilarityScore().orElse(false);
-      var sortExpression = command.sortExpression();
+
+      var sortExpressionOptional = vectorSortable.vectorSortExpression();
+      if (sortExpressionOptional.isEmpty()) {
+        // nothing to sort on, so nothing to return even if they asked for the similarity score
+        return NO_OP;
+      }
+      var sortExpression = sortExpressionOptional.get();
+
+      var includeSimilarityScore = vectorSortable.includeSimilarityScore().orElse(false);
+      if (!includeSimilarityScore) {
+        return NO_OP;
+      }
+
       var requestedVectorColumnPath =
           sortExpression.map(SortExpression::pathAsCqlIdentifier).orElse(null);
-      var requestedVector = sortExpression.map(SortExpression::vector).orElse(null);
 
       String similarityFunctionFromVectorConfig = null;
-      if (requestedVectorColumnPath != null) {
-        similarityFunctionFromVectorConfig =
-            table
-                .vectorConfig()
-                .getColumnDefinition(requestedVectorColumnPath)
-                .map(VectorColumnDefinition::similarityFunction)
-                .map(SimilarityFunction::getFunction)
-                .orElse(null);
+
+      var apiColumnDef = table.apiTableDef()
+                .allColumns().filterBy(ApiTypeName.VECTOR)
+                .get(sortExpression.pathAsCqlIdentifier());
+      if (apiColumnDef == null){
+        // column does not exists or is not a vector, ignore because sort will fail
+        return NO_OP;
       }
+
+      var apiVectorType = (ApiVectorType) apiColumnDef.type();
+      apiVectorType.
 
       if (!requestedSimilarityScore
           || requestedVectorColumnPath == null

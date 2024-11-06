@@ -48,11 +48,11 @@ public record FindOneCommand(
 
   @Override
   public Optional<Boolean> includeSimilarityScore() {
-    return Optional.ofNullable(options()).map(Options::includeSimilarity);
+    return options() == null ? Optional.empty() : Optional.of(options().includeSimilarity);
   }
 
   @Override
   public Optional<Boolean> includeSortVector() {
-    return Optional.ofNullable(options()).map(Options::includeSortVector);
+    return options() == null ? Optional.empty() : Optional.of(options().includeSortVector);
   }
 }
