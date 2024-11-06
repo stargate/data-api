@@ -70,8 +70,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
             ? CqlPagingState.EMPTY
             : CqlPagingState.from(command.options().pageState());
 
-    var pageBuilder =
-        ReadAttemptPage.<TableSchemaObject>builder().singleResponse(false).mayReturnVector(command);
+    var pageBuilder = ReadAttemptPage.<TableSchemaObject>builder().singleResponse(false).mayReturnVector(command);
+
 
     return readCommandResolver.buildReadOperation(ctx, command, cqlPageState, pageBuilder);
 

@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
@@ -29,6 +30,7 @@ import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.util.*;
 import java.util.function.Function;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +58,7 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
       List<ColumnMetadata> columns,
       ColumnsDescContainer columnsDesc,
       SimilarityScoreFunction similarityScoreFunction) {
+
     this.objectMapper = objectMapper;
     this.table = table;
     this.columns = columns;
@@ -177,7 +180,6 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
       } catch (IllegalArgumentException ignored) {
       }
     }
-
     return result;
   }
 
