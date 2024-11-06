@@ -136,6 +136,7 @@ public abstract class OperationAttempt<
       return Uni.createFrom().item(downcast());
     }
 
+    long startNano = System.nanoTime();
     return Uni.createFrom()
         .item(() -> executeIfInProgress(queryExecutor)) // Wraps any error from execute() into a Uni
         .flatMap(uni -> uni) // Unwrap Uni<Uni<AsyncResultSet>> to Uni<AsyncResultSet>
@@ -148,8 +149,10 @@ public abstract class OperationAttempt<
         .invoke(
             () -> {
               if (LOGGER.isDebugEnabled()) {
+                double durationMs = (System.nanoTime() - startNano) / 1_000_000.0;
                 LOGGER.debug(
-                    "execute() - finished subclass={}, {}",
+                    "execute() - finished durationMs={}, subclass={}, {}",
+                    durationMs,
                     getClass().getSimpleName(),
                     positionAndAttemptId());
               }

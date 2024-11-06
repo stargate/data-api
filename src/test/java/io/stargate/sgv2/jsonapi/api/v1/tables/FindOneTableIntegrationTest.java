@@ -143,12 +143,12 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
               // By default, null values are not returned
               removeNullValues(
                   """
-                              {
-                                  "id": "c",
-                                  "age": null,
-                                  "name": null
-                              }
-                              """));
+                                  {
+                                      "id": "c",
+                                      "age": null,
+                                      "name": null
+                                  }
+                                  """));
     }
 
     @Test
@@ -179,7 +179,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                               "Id": 2,
                               "value": "b"
                           }
-                              """;
+                          """;
       assertTableCommand(keyspaceName, TABLE_NAME)
           .templated()
           .insertOne(DOC_B_JSON)
