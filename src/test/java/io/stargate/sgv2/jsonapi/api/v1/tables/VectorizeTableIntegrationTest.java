@@ -23,7 +23,7 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class VectorizeTableIntegartionTest extends AbstractTableIntegrationTestBase {
+public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   private static final String TABLE_NAME = "vectorize" + System.currentTimeMillis();
   private static final VectorizeTableScenario SCENARIO =
