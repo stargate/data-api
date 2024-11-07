@@ -493,6 +493,17 @@ public abstract class OperationAttempt<
   }
 
   /**
+   * The override warnings that needs to removed as part of the response.
+   *
+   * <p>See {@link OperationAttemptPage} for how warnings are included in the response.
+   *
+   * @return An unmodifiable list of warnings, never <code>null</code>
+   */
+  protected List<String> warningOverrides() {
+    return Collections.emptyList();
+  }
+
+  /**
    * Called to get the description of the schema to use when building the response.
    *
    * @return The optional object that describes the schema, if present the object will be serialised
