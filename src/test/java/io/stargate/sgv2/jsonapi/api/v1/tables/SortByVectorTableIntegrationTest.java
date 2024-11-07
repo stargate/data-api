@@ -172,9 +172,125 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
             .wasSuccessful();
 
     if (commandName == Command.CommandName.FIND) {
-      validator.hasDocuments(limit);
+      validator.hasDocuments(limit).includeSimilarityScoreDocuments(false);
     } else {
-      validator.hasSingleDocument();
+      validator.hasSingleDocument().includeSimilarityScoreSingleDocument(false);
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("findCommandNames")
+  public void findSimilarityScore(Command.CommandName commandName) {
+
+    var sort =
+        ImmutableMap.of(
+            SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL),
+            SCENARIO.columnValue(VectorDimension5TableScenario.INDEXED_VECTOR_COL));
+
+    var limit = 3;
+    Map<String, Object> options =
+        commandName == Command.CommandName.FIND
+            ? ImmutableMap.of("limit", limit, "includeSimilarity", true)
+            : ImmutableMap.of("includeSimilarity", true);
+
+    var validator =
+        assertTableCommand(keyspaceName, TABLE_NAME)
+            .templated()
+            .find(commandName, null, null, sort, options)
+            .wasSuccessful();
+
+    if (commandName == Command.CommandName.FIND) {
+      validator.hasDocuments(limit).includeSimilarityScoreDocuments(true).includeSortVector(false);
+    } else {
+      validator
+          .hasSingleDocument()
+          .includeSimilarityScoreSingleDocument(true)
+          .includeSortVector(false);
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("findCommandNames")
+  public void findSimilarityScoreWithoutANN(Command.CommandName commandName) {
+    // Without Vector sort clause, similarityScore won't be included
+
+    var limit = 3;
+    Map<String, Object> options =
+        commandName == Command.CommandName.FIND
+            ? ImmutableMap.of("limit", limit, "includeSimilarity", true)
+            : ImmutableMap.of("includeSimilarity", true);
+
+    var validator =
+        assertTableCommand(keyspaceName, TABLE_NAME)
+            .templated()
+            .find(commandName, null, null, null, options)
+            .wasSuccessful();
+
+    if (commandName == Command.CommandName.FIND) {
+      validator.hasDocuments(limit).includeSimilarityScoreDocuments(false).includeSortVector(false);
+    } else {
+      validator
+          .hasSingleDocument()
+          .includeSimilarityScoreSingleDocument(false)
+          .includeSortVector(false);
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("findCommandNames")
+  public void findReturnVector(Command.CommandName commandName) {
+
+    var sort =
+        ImmutableMap.of(
+            SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL),
+            SCENARIO.columnValue(VectorDimension5TableScenario.INDEXED_VECTOR_COL));
+
+    var limit = 3;
+    Map<String, Object> options =
+        commandName == Command.CommandName.FIND
+            ? ImmutableMap.of("limit", limit, "includeSortVector", true)
+            : ImmutableMap.of("includeSortVector", true);
+
+    var validator =
+        assertTableCommand(keyspaceName, TABLE_NAME)
+            .templated()
+            .find(commandName, null, null, sort, options)
+            .wasSuccessful();
+
+    if (commandName == Command.CommandName.FIND) {
+      validator.hasDocuments(limit).includeSimilarityScoreDocuments(false).includeSortVector(true);
+    } else {
+      validator
+          .hasSingleDocument()
+          .includeSimilarityScoreSingleDocument(false)
+          .includeSortVector(true);
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("findCommandNames")
+  public void returnVectorWithoutANN(Command.CommandName commandName) {
+    // Without Vector sort clause, vector won't be included in status map.
+
+    var limit = 3;
+    Map<String, Object> options =
+        commandName == Command.CommandName.FIND
+            ? ImmutableMap.of("limit", limit, "includeSortVector", true)
+            : ImmutableMap.of("includeSortVector", true);
+
+    var validator =
+        assertTableCommand(keyspaceName, TABLE_NAME)
+            .templated()
+            .find(commandName, null, null, null, options)
+            .wasSuccessful();
+
+    if (commandName == Command.CommandName.FIND) {
+      validator.hasDocuments(limit).includeSimilarityScoreDocuments(false).includeSortVector(false);
+    } else {
+      validator
+          .hasSingleDocument()
+          .includeSimilarityScoreSingleDocument(false)
+          .includeSortVector(false);
     }
   }
 
@@ -202,10 +318,15 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
     if (commandName == Command.CommandName.FIND) {
       validator
           .hasDocuments(limit)
-          .hasDocumentInPosition(0, VectorDimension5TableScenario.KNOWN_VECTOR_ROW_JSON);
+          .hasDocumentInPosition(0, VectorDimension5TableScenario.KNOWN_VECTOR_ROW_JSON)
+          .includeSortVector(false)
+          .includeSimilarityScoreDocuments(false);
 
     } else {
-      validator.hasSingleDocument(VectorDimension5TableScenario.KNOWN_VECTOR_ROW_JSON);
+      validator
+          .hasSingleDocument(VectorDimension5TableScenario.KNOWN_VECTOR_ROW_JSON)
+          .includeSortVector(false)
+          .includeSimilarityScoreSingleDocument(false);
     }
   }
 }
