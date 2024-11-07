@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.VectorDimension5TableScenario;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -296,6 +297,40 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
+  public void findRandomBinaryVector(Command.CommandName commandName) {
+    // Doing a sort for a vector we do not know if is in the table
+
+    Object[] rawData =
+        (Object[]) SCENARIO.columnValue(VectorDimension5TableScenario.INDEXED_VECTOR_COL);
+    float[] vectorData = new float[rawData.length];
+    for (int i = 0; i < vectorData.length; i++) {
+      vectorData[i] = ((BigDecimal) rawData[i]).floatValue();
+    }
+    var vectorString = generateBase64EncodedBinaryVector(vectorData);
+    var sort =
+        ImmutableMap.of(
+            SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL),
+            (Object) Map.of("$binary", vectorString));
+
+    var limit = 3;
+    Map<String, Object> options =
+        commandName == Command.CommandName.FIND ? ImmutableMap.of("limit", limit) : null;
+
+    var validator =
+        assertTableCommand(keyspaceName, TABLE_NAME)
+            .templated()
+            .find(commandName, null, null, sort, options)
+            .wasSuccessful();
+
+    if (commandName == Command.CommandName.FIND) {
+      validator.hasDocuments(limit);
+    } else {
+      validator.hasSingleDocument();
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("findCommandNames")
   public void findKnownVector(Command.CommandName commandName) {
     // Doing a sort for a vector we know the vector is in the table, we can match on the expected
     // doc
@@ -327,6 +362,38 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
           .hasSingleDocument(VectorDimension5TableScenario.KNOWN_VECTOR_ROW_JSON)
           .includeSortVector(false)
           .includeSimilarityScoreSingleDocument(false);
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("findCommandNames")
+  public void findKnownVectorAsBinary(Command.CommandName commandName) {
+    // Doing a sort for a vector we know the vector is in the table, we can match on the expected
+    // doc
+    var vectorString =
+        generateBase64EncodedBinaryVector(VectorDimension5TableScenario.KNOWN_VECTOR_ARRAY);
+    var sort =
+        ImmutableMap.of(
+            SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL),
+            (Object) Map.of("$binary", vectorString));
+
+    var limit = 1;
+    Map<String, Object> options =
+        commandName == Command.CommandName.FIND ? ImmutableMap.of("limit", limit) : null;
+
+    var validator =
+        assertTableCommand(keyspaceName, TABLE_NAME)
+            .templated()
+            .find(commandName, null, null, sort, options)
+            .wasSuccessful();
+
+    if (commandName == Command.CommandName.FIND) {
+      validator
+          .hasDocuments(limit)
+          .hasDocumentInPosition(0, VectorDimension5TableScenario.KNOWN_VECTOR_ROW_JSON);
+
+    } else {
+      validator.hasSingleDocument(VectorDimension5TableScenario.KNOWN_VECTOR_ROW_JSON);
     }
   }
 }

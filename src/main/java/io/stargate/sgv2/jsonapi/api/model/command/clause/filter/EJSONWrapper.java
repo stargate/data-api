@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Objects;
@@ -21,7 +23,6 @@ public class EJSONWrapper {
   public enum EJSONType {
     BINARY($BINARY),
     DATE($DATE);
-    ;
 
     private final String key;
 
@@ -117,5 +118,19 @@ public class EJSONWrapper {
     byte[] bytes = new byte[buffer.remaining()];
     buffer.get(bytes);
     return bytes;
+  }
+
+  // Returns the float array value from the binary EJSON wrapper
+  public float[] getVectorValueForBinary() {
+    if (type != EJSONType.BINARY) {
+      throw new IllegalStateException(
+          "Vector value can only be extracted from binary EJSON wrapper");
+    }
+    try {
+      return CqlVectorUtil.bytesToFloats(value().binaryValue());
+    } catch (IOException | IllegalArgumentException e) {
+      throw new IllegalArgumentException(
+          "Invalid content in EJSON $binary wrapper, problem: %s".formatted(e.getMessage()));
+    }
   }
 }
