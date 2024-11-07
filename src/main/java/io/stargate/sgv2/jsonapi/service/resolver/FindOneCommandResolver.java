@@ -62,7 +62,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, FindOneCommand command) {
 
-    var pageBuilder = ReadAttemptPage.builder().singleResponse(true).includeSortVector(false);
+    var pageBuilder = ReadAttemptPage.builder().singleResponse(true).mayReturnVector(command);
 
     // the skip is 0 and the limit is 1 always for findOne
     return readCommandResolver.buildReadOperation(ctx, command, CqlPagingState.EMPTY, pageBuilder);

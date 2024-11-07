@@ -4,12 +4,17 @@ import static org.mockito.Mockito.mock;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
+import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link ReadAttempt}. */
+@QuarkusTest
+@TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class ReadAttemptTest {
 
   private static final TestData TEST_DATA = new TestData();
