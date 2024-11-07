@@ -10,6 +10,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
+import io.stargate.sgv2.jsonapi.util.Base64Util;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -61,6 +63,50 @@ class SortClauseDeserializerTest {
     }
 
     @Test
+    public void vectorSearchBinaryObject() throws Exception {
+      String vectorString =
+          Base64Util.encodeAsMimeBase64(
+              CqlVectorUtil.floatsToBytes(new float[] {0.11f, 0.22f, 0.33f}));
+      String json =
+              """
+            {
+             "$vector" : { "$binary" : "%s"}
+            }
+            """
+              .formatted(vectorString);
+
+      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions()).hasSize(1);
+      assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("$vector");
+      assertThat(sortClause.sortExpressions().get(0).vector())
+          .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
+    }
+
+    @Test
+    public void binaryVectorSearchTableColumn() throws Exception {
+      String vectorString =
+          Base64Util.encodeAsMimeBase64(
+              CqlVectorUtil.floatsToBytes(new float[] {0.11f, 0.22f, 0.33f}));
+      String json =
+              """
+            {
+             "test" : { "$binary" : "%s"}
+            }
+            """
+              .formatted(vectorString);
+
+      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions()).hasSize(1);
+      assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("test");
+      assertThat(sortClause.sortExpressions().get(0).vector())
+          .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
+    }
+
+    @Test
     public void vectorSearchEmpty() {
       String json =
           """
@@ -102,7 +148,9 @@ class SortClauseDeserializerTest {
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable.getMessage()).contains("$vector value needs to be array of numbers");
+      assertThat(throwable.getMessage())
+          .contains(
+              "Invalid sort clause value: Only binary vector object values is supported for sorting. Path: $vector, Value: {}.");
     }
 
     public void vectorSearchInvalidData() {
@@ -181,7 +229,8 @@ class SortClauseDeserializerTest {
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage())
-          .contains("$vectorize search clause needs to be non-blank text value");
+          .contains(
+              "Invalid sort clause value: Only binary vector object values is supported for sorting. Path: $vectorize, Value: {}.");
     }
 
     @Test

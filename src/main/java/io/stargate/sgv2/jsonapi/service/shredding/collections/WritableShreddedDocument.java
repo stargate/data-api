@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.util.Base64Util;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
@@ -298,24 +297,14 @@ public record WritableShreddedDocument(
     }
 
     @Override
-    public void shredVector(JsonPath path, String base64Vector) {
+    public void shredVector(JsonPath path, byte[] binaryVector) {
       // vector data is added only to queryVectorValues and exists keys index
       addKey(path);
 
-      byte[] binaryPayload;
       try {
-        binaryPayload = Base64Util.decodeFromMimeBase64(base64Vector);
+        queryVectorValues = CqlVectorUtil.bytesToFloats(binaryVector);
       } catch (IllegalArgumentException e) {
-        throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
-            "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String, problem: %s",
-            e.getMessage());
-      }
-
-      try {
-        queryVectorValues = CqlVectorUtil.bytesToFloats(binaryPayload);
-      } catch (IllegalArgumentException e) {
-        throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
-            "Invalid content in EJSON $binary wrapper, problem: %s", e.getMessage());
+        throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(e.getMessage());
       }
     }
 
