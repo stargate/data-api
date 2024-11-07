@@ -15,19 +15,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.operation.OperationProjection;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
-import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.util.*;
 import java.util.function.Function;
@@ -228,33 +224,30 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
         return NO_OP;
       }
 
-      var requestedVectorColumnPath =
-          sortExpression.map(SortExpression::pathAsCqlIdentifier).orElse(null);
-
-      String similarityFunctionFromVectorConfig = null;
-
-      var apiColumnDef = table.apiTableDef()
-                .allColumns().filterBy(ApiTypeName.VECTOR)
-                .get(sortExpression.pathAsCqlIdentifier());
-      if (apiColumnDef == null){
-        // column does not exists or is not a vector, ignore because sort will fail
+      var requestedVectorColumnPath = sortExpression.pathAsCqlIdentifier();
+      var apiColumnDef =
+          table
+              .apiTableDef()
+              .allColumns()
+              .filterBy(ApiTypeName.VECTOR)
+              .get(requestedVectorColumnPath);
+      if (apiColumnDef == null) {
+        // column does not exist or is not a vector, ignore because sort will fail
         return NO_OP;
       }
 
-      var apiVectorType = (ApiVectorType) apiColumnDef.type();
-      apiVectorType.
-
-      if (!requestedSimilarityScore
-          || requestedVectorColumnPath == null
-          || requestedVector == null
-          || similarityFunctionFromVectorConfig == null) {
+      var vectorColDefinition = table.vectorConfig().getColumnDefinition(requestedVectorColumnPath);
+      if (vectorColDefinition.isEmpty()) {
+        //
         return NO_OP;
       }
+      var similarityFunction = vectorColDefinition.get().similarityFunction().getFunction();
+
       return new SimilarityScoreFunction(
           true,
           requestedVectorColumnPath,
-          CqlVectorUtil.floatsToCqlVector(requestedVector),
-          similarityFunctionFromVectorConfig);
+          CqlVectorUtil.floatsToCqlVector(sortExpression.vector()),
+          similarityFunction);
     }
 
     @Override
