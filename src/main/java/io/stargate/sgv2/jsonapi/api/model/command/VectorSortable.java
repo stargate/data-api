@@ -15,16 +15,17 @@ public interface VectorSortable extends Sortable {
   }
 
   /**
-   * Returns the first SortExpression that has {@link SortExpression#vector()} non null, if there is
+   * Returns the first SortExpression that has {@link SortExpression#vector()} not null, if there is
    * more than one raises {@link IllegalStateException}.
    *
    * @return the vector sort expression if it exists.
    */
   default Optional<SortExpression> vectorSortExpression() {
-    if (sortClause() != null && sortClause().sortExpressions() != null){
-      var vectorSorts = sortClause().sortExpressions().stream()
-          .filter(expression -> expression.vector() != null)
-          .toList();
+    if (sortClause() != null && sortClause().sortExpressions() != null) {
+      var vectorSorts =
+          sortClause().sortExpressions().stream()
+              .filter(expression -> expression.vector() != null)
+              .toList();
       if (vectorSorts.size() > 1) {
         throw new IllegalStateException("Only one vector sort expression is allowed");
       }

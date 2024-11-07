@@ -107,7 +107,8 @@ public class ReadAttemptPage<SchemaT extends TableSchemaObject>
     public <CmdT extends VectorSortable> Builder<SchemaT> mayReturnVector(CmdT command) {
       var includeVector = command.includeSortVector().orElse(false);
       if (includeVector) {
-        var requestedVector = command.vectorSortExpression().map(SortExpression::vector).orElse(null);
+        var requestedVector =
+            command.vectorSortExpression().map(SortExpression::vector).orElse(null);
         if (requestedVector != null) {
           this.includeSortVector = true;
           this.sortVector = requestedVector;

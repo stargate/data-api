@@ -1,16 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtApiColumnDef;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.querybuilder.select.OngoingSelection;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.datastax.oss.driver.api.querybuilder.select.Selector;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -23,10 +20,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.OperationProjection;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
-import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.util.*;
-import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,20 +40,20 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
   private TableSchemaObject table;
   private List<ColumnMetadata> columns;
   private ColumnsDescContainer columnsDesc;
-  private SimilarityScoreFunction similarityScoreFunction;
+  private TableSimilarityFunction tableSimilarityFunction;
 
   private TableProjection(
       ObjectMapper objectMapper,
       TableSchemaObject table,
       List<ColumnMetadata> columns,
       ColumnsDescContainer columnsDesc,
-      SimilarityScoreFunction similarityScoreFunction) {
+      TableSimilarityFunction tableSimilarityFunction) {
 
     this.objectMapper = objectMapper;
     this.table = table;
     this.columns = columns;
     this.columnsDesc = columnsDesc;
-    this.similarityScoreFunction = similarityScoreFunction;
+    this.tableSimilarityFunction = tableSimilarityFunction;
   }
 
   /**
@@ -103,7 +97,7 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
         table,
         columns,
         readApiColumns.toColumnsDesc(),
-        SimilarityScoreFunction.from(command, table));
+        TableSimilarityFunction.from(command, table));
   }
 
   @Override
@@ -113,7 +107,7 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
     Select select = ongoingSelection.columnsIds(readColumns);
 
     // may apply similarity score function
-    return similarityScoreFunction.apply(select);
+    return tableSimilarityFunction.apply(select);
   }
 
   @Override
@@ -168,9 +162,9 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
 
     // If user specify includeSimilarity, but no ANN sort clause, then we won't generate
     // similarity_score function in the cql statement
-    if (similarityScoreFunction.needProjection()) {
+    if (tableSimilarityFunction.canProjectSimilarity()) {
       try {
-        final float aFloat = row.getFloat(SimilarityScoreFunction.SIMILARITY_SCORE_ALIAS);
+        final float aFloat = row.getFloat(TableSimilarityFunction.SIMILARITY_SCORE_ALIAS);
         result.put(VECTOR_FUNCTION_SIMILARITY_FIELD, aFloat);
         // Should not happen, but keep it caught, in case it breaks the query
       } catch (IllegalArgumentException ignored) {
@@ -182,87 +176,5 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
   @Override
   public ColumnsDescContainer getSchemaDescription() {
     return columnsDesc;
-  }
-
-  private record SimilarityScoreFunction(
-      boolean requestedSimilarityScore,
-      CqlIdentifier requestedVectorColumnPath,
-      CqlVector<Float> vector,
-      String function)
-      implements Function<Select, Select> {
-
-    private static final SimilarityScoreFunction NO_OP =
-        new SimilarityScoreFunction(false, null, null, null);
-
-    // Make a unique constant string as similarity score function alias in cql statement
-    // E.G. SELECT id,similarity_euclidean(vector_type,[0.2, 0.15, 0.3]) AS
-    // similarityScore1699123456789 from xxx;
-    private static final String SIMILARITY_SCORE_ALIAS =
-        "similarityScore" + System.currentTimeMillis();
-
-    static SimilarityScoreFunction from(Command command, TableSchemaObject table) {
-
-      if (!(command instanceof VectorSortable)) {
-        return NO_OP;
-      }
-      var vectorSortable = (VectorSortable) command;
-
-      // SimilarityScore is only included when
-      // 1. tableSchemaObject has vector enabled
-      // 2. includeSimilarityScore is set
-      // 3. there is a vector sort clause
-
-      var sortExpressionOptional = vectorSortable.vectorSortExpression();
-      if (sortExpressionOptional.isEmpty()) {
-        // nothing to sort on, so nothing to return even if they asked for the similarity score
-        return NO_OP;
-      }
-      var sortExpression = sortExpressionOptional.get();
-
-      var includeSimilarityScore = vectorSortable.includeSimilarityScore().orElse(false);
-      if (!includeSimilarityScore) {
-        return NO_OP;
-      }
-
-      var requestedVectorColumnPath = sortExpression.pathAsCqlIdentifier();
-      var apiColumnDef =
-          table
-              .apiTableDef()
-              .allColumns()
-              .filterBy(ApiTypeName.VECTOR)
-              .get(requestedVectorColumnPath);
-      if (apiColumnDef == null) {
-        // column does not exist or is not a vector, ignore because sort will fail
-        return NO_OP;
-      }
-
-      var vectorColDefinition = table.vectorConfig().getColumnDefinition(requestedVectorColumnPath);
-      if (vectorColDefinition.isEmpty()) {
-        //
-        return NO_OP;
-      }
-      var similarityFunction = vectorColDefinition.get().similarityFunction().getFunction();
-
-      return new SimilarityScoreFunction(
-          true,
-          requestedVectorColumnPath,
-          CqlVectorUtil.floatsToCqlVector(sortExpression.vector()),
-          similarityFunction);
-    }
-
-    @Override
-    public Select apply(Select select) {
-      if (this == NO_OP) {
-        return select;
-      }
-
-      return select
-          .function(function, Selector.column(requestedVectorColumnPath), literal(vector))
-          .as(SIMILARITY_SCORE_ALIAS);
-    }
-
-    private boolean needProjection() {
-      return this != NO_OP;
-    }
   }
 }
