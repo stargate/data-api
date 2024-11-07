@@ -256,6 +256,23 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         return new TextTableFilter(column.asInternal(), operator, (String) value);
       }
 
+      // Sample Collection type values
+      // TODO, note tables feature does not support complex type now, the unit tests just mimic an
+      // invalid filter
+      // usage against complex datatype columns
+      if (type.equals(DataTypes.setOf(DataTypes.TEXT))) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.listOf(DataTypes.TEXT))) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.vectorOf(DataTypes.FLOAT, 3))) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+
       throw new IllegalArgumentException("Unsupported type");
     }
 
@@ -318,6 +335,26 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         return "123e4567-e89b-12d3-a456-426655440000"; // Sample TIMEUUID
       }
 
+      if (type.equals(DataTypes.TIMEUUID)) {
+        return "123e4567-e89b-12d3-a456-426655440000"; // Sample TIMEUUID
+      }
+
+      // Sample Collection type values
+      // TODO, note tables feature does not support complex type now, the unit tests just mimic an
+      // invalid filter
+      // usage against complex datatype columns
+      if (type.equals(DataTypes.setOf(DataTypes.TEXT))) {
+        return null;
+      }
+      if (type.equals(DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))) {
+        return null;
+      }
+      if (type.equals(DataTypes.listOf(DataTypes.TEXT))) {
+        return null;
+      }
+      if (type.equals(DataTypes.vectorOf(DataTypes.FLOAT, 3))) {
+        return null;
+      }
       throw new IllegalArgumentException("Unsupported type");
     }
 
