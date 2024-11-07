@@ -61,7 +61,8 @@ public record CreateIndexCommand(
 
   // This is index command option irrespective of column definition.
   public record Options(
-      @Schema(
+      @Nullable
+          @Schema(
               description = "Flag to ignore if index already exists",
               defaultValue = "false",
               type = SchemaType.BOOLEAN,

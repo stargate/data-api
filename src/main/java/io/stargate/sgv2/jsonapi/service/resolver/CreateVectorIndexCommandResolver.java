@@ -70,11 +70,10 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     }
 
     // Command level option for ifNotExists
-    boolean ifNotExists = false;
-    final CreateVectorIndexCommand.Options commandOptions = command.options();
-    if (commandOptions != null && commandOptions.ifNotExists() != null) {
-      ifNotExists = commandOptions.ifNotExists();
-    }
+    boolean ifNotExists =
+        Optional.ofNullable(command.options())
+            .map(CreateVectorIndexCommand.Options::ifNotExists)
+            .orElse(false);
 
     // Default Similarity Function to COSINE
     if (similarityFunction == null && sourceModel == null) {
