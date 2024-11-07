@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +31,10 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
       CommandContext<KeyspaceSchemaObject> ctx, CreateTableCommand command) {
 
     String tableName = command.name();
-    boolean ifNotExists = command.options() != null ? command.options().ifNotExists() : false;
+    boolean ifNotExists =
+        Optional.ofNullable(command.options())
+            .map(CreateTableCommand.Options::ifNotExists)
+            .orElse(false);
 
     // TODO: AARON: this is where the bad user column types like list of map will be caught and
     // thrown
