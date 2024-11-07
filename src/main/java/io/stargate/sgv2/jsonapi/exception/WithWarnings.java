@@ -23,13 +23,13 @@ public class WithWarnings<T> implements Consumer<OperationAttempt<?, ?>> {
 
   private final T target;
   private final List<WarningException> warnings;
-  private final List<String> supressedWarnings;
+  private final List<String> suppressedWarnings;
 
-  public WithWarnings(T target, List<WarningException> warnings, List<String> supressedWarnings) {
+  public WithWarnings(T target, List<WarningException> warnings, List<String> suppressedWarnings) {
     Preconditions.checkNotNull(target, "target must not be null");
     this.target = target;
     this.warnings = warnings == null ? new ArrayList<>() : warnings;
-    this.supressedWarnings = supressedWarnings == null ? new ArrayList<>() : supressedWarnings;
+    this.suppressedWarnings = suppressedWarnings == null ? new ArrayList<>() : suppressedWarnings;
   }
 
   /**
@@ -72,8 +72,8 @@ public class WithWarnings<T> implements Consumer<OperationAttempt<?, ?>> {
    *
    * @return an instance with no warnings
    */
-  public static <T> WithWarnings<T> of(T target, List<String> supressedWarnings) {
-    return new WithWarnings<>(target, new ArrayList<>(), supressedWarnings);
+  public static <T> WithWarnings<T> of(T target, List<String> suppressedWarnings) {
+    return new WithWarnings<>(target, new ArrayList<>(), suppressedWarnings);
   }
 
   /**
@@ -100,6 +100,6 @@ public class WithWarnings<T> implements Consumer<OperationAttempt<?, ?>> {
   public void accept(OperationAttempt<?, ?> operationAttempt) {
     Objects.requireNonNull(operationAttempt, "operationAttempt must not be null");
     warnings.forEach(operationAttempt::addWarning);
-    supressedWarnings.forEach(operationAttempt::addSupressedWarning);
+    suppressedWarnings.forEach(operationAttempt::addSuppressedWarning);
   }
 }
