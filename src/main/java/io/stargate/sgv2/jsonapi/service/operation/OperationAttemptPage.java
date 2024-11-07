@@ -68,7 +68,7 @@ abstract class OperationAttemptPage<
         .flatMap(
             attempt ->
                 attempt.warnings().stream()
-                    .filter(warn -> !attempt.warningOverrides().contains(warn.code)))
+                    .filter(warn -> !attempt.supressedWarnings().contains(warn.code)))
         .forEach(resultBuilder::addWarning);
   }
 

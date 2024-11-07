@@ -74,6 +74,7 @@ public abstract class OperationAttempt<
   protected final UUID attemptId = UUID.randomUUID();
 
   private final List<APIException> warnings = new ArrayList<>();
+  private final List<String> supressedWarnings = new ArrayList<>();
   private Throwable failure;
 
   // Keep this private, so sub-classes set through setter incase we need to syncronize later
@@ -481,6 +482,18 @@ public abstract class OperationAttempt<
   }
 
   /**
+   * Adds supression warning override code to the attempt, so they are not included in the response.
+   *
+   * <p>See {@link OperationAttemptPage} for how warnings are included in the response.
+   *
+   * @param supressedWarning The warning message code to add, cannot be <code>null</code> or blank.
+   */
+  public void addSupressedWarning(String supressedWarning) {
+    supressedWarnings.add(
+        Objects.requireNonNull(supressedWarning, "supressedWarning cannot be null"));
+  }
+
+  /**
    * The warnings that have been added to the attempt, these are messages that can be included in
    * the response.
    *
@@ -499,8 +512,8 @@ public abstract class OperationAttempt<
    *
    * @return An unmodifiable list of warnings, never <code>null</code>
    */
-  protected List<String> warningOverrides() {
-    return Collections.emptyList();
+  protected List<String> supressedWarnings() {
+    return List.copyOf(supressedWarnings);
   }
 
   /**

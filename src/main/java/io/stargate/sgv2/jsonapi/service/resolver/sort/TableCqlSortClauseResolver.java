@@ -250,7 +250,9 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
     LOGGER.debug(
         "Vector sorting on column {}", cqlIdentifierToMessageString(vectorSortColumn.name()));
     var cqlVector = CqlVectorUtil.floatsToCqlVector(vectorSortExpression.vector());
-    return WithWarnings.of(new TableOrderByANNCqlClause(vectorSortColumn, cqlVector));
+    return WithWarnings.of(
+        new TableOrderByANNCqlClause(vectorSortColumn, cqlVector),
+        List.of(WarningException.Code.ZERO_FILTER_OPERATIONS.name()));
   }
 
   private Optional<IndexMetadata> findIndexMetadata(

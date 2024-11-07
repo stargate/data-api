@@ -18,7 +18,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByANNCqlClause;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -124,15 +123,6 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
           statement.getPositionalValues());
     }
     return rowSorter.executeRead(queryExecutor, statement);
-  }
-
-  @Override
-  protected List<String> warningOverrides() {
-    if (orderByCqlClause instanceof TableOrderByANNCqlClause) {
-      return List.of(WarningException.Code.ZERO_FILTER_OPERATIONS.name());
-    } else {
-      return List.of();
-    }
   }
 
   @Override
