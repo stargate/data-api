@@ -7,12 +7,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
+import com.fasterxml.jackson.core.Base64Variants;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
+import io.stargate.sgv2.jsonapi.util.Base64Util;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -255,10 +257,21 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   }
 
   protected String generateBase64EncodedBinaryVector(float[] vector) {
-    return EJSONWrapper.binaryFormatString(vector);
+    {
+      final byte[] byteArray = CqlVectorUtil.floatsToBytes(vector);
+
+      // Encode the byte array into a Base64 string
+      return Base64Variants.MIME_NO_LINEFEEDS.encode(byteArray);
+    }
   }
 
-  protected float[] decodeBase64BinaryVectorToFloatArray(String binaryVector) {
-    return EJSONWrapper.toFloatArray(binaryVector);
+  protected float[] decodeBase64BinaryVectorToFloatArray(String base64Vector) {
+    byte[] binaryPayload;
+    try {
+      binaryPayload = Base64Util.decodeFromMimeBase64(base64Vector);
+      return CqlVectorUtil.bytesToFloats(binaryPayload);
+    } catch (Exception e) {
+      throw new RuntimeException("Not a valid binary vector", e);
+    }
   }
 }

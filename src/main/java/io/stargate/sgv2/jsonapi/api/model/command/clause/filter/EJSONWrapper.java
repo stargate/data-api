@@ -1,12 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.core.Base64Variants;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.util.Base64Util;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Objects;
@@ -24,7 +23,6 @@ public class EJSONWrapper {
   public enum EJSONType {
     BINARY($BINARY),
     DATE($DATE);
-    ;
 
     private final String key;
 
@@ -125,42 +123,14 @@ public class EJSONWrapper {
   // Returns the float array value from the binary EJSON wrapper
   public float[] getVectorValueForBinary() {
     if (type != EJSONType.BINARY) {
-      throw new RuntimeException("Vector value can only be extracted from binary EJSON wrapper");
+      throw new IllegalStateException(
+          "Vector value can only be extracted from binary EJSON wrapper");
     }
-    return toFloatArray(value.textValue());
-  }
-
-  // Utility method for converting binary wrapped value to float array
-  public static float[] toFloatArray(String base64Vector) {
-    byte[] binaryPayload;
     try {
-      binaryPayload = Base64Util.decodeFromMimeBase64(base64Vector);
-    } catch (IllegalArgumentException e) {
-      throw new RuntimeException(
-          "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String, problem: %s"
-              .formatted(e.getMessage()));
-    }
-
-    try {
-      return CqlVectorUtil.bytesToFloats(binaryPayload);
-    } catch (IllegalArgumentException e) {
-      throw new RuntimeException(
+      return CqlVectorUtil.bytesToFloats(value().binaryValue());
+    } catch (IOException | IllegalArgumentException e) {
+      throw new IllegalArgumentException(
           "Invalid content in EJSON $binary wrapper, problem: %s".formatted(e.getMessage()));
     }
-  }
-
-  // Utility method for converting float array to binary vector value
-  public static String binaryFormatString(float[] vector) {
-    ByteBuffer byteBuffer = ByteBuffer.allocate(vector.length * 4); // 4 bytes per float
-
-    for (float val : vector) {
-      byteBuffer.putInt(Float.floatToIntBits(val)); // Convert float to raw int bits
-    }
-
-    // Get the byte array from the ByteBuffer
-    byte[] byteArray = byteBuffer.array();
-
-    // Encode the byte array into a Base64 string
-    return Base64Variants.MIME_NO_LINEFEEDS.encode(byteArray);
   }
 }

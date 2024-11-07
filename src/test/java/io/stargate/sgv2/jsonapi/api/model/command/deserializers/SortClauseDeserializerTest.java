@@ -6,11 +6,12 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
+import io.stargate.sgv2.jsonapi.util.Base64Util;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -63,7 +64,9 @@ class SortClauseDeserializerTest {
 
     @Test
     public void vectorSearchBinaryObject() throws Exception {
-      String vectorString = EJSONWrapper.binaryFormatString(new float[] {0.11f, 0.22f, 0.33f});
+      String vectorString =
+          Base64Util.encodeAsMimeBase64(
+              CqlVectorUtil.floatsToBytes(new float[] {0.11f, 0.22f, 0.33f}));
       String json =
               """
             {
@@ -83,7 +86,9 @@ class SortClauseDeserializerTest {
 
     @Test
     public void binaryVectorSearchTableColumn() throws Exception {
-      String vectorString = EJSONWrapper.binaryFormatString(new float[] {0.11f, 0.22f, 0.33f});
+      String vectorString =
+          Base64Util.encodeAsMimeBase64(
+              CqlVectorUtil.floatsToBytes(new float[] {0.11f, 0.22f, 0.33f}));
       String json =
               """
             {
