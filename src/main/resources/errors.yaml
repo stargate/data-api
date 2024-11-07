@@ -837,13 +837,7 @@ request-errors:
     body: |-
       Sort clause does not support more than one vectorize sort.
 
-      Request has vectorize sort on vector columns: ${sortVectorizeOnVectorColumns}
-
-  - scope: SORT
-    code: VECTORIZE_SORT_WITH_OTHER_SORT_EXPRESSION
-    title: Can not combine vectorize sort with other sort expression
-    body: |-
-      No other sort expression is allowed when vectorize sort is specified in sort clause.
+      Request has vectorize sort on vector columns: ${sortVectorizeColumns}
 
   - scope: SORT
     code: VECTORIZE_SORT_ON_NON_VECTOR_COLUMN
@@ -851,7 +845,7 @@ request-errors:
     body: |-
       Can not vectorize on non-vector column. 
       
-      Request has vectorize sort on non-vector column: ${sortVectorizeOnNonVectorColumn}
+      Request has vectorize sort on non-vector column: ${nonVectorColumn}
 
   - scope: SORT
     code: VECTORIZE_SORT_ON_VECTOR_COLUMN_WITHOUT_VECTORIZE_DEFINITION
@@ -859,7 +853,7 @@ request-errors:
     body: |-
       Can not vectorize on vector column that has no vectorize definition. 
       
-      Request has vectorize sort on vector column that has no vectorize definition: ${vectorColumnWithoutVectorizeDefinition}
+      Request has vectorize sort on vector column that has no vectorize definition: ${noVectorizeDefinition}
       
 
 

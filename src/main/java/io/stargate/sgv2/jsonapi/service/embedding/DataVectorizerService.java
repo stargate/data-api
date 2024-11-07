@@ -9,17 +9,18 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.MeteredEmbeddingProvider;
-import io.stargate.sgv2.jsonapi.service.resolver.sort.TableVectorizeSortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
@@ -242,20 +243,68 @@ public class DataVectorizerService {
       return List.of();
     }
 
-    // TODO, how to refactor and add this resolver to class scope
-    var tableVectorizeSortClauseResolver = new TableVectorizeSortClauseResolver();
-    var vectorizeSortExpression =
-        tableVectorizeSortClauseResolver.resolve(commandContext, command).orElse(null);
-
-    if (vectorizeSortExpression == null) {
+    var vectorizeSorts = command.sortClause().tableVectorizeSorts();
+    if (vectorizeSorts.isEmpty()) {
       return List.of();
     }
+
+    var tableSchemaObject = commandContext.schemaObject();
+
+    if (vectorizeSorts.size() > 1) {
+      //      "sort": {
+      //        "vector_col_with_vectorize_def": "ChatGPT integrated sneakers that talk to you",
+      //        "vector_col_without_vectorize_de": "ChatGPT integrated sneakers that talk to you"
+      //      },
+      //      if we do not check here, we will get the first vectorize sort, vectorize it, and sort
+      // clause will end up with
+      //      thinking second one is not a vector sort, and say you can not combine vector sort and
+      // non-vector sort
+      throw SortException.Code.MORE_THAN_ONE_VECTORIZE_SORT.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put(
+                    "sortVectorizeColumns",
+                    errFmtJoin(vectorizeSorts.stream().map(SortExpression::path).toList()));
+              }));
+    }
+
+    var vectorizeSortExpression = vectorizeSorts.getFirst();
+    var apiTableDef = tableSchemaObject.apiTableDef();
     var vectorColumnDef =
-        commandContext
-            .schemaObject()
-            .apiTableDef()
-            .allColumns()
-            .get(vectorizeSortExpression.pathAsCqlIdentifier());
+        apiTableDef.allColumns().get(vectorizeSortExpression.pathAsCqlIdentifier());
+
+    if (vectorColumnDef == null) {
+      throw SortException.Code.CANNOT_SORT_UNKNOWN_COLUMNS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put(
+                    "allColumns", errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
+                map.put(
+                    "unknownColumns",
+                    errFmtCqlIdentifier(List.of(vectorizeSortExpression.pathAsCqlIdentifier())));
+              }));
+    }
+
+    if (vectorColumnDef.type().typeName() != ApiTypeName.VECTOR) {
+      throw SortException.Code.VECTORIZE_SORT_ON_NON_VECTOR_COLUMN.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("nonVectorColumn", errFmtApiColumnDef(List.of(vectorColumnDef)));
+              }));
+    }
+
+    var vectorTypeDef = (ApiVectorType) vectorColumnDef.type();
+    if (vectorTypeDef.getVectorizeDefinition() == null) {
+      throw SortException.Code.VECTORIZE_SORT_ON_VECTOR_COLUMN_WITHOUT_VECTORIZE_DEFINITION.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("noVectorizeDefinition", errFmtApiColumnDef(List.of(vectorColumnDef)));
+              }));
+    }
 
     return List.of(
         new DataVectorizer.SortVectorizeTask(sortClause, vectorizeSortExpression, vectorColumnDef));

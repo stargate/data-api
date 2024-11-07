@@ -127,7 +127,7 @@ public class VectorizeTableIntegartionTest extends AbstractTableIntegrationTestB
                 SAMPLE_VECTORIZE_CONTENT,
                 VectorizeTableScenario.fieldName(VectorizeTableScenario.CONTENT_COL),
                 1),
-            SortException.Code.VECTORIZE_SORT_WITH_OTHER_SORT_EXPRESSION));
+            SortException.Code.CANNOT_MIX_VECTOR_AND_NON_VECTOR_SORT));
   }
 
   @ParameterizedTest
