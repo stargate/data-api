@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverException
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 
 /** Resolver for the {@link DropIndexCommand}. */
 @ApplicationScoped
@@ -34,8 +35,10 @@ public class DropIndexCommandResolver implements CommandResolver<DropIndexComman
             ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
             Duration.ofMillis(
                 ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
-    final DropIndexCommand.Options options = command.options();
-    final boolean ifExists = (options != null) && options.ifExists();
+    final boolean ifExists =
+        Optional.ofNullable(command.options())
+            .map(DropIndexCommand.Options::ifExists)
+            .orElse(false);
     CQLOption<Drop> cqlOption = null;
     if (ifExists) {
       cqlOption = CQLOption.ForDrop.ifExists();
