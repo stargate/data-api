@@ -127,7 +127,10 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
                 SAMPLE_VECTORIZE_CONTENT,
                 VectorizeTableScenario.fieldName(VectorizeTableScenario.CONTENT_COL),
                 1),
-            SortException.Code.CANNOT_MIX_VECTOR_AND_NON_VECTOR_SORT));
+            SortException.Code.CANNOT_MIX_VECTOR_AND_NON_VECTOR_SORT),
+        Arguments.of(
+            ImmutableMap.of("no_column_exist", SAMPLE_VECTORIZE_CONTENT),
+            SortException.Code.CANNOT_SORT_UNKNOWN_COLUMNS));
   }
 
   @ParameterizedTest

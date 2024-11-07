@@ -138,7 +138,6 @@ public class DataVectorizerService {
               tasksForInsert(commandContext.schemaObject(), imc.documents());
           case InsertOneCommand ioc ->
               tasksForInsert(commandContext.schemaObject(), List.of(ioc.document()));
-            //          case Sortable sortable -> tasksForSort(apiTableDef, sortable.sortClause());
           case Sortable sortable -> tasksForSort(sortable, commandContext);
 
           default -> List.of();
@@ -274,17 +273,9 @@ public class DataVectorizerService {
     var vectorColumnDef =
         apiTableDef.allColumns().get(vectorizeSortExpression.pathAsCqlIdentifier());
 
+    // if there is no target vector column in table, just leave it for sort to fail
     if (vectorColumnDef == null) {
-      throw SortException.Code.CANNOT_SORT_UNKNOWN_COLUMNS.get(
-          errVars(
-              tableSchemaObject,
-              map -> {
-                map.put(
-                    "allColumns", errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
-                map.put(
-                    "unknownColumns",
-                    errFmtCqlIdentifier(List.of(vectorizeSortExpression.pathAsCqlIdentifier())));
-              }));
+      return List.of();
     }
 
     if (vectorColumnDef.type().typeName() != ApiTypeName.VECTOR) {
