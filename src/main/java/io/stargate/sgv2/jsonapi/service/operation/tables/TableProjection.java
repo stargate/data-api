@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtApiColumnDef;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
@@ -10,6 +11,7 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
@@ -18,7 +20,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.OperationProjection;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
-import io.stargate.sgv2.jsonapi.service.projection.TableProjectionDefinition;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,26 +40,28 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
   private TableSchemaObject table;
   private List<ColumnMetadata> columns;
   private ColumnsDescContainer columnsDesc;
+  private TableSimilarityFunction tableSimilarityFunction;
 
   private TableProjection(
       ObjectMapper objectMapper,
       TableSchemaObject table,
       List<ColumnMetadata> columns,
-      ColumnsDescContainer columnsDesc) {
+      ColumnsDescContainer columnsDesc,
+      TableSimilarityFunction tableSimilarityFunction) {
+
     this.objectMapper = objectMapper;
     this.table = table;
     this.columns = columns;
     this.columnsDesc = columnsDesc;
+    this.tableSimilarityFunction = tableSimilarityFunction;
   }
 
   /**
    * Factory method for construction projection instance, given a projection definition and table
    * schema.
    */
-  public static TableProjection fromDefinition(
-      ObjectMapper objectMapper,
-      TableProjectionDefinition projectionDefinition,
-      TableSchemaObject table) {
+  public static <CmdT extends Projectable> TableProjection fromDefinition(
+      ObjectMapper objectMapper, CmdT command, TableSchemaObject table) {
 
     Map<String, ColumnMetadata> columnsByName = new HashMap<>();
     // TODO: This can also be cached as part of TableSchemaObject than resolving it for every query.
@@ -67,7 +70,8 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
         .getColumns()
         .forEach((id, column) -> columnsByName.put(id.asInternal(), column));
 
-    List<ColumnMetadata> columns = projectionDefinition.extractSelectedColumns(columnsByName);
+    List<ColumnMetadata> columns =
+        command.tableProjectionDefinition().extractSelectedColumns(columnsByName);
 
     // TODO: A table can't be with empty columns. Think a redundant check.
     if (columns.isEmpty()) {
@@ -88,14 +92,22 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
               .formatted(errFmtApiColumnDef(readApiColumns.filterByUnsupported())));
     }
 
-    return new TableProjection(objectMapper, table, columns, readApiColumns.toColumnsDesc());
+    return new TableProjection(
+        objectMapper,
+        table,
+        columns,
+        readApiColumns.toColumnsDesc(),
+        TableSimilarityFunction.from(command, table));
   }
 
   @Override
   public Select apply(OngoingSelection ongoingSelection) {
     Set<CqlIdentifier> readColumns = new LinkedHashSet<>();
     readColumns.addAll(columns.stream().map(ColumnMetadata::getName).toList());
-    return ongoingSelection.columnsIds(readColumns);
+    Select select = ongoingSelection.columnsIds(readColumns);
+
+    // may apply similarity score function
+    return tableSimilarityFunction.apply(select);
   }
 
   @Override
@@ -146,6 +158,17 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
           columns.size(),
           nonNullCount,
           skippedNullCount);
+    }
+
+    // If user specify includeSimilarity, but no ANN sort clause, then we won't generate
+    // similarity_score function in the cql statement
+    if (tableSimilarityFunction.canProjectSimilarity()) {
+      try {
+        final float aFloat = row.getFloat(TableSimilarityFunction.SIMILARITY_SCORE_ALIAS);
+        result.put(VECTOR_FUNCTION_SIMILARITY_FIELD, aFloat);
+        // Should not happen, but keep it caught, in case it breaks the query
+      } catch (IllegalArgumentException ignored) {
+      }
     }
     return result;
   }
