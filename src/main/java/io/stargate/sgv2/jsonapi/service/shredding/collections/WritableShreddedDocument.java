@@ -303,7 +303,7 @@ public record WritableShreddedDocument(
 
       try {
         queryVectorValues = CqlVectorUtil.bytesToFloats(binaryVector);
-      } catch (RuntimeException e) {
+      } catch (IllegalArgumentException e) {
         throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(e.getMessage());
       }
     }

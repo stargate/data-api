@@ -93,6 +93,10 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) implements
         throw ErrorCodeV1.UNINDEXED_SORT_PATH.toApiException(
             "sort path '%s' is not indexed", sortExpression.path());
       }
+      // `SortClauseDeserializer` looks for binary value and adds it as SortExpression irrespective
+      // of field name to support ANN search for tables. There is no access to SchemaObject in the
+      // deserializer, so added a validation to check in case of collection.
+
       if (!(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(sortExpression.path())
               || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(sortExpression.path()))
           && sortExpression.vector() != null) {

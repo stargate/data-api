@@ -52,7 +52,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> inner = fieldIter.next();
       String path = inner.getKey().trim();
-      float[] arrayVals = null;
+      float[] vectorFloats = null;
       if (inner.getValue().isObject()) {
         var ejsonWrapped = EJSONWrapper.maybeFrom((ObjectNode) inner.getValue());
         if (ejsonWrapped == null) {
@@ -61,16 +61,16 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
               path, inner.getValue().toString());
         }
         try {
-          arrayVals = ejsonWrapped.getVectorValueForBinary();
-        } catch (RuntimeException e) {
+          vectorFloats = ejsonWrapped.getVectorValueForBinary();
+        } catch (IllegalArgumentException | IllegalStateException e) {
           throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(e.getMessage());
         }
       }
       // handle table vector sort
       if (!(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)
           || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path))) {
-        if (arrayVals != null) {
-          sortExpressions.add(SortExpression.tableVectorSort(path, arrayVals));
+        if (vectorFloats != null) {
+          sortExpressions.add(SortExpression.tableVectorSort(path, vectorFloats));
           continue;
         } else if (inner.getValue().isArray()) {
           // TODO: HACK: quick support for tables, if the value is an array we will assume the
@@ -90,12 +90,12 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         if (totalFields > 1) {
           throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
         }
-        if (arrayVals == null) {
+        if (vectorFloats == null) {
           if (!inner.getValue().isArray()) {
             throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
           } else {
             ArrayNode arrayNode = (ArrayNode) inner.getValue();
-            arrayVals = new float[arrayNode.size()];
+            vectorFloats = new float[arrayNode.size()];
             if (arrayNode.isEmpty()) {
               throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
             }
@@ -104,11 +104,11 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
               if (!element.isNumber()) {
                 throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
               }
-              arrayVals[i] = element.floatValue();
+              vectorFloats[i] = element.floatValue();
             }
           }
         }
-        SortExpression exp = SortExpression.vsearch(arrayVals);
+        SortExpression exp = SortExpression.vsearch(vectorFloats);
         sortExpressions.clear();
         sortExpressions.add(exp);
         // TODO: aaron 17-oct-2024 - this break seems unneeded as above it checks if there is only
