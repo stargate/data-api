@@ -2,17 +2,21 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 import static io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider.SAMPLE_VECTORIZE_CONTENTS;
+import static org.eclipse.jetty.util.Pool.StrategyType.RANDOM;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.v1.util.TemplateRunner;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.VectorizeTableScenario;
 import io.stargate.sgv2.jsonapi.exception.*;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import java.util.ArrayList;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,7 +29,7 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
-  private static final String TABLE_NAME = "vectorize" + System.currentTimeMillis();
+  private static final String TABLE_NAME = "tablesVectorize";
   private static final VectorizeTableScenario SCENARIO =
       new VectorizeTableScenario(keyspaceName, TABLE_NAME);
   private static final String SAMPLE_VECTORIZE_CONTENT = SAMPLE_VECTORIZE_CONTENTS.getFirst();
@@ -43,24 +47,65 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
 
   private static Stream<Arguments> insertCommandNames() {
     var commands = new ArrayList<Arguments>();
-    commands.add(Arguments.of(Command.CommandName.INSERT_ONE));
-    commands.add(Arguments.of(Command.CommandName.INSERT_MANY));
+    // insertOne single vectorize in one doc
+    commands.add(
+        Arguments.of(
+            Command.CommandName.INSERT_ONE,
+            ImmutableMap.of(
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
+                SAMPLE_VECTORIZE_CONTENT,
+                "id",
+                String.valueOf(System.currentTimeMillis()))));
+    // insertOne multiple vectorize in one doc
+    commands.add(
+        Arguments.of(
+            Command.CommandName.INSERT_ONE,
+            ImmutableMap.of(
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
+                SAMPLE_VECTORIZE_CONTENT,
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_2),
+                SAMPLE_VECTORIZE_CONTENT,
+                "id",
+                String.valueOf(System.currentTimeMillis()))));
+
+    // insertMany single vectorize in one doc
+    commands.add(
+        Arguments.of(
+            Command.CommandName.INSERT_MANY,
+            ImmutableMap.of(
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
+                SAMPLE_VECTORIZE_CONTENT,
+                "id",
+                String.valueOf(System.currentTimeMillis()))));
+    // insertMany multiple vectorize in one doc
+    commands.add(
+        Arguments.of(
+            Command.CommandName.INSERT_MANY,
+            ImmutableMap.of(
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
+                SAMPLE_VECTORIZE_CONTENT,
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_2),
+                SAMPLE_VECTORIZE_CONTENT,
+                "id",
+                String.valueOf(System.currentTimeMillis()))));
+
     return commands.stream();
   }
 
   @ParameterizedTest
   @MethodSource("insertCommandNames")
-  public void successVectorizeInsert(Command.CommandName commandName)
+  public void successVectorizeInsert(
+      Command.CommandName commandName, ImmutableMap<String, Object> document)
       throws JsonProcessingException {
 
-    Map<String, Object> document =
-        Map.of(
-            VectorizeTableScenario.fieldName(
-                VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF),
-            SAMPLE_VECTORIZE_CONTENT,
-            "id",
-            String.valueOf(System.currentTimeMillis()));
     var json = objectMapper.writeValueAsString(document);
+
     if (commandName.equals(Command.CommandName.INSERT_ONE)) {
       assertTableCommand(keyspaceName, TABLE_NAME).templated().insertOne(json).wasSuccessful();
     } else {
@@ -76,7 +121,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
     Map<String, Object> document =
         Map.of(
             VectorizeTableScenario.fieldName(
-                VectorizeTableScenario.INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF),
+                VectorizeTableScenario.INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF_1),
             SAMPLE_VECTORIZE_CONTENT,
             "id",
             String.valueOf(System.currentTimeMillis()));
@@ -103,16 +148,16 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
         Arguments.of(
             ImmutableMap.of(
                 VectorizeTableScenario.fieldName(
-                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF),
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF_1),
                 SAMPLE_VECTORIZE_CONTENT),
             SortException.Code.VECTORIZE_SORT_ON_VECTOR_COLUMN_WITHOUT_VECTORIZE_DEFINITION),
         Arguments.of(
             ImmutableMap.of(
                 VectorizeTableScenario.fieldName(
-                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF),
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
                 SAMPLE_VECTORIZE_CONTENT,
                 VectorizeTableScenario.fieldName(
-                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF),
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF_1),
                 SAMPLE_VECTORIZE_CONTENT),
             SortException.Code.MORE_THAN_ONE_VECTORIZE_SORT),
         Arguments.of(
@@ -123,7 +168,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
         Arguments.of(
             ImmutableMap.of(
                 VectorizeTableScenario.fieldName(
-                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF),
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
                 SAMPLE_VECTORIZE_CONTENT,
                 VectorizeTableScenario.fieldName(VectorizeTableScenario.CONTENT_COL),
                 1),
@@ -157,7 +202,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
     ImmutableMap<String, Object> sort =
         ImmutableMap.of(
             VectorizeTableScenario.fieldName(
-                VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF),
+                VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
             SAMPLE_VECTORIZE_CONTENT);
     var limit = 3;
     Map<String, Object> options =
@@ -174,5 +219,102 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
     } else {
       validator.hasSingleDocument();
     }
+  }
+
+  private static Stream<Arguments> VECTORIZE_UPDATE_SET() {
+    return Stream.of(
+        // no column exist to update set
+        Arguments.of(
+            ImmutableMap.of("no_column_exist", SAMPLE_VECTORIZE_CONTENT),
+            UpdateException.Code.UNKNOWN_TABLE_COLUMNS),
+        // successful vectorize update set
+        Arguments.of(
+            ImmutableMap.of(
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
+                SAMPLE_VECTORIZE_CONTENT),
+            null),
+        //  successful multiple vectorize update set
+        Arguments.of(
+            ImmutableMap.of(
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
+                SAMPLE_VECTORIZE_CONTENT,
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_2),
+                SAMPLE_VECTORIZE_CONTENT),
+            null),
+        Arguments.of(
+            ImmutableMap.of(
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF_1),
+                SAMPLE_VECTORIZE_CONTENT),
+            UpdateException.Code.INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION));
+  }
+
+  @ParameterizedTest
+  @MethodSource("VECTORIZE_UPDATE_SET")
+  public void vectorizeUpdateSet(
+      ImmutableMap<String, Object> set, UpdateException.Code updateExceptionCode)
+      throws JsonProcessingException {
+
+    // InsertOne
+    var inserterRowId = "rowId" + System.currentTimeMillis();
+    insertOneRowWithRandowVector(inserterRowId);
+    var changedVector =
+        CustomITEmbeddingProvider.TEST_DATA_DIMENSION_5.get(SAMPLE_VECTORIZE_CONTENT);
+
+    // UpdateOne
+    ImmutableMap<String, Object> filterOnRow = ImmutableMap.of("id", inserterRowId);
+    ImmutableMap<String, Object> updateSet = ImmutableMap.of("$set", set);
+    assertTableCommand(keyspaceName, TABLE_NAME)
+        .templated()
+        .updateOne(filterOnRow, updateSet)
+        .mayHaveSingleApiError(updateExceptionCode, UpdateException.class);
+
+    // if no error, then vectors in set should all be updated by vectorize
+    final Map<String, Object> vectorDataFields =
+        set.keySet().stream().collect(Collectors.toMap(Function.identity(), a -> changedVector));
+    if (updateExceptionCode == null) {
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .findOne(filterOnRow, null)
+          .wasSuccessful()
+          .hasDocumentFields(vectorDataFields);
+    }
+
+    // DeleteOne
+    assertTableCommand(keyspaceName, TABLE_NAME)
+        .templated()
+        .delete(Command.CommandName.DELETE_ONE, TemplateRunner.asJSON(filterOnRow))
+        .wasSuccessful();
+  }
+
+  private void insertOneRowWithRandowVector(String rowId) throws JsonProcessingException {
+
+    Random RANDOM = new Random();
+    // sample:  [0.0, -0.5, 3.125, 0.1, 0.3]
+    var randomVector =
+        Stream.generate(RANDOM::nextFloat) // generate random floats
+            .limit(5)
+            .toList();
+
+    Map<String, Object> document =
+        Map.of(
+            VectorizeTableScenario.fieldName(
+                VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
+            randomVector,
+            VectorizeTableScenario.fieldName(
+                VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_2),
+            randomVector,
+            VectorizeTableScenario.fieldName(
+                VectorizeTableScenario.INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF_1),
+            randomVector,
+            VectorizeTableScenario.fieldName(VectorizeTableScenario.UNINDEXED_VECTOR_COL_1),
+            randomVector,
+            "id",
+            rowId);
+    var json = objectMapper.writeValueAsString(document);
+    assertTableCommand(keyspaceName, TABLE_NAME).templated().insertOne(json).wasSuccessful();
   }
 }
