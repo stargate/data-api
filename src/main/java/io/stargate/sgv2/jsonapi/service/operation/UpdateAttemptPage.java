@@ -50,7 +50,6 @@ public class UpdateAttemptPage<SchemaT extends TableBasedSchemaObject>
       // when we refactor collections to use the OperationAttempt this will need to support
       // returning a document
       // e.g. for findOneAndDelete, for now it is always status only
-
       return new UpdateAttemptPage<>(
           attempts, CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode));
     }

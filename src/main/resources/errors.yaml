@@ -155,6 +155,18 @@ request-errors:
       
       Resend the request using only supported column values.
 
+  - scope: DOCUMENT
+    code: INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION
+    title: Can not vectorize on column without vectorize definition
+    body: |-
+      Vectorize only supports on vector column that has vectorize definition.
+      
+      The table ${keyspace}.${table} defines the vector columns with vectorize definition: ${validVectorizeColumns}.
+      The request included the following vector columns without vectorize definition: ${invalidVectorizeColumns}.
+      
+      Resend the vectorize request using only vector column with vectorize definition.
+      
+
 # ================================================================================================================
 # Family: REQUEST         Scope: FILTER
 # ================================================================================================================
@@ -187,6 +199,19 @@ request-errors:
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The request included the following columns that have unsupported data types: ${unsupportedColumns}.
+      
+      Resend the request using only supported column types.  
+
+  - scope: FILTER
+    code: FILTERING_NOT_SUPPORTED_FOR_TYPE
+    title: The column type does not support filtering
+    body: |-
+      Filtering is only supported on primitive data types such as `text` not on container types such as `list`, `set`, `map`, or `vector`.
+      
+      NOTE: This restriction will be removed at a later date.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The request included unsupported filters on the columns: ${complexColumns}.
       
       Resend the request using only supported column types.  
 
@@ -350,7 +375,7 @@ request-errors:
     code: ZERO_FILTER_OPERATIONS
     title: Zero operations provided in query filter
     body: |-
-      Zero filters were provided in the filer for this query. 
+      Zero filters were provided in the filter for this query. 
       
       Providing zero filters will return all rows in the table, which may have poor performance when the table is large. For the best performance, include one or more filters using the primary key or indexes.
       
@@ -411,6 +436,12 @@ request-errors:
       The command sorted on the columns: ${sortColumns}.
       
       ${SNIPPET.INEFFICIENT_SORT}
+
+  - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_SKIP_OPTIONS
+    title: Sorting uses skip option, performing as inmemory sory
+    body: |-
+      Sorting uses skip option, performing as inmemory sory
 
   - scope: WARNING
     code: IN_MEMORY_SORTING_DUE_TO_MISSING_PARTITION_SORTING
@@ -697,7 +728,7 @@ request-errors:
     code: INVALID_INDEX_DEFINITION
     title: Provided index configuration is not valid.
     body: |-
-      Provided index configuration is not valid: ${reason}.V
+      Provided index configuration is not valid: ${reason}.
 
   - scope: SCHEMA
     code: COLUMN_NOT_FOUND
@@ -734,6 +765,13 @@ request-errors:
       Resend the command using only columns that are defined in the table schema.
 
   - scope: SORT
+    code: CANNOT_SORT_TOO_MUCH_DATA
+    title: Sort cannot be performed because query returned more than in-memory sortable rows.
+    body: |-
+      Sort cannot be performed because query returned more than in-memory sortable rows.
+      Add more filters to reduce the number of rows returned.
+
+  - scope: SORT
     code: CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS
     title: Vector sort requested for non-vector columns
     body: |-
@@ -745,6 +783,14 @@ request-errors:
       The command attempted to sort the non vector columns: ${sortColumns}.  
       
       Resend the command using only vector columns for vector sorting.
+
+  - scope: SORT
+    code: CANNOT_VECTOR_SORT_WITH_SKIP_OPTION
+    title: Vector sort requested with skip option
+    body: |-
+      The command attempted to vector sort columns along with skip option set. 
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
 
   - scope: SORT
     code: CANNOT_VECTOR_SORT_NON_INDEXED_VECTOR_COLUMNS
@@ -797,6 +843,33 @@ request-errors:
       Updating row in a table does not support sorting, a row can only be updated by specifying full primary key(s).
       
       Resend the command without the sort clause.
+
+  - scope: SORT
+    code: MORE_THAN_ONE_VECTORIZE_SORT
+    title: Can not have more than one vectorize in sort clause
+    body: |-
+      Sort clause does not support more than one vectorize sort.
+
+      Request has vectorize sort on vector columns: ${sortVectorizeColumns}
+
+  - scope: SORT
+    code: VECTORIZE_SORT_ON_NON_VECTOR_COLUMN
+    title: Can not vectorize on non-vector column
+    body: |-
+      Can not vectorize on non-vector column. 
+      
+      Request has vectorize sort on non-vector column: ${nonVectorColumn}
+
+  - scope: SORT
+    code: VECTORIZE_SORT_ON_VECTOR_COLUMN_WITHOUT_VECTORIZE_DEFINITION
+    title: Can not vectorize on vector column without vectorize definition
+    body: |-
+      Can not vectorize on vector column that has no vectorize definition. 
+      
+      Request has vectorize sort on vector column that has no vectorize definition: ${noVectorizeDefinition}
+      
+
+
 
 # ================================================================================================================
 # ================================================================================================================

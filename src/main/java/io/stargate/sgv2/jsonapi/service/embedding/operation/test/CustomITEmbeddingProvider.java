@@ -17,6 +17,15 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
 
   public static final String TEST_API_KEY = "test_embedding_service_api_key";
 
+  public static final List<String> SAMPLE_VECTORIZE_CONTENTS =
+      List.of(
+          "ChatGPT integrated sneakers that talk to you",
+          "ChatGPT upgraded",
+          "New data updated",
+          "An AI quilt to help you sleep forever",
+          "A deep learning display that controls your mood",
+          "Updating new data");
+
   public static HashMap<String, float[]> TEST_DATA_DIMENSION_5 = new HashMap<>();
   public static HashMap<String, float[]> TEST_DATA_DIMENSION_6 = new HashMap<>();
 

@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import com.datastax.oss.driver.api.querybuilder.schema.Drop;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
@@ -16,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverException
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 
 /** Resolver for the {@link DropTableCommand}. */
 @ApplicationScoped
@@ -28,14 +30,16 @@ public class DropTableCommandResolver implements CommandResolver<DropTableComman
   @Override
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, DropTableCommand command) {
-    final DropTableCommand.Options options = command.options();
-    final boolean ifExists = (options != null) && options.ifExists();
+    final boolean ifExists =
+        Optional.ofNullable(command.options())
+            .map(DropTableCommand.Options::ifExists)
+            .orElse(false);
     final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
         new SchemaAttempt.SchemaRetryPolicy(
             ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
             Duration.ofMillis(
                 ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
-    CQLOption cqlOption = null;
+    CQLOption<Drop> cqlOption = null;
     if (ifExists) {
       cqlOption = CQLOption.ForDrop.ifExists();
     }

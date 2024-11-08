@@ -9,12 +9,13 @@ import java.util.Map;
  * enabled.
  */
 public enum SimilarityFunction {
-  COSINE("cosine"),
-  EUCLIDEAN("euclidean"),
-  DOT_PRODUCT("dot_product"),
-  UNDEFINED("undefined");
+  COSINE("cosine", "similarity_cosine"),
+  EUCLIDEAN("euclidean", "similarity_euclidean"),
+  DOT_PRODUCT("dot_product", "similarity_dot_product"),
+  UNDEFINED("undefined", "undefined");
 
   private String metric;
+  private String function;
   private static Map<String, SimilarityFunction> FUNCTIONS_MAP = new HashMap<>();
   public static final SimilarityFunction DEFAULT_SIMILARITY_FUNCTION = COSINE;
 
@@ -24,12 +25,17 @@ public enum SimilarityFunction {
     }
   }
 
-  private SimilarityFunction(String metric) {
+  private SimilarityFunction(String metric, String function) {
     this.metric = metric;
+    this.function = function;
   }
 
   public String getMetric() {
     return metric;
+  }
+
+  public String getFunction() {
+    return function;
   }
 
   // TODO: store the name of the enum in the enum itself
