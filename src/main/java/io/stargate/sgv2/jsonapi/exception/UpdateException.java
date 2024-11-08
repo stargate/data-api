@@ -14,6 +14,7 @@ public class UpdateException extends RequestException {
   }
 
   public enum Code implements ErrorCode<UpdateException> {
+    INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION,
     UNKNOWN_TABLE_COLUMNS,
     UNSUPPORTED_UPDATE_OPERATION_FOR_TABLE,
     UPDATE_PRIMARY_KEY_COLUMNS,

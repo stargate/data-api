@@ -17,9 +17,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.SortException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -138,9 +136,18 @@ public class DataVectorizerService {
     List<DataVectorizer.VectorizeTask> tasks =
         switch (command) {
           case InsertManyCommand imc ->
-              tasksForInsert(commandContext.schemaObject(), imc.documents());
+              tasksForVectorizeColumns(
+                  commandContext.schemaObject(),
+                  imc.documents(),
+                  DocumentException.Code.INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION);
           case InsertOneCommand ioc ->
-              tasksForInsert(commandContext.schemaObject(), List.of(ioc.document()));
+              tasksForVectorizeColumns(
+                  commandContext.schemaObject(),
+                  List.of(ioc.document()),
+                  DocumentException.Code.INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION);
+            // Notice table update vectorize happens before UpdateCommand execution, since we can't
+            // do readThenUpdate for table.
+            // Collection update vectorize happens after the DB read.
           case UpdateOneCommand uoc ->
               taskforUpdate(commandContext.schemaObject(), uoc.updateClause());
           case Sortable sortable -> tasksForSort(sortable, commandContext);
@@ -167,8 +174,9 @@ public class DataVectorizerService {
   }
 
   /** Build the list of vectorize tasks when inserting one or more documents */
-  private <T extends TableSchemaObject> List<DataVectorizer.VectorizeTask> tasksForInsert(
-      T tableSchemaObject, List<JsonNode> documents) {
+  private <T extends TableSchemaObject, E extends RequestException>
+      List<DataVectorizer.VectorizeTask> tasksForVectorizeColumns(
+          T tableSchemaObject, List<JsonNode> documents, ErrorCode<E> noVectorizeDefinitionCode) {
 
     var apiTableDef = tableSchemaObject.apiTableDef();
     var vectorColumnDefs = apiTableDef.allColumns().filterByTypeToList(ApiTypeName.VECTOR);
@@ -213,7 +221,7 @@ public class DataVectorizerService {
     }
 
     if (!nonVectorizeFieldNames.isEmpty()) {
-      throw DocumentException.Code.INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION.get(
+      throw noVectorizeDefinitionCode.get(
           errVars(
               tableSchemaObject,
               map -> {
@@ -325,13 +333,16 @@ public class DataVectorizerService {
     //      "vectorCol1" : "eat apple",
     //      "vectorCol2" : "eat orange"
     //    }
-    final ObjectNode setNode = updateClause.updateOperationDefs().get(UpdateOperator.SET);
+    var setNode = updateClause.updateOperationDefs().get(UpdateOperator.SET);
     // no need to vectorize $unset, cause vector would be updated to null
     if (setNode == null) {
       return List.of();
     }
 
     // can reuse the tasksForInsert
-    return tasksForInsert(tableSchemaObject, List.of(setNode));
+    return tasksForVectorizeColumns(
+        tableSchemaObject,
+        List.of(setNode),
+        UpdateException.Code.INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION);
   }
 }

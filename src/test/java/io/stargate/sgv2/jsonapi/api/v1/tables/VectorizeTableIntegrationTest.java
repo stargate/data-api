@@ -6,7 +6,6 @@ import static org.eclipse.jetty.util.Pool.StrategyType.RANDOM;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.logging.Log;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
@@ -105,9 +104,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
       Command.CommandName commandName, ImmutableMap<String, Object> document)
       throws JsonProcessingException {
 
-    Log.error("docuemtn s +" + document);
     var json = objectMapper.writeValueAsString(document);
-    Log.error("docuemtn json  +" + json);
 
     if (commandName.equals(Command.CommandName.INSERT_ONE)) {
       assertTableCommand(keyspaceName, TABLE_NAME).templated().insertOne(json).wasSuccessful();
@@ -246,17 +243,13 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
                 VectorizeTableScenario.fieldName(
                     VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_2),
                 SAMPLE_VECTORIZE_CONTENT),
-            null)
-
-        //            Arguments.of(
-        //                    ImmutableMap.of(VectorizeTableScenario.fieldName(
-        //
-        // VectorizeTableScenario.INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF_1),
-        // SAMPLE_VECTORIZE_CONTENT),
-        //
-        // DocumentException.Code.INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION),
-
-        );
+            null),
+        Arguments.of(
+            ImmutableMap.of(
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF_1),
+                SAMPLE_VECTORIZE_CONTENT),
+            UpdateException.Code.INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION));
   }
 
   @ParameterizedTest

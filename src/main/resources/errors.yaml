@@ -315,6 +315,18 @@ request-errors:
       
       Supported update operations are ${supportedUpdateOperations}.
 
+# Note INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION is a duplicate for Document scope, this one is used for Update scope.
+  - scope: UPDATE
+    code: INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION
+    title: Can not vectorize on column without vectorize definition
+    body: |-
+      Vectorize only supports on vector column that has vectorize definition.
+      
+      The table ${keyspace}.${table} defines the vector columns with vectorize definition: ${validVectorizeColumns}.
+      The request included the following vector columns without vectorize definition: ${invalidVectorizeColumns}.
+      
+      Resend the vectorize request using only vector column with vectorize definition.
+
   # ================================================================================================================
   # Family: REQUEST         Scope: WARNING
   # ================================================================================================================
