@@ -8,28 +8,21 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
-import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
-import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
-import io.stargate.sgv2.jsonapi.service.resolver.sort.SortClauseResolver;
-import io.stargate.sgv2.jsonapi.service.resolver.sort.TableSortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
-import java.util.Optional;
 
 /** Resolves the {@link FindOneCommand } */
 @ApplicationScoped
@@ -42,8 +35,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver;
-  private final FilterResolver<FindCommand, TableSchemaObject> tableFilterResolver;
-  private final SortClauseResolver<FindCommand, TableSchemaObject> tableSortClauseResolver;
+  private final ReadCommandResolver<FindCommand> readCommandResolver;
 
   @Inject
   public FindCommandResolver(
@@ -53,6 +45,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
       DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
 
+    this.readCommandResolver = new ReadCommandResolver<>(objectMapper, operationsConfig);
     this.objectMapper = objectMapper;
     this.operationsConfig = operationsConfig;
     this.meterRegistry = meterRegistry;
@@ -60,9 +53,6 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
-    this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
-    this.tableSortClauseResolver =
-        new TableSortClauseResolver<>(operationsConfig, JSONCodecRegistries.DEFAULT_REGISTRY);
   }
 
   @Override
@@ -73,43 +63,87 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   @Override
   public Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, FindCommand command) {
 
-    var limit =
-        Optional.ofNullable(command.options())
-            .map(FindCommand.Options::limit)
-            .orElse(Integer.MAX_VALUE);
-
+    // TODO: if we are doing in memory sorting how do we get a paging state working ?
+    // The in memory sorting will blank out the paging state so we need to handle this
     var cqlPageState =
-        Optional.ofNullable(command.options())
-            .map(options -> CqlPagingState.from(options.pageState()))
-            .orElse(CqlPagingState.EMPTY);
-
-    var projection =
-        TableRowProjection.fromDefinition(
-            objectMapper, command.tableProjectionDefinition(), ctx.schemaObject());
-
-    var orderBy = tableSortClauseResolver.resolve(ctx, command);
-
-    // make the Sorter resolver and pass ing the order by clause
-
-    var builder =
-        new TableReadAttemptBuilder(ctx.schemaObject(), projection, projection, orderBy)
-            .addBuilderOption(CQLOption.ForSelect.limit(limit))
-            .addStatementOption(CQLOption.ForStatement.pageSize(operationsConfig.defaultPageSize()))
-            .addPagingState(cqlPageState);
-
-    var where =
-        TableWhereCQLClause.forSelect(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
-    var attempts = new OperationAttemptContainer<>(builder.build(where));
+        command.options() == null
+            ? CqlPagingState.EMPTY
+            : CqlPagingState.from(command.options().pageState());
 
     var pageBuilder =
-        ReadAttemptPage.<TableSchemaObject>builder()
-            .singleResponse(false)
-            .includeSortVector(command.options() != null && command.options().includeSortVector())
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+        ReadAttemptPage.<TableSchemaObject>builder().singleResponse(false).mayReturnVector(command);
 
-    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
+    return readCommandResolver.buildReadOperation(ctx, command, cqlPageState, pageBuilder);
+
+    // TODO: AARON MAHESH this is what was here before, leaving until we confirm all good
+
+    //    var rowSorterWithWarnings = tableRowSorterClauseResolver.resolve(ctx, command);
+    //
+    //    boolean inMemorySort = rowSorterWithWarnings != null;
+    //    var operationConfig = ctx.getConfig(OperationsConfig.class);
+    //    int limit =
+    //        Optional.ofNullable(command.options())
+    //            .map(FindCommand.Options::limit)
+    //            .orElse(inMemorySort ? operationsConfig.defaultPageSize() : Integer.MAX_VALUE);
+    //
+    //    var selectLimit = inMemorySort ? operationConfig.maxDocumentSortCount() + 1 : limit;
+    //
+    //    var cqlPageState =
+    //        inMemorySort
+    //            ? CqlPagingState.EMPTY
+    //            : Optional.ofNullable(command.options())
+    //                .map(options -> CqlPagingState.from(options.pageState()))
+    //                .orElse(CqlPagingState.EMPTY);
+    //
+    //    int pageSize =
+    //        inMemorySort ? operationsConfig.defaultSortPageSize() :
+    // operationsConfig.defaultPageSize();
+    //
+    //    var orderBy = tableSortOrderByCqlClauseResolver.resolve(ctx, command);
+    //
+    //    int skip =
+    // Optional.ofNullable(command.options()).map(FindCommand.Options::skip).orElse(0);
+    //
+    //    SortedRowAccumulator.RowSortSettings rowSortSettings =
+    //        inMemorySort ? SortedRowAccumulator.RowSortSettings.from(limit, skip, selectLimit) :
+    // null;
+    //
+    //    var projection =
+    //        TableProjection.fromDefinition(
+    //            objectMapper,
+    //            command.tableProjectionDefinition(),
+    //            ctx.schemaObject(),
+    //            inMemorySort
+    //                ?
+    // rowSorterWithWarnings.getOrderingColumns().stream().map(ApiColumnDef::name).toList()
+    //                : null);
+    //
+    //    var builder =
+    //        new TableReadAttemptBuilder(
+    //                ctx.schemaObject(),
+    //                projection,
+    //                projection,
+    //                orderBy,
+    //                rowSorterWithWarnings,
+    //            rowSortSettings)
+    //            .addBuilderOption(CQLOption.ForSelect.limit(selectLimit))
+    //            .addStatementOption(CQLOption.ForStatement.pageSize(pageSize))
+    //            .addPagingState(cqlPageState);
+    //
+    //    var where =
+    //        TableWhereCQLClause.forSelect(
+    //            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
+    //    var attempts = new OperationAttemptContainer<>(builder.build(where));
+    //
+    //    var pageBuilder =
+    //        ReadAttemptPage.<TableSchemaObject>builder()
+    //            .singleResponse(false)
+    //            .includeSortVector(command.options() != null &&
+    // command.options().includeSortVector())
+    //            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
+    //            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+    //
+    //    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
   }
 
   @Override

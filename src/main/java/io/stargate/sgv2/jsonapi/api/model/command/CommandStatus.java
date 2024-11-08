@@ -105,19 +105,30 @@ public enum CommandStatus {
   PRIMARY_KEY_SCHEMA(Names.PRIMARY_KEY_SCHEMA),
 
   /**
-   * The element contains the schema that describes the schema of the columns that were requested in
-   * the projection.
+   * The schema of the columns that were requested in the projection.
    *
    * <p>When doing a read, the result of the read by default does not columns that have null values.
-   * Additionaly in the default JSON representation multiple Column types may be represented as a
+   * Additionally, in the default JSON representation multiple Column types may be represented as a
    * single JSON type, such as dates, timestamps, duration all represented as a string. Or all
    * numeric types as a JSON number.
    *
    * <p>Clients can use the schema returned here to understand where null values were omitted and
-   * what the actual type of the column is.
+   * what the database type of the column is.
    */
   @JsonProperty(Names.PROJECTION_SCHEMA)
-  PROJECTION_SCHEMA(Names.PROJECTION_SCHEMA);
+  PROJECTION_SCHEMA(Names.PROJECTION_SCHEMA),
+
+  /**
+   * The count of the number of rows that were read from the database and sorted in memory.
+   *
+   * <p>Sorting in memory is done when a sort clause uses columns that are not from the partition
+   * sort key. This type of sorting usually needs to read the entire table to sort the rows, and
+   * needs to keep in memory the skip + limit number of rows. Check documentation for ways to avoid
+   * in memory sorting.
+   */
+  @JsonProperty(Names.SORTED_ROW_COUNT)
+  SORTED_ROW_COUNT(Names.SORTED_ROW_COUNT),
+  ;
 
   private final String apiName;
 
@@ -156,5 +167,6 @@ public enum CommandStatus {
     String WARNINGS = "warnings";
     String PRIMARY_KEY_SCHEMA = "primaryKeySchema";
     String PROJECTION_SCHEMA = "projectionSchema";
+    String SORTED_ROW_COUNT = "sortedRowCount";
   }
 }

@@ -4,11 +4,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.TableOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDefinitionDesc;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -34,7 +34,8 @@ public record CreateTableCommand(
     implements TableOnlyCommand {
 
   public record Options(
-      @Schema(
+      @Nullable
+          @Schema(
               description = "Flag to ignore if table already exists",
               defaultValue = "false",
               type = SchemaType.BOOLEAN,

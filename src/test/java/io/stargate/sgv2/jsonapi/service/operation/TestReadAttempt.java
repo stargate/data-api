@@ -4,10 +4,7 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
-import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
-import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
-import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.query.*;
 
 public class TestReadAttempt extends ReadAttempt<TableSchemaObject> {
 
@@ -19,9 +16,9 @@ public class TestReadAttempt extends ReadAttempt<TableSchemaObject> {
       SelectCQLClause selectCQLClause,
       WhereCQLClause<Select> whereCQLClause,
       OrderByCqlClause orderByCqlClause,
-      CqlOptions<Select> cqlOptions,
+      CQLOptions<Select> cqlOptions,
       CqlPagingState pagingState,
-      DocumentSourceSupplier documentSourceSupplier,
+      OperationProjection projection,
       AsyncResultSet resultSet) {
     super(
         position,
@@ -31,7 +28,8 @@ public class TestReadAttempt extends ReadAttempt<TableSchemaObject> {
         orderByCqlClause,
         cqlOptions,
         pagingState,
-        documentSourceSupplier);
+        RowSorter.NO_OP,
+        projection);
     this.resultSet = resultSet;
   }
 }

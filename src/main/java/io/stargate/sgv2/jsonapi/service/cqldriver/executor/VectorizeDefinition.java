@@ -63,7 +63,7 @@ public record VectorizeDefinition(
   static VectorizeDefinition fromJson(JsonNode jsonNode, ObjectMapper objectMapper) {
 
     // provider, modelName, must exist
-    // TODO: WHAT HAPPENS IF THEY DONT ? JSON props on VectorizeConfig say model isnot required
+    // TODO: WHAT HAPPENS IF THEY DONT ? JSON props on VectorizeConfig say model is not required
     String provider = jsonNode.get(VectorConstants.Vectorize.PROVIDER).asText();
     String modelName = jsonNode.get(VectorConstants.Vectorize.MODEL_NAME).asText();
 
@@ -119,7 +119,7 @@ public record VectorizeDefinition(
       }
     } catch (JsonProcessingException e) {
       LOGGER.error(
-          "rror parsing vectorize JSON configuration for table: %s.%s, json: %s"
+          "Error parsing vectorize JSON configuration for table: %s.%s, json: %s"
               .formatted(tableMetadata.getKeyspace(), tableMetadata.getName(), vectorizeJson),
           e);
       // TODO: THIS ERROR NEEDS WORK !!!! Update this error so it says the keyspace and table name !

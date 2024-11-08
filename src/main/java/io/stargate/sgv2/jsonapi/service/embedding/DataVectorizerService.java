@@ -1,22 +1,32 @@
 package io.stargate.sgv2.jsonapi.service.embedding;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtApiColumnDef;
+
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.MeteredEmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /** Service to vectorize the data to embedding vector. */
 @ApplicationScoped
@@ -46,8 +56,19 @@ public class DataVectorizerService {
    */
   public <T extends SchemaObject> Uni<Command> vectorize(
       DataApiRequestInfo dataApiRequestInfo, CommandContext<T> commandContext, Command command) {
+
     final DataVectorizer dataVectorizer =
         constructDataVectorizer(dataApiRequestInfo, commandContext);
+
+    // TODO, This is the hack to make table vectorize failure goes into command process flow
+    try {
+      if (commandContext.schemaObject() instanceof TableSchemaObject) {
+        return vectorizeTableCommand(dataVectorizer, commandContext.asTableContext(), command);
+      }
+    } catch (APIException e) {
+      return Uni.createFrom().failure(e);
+    }
+
     return vectorizeSortClause(dataVectorizer, commandContext, command)
         .onItem()
         .transformToUni(flag -> vectorizeDocument(dataVectorizer, commandContext, command))
@@ -77,6 +98,7 @@ public class DataVectorizerService {
 
   private <T extends SchemaObject> Uni<Boolean> vectorizeSortClause(
       DataVectorizer dataVectorizer, CommandContext<T> commandContext, Command command) {
+
     if (command instanceof Sortable sortable) {
       return dataVectorizer.vectorize(sortable.sortClause());
     }
@@ -91,5 +113,191 @@ public class DataVectorizerService {
       return dataVectorizer.vectorize(insertManyCommand.documents());
     }
     return Uni.createFrom().item(true);
+  }
+
+  /**
+   * Vectorize any table command. This is a new code path to avoid changing the collection code
+   * until we need to should be updated later to be a single code path - aaron nov 5th 2024
+   */
+  private Uni<Command> vectorizeTableCommand(
+      DataVectorizer dataVectorizer,
+      CommandContext<TableSchemaObject> commandContext,
+      Command command) {
+
+    var apiTableDef = commandContext.schemaObject().apiTableDef();
+    var vectorizeDefs = apiTableDef.allColumns().getVectorizeDefs();
+    if (vectorizeDefs.isEmpty()) {
+      return Uni.createFrom().item(command);
+    }
+
+    // Update is handled later because we need to check if the update actually changed a value
+    // check the UpdateOperationResult class
+    List<DataVectorizer.VectorizeTask> tasks =
+        switch (command) {
+          case InsertManyCommand imc ->
+              tasksForInsert(commandContext.schemaObject(), imc.documents());
+          case InsertOneCommand ioc ->
+              tasksForInsert(commandContext.schemaObject(), List.of(ioc.document()));
+          case Sortable sortable -> tasksForSort(sortable, commandContext);
+
+          default -> List.of();
+        };
+
+    if (tasks.isEmpty()) {
+      // Nothing to do, or this is not the sort of command that we can vectorize
+      return Uni.createFrom().item(command);
+    }
+
+    var embeddingRequestType =
+        switch (command) {
+          case ModifyCommand mc -> EmbeddingProvider.EmbeddingRequestType.INDEX;
+          case Sortable s -> EmbeddingProvider.EmbeddingRequestType.SEARCH;
+          default ->
+              throw new IllegalArgumentException(
+                  "Could not determine the embeddingRequestType for command type "
+                      + command.getClass());
+        };
+
+    return dataVectorizer.vectorizeTasks(command, tasks, embeddingRequestType);
+  }
+
+  /** Build the list of vectorize tasks when inserting one or more documents */
+  private <T extends TableSchemaObject> List<DataVectorizer.VectorizeTask> tasksForInsert(
+      T tableSchemaObject, List<JsonNode> documents) {
+
+    var apiTableDef = tableSchemaObject.apiTableDef();
+    var vectorColumnDefs = apiTableDef.allColumns().filterByTypeToList(ApiTypeName.VECTOR);
+
+    if (vectorColumnDefs.isEmpty()) {
+      return List.of();
+    }
+
+    // get all the fields in the documents that are vector columns, and the value of the node is a
+    // string, so we can check if they have a vectorize def.
+    // key is the parent of the vector field, not the vector field itself
+    Map<ObjectNode, ApiColumnDef> candidateVectorizeField = new HashMap<>();
+    for (var vectorColumnDef : vectorColumnDefs) {
+      for (var document : documents) {
+        var vectorField = document.path(vectorColumnDef.jsonKey());
+
+        // if the field does not exist then jackson will return a missing node, double-checking with
+        // text to be sure
+        if (!vectorField.isMissingNode() && vectorField.isTextual()) {
+          // document is the parent, we do not go deeper than the top level
+          if (!document.isObject()) {
+            throw new IllegalArgumentException("Document node must be an ObjectNode");
+          }
+          candidateVectorizeField.put((ObjectNode) document, vectorColumnDef);
+        }
+      }
+    }
+
+    // Now check that the columns actually have vectorize enabled.
+    Set<String> nonVectorizeFieldNames = new HashSet<>();
+    List<ApiColumnDef> supportedVectorizeFields = new ArrayList<>();
+    for (var columnDef : candidateVectorizeField.values()) {
+      if (((ApiVectorType) columnDef.type()).getVectorizeDefinition() == null) {
+        nonVectorizeFieldNames.add(columnDef.jsonKey());
+      } else {
+        supportedVectorizeFields.add(columnDef);
+      }
+    }
+
+    if (!nonVectorizeFieldNames.isEmpty()) {
+      throw DocumentException.Code.INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("validVectorizeColumns", errFmtApiColumnDef(supportedVectorizeFields));
+                map.put("invalidVectorizeColumns", errFmtJoin(nonVectorizeFieldNames));
+              }));
+    }
+
+    var vectorizeTasks =
+        new ArrayList<DataVectorizer.VectorizeTask>(candidateVectorizeField.size());
+    for (var entry : candidateVectorizeField.entrySet()) {
+      var parentNode = entry.getKey();
+      var vectorColumnDef = entry.getValue();
+
+      // if the user sent a blank string for the vectorize field, we just turn that into a null
+      // without vectorizing
+      // but that only applies if the column has a vectorize definition so do it here not above
+      var vectorizeText = parentNode.path(vectorColumnDef.jsonKey()).textValue();
+      if (vectorizeText.isBlank()) {
+        parentNode.putNull(vectorColumnDef.jsonKey());
+      } else {
+        vectorizeTasks.add(new DataVectorizer.VectorizeTask(parentNode, vectorColumnDef));
+      }
+    }
+    return vectorizeTasks;
+  }
+
+  /** Build the list of vectorize tasks for a sort clause */
+  private List<DataVectorizer.VectorizeTask> tasksForSort(
+      Sortable command, CommandContext<TableSchemaObject> commandContext) {
+
+    var sortClause = command.sortClause();
+    // because this is coming off the command may be null or empty
+    if (sortClause == null || sortClause.isEmpty()) {
+      return List.of();
+    }
+
+    var vectorizeSorts = command.sortClause().tableVectorizeSorts();
+    if (vectorizeSorts.isEmpty()) {
+      return List.of();
+    }
+
+    var tableSchemaObject = commandContext.schemaObject();
+
+    if (vectorizeSorts.size() > 1) {
+      //      "sort": {
+      //        "vector_col_with_vectorize_def": "ChatGPT integrated sneakers that talk to you",
+      //        "vector_col_without_vectorize_de": "ChatGPT integrated sneakers that talk to you"
+      //      },
+      //      if we do not check here, we will get the first vectorize sort, vectorize it, and sort
+      // clause will end up with
+      //      thinking second one is not a vector sort, and say you can not combine vector sort and
+      // non-vector sort
+      throw SortException.Code.MORE_THAN_ONE_VECTORIZE_SORT.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put(
+                    "sortVectorizeColumns",
+                    errFmtJoin(vectorizeSorts.stream().map(SortExpression::path).toList()));
+              }));
+    }
+
+    var vectorizeSortExpression = vectorizeSorts.getFirst();
+    var apiTableDef = tableSchemaObject.apiTableDef();
+    var vectorColumnDef =
+        apiTableDef.allColumns().get(vectorizeSortExpression.pathAsCqlIdentifier());
+
+    // if there is no target vector column in table, just leave it for sort to fail
+    if (vectorColumnDef == null) {
+      return List.of();
+    }
+
+    if (vectorColumnDef.type().typeName() != ApiTypeName.VECTOR) {
+      throw SortException.Code.VECTORIZE_SORT_ON_NON_VECTOR_COLUMN.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("nonVectorColumn", errFmtApiColumnDef(List.of(vectorColumnDef)));
+              }));
+    }
+
+    var vectorTypeDef = (ApiVectorType) vectorColumnDef.type();
+    if (vectorTypeDef.getVectorizeDefinition() == null) {
+      throw SortException.Code.VECTORIZE_SORT_ON_VECTOR_COLUMN_WITHOUT_VECTORIZE_DEFINITION.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("noVectorizeDefinition", errFmtApiColumnDef(List.of(vectorColumnDef)));
+              }));
+    }
+
+    return List.of(
+        new DataVectorizer.SortVectorizeTask(sortClause, vectorizeSortExpression, vectorColumnDef));
   }
 }
