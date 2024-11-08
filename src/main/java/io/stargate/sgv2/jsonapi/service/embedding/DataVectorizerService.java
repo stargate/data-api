@@ -10,8 +10,11 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.APIException;
@@ -138,6 +141,8 @@ public class DataVectorizerService {
               tasksForInsert(commandContext.schemaObject(), imc.documents());
           case InsertOneCommand ioc ->
               tasksForInsert(commandContext.schemaObject(), List.of(ioc.document()));
+          case UpdateOneCommand uoc ->
+              taskforUpdate(commandContext.schemaObject(), uoc.updateClause());
           case Sortable sortable -> tasksForSort(sortable, commandContext);
 
           default -> List.of();
@@ -299,5 +304,30 @@ public class DataVectorizerService {
 
     return List.of(
         new DataVectorizer.SortVectorizeTask(sortClause, vectorizeSortExpression, vectorColumnDef));
+  }
+
+  /**
+   * Vectorize the '$vectorize' fields in the update clause
+   *
+   * @param updateClause - Update clause to be vectorized
+   */
+  private <T extends TableSchemaObject> List<DataVectorizer.VectorizeTask> taskforUpdate(
+      T tableSchemaObject, UpdateClause updateClause) {
+    if (updateClause == null) {
+      return List.of();
+    }
+
+    //    "$set": {
+    //      "vectorCol1" : "eat apple",
+    //      "vectorCol2" : "eat orange"
+    //    }
+    final ObjectNode setNode = updateClause.updateOperationDefs().get(UpdateOperator.SET);
+    // no need to vectorize $unset, cause vector would be updated to null
+    if (setNode == null) {
+      return List.of();
+    }
+
+    // can reuse the tasksForInsert
+    return tasksForInsert(tableSchemaObject, List.of(setNode));
   }
 }
