@@ -55,6 +55,12 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) implements
         : sortExpressions.stream().map(SortExpression::pathAsCqlIdentifier).toList();
   }
 
+  public List<SortExpression> tableVectorizeSorts() {
+    return sortExpressions == null
+        ? List.of()
+        : sortExpressions.stream().filter(SortExpression::isTableVectorizeSort).toList();
+  }
+
   /** Returns all non vector columns sorts. */
   public List<SortExpression> tableNonVectorSorts() {
     return sortExpressions.stream()

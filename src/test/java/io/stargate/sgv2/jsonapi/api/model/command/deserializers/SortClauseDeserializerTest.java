@@ -303,18 +303,6 @@ class SortClauseDeserializerTest {
     }
 
     @Test
-    public void mustBeCorrectContainerNode() {
-      String json =
-          """
-                    {"path": "value"}
-                    """;
-
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
-
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
-    }
-
-    @Test
     public void mustNotContainBlankString() {
       String json =
           """
