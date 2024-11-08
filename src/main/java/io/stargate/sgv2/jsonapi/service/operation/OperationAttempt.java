@@ -522,12 +522,14 @@ public abstract class OperationAttempt<
                       int vectorSize = vector.size();
                       List<Object> trimmedList = new ArrayList<>();
 
-                      // Add elements up to a maximum of 5 or the actual vector size, whichever is smaller
+                      // Add elements up to a maximum of 5 or the actual vector size, whichever is
+                      // smaller
                       for (int i = 0; i < Math.min(5, vectorSize); i++) {
                         trimmedList.add(vector.get(i));
                       }
-                      if(trimmedList.size() < vectorSize) {
-                        trimmedList.add(  "<vector<%s> trimmed, log at trace to get full value>"
+                      if (trimmedList.size() < vectorSize) {
+                        trimmedList.add(
+                            "<vector<%s> trimmed, log at trace to get full value>"
                                 .formatted(vector.size()));
                       }
                       return trimmedList;
