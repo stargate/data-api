@@ -6,6 +6,7 @@ import static org.eclipse.jetty.util.Pool.StrategyType.RANDOM;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.logging.Log;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
@@ -47,24 +48,67 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
 
   private static Stream<Arguments> insertCommandNames() {
     var commands = new ArrayList<Arguments>();
-    commands.add(Arguments.of(Command.CommandName.INSERT_ONE));
-    commands.add(Arguments.of(Command.CommandName.INSERT_MANY));
+    // insertOne single vectorize in one doc
+    commands.add(
+        Arguments.of(
+            Command.CommandName.INSERT_ONE,
+            ImmutableMap.of(
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
+                SAMPLE_VECTORIZE_CONTENT,
+                "id",
+                String.valueOf(System.currentTimeMillis()))));
+    // insertOne multiple vectorize in one doc
+    commands.add(
+        Arguments.of(
+            Command.CommandName.INSERT_ONE,
+            ImmutableMap.of(
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
+                SAMPLE_VECTORIZE_CONTENT,
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_2),
+                SAMPLE_VECTORIZE_CONTENT,
+                "id",
+                String.valueOf(System.currentTimeMillis()))));
+
+    // insertMany single vectorize in one doc
+    commands.add(
+        Arguments.of(
+            Command.CommandName.INSERT_MANY,
+            ImmutableMap.of(
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
+                SAMPLE_VECTORIZE_CONTENT,
+                "id",
+                String.valueOf(System.currentTimeMillis()))));
+    // insertMany multiple vectorize in one doc
+    commands.add(
+        Arguments.of(
+            Command.CommandName.INSERT_MANY,
+            ImmutableMap.of(
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
+                SAMPLE_VECTORIZE_CONTENT,
+                VectorizeTableScenario.fieldName(
+                    VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_2),
+                SAMPLE_VECTORIZE_CONTENT,
+                "id",
+                String.valueOf(System.currentTimeMillis()))));
+
     return commands.stream();
   }
 
   @ParameterizedTest
   @MethodSource("insertCommandNames")
-  public void successVectorizeInsert(Command.CommandName commandName)
+  public void successVectorizeInsert(
+      Command.CommandName commandName, ImmutableMap<String, Object> document)
       throws JsonProcessingException {
 
-    Map<String, Object> document =
-        Map.of(
-            VectorizeTableScenario.fieldName(
-                VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
-            SAMPLE_VECTORIZE_CONTENT,
-            "id",
-            String.valueOf(System.currentTimeMillis()));
+    Log.error("docuemtn s +" + document);
     var json = objectMapper.writeValueAsString(document);
+    Log.error("docuemtn json  +" + json);
+
     if (commandName.equals(Command.CommandName.INSERT_ONE)) {
       assertTableCommand(keyspaceName, TABLE_NAME).templated().insertOne(json).wasSuccessful();
     } else {
@@ -180,17 +224,20 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
     }
   }
 
-  private static Stream<Arguments> INVALID_VECTORIZE_UPDATE_SET() {
+  private static Stream<Arguments> VECTORIZE_UPDATE_SET() {
     return Stream.of(
+        // no column exist to update set
         Arguments.of(
             ImmutableMap.of("no_column_exist", SAMPLE_VECTORIZE_CONTENT),
             UpdateException.Code.UNKNOWN_TABLE_COLUMNS),
+        // successful vectorize update set
         Arguments.of(
             ImmutableMap.of(
                 VectorizeTableScenario.fieldName(
                     VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
                 SAMPLE_VECTORIZE_CONTENT),
             null),
+        //  successful multiple vectorize update set
         Arguments.of(
             ImmutableMap.of(
                 VectorizeTableScenario.fieldName(
@@ -213,15 +260,15 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
   }
 
   @ParameterizedTest
-  @MethodSource("INVALID_VECTORIZE_UPDATE_SET")
-  public void invalidVectorizeUpdateSet(
+  @MethodSource("VECTORIZE_UPDATE_SET")
+  public void vectorizeUpdateSet(
       ImmutableMap<String, Object> set, UpdateException.Code updateExceptionCode)
       throws JsonProcessingException {
 
     // InsertOne
     var inserterRowId = "rowId" + System.currentTimeMillis();
     insertOneRowWithRandowVector(inserterRowId);
-    var changedVectorString =
+    var changedVector =
         CustomITEmbeddingProvider.TEST_DATA_DIMENSION_5.get(SAMPLE_VECTORIZE_CONTENT);
 
     // UpdateOne
@@ -233,11 +280,8 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
         .mayHaveSingleApiError(updateExceptionCode, UpdateException.class);
 
     // if no error, then vectors in set should all be updated by vectorize
-    final Map<String, String> vectorDataFields =
-        set.keySet().stream()
-            .collect(
-                Collectors.toMap(
-                    Function.identity(), a -> TemplateRunner.asJSON(changedVectorString)));
+    final Map<String, Object> vectorDataFields =
+        set.keySet().stream().collect(Collectors.toMap(Function.identity(), a -> changedVector));
     if (updateExceptionCode == null) {
       assertTableCommand(keyspaceName, TABLE_NAME)
           .templated()

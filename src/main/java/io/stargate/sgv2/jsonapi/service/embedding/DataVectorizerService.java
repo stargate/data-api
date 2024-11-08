@@ -180,7 +180,7 @@ public class DataVectorizerService {
     // get all the fields in the documents that are vector columns, and the value of the node is a
     // string, so we can check if they have a vectorize def.
     // key is the parent of the vector field, not the vector field itself
-    Map<ObjectNode, ApiColumnDef> candidateVectorizeField = new HashMap<>();
+    Map<ObjectNode, List<ApiColumnDef>> candidateVectorizeFieldsPerDoc = new HashMap<>();
     for (var vectorColumnDef : vectorColumnDefs) {
       for (var document : documents) {
         var vectorField = document.path(vectorColumnDef.jsonKey());
@@ -192,19 +192,23 @@ public class DataVectorizerService {
           if (!document.isObject()) {
             throw new IllegalArgumentException("Document node must be an ObjectNode");
           }
-          candidateVectorizeField.put((ObjectNode) document, vectorColumnDef);
+          candidateVectorizeFieldsPerDoc
+              .computeIfAbsent((ObjectNode) document, key -> new ArrayList<>())
+              .add(vectorColumnDef);
         }
       }
     }
 
     // Now check that the columns actually have vectorize enabled.
     Set<String> nonVectorizeFieldNames = new HashSet<>();
-    List<ApiColumnDef> supportedVectorizeFields = new ArrayList<>();
-    for (var columnDef : candidateVectorizeField.values()) {
-      if (((ApiVectorType) columnDef.type()).getVectorizeDefinition() == null) {
-        nonVectorizeFieldNames.add(columnDef.jsonKey());
-      } else {
-        supportedVectorizeFields.add(columnDef);
+    Set<ApiColumnDef> supportedVectorizeFields = new HashSet<>();
+    for (var columnDefs : candidateVectorizeFieldsPerDoc.values()) {
+      for (var columnDef : columnDefs) {
+        if (((ApiVectorType) columnDef.type()).getVectorizeDefinition() == null) {
+          nonVectorizeFieldNames.add(columnDef.jsonKey());
+        } else {
+          supportedVectorizeFields.add(columnDef);
+        }
       }
     }
 
@@ -218,20 +222,20 @@ public class DataVectorizerService {
               }));
     }
 
-    var vectorizeTasks =
-        new ArrayList<DataVectorizer.VectorizeTask>(candidateVectorizeField.size());
-    for (var entry : candidateVectorizeField.entrySet()) {
-      var parentNode = entry.getKey();
-      var vectorColumnDef = entry.getValue();
-
-      // if the user sent a blank string for the vectorize field, we just turn that into a null
-      // without vectorizing
-      // but that only applies if the column has a vectorize definition so do it here not above
-      var vectorizeText = parentNode.path(vectorColumnDef.jsonKey()).textValue();
-      if (vectorizeText.isBlank()) {
-        parentNode.putNull(vectorColumnDef.jsonKey());
-      } else {
-        vectorizeTasks.add(new DataVectorizer.VectorizeTask(parentNode, vectorColumnDef));
+    var vectorizeTasks = new ArrayList<DataVectorizer.VectorizeTask>();
+    for (var entry : candidateVectorizeFieldsPerDoc.entrySet()) {
+      var parentNodeDoc = entry.getKey();
+      var vectorColumnDefsPerDoc = entry.getValue();
+      for (var vectorColumnDef : vectorColumnDefsPerDoc) {
+        // if the user sent a blank string for the vectorize field, we just turn that into a null
+        // without vectorizing
+        // but that only applies if the column has a vectorize definition so do it here not above
+        var vectorizeText = parentNodeDoc.path(vectorColumnDef.jsonKey()).textValue();
+        if (vectorizeText.isBlank()) {
+          parentNodeDoc.putNull(vectorColumnDef.jsonKey());
+        } else {
+          vectorizeTasks.add(new DataVectorizer.VectorizeTask(parentNodeDoc, vectorColumnDef));
+        }
       }
     }
     return vectorizeTasks;

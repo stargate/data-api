@@ -5,7 +5,6 @@ import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.hasEntry;
 
-import io.quarkus.logging.Log;
 import io.restassured.response.ValidatableResponse;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -212,8 +211,7 @@ public class DataApiResponseValidator {
     return body(path, jsonEquals(rawJson));
   }
 
-  public DataApiResponseValidator hasDocumentFields(Map<String, String> expectedJsons) {
-    Log.error("row json here " + expectedJsons);
+  public DataApiResponseValidator hasDocumentFields(Map<String, Object> expectedJsons) {
     expectedJsons.forEach((path, rawJson) -> body("data.document." + path, jsonEquals(rawJson)));
     return this;
   }
