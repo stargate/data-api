@@ -519,15 +519,18 @@ public abstract class OperationAttempt<
               .map(
                   value -> {
                     if (value instanceof CqlVector<?> vector) {
-                      var i = vector.size();
-                      return Arrays.asList(
-                          vector.get(Math.min(0, i)),
-                          vector.get(Math.min(1, i)),
-                          vector.get(Math.min(2, i)),
-                          vector.get(Math.min(3, i)),
-                          vector.get(Math.min(4, i)),
-                          "<vector<%s> trimmed, log at trace to get full value>"
-                              .formatted(vector.size()));
+                      int vectorSize = vector.size();
+                      List<Object> trimmedList = new ArrayList<>();
+
+                      // Add elements up to a maximum of 5 or the actual vector size, whichever is smaller
+                      for (int i = 0; i < Math.min(5, vectorSize); i++) {
+                        trimmedList.add(vector.get(i));
+                      }
+                      if(trimmedList.size() < vectorSize) {
+                        trimmedList.add(  "<vector<%s> trimmed, log at trace to get full value>"
+                                .formatted(vector.size()));
+                      }
+                      return trimmedList;
                     }
                     return value;
                   })
