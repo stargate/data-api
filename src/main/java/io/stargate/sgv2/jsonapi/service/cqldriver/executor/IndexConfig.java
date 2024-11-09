@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import io.stargate.sgv2.jsonapi.service.schema.tables.IndexDefinition;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiRegularIndex;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,9 +13,10 @@ import java.util.stream.Collectors;
 /**
  * Map of index definitions where the key is the column name and the value is the index definition.
  */
-public class IndexConfig extends HashMap<CqlIdentifier, IndexDefinition> {
+public class IndexConfig extends HashMap<CqlIdentifier, ApiRegularIndex> {
 
-  private IndexConfig(Map<CqlIdentifier, IndexDefinition> indexDefinitions) {
+  // TODO : AARON REMOVE
+  private IndexConfig(Map<CqlIdentifier, ApiRegularIndex> indexDefinitions) {
     super(indexDefinitions);
   }
 
@@ -24,7 +25,7 @@ public class IndexConfig extends HashMap<CqlIdentifier, IndexDefinition> {
         tableMetadata.getIndexes().values().stream()
             .map(
                 indexMetadata ->
-                    IndexDefinition.from(
+                    ApiRegularIndex.from(
                         tableMetadata
                             .getColumn(
                                 CqlIdentifierUtil.cqlIdentifierFromUserInput(
@@ -37,7 +38,7 @@ public class IndexConfig extends HashMap<CqlIdentifier, IndexDefinition> {
                         indexMetadata))
             .collect(
                 Collectors.toMap(
-                    IndexDefinition::getColumnName, indexDefinition -> indexDefinition)));
+                    ApiRegularIndex::getTargetColumn, apiRegularIndexDef -> apiRegularIndexDef)));
   }
 
   // Regex pattern to extract the column name from the index target

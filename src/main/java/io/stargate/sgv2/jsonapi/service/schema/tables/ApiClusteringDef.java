@@ -26,7 +26,7 @@ public class ApiClusteringDef {
     return order;
   }
 
-  public static class FromUserDescFactory extends UserDescFactory {
+  public static class FromUserDescFactory extends FactoryFromDesc {
 
     public Optional<ApiClusteringDef> create(
         ApiColumnDefContainer columns, PrimaryKeyDesc.OrderingKeyDesc orderingKeyDesc) {

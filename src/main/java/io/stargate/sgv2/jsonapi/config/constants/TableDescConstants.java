@@ -26,4 +26,17 @@ public interface TableDescConstants {
     String PARTITION_BY = "partitionBy";
     String PARTITION_SORT = "partitionSort";
   }
+
+  interface IndexDesc {
+    String COLUMN = "column";
+    String OPTIONS = "options";
+  }
+
+  interface RegularIndexDescOptions {
+    String ASCII = "ascii";
+    String CASE_SENSITIVE = "case_sensitive";
+    String NORMALIZE = "normalize";
+    String SOURCE_MODEL = "source_model";
+    String SIMILARITY_FUNCTION = "similarity_function";
+  }
 }

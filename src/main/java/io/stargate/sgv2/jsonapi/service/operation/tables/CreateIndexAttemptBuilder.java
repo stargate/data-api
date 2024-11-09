@@ -5,55 +5,43 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiRegularIndex;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Objects;
 
 /** Builder for a {@link CreateIndexAttempt}. */
 public class CreateIndexAttemptBuilder {
   private int position;
-  private TableSchemaObject schemaObject;
-  private CqlIdentifier columnName;
-  private DataType dataType;
-  private CqlIdentifier indexName;
-  private CreateIndexAttempt.TextIndexOptions textIndexOptions;
-  private CreateIndexAttempt.VectorIndexOptions vectorIndexOptions;
-  private SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy;
-  private boolean ifNotExists;
 
-  public CreateIndexAttemptBuilder(
-      int position,
-      TableSchemaObject schemaObject,
-      String columnName,
-      String indexName,
-      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
-    this.position = position;
-    this.schemaObject = schemaObject;
-    this.columnName = CqlIdentifierUtil.cqlIdentifierFromUserInput(columnName);
-    this.indexName = CqlIdentifierUtil.cqlIdentifierFromUserInput(indexName);
-    this.dataType = schemaObject.tableMetadata().getColumn(this.columnName).get().getType();
-    this.schemaRetryPolicy = schemaRetryPolicy;
+  private final TableSchemaObject schemaObject;
+  private SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy;
+  // must be specified, the default should not be defined in here
+  private Boolean ifNotExists = null;
+
+  public CreateIndexAttemptBuilder(TableSchemaObject schemaObject) {
+    this.schemaObject =  Objects.requireNonNull(schemaObject, "schemaObject object cannot be null");
   }
 
-  public CreateIndexAttemptBuilder ifNotExists(boolean ifNotExists) {
+  public CreateIndexAttemptBuilder withIfNotExists(boolean ifNotExists) {
     this.ifNotExists = ifNotExists;
     return this;
   }
 
-  public CreateIndexAttemptBuilder textIndexOptions(
-      Boolean caseSensitive, Boolean normalize, Boolean ascii) {
-    this.textIndexOptions =
-        new CreateIndexAttempt.TextIndexOptions(caseSensitive, normalize, ascii);
+  public CreateIndexAttemptBuilder withSchemaRetryPolicy(SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
+    this.schemaRetryPolicy = schemaRetryPolicy;
     return this;
   }
 
-  public CreateIndexAttemptBuilder vectorIndexOptions(
-      SimilarityFunction similarityFunction, String sourceModel) {
-    this.vectorIndexOptions =
-        new CreateIndexAttempt.VectorIndexOptions(similarityFunction, sourceModel);
-    return this;
-  }
 
-  public CreateIndexAttempt build() {
+
+//  public CreateIndexAttemptBuilder vectorIndexOptions(
+//      SimilarityFunction similarityFunction, String sourceModel) {
+//    this.vectorIndexOptions =
+//        new CreateIndexAttempt.VectorIndexOptions(similarityFunction, sourceModel);
+//    return this;
+//  }
+
+  public CreateIndexAttempt build(ApiRegularIndex indexDef) {
     // Validate required fields
     Objects.requireNonNull(columnName, "Column name cannot be null");
     Objects.requireNonNull(dataType, "Data type cannot be null");

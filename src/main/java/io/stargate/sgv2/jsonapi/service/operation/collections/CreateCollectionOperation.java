@@ -146,7 +146,7 @@ public record CreateCollectionOperation(
             tableMetadata,
             vectorSearch,
             vectorSize,
-            SimilarityFunction.fromString(vectorFunction),
+            SimilarityFunction.fromApiName(vectorFunction),
             SourceModel.fromString(sourceModel),
             comment,
             objectMapper);

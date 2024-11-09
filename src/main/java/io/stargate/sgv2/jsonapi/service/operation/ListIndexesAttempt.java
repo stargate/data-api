@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.tables.IndexDefinition;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiRegularIndex;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 
@@ -35,7 +35,7 @@ public class ListIndexesAttempt extends MetadataAttempt<TableSchemaObject> {
   @Override
   protected Object getSchema() {
     return schemaObject.indexConfig().values().stream()
-        .map(IndexDefinition::getIndexDefinition)
+        .map(ApiRegularIndex::getIndexDefinition)
         .toList();
   }
 }

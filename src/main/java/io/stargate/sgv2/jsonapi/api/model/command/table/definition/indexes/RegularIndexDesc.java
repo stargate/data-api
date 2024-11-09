@@ -1,0 +1,50 @@
+package io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+
+public record RegularIndexDesc(
+    @NotNull
+        @Size(min = 1, max = 48)
+        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
+        @Schema(description = "Name of the column for which index to be created.")
+        String column,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+        @Nullable
+        @Schema(description = "Different indexing options.", type = SchemaType.OBJECT)
+        RegularIndexDescOptions options)
+    implements IndexDesc {
+
+  // This is index definition options for text column types.
+  public record RegularIndexDescOptions(
+      @Nullable
+          @Schema(
+              description = "Ignore case in matching string values.",
+              defaultValue = "true",
+              type = SchemaType.BOOLEAN,
+              implementation = Boolean.class)
+          @JsonInclude(JsonInclude.Include.NON_NULL)
+          Boolean caseSensitive,
+      @Nullable
+          @Schema(
+              description = "When set to true, perform Unicode normalization on indexed strings.",
+              defaultValue = "false",
+              type = SchemaType.BOOLEAN,
+              implementation = Boolean.class)
+          @JsonInclude(JsonInclude.Include.NON_NULL)
+          Boolean normalize,
+      @Nullable
+          @Schema(
+              description =
+                  "When set to true, index will converts alphabetic, numeric, and symbolic characters to the ascii equivalent, if one exists.",
+              defaultValue = "false",
+              type = SchemaType.BOOLEAN,
+              implementation = Boolean.class)
+          @JsonInclude(JsonInclude.Include.NON_NULL)
+          Boolean ascii) {}
+}

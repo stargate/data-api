@@ -1,0 +1,20 @@
+package io.stargate.sgv2.jsonapi.exception.checked;
+
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.IndexDesc;
+
+/** Thrown when the user has described an index what we cannot support. */
+public class UnsupportedUserIndexException extends CheckedApiException {
+
+  private final IndexDesc indexDesc;
+
+  public UnsupportedUserIndexException(String reason, IndexDesc indexDesc) {
+    this(reason, indexDesc, null);
+  }
+
+  public UnsupportedUserIndexException(String reason, IndexDesc indexDesc, Throwable cause) {
+    super(
+        "Unsupported index description, reason: %s indexDesc: %s ".formatted(reason, indexDesc),
+        cause);
+    this.indexDesc = indexDesc;
+  }
+}

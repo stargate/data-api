@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.IndexCreationCommand;
-import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.VectorIndexDesc;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -24,43 +24,12 @@ public record CreateVectorIndexCommand(
         @Schema(
             description = "Definition for created index for a column.",
             type = SchemaType.OBJECT)
-        Definition definition,
+        VectorIndexDesc definition,
     @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
         @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
         Options options)
     implements CollectionCommand, IndexCreationCommand {
-  public record Definition(
-      @NotNull
-          @Size(min = 1, max = 48)
-          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-          @Schema(description = "Name of the column for which index to be created.")
-          String column,
-      @JsonInclude(JsonInclude.Include.NON_NULL)
-          @Nullable
-          @Schema(description = "Different indexing options.", type = SchemaType.OBJECT)
-          Options options) {
-    // This is index definition options for vector column types.
-    public record Options(
-        @Nullable
-            @Pattern(
-                regexp = "(dot_product|cosine|euclidean)",
-                message = "function name can only be 'dot_product', 'cosine' or 'euclidean'")
-            @Schema(
-                description =
-                    "Similarity function algorithm that needs to be used for vector search",
-                defaultValue = "cosine",
-                type = SchemaType.STRING,
-                implementation = String.class)
-            @JsonInclude(JsonInclude.Include.NON_NULL)
-            SimilarityFunction metric,
-        @Nullable
-            @Size(min = 1, max = 48)
-            @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-            @Schema(description = "Model name used to generate the embeddings.")
-            @JsonInclude(JsonInclude.Include.NON_NULL)
-            String sourceModel) {}
-  }
 
   // This is index command option irrespective of column definition.
   public record Options(

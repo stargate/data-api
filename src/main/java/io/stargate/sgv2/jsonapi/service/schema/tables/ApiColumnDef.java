@@ -62,7 +62,7 @@ public class ApiColumnDef {
     return type;
   }
 
-  private static class ColumnDescFactory extends UserDescFactory
+  private static class ColumnDescFactory extends FactoryFromDesc
       implements ColumnFactoryFromColumnDesc {
     @Override
     public ApiColumnDef create(

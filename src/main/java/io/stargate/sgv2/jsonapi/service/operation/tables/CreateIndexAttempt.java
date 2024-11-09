@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedCreateIndex;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,12 +26,8 @@ import java.util.Map;
  An attempt to create index for a table's column.
 */
 public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
-  private final CqlIdentifier columnName;
-  private final CqlIdentifier indexName;
-  private final TextIndexOptions textIndexOptions;
-  private final VectorIndexOptions vectorIndexOptions;
-  private final DataType dataType;
-  private final boolean ifNotExists;
+
+
 
   /*
    * @param position The position of the attempt in the sequence, for create index it's  always 0.
@@ -46,13 +43,8 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
   protected CreateIndexAttempt(
       int position,
       TableSchemaObject schemaObject,
-      CqlIdentifier columnName,
-      DataType dataType,
-      CqlIdentifier indexName,
-      TextIndexOptions textIndexOptions,
-      VectorIndexOptions vectorIndexOptions,
-      boolean ifNotExists,
-      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
+      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy,
+      CqlOptions<CreateIndexStart> cqlOptions,) {
     super(position, schemaObject, schemaRetryPolicy);
 
     this.columnName = columnName;
@@ -67,39 +59,39 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
   /*
    * Options for a text index.
    */
-  public record TextIndexOptions(Boolean caseSensitive, Boolean normalize, Boolean ascii) {
-
-    public Map<String, Object> getOptions() {
-      Map<String, Object> options = new HashMap<>();
-      if (caseSensitive != null) {
-        options.put("case_sensitive", caseSensitive);
-      }
-      if (normalize != null) {
-        options.put("normalize", normalize);
-      }
-      if (ascii != null) {
-        options.put("ascii", ascii);
-      }
-      return options;
-    }
-  }
+//  public record TextIndexOptions(Boolean caseSensitive, Boolean normalize, Boolean ascii) {
+//
+//    public Map<String, Object> getOptions() {
+//      Map<String, Object> options = new HashMap<>();
+//      if (caseSensitive != null) {
+//        options.put("case_sensitive", caseSensitive);
+//      }
+//      if (normalize != null) {
+//        options.put("normalize", normalize);
+//      }
+//      if (ascii != null) {
+//        options.put("ascii", ascii);
+//      }
+//      return options;
+//    }
+//  }
 
   /*
    * Options for a vector index.
    */
-  public record VectorIndexOptions(SimilarityFunction similarityFunction, String sourceModel) {
-    public Map<String, Object> getOptions() {
-      Map<String, Object> options = new HashMap<>();
-      if (similarityFunction != null) {
-        options.put(
-            VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION, similarityFunction.getMetric());
-      }
-      if (sourceModel != null) {
-        options.put(VectorConstants.CQLAnnIndex.SOURCE_MODEL, sourceModel);
-      }
-      return options;
-    }
-  }
+//  public record VectorIndexOptions(SimilarityFunction similarityFunction, String sourceModel) {
+//    public Map<String, Object> getOptions() {
+//      Map<String, Object> options = new HashMap<>();
+//      if (similarityFunction != null) {
+//        options.put(
+//            VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION, similarityFunction.getCqlName());
+//      }
+//      if (sourceModel != null) {
+//        options.put(VectorConstants.CQLAnnIndex.SOURCE_MODEL, sourceModel);
+//      }
+//      return options;
+//    }
+//  }
 
   @Override
   protected SimpleStatement buildStatement() {

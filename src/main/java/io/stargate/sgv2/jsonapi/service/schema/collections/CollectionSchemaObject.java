@@ -170,7 +170,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         final String sourceModelName =
             vectorIndex.getOptions().get(VectorConstants.CQLAnnIndex.SOURCE_MODEL);
         if (functionName != null) {
-          function = SimilarityFunction.fromString(functionName);
+          function = SimilarityFunction.fromCqlName(functionName);
         }
         if (sourceModelName != null) {
           sourceModel = SourceModel.fromString(sourceModelName);

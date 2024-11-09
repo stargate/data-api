@@ -36,7 +36,7 @@ public record VectorColumnDefinition(
 
     int dimension = jsonNode.get(VectorConstants.VectorColumn.DIMENSION).asInt();
     var similarityFunction =
-        SimilarityFunction.fromString(jsonNode.get(VectorConstants.VectorColumn.METRIC).asText());
+        SimilarityFunction.fromApiName(jsonNode.get(VectorConstants.VectorColumn.METRIC).asText());
     // sourceModel doesn't exist if the collection was created before supporting sourceModel; if
     // missing, it will be an empty string and sourceModel becomes OTHER.
     var sourceModel =

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.IndexCreationCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDesc;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -23,53 +24,15 @@ public record CreateIndexCommand(
         @Schema(
             description = "Definition for created index for a column.",
             type = SchemaType.OBJECT)
-        Definition definition,
+        RegularIndexDesc definition,
     @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
         @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
-        Options options)
+        CreateIndexCommandOptions options)
     implements CollectionCommand, IndexCreationCommand {
-  public record Definition(
-      @NotNull
-          @Size(min = 1, max = 48)
-          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-          @Schema(description = "Name of the column for which index to be created.")
-          String column,
-      @JsonInclude(JsonInclude.Include.NON_NULL)
-          @Nullable
-          @Schema(description = "Different indexing options.", type = SchemaType.OBJECT)
-          Options options) {
-    // This is index definition options for text column types.
-    public record Options(
-        @Nullable
-            @Schema(
-                description = "Ignore case in matching string values.",
-                defaultValue = "true",
-                type = SchemaType.BOOLEAN,
-                implementation = Boolean.class)
-            @JsonInclude(JsonInclude.Include.NON_NULL)
-            Boolean caseSensitive,
-        @Nullable
-            @Schema(
-                description = "When set to true, perform Unicode normalization on indexed strings.",
-                defaultValue = "false",
-                type = SchemaType.BOOLEAN,
-                implementation = Boolean.class)
-            @JsonInclude(JsonInclude.Include.NON_NULL)
-            Boolean normalize,
-        @Nullable
-            @Schema(
-                description =
-                    "When set to true, index will converts alphabetic, numeric, and symbolic characters to the ascii equivalent, if one exists.",
-                defaultValue = "false",
-                type = SchemaType.BOOLEAN,
-                implementation = Boolean.class)
-            @JsonInclude(JsonInclude.Include.NON_NULL)
-            Boolean ascii) {}
-  }
 
   // This is index command option irrespective of column definition.
-  public record Options(
+  public record CreateIndexCommandOptions(
       @Schema(
               description = "Flag to ignore if index already exists",
               defaultValue = "false",

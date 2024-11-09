@@ -620,6 +620,49 @@ request-errors:
       
       The command used the dimension: ${unsupportedValue}.
 
+  - scope: SCHEMA
+    code: UNKNOWN_INDEX_COLUMN
+    title: Index creation for unknown column
+    body: |-
+      The command attempted to create an index on a column that is not in the table schema.
+      
+      Indexes can only be created on existing columns.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to index the unknown columns: ${unknownColumns}.  
+      
+      Sends the command using columns that are defined in the table schema.
+
+
+  - scope: SCHEMA
+    code: DATA_TYPE_NOT_SUPPORTED_BY_INDEXING
+    title: Index creation for unsupported data type
+    body: |-
+      The command attempted to create an index on a column that uses a data type not supported for indexing.
+      
+      Regular indexes can only be created on primitive data types such as `text` and `int`, vector columns can be indexed using the createVectorIndex command.
+      
+      Note: Indexing for `map`, `list`, and `set` types will be added at a later date. 
+      
+      The supported primitive data types are: ${supportedTypes}.
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to index the unsupported columns: ${unsupportedColumns}.
+      
+      Sends the command using columns of the supported data types.
+
+  - scope: SCHEMA
+    code: TEXT_ANALYSIS_NOT_SUPPORTED_BY_DATA_TYPE
+    title: Index creation using text analysis for unsupported data type
+    body: |-
+      The command attempted to create an index that specified text analysis on a column that uses a data type not supported for text analysis.
+      
+      Text analysis options `ascii`, `caseSensitive`, and `normalize` can only be used on columns of type `text` or `ascii`. 
+  
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to index the unsupported columns: ${unsupportedColumns}.
+      
+      Sends the command using columns of the supported data types.
+
     # prev errors - all need to be reviewed
 
   - scope: SCHEMA
@@ -692,12 +735,6 @@ request-errors:
     title: Unable to parse vectorize configuration, schema invalid.
     body: |-
       Unable to parse vectorize configuration, schema invalid for field ${field}.
-
-  - scope: SCHEMA
-    code: INVALID_INDEX_DEFINITION
-    title: Provided index configuration is not valid.
-    body: |-
-      Provided index configuration is not valid: ${reason}.V
 
   - scope: SCHEMA
     code: COLUMN_NOT_FOUND

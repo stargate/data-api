@@ -74,7 +74,7 @@ public class VectorConfig {
                 // if similarity function is set, use it
                 SimilarityFunction similarityFunction =
                     similarityFunctionStr != null
-                        ? SimilarityFunction.fromString(similarityFunctionStr)
+                        ? SimilarityFunction.fromCqlName(similarityFunctionStr)
                         : null;
 
                 String sourceModelStr =
