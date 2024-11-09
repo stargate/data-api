@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.CQL_IDENTIFIER_COMPARATOR;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
@@ -51,11 +52,19 @@ public class ApiColumnDef {
   /**
    * Gets the {@link CqlIdentifier} for the column.
    *
-   * <p>Use {@link io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil} to get the string from the
-   * identifier.
+   * <p>NOTE: Use {@link #jsonKey()} to get the name to use in JSON.
    */
   public CqlIdentifier name() {
     return name;
+  }
+
+  /**
+   * Returns the name of this column to use in JSON, or to lookup in a JSON object.
+   *
+   * @return Name of this column to use in JSON
+   */
+  public String jsonKey() {
+    return cqlIdentifierToJsonKey(name);
   }
 
   public ApiDataType type() {

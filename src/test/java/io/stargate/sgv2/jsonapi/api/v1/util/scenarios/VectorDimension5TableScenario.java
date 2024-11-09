@@ -35,12 +35,14 @@ public class VectorDimension5TableScenario extends TestDataScenario {
       new ApiColumnDef(CqlIdentifier.fromCql("unindexed_vector"), ApiVectorType.from(5));
 
   public static final ArrayNode KNOWN_VECTOR = JsonNodeFactory.instance.arrayNode(5);
+  public static final float[] KNOWN_VECTOR_ARRAY = new float[5];
   public static final Map<String, Object> KNOWN_VECTOR_ROW = new LinkedHashMap<>();
   public static final String KNOWN_VECTOR_ROW_JSON;
 
   static {
     for (int i = 0; i < 5; i++) {
       KNOWN_VECTOR.add(1.0f);
+      KNOWN_VECTOR_ARRAY[i] = 1.0f;
     }
 
     KNOWN_VECTOR_ROW.put(fieldName(ID_COL), "row-1");

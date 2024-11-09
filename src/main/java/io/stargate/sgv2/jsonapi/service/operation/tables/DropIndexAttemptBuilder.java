@@ -5,7 +5,7 @@ import com.datastax.oss.driver.api.querybuilder.schema.Drop;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
-import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
+import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 
 /** Builds a {@link DropIndexAttempt}. */
@@ -13,7 +13,7 @@ public class DropIndexAttemptBuilder {
   private int position;
   private final KeyspaceSchemaObject schemaObject;
   private final CqlIdentifier name;
-  private CqlOptions<Drop> cqlOptions = new CqlOptions<>();
+  private CQLOptions<Drop> cqlOptions = new CQLOptions<>();
   private final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy;
 
   public DropIndexAttemptBuilder(

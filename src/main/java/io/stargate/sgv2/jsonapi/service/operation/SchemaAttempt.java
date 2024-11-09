@@ -27,13 +27,7 @@ public abstract class SchemaAttempt<SchemaT extends SchemaObject>
   protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
     var statement = buildStatement();
 
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
-          "execute() - {}, cql={}, values={}",
-          positionAndAttemptId(),
-          statement.getQuery(),
-          statement.getPositionalValues());
-    }
+    logStatement(LOGGER, "executeStatement()", statement);
     return queryExecutor.executeCreateSchema(statement);
   }
 

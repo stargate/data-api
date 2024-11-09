@@ -106,7 +106,7 @@ public class SortByClusteringTableIntegrationTest extends AbstractTableIntegrati
         .find(commandName, FILTER_ID, null, sort)
         .hasSingleWarning(
             WarningException.Code.IN_MEMORY_SORTING_DUE_TO_NON_PARTITION_SORTING,
-            "The command sorted on the columns: %s.".formatted(errFmtJoin(sort.keySet())));
+            "The command used columns in the sort clause that are not part of the partition sorting, and so the query was sorted in memory.");
   }
 
   @ParameterizedTest

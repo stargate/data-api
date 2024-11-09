@@ -25,12 +25,15 @@ public interface OrderByCqlClause extends Function<Select, Select>, CQLClause {
   OrderByCqlClause NO_OP = select -> select;
 
   /**
-   * If true, this means that the query will need to be sorted in memory after the query is
-   * executed.
+   * Describes if the Order By fully covers the sort, skip, and limit from the command.
    *
-   * @return true if the query needs to be sorted in memory
+   * <p>NOTE: Default is false, implementations must override this if they want to prevent in memory
+   * sorting
+   *
+   * @return true if the Order By fully covers the command, false otherwise meaning there should be
+   *     in memory sorting, skip, and limit.
    */
-  default boolean inMemorySortNeeded() {
-    return true;
+  default boolean fullyCoversCommand() {
+    return false;
   }
 }

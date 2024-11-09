@@ -91,7 +91,7 @@ public class VectorConfig {
                 return new AbstractMap.SimpleEntry<>(similarityFunction, sourceModel);
               });
 
-      // if now index, or we could not work out the function, default
+      // if no index, or we could not work out the function, default
       var similarityFunction =
           indexFunction.map(Map.Entry::getKey).orElse(SimilarityFunction.COSINE);
       var sourceModel = indexFunction.map(Map.Entry::getValue).orElse(SourceModel.OTHER);
@@ -113,6 +113,15 @@ public class VectorConfig {
 
   public boolean vectorEnabled() {
     return vectorEnabled;
+  }
+
+  public Optional<VectorColumnDefinition> getFirstVectorColumnWithVectorizeDefinition() {
+    // HACK - aaron - here so we can get the first definition when processing a table, need to
+    // refactor so we
+    // not need to know this in the GeneralResource
+    return columnVectorDefinitions.values().stream()
+        .filter(vectorColumnDefinition -> vectorColumnDefinition.vectorizeDefinition() != null)
+        .findFirst();
   }
 
   public Optional<VectorColumnDefinition> getColumnDefinition(String columnName) {

@@ -453,7 +453,7 @@ public class SelectWhereAnalyzerTest {
   class DataTypesSanityCheck {
 
     private static Stream<Arguments> allScalarDatatype() {
-      return names().ALL_CQL_DATATYPE_COLUMNS.stream().map(Arguments::of);
+      return names().ALL_SCALAR_DATATYPE_COLUMNS.stream().map(Arguments::of);
     }
 
     private static final Set<CqlIdentifier> allow_filtering_needed_for_comparison =
@@ -819,6 +819,35 @@ public class SelectWhereAnalyzerTest {
           .assertAllowFilteringEnabled()
           .assertOneWarning(WarningException.Code.MISSING_INDEX)
           .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
+    }
+  }
+
+  @Nested
+  class ComplexDataType {
+
+    // ==================================================================================================================
+    // Currently, only PrimitiveApiDataType(Scalar) is supported for table filter
+    // ==================================================================================================================
+
+    private static Stream<Arguments> complexDataTypes() {
+      return names().ALL_COLLECTION_DATATYPE_COLUMNS.stream().map((Arguments::of));
+    }
+
+    @ParameterizedTest
+    @MethodSource("complexDataTypes")
+    public void eq_complex_column(CqlIdentifier complexColumnIdentifier) {
+      var fixture =
+          TEST_DATA
+              .whereAnalyzer()
+              .tableAllColumnDatatypesIndexed(
+                  "$eq_on_%s".formatted(complexColumnIdentifier.asInternal()),
+                  WhereCQLClauseAnalyzer.StatementType.SELECT);
+      fixture
+          .expression()
+          .eqOn(complexColumnIdentifier)
+          .analyzeThrows(FilterException.class)
+          .assertFilterExceptionCode(FilterException.Code.FILTERING_NOT_SUPPORTED_FOR_TYPE)
+          .assertExceptionOnComplexColumns(complexColumnIdentifier);
     }
   }
 }

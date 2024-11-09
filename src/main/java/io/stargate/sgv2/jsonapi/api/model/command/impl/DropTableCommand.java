@@ -22,7 +22,8 @@ public record DropTableCommand(
     implements NoOptionsCommand, KeyspaceCommand {
 
   public record Options(
-      @Schema(
+      @Nullable
+          @Schema(
               description = "Flag to ignore if table doesn't exists",
               defaultValue = "false",
               type = SchemaType.BOOLEAN,
