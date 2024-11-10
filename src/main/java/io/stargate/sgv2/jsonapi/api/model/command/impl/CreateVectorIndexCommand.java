@@ -28,11 +28,11 @@ public record CreateVectorIndexCommand(
     @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
         @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
-        Options options)
+        CreateVectorIndexCommandOptions options)
     implements CollectionCommand, IndexCreationCommand {
 
   // This is index command option irrespective of column definition.
-  public record Options(
+  public record CreateVectorIndexCommandOptions(
       @Nullable
           @Schema(
               description = "Flag to ignore if index already exists",

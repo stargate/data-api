@@ -631,7 +631,7 @@ request-errors:
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The command attempted to index the unknown columns: ${unknownColumns}.  
       
-      Sends the command using columns that are defined in the table schema.
+      Send the command using columns that are defined in the table schema.
 
 
   - scope: SCHEMA
@@ -648,7 +648,7 @@ request-errors:
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The command attempted to index the unsupported columns: ${unsupportedColumns}.
       
-      Sends the command using columns of the supported data types.
+      Send the command using columns of the supported data types.
 
   - scope: SCHEMA
     code: TEXT_ANALYSIS_NOT_SUPPORTED_BY_DATA_TYPE
@@ -661,7 +661,22 @@ request-errors:
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The command attempted to index the unsupported columns: ${unsupportedColumns}.
       
-      Sends the command using columns of the supported data types.
+      Send the command using columns of the supported data types.
+
+  - scope: SCHEMA
+    code: VECTOR_INDEX_NOT_SUPPORTED_BY_DATA_TYPE
+    title: Vector index creation for unsupported data type
+    body: |-
+      The command attempted to create an vector index on a column that is not a `vector` type.
+      
+      Vector indexes can only be created on columns of type `vector`, regular indexes can only be created on primitive data types such as `text` and `int` using the createIndex command.
+      
+      Note: Indexing for `map`, `list`, and `set` types will be added at a later date. 
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to vector index the unsupported columns: ${unsupportedColumns}.
+      
+      Send the command again using a vector column.
 
     # prev errors - all need to be reviewed
 

@@ -1,69 +1,92 @@
 package io.stargate.sgv2.jsonapi.service.schema;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * The similarity function used for the vector index. This is only applicable if the vector index is
  * enabled.
+ *
+ * <p>For indexing and projection functions see
+ * https://cassandra.apache.org/doc/latest/cassandra/getting-started/vector-search-quickstart.html
  */
 public enum SimilarityFunction {
-  COSINE("cosine", "cosine"),
-  EUCLIDEAN("euclidean", "euclidean"),
-  DOT_PRODUCT("dot_product", "dot_product"),
-  UNDEFINED("undefined", "undefined");
+  COSINE("cosine", "COSINE", "similarity_cosine"),
+  EUCLIDEAN("euclidean", "EUCLIDEAN", "similarity_euclidean"),
+  DOT_PRODUCT("dot_product", "DOT_PRODUCT", "similarity_dot_product"),
+  UNDEFINED("undefined", "undefined", "undefined");
 
   public static final SimilarityFunction DEFAULT_SIMILARITY_FUNCTION = COSINE;
 
-  private String cqlFunctionName;
+  private String cqlProjectionFunction;
+  private String cqlIndexingFunction;
   private String apiFunctionName;
 
-  private static Map<String, SimilarityFunction> FUNCTION_BY_CQL_NAME = new HashMap<>();
+  private static Map<String, SimilarityFunction> FUNCTION_BY_INDEXING_FUNCTION = new HashMap<>();
   private static Map<String, SimilarityFunction> FUNCTION_BY_API_NAME = new HashMap<>();
 
   static {
     for (SimilarityFunction similarityFunction : SimilarityFunction.values()) {
-      FUNCTION_BY_CQL_NAME.put(similarityFunction.getCqlName(), similarityFunction);
-      FUNCTION_BY_API_NAME.put(similarityFunction.getApiName(), similarityFunction);
+      if (similarityFunction != UNDEFINED) {
+
+        FUNCTION_BY_INDEXING_FUNCTION.put(
+            similarityFunction.cqlIndexingFunction().toLowerCase(), similarityFunction);
+        FUNCTION_BY_API_NAME.put(
+            similarityFunction.apiFunctionName.toLowerCase(), similarityFunction);
+      }
     }
   }
 
-  SimilarityFunction(String cqlFunctionName, String apiFunctionName) {
-    this.cqlFunctionName = cqlFunctionName;
+  SimilarityFunction(
+      String apiFunctionName, String cqlIndexingFunction, String cqlProjectionFunction) {
     this.apiFunctionName = apiFunctionName;
+    this.cqlIndexingFunction = cqlIndexingFunction;
+    this.cqlProjectionFunction = cqlProjectionFunction;
   }
 
   // TODO AARON - removed the @JsonValue becaue this should not be exposed to the user
   //  @JsonValue
-  public String getCqlName() {
-    return cqlFunctionName;
+  public String cqlProjectionFunction() {
+    return cqlProjectionFunction;
   }
 
-  public String getApiName() {
+  public String cqlIndexingFunction() {
+    return cqlIndexingFunction;
+  }
+
+  public String apiName() {
     return apiFunctionName;
   }
 
-  public static SimilarityFunction fromCqlName(String cqlName) {
-    return fromName(cqlName, FUNCTION_BY_CQL_NAME);
+  public static Optional<SimilarityFunction> fromCqlIndexingFunction(String cqlIndexingFunction) {
+    return fromName(cqlIndexingFunction, FUNCTION_BY_INDEXING_FUNCTION);
   }
 
-  public static SimilarityFunction fromApiName(String apiName) {
+  public static Optional<SimilarityFunction> fromApiName(String apiName) {
     return fromName(apiName, FUNCTION_BY_API_NAME);
   }
 
-  private static SimilarityFunction fromName(String name, Map<String, SimilarityFunction> map) {
+  private static Optional<SimilarityFunction> fromName(
+      String name, Map<String, SimilarityFunction> map) {
 
     // not standard behavior, but the code already did this, would be better to have the enum throw
-    // or return null and then the caller work out what to do.
-    if (name == null) {
-      return UNDEFINED;
+    // or return null and then the caller work out what to do. - aaron
+    if (name == null || name.isBlank()) {
+      return Optional.of(UNDEFINED);
     }
 
-    var function = map.get(name);
-    if (function == null) {
-      throw ErrorCodeV1.VECTOR_SEARCH_INVALID_FUNCTION_NAME.toApiException("'%s'", name);
-    }
-    return function;
+    return Optional.ofNullable(map.get(name.toLowerCase()));
+  }
+
+  /**
+   * HACK - aaron 11 nov, it used to be that getting hte function from the string name would throw
+   * this if it was not found, changed so that returns optional so the called can work out what to
+   * do. Call this to get the exception
+   */
+  public static JsonApiException getUnknownFunctionException(String functionName) {
+    return ErrorCodeV1.VECTOR_SEARCH_INVALID_FUNCTION_NAME.toApiException("'%s'", functionName);
   }
 }

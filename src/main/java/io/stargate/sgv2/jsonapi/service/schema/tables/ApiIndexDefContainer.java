@@ -58,6 +58,10 @@ public class ApiIndexDefContainer implements Iterable<ApiIndexDef> {
     byName.put(indexDef.indexName(), indexDef);
   }
 
+  public List<ApiIndexDef> allIndexes() {
+    return Collections.unmodifiableList(byName.values().stream().toList());
+  }
+
   public List<ApiIndexDef> allIndexesFor(CqlIdentifier targetColumn) {
     return Collections.unmodifiableList(byTarget.get(targetColumn));
   }

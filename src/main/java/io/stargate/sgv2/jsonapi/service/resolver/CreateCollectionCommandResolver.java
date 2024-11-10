@@ -15,8 +15,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -203,18 +203,24 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       if (metric == null) {
         // (1) sourceModel is provided but metric is not - set metric to cosine or dot_product based
         // on the map
-        metric = SourceModel.getSimilarityFunction(sourceModel).getMetric();
+        final String sourceModelFromUser = sourceModel;
+        metric =
+            EmbeddingSourceModel.fromName(sourceModelFromUser)
+                .orElseThrow(
+                    () -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModelFromUser))
+                .getSimilarityFunction()
+                .apiName();
       }
       // (2) both sourceModel and metric are provided - do nothing
     } else {
       if (metric != null) {
         // (3) sourceModel is not provided but metric is - set sourceModel to 'other'
-        sourceModel = SourceModel.OTHER.getName();
+        sourceModel = EmbeddingSourceModel.OTHER.getName();
       } else {
         // (4) both sourceModel and metric are not provided - set sourceModel to 'other' and metric
         // to 'cosine'
-        sourceModel = SourceModel.DEFAULT_SOURCE_MODEL.getName();
-        metric = SimilarityFunction.DEFAULT_SIMILARITY_FUNCTION.getMetric();
+        sourceModel = EmbeddingSourceModel.DEFAULT_SOURCE_MODEL.getName();
+        metric = SimilarityFunction.DEFAULT_SIMILARITY_FUNCTION.cqlIndexingFunction();
       }
     }
 

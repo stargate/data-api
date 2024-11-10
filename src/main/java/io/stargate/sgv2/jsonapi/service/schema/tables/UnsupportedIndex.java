@@ -38,6 +38,11 @@ public abstract class UnsupportedIndex implements ApiIndexDef {
   }
 
   @Override
+  public Map<String, String> indexOptions() {
+    return options;
+  }
+
+  @Override
   public boolean isUnsupported() {
     return true;
   }

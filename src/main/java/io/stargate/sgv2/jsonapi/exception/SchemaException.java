@@ -14,6 +14,9 @@ public class SchemaException extends RequestException {
   }
 
   public enum Code implements ErrorCode<SchemaException> {
+    // REMOVE !
+    INVALID_INDEX_DEFINITION,
+
     CANNOT_DROP_INDEXED_COLUMNS,
     CANNOT_DROP_PRIMARY_KEY_COLUMNS,
     CANNOT_DROP_UNKNOWN_COLUMNS,
@@ -33,10 +36,11 @@ public class SchemaException extends RequestException {
     UNSUPPORTED_MAP_DEFINITION,
     UNSUPPORTED_SET_DEFINITION,
     UNSUPPORTED_VECTOR_DIMENSION,
+    VECTOR_INDEX_NOT_SUPPORTED_BY_DATA_TYPE,
     ZERO_PARTITION_COLUMNS,
 
     // older below - seperated because they need to be confirmed
-    COLUMN_TYPE_INCORRECT,
+    //    COLUMN_TYPE_INCORRECT,
     INDEX_NOT_FOUND,
     INVALID_CONFIGURATION,
     // INVALID_INDEX_DEFINITION,

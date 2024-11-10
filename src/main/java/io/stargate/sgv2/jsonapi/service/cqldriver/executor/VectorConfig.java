@@ -9,8 +9,8 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -74,19 +74,33 @@ public class VectorConfig {
                 // if similarity function is set, use it
                 SimilarityFunction similarityFunction =
                     similarityFunctionStr != null
-                        ? SimilarityFunction.fromCqlName(similarityFunctionStr)
+                        ? SimilarityFunction.fromCqlIndexingFunction(similarityFunctionStr)
+                            .orElseThrow(
+                                () ->
+                                    SimilarityFunction.getUnknownFunctionException(
+                                        similarityFunctionStr))
                         : null;
 
                 String sourceModelStr =
                     index.getOptions().get(VectorConstants.CQLAnnIndex.SOURCE_MODEL);
-                SourceModel sourceModel = null;
+                EmbeddingSourceModel sourceModel = null;
                 if (sourceModelStr != null) {
                   // if similarity function is not set, use the source model to determine it
+
+                  var sourceModelSimilarityFunction =
+                      EmbeddingSourceModel.fromName(sourceModelStr)
+                          .orElseThrow(
+                              () ->
+                                  EmbeddingSourceModel.getUnknownSourceModelException(
+                                      sourceModelStr))
+                          .getSimilarityFunction();
                   similarityFunction =
                       similarityFunction == null
-                          ? SourceModel.getSimilarityFunction(sourceModelStr)
+                          ? sourceModelSimilarityFunction
                           : similarityFunction;
-                  sourceModel = SourceModel.fromString(sourceModelStr);
+                  sourceModel =
+                      EmbeddingSourceModel.fromName(sourceModelStr)
+                          .orElseThrow(() -> new IllegalStateException("Invalid source model"));
                 }
                 return new AbstractMap.SimpleEntry<>(similarityFunction, sourceModel);
               });
@@ -94,7 +108,7 @@ public class VectorConfig {
       // if no index, or we could not work out the function, default
       var similarityFunction =
           indexFunction.map(Map.Entry::getKey).orElse(SimilarityFunction.COSINE);
-      var sourceModel = indexFunction.map(Map.Entry::getValue).orElse(SourceModel.OTHER);
+      var sourceModel = indexFunction.map(Map.Entry::getValue).orElse(EmbeddingSourceModel.OTHER);
       int dimensions = ((VectorType) column.getType()).getDimensions();
 
       // NOTE: need to keep the column name as a string in the VectorColumnDefinition

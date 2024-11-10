@@ -2,11 +2,12 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.IndexDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import java.util.Map;
 import java.util.Objects;
 
-public class ApiCollectionIndex extends ApiRegularIndex {
+public class ApiCollectionIndex extends ApiSupportedIndex {
 
   public static final IndexFactoryFromCql FROM_CQL_FACTORY = new CqlTypeFactory();
 
@@ -18,24 +19,25 @@ public class ApiCollectionIndex extends ApiRegularIndex {
       CqlIdentifier targetColumn,
       Map<String, String> options,
       ApiIndexFunction indexFunction) {
-    super(indexName, targetColumn, options);
+    super(ApiIndexType.COLLECTION, indexName, targetColumn, options);
     this.indexFunction = Objects.requireNonNull(indexFunction, "indexFunction must not be null");
-  }
-
-  @Override
-  public ApiIndexType indexType() {
-    return ApiIndexType.COLLECTION;
   }
 
   public ApiIndexFunction indexFunction() {
     return indexFunction;
   }
 
+  @Override
+  public IndexDesc indexDesc() {
+    // TODO: implement this
+    return null;
+  }
+
   private static class CqlTypeFactory extends IndexFactoryFromCql {
 
     @Override
     protected ApiIndexDef create(
-        ApiColumnDef apiColumnDef, IndexTarget indexTarget, IndexMetadata indexMetadata)
+        ApiColumnDef apiColumnDef, CQLSAIIndex.IndexTarget indexTarget, IndexMetadata indexMetadata)
         throws UnsupportedCqlIndexException {
 
       // this is a sanity check, the base will have worked this, but we should check it here

@@ -8,7 +8,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
 import org.junit.jupiter.api.*;
@@ -405,7 +405,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               Map.of(
                   "reason",
                   "sourceModel `%s` used in request is invalid. Supported source models are: %s"
-                      .formatted("invalid_source_model", SourceModel.getAllSourceModelNames())));
+                      .formatted(
+                          "invalid_source_model",
+                          EmbeddingSourceModel.getSupportedSourceModelNames())));
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCreateVectorIndex(
               """

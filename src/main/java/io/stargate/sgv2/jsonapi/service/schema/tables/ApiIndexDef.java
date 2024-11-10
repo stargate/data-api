@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.IndexDesc;
+import java.util.Map;
 
 /**
  * The API definition of an Index, is an interface so the unsupported indexs can be represented as
@@ -16,6 +17,8 @@ public interface ApiIndexDef {
   ApiIndexType indexType();
 
   IndexDesc indexDesc();
+
+  Map<String, String> indexOptions();
 
   default boolean isUnsupported() {
     return false;

@@ -13,7 +13,7 @@ public class DropIndexAttemptBuilder {
   private int position;
   private final KeyspaceSchemaObject schemaObject;
   private final CqlIdentifier name;
-  private CQLOptions<Drop> cqlOptions = new CQLOptions<>();
+  private CQLOptions.BuildableCQLOptions<Drop> cqlOptions = new CQLOptions.BuildableCQLOptions<>();
   private final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy;
 
   public DropIndexAttemptBuilder(

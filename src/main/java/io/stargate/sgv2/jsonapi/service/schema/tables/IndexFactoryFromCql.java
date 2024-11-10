@@ -1,61 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexKind;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
-import com.datastax.oss.driver.internal.core.adminrequest.AdminRow;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownCqlIndexFunctionException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** */
 public abstract class IndexFactoryFromCql extends FactoryFromCql {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexFactoryFromCql.class);
-
-  /**
-   * The target of the index is stored as a string in the indexing options in Cassandra 3.0+ See
-   * {@link
-   * com.datastax.oss.driver.internal.core.metadata.schema.parsing.TableParser#buildModernIndex(CqlIdentifier,
-   * CqlIdentifier, AdminRow)} In the <code>system_schema.indexes</code> table the options can look
-   * like:
-   *
-   * <pre>
-   * options
-   * ------------------------------------------------
-   * {'class_name': 'StorageAttachedIndex', 'target': 'age'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'country'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'values(array_contains)'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'entries(array_size)'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'values(exist_keys)'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'entries(query_bool_values)'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'entries(query_dbl_values)'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'values(query_null_values)'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'entries(query_text_values)'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'entries(query_timestamp_values)'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'comment_vector'}
-   * {'class_name': 'StorageAttachedIndex', 'similarity_function': 'cosine', 'target': 'my_vector'}
-   * </pre>
-   *
-   * The target can just be the name of the column, or the name of the column in parentheses
-   * prefixed by the index type for a map type: values(column), keys(column), and entries(column)
-   * see https://docs.datastax.com/en/cql/hcd-1.0/develop/indexing/sai/collections.html
-   *
-   * <p>The Reg Exp below will match:
-   *
-   * <ul>
-   *   <li>"monkeys": group 1 - "monkeys"
-   *   <li>"(monkeys)": group 1 - "monkeys" (without the parentheses) https://regex101.com/ called
-   *       it group 2 but there was only 1
-   *   <li>"values(monkeys)": group 1 - "values" group 2 - "monkeys"
-   * </ul>
-   */
-  private static Pattern INDEX_TARGET_PATTERN = Pattern.compile("^(\\w+)?(?:\\((\\w+)\\))?$");
-
-  // The name SAI uses for the {@link CqlIndexOptions#CLASS} option
-  private static final String SAI_INDEX_CLASS = "StorageAttachedIndex";
 
   public static final IndexFactoryFromCql DEFAULT = new DefaultFactory();
 
@@ -73,7 +27,7 @@ public abstract class IndexFactoryFromCql extends FactoryFromCql {
     // if we get this var, there is a chance we can support it
     try {
       // will throw if we could not work out the target
-      var indexTarget = IndexTarget.fromCql(indexMetadata);
+      var indexTarget = CQLSAIIndex.indexTarget(indexMetadata);
 
       var apiColumnDef = allColumns.get(indexTarget.targetColumn());
       if (apiColumnDef == null) {
@@ -111,7 +65,7 @@ public abstract class IndexFactoryFromCql extends FactoryFromCql {
   }
 
   protected abstract ApiIndexDef create(
-      ApiColumnDef apiColumnDef, IndexTarget indexTarget, IndexMetadata indexMetadata)
+      ApiColumnDef apiColumnDef, CQLSAIIndex.IndexTarget indexTarget, IndexMetadata indexMetadata)
       throws UnsupportedCqlIndexException;
 
   /**
@@ -122,8 +76,7 @@ public abstract class IndexFactoryFromCql extends FactoryFromCql {
    * @return
    */
   public boolean isSupported(IndexMetadata indexMetadata) {
-    return indexMetadata.getKind() == IndexKind.CUSTOM
-        && SAI_INDEX_CLASS.equals(CqlIndexOptions.CLASS.readFrom(indexMetadata.getOptions()));
+    return CQLSAIIndex.isSAIIndex(indexMetadata);
   }
 
   public UnsupportedCqlIndex createUnsupported(IndexMetadata indexMetadata) {
@@ -135,40 +88,9 @@ public abstract class IndexFactoryFromCql extends FactoryFromCql {
 
     @Override
     protected ApiIndexDef create(
-        ApiColumnDef apiColumnDef, IndexTarget indexTarget, IndexMetadata indexMetadata)
+        ApiColumnDef apiColumnDef, CQLSAIIndex.IndexTarget indexTarget, IndexMetadata indexMetadata)
         throws UnsupportedCqlIndexException {
       throw new UnsupportedOperationException("create() - Not implemented");
-    }
-  }
-
-  /**
-   * For internal to this package use only, for parsing the index target see docs for {@link
-   * #INDEX_TARGET_PATTERN}
-   *
-   * @param targetColumn
-   * @param indexFunction Null when there is no function
-   */
-  protected record IndexTarget(CqlIdentifier targetColumn, ApiIndexFunction indexFunction) {
-
-    public static IndexTarget fromCql(IndexMetadata indexMetadata)
-        throws UnknownCqlIndexFunctionException, UnsupportedCqlIndexException {
-
-      var target = CqlIndexOptions.TARGET.readFrom(indexMetadata.getOptions());
-      Matcher matcher = INDEX_TARGET_PATTERN.matcher(target);
-      if (!matcher.matches()) {
-        throw new UnsupportedCqlIndexException(
-            "Could not parse index target: '" + target + "'", indexMetadata);
-      }
-
-      return switch (matcher.groupCount()) {
-        case 1 -> new IndexTarget(CqlIdentifier.fromInternal(matcher.group(1)), null);
-        case 2 ->
-            new IndexTarget(
-                CqlIdentifier.fromInternal(matcher.group(2)),
-                ApiIndexFunction.fromCql(matcher.group(1)));
-        default ->
-            throw new IllegalArgumentException("Could not parse index target: '" + target + "'");
-      };
     }
   }
 }

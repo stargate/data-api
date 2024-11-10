@@ -361,4 +361,17 @@ public class DataApiResponseValidator {
       return body("status.sortVector", is(nullValue()));
     }
   }
+
+  public DataApiResponseValidator hasIndexes(String... indexes) {
+    return body("status.indexes", hasSize(indexes.length))
+        .body("status.indexes", containsInAnyOrder(indexes));
+  }
+
+  public DataApiResponseValidator doesNotHaveIndexes(String... indexes) {
+    DataApiResponseValidator toReturn = this;
+    for (String index : indexes) {
+      toReturn = body("status.indexes", not(contains(index)));
+    }
+    return toReturn;
+  }
 }

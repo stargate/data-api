@@ -7,8 +7,8 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import java.util.List;
 
 /**
@@ -29,7 +29,7 @@ public class CollectionSettingsV0Reader implements CollectionSettingsReader {
       boolean vectorEnabled,
       int vectorSize,
       SimilarityFunction function,
-      SourceModel sourceModel) {
+      EmbeddingSourceModel sourceModel) {
 
     VectorConfig vectorConfig =
         vectorEnabled

@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 
 /**
  * Configuration vector column with the extra info we need for vectors
@@ -20,7 +20,7 @@ public record VectorColumnDefinition(
     String fieldName,
     int vectorSize,
     SimilarityFunction similarityFunction,
-    SourceModel sourceModel,
+    EmbeddingSourceModel sourceModel,
     VectorizeDefinition vectorizeDefinition) {
 
   /**
@@ -35,12 +35,23 @@ public record VectorColumnDefinition(
     // TODO: What if they do not exist ? What is enforcing this ?
 
     int dimension = jsonNode.get(VectorConstants.VectorColumn.DIMENSION).asInt();
+    // aaron - 11 nov 2024, this code had no null check on the function name, and the
+    // SimilarityFunction
+    // turns nulls into UNDEFINED, so unclear what happens if the value was null here
+    var functionName = jsonNode.get(VectorConstants.VectorColumn.METRIC).asText();
     var similarityFunction =
-        SimilarityFunction.fromApiName(jsonNode.get(VectorConstants.VectorColumn.METRIC).asText());
+        SimilarityFunction.fromApiName(functionName)
+            .orElseThrow(() -> SimilarityFunction.getUnknownFunctionException(functionName));
     // sourceModel doesn't exist if the collection was created before supporting sourceModel; if
     // missing, it will be an empty string and sourceModel becomes OTHER.
+    // TODO: CHANGE THIS TO BE MORE EXPLICIT AND NOT RELY ON EMPTY STRING
     var sourceModel =
-        SourceModel.fromString(jsonNode.path(VectorConstants.VectorColumn.SOURCE_MODEL).asText());
+        EmbeddingSourceModel.fromName(
+                jsonNode.path(VectorConstants.VectorColumn.SOURCE_MODEL).asText())
+            .orElseThrow(
+                () ->
+                    EmbeddingSourceModel.getUnknownSourceModelException(
+                        jsonNode.path(VectorConstants.VectorColumn.SOURCE_MODEL).asText()));
 
     return fromJson(
         DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
@@ -56,7 +67,7 @@ public record VectorColumnDefinition(
       String fieldName,
       int dimension,
       SimilarityFunction similarityFunction,
-      SourceModel sourceModel,
+      EmbeddingSourceModel sourceModel,
       JsonNode jsonNode,
       ObjectMapper objectMapper) {
 

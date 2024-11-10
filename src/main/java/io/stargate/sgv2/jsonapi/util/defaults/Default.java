@@ -1,52 +1,23 @@
 package io.stargate.sgv2.jsonapi.util.defaults;
 
-import java.util.function.Predicate;
+import java.util.function.Function;
 
-public abstract class Default<T> {
+public interface Default<T> {
 
-  protected T defaultValue;
-  final Predicate<T> isPresent;
+  T defaultValue();
 
-  protected Default(T defaultValue) {
-    this.defaultValue = defaultValue;
+  T apply(T value);
 
-    this.isPresent = createIsPresent();
-    if (this.isPresent == null) {
-      throw new IllegalStateException("isPresent must not be null");
-    }
+  default <TSource> T apply(TSource source, Function<TSource, T> supplier) {
+    return apply(source == null ? null : supplier.apply(source));
   }
 
-  protected Default(Default<T> wrapped) {
-    this.defaultValue = wrapped.defaultValue;
+  boolean isPresent(T value);
 
-    this.isPresent = createIsPresent();
-    if (this.isPresent == null) {
-      throw new IllegalStateException("isPresent must not be null");
-    }
-  }
+  interface Stringable<T> extends Default<T> {
 
-  public T defaultValue() {
-    return defaultValue;
-  }
+    T applyToType(String stringValue);
 
-  public abstract T apply(T value);
-
-  public boolean isPresent(T value) {
-    return isPresent.test(value);
-  }
-
-  protected abstract Predicate<T> createIsPresent();
-
-  public abstract static class StringableDefault<T> extends Default<T> {
-
-    protected StringableDefault(T defaultValue) {
-      super(defaultValue);
-    }
-
-    protected StringableDefault(Default<T> wrapped) {
-      super(wrapped);
-    }
-
-    abstract T apply(String stringValue);
+    String applyToString(T objectValue);
   }
 }

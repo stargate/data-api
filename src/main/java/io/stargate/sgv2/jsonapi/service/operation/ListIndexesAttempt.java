@@ -1,9 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
+
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiRegularIndex;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDefContainer;
 import java.util.List;
+import java.util.Optional;
 
 /** Attempt to list indexes for a table. */
 public class ListIndexesAttempt extends MetadataAttempt<TableSchemaObject> {
@@ -13,6 +16,19 @@ public class ListIndexesAttempt extends MetadataAttempt<TableSchemaObject> {
     setStatus(OperationStatus.READY);
   }
 
+  private Optional<ApiIndexDefContainer> indexesForTable() {
+    // TODO: better option checking
+    var tableMetadata =
+        keyspaceMetadata.get().getTable(schemaObject.tableMetadata().getName()).get();
+
+    // aaron - this should not happen ?
+    if (!TABLE_MATCHER.test(tableMetadata)) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        TableSchemaObject.from(tableMetadata, OBJECT_MAPPER).apiTableDef().indexes());
+  }
+
   /**
    * Get indexes names from the table metadata.
    *
@@ -20,11 +36,14 @@ public class ListIndexesAttempt extends MetadataAttempt<TableSchemaObject> {
    */
   @Override
   protected List<String> getNames() {
-    return schemaObject.indexConfig().values().stream()
+
+    return indexesForTable()
         .map(
-            indexDefinition ->
-                CqlIdentifierUtil.externalRepresentation(indexDefinition.getIndexName()))
-        .toList();
+            indexes ->
+                indexes.allIndexes().stream()
+                    .map(index -> cqlIdentifierToJsonKey(index.indexName()))
+                    .toList())
+        .orElse(List.of());
   }
 
   /**
@@ -34,8 +53,8 @@ public class ListIndexesAttempt extends MetadataAttempt<TableSchemaObject> {
    */
   @Override
   protected Object getSchema() {
-    return schemaObject.indexConfig().values().stream()
-        .map(ApiRegularIndex::getIndexDefinition)
-        .toList();
+    return indexesForTable()
+        .map(indexes -> indexes.allIndexes().stream().map(ApiIndexDef::indexDesc).toList())
+        .orElse(List.of());
   }
 }

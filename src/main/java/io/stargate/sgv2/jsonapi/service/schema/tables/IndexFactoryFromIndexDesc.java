@@ -1,10 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.IndexDesc;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +40,33 @@ public abstract class IndexFactoryFromIndexDesc<ApiT extends ApiIndexDef, DescT 
    * support.
    */
   public UnsupportedIndex createUnsupported(String name, DescT indexDesc) {
-    return new UnsupportedUserIndex(cqlIdentifierFromUserInput(name), indexDesc.options());
+    // aaron - this would be better if the IndexDesc interface had a way to get the options the user
+    // sent
+    return new UnsupportedUserIndex(userNameToIdentifier(name, "indexName"), Map.of());
+  }
+
+  /**
+   * Checks the target column exits in the table schema, throws {@link
+   * SchemaException.Code#UNKNOWN_INDEX_COLUMN} is missing.
+   *
+   * @param tableSchemaObject The table schema object to check against
+   * @param targetIdentifier The CqlIdentifier for the target column
+   * @return The {@link ApiColumnDef} for the target column for further checking
+   */
+  protected ApiColumnDef checkIndexColumnExists(
+      TableSchemaObject tableSchemaObject, CqlIdentifier targetIdentifier) {
+
+    var apiColumnDef = tableSchemaObject.apiTableDef().allColumns().get(targetIdentifier);
+    if (apiColumnDef == null) {
+      throw SchemaException.Code.UNKNOWN_INDEX_COLUMN.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put(
+                    "allColumns", errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
+                map.put("unknownColumns", errFmt(targetIdentifier));
+              }));
+    }
+    return apiColumnDef;
   }
 }

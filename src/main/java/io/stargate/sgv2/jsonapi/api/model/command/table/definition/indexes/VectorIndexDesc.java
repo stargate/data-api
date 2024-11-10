@@ -1,8 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
-import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.config.constants.VectorIndexDescDefaults;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -19,7 +18,8 @@ public record VectorIndexDesc(
     @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
         @Schema(description = "Different indexing options.", type = SchemaType.OBJECT)
-        CreateVectorIndexCommand.Options options) {
+        VectorIndexDescOptions options)
+    implements IndexDesc {
 
   // This is index definition options for vector column types.
   public record VectorIndexDescOptions(
@@ -29,11 +29,9 @@ public record VectorIndexDesc(
               message = "function name can only be 'dot_product', 'cosine' or 'euclidean'")
           @Schema(
               description = "Similarity function algorithm that needs to be used for vector search",
-              defaultValue = "cosine",
-              type = SchemaType.STRING,
-              implementation = String.class)
+              defaultValue = VectorIndexDescDefaults.DEFAULT_METRIC_NAME)
           @JsonInclude(JsonInclude.Include.NON_NULL)
-          SimilarityFunction metric,
+          String metric,
       @Nullable
           @Size(min = 1, max = 48)
           @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
