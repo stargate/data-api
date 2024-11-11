@@ -37,11 +37,12 @@ public class TestDataNames {
   public final CqlIdentifier COL_UNKNOWN_1 =
       CqlIdentifier.fromInternal("unknown-1-" + System.currentTimeMillis());
 
-  // All column datatypes
+  // ==================================================================================================================
+  // Primitive(Scalar) dataTypes
+  // ==================================================================================================================
+
   public final CqlIdentifier CQL_TEXT_COLUMN =
       CqlIdentifier.fromInternal("text-column-" + System.currentTimeMillis());
-  // TODO  public final CqlIdentifier CQL_UUID_COLUMN =
-  //          CqlIdentifier.fromInternal("uuid-column-" + System.currentTimeMillis());
   public final CqlIdentifier CQL_ASCII_COLUMN =
       CqlIdentifier.fromInternal("ascii-column-" + System.currentTimeMillis());
   public final CqlIdentifier CQL_BLOB_COLUMN =
@@ -72,10 +73,16 @@ public class TestDataNames {
       CqlIdentifier.fromInternal("date-column-" + System.currentTimeMillis());
   public final CqlIdentifier CQL_TIME_COLUMN =
       CqlIdentifier.fromInternal("time-column-" + System.currentTimeMillis());
-  public final List<CqlIdentifier> ALL_CQL_DATATYPE_COLUMNS =
+  public final CqlIdentifier CQL_INET_COLUMN =
+      CqlIdentifier.fromInternal("inet-column-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_UUID_COLUMN =
+      CqlIdentifier.fromInternal("uuid-column-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_TIMEUUID_COLUMN =
+      CqlIdentifier.fromInternal("timeuuid-column-" + System.currentTimeMillis());
+
+  public final List<CqlIdentifier> ALL_SCALAR_DATATYPE_COLUMNS =
       List.of(
           CQL_TEXT_COLUMN,
-          //          CQL_UUID_COLUMN,
           CQL_ASCII_COLUMN,
           CQL_BLOB_COLUMN,
           CQL_DURATION_COLUMN,
@@ -90,13 +97,17 @@ public class TestDataNames {
           CQL_TINYINT_COLUMN,
           CQL_TIMESTAMP_COLUMN,
           CQL_DATE_COLUMN,
-          CQL_TIME_COLUMN);
+          CQL_TIME_COLUMN,
+          CQL_INET_COLUMN,
+          CQL_UUID_COLUMN,
+          CQL_TIMEUUID_COLUMN);
+
+  public final List<CqlIdentifier> COMPARISON_WITH_INDEX_WARN_COLUMNS =
+      List.of(CQL_TEXT_COLUMN, CQL_ASCII_COLUMN, CQL_BOOLEAN_COLUMN, CQL_UUID_COLUMN);
 
   // All column datatypes index name, (Blob,Duration can NOT be indexed)
   public final CqlIdentifier CQL_TEXT_COLUMN_INDEX =
       CqlIdentifier.fromInternal("text-column-index-" + System.currentTimeMillis());
-  // TODO  public final CqlIdentifier CQL_UUID_COLUMN_INDEX =
-  //          CqlIdentifier.fromInternal("uuid-column-" + System.currentTimeMillis());
   public final CqlIdentifier CQL_ASCII_COLUMN_INDEX =
       CqlIdentifier.fromInternal("ascii-column-index-" + System.currentTimeMillis());
   public final CqlIdentifier CQL_BOOLEAN_COLUMN_INDEX =
@@ -123,4 +134,35 @@ public class TestDataNames {
       CqlIdentifier.fromInternal("date-column-index-" + System.currentTimeMillis());
   public final CqlIdentifier CQL_TIME_COLUMN_INDEX =
       CqlIdentifier.fromInternal("time-column-index-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_INET_COLUMN_INDEX =
+      CqlIdentifier.fromInternal("inet-column-index-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_UUID_COLUMN_INDEX =
+      CqlIdentifier.fromInternal("uuid-column-index-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_TIMEUUID_COLUMN_INDEX =
+      CqlIdentifier.fromInternal("timeuuid-column-index-" + System.currentTimeMillis());
+
+  // ==================================================================================================================
+  // Collection(set, map, list, vector) dataTypes
+  // ==================================================================================================================
+
+  public final CqlIdentifier CQL_MAP_COLUMN =
+      CqlIdentifier.fromInternal("map-column-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_LIST_COLUMN =
+      CqlIdentifier.fromInternal("list-column-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_SET_COLUMN =
+      CqlIdentifier.fromInternal("set-column-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_VECTOR_COLUMN =
+      CqlIdentifier.fromInternal("vector-column-" + System.currentTimeMillis());
+
+  public final List<CqlIdentifier> ALL_COLLECTION_DATATYPE_COLUMNS =
+      List.of(CQL_MAP_COLUMN, CQL_LIST_COLUMN, CQL_SET_COLUMN, CQL_VECTOR_COLUMN);
+
+  public final CqlIdentifier CQL_MAP_COLUMN_INDEX =
+      CqlIdentifier.fromInternal("map-column-index-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_LIST_COLUMN_INDEX =
+      CqlIdentifier.fromInternal("list-column-index-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_SET_COLUMN_INDEX =
+      CqlIdentifier.fromInternal("set-column-index-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_VECTOR_COLUMN_INDEX =
+      CqlIdentifier.fromInternal("vector-column-index-" + System.currentTimeMillis());
 }

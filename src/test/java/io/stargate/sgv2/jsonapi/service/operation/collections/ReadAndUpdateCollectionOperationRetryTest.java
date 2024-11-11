@@ -259,7 +259,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
         .hasSize(2)
         .containsEntry(CommandStatus.MATCHED_COUNT, 1)
         .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
-    assertThat(result.errors()).isNull();
+    assertThat(result.errors()).isEmpty();
   }
 
   @Test

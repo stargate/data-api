@@ -13,11 +13,11 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateIndex;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexOnTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexStart;
 import com.datastax.oss.driver.internal.querybuilder.schema.DefaultCreateIndex;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedCreateIndex;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,8 +51,9 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
       CqlIdentifier indexName,
       TextIndexOptions textIndexOptions,
       VectorIndexOptions vectorIndexOptions,
-      boolean ifNotExists) {
-    super(position, schemaObject, new SchemaRetryPolicy(2, Duration.ofMillis(10)));
+      boolean ifNotExists,
+      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
+    super(position, schemaObject, schemaRetryPolicy);
 
     this.columnName = columnName;
     this.dataType = dataType;
@@ -90,10 +91,11 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
     public Map<String, Object> getOptions() {
       Map<String, Object> options = new HashMap<>();
       if (similarityFunction != null) {
-        options.put("similarity_function", similarityFunction.getMetric());
+        options.put(
+            VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION, similarityFunction.getMetric());
       }
       if (sourceModel != null) {
-        options.put("source_model", sourceModel);
+        options.put(VectorConstants.CQLAnnIndex.SOURCE_MODEL, sourceModel);
       }
       return options;
     }

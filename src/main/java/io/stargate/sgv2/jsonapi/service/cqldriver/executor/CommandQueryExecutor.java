@@ -1,12 +1,19 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
+import com.datastax.oss.driver.api.core.AsyncPagingIterable;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.google.common.annotations.VisibleForTesting;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.service.cqldriver.AccumulatingAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,9 +46,10 @@ public class CommandQueryExecutor {
   }
 
   private enum QueryType {
+    CREATE_SCHEMA,
     READ,
-    WRITE,
-    CREATE_SCHEMA;
+    TRUNCATE,
+    WRITE;
 
     final String profileSuffix;
 
@@ -71,11 +79,74 @@ public class CommandQueryExecutor {
     return executeAndWrap(statement);
   }
 
+  /**
+   * Query executor to read all the pages that satisfy the query, it will keep fetching pages until
+   * there are no more.
+   *
+   * <p>It needs to do this without blocking on the reactive thread.
+   *
+   * @param statement The statement to execute.
+   * @param rowAccumulator The accumulator to hold the rows that are read as we go through the
+   *     pages. The accumulator can keep them all or discard some / all as they are read.
+   */
+  public Uni<AsyncResultSet> executeReadAllPages(
+      SimpleStatement statement, RowAccumulator rowAccumulator) {
+    Objects.requireNonNull(statement, "statement must not be null");
+
+    var accumulator = new AccumulatingAsyncResultSet(rowAccumulator);
+
+    return Multi.createBy()
+        .repeating()
+        .uni(
+            () -> new AtomicReference<AsyncResultSet>(null), // the state passed to the producer
+            stateRef -> {
+              Uni<AsyncResultSet> result =
+                  stateRef.get() == null
+                      ? executeRead(statement) // AsyncResultSet is null so first page
+                      : Uni.createFrom()
+                          .completionStage(stateRef.get().fetchNextPage()); // After first page
+              // returning result for looping, this is remembering the rows as we page through them
+              return result
+                  .onItem()
+                  .invoke(
+                      rs -> {
+                        accumulator.accumulate(rs);
+                        stateRef.set(rs);
+                      });
+            })
+        // Documents read until pageState available, max records read is deleteLimit + 1 TODO
+        // COMMENTS
+        .whilst(AsyncPagingIterable::hasMorePages)
+        .collect()
+        .asList()
+        .onItem()
+        .transformToUni(resultSets -> Uni.createFrom().item(accumulator));
+  }
+
   public Uni<AsyncResultSet> executeWrite(SimpleStatement statement) {
     Objects.requireNonNull(statement, "statement must not be null");
 
     statement = withExecutionProfile(statement, QueryType.WRITE);
     return executeAndWrap(statement);
+  }
+
+  public Uni<AsyncResultSet> executeTruncate(SimpleStatement statement) {
+    Objects.requireNonNull(statement, "statement must not be null");
+
+    statement = withExecutionProfile(statement, QueryType.WRITE);
+    return executeAndWrap(statement);
+  }
+
+  /**
+   * Get the metadata for the given keyspace using session.
+   *
+   * @param keyspace The keyspace name.
+   * @return The keyspace metadata if it exists.
+   */
+  public Optional<KeyspaceMetadata> getKeyspaceMetadata(String keyspace) {
+    return session()
+        .getMetadata()
+        .getKeyspace(CqlIdentifierUtil.cqlIdentifierFromUserInput(keyspace));
   }
 
   public Uni<AsyncResultSet> executeCreateSchema(SimpleStatement statement) {
@@ -98,9 +169,10 @@ public class CommandQueryExecutor {
     return statement.setExecutionProfileName(getExecutionProfile(queryType));
   }
 
-  private Uni<AsyncResultSet> executeAndWrap(SimpleStatement statement) {
+  @VisibleForTesting
+  public Uni<AsyncResultSet> executeAndWrap(SimpleStatement statement) {
     return Uni.createFrom().completionStage(session().executeAsync(statement));
   }
 
-  public static record RequestContext(Optional<String> tenantId, Optional<String> authToken) {}
+  public record RequestContext(Optional<String> tenantId, Optional<String> authToken) {}
 }

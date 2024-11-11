@@ -10,6 +10,7 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Optional;
 
 /** Tests data and utility for testing the JSON Codecs see {@link JSONCodecRegistryTest} */
@@ -60,14 +61,20 @@ public class JSONCodecRegistryTestData {
   public final String DATE_VALID_STR = "2024-09-24";
   public final String DATE_INVALID_STR = "not-a-date";
 
-  public final String DURATION_VALID1_STR = "1h30m";
-  public final String DURATION_VALID2_STR = "PT1H30M";
+  public final String DURATION_VALID_STR_CASS = "1h30m";
+  public final String DURATION_VALID_STR_ISO8601 = "PT1H30M";
   public final String DURATION_INVALID_STR = "not-a-duration";
 
   public final String TIME_VALID_STR = "12:34:56.789";
   public final String TIME_INVALID_STR = "not-a-time";
 
   public final String TIMESTAMP_VALID_STR = "2024-09-12T10:15:30Z";
+  public final long TIMESTAMP_VALID_NUM;
+
+  {
+    TIMESTAMP_VALID_NUM = Instant.parse(TIMESTAMP_VALID_STR).toEpochMilli();
+  }
+
   public final String TIMESTAMP_INVALID_STR = "not-a-timestamp";
 
   // 4 byte / 2 UCS-2 char Unicode Surrogate Pair characters (see

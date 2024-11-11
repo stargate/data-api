@@ -105,6 +105,9 @@ public interface EmbeddingProvidersConfig {
       @JsonProperty
       String name();
 
+      @JsonProperty
+      String displayName();
+
       /**
        * vectorDimension is not null if the model supports a single dimension value. It will be null
        * if the model supports different dimensions. A parameter called vectorDimension is included.
@@ -121,6 +124,15 @@ public interface EmbeddingProvidersConfig {
 
       @JsonProperty
       Map<String, String> properties();
+
+      /** Flag to mark if support for the model is deprecated. */
+      @Nullable
+      @JsonProperty
+      Optional<Boolean> deprecated();
+
+      @Nullable
+      @JsonProperty
+      Optional<String> serviceUrl();
     }
 
     interface ParameterConfig {

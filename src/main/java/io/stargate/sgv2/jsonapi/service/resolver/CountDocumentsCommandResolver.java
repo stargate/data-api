@@ -48,7 +48,9 @@ public class CountDocumentsCommandResolver implements CommandResolver<CountDocum
   @Override
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, CountDocumentsCommand command) {
-    DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
+
+    DBLogicalExpression dbLogicalExpression =
+        collectionFilterResolver.resolve(ctx, command).target();
     addToMetrics(
         meterRegistry,
         dataApiRequestInfo,

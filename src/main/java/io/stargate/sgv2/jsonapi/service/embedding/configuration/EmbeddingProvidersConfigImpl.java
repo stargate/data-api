@@ -26,9 +26,12 @@ public record EmbeddingProvidersConfigImpl(
 
     public record ModelConfigImpl(
         String name,
+        String displayName,
         Optional<Integer> vectorDimension,
         List<ParameterConfig> parameters,
-        Map<String, String> properties)
+        Map<String, String> properties,
+        Optional<Boolean> deprecated,
+        Optional<String> serviceUrl)
         implements ModelConfig {
 
       public ModelConfigImpl(
@@ -36,11 +39,18 @@ public record EmbeddingProvidersConfigImpl(
           List<ParameterConfig> modelParameterList) {
         this(
             grpcModelConfig.getName(),
+            grpcModelConfig.getDisplayName(),
             grpcModelConfig.hasVectorDimension()
                 ? Optional.of(grpcModelConfig.getVectorDimension())
                 : Optional.empty(),
             modelParameterList,
-            grpcModelConfig.getPropertiesMap());
+            grpcModelConfig.getPropertiesMap(),
+            grpcModelConfig.hasDeprecated()
+                ? Optional.of(grpcModelConfig.getDeprecated())
+                : Optional.empty(),
+            grpcModelConfig.hasServiceUrl()
+                ? Optional.of(grpcModelConfig.getServiceUrl())
+                : Optional.empty());
       }
     }
 

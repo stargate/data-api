@@ -25,6 +25,10 @@ public class RequestException extends APIException {
     FILTER,
     /** See {@link SchemaException} */
     SCHEMA,
+    /** See {@link SortException} */
+    SORT,
+    /** See {@link UpdateException} */
+    UPDATE,
     /** See {@link WarningException} */
     WARNING;
 

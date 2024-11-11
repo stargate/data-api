@@ -6,6 +6,8 @@ import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
@@ -25,6 +27,8 @@ import org.slf4j.LoggerFactory;
 public class LogicalExpressionTestData extends TestDataSuplier {
 
   private static final Logger log = LoggerFactory.getLogger(LogicalExpressionTestData.class);
+
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   public LogicalExpressionTestData(TestData testData) {
     super(testData);
@@ -71,6 +75,11 @@ public class LogicalExpressionTestData extends TestDataSuplier {
       return fixture;
     }
 
+    public FixtureT notInOn(CqlIdentifier column) {
+      expression.addFilter(nin(tableMetadata.getColumn(column).orElseThrow()));
+      return fixture;
+    }
+
     public FixtureT eqAllPrimaryKeys() {
       eqAllPartitionKeys();
       return eqAllClusteringKeys();
@@ -83,6 +92,22 @@ public class LogicalExpressionTestData extends TestDataSuplier {
               columnMetadata -> {
                 rootImplicitAnd.addFilter(eq(columnMetadata));
               });
+      return fixture;
+    }
+
+    public FixtureT eqSkipOnePartitionKeys(int skipIndex) {
+      if (skipIndex >= tableMetadata.getPartitionKey().size()) {
+        throw new IllegalArgumentException(
+            "Skip index is greater than the number of partition keys");
+      }
+      int index = -1;
+      for (ColumnMetadata columnMetadata : tableMetadata.getPartitionKey()) {
+        index++;
+        if (index == skipIndex) {
+          continue;
+        }
+        expression.addFilter(eq(columnMetadata));
+      }
       return fixture;
     }
 
@@ -178,6 +203,13 @@ public class LogicalExpressionTestData extends TestDataSuplier {
           List.of(value(columnMetadata.getType()), value(columnMetadata.getType())));
     }
 
+    public static TableFilter nin(ColumnMetadata columnMetadata) {
+      return new InTableFilter(
+          InTableFilter.Operator.NIN,
+          columnMetadata.getName().asInternal(),
+          List.of(value(columnMetadata.getType()), value(columnMetadata.getType())));
+    }
+
     public static TableFilter filter(
         CqlIdentifier column,
         DataType type,
@@ -187,7 +219,6 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         return new TextTableFilter(column.asInternal(), operator, (String) value);
       }
       if (type.equals(DataTypes.DURATION)) {
-        // we pass a string to the codec for a duration
         return new TextTableFilter(column.asInternal(), operator, (String) value);
       }
       if (type.equals(DataTypes.INT)) {
@@ -233,6 +264,32 @@ public class LogicalExpressionTestData extends TestDataSuplier {
       if (type.equals(DataTypes.TIMESTAMP)) {
         return new TextTableFilter(column.asInternal(), operator, (String) value);
       }
+      if (type.equals(DataTypes.INET)) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.UUID)) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.TIMEUUID)) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+
+      // Sample Collection type values
+      // TODO, note tables feature does not support complex type now, the unit tests just mimic an
+      // invalid filter
+      // usage against complex datatype columns
+      if (type.equals(DataTypes.setOf(DataTypes.TEXT))) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.listOf(DataTypes.TEXT))) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.vectorOf(DataTypes.FLOAT, 3))) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
 
       throw new IllegalArgumentException("Unsupported type");
     }
@@ -245,7 +302,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         return "P1H30M"; // Handle duration as a string
       }
       if (type.equals(DataTypes.INT)) {
-        return 25L;
+        return 25;
       }
       if (type.equals(DataTypes.BIGINT)) {
         return 1000000L;
@@ -286,8 +343,77 @@ public class LogicalExpressionTestData extends TestDataSuplier {
       if (type.equals(DataTypes.TIMESTAMP)) {
         return "2024-09-24T14:06:59Z"; // Sample timestamp
       }
+      if (type.equals(DataTypes.INET)) {
+        return "127.0.0.1"; // Sample internet address
+      }
+      if (type.equals(DataTypes.UUID)) {
+        return "123e4567-e89b-12d3-a456-426614174000"; // Sample UUID
+      }
+      if (type.equals(DataTypes.TIMEUUID)) {
+        return "123e4567-e89b-12d3-a456-426655440000"; // Sample TIMEUUID
+      }
 
+      if (type.equals(DataTypes.TIMEUUID)) {
+        return "123e4567-e89b-12d3-a456-426655440000"; // Sample TIMEUUID
+      }
+
+      // Sample Collection type values
+      // TODO, note tables feature does not support complex type now, the unit tests just mimic an
+      // invalid filter
+      // usage against complex datatype columns
+      if (type.equals(DataTypes.setOf(DataTypes.TEXT))) {
+        return null;
+      }
+      if (type.equals(DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))) {
+        return null;
+      }
+      if (type.equals(DataTypes.listOf(DataTypes.TEXT))) {
+        return null;
+      }
+      if (type.equals(DataTypes.vectorOf(DataTypes.FLOAT, 3))) {
+        return null;
+      }
       throw new IllegalArgumentException("Unsupported type");
+    }
+
+    public static JsonNode jsonNodeValue(DataType dataType) {
+      Object value = value(dataType);
+      if (value instanceof String) {
+        return MAPPER.getNodeFactory().textNode((String) value);
+      }
+      if (value instanceof Integer) {
+        return MAPPER.getNodeFactory().numberNode((Integer) value);
+      }
+      if (value instanceof Long) {
+        return MAPPER.getNodeFactory().numberNode((Long) value);
+      }
+      if (value instanceof BigDecimal) {
+        return MAPPER.getNodeFactory().numberNode((BigDecimal) value);
+      }
+      if (value instanceof Double) {
+        return MAPPER.getNodeFactory().numberNode((Double) value);
+      }
+      if (value instanceof Float) {
+        return MAPPER.getNodeFactory().numberNode((Float) value);
+      }
+      if (value instanceof Short) {
+        return MAPPER.getNodeFactory().numberNode((Short) value);
+      }
+      if (value instanceof Byte) {
+        return MAPPER.getNodeFactory().numberNode((Byte) value);
+      }
+      if (value instanceof BigInteger) {
+        return MAPPER.getNodeFactory().numberNode((BigInteger) value);
+      }
+      if (value instanceof Boolean) {
+        return MAPPER.getNodeFactory().booleanNode((Boolean) value);
+      }
+      if (value instanceof byte[]) {
+        return MAPPER.getNodeFactory().binaryNode((byte[]) value);
+      }
+
+      throw new IllegalArgumentException(
+          "Did not understand type %s to convert into JsonNode".formatted(dataType));
     }
 
     // Get CqlValue of type that Driver expects

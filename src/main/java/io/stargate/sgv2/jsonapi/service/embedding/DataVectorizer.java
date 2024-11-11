@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
 import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,12 +16,13 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
+import java.util.*;
 
 /**
  * Utility class to execute embedding serive to get vector embeddings for the text fields in the
@@ -65,15 +68,14 @@ public class DataVectorizer {
       for (int position = 0; position < documents.size(); position++) {
         JsonNode document = documents.get(position);
         if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-          if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+          if (document.has(VECTOR_EMBEDDING_FIELD)) {
             throw ErrorCodeV1.INVALID_USAGE_OF_VECTORIZE.toApiException(
                 "issue in document at position %d", (position + 1));
           }
           final JsonNode jsonNode =
               document.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
           if (jsonNode.isNull()) {
-            ((ObjectNode) document)
-                .put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
+            ((ObjectNode) document).put(VECTOR_EMBEDDING_FIELD, (String) null);
             continue;
           }
           if (!jsonNode.isTextual()) {
@@ -83,8 +85,7 @@ public class DataVectorizer {
 
           String vectorizeData = jsonNode.asText();
           if (vectorizeData.isBlank()) {
-            ((ObjectNode) document)
-                .put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
+            ((ObjectNode) document).put(VECTOR_EMBEDDING_FIELD, (String) null);
             continue;
           }
 
@@ -113,14 +114,15 @@ public class DataVectorizer {
                 vectorData -> {
                   final VectorConfig vectorConfig = schemaObject.vectorConfig();
                   // This will be the first element for collection
-                  final VectorConfig.ColumnVectorDefinition collectionVectorDefinition =
-                      vectorConfig.columnVectorDefinitions().get(0);
+                  // TODO: AARON - this code had no null projection, now throws if not present
+                  final VectorColumnDefinition collectionVectorDefinition =
+                      vectorConfig.getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
 
                   // check if we get back the same number of vectors that we asked for
                   if (vectorData.size() != vectorizeTexts.size()) {
                     throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                         "Embedding provider '%s' didn't return the expected number of embeddings. Expect: '%d'. Actual: '%d'",
-                        collectionVectorDefinition.vectorizeConfig().provider(),
+                        collectionVectorDefinition.vectorizeDefinition().provider(),
                         vectorizeTexts.size(),
                         vectorData.size());
                   }
@@ -134,7 +136,7 @@ public class DataVectorizer {
                     if (vector.length != collectionVectorDefinition.vectorSize()) {
                       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                           "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                          collectionVectorDefinition.vectorizeConfig().provider(),
+                          collectionVectorDefinition.vectorizeDefinition().provider(),
                           collectionVectorDefinition.vectorSize(),
                           vector.length);
                     }
@@ -142,8 +144,7 @@ public class DataVectorizer {
                     for (float listValue : vector) {
                       arrayNode.add(nodeFactory.numberNode(listValue));
                     }
-                    ((ObjectNode) document)
-                        .put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, arrayNode);
+                    ((ObjectNode) document).put(VECTOR_EMBEDDING_FIELD, arrayNode);
                   }
                   return true;
                 });
@@ -176,14 +177,15 @@ public class DataVectorizer {
             vectorData -> {
               final VectorConfig vectorConfig = schemaObject.vectorConfig();
               // This will be the first element for collection
-              final VectorConfig.ColumnVectorDefinition collectionVectorDefinition =
-                  vectorConfig.columnVectorDefinitions().get(0);
+              // TODO: AARON - this code had no null projection, now throws if not present
+              final VectorColumnDefinition collectionVectorDefinition =
+                  vectorConfig.getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
               float[] vector = vectorData.get(0);
               // check if vector have the expected size
               if (vector.length != collectionVectorDefinition.vectorSize()) {
                 throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                     "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                    collectionVectorDefinition.vectorizeConfig().provider(),
+                    collectionVectorDefinition.vectorizeDefinition().provider(),
                     collectionVectorDefinition.vectorSize(),
                     vector.length);
               }
@@ -223,13 +225,14 @@ public class DataVectorizer {
                   float[] vector = vectorData.get(0);
                   final VectorConfig vectorConfig = schemaObject.vectorConfig();
                   // This will be the first element for collection
-                  final VectorConfig.ColumnVectorDefinition collectionVectorDefinition =
-                      vectorConfig.columnVectorDefinitions().get(0);
+                  // TODO: AARON - this code had no null projection, now throws if not present
+                  final VectorColumnDefinition collectionVectorDefinition =
+                      vectorConfig.getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
                   // check if vector have the expected size
                   if (vector.length != collectionVectorDefinition.vectorSize()) {
                     throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                         "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                        collectionVectorDefinition.vectorizeConfig().provider(),
+                        collectionVectorDefinition.vectorizeDefinition().provider(),
                         collectionVectorDefinition.vectorSize(),
                         vector.length);
                   }
@@ -241,6 +244,174 @@ public class DataVectorizer {
       return Uni.createFrom().item(true);
     } catch (JsonApiException e) {
       return Uni.createFrom().failure(e);
+    }
+  }
+
+  public <T> Uni<T> vectorizeTasks(
+      T uniObject, List<VectorizeTask> tasks, EmbeddingProvider.EmbeddingRequestType requestType) {
+    Objects.requireNonNull(tasks, "tasks must not be null");
+
+    if (tasks.isEmpty()) {
+      return Uni.createFrom().item(uniObject);
+    }
+
+    // HACK: currently we only support one embedding provider because collections only supported one
+    // so quick check here that we only have one, and then use it's name as the name to blame if
+    // anything
+    // goes wrong :)
+    var embeddingProviderNames =
+        tasks.stream()
+            .map(task -> task.vectorType.getVectorizeDefinition().provider())
+            .distinct()
+            .toList();
+    if (embeddingProviderNames.size() != 1) {
+      throw new IllegalArgumentException(
+          "Must be single embedding provider name, got " + embeddingProviderNames);
+    }
+
+    var textToVectorize = tasks.stream().map(VectorizeTask::getVectorizeText).toList();
+
+    return vectorizeTexts(textToVectorize, embeddingProviderNames.getFirst(), requestType)
+        .onItem()
+        .transform(
+            vectorData -> {
+              for (int i = 0; i < vectorData.size(); i++) {
+                tasks.get(i).setVector(vectorData.get(i));
+              }
+              return uniObject;
+            });
+  }
+
+  private Uni<List<float[]>> vectorizeTexts(
+      List<String> textsToVectorize,
+      String providerName,
+      EmbeddingProvider.EmbeddingRequestType requestType) {
+
+    // Copied from vectorize(List<JsonNode> documents) above leaving as is for now
+    if (embeddingProvider == null) {
+      throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
+          schemaObject.name().table());
+    }
+
+    return embeddingProvider
+        .vectorize(1, textsToVectorize, embeddingCredentials, requestType)
+        .map(EmbeddingProvider.Response::embeddings)
+        .onItem()
+        .transform(
+            vectorData -> {
+              // Copied from vectorize(List<JsonNode> documents) above leaving as is for now
+              if (vectorData.size() != textsToVectorize.size()) {
+                throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
+                    "Embedding provider '%s' didn't return the expected number of embeddings. Expect: '%d'. Actual: '%d'",
+                    providerName, textsToVectorize.size(), vectorData.size());
+              }
+              return vectorData;
+            });
+  }
+
+  /**
+   * A task to vectorize a single field in a document
+   *
+   * <p>NOTE: aaron - 5 - nove 2024 this was added for tables so we did not change the collection
+   * code, we should refactor to use this pattern for the collection code as well.
+   */
+  public static class VectorizeTask {
+
+    private final ObjectNode parentObject;
+    final ApiColumnDef columnDef;
+    final ApiVectorType vectorType;
+
+    public VectorizeTask(ObjectNode parentObject, ApiColumnDef columnDef) {
+      this.parentObject = parentObject;
+      // Parent can be null if a subclass wants to handle updating the target.
+      this.columnDef = columnDef;
+      // sanity checks
+
+      if (columnDef.type().typeName() != ApiTypeName.VECTOR) {
+        throw new IllegalArgumentException(
+            "Column must be of type VECTOR, columnDef: " + columnDef);
+      }
+      this.vectorType = (ApiVectorType) columnDef.type();
+      Objects.requireNonNull(
+          vectorType.getVectorizeDefinition(),
+          "vectorType.getVectorizeDefinition() must not be null");
+    }
+
+    /**
+     * Call to get the text this task wants to be vectorized
+     *
+     * @return Text to be vectorized
+     */
+    public String getVectorizeText() {
+      return parentObject.get(columnDef.jsonKey()).asText();
+    }
+
+    /**
+     * Call to get this task to set the vector that was created to replace the text.
+     *
+     * @param vector vector to replace the text with
+     */
+    public void setVector(float[] vector) {
+      validateVector(vector);
+      updateTarget(vector);
+    }
+
+    /** Validate the vector length against the definition of what we expected. */
+    private void validateVector(float[] vector) {
+      // Copied from vectorize(List<JsonNode> documents) above leaving as is for now - aaron
+      if (vector.length != vectorType.getDimension()) {
+        throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
+            "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
+            vectorType.getVectorizeDefinition().provider(),
+            vectorType.getDimension(),
+            vector.length);
+      }
+    }
+
+    /**
+     * Update the target with the vector, subclasses should override this if they want to write the
+     * vector somewhere
+     */
+    private void updateTarget(float[] vector) {
+      Objects.requireNonNull(parentObject, "parentObject must not be null");
+
+      var arrayNode = JsonNodeFactory.instance.arrayNode(vector.length);
+      for (float v : vector) {
+        arrayNode.add(JsonNodeFactory.instance.numberNode(v));
+      }
+
+      parentObject.put(columnDef.jsonKey(), arrayNode);
+    }
+  }
+
+  /** Vector class for a sort expression */
+  public static class SortVectorizeTask extends VectorizeTask {
+
+    private final SortClause sortClause;
+    private final SortExpression sortExpression;
+
+    SortVectorizeTask(
+        SortClause sortClause, SortExpression sortExpression, ApiColumnDef columnDef) {
+      super(null, columnDef);
+      this.sortClause = Objects.requireNonNull(sortClause, "sortClause must not be null");
+      this.sortExpression =
+          Objects.requireNonNull(sortExpression, "sortExpression must not be null");
+    }
+
+    @Override
+    public String getVectorizeText() {
+      return sortExpression.vectorize();
+    }
+
+    @Override
+    public void setVector(float[] vector) {
+      // Changes from vectorize(SortClause sortClause) above, it cleared the list this is replacing
+      // the
+      // sort expression in the list.
+      var i = sortClause.sortExpressions().indexOf(sortExpression);
+      sortClause
+          .sortExpressions()
+          .set(i, SortExpression.tableVectorSort(sortExpression.path(), vector));
     }
   }
 }

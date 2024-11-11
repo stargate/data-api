@@ -8,18 +8,18 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,7 +31,6 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
   public Class<CreateIndexCommand> getCommandClass() {
     return CreateIndexCommand.class;
   }
-  ;
 
   @Override
   public Operation resolveTableCommand(
@@ -55,9 +54,6 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
     Boolean caseSensitive = definitionOptions != null ? definitionOptions.caseSensitive() : null;
     Boolean normalize = definitionOptions != null ? definitionOptions.normalize() : null;
     Boolean ascii = definitionOptions != null ? definitionOptions.ascii() : null;
-    SimilarityFunction similarityFunction =
-        definitionOptions != null ? definitionOptions.metric() : null;
-    String sourceModel = definitionOptions != null ? definitionOptions.sourceModel() : null;
     if (definitionOptions != null) {
       // Validate Options
       if (!columnMetadata.getType().equals(DataTypes.TEXT)) {
@@ -68,49 +64,33 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
                   "`caseSensitive`, `normalize` and `ascii` options are valid only for `text` column"));
         }
       }
-      if (!(columnMetadata.getType() instanceof VectorType)) {
-        if (similarityFunction != null || sourceModel != null) {
-          throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
-              Map.of(
-                  "reason",
-                  "`metric` and `sourceModel` options are valid only for `vector` type column"));
-        }
-      } else {
-        if (similarityFunction != null && sourceModel != null) {
-          throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
-              Map.of(
-                  "reason",
-                  "Only one of `metric` or `sourceModel` options should be used for `vector` type column"));
-        }
-        if (sourceModel != null && !VectorConstant.SUPPORTED_SOURCES.contains(sourceModel)) {
-          throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
-              Map.of(
-                  "reason",
-                  "Invalid `sourceModel`. Supported source models are: "
-                      + VectorConstant.SUPPORTED_SOURCES));
-        }
+    }
+
+    // Validate non vector
+    if (columnMetadata.getType() instanceof VectorType) {
+      if (caseSensitive != null || normalize != null || ascii != null) {
+        throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
+            Map.of(
+                "reason", "Use `createVectorIndex` command to create index on vector type column"));
       }
     }
 
     // Command level option for ifNotExists
-    boolean ifNotExists = false;
-    final CreateIndexCommand.Options commandOptions = command.options();
-    if (commandOptions != null && commandOptions.ifNotExists() != null) {
-      ifNotExists = commandOptions.ifNotExists();
-    }
+    boolean ifNotExists =
+        Optional.ofNullable(command.options())
+            .map(CreateIndexCommand.Options::ifNotExists)
+            .orElse(false);
 
-    // Default Similarity Function to COSINE
-    if (columnMetadata.getType() instanceof VectorType
-        && similarityFunction == null
-        && sourceModel == null) {
-      similarityFunction = SimilarityFunction.COSINE;
-    }
-
+    final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
+        new SchemaAttempt.SchemaRetryPolicy(
+            ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
+            Duration.ofMillis(
+                ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
     var attempt =
-        new CreateIndexAttemptBuilder(0, ctx.schemaObject(), columnName, indexName)
+        new CreateIndexAttemptBuilder(
+                0, ctx.schemaObject(), columnName, indexName, schemaRetryPolicy)
             .ifNotExists(ifNotExists)
             .textIndexOptions(caseSensitive, normalize, ascii)
-            .vectorIndexOptions(similarityFunction, sourceModel)
             .build();
     var attempts = new OperationAttemptContainer<>(List.of(attempt));
     var pageBuilder =

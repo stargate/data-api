@@ -1,10 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
-import static org.hamcrest.Matchers.is;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -41,7 +41,7 @@ public class TableFeatureDisabledIntegrationTest extends AbstractTableIntegratio
   @Order(1)
   @Test
   public void failCreateWithoutFeatureEnabled() {
-    DataApiCommandSenders.assertNamespaceCommand(keyspaceName)
+    assertNamespaceCommand(keyspaceName)
         .postCreateTable(simpleTableDef(TABLE_TO_CREATE))
         .hasSingleApiError(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED);
   }
@@ -50,18 +50,17 @@ public class TableFeatureDisabledIntegrationTest extends AbstractTableIntegratio
   @Order(2)
   @Test
   public void okCreateWithFeatureEnabledViaHeader() {
-    DataApiCommandSenders.assertNamespaceCommand(keyspaceName)
+    assertNamespaceCommand(keyspaceName)
         .header(ApiFeature.TABLES.httpHeaderName(), "true")
         .postCreateTable(simpleTableDef(TABLE_TO_CREATE))
-        .hasNoErrors()
-        .body("status.ok", is(1));
+        .wasSuccessful();
   }
 
   // But even with table, find() should fail without Feature enabled
   @Order(3)
   @Test
   public void failFindWithoutFeature() {
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_TO_CREATE)
+    assertTableCommand(keyspaceName, TABLE_TO_CREATE)
         .postFindOne("{}")
         .hasSingleApiError(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED);
   }
@@ -70,10 +69,10 @@ public class TableFeatureDisabledIntegrationTest extends AbstractTableIntegratio
   @Order(4)
   @Test
   public void okFindWithFeatureEnabledViaHeader() {
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_TO_CREATE)
+    assertTableCommand(keyspaceName, TABLE_TO_CREATE)
         .header(ApiFeature.TABLES.httpHeaderName(), "true")
         .postFindOne("{}")
-        .hasNoErrors();
+        .wasSuccessful();
   }
 
   private static String simpleTableDef(String tableName) {

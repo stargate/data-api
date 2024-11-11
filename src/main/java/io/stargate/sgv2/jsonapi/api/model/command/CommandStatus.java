@@ -102,5 +102,31 @@ public enum CommandStatus {
    * definitions as the is used in createTable command.
    */
   @JsonProperty("primaryKeySchema")
-  PRIMARY_KEY_SCHEMA;
+  PRIMARY_KEY_SCHEMA,
+
+  /**
+   * The schema of the columns that were requested in the projection.
+   *
+   * <p>When doing a read, the result of the read by default does not columns that have null values.
+   * Additionally, in the default JSON representation multiple Column types may be represented as a
+   * single JSON type, such as dates, timestamps, duration all represented as a string. Or all
+   * numeric types as a JSON number.
+   *
+   * <p>Clients can use the schema returned here to understand where null values were omitted and
+   * what the database type of the column is.
+   */
+  @JsonProperty("projectionSchema")
+  PROJECTION_SCHEMA,
+
+  /**
+   * The count of the number of rows that were read from the database and sorted in memory.
+   *
+   * <p>Sorting in memory is done when a sort clause uses columns that are not from the partition
+   * sort key. This type of sorting usually needs to read the entire table to sort the rows, and
+   * needs to keep in memory the skip + limit number of rows. Check documentation for ways to avoid
+   * in memory sorting.
+   */
+  @JsonProperty("sortedRowCount")
+  SORTED_ROW_COUNT,
+  ;
 }

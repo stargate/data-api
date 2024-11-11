@@ -3,19 +3,20 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
-import com.fasterxml.jackson.core.Base64Variants;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
-import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.exception.catchable.ToJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.ToJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import io.stargate.sgv2.jsonapi.util.Base64Util;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.time.DateTimeException;
+import java.time.Instant;
 import java.util.function.Function;
 
 /**
@@ -331,13 +332,12 @@ public record JSONCodec<JavaT, CqlT>(
 
     static ByteBuffer byteBufferFromEJSON(DataType targetCQLType, EJSONWrapper wrapper)
         throws ToCQLCodecException {
-      if (wrapper.type() != EJSONWrapper.EJSONType.BINARY) {
-        throw new ToCQLCodecException(
-            wrapper,
-            targetCQLType,
-            "Unsupported EJSON type '%s': only '%s' supported"
-                .formatted(wrapper.type().key(), EJSONWrapper.EJSONType.BINARY.key()));
-      }
+      return ByteBuffer.wrap(byteArrayFromEJSON(targetCQLType, wrapper));
+    }
+
+    static byte[] byteArrayFromEJSON(DataType targetCQLType, EJSONWrapper wrapper)
+        throws ToCQLCodecException {
+      verifyEJSONType(wrapper, targetCQLType, EJSONWrapper.EJSONType.BINARY);
       JsonNode value = wrapper.value();
       byte[] binaryPayload;
 
@@ -345,10 +345,15 @@ public record JSONCodec<JavaT, CqlT>(
         if (value.isBinary()) {
           binaryPayload = value.binaryValue();
         } else if (value.isTextual()) {
-          // Jackson supports multiple optimized variants: MIME, PEM, MODIFIED_FOR_URL
-          // but MIME_NO_LINEFEEDS is the most common (and default).
-          // Most variation on encoding side; for decoding less difference
-          binaryPayload = Base64Variants.MIME_NO_LINEFEEDS.decode(value.textValue());
+          try {
+            binaryPayload = Base64Util.decodeFromMimeBase64(value.textValue());
+          } catch (IllegalArgumentException e) {
+            throw new ToCQLCodecException(
+                wrapper,
+                targetCQLType,
+                "Unsupported JSON value in EJSON $binary wrapper: String not valid Base64-encoded content, problem: %s"
+                    .formatted(e.getMessage()));
+          }
         } else {
           throw new ToCQLCodecException(
               wrapper,
@@ -363,7 +368,7 @@ public record JSONCodec<JavaT, CqlT>(
             "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String; problem: %s"
                 .formatted(e.getMessage()));
       }
-      return ByteBuffer.wrap(binaryPayload);
+      return binaryPayload;
     }
 
     static InetAddress inetAddressFromString(String value) throws IllegalArgumentException {
@@ -371,6 +376,33 @@ public record JSONCodec<JavaT, CqlT>(
         return InetAddress.getByName(value);
       } catch (UnknownHostException e) {
         throw new IllegalArgumentException("Invalid IP address value '%s'".formatted(value));
+      }
+    }
+
+    static Instant instantFromEJSON(DataType targetCQLType, EJSONWrapper wrapper)
+        throws ToCQLCodecException {
+      verifyEJSONType(wrapper, targetCQLType, EJSONWrapper.EJSONType.DATE);
+      JsonNode value = wrapper.value();
+
+      if (!value.isNumber()) {
+        throw new ToCQLCodecException(
+            wrapper,
+            targetCQLType,
+            "Unsupported JSON value type in EJSON $date wrapper (%s): only NUMBER allowed"
+                .formatted(value.getNodeType()));
+      }
+      return Instant.ofEpochMilli(value.longValue());
+    }
+
+    private static void verifyEJSONType(
+        EJSONWrapper wrapper, DataType targetCQLType, EJSONWrapper.EJSONType expectedType)
+        throws ToCQLCodecException {
+      if (wrapper.type() != expectedType) {
+        throw new ToCQLCodecException(
+            wrapper,
+            targetCQLType,
+            "Unsupported EJSON type '%s': only '%s' supported"
+                .formatted(wrapper.type().key(), expectedType.key()));
       }
     }
   }

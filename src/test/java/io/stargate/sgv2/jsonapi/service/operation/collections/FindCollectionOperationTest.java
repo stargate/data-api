@@ -28,12 +28,14 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
@@ -53,7 +55,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -83,13 +84,13 @@ public class FindCollectionOperationTest extends OperationTestBase {
                 SCHEMA_OBJECT_NAME,
                 null,
                 IdConfig.defaultIdConfig(),
-                new VectorConfig(
-                    true,
+                VectorConfig.fromColumnDefinitions(
                     List.of(
-                        new VectorConfig.ColumnVectorDefinition(
+                        new VectorColumnDefinition(
                             DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                             -1,
                             SimilarityFunction.COSINE,
+                            SourceModel.OTHER,
                             null))),
                 null),
             null,
@@ -312,9 +313,9 @@ public class FindCollectionOperationTest extends OperationTestBase {
       assertThat(result.data().getResponseDocuments())
           .hasSize(2)
           .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
-      assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
-      assertThat(result.status()).isNull();
+      assertThat(result.status()).isEmpty();
+      ;
     }
 
     @Test
@@ -2715,6 +2716,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+
       FindCollectionOperation operation =
           FindCollectionOperation.vsearch(
               VECTOR_COMMAND_CONTEXT,
@@ -2746,7 +2748,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
           .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
-      assertThat(result.status()).isNull();
+      assertThat(result.status()).isEmpty();
     }
 
     @Test
@@ -2981,13 +2983,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
       CommandResult.Error error =
           ThrowableToErrorMapper.getMapperWithMessageFunction()
               .apply(failure, failure.getMessage());
-      AssertionsForClassTypes.assertThat(error).isNotNull();
-      AssertionsForClassTypes.assertThat(error.fields().get("errorCode"))
-          .isEqualTo("SERVER_READ_FAILED");
-      AssertionsForClassTypes.assertThat(error.fields().get("exceptionClass"))
-          .isEqualTo("JsonApiException");
-      AssertionsForClassTypes.assertThat(error.httpStatus()).isEqualTo(Response.Status.BAD_GATEWAY);
-      AssertionsForClassTypes.assertThat(error.message())
+      assertThat(error).isNotNull();
+      assertThat(error.fields().get("errorCode")).isEqualTo("SERVER_READ_FAILED");
+      assertThat(error.fields().get("exceptionClass")).isEqualTo("JsonApiException");
+      assertThat(error.httpStatus()).isEqualTo(Response.Status.BAD_GATEWAY);
+      assertThat(error.message())
           .startsWith("Database read failed")
           .endsWith(
               "Cassandra failure during read query at consistency ONE (0 responses were required but only 1 replica responded, 1 failed)");

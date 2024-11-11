@@ -4,17 +4,18 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnMetadata;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
+import com.datastax.oss.driver.api.querybuilder.relation.ColumnRelationBuilder;
+import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.term.Term;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
-import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
+import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
-import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import java.util.ArrayList;
@@ -29,18 +30,15 @@ public class InTableFilter extends TableFilter {
   public final Operator operator;
 
   public enum Operator {
-    IN(BuiltConditionPredicate.IN);
-    // TODO NIN
+    IN,
+    NIN;
 
-    public final BuiltConditionPredicate predicate;
-
-    Operator(BuiltConditionPredicate predicate) {
-      this.predicate = predicate;
-    }
+    Operator() {}
 
     public static InTableFilter.Operator from(ValueComparisonOperator operator) {
       return switch (operator) {
         case IN -> IN;
+        case NIN -> NIN;
         default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
       };
     }
@@ -110,5 +108,13 @@ public class InTableFilter extends TableFilter {
   public BuiltCondition get() {
     throw new UnsupportedOperationException(
         "Not supported - will be modified when we migrate collections filters java driver");
+  }
+
+  private Relation applyInOperator(
+      ColumnRelationBuilder<Relation> columnRelationBuilder, List<Term> bindMarkers) {
+    return switch (operator) {
+      case IN -> columnRelationBuilder.in(bindMarkers);
+      case NIN -> columnRelationBuilder.notIn(bindMarkers);
+    };
   }
 }

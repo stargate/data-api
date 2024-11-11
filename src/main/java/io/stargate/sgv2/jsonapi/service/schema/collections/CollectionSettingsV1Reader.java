@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import java.util.List;
 
@@ -23,12 +24,12 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
 
     JsonNode collectionOptionsNode = collectionNode.get(TableCommentConstants.OPTIONS_KEY);
     // construct collectionSettings VectorConfig
-    VectorConfig vectorConfig = VectorConfig.notEnabledVectorConfig();
+    VectorConfig vectorConfig = VectorConfig.NOT_ENABLED_CONFIG;
     JsonNode vector = collectionOptionsNode.path(TableCommentConstants.COLLECTION_VECTOR_KEY);
     if (!vector.isMissingNode()) {
-      VectorConfig.ColumnVectorDefinition columnVectorDefinition =
-          VectorConfig.ColumnVectorDefinition.fromJson(vector, objectMapper);
-      vectorConfig = new VectorConfig(true, List.of(columnVectorDefinition));
+      VectorColumnDefinition vectorColumnDefinition =
+          VectorColumnDefinition.fromJson(vector, objectMapper);
+      vectorConfig = VectorConfig.fromColumnDefinitions(List.of(vectorColumnDefinition));
     }
     // construct collectionSettings IndexingConfig
     CollectionIndexingConfig indexingConfig = null;

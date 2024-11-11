@@ -1,10 +1,17 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.data.CqlVector;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.time.Duration;
 import java.util.*;
 import org.slf4j.Logger;
@@ -32,7 +39,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class OperationAttempt<
         SubT extends OperationAttempt<SubT, SchemaT>, SchemaT extends SchemaObject>
-    implements Comparable<SubT> {
+    implements Comparable<SubT>, PrettyPrintable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OperationAttempt.class);
 
@@ -68,11 +75,15 @@ public abstract class OperationAttempt<
 
   protected final UUID attemptId = UUID.randomUUID();
 
-  private final List<String> warnings = new ArrayList<>();
+  private final List<APIException> warnings = new ArrayList<>();
   private Throwable failure;
 
   // Keep this private, so sub-classes set through setter incase we need to syncronize later
   private OperationStatus status = OperationStatus.UNINITIALIZED;
+
+  // Number of times the operation has been retried, we started with 0 and only increase when we
+  // decide to retry.
+  private int retryCount = 0;
 
   /**
    * Create a new {@link OperationAttempt} with the provided position, schema object and retry
@@ -117,8 +128,9 @@ public abstract class OperationAttempt<
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "execute() - starting subclass={}, {}",
+          "execute() - starting subclass={}, status={}, {}",
           getClass().getSimpleName(),
+          status(),
           positionAndAttemptId());
     }
 
@@ -126,6 +138,7 @@ public abstract class OperationAttempt<
       return Uni.createFrom().item(downcast());
     }
 
+    long startNano = System.nanoTime();
     return Uni.createFrom()
         .item(() -> executeIfInProgress(queryExecutor)) // Wraps any error from execute() into a Uni
         .flatMap(uni -> uni) // Unwrap Uni<Uni<AsyncResultSet>> to Uni<AsyncResultSet>
@@ -138,8 +151,10 @@ public abstract class OperationAttempt<
         .invoke(
             () -> {
               if (LOGGER.isDebugEnabled()) {
+                double durationMs = (System.nanoTime() - startNano) / 1_000_000.0;
                 LOGGER.debug(
-                    "execute() - finished subclass={}, {}",
+                    "execute() - finished durationMs={}, subclass={}, {}",
+                    durationMs,
                     getClass().getSimpleName(),
                     positionAndAttemptId());
               }
@@ -204,12 +219,14 @@ public abstract class OperationAttempt<
     var shouldRetry = retryPolicy.shouldRetry(throwable);
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "decideRetry() shouldRetry={}, {}, for throwable {}",
+          "decideRetry() retryCount={}, retryPolicy.maxRetries={}, shouldRetry={}, {}, for throwable {}",
+          retryCount,
+          retryPolicy.maxRetries(),
           shouldRetry,
           positionAndAttemptId(),
           throwable.toString());
     }
-
+    retryCount++;
     return shouldRetry;
   }
 
@@ -252,6 +269,14 @@ public abstract class OperationAttempt<
         throwable instanceof RuntimeException
             ? exceptionHandler.maybeHandle(schemaObject, (RuntimeException) throwable)
             : throwable;
+
+    if ((handledException == null && throwable != null) && LOGGER.isWarnEnabled()) {
+      // this means we are swallowing an error, may be correct but make sure we warn
+      LOGGER.warn(
+          "onCompletion() - exception handler returned null so error is swallowed, throwable={}, {}",
+          throwable,
+          positionAndAttemptId());
+    }
 
     if (LOGGER.isDebugEnabled()) {
       if (handledException != throwable) {
@@ -305,7 +330,7 @@ public abstract class OperationAttempt<
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "setStatus() status changing from {} to {} for {}",
+          "setStatus() - status changing from {} to {} for {}",
           status(),
           newStatus,
           positionAndAttemptId());
@@ -435,6 +460,12 @@ public abstract class OperationAttempt<
         }
         setStatus(OperationStatus.ERROR);
       }
+    } else if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug(
+          "maybeAddFailure() - will not add failure for {}, because has existing failure={}, attempted new failure={}",
+          positionAndAttemptId(),
+          failure.toString(),
+          throwable.toString());
     }
     return downcast();
   }
@@ -447,11 +478,8 @@ public abstract class OperationAttempt<
    *
    * @param warning The warning message to add, cannot be <code>null</code> or blank.
    */
-  public void addWarning(String warning) {
-    if (warning == null || warning.isBlank()) {
-      throw new IllegalArgumentException("warning cannot be null or blank");
-    }
-    warnings.add(warning);
+  public void addWarning(APIException warning) {
+    warnings.add(Objects.requireNonNull(warning, "warning cannot be null"));
   }
 
   /**
@@ -462,8 +490,20 @@ public abstract class OperationAttempt<
    *
    * @return An unmodifiable list of warnings, never <code>null</code>
    */
-  public List<String> warnings() {
+  public List<APIException> warnings() {
     return List.copyOf(warnings);
+  }
+
+  /**
+   * Called to get the description of the schema to use when building the response.
+   *
+   * @return The optional object that describes the schema, if present the object will be serialised
+   *     to JSON and included in the response status such as {@link
+   *     CommandStatus#PRIMARY_KEY_SCHEMA}. How this is included in the response is up to the {@link
+   *     OperationAttemptPage} that is building the response.
+   */
+  public Optional<ColumnsDescContainer> schemaDescription() {
+    return Optional.empty();
   }
 
   /** helper method to build a string with the position and attemptId, used in logging. */
@@ -471,25 +511,67 @@ public abstract class OperationAttempt<
     return String.format("position=%d, attemptId=%s", position, attemptId);
   }
 
-  @Override
-  public String toString() {
-    return new StringBuilder("OperationAttempt{")
-        .append("subtype={")
-        .append(getClass().getSimpleName())
-        .append("}, ")
-        .append("position=")
-        .append(position)
-        .append(", ")
-        .append("status=")
-        .append(status)
-        .append(", ")
-        .append("attemptId=")
-        .append(attemptId)
-        .append(", ")
-        .append("failure=")
-        .append(failure)
-        .append("}")
-        .toString();
+  protected void logStatement(Logger logger, String prefix, SimpleStatement statement) {
+    //  vectors are very big, so we do not log them at debug they will blow up the logs
+    if (logger.isDebugEnabled()) {
+      var vectorTrimmedValues =
+          statement.getPositionalValues().stream()
+              .map(
+                  value -> {
+                    if (value instanceof CqlVector<?> vector) {
+                      int vectorSize = vector.size();
+                      List<Object> trimmedList = new ArrayList<>();
+
+                      // Add elements up to a maximum of 5 or the actual vector size, whichever is
+                      // smaller
+                      for (int i = 0; i < Math.min(5, vectorSize); i++) {
+                        trimmedList.add(vector.get(i));
+                      }
+                      if (trimmedList.size() < vectorSize) {
+                        trimmedList.add(
+                            "<vector<%s> trimmed, log at trace to get full value>"
+                                .formatted(vector.size()));
+                      }
+                      return trimmedList;
+                    }
+                    return value;
+                  })
+              .toList();
+
+      // ANN OF [-0.042139724, 0.020535178, 0.06071997, 0.06071997, 0.06071997 ... ]
+      var cql = statement.getQuery();
+      int start = cql.indexOf("ANN OF [");
+      if (start > -1) {
+        int end = cql.indexOf("]", start);
+
+        var floatPos = start;
+        for (int i = 0; i < 5; i++) {
+          var nextPos = cql.indexOf(",", floatPos + 1, end);
+          System.out.println(nextPos);
+          if (nextPos > -1) {
+            floatPos = nextPos;
+          } else {
+            floatPos = end; // before ']', this is to include the last float we want to log
+            break;
+          }
+        }
+        cql =
+            cql.substring(0, floatPos)
+                + ", <vector<unknown> trimmed, log at trace to get full value>"
+                + cql.substring(end);
+      }
+      logger.debug(
+          "{} - {}, cql={}, values={}", prefix, positionAndAttemptId(), cql, vectorTrimmedValues);
+    }
+
+    if (logger.isTraceEnabled()) {
+      logger.trace(
+          "{} - {}, cql={}, values={}",
+          prefix,
+          positionAndAttemptId(),
+          statement.getQuery(),
+          statement.getPositionalValues());
+    }
   }
 
   /**
@@ -503,6 +585,23 @@ public abstract class OperationAttempt<
     return Integer.compare(position(), other.position());
   }
 
+  @Override
+  public String toString() {
+    return toString(false);
+  }
+
+  @Override
+  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+    return prettyToStringBuilder
+        .append("position", position)
+        .append("status", status)
+        .append("attemptId", attemptId)
+        .append("schemaObject", schemaObject)
+        .append("retryPolicy", retryPolicy)
+        .append("warnings", warnings)
+        .append("failure", failure);
+  }
+
   /**
    * A policy for retrying an attempt, if the attempt does not want to retry then it should use
    * {@link RetryPolicy#NO_RETRY}.
@@ -510,7 +609,7 @@ public abstract class OperationAttempt<
    * <p>To implement a custom retry policy, subclass this class and override {@link
    * #shouldRetry(Throwable)}.
    */
-  public static class RetryPolicy {
+  public static class RetryPolicy implements PrettyPrintable {
 
     public static final RetryPolicy NO_RETRY = new RetryPolicy();
 
@@ -545,8 +644,27 @@ public abstract class OperationAttempt<
       return delay;
     }
 
+    /**
+     * Called by the OperationAttempt to decide if the attempt should be retried.
+     *
+     * @param throwable The exception raised from called {@link
+     *     #executeStatement(CommandQueryExecutor)} <b>before</b> it has been passed through a
+     *     {@link DriverExceptionHandler}.
+     * @return <code>True</code> if the attempt should be retried, the policy does not need to keep
+     *     track of the retry counts, it only needs to decide if the attempt should be retried.
+     */
     public boolean shouldRetry(Throwable throwable) {
       return false;
+    }
+
+    @Override
+    public String toString() {
+      return toString(false);
+    }
+
+    @Override
+    public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+      return prettyToStringBuilder.append("maxRetries", maxRetries).append("delay", delay);
     }
   }
 }

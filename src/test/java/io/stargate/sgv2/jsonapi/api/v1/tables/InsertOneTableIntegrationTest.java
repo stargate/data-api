@@ -1,11 +1,16 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
+
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistryTestData;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import io.stargate.sgv2.jsonapi.util.Base64Util;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
+import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
@@ -27,88 +32,147 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   static final String TABLE_WITH_INET_COLUMN = "insertOneInetColumnTable";
   static final String TABLE_WITH_LIST_COLUMNS = "insertOneListColumnsTable";
   static final String TABLE_WITH_SET_COLUMNS = "insertOneSetColumnsTable";
+  static final String TABLE_WITH_MAP_COLUMNS = "insertOneMapColumnsTable";
+  static final String TABLE_WITH_VECTOR_COLUMN = "insertOneVectorColumnTable";
 
   final JSONCodecRegistryTestData codecTestData = new JSONCodecRegistryTestData();
 
   @BeforeAll
   public final void createDefaultTables() {
-    createTableWithColumns(
-        TABLE_WITH_TEXT_COLUMNS,
-        Map.of(
-            "idText", "text",
-            "asciiText", "ascii",
-            "varcharText", "text"),
-        "idText");
-    createTableWithColumns(
-        TABLE_WITH_INT_COLUMNS,
-        Map.of(
-            "id", "text",
-            "intValue", "int",
-            "longValue", "bigint",
-            "shortValue", "smallint",
-            "byteValue", "tinyint",
-            "bigIntegerValue", "varint"),
-        "id");
-    createTableWithColumns(
-        TABLE_WITH_FP_COLUMNS,
-        Map.of(
-            "id", "text",
-            "floatValue", "float",
-            "doubleValue", "double",
-            "decimalValue", "decimal"),
-        "id");
-    createTableWithColumns(
-        TABLE_WITH_BINARY_COLUMN, Map.of("id", "text", "binaryValue", "blob"), "id");
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_TEXT_COLUMNS,
+            Map.of(
+                "idText", "text",
+                "asciiText", "ascii",
+                "varcharText", "text"),
+            "idText")
+        .wasSuccessful();
 
-    createTableWithColumns(
-        TABLE_WITH_DATETIME_COLUMNS,
-        Map.of(
-            "id", "text",
-            "dateValue", "date",
-            "durationValue", "duration",
-            "timeValue", "time",
-            "timestampValue", "timestamp"),
-        "id");
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_INT_COLUMNS,
+            Map.of(
+                "id", "text",
+                "intValue", "int",
+                "longValue", "bigint",
+                "shortValue", "smallint",
+                "byteValue", "tinyint",
+                "bigIntegerValue", "varint"),
+            "id")
+        .wasSuccessful();
 
-    createTableWithColumns(
-        TABLE_WITH_UUID_COLUMN,
-        Map.of(
-            "id", "text",
-            "uuidValue", "uuid"),
-        "id");
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_FP_COLUMNS,
+            Map.of(
+                "id", "text",
+                "floatValue", "float",
+                "doubleValue", "double",
+                "decimalValue", "decimal"),
+            "id")
+        .wasSuccessful();
 
-    createTableWithColumns(
-        TABLE_WITH_INET_COLUMN,
-        Map.of(
-            "id", "text",
-            "inetValue", "inet"),
-        "id");
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(TABLE_WITH_BINARY_COLUMN, Map.of("id", "text", "binaryValue", "blob"), "id")
+        .wasSuccessful();
 
-    createTableWithColumns(
-        TABLE_WITH_LIST_COLUMNS,
-        Map.of(
-            "id",
-            "text",
-            "stringList",
-            Map.of("type", "list", "valueType", "text"),
-            "intList",
-            Map.of("type", "list", "valueType", "int"),
-            "doubleList",
-            Map.of("type", "list", "valueType", "double")),
-        "id");
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_DATETIME_COLUMNS,
+            Map.of(
+                "id", "text",
+                "dateValue", "date",
+                "durationValue", "duration",
+                "timeValue", "time",
+                "timestampValue", "timestamp"),
+            "id")
+        .wasSuccessful();
 
-    createTableWithColumns(
-        TABLE_WITH_SET_COLUMNS,
-        Map.of(
-            "id",
-            "text",
-            "intSet",
-            Map.of("type", "set", "valueType", "int"),
-            "doubleSet",
-            Map.of("type", "set", "valueType", "double"),
-            "stringSet",
-            Map.of("type", "set", "valueType", "text")),
-        "id");
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_UUID_COLUMN,
+            Map.of(
+                "id", "text",
+                "uuidValue", "uuid"),
+            "id")
+        .wasSuccessful();
+
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_INET_COLUMN,
+            Map.of(
+                "id", "text",
+                "inetValue", "inet"),
+            "id")
+        .wasSuccessful();
+
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_LIST_COLUMNS,
+            Map.of(
+                "id",
+                "text",
+                "stringList",
+                Map.of("type", "list", "valueType", "text"),
+                "intList",
+                Map.of("type", "list", "valueType", "int"),
+                "doubleList",
+                Map.of("type", "list", "valueType", "double")),
+            "id")
+        .wasSuccessful();
+
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_SET_COLUMNS,
+            Map.of(
+                "id",
+                "text",
+                "intSet",
+                Map.of("type", "set", "valueType", "int"),
+                "doubleSet",
+                Map.of("type", "set", "valueType", "double"),
+                "stringSet",
+                Map.of("type", "set", "valueType", "text")),
+            "id")
+        .wasSuccessful();
+
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_MAP_COLUMNS,
+            Map.of(
+                "id",
+                "text",
+                "intMap",
+                Map.of("type", "map", "keyType", "text", "valueType", "int"),
+                "doubleMap",
+                Map.of("type", "map", "keyType", "ascii", "valueType", "double"),
+                "stringMap",
+                Map.of("type", "map", "keyType", "text", "valueType", "text")),
+            "id")
+        .wasSuccessful();
+
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_VECTOR_COLUMN,
+            Map.of(
+                "id",
+                "text",
+                "vector",
+                Map.of("type", "vector", "valueType", "float", "dimension", 3)),
+            "id")
+        .wasSuccessful();
   }
 
   @Nested
@@ -128,12 +192,15 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                         }
                                         """
               .formatted(STRING_UTF8_WITH_2BYTE_CHAR, STRING_UTF8_WITH_3BYTE_CHAR);
-      insertOneInTable(TABLE_WITH_TEXT_COLUMNS, DOC_JSON);
+      assertTableCommand(keyspaceName, TABLE_WITH_TEXT_COLUMNS)
+          .templated()
+          .insertOne(DOC_JSON)
+          .wasSuccessful();
 
       // And verify that we can read it back
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_TEXT_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_TEXT_COLUMNS)
           .postFindOne("{ \"filter\": { \"idText\": \"abc\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", DOC_JSON);
     }
 
@@ -148,8 +215,10 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                       }
                       """
               .formatted(STRING_UTF8_WITH_2BYTE_CHAR);
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_TEXT_COLUMNS)
-          .postInsertOne(DOC_JSON)
+
+      assertTableCommand(keyspaceName, TABLE_WITH_TEXT_COLUMNS)
+          .templated()
+          .insertOne(DOC_JSON)
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
@@ -164,11 +233,15 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     @Test
     void insertWithIntColumnsZeroFractional() {
       // In goes 5.00
-      insertOneInTable(TABLE_WITH_INT_COLUMNS, intDoc("zero-fraction", "5.00"));
+      assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
+          .templated()
+          .insertOne(intDoc("zero-fraction", "5.00"))
+          .wasSuccessful();
+
       // and out comes 5
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"zero-fraction\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", intDoc("zero-fraction", "5"));
     }
 
@@ -177,11 +250,15 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     @Test
     void insertWithIntColumnsScientificNotation() {
       // In goes 1.23E+02
-      insertOneInTable(TABLE_WITH_INT_COLUMNS, intDoc("scientific-but-int", "1.23E+02"));
+      assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
+          .templated()
+          .insertOne(intDoc("scientific-but-int", "1.23E+02"))
+          .wasSuccessful();
+
       // and out comes 123
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"scientific-but-int\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", intDoc("scientific-but-int", "123"));
     }
 
@@ -189,8 +266,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     @Test
     void failWithNonZeroFractionPlain() {
       // Try with 12.5, should fail
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
-          .postInsertOne(intDoc("non-zero-fraction", "12.5"))
+      assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
+          .templated()
+          .insertOne(intDoc("non-zero-fraction", "12.5"))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
@@ -219,10 +297,14 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     @Test
     void insertWithPlainFPValues() {
       final String docJSON = fpDoc("fpRegular", "0.25", "-2.5", "0.75");
-      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"fpRegular\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", docJSON);
     }
 
@@ -231,18 +313,26 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     void insertWithNaNOk() {
       // First check Float
       String docJSON = fpDoc("floatNan", "\"NaN\"", "0.25", "0.5");
-      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"floatNan\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", docJSON);
 
       // Then double
       docJSON = fpDoc("doubleNan", "-2.5", "\"NaN\"", "0.5");
-      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"doubleNan\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", docJSON);
     }
 
@@ -251,18 +341,26 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     void insertWithPositiveInfOk() {
       // First check Float
       String docJSON = fpDoc("floatInf", "\"Infinity\"", "0.25", "0.5");
-      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"floatInf\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", docJSON);
 
       // Then double
       docJSON = fpDoc("doubleInf", "-2.5", "\"Infinity\"", "0.5");
-      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"doubleInf\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", docJSON);
     }
 
@@ -271,34 +369,43 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     void insertWithNegativeInfOk() {
       // First check Float
       String docJSON = fpDoc("floatNegInf", "\"-Infinity\"", "0.25", "0.5");
-      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"floatNegInf\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", docJSON);
 
       // Then double
       docJSON = fpDoc("doubleNegInf", "-2.5", "\"-Infinity\"", "0.5");
-      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"doubleNegInf\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", docJSON);
     }
 
     @Test
     void failWithUnrecognizedString() {
       // First float
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
-          .postInsertOne(fpDoc("floatUnknownString", "\"Bazillion\"", "1.0", "0.5"))
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .templated()
+          .insertOne(fpDoc("floatUnknownString", "\"Bazillion\"", "1.0", "0.5"))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
               " value \"Bazillion\"",
               "Root cause: Unsupported String value: only");
       // Then double
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
-          .postInsertOne(fpDoc("doubleUnknownString", "\"Bazillion\"", "1.0", "0.5"))
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .templated()
+          .insertOne(fpDoc("doubleUnknownString", "\"Bazillion\"", "1.0", "0.5"))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
@@ -306,8 +413,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "Root cause: Unsupported String value: only");
 
       // And finally BigDecimal: different error message because no String values accepted
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
-          .postInsertOne(fpDoc("decimalUnknownString", "0.5", "1.0", "\"Bazillion\""))
+      assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .templated()
+          .insertOne(fpDoc("decimalUnknownString", "0.5", "1.0", "\"Bazillion\""))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
@@ -337,17 +445,21 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     void insertValidBinaryValue() {
       final String docJSON =
           wrappedBinaryDoc("binarySimple", codecTestData.BASE64_PADDED_ENCODED_STR);
-      insertOneInTable(TABLE_WITH_BINARY_COLUMN, docJSON);
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
+      assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+      assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
           .postFindOne("{ \"filter\": { \"id\": \"binarySimple\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", docJSON);
     }
 
     @Test
     void failOnMalformedBase64() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
-          .postInsertOne(wrappedBinaryDoc("binaryBadBase64", "not-valid-base64!!!"))
+      assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
+          .templated()
+          .insertOne(wrappedBinaryDoc("binaryBadBase64", "not-valid-base64!!!"))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
@@ -358,13 +470,15 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     @Test
     void failOnMalformedEJSONWrapper() {
       // Test with number first:
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
-          .postInsertOne(rawBinaryDoc("binaryFromNumber", "1234"))
+      assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
+          .templated()
+          .insertOne(rawBinaryDoc("binaryFromNumber", "1234"))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES, DocumentException.class, "binaryValue");
       // and then with String too; valid Base64, but not EJSON
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
-          .postInsertOne(
+      assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
+          .templated()
+          .insertOne(
               rawBinaryDoc(
                   "binaryFromString", "\"" + codecTestData.BASE64_PADDED_ENCODED_STR + "\""))
           .hasSingleApiError(
@@ -394,22 +508,100 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     void insertValidDateTimeValues() {
       // NOTE: While `CqlDuration.from()` accepts both ISO-8601 "P"-notation (like "PT2H45M")
       //   and Cassandra's standard compact/readable notation (like "2h45m"),
-      //   `CqlDuration.toString()` returns canonical representation so we use the latter here
-      //   to verify round-tripping
-      final String docJSON =
+      //   Output value will be ISO-8601 duration ("P"-notation)
+      final String inputJSON =
           datetimeDoc(
               "datetimeValid", "2024-09-24", "2h45m", "12:45:01.005", "2024-09-24T14:06:59Z");
-      insertOneInTable(TABLE_WITH_DATETIME_COLUMNS, docJSON);
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+      final String outputJSON =
+          datetimeDoc(
+              "datetimeValid", "2024-09-24", "PT2H45M", "12:45:01.005", "2024-09-24T14:06:59Z");
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .templated()
+          .insertOne(inputJSON)
+          .wasSuccessful();
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"datetimeValid\" } }")
-          .hasNoErrors()
-          .hasJSONField("data.document", docJSON);
+          .wasSuccessful()
+          .hasJSONField("data.document", outputJSON);
+    }
+
+    @Test
+    void insertEJSONTimestampValue() {
+      // NOTE: test for alternate input format -- EJSON-wrapper for Collection compatibility
+      // -- for timestamp
+      final long rawTimestamp = 1693036410000L;
+      final String timestampISO8601 = Instant.ofEpochMilli(rawTimestamp).toString();
+      final String inputJSON =
+              """
+          {
+              "id": "datetimeValidAlt",
+              "timestampValue": { "$date":  %d }
+          }
+          """
+              .formatted(rawTimestamp);
+
+      final String outputJSON =
+              """
+           {
+              "id": "datetimeValidAlt",
+              "timestampValue": "%s"
+           }
+           """
+              .formatted(timestampISO8601);
+
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .templated()
+          .insertOne(inputJSON)
+          .wasSuccessful();
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .postFindOne(
+              """
+          {
+             "filter": { "id": "datetimeValidAlt" },
+             "projection": {
+                "id": 1,
+                "timestampValue": 1
+             }
+          }
+          """)
+          .wasSuccessful()
+          .hasJSONField("data.document", outputJSON);
+    }
+
+    @Test
+    void insertValidNegativeDurationValue() {
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .templated()
+          .insertOne(
+                  """
+                    {
+                        "id": "%s",
+                        "durationValue": "%s"
+                    }
+                    """
+                  .formatted("datetimeNegDuration", "-8h10m"))
+          .wasSuccessful();
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .postFindOne(
+              """
+                                  { "filter": { "id": "datetimeNegDuration" },
+                                    "projection": { "durationValue": 1 }
+                                  }
+                              """)
+          .wasSuccessful()
+          .hasJSONField(
+              "data.document",
+                  """
+                    { "durationValue": "%s" }
+                    """
+                  .formatted("-PT8H10M"));
     }
 
     @Test
     void failOnInvalidDateValue() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
-          .postInsertOne(datetimeDoc("datetimeInvalidDate", "xxx", null, null, null))
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .templated()
+          .insertOne(datetimeDoc("datetimeInvalidDate", "xxx", null, null, null))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
@@ -420,8 +612,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
     @Test
     void failOnInvalidDurationValue() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
-          .postInsertOne(datetimeDoc("datetimeInvalidDuration", null, "xxx", null, null))
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .templated()
+          .insertOne(datetimeDoc("datetimeInvalidDuration", null, "xxx", null, null))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
@@ -432,8 +625,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
     @Test
     void failOnInvalidTimeValue() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
-          .postInsertOne(datetimeDoc("datetimeInvalidTime", null, null, "xxx", null))
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .templated()
+          .insertOne(datetimeDoc("datetimeInvalidTime", null, null, "xxx", null))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
@@ -444,8 +638,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
     @Test
     void failOnInvalidTimestampValue() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
-          .postInsertOne(datetimeDoc("datetimeInvalidTimestamp", null, null, null, "xxx"))
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .templated()
+          .insertOne(datetimeDoc("datetimeInvalidTimestamp", null, null, null, "xxx"))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
@@ -488,17 +683,22 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     @Test
     void insertValidUUIDValue() {
       final String docJSON = uuidDoc("uuidValid", "\"123e4567-e89b-12d3-a456-426614174000\"");
-      insertOneInTable(TABLE_WITH_UUID_COLUMN, docJSON);
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_UUID_COLUMN)
+      assertTableCommand(keyspaceName, TABLE_WITH_UUID_COLUMN)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_UUID_COLUMN)
           .postFindOne("{ \"filter\": { \"id\": \"uuidValid\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", docJSON);
     }
 
     @Test
     void failOnInvalidUUIDString() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_UUID_COLUMN)
-          .postInsertOne(uuidDoc("uuidInvalid", "\"xxx\""))
+      assertTableCommand(keyspaceName, TABLE_WITH_UUID_COLUMN)
+          .templated()
+          .insertOne(uuidDoc("uuidInvalid", "\"xxx\""))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
@@ -510,8 +710,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     // Test for non-String input
     @Test
     void failOnInvalidUUIDArray() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_UUID_COLUMN)
-          .postInsertOne(uuidDoc("uuidInvalid", "[1, 2, 3, 4]"))
+      assertTableCommand(keyspaceName, TABLE_WITH_UUID_COLUMN)
+          .templated()
+          .insertOne(uuidDoc("uuidInvalid", "[1, 2, 3, 4]"))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
@@ -538,17 +739,22 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     @Test
     void insertValidInetValue() {
       final String docJSON = inetDoc("inetValid", "\"192.168.5.99\"");
-      insertOneInTable(TABLE_WITH_INET_COLUMN, docJSON);
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_INET_COLUMN)
+      assertTableCommand(keyspaceName, TABLE_WITH_INET_COLUMN)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_INET_COLUMN)
           .postFindOne("{ \"filter\": { \"id\": \"inetValid\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", docJSON);
     }
 
     @Test
     void failOnInvalidInetString() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_INET_COLUMN)
-          .postInsertOne(inetDoc("inetInvalid", "\"xxx\""))
+      assertTableCommand(keyspaceName, TABLE_WITH_INET_COLUMN)
+          .templated()
+          .insertOne(inetDoc("inetInvalid", "\"xxx\""))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
@@ -560,8 +766,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     // Test for non-String input
     @Test
     void failOnInvalidInetArray() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_INET_COLUMN)
-          .postInsertOne(inetDoc("inetInvalid", "[1, 2, 3, 4]"))
+      assertTableCommand(keyspaceName, TABLE_WITH_INET_COLUMN)
+          .templated()
+          .insertOne(inetDoc("inetInvalid", "[1, 2, 3, 4]"))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
@@ -596,25 +803,33 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                         "doubleList": [0.0, -0.5, 3.125]
                       }
                       """;
-      insertOneInTable(TABLE_WITH_LIST_COLUMNS, docJSON);
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"listValidFull\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", docJSON);
 
       // And then just for int-list; null for string, missing double
-      insertOneInTable(
-          TABLE_WITH_LIST_COLUMNS,
+      var insertDoc =
           """
                       { "id": "listValidPartial",
                         "stringList": null,
                         "intList": [3, -999, 42]
                       }
-                      """);
+                      """;
+      assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .templated()
+          .insertOne(insertDoc)
+          .wasSuccessful();
+
       // If we ask for all (select * basically), get explicit empty Lists:
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"listValidPartial\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField(
               "data.document",
               """
@@ -627,14 +842,14 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
       // But if specifically just for intList, get just that
       // NOTE: id column(s) not auto-included unlike with Collections and "_id"
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
           .postFindOne(
               """
                   { "filter": { "id": "listValidPartial" },
                     "projection": { "intList": 1 }
                   }
               """)
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField(
               "data.document",
               """
@@ -646,8 +861,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
     @Test
     void failOnNonArrayListValue() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
-          .postInsertOne(
+      assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .templated()
+          .insertOne(
               """
       {
         "id":"listInvalid",
@@ -664,8 +880,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
     @Test
     void failOnWrongListElementValue() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
-          .postInsertOne(
+      assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .templated()
+          .insertOne(
               """
               {
                 "id":"listInvalid",
@@ -695,10 +912,14 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                         "stringSet": ["abc", "xyz"]
                       }
                       """;
-      insertOneInTable(TABLE_WITH_SET_COLUMNS, docJSON);
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"setValidFull\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           // also: ordering by data store is lexicographic, so differs from input order;
           // plus actual values are sorted as well
           .hasJSONField(
@@ -712,18 +933,21 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                       """);
 
       // And then just for int-list; null for string, missing double
-      insertOneInTable(
-          TABLE_WITH_SET_COLUMNS,
-          """
+      assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .templated()
+          .insertOne(
+              """
                       { "id": "setValidPartial",
                         "stringSet": null,
                         "intSet": [3, -999, 42]
                       }
-                      """);
+                      """)
+          .wasSuccessful();
+
       // If we ask for all (select * basically), get explicit empty Sets:
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"setValidPartial\" } }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField(
               "data.document",
               """
@@ -736,14 +960,14 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
       // But if specifically just for intSet, get just that
       // NOTE: id column(s) not auto-included unlike with Collections and "_id"
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+      assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
           .postFindOne(
               """
                                   { "filter": { "id": "setValidPartial" },
                                     "projection": { "intSet": 1 }
                                   }
                               """)
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField(
               "data.document",
               """
@@ -755,8 +979,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
     @Test
     void failOnNonArraySetValue() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
-          .postInsertOne(
+      assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .templated()
+          .insertOne(
               """
               {
                 "id":"setInvalid",
@@ -773,8 +998,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
     @Test
     void failOnWrongSetElementValue() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
-          .postInsertOne(
+      assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .templated()
+          .insertOne(
               """
               {
                 "id":"setInvalid",
@@ -788,6 +1014,226 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "Error trying to convert to targetCQLType `DOUBLE`",
               // Double is special since there are NaNs represented by Strings
               "Unsupported String value: only");
+    }
+  }
+
+  @Nested
+  @Order(10)
+  class InsertMapColumns {
+    @Test
+    void insertValidMapValues() {
+      // First with values for all fields (note: harder to use helper methods)
+      String docJSON =
+          """
+                          { "id": "mapValidFull",
+                            "doubleMap": {"a": 0.0,  "b":-0.5},
+                            "intMap": {"i1": 1, "i2": 2, "i3": -42},
+                            "stringMap": {"abc": "xyz"}
+                          }
+                          """;
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"mapValidFull\" } }")
+          .wasSuccessful()
+          .hasJSONField("data.document", docJSON);
+
+      // And then just for int-Map; null for string, missing double
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(
+              """
+                              { "id": "mapValidPartial",
+                                "stringMap": null,
+                                "intMap": {"a": 3, "b": -999, "c": 42}
+                              }
+                              """)
+          .wasSuccessful();
+
+      // If we ask for all (select * basically), get explicit empty Maps:
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"mapValidPartial\" } }")
+          .wasSuccessful()
+          .hasJSONField(
+              "data.document",
+              """
+                                      { "id": "mapValidPartial",
+                                        "doubleMap": { },
+                                        "intMap": {"a": 3, "b": -999, "c": 42},
+                                        "stringMap": { }
+                                      }
+                                      """);
+
+      // But if specifically just for intMap, get just that
+      // NOTE: id column(s) not auto-included unlike with Collections and "_id"
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .postFindOne(
+              """
+                                          { "filter": { "id": "mapValidPartial" },
+                                            "projection": { "intMap": 1 }
+                                          }
+                                      """)
+          .wasSuccessful()
+          .hasJSONField(
+              "data.document",
+              """
+                                      {
+                                        "intMap": {"a": 3, "b": -999, "c": 42}
+                                      }
+                                      """);
+    }
+
+    @Test
+    void failOnNonObjectForMap() {
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(
+              """
+                      {
+                        "id":"mapInvalid",
+                        "intMap":"abc"
+                      }
+                      """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `Map(TEXT => INT",
+              "no codec matching value type");
+    }
+
+    @Test
+    void failOnWrongMapValueType() {
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(
+              """
+                      {
+                        "id":"mapInvalid",
+                        "intMap":{"i1": "abc"}
+                      }
+                      """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `INT`",
+              "actual value type `java.lang.String`");
+    }
+  }
+
+  @Nested
+  @Order(11)
+  class InsertVectorColumns {
+    @Test
+    void insertValidVectorValueUsingList() {
+      String docJSON =
+          """
+                      { "id": "vectorValid",
+                        "vector": [0.0, -0.5, 3.125]
+                      }
+                      """;
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .postFindOne("{ \"filter\": { \"id\": \"vectorValid\" } }")
+          .wasSuccessful()
+          .hasJSONField("data.document", docJSON);
+    }
+
+    @Test
+    void insertValidVectorValueUsingBase64() {
+      final float[] floats = {1.0f, -0.5f, 2.5f};
+      final byte[] floatsAsBytes = CqlVectorUtil.floatsToBytes(floats);
+
+      String inputJSON =
+              """
+                          { "id": "vectorValidBase64",
+                            "vector": {"$binary": "%s"}
+                          }
+                          """
+              .formatted(Base64Util.encodeAsMimeBase64(floatsAsBytes));
+      // Base64-encoded float array used in input but will be read back as Array:
+      String expJSON =
+          """
+                          { "id": "vectorValidBase64",
+                            "vector": [1.0, -0.5, 2.5]
+                          }
+                          """;
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .templated()
+          .insertOne(inputJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .postFindOne("{ \"filter\": { \"id\": \"vectorValidBase64\" } }")
+          .wasSuccessful()
+          .hasJSONField("data.document", expJSON);
+    }
+
+    @Test
+    void failOnNonArrayVectorValue() {
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .templated()
+          .insertOne(
+              """
+              {
+                "id": "vectorInvalid",
+                "vector": "abc"
+              }
+              """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `Vector(FLOAT",
+              "no codec matching value type");
+    }
+
+    @Test
+    void failOnWrongVectorElementValue() {
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .templated()
+          .insertOne(
+              """
+                      {
+                        "id":" vectorInvalid",
+                        "vector": ["abc", 123, false]
+                      }
+                      """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `Vector(FLOAT",
+              "expected JSON Number value as Vector element at position #0");
+    }
+
+    @Test
+    void failOnVectorSizeMismatch() {
+      // Exp 3, but only gets 2:
+      final byte[] floatsAsBytes = CqlVectorUtil.floatsToBytes(new float[] {1.0f, -0.5f});
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .templated()
+          .insertOne(
+                  """
+                      { "id": "vectorValidBase64",
+                        "vector": {"$binary": "%s"}
+                      }
+                      """
+                  .formatted(Base64Util.encodeAsMimeBase64(floatsAsBytes)))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `Vector(FLOAT",
+              "expected vector of length 3, got one with 2 elements");
     }
   }
 }

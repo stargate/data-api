@@ -13,7 +13,6 @@ import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.NotSupportedException;
 import jakarta.ws.rs.WebApplicationException;
-import java.util.List;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
@@ -44,7 +43,10 @@ public class WebApplicationExceptionMapper {
       var errorBuilder =
           new APIExceptionCommandErrorBuilder(
               debugModeConfig.enabled(), operationsConfig.extendError());
-      return RestResponse.ok(new CommandResult(List.of(errorBuilder.apply(ae))));
+      return RestResponse.ok(
+          CommandResult.statusOnlyBuilder(false, false)
+              .addCommandResultError(errorBuilder.buildLegacyCommandResultError(ae))
+              .build());
     }
 
     CommandResult commandResult = new ThrowableCommandResultSupplier(toReport).get();

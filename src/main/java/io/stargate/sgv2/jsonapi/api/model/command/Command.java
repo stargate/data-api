@@ -39,47 +39,61 @@ public interface Command {
 
   /** Enum class for API command name. This is what user uses for command json body. */
   enum CommandName {
-    COUNT_DOCUMENTS("countDocuments"),
-    CREATE_COLLECTION("createCollection"),
-    CREATE_INDEX("createIndex"),
-    CREATE_KEYSPACE("createKeyspace"),
-    CREATE_NAMESPACE("createNamespace"),
-    CREATE_TABLE("createTable"),
-    DELETE_COLLECTION("deleteCollection"),
-    DELETE_MANY("deleteMany"),
-    DELETE_ONE("deleteOne"),
-    DROP_INDEX("dropIndex"),
-    DROP_NAMESPACE("dropNamespace"),
-    DROP_KEYSPACE("dropKeyspace"),
-    DROP_TABLE("dropTable"),
-    ESTIMATED_DOCUMENT_COUNT("estimatedDocumentCount"),
-    FIND_COLLECTIONS("findCollections"),
-    FIND("find"),
-    FIND_EMBEDDING_PROVIDERS("findEmbeddingProviders"),
-    FIND_NAMESPACES("findNamespaces"),
-    FIND_KEYSPACES("findKeyspaces"),
-    FIND_ONE_AND_DELETE("findOneAndDelete"),
-    FIND_ONE_AND_REPLACE("findOneAndReplace"),
-    FIND_ONE_AND_UPDATE("findOneAndUpdate"),
-    FIND_ONE("findOne"),
-    INSERT_MANY("insertMany"),
-    INSERT_ONE("insertOne"),
-    LIST_TABLES("listTables"),
-    UPDATE_MANY("updateMany"),
-    UPDATE_ONE("updateOne"),
-    BEGIN_OFFLINE_SESSION("beginOfflineSession"),
-    END_OFFLINE_SESSION("endOfflineSession"),
-    OFFLINE_GET_STATUS("offlineGetStatus"),
-    OFFLINE_INSERT_MANY("offlineInsertMany");
+    ALTER_TABLE("alterTable", CommandType.DDL),
+    COUNT_DOCUMENTS("countDocuments", CommandType.DML),
+    CREATE_COLLECTION("createCollection", CommandType.DDL),
+    CREATE_INDEX("createIndex", CommandType.DDL),
+    CREATE_VECTOR_INDEX("createVectorIndex", CommandType.DDL),
+    CREATE_KEYSPACE("createKeyspace", CommandType.DDL),
+    CREATE_NAMESPACE("createNamespace", CommandType.DDL),
+    CREATE_TABLE("createTable", CommandType.DDL),
+    DELETE_COLLECTION("deleteCollection", CommandType.DDL),
+    DELETE_MANY("deleteMany", CommandType.DML),
+    DELETE_ONE("deleteOne", CommandType.DML),
+    DROP_INDEX("dropIndex", CommandType.DML),
+    DROP_NAMESPACE("dropNamespace", CommandType.DDL),
+    DROP_KEYSPACE("dropKeyspace", CommandType.DDL),
+    DROP_TABLE("dropTable", CommandType.DDL),
+    ESTIMATED_DOCUMENT_COUNT("estimatedDocumentCount", CommandType.DML),
+    FIND_COLLECTIONS("findCollections", CommandType.DDL),
+    FIND("find", CommandType.DML),
+    FIND_EMBEDDING_PROVIDERS("findEmbeddingProviders", CommandType.DML),
+    FIND_NAMESPACES("findNamespaces", CommandType.DDL),
+    FIND_KEYSPACES("findKeyspaces", CommandType.DDL),
+    FIND_ONE_AND_DELETE("findOneAndDelete", CommandType.DML),
+    FIND_ONE_AND_REPLACE("findOneAndReplace", CommandType.DML),
+    FIND_ONE_AND_UPDATE("findOneAndUpdate", CommandType.DML),
+    FIND_ONE("findOne", CommandType.DML),
+    INSERT_MANY("insertMany", CommandType.DML),
+    INSERT_ONE("insertOne", CommandType.DML),
+    LIST_TABLES("listTables", CommandType.DDL),
+    UPDATE_MANY("updateMany", CommandType.DML),
+    UPDATE_ONE("updateOne", CommandType.DML),
+    BEGIN_OFFLINE_SESSION("beginOfflineSession", CommandType.DML),
+    END_OFFLINE_SESSION("endOfflineSession", CommandType.DML),
+    OFFLINE_GET_STATUS("offlineGetStatus", CommandType.DML),
+    OFFLINE_INSERT_MANY("offlineInsertMany", CommandType.DML);
 
     private final String apiName;
+    private final CommandType commandType;
 
-    CommandName(String apiName) {
+    CommandName(String apiName, CommandType commandType) {
       this.apiName = apiName;
+      this.commandType = commandType;
     }
 
     public String getApiName() {
       return apiName;
     }
+
+    public CommandType getCommandType() {
+      return commandType;
+    }
+  }
+
+  /** Enum class for command types. This is used to categorize commands into DDL and DML. */
+  enum CommandType {
+    DDL,
+    DML;
   }
 }

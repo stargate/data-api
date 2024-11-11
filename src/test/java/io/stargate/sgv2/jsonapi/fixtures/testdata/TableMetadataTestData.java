@@ -123,7 +123,7 @@ public class TableMetadataTestData extends TestDataSuplier {
             Map.entry(names.COL_CLUSTERING_KEY_1, DataTypes.TEXT),
             Map.entry(names.COL_CLUSTERING_KEY_2, DataTypes.TEXT),
             Map.entry(names.COL_CLUSTERING_KEY_3, DataTypes.TEXT),
-            // supported datatype columns
+            // primitive datatype columns
             Map.entry(names.CQL_TEXT_COLUMN, DataTypes.TEXT),
             Map.entry(names.CQL_ASCII_COLUMN, DataTypes.ASCII),
             Map.entry(names.CQL_BLOB_COLUMN, DataTypes.BLOB),
@@ -139,10 +139,18 @@ public class TableMetadataTestData extends TestDataSuplier {
             Map.entry(names.CQL_VARINT_COLUMN, DataTypes.VARINT),
             Map.entry(names.CQL_DATE_COLUMN, DataTypes.DATE),
             Map.entry(names.CQL_TIMESTAMP_COLUMN, DataTypes.TIMESTAMP),
-            Map.entry(names.CQL_TIME_COLUMN, DataTypes.TIME)),
+            Map.entry(names.CQL_TIME_COLUMN, DataTypes.TIME),
+            Map.entry(names.CQL_INET_COLUMN, DataTypes.INET),
+            Map.entry(names.CQL_UUID_COLUMN, DataTypes.UUID),
+            Map.entry(names.CQL_TIMEUUID_COLUMN, DataTypes.TIMEUUID),
+            // collection datatype columns
+            Map.entry(names.CQL_SET_COLUMN, DataTypes.setOf(DataTypes.TEXT)),
+            Map.entry(names.CQL_MAP_COLUMN, DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT)),
+            Map.entry(names.CQL_LIST_COLUMN, DataTypes.listOf(DataTypes.TEXT)),
+            Map.entry(names.CQL_VECTOR_COLUMN, DataTypes.vectorOf(DataTypes.FLOAT, 3))),
         ImmutableMap.of(),
         ImmutableMap.ofEntries(
-            // index all datatypes column in the table,(Blob,Duration can NOT be indexed)
+            // index scalar datatypes column in the table,(Blob,Duration can NOT be indexed)
             Map.entry(
                 names.CQL_TEXT_COLUMN_INDEX,
                 indexMetadata(names.CQL_TEXT_COLUMN_INDEX, names.CQL_TEXT_COLUMN)),
@@ -184,7 +192,29 @@ public class TableMetadataTestData extends TestDataSuplier {
                 indexMetadata(names.CQL_TIMESTAMP_COLUMN_INDEX, names.CQL_TIMESTAMP_COLUMN)),
             Map.entry(
                 names.CQL_TIME_COLUMN_INDEX,
-                indexMetadata(names.CQL_TIME_COLUMN_INDEX, names.CQL_TIME_COLUMN))));
+                indexMetadata(names.CQL_TIME_COLUMN_INDEX, names.CQL_TIME_COLUMN)),
+            Map.entry(
+                names.CQL_INET_COLUMN_INDEX,
+                indexMetadata(names.CQL_INET_COLUMN_INDEX, names.CQL_INET_COLUMN)),
+            Map.entry(
+                names.CQL_UUID_COLUMN_INDEX,
+                indexMetadata(names.CQL_UUID_COLUMN_INDEX, names.CQL_UUID_COLUMN)),
+            Map.entry(
+                names.CQL_TIMEUUID_COLUMN_INDEX,
+                indexMetadata(names.CQL_TIMEUUID_COLUMN_INDEX, names.CQL_TIMEUUID_COLUMN)),
+            // index collection datatypes column in the table
+            Map.entry(
+                names.CQL_SET_COLUMN_INDEX,
+                indexMetadata(names.CQL_SET_COLUMN_INDEX, names.CQL_SET_COLUMN)),
+            Map.entry(
+                names.CQL_LIST_COLUMN,
+                indexMetadata(names.CQL_LIST_COLUMN_INDEX, names.CQL_LIST_COLUMN)),
+            Map.entry(
+                names.CQL_MAP_COLUMN_INDEX,
+                indexMetadata(names.CQL_MAP_COLUMN_INDEX, names.CQL_MAP_COLUMN)),
+            Map.entry(
+                names.CQL_VECTOR_COLUMN_INDEX,
+                indexMetadata(names.CQL_VECTOR_COLUMN_INDEX, names.CQL_VECTOR_COLUMN))));
   }
 
   public TableMetadata tableAllDatatypesNotIndexed() {
@@ -226,7 +256,15 @@ public class TableMetadataTestData extends TestDataSuplier {
             Map.entry(names.CQL_VARINT_COLUMN, DataTypes.VARINT),
             Map.entry(names.CQL_DATE_COLUMN, DataTypes.DATE),
             Map.entry(names.CQL_TIMESTAMP_COLUMN, DataTypes.TIMESTAMP),
-            Map.entry(names.CQL_TIME_COLUMN, DataTypes.TIME)),
+            Map.entry(names.CQL_TIME_COLUMN, DataTypes.TIME),
+            Map.entry(names.CQL_INET_COLUMN, DataTypes.INET),
+            Map.entry(names.CQL_UUID_COLUMN, DataTypes.UUID),
+            Map.entry(names.CQL_TIMEUUID_COLUMN, DataTypes.TIMEUUID),
+            // collection datatype columns
+            Map.entry(names.CQL_SET_COLUMN, DataTypes.setOf(DataTypes.TEXT)),
+            Map.entry(names.CQL_MAP_COLUMN, DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT)),
+            Map.entry(names.CQL_LIST_COLUMN, DataTypes.listOf(DataTypes.TEXT)),
+            Map.entry(names.CQL_VECTOR_COLUMN, DataTypes.vectorOf(DataTypes.FLOAT, 3))),
         ImmutableMap.of(),
         ImmutableMap.of());
   }

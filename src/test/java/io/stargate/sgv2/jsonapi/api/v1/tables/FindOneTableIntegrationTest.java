@@ -1,8 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
+
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
@@ -21,16 +23,19 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
 
   @BeforeAll
   public final void createDefaultTables() {
-    createTableWithColumns(
-        TABLE_WITH_STRING_ID_AGE_NAME,
-        Map.of(
-            "id",
-            Map.of("type", "text"),
-            "age",
-            Map.of("type", "int"),
-            "name",
-            Map.of("type", "text")),
-        "id");
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_STRING_ID_AGE_NAME,
+            Map.of(
+                "id",
+                Map.of("type", "text"),
+                "age",
+                Map.of("type", "int"),
+                "name",
+                Map.of("type", "text")),
+            "id")
+        .wasSuccessful();
   }
 
   // On-empty tests to be run before ones that populate tables
@@ -39,15 +44,15 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
   class FindOneOnEmpty {
     @Test
     public void findOnEmptyNoFilter() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+      assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .postFindOne("{ }")
-          .hasNoErrors()
+          .wasSuccessful()
           .hasNoField("data.document");
     }
 
     @Test
     public void findOnEmptyNonMatchingFilter() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+      assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .postFindOne(
               """
                                   {
@@ -56,7 +61,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                                     }
                                   }
                               """)
-          .hasNoErrors()
+          .wasSuccessful()
           .hasNoField("data.document");
     }
   }
@@ -68,15 +73,19 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
     @Order(1)
     public void findOneSingleStringKey() {
       // First, insert 3 documents:
-      insertOneInTable(
-          TABLE_WITH_STRING_ID_AGE_NAME,
+      var docJSON =
           """
                       {
                           "id": "a",
                           "age": 20,
                           "name": "John"
                       }
-                      """);
+                      """;
+      assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+
       final String DOC_B_JSON =
           """
                           {
@@ -85,20 +94,25 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                               "name": "Bob"
                           }
                           """;
-      insertOneInTable(TABLE_WITH_STRING_ID_AGE_NAME, DOC_B_JSON);
+      assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+          .templated()
+          .insertOne(DOC_B_JSON)
+          .wasSuccessful();
 
       // Third one with missing "age" and null "name"
-      insertOneInTable(
-          TABLE_WITH_STRING_ID_AGE_NAME,
+      docJSON =
           """
-                              {
-                                  "id": "c",
-                                  "name": null
-                              }
-                              """);
+              {
+                "id": "c",
+                "name": null
+              }""";
+      assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
 
       // First, find the second document:
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+      assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .postFindOne(
               """
                           {
@@ -107,11 +121,11 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                               }
                           }
                       """)
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", DOC_B_JSON);
 
       // And then third
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+      assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .postFindOne(
               """
                                   {
@@ -123,44 +137,55 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                                         }
                                   }
                               """)
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField(
               "data.document",
-              """
-                              {
-                                  "id": "c",
-                                  "age": null,
-                                  "name": null
-                              }
-                              """);
+              // By default, null values are not returned
+              removeNullValues(
+                  """
+                                  {
+                                      "id": "c",
+                                      "age": null,
+                                      "name": null
+                                  }
+                                  """));
     }
 
     @Test
     @Order(2)
     public void findOneDocUpperCaseKey() {
       final String TABLE_NAME = "findOneDocUpperCaseKey";
-      createTableWithColumns(
-          TABLE_NAME, Map.of("Id", Map.of("type", "int"), "value", Map.of("type", "text")), "Id");
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .createTable(
+              TABLE_NAME,
+              Map.of("Id", Map.of("type", "int"), "value", Map.of("type", "text")),
+              "Id")
+          .wasSuccessful();
 
       // Insert 2 documents:
-      insertOneInTable(
-          TABLE_NAME,
+      var docJSON =
           """
                           {
                               "Id": 1,
                               "value": "a"
                           }
-                          """);
+                          """;
+      assertTableCommand(keyspaceName, TABLE_NAME).templated().insertOne(docJSON).wasSuccessful();
+
       final String DOC_B_JSON =
           """
                           {
                               "Id": 2,
                               "value": "b"
                           }
-                              """;
-      insertOneInTable(TABLE_NAME, DOC_B_JSON);
+                          """;
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .insertOne(DOC_B_JSON)
+          .wasSuccessful();
 
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_NAME)
+      assertTableCommand(keyspaceName, TABLE_NAME)
           .postFindOne(
               """
               {
@@ -169,7 +194,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                     }
               }
           """)
-          .hasNoErrors()
+          .wasSuccessful()
           .hasJSONField("data.document", DOC_B_JSON);
     }
 
@@ -177,24 +202,26 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
     @Order(3)
     public void findOneDocIdKey() {
       final String TABLE_NAME = "findOneDocIdKeyTable";
-      createTableWithColumns(
-          TABLE_NAME,
-          Map.of(
-              "_id",
-              Map.of("type", "int"),
-              "desc",
-              Map.of("type", "text"),
-              "valueLong",
-              Map.of("type", "bigint"),
-              "valueDouble",
-              Map.of("type", "double"),
-              "valueBlob",
-              Map.of("type", "blob")),
-          "_id");
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .createTable(
+              TABLE_NAME,
+              Map.of(
+                  "_id",
+                  Map.of("type", "int"),
+                  "desc",
+                  Map.of("type", "text"),
+                  "valueLong",
+                  Map.of("type", "bigint"),
+                  "valueDouble",
+                  Map.of("type", "double"),
+                  "valueBlob",
+                  Map.of("type", "blob")),
+              "_id")
+          .wasSuccessful();
 
       // First, insert 2 documents:
-      insertOneInTable(
-          TABLE_NAME,
+      var docJSON =
           """
                               {
                                   "_id": 1,
@@ -202,7 +229,9 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                                   "valueLong": 1234567890,
                                   "valueDouble": -1.25
                               }
-                              """);
+                              """;
+      assertTableCommand(keyspaceName, TABLE_NAME).templated().insertOne(docJSON).wasSuccessful();
+
       final String DOC_B_JSON =
           """
                               {
@@ -213,9 +242,12 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                                   "valueBlob": null
                               }
                               """;
-      insertOneInTable(TABLE_NAME, DOC_B_JSON);
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .insertOne(DOC_B_JSON)
+          .wasSuccessful();
 
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_NAME)
+      assertTableCommand(keyspaceName, TABLE_NAME)
           .postFindOne(
               """
               {
@@ -224,8 +256,8 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                     }
               }
               """)
-          .hasNoErrors()
-          .hasJSONField("data.document", DOC_B_JSON);
+          .wasSuccessful()
+          .hasJSONField("data.document", removeNullValues(DOC_B_JSON));
     }
   }
 
@@ -235,7 +267,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
     @Test
     @Order(1)
     public void failOnUnknownColumn() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+      assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .postFindOne(
               """
                           {
@@ -244,7 +276,6 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                               }
                           }
                       """)
-          .hasNoData()
           .hasSingleApiError(
               FilterException.Code.UNKNOWN_TABLE_COLUMNS,
               FilterException.class,

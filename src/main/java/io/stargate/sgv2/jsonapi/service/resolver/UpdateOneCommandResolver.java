@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -7,16 +9,16 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
-import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
-import io.stargate.sgv2.jsonapi.service.operation.tables.UpdateTableOperation;
+import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
@@ -80,11 +82,29 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, UpdateOneCommand command) {
 
-    return new UpdateTableOperation(
-        ctx,
-        tableUpdateResolver.resolve(ctx, command),
+    // Sort clause is not supported for table updateOne command.
+    if (command.sortClause() != null && !command.sortClause().isEmpty()) {
+      throw SortException.Code.CANNOT_SORT_TABLE_UPDATE_COMMAND.get(
+          errVars(ctx.schemaObject(), map -> {}));
+    }
+
+    var builder = new UpdateAttemptBuilder<>(ctx.schemaObject());
+
+    // need to update so we use WithWarnings correctly
+    var where =
         TableWhereCQLClause.forUpdate(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command)));
+            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
+
+    var attempts =
+        new OperationAttemptContainer<>(
+            builder.build(where, tableUpdateResolver.resolve(ctx, command)));
+
+    var pageBuilder =
+        UpdateAttemptPage.<TableSchemaObject>builder()
+            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
+            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+
+    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
   }
 
   @Override
@@ -115,7 +135,8 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> ctx, UpdateOneCommand command) {
-    final DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
+
+    var dbLogicalExpression = collectionFilterResolver.resolve(ctx, command).target();
 
     final SortClause sortClause = command.sortClause();
     SchemaValidatable.maybeValidate(ctx, sortClause);

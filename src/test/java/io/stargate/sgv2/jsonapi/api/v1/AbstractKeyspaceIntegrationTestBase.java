@@ -1,16 +1,20 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
+import com.fasterxml.jackson.core.Base64Variants;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
+import io.stargate.sgv2.jsonapi.util.Base64Util;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +38,7 @@ import org.junit.jupiter.api.TestInstance;
 public abstract class AbstractKeyspaceIntegrationTestBase {
 
   // keyspace automatically created in this test
-  protected final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
+  protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
 
   @BeforeAll
   public static void enableLog() {
@@ -66,8 +70,8 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
         .post(GeneralResource.BASE_PATH)
         .then()
         .statusCode(200)
-        .body("status.ok", is(1))
-        .body("errors", is(nullValue()));
+        .body("$", responseIsDDLSuccess())
+        .body("status.ok", is(1));
   }
 
   @AfterAll
@@ -91,6 +95,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
         .post(GeneralResource.BASE_PATH)
         .then()
         .statusCode(200)
+        .body("$", responseIsDDLSuccess())
         .body("status.ok", is(1))
         .body("errors", is(nullValue()));
   }
@@ -112,7 +117,8 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
         .when()
         .post(KeyspaceResource.BASE_PATH, keyspaceName)
         .then()
-        .statusCode(200);
+        .statusCode(200)
+        .body("$", responseIsDDLSuccess());
   }
 
   protected int getTestPort() {
@@ -248,5 +254,24 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   /** Utility method for reducing boilerplate code for sending JSON commands */
   protected RequestSpecification givenHeadersAndJson(String json) {
     return given().headers(getHeaders()).contentType(ContentType.JSON).body(json);
+  }
+
+  protected String generateBase64EncodedBinaryVector(float[] vector) {
+    {
+      final byte[] byteArray = CqlVectorUtil.floatsToBytes(vector);
+
+      // Encode the byte array into a Base64 string
+      return Base64Variants.MIME_NO_LINEFEEDS.encode(byteArray);
+    }
+  }
+
+  protected float[] decodeBase64BinaryVectorToFloatArray(String base64Vector) {
+    byte[] binaryPayload;
+    try {
+      binaryPayload = Base64Util.decodeFromMimeBase64(base64Vector);
+      return CqlVectorUtil.bytesToFloats(binaryPayload);
+    } catch (Exception e) {
+      throw new RuntimeException("Not a valid binary vector", e);
+    }
   }
 }

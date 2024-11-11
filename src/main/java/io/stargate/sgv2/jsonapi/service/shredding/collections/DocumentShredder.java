@@ -21,6 +21,7 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.OptionalInt;
@@ -339,7 +340,13 @@ public class DocumentShredder {
             "Unsupported JSON value type in EJSON $binary wrapper (%s): only STRING allowed",
             binaryValue.getNodeType());
       }
-      callback.shredVector(path, binaryValue.textValue());
+      try {
+        callback.shredVector(path, binaryValue.binaryValue());
+      } catch (IOException e) {
+        throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
+            "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String, problem: %s"
+                .formatted(e.getMessage()));
+      }
     } else {
       throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
           value.getNodeType().toString());
