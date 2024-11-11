@@ -28,7 +28,11 @@ public class WhereAnalyzerTest {
 
   @Test
   public void emptyFilter() {
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("emptyFilter()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "emptyFilter()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .analyze()
         .assertAllowFilteringEnabled()
@@ -38,7 +42,11 @@ public class WhereAnalyzerTest {
   @Test
   public void eqAllPrimaryKeys() {
 
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("eqAllPrimaryKeys()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "eqAllPrimaryKeys()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture.expression().eqAllPrimaryKeys().analyze().assertNoFilteringNoWarnings();
   }
 
@@ -49,14 +57,21 @@ public class WhereAnalyzerTest {
   @Test
   public void oneIndexed() {
 
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("oneIndexed()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index("oneIndexed()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture.expression().eqOn(names().COL_INDEXED_1).analyze().assertNoFilteringNoWarnings();
   }
 
   @Test
   public void oneIndexedOneRegular() {
 
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("oneIndexedOneRegular()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "oneIndexedOneRegular()", WhereCQLClauseAnalyzer.StatementType.SELECT);
 
     fixture
         .expression()
@@ -72,7 +87,10 @@ public class WhereAnalyzerTest {
   @Test
   public void oneRegular() {
 
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("oneRegular()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index("oneRegular()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
         .eqOn(names().COL_REGULAR_1)
@@ -89,7 +107,11 @@ public class WhereAnalyzerTest {
   @Test
   public void notEqTextOnIndexed() {
 
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("notEqTextOnIndexed()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "notEqTextOnIndexed()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
         .notEqOn(names().COL_INDEXED_1)
@@ -104,7 +126,11 @@ public class WhereAnalyzerTest {
   @Test
   public void notEqTextOnRegular() {
     // this should be a regular missing index warning
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("notEqTextOnRegular()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "notEqTextOnRegular()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
         .notEqOn(names().COL_REGULAR_1)
@@ -121,14 +147,22 @@ public class WhereAnalyzerTest {
   @Test
   public void allPartitionKeys() {
 
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("eqAllPartitionKeys()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "eqAllPartitionKeys()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture.expression().eqAllPartitionKeys().analyze().assertNoFilteringNoWarnings();
   }
 
   @Test
   public void onePartition() {
 
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("onePartition()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "onePartition()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
         .eqOn(names().COL_PARTITION_KEY_1)
@@ -141,7 +175,11 @@ public class WhereAnalyzerTest {
   @Test
   public void onePartitionOneRegular() {
 
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("onePartitionOneRegular()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "onePartitionOneRegular()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
         .eqOn(names().COL_PARTITION_KEY_1)
@@ -156,7 +194,11 @@ public class WhereAnalyzerTest {
   @Test
   public void onePartitionOneIndexed() {
 
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("onePartitionOneIndexed()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "onePartitionOneIndexed()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
         .eqOn(names().COL_PARTITION_KEY_1)
@@ -175,7 +217,11 @@ public class WhereAnalyzerTest {
   @Test
   public void skip1of3ClusteringKey() {
 
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("skip1of3ClusteringKey()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "skip1of3ClusteringKey()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
         .eqAllPartitionKeys()
@@ -190,7 +236,11 @@ public class WhereAnalyzerTest {
   @Test
   public void skip2of3ClusteringKey() {
 
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("skip2of3ClusteringKey()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "skip2of3ClusteringKey()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
         .eqAllPartitionKeys()
@@ -205,7 +255,11 @@ public class WhereAnalyzerTest {
   @Test
   public void skip3of3ClusteringKey() {
 
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("skip3of3ClusteringKey()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "skip3of3ClusteringKey()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
         .eqAllPartitionKeys()
@@ -218,7 +272,11 @@ public class WhereAnalyzerTest {
   @Test
   public void skip1and2of3ClusteringKey() {
 
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("skip3of3ClusteringKey()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "skip3of3ClusteringKey()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
         .eqAllPartitionKeys()
@@ -234,7 +292,10 @@ public class WhereAnalyzerTest {
   public void skip2and3of3ClusteringKey() {
 
     var fixture =
-        TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("skip2and3of3ClusteringKey()");
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "skip2and3of3ClusteringKey()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
         .eqAllPartitionKeys()
@@ -248,7 +309,10 @@ public class WhereAnalyzerTest {
   public void skip1and3of3ClusteringKey() {
 
     var fixture =
-        TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("skip2and3of3ClusteringKey()");
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "skip2and3of3ClusteringKey()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
         .eqAllPartitionKeys()
@@ -266,7 +330,11 @@ public class WhereAnalyzerTest {
   @Test
   public void oneUnknownColumn() {
 
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("oneUnknownColumn()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "oneUnknownColumn()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
         .rootImplicitAnd
@@ -283,7 +351,11 @@ public class WhereAnalyzerTest {
   @Test
   public void unknownAndFullPk() {
 
-    var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("unknownAndFullPk()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index(
+                "unknownAndFullPk()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
         .rootImplicitAnd
@@ -302,7 +374,10 @@ public class WhereAnalyzerTest {
   @Test
   public void eqOneDuration() {
 
-    var fixture = TEST_DATA.whereAnalyzer().tableKeyAndTwoDuration("eqOneDuration()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .tableKeyAndTwoDuration("eqOneDuration()", WhereCQLClauseAnalyzer.StatementType.SELECT);
 
     fixture
         .expression()
@@ -316,7 +391,10 @@ public class WhereAnalyzerTest {
   @Test
   public void gtOneDuration() {
 
-    var fixture = TEST_DATA.whereAnalyzer().tableKeyAndTwoDuration("gtOnDuration()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .tableKeyAndTwoDuration("gtOnDuration()", WhereCQLClauseAnalyzer.StatementType.SELECT);
 
     fixture
         .expression()
@@ -329,7 +407,10 @@ public class WhereAnalyzerTest {
   @Test
   public void gtTwoDuration() {
 
-    var fixture = TEST_DATA.whereAnalyzer().tableKeyAndTwoDuration("gtOnDuration()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .tableKeyAndTwoDuration("gtOnDuration()", WhereCQLClauseAnalyzer.StatementType.SELECT);
 
     fixture
         .expression()
@@ -344,7 +425,10 @@ public class WhereAnalyzerTest {
   @Test
   public void gtOneDurationFullPk() {
 
-    var fixture = TEST_DATA.whereAnalyzer().tableKeyAndTwoDuration("gtOnDuration()");
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .tableKeyAndTwoDuration("gtOnDuration()", WhereCQLClauseAnalyzer.StatementType.SELECT);
 
     fixture
         .expression()
@@ -372,7 +456,7 @@ public class WhereAnalyzerTest {
     @Test
     public void eq_indexed_column() {
 
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)
             || cqlDatatypeColumn.equals(names().CQL_DURATION_COLUMN)) {
           continue;
@@ -380,7 +464,9 @@ public class WhereAnalyzerTest {
         var fixture =
             TEST_DATA
                 .whereAnalyzer()
-                .tableAllColumnDatatypesIndexed("$eq_on_indexed_" + cqlDatatypeColumn.asInternal());
+                .tableAllColumnDatatypesIndexed(
+                    "$eq_on_indexed_" + cqlDatatypeColumn.asInternal(),
+                    WhereCQLClauseAnalyzer.StatementType.SELECT);
         fixture.expression().eqOn(cqlDatatypeColumn).analyze().assertNoFilteringNoWarnings();
       }
 
@@ -388,7 +474,9 @@ public class WhereAnalyzerTest {
       var durationFixture =
           TEST_DATA
               .whereAnalyzer()
-              .tableAllColumnDatatypesIndexed("$eq_on_" + names().CQL_DURATION_COLUMN.asInternal());
+              .tableAllColumnDatatypesIndexed(
+                  "$eq_on_" + names().CQL_DURATION_COLUMN.asInternal(),
+                  WhereCQLClauseAnalyzer.StatementType.SELECT);
       durationFixture
           .expression()
           .eqOn(names().CQL_DURATION_COLUMN)
@@ -400,7 +488,7 @@ public class WhereAnalyzerTest {
 
     @Test
     public void eq_not_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
           continue;
         }
@@ -408,7 +496,8 @@ public class WhereAnalyzerTest {
             TEST_DATA
                 .whereAnalyzer()
                 .tableAllColumnDatatypesNotIndexed(
-                    "$eq_on_not_indexed_" + cqlDatatypeColumn.asInternal());
+                    "$eq_on_not_indexed_" + cqlDatatypeColumn.asInternal(),
+                    WhereCQLClauseAnalyzer.StatementType.SELECT);
         fixture
             .expression()
             .eqOn(cqlDatatypeColumn)
@@ -429,7 +518,7 @@ public class WhereAnalyzerTest {
     public void ne_indexed_column() {
       // If column is on SAI index, perform $ne on it.
       // -> For TEXT, ASCII, BOOLEAN, DURATION, BLOB. ALLOW FILTERING is needed.
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
           continue;
         }
@@ -437,7 +526,9 @@ public class WhereAnalyzerTest {
           var fixture =
               TEST_DATA
                   .whereAnalyzer()
-                  .tableAllColumnDatatypesIndexed("$ne_on_" + cqlDatatypeColumn.asInternal());
+                  .tableAllColumnDatatypesIndexed(
+                      "$ne_on_" + cqlDatatypeColumn.asInternal(),
+                      WhereCQLClauseAnalyzer.StatementType.SELECT);
           fixture
               .expression()
               .notEqOn(cqlDatatypeColumn)
@@ -454,7 +545,8 @@ public class WhereAnalyzerTest {
               TEST_DATA
                   .whereAnalyzer()
                   .tableAllColumnDatatypesIndexed(
-                      "$ne_on_indexed_" + cqlDatatypeColumn.asInternal());
+                      "$ne_on_indexed_" + cqlDatatypeColumn.asInternal(),
+                      WhereCQLClauseAnalyzer.StatementType.SELECT);
           fixture
               .expression()
               .notEqOn(cqlDatatypeColumn)
@@ -467,14 +559,16 @@ public class WhereAnalyzerTest {
         var fixture =
             TEST_DATA
                 .whereAnalyzer()
-                .tableAllColumnDatatypesIndexed("$ne_on_indexed_" + cqlDatatypeColumn.asInternal());
+                .tableAllColumnDatatypesIndexed(
+                    "$ne_on_indexed_" + cqlDatatypeColumn.asInternal(),
+                    WhereCQLClauseAnalyzer.StatementType.SELECT);
         fixture.expression().notEqOn(cqlDatatypeColumn).analyze().assertNoFilteringNoWarnings();
       }
     }
 
     @Test
     public void ne_not_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
           continue;
         }
@@ -482,7 +576,8 @@ public class WhereAnalyzerTest {
             TEST_DATA
                 .whereAnalyzer()
                 .tableAllColumnDatatypesNotIndexed(
-                    "$ne_on_not_indexed_" + cqlDatatypeColumn.asInternal());
+                    "$ne_on_not_indexed_" + cqlDatatypeColumn.asInternal(),
+                    WhereCQLClauseAnalyzer.StatementType.SELECT);
         fixture
             .expression()
             .notEqOn(cqlDatatypeColumn)
@@ -501,7 +596,7 @@ public class WhereAnalyzerTest {
 
     @Test
     public void in_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
           continue;
         }
@@ -509,7 +604,9 @@ public class WhereAnalyzerTest {
           var fixture =
               TEST_DATA
                   .whereAnalyzer()
-                  .tableAllColumnDatatypesIndexed("$ne_on_" + cqlDatatypeColumn.asInternal());
+                  .tableAllColumnDatatypesIndexed(
+                      "$ne_on_" + cqlDatatypeColumn.asInternal(),
+                      WhereCQLClauseAnalyzer.StatementType.SELECT);
           fixture
               .expression()
               .notEqOn(cqlDatatypeColumn)
@@ -522,14 +619,16 @@ public class WhereAnalyzerTest {
         var fixture =
             TEST_DATA
                 .whereAnalyzer()
-                .tableAllColumnDatatypesIndexed("$in_on_indexed_" + cqlDatatypeColumn.asInternal());
+                .tableAllColumnDatatypesIndexed(
+                    "$in_on_indexed_" + cqlDatatypeColumn.asInternal(),
+                    WhereCQLClauseAnalyzer.StatementType.SELECT);
         fixture.expression().inOn(cqlDatatypeColumn).analyze().assertNoFilteringNoWarnings();
       }
     }
 
     @Test
     public void in_not_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
           continue;
         }
@@ -537,7 +636,8 @@ public class WhereAnalyzerTest {
             TEST_DATA
                 .whereAnalyzer()
                 .tableAllColumnDatatypesNotIndexed(
-                    "$in_on_not_indexed_" + cqlDatatypeColumn.asInternal());
+                    "$in_on_not_indexed_" + cqlDatatypeColumn.asInternal(),
+                    WhereCQLClauseAnalyzer.StatementType.SELECT);
         fixture
             .expression()
             .inOn(cqlDatatypeColumn)
@@ -555,7 +655,7 @@ public class WhereAnalyzerTest {
 
     @Test
     public void comparison_api_filter_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
           continue;
         }
@@ -563,7 +663,9 @@ public class WhereAnalyzerTest {
           var fixture =
               TEST_DATA
                   .whereAnalyzer()
-                  .tableAllColumnDatatypesIndexed("$gt_on_" + cqlDatatypeColumn.asInternal());
+                  .tableAllColumnDatatypesIndexed(
+                      "$gt_on_" + cqlDatatypeColumn.asInternal(),
+                      WhereCQLClauseAnalyzer.StatementType.SELECT);
           fixture
               .expression()
               .gtOn(cqlDatatypeColumn)
@@ -575,14 +677,16 @@ public class WhereAnalyzerTest {
         var fixture =
             TEST_DATA
                 .whereAnalyzer()
-                .tableAllColumnDatatypesIndexed("$gt_on_indexed_" + cqlDatatypeColumn.asInternal());
+                .tableAllColumnDatatypesIndexed(
+                    "$gt_on_indexed_" + cqlDatatypeColumn.asInternal(),
+                    WhereCQLClauseAnalyzer.StatementType.SELECT);
         fixture.expression().gtOn(cqlDatatypeColumn).analyze().assertNoFilteringNoWarnings();
       }
     }
 
     @Test
     public void comparison_api_filter_not_indexed_column() {
-      for (CqlIdentifier cqlDatatypeColumn : names().ALL_CQL_DATATYPE_COLUMNS) {
+      for (CqlIdentifier cqlDatatypeColumn : names().ALL_SCALAR_DATATYPE_COLUMNS) {
         if (cqlDatatypeColumn.equals(names().CQL_BLOB_COLUMN)) {
           continue;
         }
@@ -590,7 +694,8 @@ public class WhereAnalyzerTest {
             TEST_DATA
                 .whereAnalyzer()
                 .tableAllColumnDatatypesNotIndexed(
-                    "$gt_on_not_indexed_" + cqlDatatypeColumn.asInternal());
+                    "$gt_on_not_indexed_" + cqlDatatypeColumn.asInternal(),
+                    WhereCQLClauseAnalyzer.StatementType.SELECT);
         fixture
             .expression()
             .inOn(cqlDatatypeColumn)

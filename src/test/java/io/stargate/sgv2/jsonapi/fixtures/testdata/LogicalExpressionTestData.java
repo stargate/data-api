@@ -8,9 +8,9 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
+import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.*;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
@@ -76,7 +76,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
     }
 
     public FixtureT notInOn(CqlIdentifier column) {
-      expression.addFilter(nin(tableMetadata.getColumn(column).orElseThrow()));
+      rootImplicitAnd.addFilter(nin(tableMetadata.getColumn(column).orElseThrow()));
       return fixture;
     }
 
@@ -106,7 +106,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         if (index == skipIndex) {
           continue;
         }
-        expression.addFilter(eq(columnMetadata));
+        rootImplicitAnd.addFilter(eq(columnMetadata));
       }
       return fixture;
     }

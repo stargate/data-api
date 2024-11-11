@@ -5,7 +5,6 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnMet
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.datastax.oss.driver.api.querybuilder.relation.ColumnRelationBuilder;
-import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.term.Term;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;

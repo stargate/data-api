@@ -37,7 +37,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     return new WhereAnalyzerFixture(
         message,
         tableMetaData,
-        testData.logicalExpression().andExpression(tableMetaData),
+        testData.logicalExpression().implicitAndExpression(tableMetaData),
         statementType);
   }
 
@@ -47,7 +47,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     return new WhereAnalyzerFixture(
         message,
         tableMetaData,
-        testData.logicalExpression().andExpression(tableMetaData),
+        testData.logicalExpression().implicitAndExpression(tableMetaData),
         statementType);
   }
 
@@ -57,7 +57,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     return new WhereAnalyzerFixture(
         message,
         tableMetaData,
-        testData.logicalExpression().andExpression(tableMetaData),
+        testData.logicalExpression().implicitAndExpression(tableMetaData),
         statementType);
   }
 
@@ -67,7 +67,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     return new WhereAnalyzerFixture(
         message,
         tableMetaData,
-        testData.logicalExpression().andExpression(tableMetaData),
+        testData.logicalExpression().implicitAndExpression(tableMetaData),
         statementType);
   }
 
@@ -135,7 +135,8 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
       LOGGER.warn("Analyzing: {}\n {}", message, toString(true));
       // store the result in this fixture for later
       analysisResult =
-          analyzer.analyse(TableWhereCQLClause.forSelect(tableSchemaObject, expression.expression));
+          analyzer.analyse(
+              TableWhereCQLClause.forSelect(tableSchemaObject, expression.rootImplicitAnd));
       LOGGER.warn("Analysis result: {}", analysisResult);
     }
 
@@ -298,7 +299,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
 
     public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
       prettyToStringBuilder
-          .append("expression", expression.expression)
+          .append("expression", expression.rootImplicitAnd)
           .append("table", tableMetadata.describe(true));
       return prettyToStringBuilder;
     }

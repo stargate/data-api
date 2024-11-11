@@ -16,13 +16,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescCo
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedSelect;
-import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
+import io.stargate.sgv2.jsonapi.service.operation.query.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.query.*;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
