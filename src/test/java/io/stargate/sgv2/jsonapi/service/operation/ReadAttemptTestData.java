@@ -4,6 +4,7 @@ import static org.mockito.Mockito.*;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
@@ -12,7 +13,6 @@ import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableProjection;
-import io.stargate.sgv2.jsonapi.service.projection.TableProjectionDefinition;
 
 public class ReadAttemptTestData extends OperationAttemptTestData {
 
@@ -52,10 +52,28 @@ public class ReadAttemptTestData extends OperationAttemptTestData {
                 CqlPagingState.EMPTY,
                 TableProjection.fromDefinition(
                     objectMapper,
-                    TableProjectionDefinition.createFromDefinition(null),
+                    mockFindCommand(),
                     TableSchemaObject.from(testData.tableMetadata().keyValue(), objectMapper)),
                 resultSet));
 
     return new OperationAttemptFixture<>(attempt, queryExecutor, exceptionHandler, resultSet);
+  }
+
+  private FindCommand mockFindCommand() {
+    var objectMapper = new ObjectMapper();
+    String json =
+        """
+                    {
+                      "find": {
+                        }
+                    }
+                  """;
+    FindCommand command = null;
+    try {
+      command = objectMapper.readValue(json, FindCommand.class);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("fail to deserialize find command " + e);
+    }
+    return command;
   }
 }

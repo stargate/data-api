@@ -24,9 +24,7 @@ public class TruncateAttempt<SchemaT extends TableBasedSchemaObject>
   protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
     // bind and execute
     var statement = buildTruncateStatement();
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("execute() - {}, cql={}", positionAndAttemptId(), statement);
-    }
+    logStatement(LOGGER, "executeStatement()", statement);
     return queryExecutor.executeTruncate(statement);
   }
 

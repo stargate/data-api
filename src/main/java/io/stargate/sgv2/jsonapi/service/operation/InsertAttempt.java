@@ -43,13 +43,7 @@ public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
     // bind and execute
     var statement = buildInsertStatement();
 
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
-          "execute() - {}, cql={}, values={}",
-          positionAndAttemptId(),
-          statement.getQuery(),
-          statement.getPositionalValues());
-    }
+    logStatement(LOGGER, "executeStatement()", statement);
     return queryExecutor.executeWrite(statement);
   }
 

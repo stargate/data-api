@@ -211,6 +211,11 @@ public class DataApiResponseValidator {
     return body(path, jsonEquals(rawJson));
   }
 
+  public DataApiResponseValidator hasDocumentFields(Map<String, Object> expectedJsons) {
+    expectedJsons.forEach((path, rawJson) -> body("data.document." + path, jsonEquals(rawJson)));
+    return this;
+  }
+
   public DataApiResponseValidator hasNoWarnings() {
     return body("status.warnings", is(nullValue()));
   }
@@ -318,5 +323,42 @@ public class DataApiResponseValidator {
       return hasEmptyDataDocument();
     }
     return body("data.document.id", is(sampleId));
+  }
+
+  public int responseDocumentsCount() {
+    hasField("data.documents");
+    return response.extract().jsonPath().getList("data.documents").size();
+  }
+
+  public DataApiResponseValidator includeSimilarityScoreSingleDocument(
+      boolean includeSimilarityScore) {
+    if (includeSimilarityScore) {
+      return body("data.document.$similarity", is(notNullValue()));
+    } else {
+      return body("data.document.$similarity", is(nullValue()));
+    }
+  }
+
+  public DataApiResponseValidator includeSimilarityScoreDocuments(boolean includeSimilarityScore) {
+    var documentAmount = responseDocumentsCount();
+    for (int i = 0; i < documentAmount; i++) {
+      String path = String.format("data.documents[%d].$similarity", i);
+      if (includeSimilarityScore) {
+        response.body(path, is(notNullValue()));
+      } else {
+        response.body(path, is(nullValue()));
+      }
+    }
+    return this;
+  }
+
+  public DataApiResponseValidator includeSortVector(boolean include) {
+    // expected format
+    // "status": { "sortVector": [ 0.1, 0.2, 0.3 ]}
+    if (include) {
+      return body("status.sortVector", is(notNullValue()));
+    } else {
+      return body("status.sortVector", is(nullValue()));
+    }
   }
 }

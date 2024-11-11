@@ -4,11 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
-import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
-import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
-import io.stargate.sgv2.jsonapi.api.model.command.Windowable;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.validation.CheckFindOption;
@@ -28,7 +24,7 @@ public record FindCommand(
     @JsonProperty("projection") JsonNode projectionDefinition,
     @Valid @JsonProperty("sort") SortClause sortClause,
     @Valid @Nullable Options options)
-    implements ReadCommand, Filterable, Projectable, Sortable, Windowable {
+    implements ReadCommand, Filterable, Projectable, Sortable, Windowable, VectorSortable {
 
   public record Options(
 
@@ -84,5 +80,15 @@ public record FindCommand(
   @Override
   public Optional<Integer> skip() {
     return Optional.ofNullable(options()).map(Options::skip).filter(skip -> skip > 0);
+  }
+
+  @Override
+  public Optional<Boolean> includeSimilarityScore() {
+    return options() == null ? Optional.empty() : Optional.of(options().includeSimilarity);
+  }
+
+  @Override
+  public Optional<Boolean> includeSortVector() {
+    return options() == null ? Optional.empty() : Optional.of(options().includeSortVector);
   }
 }
