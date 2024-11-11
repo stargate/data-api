@@ -217,11 +217,11 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     } else {
       if (metric != null) {
         // (3) sourceModel is not provided but metric is - set sourceModel to 'other'
-        sourceModel = EmbeddingSourceModel.OTHER.apiName();
+        sourceModel = EmbeddingSourceModel.OTHER.cqlName();
       } else {
         // (4) both sourceModel and metric are not provided - set sourceModel to 'other' and metric
         // to 'cosine'
-        sourceModel = EmbeddingSourceModel.DEFAULT.apiName();
+        sourceModel = EmbeddingSourceModel.DEFAULT.cqlName();
         metric = SimilarityFunction.DEFAULT.cqlIndexingFunction();
       }
     }
