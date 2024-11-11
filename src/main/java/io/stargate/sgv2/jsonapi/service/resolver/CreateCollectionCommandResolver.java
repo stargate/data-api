@@ -203,9 +203,11 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       if (metric == null) {
         // (1) sourceModel is provided but metric is not - set metric to cosine or dot_product based
         // on the map
+        // TODO: HAZEL this says ^^ "cosine or dot_product based on the map" but this is just the
+        // default for model
         final String sourceModelFromUser = sourceModel;
         metric =
-            EmbeddingSourceModel.fromName(sourceModelFromUser)
+            EmbeddingSourceModel.fromNameOrDefault(sourceModelFromUser)
                 .orElseThrow(
                     () -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModelFromUser))
                 .getSimilarityFunction()
@@ -219,8 +221,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       } else {
         // (4) both sourceModel and metric are not provided - set sourceModel to 'other' and metric
         // to 'cosine'
-        sourceModel = EmbeddingSourceModel.DEFAULT_SOURCE_MODEL.getName();
-        metric = SimilarityFunction.DEFAULT_SIMILARITY_FUNCTION.cqlIndexingFunction();
+        sourceModel = EmbeddingSourceModel.DEFAULT.getName();
+        metric = SimilarityFunction.DEFAULT.cqlIndexingFunction();
       }
     }
 

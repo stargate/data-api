@@ -25,7 +25,7 @@ public enum EmbeddingSourceModel {
   UNDEFINED("undefined", null);
 
   // TODO: Add a comment why this is the default
-  public static final EmbeddingSourceModel DEFAULT_SOURCE_MODEL = OTHER;
+  public static final EmbeddingSourceModel DEFAULT = OTHER;
 
   private final String name;
   private final SimilarityFunction similarityFunction;
@@ -83,22 +83,30 @@ public enum EmbeddingSourceModel {
 
   /**
    * Converts a string representation of a source model name to its corresponding {@link
-   * EmbeddingSourceModel} enum.
+   * EmbeddingSourceModel} enum if it exists.
    *
-   * <p>If the provided name is <code>null</code>, returns {@link EmbeddingSourceModel#UNDEFINED},
-   * used for non-vector collections. If the name is an empty string, returns the default {@link
-   * EmbeddingSourceModel#DEFAULT_SOURCE_MODEL}, indicating the collection was created before source
-   * models were supported.
-   *
-   * @param name Name of the source model
+   * @param name Name of the source model, there is no default returned. Nullable.
    * @return Optional with the corresponding {@link EmbeddingSourceModel} or empty if the name is
-   *     not known
+   *     not known, there are no defaults returned. Use {@link #DEFAULT}.
    */
   public static Optional<EmbeddingSourceModel> fromName(String name) {
+    return name == null
+        ? Optional.empty()
+        : Optional.ofNullable(SOURCE_MODEL_BY_NAME.get(name.toLowerCase()));
+  }
+
+  /**
+   * Like {@link #fromName(String)} but if the name is null or blank it will return the default.
+   *
+   * @param name The name of the source model
+   * @return Optional with the corresponding {@link EmbeddingSourceModel}, or {@link #DEFAULT} if
+   *     the name is null or blank, or empty if the name is not known
+   */
+  public static Optional<EmbeddingSourceModel> fromNameOrDefault(String name) {
     return switch (name) {
-      case null -> Optional.of(UNDEFINED);
-      case String s when s.isBlank() -> Optional.of(OTHER);
-      default -> Optional.ofNullable(SOURCE_MODEL_BY_NAME.get(name.toLowerCase()));
+      case null -> Optional.of(DEFAULT);
+      case String s when s.isBlank() -> Optional.of(DEFAULT);
+      default -> fromName(name);
     };
   }
 

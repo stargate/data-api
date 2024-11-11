@@ -18,8 +18,11 @@ import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.util.defaults.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ApiVectorIndex extends ApiSupportedIndex {
 
@@ -30,8 +33,8 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   public static final DefaultString SIMILARITY_FUNCTION_DEFAULT =
       Defaults.of(VectorIndexDescDefaults.DEFAULT_METRIC_NAME);
 
-  // There is no de
-  public static final DefaultString SOURCE_MODEL_DEFAULT = Defaults.of("");
+  public static final DefaultString SOURCE_MODEL_DEFAULT =
+      Defaults.of(EmbeddingSourceModel.DEFAULT.getName());
 
   private interface Options {
     // No default when we read this from the options map, we cannot guess what it is
@@ -92,6 +95,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
    */
   private static class UserDescFactory
       extends IndexFactoryFromIndexDesc<ApiVectorIndex, VectorIndexDefinitionDesc> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserDescFactory.class);
 
     @Override
     public ApiVectorIndex create(
@@ -103,8 +107,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
       Objects.requireNonNull(indexDesc, "indexDesc must not be null");
 
       // for now we are relying on the validation of the request deserializer that these values are
-      // specified
-      // userNameToIdentifier will throw an exception if the values are not specified
+      // specified userNameToIdentifier will throw an exception if the values are not specified
       var indexIdentifier = userNameToIdentifier(indexName, "indexName");
       var targetIdentifier = userNameToIdentifier(indexDesc.column(), "targetColumn");
 
@@ -112,6 +115,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
       // we could check if there is an existing index but that is a race condition, we will need to
       // catch it if it fails
+
       // Vector indexes can only be on vector columns
       if (apiColumnDef.type().typeName() != ApiTypeName.VECTOR) {
         throw SchemaException.Code.VECTOR_INDEX_NOT_SUPPORTED_BY_DATA_TYPE.get(
@@ -127,38 +131,73 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
       Map<String, String> indexOptions = new HashMap<>();
 
-      // TODO: throw if the model is not found
-      // TODO: WHAT TO DO WITH UNDEFINED OR OTHER MODEL NAMES ???
-      var maybeSourceModel =
-          EmbeddingSourceModel.fromName(
-              SOURCE_MODEL_DEFAULT.apply(
-                  indexDesc.options(),
-                  VectorIndexDefinitionDesc.VectorIndexDescOptions::sourceModel));
+      // Work out the source model, we need to use defaults and catch bad model names from the user
+      // Use the default for the property, the only way we don't get a source mode is if the name
+      // was unknown
+      var userOrDefaultModelName =
+          SOURCE_MODEL_DEFAULT.apply(
+              indexDesc.options(), VectorIndexDefinitionDesc.VectorIndexDescOptions::sourceModel);
+      var maybeSourceModel = EmbeddingSourceModel.fromName(userOrDefaultModelName);
+      if (maybeSourceModel.isEmpty()) {
+        throw SchemaException.Code.UNKNOWN_VECTOR_SOURCE_MODEL.get(
+            Map.of(
+                "knownSourceModels",
+                EmbeddingSourceModel.getSupportedSourceModelNames(),
+                "unknownSourceModel",
+                userOrDefaultModelName));
+      }
+      var sourceModelToUse = maybeSourceModel.get();
+      Options.SOURCE_MODEL.putOrDefault(indexOptions, sourceModelToUse.name());
 
-      // TODO: check the undefined model name
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(
+            "create() - options.sourceModel: {}, userOrDefaultModelName: {}, sourceModelToUse: {} ",
+            (indexDesc.options() == null) ? "<options null>" : indexDesc.options().sourceModel(),
+            userOrDefaultModelName,
+            sourceModelToUse);
+      }
 
-      // If we have a source model then set it in the options, otherwise leave it out
-      maybeSourceModel.ifPresent(
-          model -> Options.SOURCE_MODEL.putOrDefault(indexOptions, model.name()));
-
-      var similarityFunctionName =
+      // Work out the similarity function, we need to use defaults and catch bad names from the
+      // user,
+      // and fall back to the source model if the user did not provide a function
+      // Using the default value, get the similarity function from the options
+      var userOrDefaultFunctionName =
           SIMILARITY_FUNCTION_DEFAULT.apply(
               indexDesc.options(), VectorIndexDefinitionDesc.VectorIndexDescOptions::metric);
-      var similarityFunction =
-          SimilarityFunction.fromApiName(similarityFunctionName)
-              .orElseThrow(() -> new IllegalStateException("TODO"));
-      // TOOD: WHAT ABOUT the UNDEFINED similarity function ?
+      // get the enum, the only way this fails is if the name is unknown
+      var userOrDefaultFunction = SimilarityFunction.fromApiName(userOrDefaultFunctionName);
+
+      if (userOrDefaultFunction.isEmpty()) {
+        throw SchemaException.Code.UNKNOWN_VECTOR_METRIC.get(
+            Map.of(
+                "knownMetrics",
+                errFmtJoin(List.of(SimilarityFunction.values()), SimilarityFunction::apiName),
+                "unknownMetric",
+                userOrDefaultFunctionName));
+      }
+
+      // Now need to work out what function we use, the one the user provided or the one from the
+      // source model.
+      var functionToUse =
+          SimilarityFunction.decideFromInputOrModel(
+              SIMILARITY_FUNCTION_DEFAULT.isPresent(
+                  indexDesc.options(), VectorIndexDefinitionDesc.VectorIndexDescOptions::metric),
+              userOrDefaultFunction.orElse(null),
+              maybeSourceModel.get());
 
       // Unlike the source model, the similarity function is required, and because we are building
-      // the index
-      // we use the cqlIndexingFunction()
-      Options.SIMILARITY_FUNCTION.putOrDefault(
-          indexOptions, similarityFunction.cqlIndexingFunction());
+      // the index we use the cqlIndexingFunction()
+      Options.SIMILARITY_FUNCTION.putOrDefault(indexOptions, functionToUse.cqlIndexingFunction());
 
-      // TODO: aaron rationalise the source model  and similarity function
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(
+            "create() - options.metric: {}, userOrDefaultFunctionName: {}, functionToUse: {} ",
+            (indexDesc.options() == null) ? "<options null>" : indexDesc.options().metric(),
+            userOrDefaultFunctionName,
+            functionToUse);
+      }
 
-      return new ApiVectorIndex(
-          indexIdentifier, targetIdentifier, indexOptions, similarityFunction);
+      return new ApiVectorIndex(indexIdentifier, targetIdentifier, indexOptions, functionToUse);
     }
   }
 

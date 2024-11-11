@@ -86,21 +86,19 @@ public class VectorConfig {
                 EmbeddingSourceModel sourceModel = null;
                 if (sourceModelStr != null) {
                   // if similarity function is not set, use the source model to determine it
-
-                  var sourceModelSimilarityFunction =
-                      EmbeddingSourceModel.fromName(sourceModelStr)
+                  // get with the default model so we can get the similarity function, still may not
+                  // find the model
+                  // if they have not set it up correctly
+                  sourceModel =
+                      EmbeddingSourceModel.fromNameOrDefault(sourceModelStr)
                           .orElseThrow(
                               () ->
                                   EmbeddingSourceModel.getUnknownSourceModelException(
-                                      sourceModelStr))
-                          .getSimilarityFunction();
+                                      sourceModelStr));
                   similarityFunction =
                       similarityFunction == null
-                          ? sourceModelSimilarityFunction
+                          ? sourceModel.getSimilarityFunction()
                           : similarityFunction;
-                  sourceModel =
-                      EmbeddingSourceModel.fromName(sourceModelStr)
-                          .orElseThrow(() -> new IllegalStateException("Invalid source model"));
                 }
                 return new AbstractMap.SimpleEntry<>(similarityFunction, sourceModel);
               });

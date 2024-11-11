@@ -176,7 +176,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         }
         if (sourceModelName != null) {
           sourceModel =
-              EmbeddingSourceModel.fromName(sourceModelName)
+              EmbeddingSourceModel.fromNameOrDefault(sourceModelName)
                   .orElseThrow(
                       () -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModelName));
         }
@@ -201,7 +201,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           table,
           false,
           0,
-          SimilarityFunction.UNDEFINED,
+          SimilarityFunction.DEFAULT,
           EmbeddingSourceModel.UNDEFINED,
           comment,
           objectMapper);

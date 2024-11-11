@@ -43,15 +43,12 @@ public record VectorColumnDefinition(
         SimilarityFunction.fromApiName(functionName)
             .orElseThrow(() -> SimilarityFunction.getUnknownFunctionException(functionName));
     // sourceModel doesn't exist if the collection was created before supporting sourceModel; if
-    // missing, it will be an empty string and sourceModel becomes OTHER.
-    // TODO: CHANGE THIS TO BE MORE EXPLICIT AND NOT RELY ON EMPTY STRING
+    // missing, it will be an empty string and sourceModel becomes the default.
+    var sourceModelName = jsonNode.path(VectorConstants.VectorColumn.SOURCE_MODEL).asText();
     var sourceModel =
-        EmbeddingSourceModel.fromName(
-                jsonNode.path(VectorConstants.VectorColumn.SOURCE_MODEL).asText())
+        EmbeddingSourceModel.fromNameOrDefault(sourceModelName)
             .orElseThrow(
-                () ->
-                    EmbeddingSourceModel.getUnknownSourceModelException(
-                        jsonNode.path(VectorConstants.VectorColumn.SOURCE_MODEL).asText()));
+                () -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModelName));
 
     return fromJson(
         DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,

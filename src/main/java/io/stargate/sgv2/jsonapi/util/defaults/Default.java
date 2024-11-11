@@ -14,6 +14,10 @@ public interface Default<T> {
 
   boolean isPresent(T value);
 
+  default <TSource> boolean isPresent(TSource source, Function<TSource, T> supplier) {
+    return isPresent(source == null ? null : supplier.apply(source));
+  }
+
   interface Stringable<T> extends Default<T> {
 
     default boolean isPresent(String value) {

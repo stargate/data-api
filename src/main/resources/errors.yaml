@@ -678,7 +678,39 @@ request-errors:
       
       Send the command again using a vector column.
 
+  - scope: SCHEMA
+    code: UNKNOWN_VECTOR_SOURCE_MODEL
+    title: Vector index creation with unknown vector source model
+    body: |-
+      The command attempted to create an vector index using a vector source model that is not known by the API.
+      
+      Including the optional name of the model that created the vectors when creating a vector index can provide significant performance improvements. 
+      
+      The known source models are: ${knownSourceModels}.
+      The command attempted to use the source model: ${unknownSourceModel}.
+      
+      Send the command again using a known source model.
+
+  - scope: SCHEMA
+    code: UNKNOWN_VECTOR_METRIC
+    title: Vector index creation with unknown vector metric
+    body: |-
+      The command attempted to create an vector index using a metric that is not known by the API.
+            
+      The metric, also known as the similarity function, used to create the vector index is used to compare vectors to find the similar vectors.
+      
+      The known metrics are: ${knownMetrics}.
+      The command attempted to use the metric: ${unknownMetric}.
+      
+      Send the command again using a known source metric.
+
     # prev errors - all need to be reviewed
+
+  - scope: SCHEMA
+    code: INVALID_INDEX_DEFINITION
+    title: Provided index configuration is not valid.
+    body: |-
+      Provided index configuration is not valid: ${reason}.
 
   - scope: SCHEMA
     code: INVALID_KEYSPACE

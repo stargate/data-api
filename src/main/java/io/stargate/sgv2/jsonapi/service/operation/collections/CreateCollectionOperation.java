@@ -136,12 +136,13 @@ public record CreateCollectionOperation(
     CollectionSchemaObject existedCollectionSettings =
         CollectionSchemaObject.getCollectionSettings(tableMetadata, objectMapper);
 
+    // Use the fromNameOrDefault() so if not specified it will default
     var embeddingSourceModel =
-        EmbeddingSourceModel.fromName(sourceModel)
+        EmbeddingSourceModel.fromNameOrDefault(sourceModel)
             .orElseThrow(() -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModel));
 
     var similarityFunction =
-        SimilarityFunction.fromApiName(vectorFunction)
+        SimilarityFunction.fromApiNameOrDefault(vectorFunction)
             .orElseThrow(() -> SimilarityFunction.getUnknownFunctionException(vectorFunction));
 
     CollectionSchemaObject newCollectionSettings =
