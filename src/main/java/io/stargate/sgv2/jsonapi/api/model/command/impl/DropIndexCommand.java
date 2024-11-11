@@ -23,7 +23,8 @@ public record DropIndexCommand(
     implements NoOptionsCommand, KeyspaceCommand {
 
   public record Options(
-      @Schema(
+      @Nullable
+          @Schema(
               description = "Flag to ignore if index doesn't exists",
               defaultValue = "false",
               type = SchemaType.BOOLEAN,

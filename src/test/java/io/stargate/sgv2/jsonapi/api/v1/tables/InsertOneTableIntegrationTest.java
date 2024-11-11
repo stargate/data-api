@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
+import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
@@ -522,6 +523,78 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .postFindOne("{ \"filter\": { \"id\": \"datetimeValid\" } }")
           .wasSuccessful()
           .hasJSONField("data.document", outputJSON);
+    }
+
+    @Test
+    void insertEJSONTimestampValue() {
+      // NOTE: test for alternate input format -- EJSON-wrapper for Collection compatibility
+      // -- for timestamp
+      final long rawTimestamp = 1693036410000L;
+      final String timestampISO8601 = Instant.ofEpochMilli(rawTimestamp).toString();
+      final String inputJSON =
+              """
+          {
+              "id": "datetimeValidAlt",
+              "timestampValue": { "$date":  %d }
+          }
+          """
+              .formatted(rawTimestamp);
+
+      final String outputJSON =
+              """
+           {
+              "id": "datetimeValidAlt",
+              "timestampValue": "%s"
+           }
+           """
+              .formatted(timestampISO8601);
+
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .templated()
+          .insertOne(inputJSON)
+          .wasSuccessful();
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .postFindOne(
+              """
+          {
+             "filter": { "id": "datetimeValidAlt" },
+             "projection": {
+                "id": 1,
+                "timestampValue": 1
+             }
+          }
+          """)
+          .wasSuccessful()
+          .hasJSONField("data.document", outputJSON);
+    }
+
+    @Test
+    void insertValidNegativeDurationValue() {
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .templated()
+          .insertOne(
+                  """
+                    {
+                        "id": "%s",
+                        "durationValue": "%s"
+                    }
+                    """
+                  .formatted("datetimeNegDuration", "-8h10m"))
+          .wasSuccessful();
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .postFindOne(
+              """
+                                  { "filter": { "id": "datetimeNegDuration" },
+                                    "projection": { "durationValue": 1 }
+                                  }
+                              """)
+          .wasSuccessful()
+          .hasJSONField(
+              "data.document",
+                  """
+                    { "durationValue": "%s" }
+                    """
+                  .formatted("-PT8H10M"));
     }
 
     @Test

@@ -5,7 +5,6 @@ import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 
-import com.fasterxml.jackson.core.Base64Variants;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
@@ -13,7 +12,6 @@ import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.junit.jupiter.api.*;
 
@@ -487,7 +485,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body(
               "errors[0].message",
               is(
-                  "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper: not valid Base64-encoded String, problem: Illegal character '@' (code 0x40) in base64 content"));
+                  "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper: not valid Base64-encoded String, problem: Cannot access contents of TextNode as binary due to broken Base64 encoding: Illegal character '@' (code 0x40) in base64 content"));
     }
 
     @Test
@@ -565,7 +563,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body(
               "errors[0].message",
               is(
-                  "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper, problem: binary value to decode is not a multiple of 4 bytes long (3 bytes)"));
+                  "Bad binary vector value to shred: binary value to decode is not a multiple of 4 bytes long (3 bytes)"));
     }
 
     @Test
@@ -760,6 +758,42 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           }
         }
         """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]._id", is("3"))
+          .body("data.documents[0].$vector", is(notNullValue()))
+          .body("data.documents[1]._id", is("2"))
+          .body("data.documents[1].$vector", is(notNullValue()))
+          .body("data.documents[2]._id", is("1"))
+          .body("data.documents[2].$vector", is(notNullValue()));
+    }
+
+    @Test
+    @Order(2)
+    public void happyPathBinaryVector() {
+      String vectorString =
+          generateBase64EncodedBinaryVector(new float[] {0.15f, 0.1f, 0.1f, 0.35f, 0.55f});
+      String json =
+              """
+            {
+              "find": {
+                "sort" : {"$vector" : {"$binary" : "%s" } },
+                "projection" : {"_id" : 1, "$vector" : 1},
+                "options" : {
+                    "limit" : 5
+                }
+              }
+            }
+            """
+              .formatted(vectorString);
 
       given()
           .headers(getHeaders())
@@ -2061,32 +2095,6 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
       sb.append(nums[ix]);
     }
     return sb.toString();
-  }
-
-  private String generateBase64EncodedBinaryVector(float[] vector) {
-    ByteBuffer byteBuffer = ByteBuffer.allocate(vector.length * 4); // 4 bytes per float
-
-    for (float val : vector) {
-      byteBuffer.putInt(Float.floatToIntBits(val)); // Convert float to raw int bits
-    }
-
-    // Get the byte array from the ByteBuffer
-    byte[] byteArray = byteBuffer.array();
-
-    // Encode the byte array into a Base64 string
-    return Base64Variants.MIME_NO_LINEFEEDS.encode(byteArray);
-  }
-
-  private float[] decodeBase64BinaryVectorToFloatArray(String binaryVector) {
-    // Decode the Base64 string to a byte array
-    byte[] decodedBytes = Base64Variants.MIME_NO_LINEFEEDS.decode(binaryVector);
-
-    float[] floats = new float[decodedBytes.length / 4];
-    ByteBuffer byteBuffer = ByteBuffer.wrap(decodedBytes);
-    for (int i = 0; i < floats.length; i++) {
-      floats[i] = byteBuffer.getFloat();
-    }
-    return floats;
   }
 
   @Nested

@@ -119,7 +119,7 @@ quarkus:
       'io.quarkus.http.access-log':
         level: INFO
       'io.stargate':
-        level: WARN
+        level: DEBUG
 
     min-level: trace
 

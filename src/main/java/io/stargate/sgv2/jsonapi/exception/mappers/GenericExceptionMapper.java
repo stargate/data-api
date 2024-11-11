@@ -19,6 +19,7 @@ public class GenericExceptionMapper {
     MismatchedInputException.class
   })
   public RestResponse<CommandResult> genericExceptionMapper(Throwable e) {
+
     CommandResult commandResult = new ThrowableCommandResultSupplier(e).get();
     return commandResult.toRestResponse();
   }

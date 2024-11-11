@@ -35,7 +35,7 @@ public class TableTemplates extends TemplateRunner {
     if (sort != null) {
       clause.put("sort", sort);
     }
-    if (sort != null) {
+    if (options != null) {
       clause.put("options", options);
     }
     return asJSON(clause);
@@ -126,6 +126,22 @@ public class TableTemplates extends TemplateRunner {
           """
             .formatted(filter, update);
     return sender.postUpdateOne(json);
+  }
+
+  public DataApiResponseValidator updateOne(
+      Map<String, Object> filter, Map<String, Object> update) {
+    return sender.postUpdateOne(updateClause(filter, update));
+  }
+
+  private String updateClause(Map<String, Object> filter, Map<String, Object> update) {
+    var clause = new LinkedHashMap<>();
+    if (filter != null) {
+      clause.put("filter", filter);
+    }
+    if (update != null) {
+      clause.put("update", update);
+    }
+    return asJSON(clause);
   }
 
   public DataApiResponseValidator deleteMany(String filter) {

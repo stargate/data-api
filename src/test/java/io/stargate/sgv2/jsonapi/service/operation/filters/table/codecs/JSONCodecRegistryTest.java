@@ -259,12 +259,25 @@ public class JSONCodecRegistryTest {
             DataTypes.DURATION,
             TEST_DATA.DURATION_VALID_STR_ISO8601,
             CqlDuration.from(TEST_DATA.DURATION_VALID_STR_ISO8601)),
+        // Should also support negative duration values:
+        Arguments.of(
+            DataTypes.DURATION,
+            "-" + TEST_DATA.DURATION_VALID_STR_CASS,
+            CqlDuration.from("-" + TEST_DATA.DURATION_VALID_STR_CASS)),
+        Arguments.of(
+            DataTypes.DURATION,
+            "-" + TEST_DATA.DURATION_VALID_STR_ISO8601,
+            CqlDuration.from("-" + TEST_DATA.DURATION_VALID_STR_ISO8601)),
         Arguments.of(
             DataTypes.TIME, TEST_DATA.TIME_VALID_STR, LocalTime.parse(TEST_DATA.TIME_VALID_STR)),
         Arguments.of(
             DataTypes.TIMESTAMP,
             TEST_DATA.TIMESTAMP_VALID_STR,
-            Instant.parse(TEST_DATA.TIMESTAMP_VALID_STR)));
+            Instant.parse(TEST_DATA.TIMESTAMP_VALID_STR)),
+        Arguments.of(
+            DataTypes.TIMESTAMP,
+            EJSONWrapper.timestampWrapper(TEST_DATA.TIMESTAMP_VALID_NUM),
+            Instant.ofEpochMilli(TEST_DATA.TIMESTAMP_VALID_NUM)));
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesUuid() {
@@ -574,6 +587,11 @@ public class JSONCodecRegistryTest {
             DataTypes.DURATION,
             CqlDuration.from(TEST_DATA.DURATION_VALID_STR_CASS),
             JSONS.textNode(TEST_DATA.DURATION_VALID_STR_ISO8601)),
+        // And then negative variant of same duration
+        Arguments.of(
+            DataTypes.DURATION,
+            CqlDuration.from("-" + TEST_DATA.DURATION_VALID_STR_CASS),
+            JSONS.textNode("-" + TEST_DATA.DURATION_VALID_STR_ISO8601)),
         Arguments.of(
             DataTypes.TIME,
             LocalTime.parse(TEST_DATA.TIME_VALID_STR),
