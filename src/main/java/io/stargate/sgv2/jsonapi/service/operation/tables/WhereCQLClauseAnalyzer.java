@@ -659,7 +659,7 @@ public class WhereCQLClauseAnalyzer {
         WhereCQLClause<?> target,
         List<WarningException> warningExceptions,
         boolean requiresAllowFiltering) {
-      super(target, warningExceptions);
+      super(target, warningExceptions, null);
       this.requiresAllowFiltering = requiresAllowFiltering;
     }
 

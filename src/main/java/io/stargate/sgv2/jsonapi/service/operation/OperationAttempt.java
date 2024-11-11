@@ -6,7 +6,7 @@ import com.datastax.oss.driver.api.core.data.CqlVector;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
-import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.time.Duration;
 import java.util.*;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +76,8 @@ public abstract class OperationAttempt<
 
   protected final UUID attemptId = UUID.randomUUID();
 
-  private final List<APIException> warnings = new ArrayList<>();
+  private final List<WarningException> warnings = new ArrayList<>();
+  private final List<WarningException.Code> suppressedWarnings = new ArrayList<>();
   private Throwable failure;
 
   // Keep this private, so sub-classes set through setter incase we need to syncronize later
@@ -478,8 +480,20 @@ public abstract class OperationAttempt<
    *
    * @param warning The warning message to add, cannot be <code>null</code> or blank.
    */
-  public void addWarning(APIException warning) {
+  public void addWarning(WarningException warning) {
     warnings.add(Objects.requireNonNull(warning, "warning cannot be null"));
+  }
+
+  /**
+   * Adds supression warning override code to the attempt, so they are not included in the response.
+   *
+   * <p>See {@link OperationAttemptPage} for how warnings are included in the response.
+   *
+   * @param suppressedWarning The warning message code to add, cannot be <code>null</code> or blank.
+   */
+  public void addSuppressedWarning(WarningException.Code suppressedWarning) {
+    suppressedWarnings.add(
+        Objects.requireNonNull(suppressedWarning, "suppressedWarning cannot be null"));
   }
 
   /**
@@ -490,8 +504,27 @@ public abstract class OperationAttempt<
    *
    * @return An unmodifiable list of warnings, never <code>null</code>
    */
-  public List<APIException> warnings() {
+  public List<WarningException> warnings() {
     return List.copyOf(warnings);
+  }
+
+  /**
+   * The warnings are filtered using suppressed warning and only those to be added to the response.
+   *
+   * <p>See {@link OperationAttemptPage} for how warnings are included in the response.
+   *
+   * @return An unmodifiable list of warnings, never <code>null</code>
+   */
+  protected List<WarningException> warningsExcludingSupresed() {
+    if (suppressedWarnings.isEmpty()) {
+      return warnings;
+    }
+    var suppressedWarningsToCheck =
+        suppressedWarnings.stream().map(warn -> warn.name()).collect(Collectors.toSet());
+
+    return warnings.stream()
+        .filter(warn -> !suppressedWarningsToCheck.contains(warn.code))
+        .toList();
   }
 
   /**
