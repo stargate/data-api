@@ -165,8 +165,6 @@ message GetSupportedProvidersResponse {
       optional int32 vector_dimension = 2;
       repeated ParameterConfig parameters = 3;
       map<string, string> properties = 4;
-      optional bool deprecated = 5;
-      optional string serviceUrl = 6;
     }
   }
 
