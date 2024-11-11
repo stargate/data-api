@@ -302,7 +302,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         return "P1H30M"; // Handle duration as a string
       }
       if (type.equals(DataTypes.INT)) {
-        return 25;
+        return 25L;
       }
       if (type.equals(DataTypes.BIGINT)) {
         return 1000000L;
