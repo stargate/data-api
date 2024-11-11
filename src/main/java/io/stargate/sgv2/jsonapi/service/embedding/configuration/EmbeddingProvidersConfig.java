@@ -105,9 +105,6 @@ public interface EmbeddingProvidersConfig {
       @JsonProperty
       String name();
 
-      @JsonProperty
-      String displayName();
-
       /**
        * vectorDimension is not null if the model supports a single dimension value. It will be null
        * if the model supports different dimensions. A parameter called vectorDimension is included.

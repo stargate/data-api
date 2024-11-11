@@ -26,7 +26,6 @@ public record EmbeddingProvidersConfigImpl(
 
     public record ModelConfigImpl(
         String name,
-        String displayName,
         Optional<Integer> vectorDimension,
         List<ParameterConfig> parameters,
         Map<String, String> properties,
@@ -39,7 +38,6 @@ public record EmbeddingProvidersConfigImpl(
           List<ParameterConfig> modelParameterList) {
         this(
             grpcModelConfig.getName(),
-            grpcModelConfig.getDisplayName(),
             grpcModelConfig.hasVectorDimension()
                 ? Optional.of(grpcModelConfig.getVectorDimension())
                 : Optional.empty(),
