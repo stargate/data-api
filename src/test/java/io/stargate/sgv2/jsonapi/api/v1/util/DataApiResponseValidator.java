@@ -211,6 +211,11 @@ public class DataApiResponseValidator {
     return body(path, jsonEquals(rawJson));
   }
 
+  public DataApiResponseValidator hasDocumentFields(Map<String, Object> expectedJsons) {
+    expectedJsons.forEach((path, rawJson) -> body("data.document." + path, jsonEquals(rawJson)));
+    return this;
+  }
+
   public DataApiResponseValidator hasNoWarnings() {
     return body("status.warnings", is(nullValue()));
   }
