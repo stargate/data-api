@@ -8,7 +8,6 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
 import org.junit.jupiter.api.*;
@@ -169,7 +168,10 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                     }
                                   }
                                   """)
-          .wasSuccessful();
+          .hasSingleApiError(
+              SchemaException.Code.DATA_TYPE_NOT_SUPPORTED_BY_INDEXING,
+              SchemaException.class,
+              "The command attempted to index the unsupported columns: list_type(list).");
     }
 
     @Test
@@ -184,7 +186,10 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                     }
                                   }
                                   """)
-          .wasSuccessful();
+          .hasSingleApiError(
+              SchemaException.Code.DATA_TYPE_NOT_SUPPORTED_BY_INDEXING,
+              SchemaException.class,
+              "The command attempted to index the unsupported columns: set_type(set).");
     }
 
     @Test
@@ -199,7 +204,10 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                     }
                                   }
                                   """)
-          .wasSuccessful();
+          .hasSingleApiError(
+              SchemaException.Code.DATA_TYPE_NOT_SUPPORTED_BY_INDEXING,
+              SchemaException.class,
+              "The command attempted to index the unsupported columns: map_type(map).");
     }
 
     @Test
@@ -254,7 +262,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     @Test
     public void createVectorIndex() {
       assertTableCommand(keyspaceName, testTableName)
-          .postCreateIndex(
+          .postCreateVectorIndex(
               """
                                           {
                                             "name": "vector_type_1_idx",
@@ -328,9 +336,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   class CreateIndexFailure {
     @Test
     public void tryCreateIndexMissingColumn() {
-      final SchemaException schemaException =
-          SchemaException.Code.INVALID_INDEX_DEFINITION.get(
-              Map.of("reason", "Column not defined in the table"));
+
       assertTableCommand(keyspaceName, testTableName)
           .postCreateIndex(
               """
@@ -342,18 +348,14 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                       }
                       """)
           .hasSingleApiError(
-              SchemaException.Code.INVALID_INDEX_DEFINITION,
+              SchemaException.Code.UNKNOWN_INDEX_COLUMN,
               SchemaException.class,
-              schemaException.body);
+              "The command attempted to index the unknown columns: city.");
     }
 
     @Test
     public void nonTextOptions() {
-      final SchemaException schemaException =
-          SchemaException.Code.INVALID_INDEX_DEFINITION.get(
-              Map.of(
-                  "reason",
-                  "`caseSensitive`, `normalize` and `ascii` options are valid only for `text` column"));
+
       assertTableCommand(keyspaceName, testTableName)
           .postCreateIndex(
               """
@@ -368,9 +370,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                               }
                               """)
           .hasSingleApiError(
-              SchemaException.Code.INVALID_INDEX_DEFINITION,
+              SchemaException.Code.TEXT_ANALYSIS_NOT_SUPPORTED_BY_DATA_TYPE,
               SchemaException.class,
-              schemaException.body);
+              "The command attempted to index the unsupported columns: invalid_text(int).");
     }
   }
 
@@ -379,9 +381,6 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   class CreateVectorIndexFailure {
     @Test
     public void tryCreateIndexMissingColumn() {
-      final SchemaException schemaException =
-          SchemaException.Code.INVALID_INDEX_DEFINITION.get(
-              Map.of("reason", "Column not defined in the table"));
       assertTableCommand(keyspaceName, testTableName)
           .postCreateVectorIndex(
               """
@@ -393,21 +392,14 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                               }
                               """)
           .hasSingleApiError(
-              SchemaException.Code.INVALID_INDEX_DEFINITION,
+              SchemaException.Code.UNKNOWN_INDEX_COLUMN,
               SchemaException.class,
-              schemaException.body);
+              "The command attempted to index the unknown columns: city.");
     }
 
     @Test
     public void invalidSourceModel() {
-      final SchemaException schemaException =
-          SchemaException.Code.INVALID_INDEX_DEFINITION.get(
-              Map.of(
-                  "reason",
-                  "sourceModel `%s` used in request is invalid. Supported source models are: %s"
-                      .formatted(
-                          "invalid_source_model",
-                          EmbeddingSourceModel.getSupportedSourceModelNames())));
+
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCreateVectorIndex(
               """
@@ -422,9 +414,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 }
                 """)
           .hasSingleApiError(
-              SchemaException.Code.INVALID_INDEX_DEFINITION,
+              SchemaException.Code.UNKNOWN_VECTOR_SOURCE_MODEL,
               SchemaException.class,
-              schemaException.body);
+              "The command attempted to use the source model: invalid_source_model.");
     }
   }
 }
