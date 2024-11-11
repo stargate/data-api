@@ -2,12 +2,13 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.IndexDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.VectorIndexDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.VectorIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorIndexDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -22,8 +23,8 @@ import java.util.Objects;
 
 public class ApiVectorIndex extends ApiSupportedIndex {
 
-  public static final IndexFactoryFromIndexDesc<ApiVectorIndex, VectorIndexDesc> FROM_DESC_FACTORY =
-      new UserDescFactory();
+  public static final IndexFactoryFromIndexDesc<ApiVectorIndex, VectorIndexDefinitionDesc>
+      FROM_DESC_FACTORY = new UserDescFactory();
   public static final IndexFactoryFromCql FROM_CQL_FACTORY = new CqlTypeFactory();
 
   public static final DefaultString SIMILARITY_FUNCTION_DEFAULT =
@@ -59,9 +60,26 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   }
 
   @Override
-  public IndexDesc indexDesc() {
-    // TODO
-    return null;
+  public IndexDesc<VectorIndexDefinitionDesc> indexDesc() {
+
+    var definitionOptions =
+        new VectorIndexDefinitionDesc.VectorIndexDescOptions(
+            Options.SIMILARITY_FUNCTION.getWithDefault(indexOptions),
+            Options.SOURCE_MODEL.getWithDefault(indexOptions));
+
+    var definition =
+        new VectorIndexDefinitionDesc(cqlIdentifierToJsonKey(targetColumn), definitionOptions);
+    return new IndexDesc<VectorIndexDefinitionDesc>() {
+      @Override
+      public String name() {
+        return cqlIdentifierToJsonKey(indexName);
+      }
+
+      @Override
+      public VectorIndexDefinitionDesc definition() {
+        return definition;
+      }
+    };
   }
 
   public SimilarityFunction similarityFunction() {
@@ -69,15 +87,17 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   }
 
   /**
-   * Factory to create a new {@link ApiVectorIndex} using {@link RegularIndexDesc} from the user
-   * request.
+   * Factory to create a new {@link ApiVectorIndex} using {@link RegularIndexDefinitionDesc} from
+   * the user request.
    */
   private static class UserDescFactory
-      extends IndexFactoryFromIndexDesc<ApiVectorIndex, VectorIndexDesc> {
+      extends IndexFactoryFromIndexDesc<ApiVectorIndex, VectorIndexDefinitionDesc> {
 
     @Override
     public ApiVectorIndex create(
-        TableSchemaObject tableSchemaObject, String indexName, VectorIndexDesc indexDesc) {
+        TableSchemaObject tableSchemaObject,
+        String indexName,
+        VectorIndexDefinitionDesc indexDesc) {
 
       Objects.requireNonNull(tableSchemaObject, "tableSchemaObject must not be null");
       Objects.requireNonNull(indexDesc, "indexDesc must not be null");
@@ -112,10 +132,10 @@ public class ApiVectorIndex extends ApiSupportedIndex {
       var maybeSourceModel =
           EmbeddingSourceModel.fromName(
               SOURCE_MODEL_DEFAULT.apply(
-                  indexDesc.options(), VectorIndexDesc.VectorIndexDescOptions::sourceModel));
+                  indexDesc.options(),
+                  VectorIndexDefinitionDesc.VectorIndexDescOptions::sourceModel));
 
       // TODO: check the undefined model name
-
 
       // If we have a source model then set it in the options, otherwise leave it out
       maybeSourceModel.ifPresent(
@@ -123,7 +143,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
       var similarityFunctionName =
           SIMILARITY_FUNCTION_DEFAULT.apply(
-              indexDesc.options(), VectorIndexDesc.VectorIndexDescOptions::metric);
+              indexDesc.options(), VectorIndexDefinitionDesc.VectorIndexDescOptions::metric);
       var similarityFunction =
           SimilarityFunction.fromApiName(similarityFunctionName)
               .orElseThrow(() -> new IllegalStateException("TODO"));

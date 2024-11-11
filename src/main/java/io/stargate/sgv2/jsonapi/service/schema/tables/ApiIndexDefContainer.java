@@ -5,10 +5,12 @@ import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
+import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.util.*;
 
 /** Container for */
-public class ApiIndexDefContainer implements Iterable<ApiIndexDef> {
+public class ApiIndexDefContainer implements Iterable<ApiIndexDef>, PrettyPrintable {
 
   public static final CqlColumnFactory FROM_CQL_FACTORY = new CqlColumnFactory();
 
@@ -39,6 +41,11 @@ public class ApiIndexDefContainer implements Iterable<ApiIndexDef> {
     this.byName = new HashMap<>(other.byName);
   }
 
+  public ApiIndexDefContainer(List<ApiIndexDef> indexDefs) {
+    this(indexDefs.size());
+    indexDefs.forEach(this::put);
+  }
+
   public static ApiIndexDefContainer of() {
     return IMMUTABLE_EMPTY;
   }
@@ -58,8 +65,12 @@ public class ApiIndexDefContainer implements Iterable<ApiIndexDef> {
     byName.put(indexDef.indexName(), indexDef);
   }
 
+  public List<CqlIdentifier> allIndexNames() {
+    return byName.keySet().stream().toList();
+  }
+
   public List<ApiIndexDef> allIndexes() {
-    return Collections.unmodifiableList(byName.values().stream().toList());
+    return byName.values().stream().toList();
   }
 
   public List<ApiIndexDef> allIndexesFor(CqlIdentifier targetColumn) {
@@ -71,9 +82,31 @@ public class ApiIndexDefContainer implements Iterable<ApiIndexDef> {
     return Optional.ofNullable(indexes.isEmpty() ? null : indexes.getFirst());
   }
 
+  public ApiIndexDefContainer filterBySupported() {
+    return new ApiIndexDefContainer(
+            byName.values().stream().filter(i -> !i.isUnsupported()).toList())
+        .toUnmodifiable();
+  }
+
+  public ApiIndexDefContainer filterByUnsupported() {
+    return new ApiIndexDefContainer(
+            byName.values().stream().filter(ApiIndexDef::isUnsupported).toList())
+        .toUnmodifiable();
+  }
+
   @Override
   public Iterator<ApiIndexDef> iterator() {
     return byName.values().iterator();
+  }
+
+  @Override
+  public String toString() {
+    return toString(false);
+  }
+
+  @Override
+  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+    return prettyToStringBuilder.append("indexes", byName.values());
   }
 
   public static class CqlColumnFactory {

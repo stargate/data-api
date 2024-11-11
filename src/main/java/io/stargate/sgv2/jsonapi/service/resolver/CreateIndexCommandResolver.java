@@ -23,7 +23,7 @@ import java.time.Duration;
 public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCommand> {
 
   // Command option
-  private static final DefaultBoolean IF_NOT_EXISTS = Defaults.of(false);
+  public static final DefaultBoolean IF_NOT_EXISTS_DEFAULT = Defaults.of(false);
 
   @Override
   public Class<CreateIndexCommand> getCommandClass() {
@@ -38,7 +38,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
 
     attemptBuilder =
         attemptBuilder.withIfNotExists(
-            IF_NOT_EXISTS.apply(
+            IF_NOT_EXISTS_DEFAULT.apply(
                 command.options(), CreateIndexCommand.CreateIndexCommandOptions::ifNotExists));
 
     // TODO: we need a centralised way of creating retry attempt.

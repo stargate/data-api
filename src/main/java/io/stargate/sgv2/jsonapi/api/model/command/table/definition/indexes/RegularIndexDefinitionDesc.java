@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -8,7 +9,8 @@ import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-public record RegularIndexDesc(
+@JsonPropertyOrder({"column", "options"})
+public record RegularIndexDefinitionDesc(
     @NotNull
         @Size(min = 1, max = 48)
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
@@ -18,10 +20,20 @@ public record RegularIndexDesc(
         @Nullable
         @Schema(description = "Different indexing options.", type = SchemaType.OBJECT)
         RegularIndexDescOptions options)
-    implements IndexDesc {
+    implements IndexDefinitionDesc<RegularIndexDefinitionDesc.RegularIndexDescOptions> {
 
   // This is index definition options for text column types.
+  @JsonPropertyOrder({"ascii", "caseSensitive", "normalize"})
   public record RegularIndexDescOptions(
+      @Nullable
+          @Schema(
+              description =
+                  "When set to true, index will converts alphabetic, numeric, and symbolic characters to the ascii equivalent, if one exists.",
+              defaultValue = "false",
+              type = SchemaType.BOOLEAN,
+              implementation = Boolean.class)
+          @JsonInclude(JsonInclude.Include.NON_NULL)
+          Boolean ascii,
       @Nullable
           @Schema(
               description = "Ignore case in matching string values.",
@@ -37,14 +49,5 @@ public record RegularIndexDesc(
               type = SchemaType.BOOLEAN,
               implementation = Boolean.class)
           @JsonInclude(JsonInclude.Include.NON_NULL)
-          Boolean normalize,
-      @Nullable
-          @Schema(
-              description =
-                  "When set to true, index will converts alphabetic, numeric, and symbolic characters to the ascii equivalent, if one exists.",
-              defaultValue = "false",
-              type = SchemaType.BOOLEAN,
-              implementation = Boolean.class)
-          @JsonInclude(JsonInclude.Include.NON_NULL)
-          Boolean ascii) {}
+          Boolean normalize) {}
 }

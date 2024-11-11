@@ -3,11 +3,10 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.IndexDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.IndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +17,8 @@ import org.slf4j.LoggerFactory;
  * @param <ApiT> The type of the index to create.
  * @param <DescT> The type of the index description.
  */
-public abstract class IndexFactoryFromIndexDesc<ApiT extends ApiIndexDef, DescT extends IndexDesc>
+public abstract class IndexFactoryFromIndexDesc<
+        ApiT extends ApiIndexDef, DescT extends IndexDefinitionDesc>
     extends FactoryFromDesc {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexFactoryFromIndexDesc.class);
 
@@ -34,16 +34,6 @@ public abstract class IndexFactoryFromIndexDesc<ApiT extends ApiIndexDef, DescT 
    */
   public abstract ApiT create(
       TableSchemaObject tableSchemaObject, String indexName, DescT indexDesc);
-
-  /**
-   * Called to create an index from the user description in a command that we know we do not
-   * support.
-   */
-  public UnsupportedIndex createUnsupported(String name, DescT indexDesc) {
-    // aaron - this would be better if the IndexDesc interface had a way to get the options the user
-    // sent
-    return new UnsupportedUserIndex(userNameToIdentifier(name, "indexName"), Map.of());
-  }
 
   /**
    * Checks the target column exits in the table schema, throws {@link

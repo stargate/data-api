@@ -33,7 +33,10 @@ public class ApiTableDef {
   private final ApiColumnDefContainer allColumns;
   private final ApiColumnDefContainer nonPKColumns;
   private final ApiColumnDefContainer unsupportedColumns;
-  private final ApiIndexDefContainer indexDefs;
+
+  // split into two so we do not accidentally reference an index we cannot use.
+  private final ApiIndexDefContainer supportedIndexes;
+  private final ApiIndexDefContainer indexesIncludingUnsupported;
 
   private ApiTableDef(
       CqlIdentifier name,
@@ -41,7 +44,7 @@ public class ApiTableDef {
       ApiColumnDefContainer partitionkeys,
       List<ApiClusteringDef> clusteringDefs,
       ApiColumnDefContainer allColumns,
-      ApiIndexDefContainer indexDefs) {
+      ApiIndexDefContainer allIndexes) {
 
     this.name = name;
     this.primaryKeys = primaryKeys.toUnmodifiable();
@@ -50,7 +53,8 @@ public class ApiTableDef {
     this.clusteringKeys =
         ApiColumnDefContainer.of(clusteringDefs.stream().map(ApiClusteringDef::columnDef).toList());
     this.allColumns = allColumns.toUnmodifiable();
-    this.indexDefs = indexDefs.toUnmodifiable();
+    this.supportedIndexes = allIndexes.filterBySupported();
+    this.indexesIncludingUnsupported = allIndexes;
 
     var workingNonPKColumns = new ApiColumnDefContainer(allColumns().size() - primaryKeys.size());
     allColumns.values().stream()
@@ -147,9 +151,14 @@ public class ApiTableDef {
     return unsupportedColumns;
   }
 
-  /** Get all the indexes on this table, includes all forms of indexes. */
+  /** Get all the indexes on this table that are supported by the API */
   public ApiIndexDefContainer indexes() {
-    return indexDefs;
+    return supportedIndexes;
+  }
+
+  /** Gets all the indexes on the table that are supported and unsupported by the API. */
+  public ApiIndexDefContainer indexesIncludingUnsupported() {
+    return indexesIncludingUnsupported;
   }
 
   /**

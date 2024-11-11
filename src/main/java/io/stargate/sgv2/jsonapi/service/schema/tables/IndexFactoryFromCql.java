@@ -42,8 +42,8 @@ public abstract class IndexFactoryFromCql extends FactoryFromCql {
       return switch (apiIndexType) {
         case REGULAR ->
             ApiRegularIndex.FROM_CQL_FACTORY.create(apiColumnDef, indexTarget, indexMetadata);
-        case COLLECTION ->
-            ApiCollectionIndex.FROM_CQL_FACTORY.create(apiColumnDef, indexTarget, indexMetadata);
+          // for now we do not support collection indexes, will do for GA - aaron nov 11
+        case COLLECTION -> createUnsupported(indexMetadata);
         case VECTOR ->
             ApiVectorIndex.FROM_CQL_FACTORY.create(apiColumnDef, indexTarget, indexMetadata);
         default ->
@@ -79,8 +79,8 @@ public abstract class IndexFactoryFromCql extends FactoryFromCql {
     return CQLSAIIndex.isSAIIndex(indexMetadata);
   }
 
-  public UnsupportedCqlIndex createUnsupported(IndexMetadata indexMetadata) {
-    return new UnsupportedCqlIndex(indexMetadata.getName(), indexMetadata.getOptions());
+  public UnsupportedIndex createUnsupported(IndexMetadata indexMetadata) {
+    return new UnsupportedIndex(indexMetadata);
   }
 
   private static class DefaultFactory extends IndexFactoryFromCql {

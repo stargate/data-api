@@ -19,7 +19,7 @@ import java.time.Duration;
 public class CreateVectorIndexCommandResolver implements CommandResolver<CreateVectorIndexCommand> {
 
   // Command option
-  private static final DefaultBoolean IF_NOT_EXISTS_DEFAULT = Defaults.of(false);
+  public static final DefaultBoolean IF_NOT_EXISTS_DEFAULT = Defaults.of(false);
 
   @Override
   public Class<CreateVectorIndexCommand> getCommandClass() {

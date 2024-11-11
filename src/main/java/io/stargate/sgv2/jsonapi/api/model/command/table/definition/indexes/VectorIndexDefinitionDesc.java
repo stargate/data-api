@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.stargate.sgv2.jsonapi.config.constants.VectorIndexDescDefaults;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
@@ -9,7 +10,8 @@ import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-public record VectorIndexDesc(
+@JsonPropertyOrder({"column", "options"})
+public record VectorIndexDefinitionDesc(
     @NotNull
         @Size(min = 1, max = 48)
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
@@ -19,9 +21,10 @@ public record VectorIndexDesc(
         @Nullable
         @Schema(description = "Different indexing options.", type = SchemaType.OBJECT)
         VectorIndexDescOptions options)
-    implements IndexDesc {
+    implements IndexDefinitionDesc<VectorIndexDefinitionDesc.VectorIndexDescOptions> {
 
-  // This is index definition options for vector column types.
+  // This is index definition options for vector column types
+  @JsonPropertyOrder({"metric", "sourceModel"})
   public record VectorIndexDescOptions(
       @Nullable
           @Pattern(
@@ -29,7 +32,9 @@ public record VectorIndexDesc(
               message = "function name can only be 'dot_product', 'cosine' or 'euclidean'")
           @Schema(
               description = "Similarity function algorithm that needs to be used for vector search",
-              defaultValue = VectorIndexDescDefaults.DEFAULT_METRIC_NAME)
+              defaultValue = VectorIndexDescDefaults.DEFAULT_METRIC_NAME,
+              type = SchemaType.STRING,
+              implementation = String.class)
           @JsonInclude(JsonInclude.Include.NON_NULL)
           String metric,
       @Nullable

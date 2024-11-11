@@ -24,7 +24,7 @@ public abstract class Property<KeyT, ValueT> {
   }
 
   /**
-   * Test if the value is present
+   * Test if the value is present using {@link Default#isPresent(Object)}
    *
    * @param value
    * @return
@@ -68,6 +68,25 @@ public abstract class Property<KeyT, ValueT> {
   }
 
   /**
+   * Read the key from the map, returns the value if the {@link #isPresent(Object)} is true,
+   * otherwise <code>null</code>.
+   *
+   * <p>This <em>bypasses</em> the default value.
+   *
+   * @param map The map to read from
+   * @return The value if it is present, otherwise <code>null</code>
+   */
+  public ValueT getIfPresent(Map<KeyT, ValueT> map) {
+    try {
+      var value = map.get(key);
+      return isPresent(value) ? value : null;
+    } catch (RequiredValue.RequiredValueMissingException e) {
+      throw new RequiredValue.RequiredValueMissingException(
+          "Required value missing for key: " + key);
+    }
+  }
+
+  /**
    * Write the value or the default value to the map , return any previous value
    *
    * @param map
@@ -91,6 +110,27 @@ public abstract class Property<KeyT, ValueT> {
 
     public StringableValueT getWithDefaultStringable(Map<StringableKeyT, String> map) {
       return stringableDefaultValue.applyToType(map.get((key)));
+    }
+
+    /**
+     * Read the key from the map, returns the value if the {@link Default#isPresent()} is true,
+     * otherwise <code>null</code>.
+     *
+     * <p>This <em>bypasses</em> the default value.
+     *
+     * @param map The map to read from
+     * @return The value if it is present, otherwise <code>null</code>
+     */
+    public StringableValueT getIfPresentStringable(Map<StringableKeyT, String> map) {
+      try {
+        var value = map.get(key);
+        return stringableDefaultValue.isPresent(value)
+            ? stringableDefaultValue.applyToType(value)
+            : null;
+      } catch (RequiredValue.RequiredValueMissingException e) {
+        throw new RequiredValue.RequiredValueMissingException(
+            "Required value missing for key: " + key);
+      }
     }
 
     public String putOrDefaultStringable(Map<StringableKeyT, String> map, StringableValueT value) {

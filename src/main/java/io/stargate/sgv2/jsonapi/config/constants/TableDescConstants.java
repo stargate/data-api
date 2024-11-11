@@ -28,14 +28,23 @@ public interface TableDescConstants {
   }
 
   interface IndexDesc {
-    String COLUMN = "column";
-    String OPTIONS = "options";
+    String NAME = "name";
+    String DEFINITION = "definition";
   }
 
-  interface RegularIndexDescOptions {
+  interface IndexDefinitionDesc {
+    String COLUMN = "column";
+    String OPTIONS = "options";
+    String API_SUPPORT = "apiSupport";
+  }
+
+  interface RegularIndexDefinitionDescOptions {
     String ASCII = "ascii";
     String CASE_SENSITIVE = "case_sensitive";
     String NORMALIZE = "normalize";
+  }
+
+  interface VectorIndexDefinitionDescOptions {
     String SOURCE_MODEL = "source_model";
     String SIMILARITY_FUNCTION = "similarity_function";
   }

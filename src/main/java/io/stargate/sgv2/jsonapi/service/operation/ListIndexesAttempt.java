@@ -7,9 +7,12 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDefContainer;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Attempt to list indexes for a table. */
 public class ListIndexesAttempt extends MetadataAttempt<TableSchemaObject> {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ListIndexesAttempt.class);
 
   protected ListIndexesAttempt(int position, TableSchemaObject schemaObject) {
     super(position, schemaObject, RetryPolicy.NO_RETRY);
@@ -25,8 +28,17 @@ public class ListIndexesAttempt extends MetadataAttempt<TableSchemaObject> {
     if (!TABLE_MATCHER.test(tableMetadata)) {
       return Optional.empty();
     }
-    return Optional.of(
-        TableSchemaObject.from(tableMetadata, OBJECT_MAPPER).apiTableDef().indexes());
+    var indexesContainer =
+        TableSchemaObject.from(tableMetadata, OBJECT_MAPPER)
+            .apiTableDef()
+            .indexesIncludingUnsupported();
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug(
+          "indexesForTable() - table: {} indexesContainer: {}",
+          schemaObject.tableMetadata().getName(),
+          indexesContainer);
+    }
+    return Optional.of(indexesContainer);
   }
 
   /**

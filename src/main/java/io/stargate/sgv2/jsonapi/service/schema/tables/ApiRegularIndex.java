@@ -1,12 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
+import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.IndexDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
@@ -20,7 +21,7 @@ import java.util.Objects;
 /** An index on a numeric or text column that is not using text analysis . */
 public class ApiRegularIndex extends ApiSupportedIndex {
 
-  public static final IndexFactoryFromIndexDesc<ApiRegularIndex, RegularIndexDesc>
+  public static final IndexFactoryFromIndexDesc<ApiRegularIndex, RegularIndexDefinitionDesc>
       FROM_DESC_FACTORY = new UserDescFactory();
 
   public static final IndexFactoryFromCql FROM_CQL_FACTORY = new CqlTypeFactory();
@@ -43,8 +44,31 @@ public class ApiRegularIndex extends ApiSupportedIndex {
   }
 
   @Override
-  public IndexDesc indexDesc() {
-    return null;
+  public IndexDesc<RegularIndexDefinitionDesc> indexDesc() {
+
+    // Only the text indexes has the properties, we rely on the factories to create the options
+    // map with the correct values, so we use getIfPresent to skip the defaults which and read null
+    // if it
+    // is not in the map
+    var definitionOptions =
+        new RegularIndexDefinitionDesc.RegularIndexDescOptions(
+            Options.ASCII.getIfPresentStringable(indexOptions),
+            Options.CASE_SENSITIVE.getIfPresentStringable(indexOptions),
+            Options.NORMALIZE.getIfPresentStringable(indexOptions));
+
+    var definition =
+        new RegularIndexDefinitionDesc(cqlIdentifierToJsonKey(targetColumn), definitionOptions);
+    return new IndexDesc<RegularIndexDefinitionDesc>() {
+      @Override
+      public String name() {
+        return cqlIdentifierToJsonKey(indexName);
+      }
+
+      @Override
+      public RegularIndexDefinitionDesc definition() {
+        return definition;
+      }
+    };
   }
 
   public boolean isAscii() {
@@ -60,15 +84,17 @@ public class ApiRegularIndex extends ApiSupportedIndex {
   }
 
   /**
-   * Factor to create a new {@link ApiRegularIndex} using {@link RegularIndexDesc} from the user
-   * request.
+   * Factor to create a new {@link ApiRegularIndex} using {@link RegularIndexDefinitionDesc} from
+   * the user request.
    */
   private static class UserDescFactory
-      extends IndexFactoryFromIndexDesc<ApiRegularIndex, RegularIndexDesc> {
+      extends IndexFactoryFromIndexDesc<ApiRegularIndex, RegularIndexDefinitionDesc> {
 
     @Override
     public ApiRegularIndex create(
-        TableSchemaObject tableSchemaObject, String indexName, RegularIndexDesc indexDesc) {
+        TableSchemaObject tableSchemaObject,
+        String indexName,
+        RegularIndexDefinitionDesc indexDesc) {
 
       Objects.requireNonNull(tableSchemaObject, "tableSchemaObject must not be null");
       Objects.requireNonNull(indexDesc, "indexDesc must not be null");

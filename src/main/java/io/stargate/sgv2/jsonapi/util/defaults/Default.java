@@ -16,6 +16,10 @@ public interface Default<T> {
 
   interface Stringable<T> extends Default<T> {
 
+    default boolean isPresent(String value) {
+      return !(value == null || value.isBlank());
+    }
+
     T applyToType(String stringValue);
 
     String applyToString(T objectValue);
