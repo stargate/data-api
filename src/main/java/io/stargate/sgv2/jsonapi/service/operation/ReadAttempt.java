@@ -70,7 +70,6 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     this.pagingState = pagingState;
     this.projection = Objects.requireNonNull(projection, "projection must not be null");
     this.rowSorter = Objects.requireNonNull(rowSorter, "rowSorter must not be null");
-
     downcastRetryPolicy();
     Objects.requireNonNull(readAttemptRetryPolicy, "readAttemptRetryPolicy must not be null");
     setStatus(OperationStatus.READY);

@@ -53,7 +53,7 @@ public abstract class FilterResolver<
   protected abstract FilterMatchRules<CmdT> buildMatchRules();
 
   /**
-   * Users of the class should call this function to convert the filer on the command into a {@link
+   * Users of the class should call this function to convert the filter on the command into a {@link
    * DBLogicalExpression}.
    *
    * @param commandContext
