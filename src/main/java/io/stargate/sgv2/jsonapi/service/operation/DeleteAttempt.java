@@ -36,13 +36,7 @@ public class DeleteAttempt<SchemaT extends TableBasedSchemaObject>
   protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
     // bind and execute
     var statement = buildDeleteStatement();
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
-          "execute() - {}, cql={}, values={}",
-          positionAndAttemptId(),
-          statement.getQuery(),
-          statement.getPositionalValues());
-    }
+    logStatement(LOGGER, "executeStatement()", statement);
     return queryExecutor.executeWrite(statement);
   }
 
