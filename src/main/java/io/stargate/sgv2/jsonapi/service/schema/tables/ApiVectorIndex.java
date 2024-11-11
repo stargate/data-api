@@ -34,7 +34,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
       Defaults.of(VectorIndexDescDefaults.DEFAULT_METRIC_NAME);
 
   public static final DefaultString SOURCE_MODEL_DEFAULT =
-      Defaults.of(EmbeddingSourceModel.DEFAULT.getName());
+      Defaults.of(EmbeddingSourceModel.DEFAULT.apiName());
 
   private interface Options {
     // No default when we read this from the options map, we cannot guess what it is
@@ -42,24 +42,29 @@ public class ApiVectorIndex extends ApiSupportedIndex {
     StringProperty SIMILARITY_FUNCTION =
         Properties.ofRequired(VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION);
 
-    // The default is a null string
     StringProperty SOURCE_MODEL =
-        Properties.of(VectorConstants.CQLAnnIndex.SOURCE_MODEL, (String) null);
+        Properties.of(
+            VectorConstants.CQLAnnIndex.SOURCE_MODEL, EmbeddingSourceModel.DEFAULT.apiName());
   }
 
+  // because we actually use the similarityFunction when doing reads better to avoid checking the
+  // options where it is
+  // only a string. And for that, and the model, they have different names for different usages, so
+  // to reduce
+  // confusion we hold them here, and rely on the factory to sort it out.
   private final SimilarityFunction similarityFunction;
+  private final EmbeddingSourceModel sourceModel;
 
   private ApiVectorIndex(
       CqlIdentifier indexName,
       CqlIdentifier targetColumn,
       Map<String, String> options,
-      SimilarityFunction similarityFunction) {
+      SimilarityFunction similarityFunction,
+      EmbeddingSourceModel sourceModel) {
     super(ApiIndexType.VECTOR, indexName, targetColumn, options);
 
-    // because we actually use the similarityFunction when doing reads, and it needs to be mapped to
-    // an enum,
-    // forcing the factories to do the work and pass it
     this.similarityFunction = similarityFunction;
+    this.sourceModel = sourceModel;
   }
 
   @Override
@@ -67,12 +72,12 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
     var definitionOptions =
         new VectorIndexDefinitionDesc.VectorIndexDescOptions(
-            Options.SIMILARITY_FUNCTION.getWithDefault(indexOptions),
-            Options.SOURCE_MODEL.getWithDefault(indexOptions));
+            similarityFunction.apiName(), sourceModel.apiName());
 
     var definition =
         new VectorIndexDefinitionDesc(cqlIdentifierToJsonKey(targetColumn), definitionOptions);
-    return new IndexDesc<VectorIndexDefinitionDesc>() {
+
+    return new IndexDesc<>() {
       @Override
       public String name() {
         return cqlIdentifierToJsonKey(indexName);
@@ -137,7 +142,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
       var userOrDefaultModelName =
           SOURCE_MODEL_DEFAULT.apply(
               indexDesc.options(), VectorIndexDefinitionDesc.VectorIndexDescOptions::sourceModel);
-      var maybeSourceModel = EmbeddingSourceModel.fromName(userOrDefaultModelName);
+      var maybeSourceModel = EmbeddingSourceModel.fromApiName(userOrDefaultModelName);
       if (maybeSourceModel.isEmpty()) {
         throw SchemaException.Code.UNKNOWN_VECTOR_SOURCE_MODEL.get(
             Map.of(
@@ -147,7 +152,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
                 userOrDefaultModelName));
       }
       var sourceModelToUse = maybeSourceModel.get();
-      Options.SOURCE_MODEL.putOrDefault(indexOptions, sourceModelToUse.name());
+      Options.SOURCE_MODEL.putOrDefault(indexOptions, sourceModelToUse.cqlName());
 
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug(
@@ -197,7 +202,8 @@ public class ApiVectorIndex extends ApiSupportedIndex {
             functionToUse);
       }
 
-      return new ApiVectorIndex(indexIdentifier, targetIdentifier, indexOptions, functionToUse);
+      return new ApiVectorIndex(
+          indexIdentifier, targetIdentifier, indexOptions, functionToUse, sourceModelToUse);
     }
   }
 
@@ -226,16 +232,30 @@ public class ApiVectorIndex extends ApiSupportedIndex {
                 + indexMetadata.getName());
       }
 
+      var sourceModel =
+          EmbeddingSourceModel.fromCqlName(
+                  Options.SOURCE_MODEL.getWithDefault(indexMetadata.getOptions()))
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "Unknown source model index.name:%s, index.options%s"
+                              .formatted(indexMetadata.getName(), indexMetadata.getOptions())));
+
       var similarityFunction =
           SimilarityFunction.fromCqlIndexingFunction(
                   Options.SIMILARITY_FUNCTION.getWithDefault(indexMetadata.getOptions()))
-              .orElseThrow(() -> new IllegalStateException("TODO"));
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "Unknown similarity function index.name:%s, index.options%s"
+                              .formatted(indexMetadata.getName(), indexMetadata.getOptions())));
 
       return new ApiVectorIndex(
           indexMetadata.getName(),
           indexTarget.targetColumn(),
           indexMetadata.getOptions(),
-          similarityFunction);
+          similarityFunction,
+          sourceModel);
     }
   }
 }

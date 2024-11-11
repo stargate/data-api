@@ -44,7 +44,8 @@ public class DataApiResponseValidator {
                   CREATE_INDEX,
                   DROP_INDEX,
                   CREATE_VECTOR_INDEX,
-                  LIST_TABLES ->
+                  LIST_TABLES,
+                  LIST_INDEXES ->
               responseIsDDLSuccess();
           case CREATE_COLLECTION -> responseIsDDLSuccess();
           default ->
@@ -103,7 +104,7 @@ public class DataApiResponseValidator {
       case ALTER_TABLE, CREATE_TABLE, DROP_TABLE, CREATE_INDEX, DROP_INDEX, CREATE_VECTOR_INDEX -> {
         return hasNoErrors().hasStatusOK();
       }
-      case LIST_TABLES -> {
+      case LIST_TABLES, LIST_INDEXES -> {
         return hasNoErrors();
       }
       case CREATE_COLLECTION -> {

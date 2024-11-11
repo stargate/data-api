@@ -79,7 +79,7 @@ public enum SimilarityFunction {
 
     if (!userProvided) {
       // the user did not provide a function, so we use the one from the model
-      return sourceModel.getSimilarityFunction();
+      return sourceModel.similarityFunction();
     }
     // the user provided a function, so we use that one
     return userOrDefaultFunction == null ? DEFAULT : userOrDefaultFunction;

@@ -46,7 +46,7 @@ public record VectorColumnDefinition(
     // missing, it will be an empty string and sourceModel becomes the default.
     var sourceModelName = jsonNode.path(VectorConstants.VectorColumn.SOURCE_MODEL).asText();
     var sourceModel =
-        EmbeddingSourceModel.fromNameOrDefault(sourceModelName)
+        EmbeddingSourceModel.fromApiNameOrDefault(sourceModelName)
             .orElseThrow(
                 () -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModelName));
 

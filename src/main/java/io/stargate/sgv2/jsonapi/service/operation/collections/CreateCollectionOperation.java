@@ -138,7 +138,7 @@ public record CreateCollectionOperation(
 
     // Use the fromNameOrDefault() so if not specified it will default
     var embeddingSourceModel =
-        EmbeddingSourceModel.fromNameOrDefault(sourceModel)
+        EmbeddingSourceModel.fromApiNameOrDefault(sourceModel)
             .orElseThrow(() -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModel));
 
     var similarityFunction =

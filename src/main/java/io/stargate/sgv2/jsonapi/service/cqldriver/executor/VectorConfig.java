@@ -90,14 +90,14 @@ public class VectorConfig {
                   // find the model
                   // if they have not set it up correctly
                   sourceModel =
-                      EmbeddingSourceModel.fromNameOrDefault(sourceModelStr)
+                      EmbeddingSourceModel.fromCqlNameOrDefault(sourceModelStr)
                           .orElseThrow(
                               () ->
                                   EmbeddingSourceModel.getUnknownSourceModelException(
                                       sourceModelStr));
                   similarityFunction =
                       similarityFunction == null
-                          ? sourceModel.getSimilarityFunction()
+                          ? sourceModel.similarityFunction()
                           : similarityFunction;
                 }
                 return new AbstractMap.SimpleEntry<>(similarityFunction, sourceModel);

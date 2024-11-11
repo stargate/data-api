@@ -176,7 +176,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         }
         if (sourceModelName != null) {
           sourceModel =
-              EmbeddingSourceModel.fromNameOrDefault(sourceModelName)
+              EmbeddingSourceModel.fromApiNameOrDefault(sourceModelName)
                   .orElseThrow(
                       () -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModelName));
         }
@@ -342,7 +342,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           new CreateCollectionCommand.Options.VectorSearchConfig(
               vectorColumnDefinition.vectorSize(),
               vectorColumnDefinition.similarityFunction().name().toLowerCase(),
-              vectorColumnDefinition.sourceModel().getName(),
+              vectorColumnDefinition.sourceModel().apiName(),
               vectorizeConfig);
     }
 

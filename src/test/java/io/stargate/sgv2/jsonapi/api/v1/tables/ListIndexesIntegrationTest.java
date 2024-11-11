@@ -30,9 +30,9 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                 "definition": {
                   "column": "name",
                   "options": {
-                   "caseSensitive": false,
-                    "normalize": true,
-                    "ascii": true
+                    "ascii": true,
+                    "caseSensitive": false,
+                    "normalize": true
                   }
                 }
               }
@@ -55,9 +55,9 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                     "definition": {
                       "column": "city",
                       "options": {
-                       "caseSensitive": true,
-                        "normalize": false,
-                        "ascii": false
+                        "ascii": false,
+                        "caseSensitive": true,
+                        "normalize": false
                       }
                     }
                   }
@@ -71,7 +71,7 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                    "column": "content",
                    "options": {
                      "metric": "cosine",
-                     "sourceModel": "openai_v3_small"
+                     "sourceModel": "openai-v3-small"
                    }
                  }
                }

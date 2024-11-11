@@ -13,34 +13,44 @@ import java.util.stream.Collectors;
  * enabled.
  */
 public enum EmbeddingSourceModel {
-  ADA002("ada002", SimilarityFunction.DOT_PRODUCT),
-  BERT("bert", SimilarityFunction.DOT_PRODUCT),
-  COHERE_V3("cohere-v3", SimilarityFunction.DOT_PRODUCT),
-  GECKO("gecko", SimilarityFunction.DOT_PRODUCT),
-  NV_QA_4("nv-qa-4", SimilarityFunction.DOT_PRODUCT),
-  OPENAI_V3_LARGE("openai-v3-large", SimilarityFunction.DOT_PRODUCT),
-  OPENAI_V3_SMALL("openai-v3-small", SimilarityFunction.DOT_PRODUCT),
-  OTHER("other", SimilarityFunction.COSINE),
+  ADA002("ada002", "ADA002", SimilarityFunction.DOT_PRODUCT),
+  BERT("bert", "BERT", SimilarityFunction.DOT_PRODUCT),
+  COHERE_V3("cohere-v3", "COHERE_V3", SimilarityFunction.DOT_PRODUCT),
+  GECKO("gecko", "GECKO", SimilarityFunction.DOT_PRODUCT),
+  NV_QA_4("nv-qa-4", "NV_QA_4", SimilarityFunction.DOT_PRODUCT),
+  OPENAI_V3_LARGE("openai-v3-large", "OPENAI_V3_LARGE", SimilarityFunction.DOT_PRODUCT),
+  OPENAI_V3_SMALL("openai-v3-small", "OPENAI_V3_SMALL", SimilarityFunction.DOT_PRODUCT),
+  OTHER("other", "OTHER", SimilarityFunction.COSINE),
   // NOTE: was null originally for undefined
-  UNDEFINED("undefined", null);
+  UNDEFINED("undefined", "undefined", null);
 
   // TODO: Add a comment why this is the default
   public static final EmbeddingSourceModel DEFAULT = OTHER;
 
-  private final String name;
+  private final String apiName;
+  private final String cqlName;
   private final SimilarityFunction similarityFunction;
 
-  private static final Map<String, EmbeddingSourceModel> SOURCE_MODEL_BY_NAME =
+  private static final Map<String, EmbeddingSourceModel> SOURCE_MODEL_BY_API_NAME =
       Arrays.stream(EmbeddingSourceModel.values())
-          .collect(Collectors.toMap(model -> model.name().toLowerCase(), Function.identity()));
+          .collect(Collectors.toMap(model -> model.apiName().toLowerCase(), Function.identity()));
 
-  EmbeddingSourceModel(String name, SimilarityFunction similarityFunction) {
-    this.name = name;
+  private static final Map<String, EmbeddingSourceModel> SOURCE_MODEL_BY_CQL_NAME =
+      Arrays.stream(EmbeddingSourceModel.values())
+          .collect(Collectors.toMap(model -> model.cqlName().toLowerCase(), Function.identity()));
+
+  EmbeddingSourceModel(String apiName, String cqlName, SimilarityFunction similarityFunction) {
+    this.apiName = apiName;
+    this.cqlName = cqlName;
     this.similarityFunction = similarityFunction;
   }
 
-  public String getName() {
-    return name;
+  public String cqlName() {
+    return cqlName;
+  }
+
+  public String apiName() {
+    return apiName;
   }
 
   /**
@@ -48,14 +58,14 @@ public enum EmbeddingSourceModel {
    *
    * @return null if there is no default similarity function, otherwise the similarity function
    */
-  public SimilarityFunction getSimilarityFunction() {
+  public SimilarityFunction similarityFunction() {
     return similarityFunction;
   }
 
   public static String getSupportedSourceModelNames() {
     return Arrays.stream(EmbeddingSourceModel.values())
         .filter(v -> !v.equals(EmbeddingSourceModel.UNDEFINED))
-        .map(EmbeddingSourceModel::getName)
+        .map(EmbeddingSourceModel::apiName)
         .collect(Collectors.joining(", "));
   }
 
@@ -81,32 +91,47 @@ public enum EmbeddingSourceModel {
   //        : getSimilarityFunction(SOURCE_MODEL_NAME_MAP.get(sourceModelName));
   //  }
 
-  /**
-   * Converts a string representation of a source model name to its corresponding {@link
-   * EmbeddingSourceModel} enum if it exists.
-   *
-   * @param name Name of the source model, there is no default returned. Nullable.
-   * @return Optional with the corresponding {@link EmbeddingSourceModel} or empty if the name is
-   *     not known, there are no defaults returned. Use {@link #DEFAULT}.
-   */
-  public static Optional<EmbeddingSourceModel> fromName(String name) {
-    return name == null
+  public static Optional<EmbeddingSourceModel> fromCqlName(String cqlName) {
+    return cqlName == null
         ? Optional.empty()
-        : Optional.ofNullable(SOURCE_MODEL_BY_NAME.get(name.toLowerCase()));
+        : Optional.ofNullable(SOURCE_MODEL_BY_CQL_NAME.get(cqlName.toLowerCase()));
+  }
+
+  public static Optional<EmbeddingSourceModel> fromCqlNameOrDefault(String cqlName) {
+    return switch (cqlName) {
+      case null -> Optional.of(DEFAULT);
+      case String s when s.isBlank() -> Optional.of(DEFAULT);
+      default -> fromCqlName(cqlName);
+    };
   }
 
   /**
-   * Like {@link #fromName(String)} but if the name is null or blank it will return the default.
+   * Converts a string representation of a source model apiName to its corresponding {@link
+   * EmbeddingSourceModel} enum if it exists.
    *
-   * @param name The name of the source model
-   * @return Optional with the corresponding {@link EmbeddingSourceModel}, or {@link #DEFAULT} if
-   *     the name is null or blank, or empty if the name is not known
+   * @param apiName Name of the source model, there is no default returned. Nullable.
+   * @return Optional with the corresponding {@link EmbeddingSourceModel} or empty if the apiName is
+   *     not known, there are no defaults returned. Use {@link #DEFAULT}.
    */
-  public static Optional<EmbeddingSourceModel> fromNameOrDefault(String name) {
-    return switch (name) {
+  public static Optional<EmbeddingSourceModel> fromApiName(String apiName) {
+    return apiName == null
+        ? Optional.empty()
+        : Optional.ofNullable(SOURCE_MODEL_BY_API_NAME.get(apiName.toLowerCase()));
+  }
+
+  /**
+   * Like {@link #fromApiName(String)} but if the apiName is null or blank it will return the
+   * default.
+   *
+   * @param apiName The apiName of the source model
+   * @return Optional with the corresponding {@link EmbeddingSourceModel}, or {@link #DEFAULT} if
+   *     the apiName is null or blank, or empty if the apiName is not known
+   */
+  public static Optional<EmbeddingSourceModel> fromApiNameOrDefault(String apiName) {
+    return switch (apiName) {
       case null -> Optional.of(DEFAULT);
       case String s when s.isBlank() -> Optional.of(DEFAULT);
-      default -> fromName(name);
+      default -> fromApiName(apiName);
     };
   }
 
@@ -115,8 +140,8 @@ public enum EmbeddingSourceModel {
    * the caller should decide when to throw. Moved to be a public method here so it can be used by
    * the caller.
    */
-  public static JsonApiException getUnknownSourceModelException(String modelName) {
+  public static JsonApiException getUnknownSourceModelException(String apiName) {
     return ErrorCodeV1.VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME.toApiException(
-        "Received: '%s'; Accepted: %s", modelName, getSupportedSourceModelNames());
+        "Received: '%s'; Accepted: %s", apiName, getSupportedSourceModelNames());
   }
 }

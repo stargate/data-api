@@ -207,21 +207,21 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         // default for model
         final String sourceModelFromUser = sourceModel;
         metric =
-            EmbeddingSourceModel.fromNameOrDefault(sourceModelFromUser)
+            EmbeddingSourceModel.fromApiNameOrDefault(sourceModelFromUser)
                 .orElseThrow(
                     () -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModelFromUser))
-                .getSimilarityFunction()
+                .similarityFunction()
                 .apiName();
       }
       // (2) both sourceModel and metric are provided - do nothing
     } else {
       if (metric != null) {
         // (3) sourceModel is not provided but metric is - set sourceModel to 'other'
-        sourceModel = EmbeddingSourceModel.OTHER.getName();
+        sourceModel = EmbeddingSourceModel.OTHER.apiName();
       } else {
         // (4) both sourceModel and metric are not provided - set sourceModel to 'other' and metric
         // to 'cosine'
-        sourceModel = EmbeddingSourceModel.DEFAULT.getName();
+        sourceModel = EmbeddingSourceModel.DEFAULT.apiName();
         metric = SimilarityFunction.DEFAULT.cqlIndexingFunction();
       }
     }
