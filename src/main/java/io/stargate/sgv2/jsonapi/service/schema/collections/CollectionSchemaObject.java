@@ -342,7 +342,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           new CreateCollectionCommand.Options.VectorSearchConfig(
               vectorColumnDefinition.vectorSize(),
               vectorColumnDefinition.similarityFunction().name().toLowerCase(),
-              vectorColumnDefinition.sourceModel().cqlName(),
+              vectorColumnDefinition.sourceModel().apiName(),
               vectorizeConfig);
     }
 
