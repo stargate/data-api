@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class TypeFactoryFromColumnDesc<
-    ApiT extends ApiDataType, DescT extends ColumnDesc> {
+public abstract class TypeFactoryFromColumnDesc<ApiT extends ApiDataType, DescT extends ColumnDesc>
+    extends FactoryFromDesc {
   private static final Logger LOGGER = LoggerFactory.getLogger(TypeFactoryFromColumnDesc.class);
 
   public static final TypeFactoryFromColumnDesc<ApiDataType, ColumnDesc> DEFAULT =

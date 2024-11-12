@@ -247,4 +247,17 @@ public class TableTemplates extends TemplateRunner {
             .formatted(alterOperation, asJSON(columns));
     return sender.postAlterTable(json);
   }
+
+  public DataApiResponseValidator listIndexes(boolean explain) {
+    String json =
+            """
+        {
+          "options" : {
+            "explain" : %s
+          }
+       }
+        """
+            .formatted(explain);
+    return sender.postListIndexes(json);
+  }
 }
