@@ -81,7 +81,10 @@ class ReadCommandResolver<
     // and then if we need to do in memory sorting
     var inMemorySort =
         new TableMemorySortClauseResolver<>(
-                operationsConfig, orderByWithWarnings.target(), commandSkip, commandLimit)
+                operationsConfig,
+                orderByWithWarnings.target(),
+                commandSkip,
+                Math.min(commandLimit, operationsConfig.defaultPageSize()))
             .resolve(commandContext, command);
     attemptBuilder.addSorter(inMemorySort);
 
