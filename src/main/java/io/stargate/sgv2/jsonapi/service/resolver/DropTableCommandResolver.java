@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+
 import com.datastax.oss.driver.api.querybuilder.schema.Drop;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
@@ -14,13 +16,10 @@ import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DropTableAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DropTableExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 /** Resolver for the {@link DropTableCommand}. */
 @ApplicationScoped
@@ -60,7 +59,6 @@ public class DropTableCommandResolver implements CommandResolver<DropTableComman
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new GenericOperation<>(
-        attempts, pageBuilder, new DropTableExceptionHandler(tableName));
+    return new GenericOperation<>(attempts, pageBuilder, new DropTableExceptionHandler(tableName));
   }
 }

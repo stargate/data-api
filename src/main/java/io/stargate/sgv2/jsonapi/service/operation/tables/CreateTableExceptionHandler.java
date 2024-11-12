@@ -1,17 +1,14 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.servererrors.AlreadyExistsException;
-import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-
-import java.util.Map;
-
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 
-public class CreateTableExceptionHandler extends KeyspaceDriverExceptionHandler{
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.servererrors.AlreadyExistsException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
+import java.util.Map;
+
+public class CreateTableExceptionHandler extends KeyspaceDriverExceptionHandler {
 
   private final CqlIdentifier tableName;
 

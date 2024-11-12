@@ -14,7 +14,6 @@ public class SchemaException extends RequestException {
   }
 
   public enum Code implements ErrorCode<SchemaException> {
-
     CANNOT_ADD_EXISTING_INDEX,
     CANNOT_ADD_EXISTING_TABLE,
     CANNOT_DROP_INDEXED_COLUMNS,
@@ -46,8 +45,7 @@ public class SchemaException extends RequestException {
     // older below - seperated because they need to be confirmed
     INVALID_CONFIGURATION,
     INVALID_KEYSPACE,
-    INVALID_VECTORIZE_CONFIGURATION
-    ;
+    INVALID_VECTORIZE_CONFIGURATION;
 
     private final ErrorTemplate<SchemaException> template;
 

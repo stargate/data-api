@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorIndex;
 import io.stargate.sgv2.jsonapi.util.defaults.DefaultBoolean;
 import io.stargate.sgv2.jsonapi.util.defaults.Defaults;
@@ -48,8 +47,9 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
                     ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis())));
 
     // this will throw APIException if the index is not supported
-    var apiIndex = ApiVectorIndex.FROM_DESC_FACTORY.create(
-        ctx.schemaObject(), command.name(), command.definition());
+    var apiIndex =
+        ApiVectorIndex.FROM_DESC_FACTORY.create(
+            ctx.schemaObject(), command.name(), command.definition());
     var attempt = attemptBuilder.build(apiIndex);
 
     var pageBuilder =
@@ -58,7 +58,8 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
     return new GenericOperation<>(
-        new OperationAttemptContainer<>(attempt), pageBuilder, new CreateIndexExceptionHandler(apiIndex.indexName()));
-
+        new OperationAttemptContainer<>(attempt),
+        pageBuilder,
+        new CreateIndexExceptionHandler(apiIndex.indexName()));
   }
 }
