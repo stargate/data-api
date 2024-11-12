@@ -6,33 +6,50 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import java.util.Objects;
 
 /** Builds a {@link DropIndexAttempt}. */
 public class DropIndexAttemptBuilder {
   private int position;
   private final KeyspaceSchemaObject schemaObject;
-  private final CqlIdentifier name;
-  private CQLOptions.BuildableCQLOptions<Drop> cqlOptions = new CQLOptions.BuildableCQLOptions<>();
-  private final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy;
+  private final CQLOptions.BuildableCQLOptions<Drop> cqlOptions =
+      new CQLOptions.BuildableCQLOptions<>();
 
-  public DropIndexAttemptBuilder(
-      KeyspaceSchemaObject schemaObject,
-      String indexName,
-      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
-    this.schemaObject = schemaObject;
-    this.schemaRetryPolicy = schemaRetryPolicy;
-    this.name = CqlIdentifierUtil.cqlIdentifierFromUserInput(indexName);
+  private CqlIdentifier indexName;
+  private SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy;
+  // must be specified, the default should not be defined in here
+  private Boolean ifExists = null;
+
+  public DropIndexAttemptBuilder(KeyspaceSchemaObject schemaObject) {
+    this.schemaObject = Objects.requireNonNull(schemaObject, "schemaObject must not be null");
   }
 
-  public DropIndexAttemptBuilder withIfExists(CQLOption<Drop> cqlOption) {
-    if (cqlOption != null) {
-      this.cqlOptions.addBuilderOption(cqlOption);
-    }
+  public DropIndexAttemptBuilder withIndexName(CqlIdentifier indexName) {
+    this.indexName = Objects.requireNonNull(indexName, "indexName must not be null");
+    return this;
+  }
+
+  public DropIndexAttemptBuilder withSchemaRetryPolicy(
+      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
+    this.schemaRetryPolicy =
+        Objects.requireNonNull(schemaRetryPolicy, "schemaRetryPolicy cannot be null");
+    return this;
+  }
+
+  public DropIndexAttemptBuilder withIfExists(boolean ifExists) {
+    this.ifExists = ifExists;
     return this;
   }
 
   public DropIndexAttempt build() {
-    return new DropIndexAttempt(position++, schemaObject, name, cqlOptions, schemaRetryPolicy);
+
+    Objects.requireNonNull(indexName, "indexName must not be null");
+    Objects.requireNonNull(schemaRetryPolicy, "schemaRetryPolicy cannot be null");
+    Objects.requireNonNull(ifExists, "ifExists cannot be null");
+
+    if (ifExists) {
+      cqlOptions.addBuilderOption(CQLOption.ForDrop.ifExists());
+    }
+    return new DropIndexAttempt(position++, schemaObject, indexName, cqlOptions, schemaRetryPolicy);
   }
 }

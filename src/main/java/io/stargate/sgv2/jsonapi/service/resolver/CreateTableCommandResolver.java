@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableAttemptBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -17,6 +18,8 @@ import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 @ApplicationScoped
 public class CreateTableCommandResolver implements CommandResolver<CreateTableCommand> {
@@ -30,7 +33,8 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateTableCommand command) {
 
-    String tableName = command.name();
+    var tableName = cqlIdentifierFromUserInput(command.name());
+
     boolean ifNotExists =
         Optional.ofNullable(command.options())
             .map(CreateTableCommand.Options::ifNotExists)
@@ -65,7 +69,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
     return new GenericOperation<>(
-        attempts, pageBuilder, new KeyspaceDriverExceptionHandler(command));
+        attempts, pageBuilder, new CreateTableExceptionHandler(tableName));
   }
 
   @Override

@@ -32,13 +32,6 @@ public class CreateIndexAttemptBuilder {
     return this;
   }
 
-  //  public CreateIndexAttemptBuilder vectorIndexOptions(
-  //      SimilarityFunction similarityFunction, String sourceModel) {
-  //    this.vectorIndexOptions =
-  //        new CreateIndexAttempt.VectorIndexOptions(similarityFunction, sourceModel);
-  //    return this;
-  //  }
-
   private void checkBuildPreconditions() {
     Objects.requireNonNull(ifNotExists, "ifNotExists cannot be null");
     Objects.requireNonNull(schemaRetryPolicy, "schemaRetryPolicy cannot be null");
@@ -61,7 +54,7 @@ public class CreateIndexAttemptBuilder {
   }
 
   public CreateIndexAttempt build(ApiVectorIndex apiVectorIndex) {
-    Objects.requireNonNull(apiVectorIndex, "apiRegularIndex cannot be null");
+    Objects.requireNonNull(apiVectorIndex, "apiVectorIndex cannot be null");
     checkBuildPreconditions();
 
     return new CreateIndexAttempt(

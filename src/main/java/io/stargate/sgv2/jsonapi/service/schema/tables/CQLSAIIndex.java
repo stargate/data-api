@@ -13,7 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** Shared methods / constants for CQL SAI indexes. */
-abstract class CQLSAIIndex {
+public abstract class CQLSAIIndex {
 
   /**
    * The common options from the {@link IndexMetadata#getOptions()} for SAI indexes. ApiIndex sub
@@ -32,7 +32,7 @@ abstract class CQLSAIIndex {
   // the class name for SAI indexes, use the {@link #indexClassIsSai(String)} to check if an index
   // is an SAI index
   // it does a better job.
-  static final String SAI_CLASS_NAME = "StorageAttachedIndex";
+  public static final String SAI_CLASS_NAME = "StorageAttachedIndex";
   private static final String SAI_CLASS_NAME_ENDS_WITH = "." + SAI_CLASS_NAME;
 
   /**

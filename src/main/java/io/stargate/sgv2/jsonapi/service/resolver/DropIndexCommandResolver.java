@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import com.datastax.oss.driver.api.querybuilder.schema.Drop;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropIndexCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
@@ -11,17 +13,18 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
-import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DropIndexAttemptBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.DropIndexExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
 
 /** Resolver for the {@link DropIndexCommand}. */
 @ApplicationScoped
 public class DropIndexCommandResolver implements CommandResolver<DropIndexCommand> {
+
+  private static final boolean IF_EXISTS_DEFAULT = false;
+
   @Override
   public Class<DropIndexCommand> getCommandClass() {
     return DropIndexCommand.class;
@@ -30,24 +33,26 @@ public class DropIndexCommandResolver implements CommandResolver<DropIndexComman
   @Override
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, DropIndexCommand command) {
-    final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
-        new SchemaAttempt.SchemaRetryPolicy(
-            ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
-            Duration.ofMillis(
-                ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
-    final boolean ifExists =
-        Optional.ofNullable(command.options())
-            .map(DropIndexCommand.Options::ifExists)
-            .orElse(false);
-    CQLOption<Drop> cqlOption = null;
-    if (ifExists) {
-      cqlOption = CQLOption.ForDrop.ifExists();
-    }
-    var attempt =
-        new DropIndexAttemptBuilder(ctx.schemaObject(), command.name(), schemaRetryPolicy)
-            .withIfExists(cqlOption)
-            .build();
-    var attempts = new OperationAttemptContainer<>(List.of(attempt));
+
+    var indexName = cqlIdentifierFromUserInput(command.name());
+    // Check if the index exists, we check if columns exist before trying to drop them so do for
+    // indexes as well
+
+    var attemptBuilder =
+        new DropIndexAttemptBuilder(ctx.schemaObject())
+            .withIfExists(
+                command.options() == null ? IF_EXISTS_DEFAULT : command.options().ifExists())
+            .withIndexName(indexName);
+
+    // TODO: there should be a central factory to build these
+    attemptBuilder =
+        attemptBuilder.withSchemaRetryPolicy(
+            new SchemaAttempt.SchemaRetryPolicy(
+                ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
+                Duration.ofMillis(
+                    ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis())));
+
+    var attempts = new OperationAttemptContainer<>(attemptBuilder.build());
 
     var pageBuilder =
         SchemaAttemptPage.<KeyspaceSchemaObject>builder()
@@ -55,6 +60,8 @@ public class DropIndexCommandResolver implements CommandResolver<DropIndexComman
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
     return new GenericOperation<>(
-        attempts, pageBuilder, new KeyspaceDriverExceptionHandler(command));
+        attempts, pageBuilder, new DropIndexExceptionHandler(indexName));
   }
+
+  private void checkIndexExists(KeyspaceSchemaObject schemaObject, CqlIdentifier indexName) {}
 }

@@ -14,12 +14,14 @@ public class SchemaException extends RequestException {
   }
 
   public enum Code implements ErrorCode<SchemaException> {
-    // REMOVE !
-    INVALID_INDEX_DEFINITION,
 
+    CANNOT_ADD_EXISTING_INDEX,
+    CANNOT_ADD_EXISTING_TABLE,
     CANNOT_DROP_INDEXED_COLUMNS,
     CANNOT_DROP_PRIMARY_KEY_COLUMNS,
     CANNOT_DROP_UNKNOWN_COLUMNS,
+    CANNOT_DROP_UNKNOWN_INDEX,
+    CANNOT_DROP_UNKNOWN_TABLE,
     CANNOT_DROP_VECTORIZE_FROM_NON_VECTOR_COLUMNS,
     CANNOT_DROP_VECTORIZE_FROM_UNKNOWN_COLUMNS,
     CANNOT_VECTORIZE_NON_VECTOR_COLUMNS,
@@ -42,14 +44,9 @@ public class SchemaException extends RequestException {
     ZERO_PARTITION_COLUMNS,
 
     // older below - seperated because they need to be confirmed
-    //    COLUMN_TYPE_INCORRECT,
-    INDEX_NOT_FOUND,
     INVALID_CONFIGURATION,
-    // INVALID_INDEX_DEFINITION,
     INVALID_KEYSPACE,
-    INVALID_VECTORIZE_CONFIGURATION,
-    TABLE_ALREADY_EXISTS,
-    TABLE_NOT_FOUND,
+    INVALID_VECTORIZE_CONFIGURATION
     ;
 
     private final ErrorTemplate<SchemaException> template;

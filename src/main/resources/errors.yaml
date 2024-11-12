@@ -747,6 +747,48 @@ request-errors:
       
       Send the command again using a known source metric.
 
+  - scope: SCHEMA
+    code: CANNOT_DROP_UNKNOWN_INDEX
+    title: Dropped index is not present in the keyspace schema
+    body: |-
+      The command attempted to drop an index that is not in the keyspace schema.
+      
+      The command attempted to drop the unknown index: ${unknownIndex}.
+      
+      Send the command again using an index that exists in the keyspace.
+
+  - scope: SCHEMA
+    code: CANNOT_DROP_UNKNOWN_TABLE
+    title: Dropped table is not present in the keyspace schema
+    body: |-
+      The command attempted to drop a table that is not in the keyspace schema.
+      
+      The command attempted to drop the unknown table: ${unknownTable}.
+      
+      Send the command again using an table that exists in the keyspace.
+
+  - scope: SCHEMA
+    code: CANNOT_ADD_EXISTING_TABLE
+    title: Added table already exists in the keyspace schema
+    body: |-
+      The command attempted to add a table that already exists in the keyspace schema.
+      
+      The command attempted to add the existing table: ${existingTable}.
+      
+      Send the command again using an table name that does not exist in the keyspace.
+
+  - scope: SCHEMA
+    code: CANNOT_ADD_EXISTING_INDEX
+    title: Added index already exists in the keyspace schema
+    body: |-
+      The command attempted to add an index that already exists in the keyspace schema.
+      
+      The command attempted to add the existing index: ${existingIndex}.
+      
+      Send the command again using an index name that does not exist in the keyspace.
+
+
+
     # prev errors - all need to be reviewed
 
   - scope: SCHEMA
@@ -760,24 +802,6 @@ request-errors:
     title: Keyspace used is not valid.
     body: |-
       Keyspace used is not valid: ${keyspace} 
-
-  - scope: SCHEMA
-    code: INDEX_NOT_FOUND
-    title: Index name used is not valid.
-    body: |-
-      Index name used not found: ${reason} 
-
-  - scope: SCHEMA
-    code: TABLE_NOT_FOUND
-    title: Table name used is not valid.
-    body: |-
-      Table name used bot found: ${reason} 
-
-  - scope: SCHEMA
-    code: TABLE_ALREADY_EXISTS
-    title: Table already exist in the keyspace.
-    body: |-
-      Table already exist in the keyspace: ${reason}
 
   - scope: SCHEMA
     code: COLUMN_TYPE_INCORRECT

@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedCreateIndex;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.CQLSAIIndex;
 import java.util.Objects;
 
 /*
@@ -20,7 +21,7 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
 
   // a little confusing , we need to tell the query builder to add an option to the create index
   // called
-  // "options", we then encode all of the options in that see example:
+  // "options", we then encode all the options in that see example:
   // https://cassandra.apache.org/doc/latest/cassandra/developing/cql/indexing/sai/sai-working-with.html#create-sai-index
   private static final String CQL_OPTIONS_NAME = "OPTIONS";
 
@@ -40,9 +41,8 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
   @Override
   protected SimpleStatement buildStatement() {
 
-    // TODO MOVE constant
     var createIndexStart =
-        SchemaBuilder.createIndex(indexDef.indexName()).custom("StorageAttachedIndex");
+        SchemaBuilder.createIndex(indexDef.indexName()).custom(CQLSAIIndex.SAI_CLASS_NAME);
     // ifNotExists is an option
     createIndexStart = cqlOptions.applyBuilderOptions(createIndexStart);
 
@@ -50,7 +50,6 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
         createIndexStart.onTable(
             schemaObject.tableMetadata().getKeyspace(), schemaObject.tableMetadata().getName());
 
-    // TODO: sanity check the index types
     var createIndex = createIndexOnTable.andColumn(indexDef.targetColumn());
 
     // options are things like vector function, or text case sensitivity

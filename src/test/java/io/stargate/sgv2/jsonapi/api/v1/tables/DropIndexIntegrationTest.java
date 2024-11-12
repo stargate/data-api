@@ -62,7 +62,9 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .templated()
           .dropIndex("invalid_idx", false)
           .hasSingleApiError(
-              SchemaException.Code.INDEX_NOT_FOUND.name(), "Index name used not found");
+              SchemaException.Code.CANNOT_DROP_UNKNOWN_INDEX,
+              SchemaException.class,
+              "The command attempted to drop the unknown index: invalid_idx.");
     }
 
     @Test

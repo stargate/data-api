@@ -13,11 +13,14 @@ import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DropTableAttemptBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.DropTableExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 /** Resolver for the {@link DropTableCommand}. */
 @ApplicationScoped
@@ -30,10 +33,13 @@ public class DropTableCommandResolver implements CommandResolver<DropTableComman
   @Override
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, DropTableCommand command) {
+
+    var tableName = cqlIdentifierFromUserInput(command.name());
     final boolean ifExists =
         Optional.ofNullable(command.options())
             .map(DropTableCommand.Options::ifExists)
             .orElse(false);
+
     final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
         new SchemaAttempt.SchemaRetryPolicy(
             ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
@@ -55,6 +61,6 @@ public class DropTableCommandResolver implements CommandResolver<DropTableComman
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
     return new GenericOperation<>(
-        attempts, pageBuilder, new KeyspaceDriverExceptionHandler(command));
+        attempts, pageBuilder, new DropTableExceptionHandler(tableName));
   }
 }
