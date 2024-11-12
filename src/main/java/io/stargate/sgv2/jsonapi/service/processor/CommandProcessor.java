@@ -136,7 +136,7 @@ public class CommandProcessor {
               if (command instanceof DeprecatedCommand deprecatedCommand) {
                 // for the warnings we always want V2 errors and do not want / need debug ?
                 var errorV2 =
-                    new APIExceptionCommandErrorBuilder(true)
+                    new APIExceptionCommandErrorBuilder(false)
                         .buildCommandErrorV2(deprecatedCommand.getDeprecationWarning());
                 commandResult.addWarning(errorV2);
               }
