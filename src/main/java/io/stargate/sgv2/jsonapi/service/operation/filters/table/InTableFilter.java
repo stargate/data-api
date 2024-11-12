@@ -92,7 +92,7 @@ public class InTableFilter extends TableFilter {
       }
     }
 
-    return Relation.column(getPathAsCqlIdentifier()).in(bindMarkers);
+    return applyInOperator(Relation.column(getPathAsCqlIdentifier()), bindMarkers);
     //    return
     // ongoingWhereClause.where(Relation.column(getPathAsCqlIdentifier()).in(bindMarkers));
   }
