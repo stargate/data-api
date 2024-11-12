@@ -38,7 +38,6 @@ stargate:
             max-batch-size: 2048
           models:
             - name: text-embedding-3-small
-              display-name: "text-embedding-3-small"
               parameters:
                 - name: vectorDimension
                   type: number
@@ -48,7 +47,6 @@ stargate:
                     numeric-range: [2, 1536]
                   help: "Vector dimension to use in the database and when calling OpenAI."
             - name: text-embedding-3-large
-              display-name: "text-embedding-3-large"
               parameters:
                 - name: vectorDimension
                   type: number
@@ -58,7 +56,6 @@ stargate:
                     numeric-range: [256, 3072]
                   help: "Vector dimension to use in the database and when calling OpenAI."
             - name: text-embedding-ada-002
-              display-name: "text-embedding-ada-002"
               vector-dimension: 1536
         azureOpenAI:
           # see https://learn.microsoft.com/en-us/azure/ai-services/openai/reference
@@ -95,7 +92,6 @@ stargate:
             max-batch-size: 2048
           models:
             - name: text-embedding-3-small
-              display-name: "text-embedding-3-small"
               parameters:
                 - name: vectorDimension
                   type: number
@@ -105,7 +101,6 @@ stargate:
                     numeric-range: [2, 1536]
                   help: "Vector dimension to use in the database and when calling Azure OpenAI."
             - name: text-embedding-3-large
-              display-name: "text-embedding-3-large"
               parameters:
                 - name: vectorDimension
                   type: number
@@ -118,7 +113,6 @@ stargate:
                     numeric-range: [256, 3072]
                   help: "Vector dimension to use in the database and when calling Azure OpenAI."
             - name: text-embedding-ada-002
-              display-name: "text-embedding-ada-002"
               vector-dimension: 1536
         bedrock:
           display-name: Amazon Bedrock
@@ -149,10 +143,8 @@ stargate:
             max-batch-size: 1
           models:
             - name: amazon.titan-embed-text-v1
-              display-name: "amazon.titan-embed-text-v1"
               vector-dimension: 1536
             - name: amazon.titan-embed-text-v2:0
-              display-name: "amazon.titan-embed-text-v2:0"
               parameters:
                 - name: vectorDimension
                   type: number
@@ -183,22 +175,16 @@ stargate:
             max-batch-size: 32
           models:
             - name: sentence-transformers/all-MiniLM-L6-v2
-              display-name: "sentence-transformers/all-MiniLM-L6-v2"
               vector-dimension: 384
             - name: intfloat/multilingual-e5-large
-              display-name: "intfloat/multilingual-e5-large"
               vector-dimension: 1024
             - name: intfloat/multilingual-e5-large-instruct
-              display-name: "intfloat/multilingual-e5-large-instruct"
               vector-dimension: 1024
             - name: BAAI/bge-small-en-v1.5
-              display-name: "BAAI/bge-small-en-v1.5"
               vector-dimension: 384
             - name: BAAI/bge-base-en-v1.5
-              display-name: "BAAI/bge-base-en-v1.5"
               vector-dimension: 768
             - name: BAAI/bge-large-en-v1.5
-              display-name: "BAAI/bge-large-en-v1.5"
               vector-dimension: 1024
         huggingfaceDedicated:
           # see https://huggingface.co/docs/inference-endpoints/en/supported_tasks#sentence-embeddings
@@ -222,7 +208,6 @@ stargate:
             max-batch-size: 32
           models:
             - name: endpoint-defined-model
-              display-name: "endpoint-defined-model"
               parameters:
                 - name: vectorDimension
                   type: number
@@ -280,7 +265,6 @@ stargate:
             max-batch-size: 32
           models:
             - name: textembedding-gecko@003
-              display-name: "textembedding-gecko@003"
               vector-dimension: 768
               parameters:
                 - name: "autoTruncate"
@@ -311,10 +295,8 @@ stargate:
             max-batch-size: 32
           models:
             - name: embed-english-v3.0
-              display-name: "embed-english-v3.0"
               vector-dimension: 1024
             - name: embed-english-v2.0
-              display-name: "embed-english-v2.0"
               vector-dimension: 4096
         nvidia:
           display-name: Nvidia
@@ -327,7 +309,6 @@ stargate:
             max-batch-size: 8
           models:
             - name: NV-Embed-QA
-              display-name: "NV-Embed-QA"
               vector-dimension: 1024
               properties:
                 max-tokens: 512
@@ -355,19 +336,14 @@ stargate:
             max-batch-size: 32
           models:
             - name: jina-embeddings-v2-base-en
-              display-name: "jina-embeddings-v2-base-en"
               vector-dimension: 768
             - name: jina-embeddings-v2-base-de
-              display-name: "jina-embeddings-v2-base-de"
               vector-dimension: 768
             - name: jina-embeddings-v2-base-es
-              display-name: "jina-embeddings-v2-base-es"
               vector-dimension: 768
             - name: jina-embeddings-v2-base-code
-              display-name: "jina-embeddings-v2-base-code"
               vector-dimension: 768
             - name: jina-embeddings-v2-base-zh
-              display-name: "jina-embeddings-v2-base-zh"
               vector-dimension: 768
         voyageAI:
           # see https://docs.voyageai.com/reference/embeddings-api
@@ -401,25 +377,18 @@ stargate:
             max-batch-size: 32
           models:
             - name: voyage-large-2-instruct
-              display-name: "voyage-large-2-instruct"
               vector-dimension: 1024
             - name: voyage-law-2
-              display-name: "voyage-law-2"
               vector-dimension: 1024
             - name: voyage-code-2
-              display-name: "voyage-code-2"
               vector-dimension: 1536
             - name: voyage-large-2
-              display-name: "voyage-large-2"
               vector-dimension: 1536
             - name: voyage-2
-              display-name: "voyage-2"
               vector-dimension: 1024
             - name: voyage-finance-2
-              display-name: "voyage-finance-2"
               vector-dimension: 1024
             - name: voyage-multilingual-2
-              display-name: "voyage-multilingual-2"
               vector-dimension: 1024
         mistral:
           # see https://docs.mistral.ai/api/#operation/createEmbedding
@@ -444,7 +413,6 @@ stargate:
             max-batch-size: 32
           models:
             - name: mistral-embed
-              display-name: "mistral-embed"
               vector-dimension: 1024
 
         # NOTE: UpstageAI has one model for storing and a diff one for reading: this is different
@@ -476,5 +444,4 @@ stargate:
             # NOTE: this is where weirdness exists; model name is prefix on which
             #   either "-query" or "-passage" is appended to get the actual model name
             - name: solar-embedding-1-large
-              display-name: "solar-embedding-1-large"
               vector-dimension: 4096

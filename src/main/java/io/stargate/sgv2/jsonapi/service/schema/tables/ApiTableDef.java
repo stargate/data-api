@@ -15,6 +15,11 @@ import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.*;
 
+/**
+ * The APi model for a table in the database.
+ *
+ * <p>Created by the factories {@link #FROM_TABLE_DESC_FACTORY} and {@link #FROM_CQL_FACTORY}.
+ */
 public class ApiTableDef {
 
   public static final FromTableDescFactory FROM_TABLE_DESC_FACTORY = new FromTableDescFactory();
@@ -29,12 +34,17 @@ public class ApiTableDef {
   private final ApiColumnDefContainer nonPKColumns;
   private final ApiColumnDefContainer unsupportedColumns;
 
+  // split into two so we do not accidentally reference an index we cannot use.
+  private final ApiIndexDefContainer supportedIndexes;
+  private final ApiIndexDefContainer indexesIncludingUnsupported;
+
   private ApiTableDef(
       CqlIdentifier name,
       ApiColumnDefContainer primaryKeys,
       ApiColumnDefContainer partitionkeys,
       List<ApiClusteringDef> clusteringDefs,
-      ApiColumnDefContainer allColumns) {
+      ApiColumnDefContainer allColumns,
+      ApiIndexDefContainer allIndexes) {
 
     this.name = name;
     this.primaryKeys = primaryKeys.toUnmodifiable();
@@ -43,6 +53,8 @@ public class ApiTableDef {
     this.clusteringKeys =
         ApiColumnDefContainer.of(clusteringDefs.stream().map(ApiClusteringDef::columnDef).toList());
     this.allColumns = allColumns.toUnmodifiable();
+    this.supportedIndexes = allIndexes.filterBySupported();
+    this.indexesIncludingUnsupported = allIndexes;
 
     var workingNonPKColumns = new ApiColumnDefContainer(allColumns().size() - primaryKeys.size());
     allColumns.values().stream()
@@ -59,6 +71,13 @@ public class ApiTableDef {
                 ApiColumnDefContainer::putAll);
   }
 
+  /**
+   * Converts the table definition to a table description for the user.
+   *
+   * <p>This is used to send the table definition to the user.
+   *
+   * @return the {@link TableDesc} for the table.
+   */
   public TableDesc toTableDesc() {
 
     var partitionKeys = partitionkeys.values().stream().map(ApiColumnDef::name).toList();
@@ -80,39 +99,75 @@ public class ApiTableDef {
         name, new TableDefinitionDesc(columnsDesc, primaryKey));
   }
 
+  /** Get the name for this table. */
   public CqlIdentifier name() {
     return name;
   }
 
+  /**
+   * Get the primary keys for this table, these are the partition keys and the clustering keys in
+   * order.
+   */
   public ApiColumnDefContainer primaryKeys() {
     return primaryKeys;
   }
 
+  /** Get the partition keys for this table, in order. */
   public ApiColumnDefContainer partitionKeys() {
     return partitionkeys;
   }
 
+  /**
+   * Get the clustering key definitions that includes the {@link ApiClusteringOrder} for this table,
+   * in order.
+   */
   public List<ApiClusteringDef> clusteringDefs() {
     return clusteringDefs;
   }
 
+  /**
+   * Get just the columns in the clustering keys for this table, in order but excluding the {@link
+   * ApiClusteringOrder} .
+   */
   public ApiColumnDefContainer clusteringKeys() {
     return clusteringKeys;
   }
 
+  /** Get all columns in the table, including the columns in the primary key. */
   public ApiColumnDefContainer allColumns() {
     return allColumns;
   }
 
+  /** Get all the columns in the table that are not part of the primary key. */
   public ApiColumnDefContainer nonPKColumns() {
     return nonPKColumns;
   }
 
+  /**
+   * Get all the columns in the table that are in some way not supported by the API, such as being a
+   * UDT etc. These are tracked for tables that were created outside of the API.
+   */
   public ApiColumnDefContainer unsupportedColumns() {
     return unsupportedColumns;
   }
 
-  public static final class FromTableDescFactory extends UserDescFactory {
+  /** Get all the indexes on this table that are supported by the API */
+  public ApiIndexDefContainer indexes() {
+    return supportedIndexes;
+  }
+
+  /** Gets all the indexes on the table that are supported and unsupported by the API. */
+  public ApiIndexDefContainer indexesIncludingUnsupported() {
+    return indexesIncludingUnsupported;
+  }
+
+  /**
+   * Factory for creating a {@link ApiTableDef} from a users decription sent in a command {@link
+   * TableDefinitionDesc}.
+   *
+   * <p>Use the singleton {@link #FROM_TABLE_DESC_FACTORY} to create an instance.
+   */
+  public static final class FromTableDescFactory extends FactoryFromDesc {
 
     FromTableDescFactory() {}
 
@@ -205,11 +260,22 @@ public class ApiTableDef {
       partitionKeys.values().forEach(primaryKeys::put);
       clusteringDefs.forEach(clusteringDefn -> primaryKeys.put(clusteringDefn.columnDef()));
 
+      // when creating the table from the User Desc it does not include any indexes
       return new ApiTableDef(
-          tableIdentifier, primaryKeys, partitionKeys, clusteringDefs, allColumnDefs);
+          tableIdentifier,
+          primaryKeys,
+          partitionKeys,
+          clusteringDefs,
+          allColumnDefs,
+          ApiIndexDefContainer.of());
     }
   }
 
+  /**
+   * Factory for creating a {@link ApiTableDef} from a {@link TableMetadata} object.
+   *
+   * <p>Use the singleton {@link #FROM_CQL_FACTORY} to create an instance.
+   */
   public static class FromCqlFactory {
 
     FromCqlFactory() {}
@@ -243,8 +309,17 @@ public class ApiTableDef {
                       allColumns.get(entry.getKey().getName()), entry.getValue()))
           .forEach(clusteringKeys::add);
 
+      var apiIndexes =
+          ApiIndexDefContainer.FROM_CQL_FACTORY.create(
+              allColumns, tableMetadata.getIndexes().values());
+
       return new ApiTableDef(
-          tableMetadata.getName(), primaryKeys, partitionKeys, clusteringKeys, allColumns);
+          tableMetadata.getName(),
+          primaryKeys,
+          partitionKeys,
+          clusteringKeys,
+          allColumns,
+          apiIndexes);
     }
   }
 }

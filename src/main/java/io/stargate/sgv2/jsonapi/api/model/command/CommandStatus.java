@@ -29,7 +29,9 @@ public enum CommandStatus {
   /** Status for reporting existing collections. */
   @JsonProperty(Names.EXISTING_TABLES)
   EXISTING_TABLES(Names.EXISTING_TABLES),
-
+  /** Status for reporting existing indexes. */
+  @JsonProperty(Names.EXISTING_INDEXES)
+  EXISTING_INDEXES(Names.EXISTING_INDEXES),
   /**
    * List of response entries, one for each document we tried to insert with {@code insertMany}
    * command. Each entry has 2 mandatory fields: {@code _id} (document id), and {@code status} (one
@@ -153,6 +155,7 @@ public enum CommandStatus {
     String EXISTING_VECTOR_PROVIDERS = "embeddingProviders";
     String EXISTING_COLLECTIONS = "collections";
     String EXISTING_TABLES = "tables";
+    String EXISTING_INDEXES = "indexes";
     String DOCUMENT_RESPONSES = "documentResponses";
     String INSERTED_IDS = "insertedIds";
     String MATCHED_COUNT = "matchedCount";

@@ -10,13 +10,14 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.SortException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -135,9 +136,20 @@ public class DataVectorizerService {
     List<DataVectorizer.VectorizeTask> tasks =
         switch (command) {
           case InsertManyCommand imc ->
-              tasksForInsert(commandContext.schemaObject(), imc.documents());
+              tasksForVectorizeColumns(
+                  commandContext.schemaObject(),
+                  imc.documents(),
+                  DocumentException.Code.INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION);
           case InsertOneCommand ioc ->
-              tasksForInsert(commandContext.schemaObject(), List.of(ioc.document()));
+              tasksForVectorizeColumns(
+                  commandContext.schemaObject(),
+                  List.of(ioc.document()),
+                  DocumentException.Code.INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION);
+            // Notice table update vectorize happens before UpdateCommand execution, since we can't
+            // do readThenUpdate for table.
+            // Collection update vectorize happens after the DB read.
+          case UpdateOneCommand uoc ->
+              taskforUpdate(commandContext.schemaObject(), uoc.updateClause());
           case Sortable sortable -> tasksForSort(sortable, commandContext);
 
           default -> List.of();
@@ -162,8 +174,9 @@ public class DataVectorizerService {
   }
 
   /** Build the list of vectorize tasks when inserting one or more documents */
-  private <T extends TableSchemaObject> List<DataVectorizer.VectorizeTask> tasksForInsert(
-      T tableSchemaObject, List<JsonNode> documents) {
+  private <T extends TableSchemaObject, E extends RequestException>
+      List<DataVectorizer.VectorizeTask> tasksForVectorizeColumns(
+          T tableSchemaObject, List<JsonNode> documents, ErrorCode<E> noVectorizeDefinitionCode) {
 
     var apiTableDef = tableSchemaObject.apiTableDef();
     var vectorColumnDefs = apiTableDef.allColumns().filterByTypeToList(ApiTypeName.VECTOR);
@@ -175,7 +188,7 @@ public class DataVectorizerService {
     // get all the fields in the documents that are vector columns, and the value of the node is a
     // string, so we can check if they have a vectorize def.
     // key is the parent of the vector field, not the vector field itself
-    Map<ObjectNode, ApiColumnDef> candidateVectorizeField = new HashMap<>();
+    Map<ObjectNode, List<ApiColumnDef>> candidateVectorizeFieldsPerDoc = new HashMap<>();
     for (var vectorColumnDef : vectorColumnDefs) {
       for (var document : documents) {
         var vectorField = document.path(vectorColumnDef.jsonKey());
@@ -187,24 +200,28 @@ public class DataVectorizerService {
           if (!document.isObject()) {
             throw new IllegalArgumentException("Document node must be an ObjectNode");
           }
-          candidateVectorizeField.put((ObjectNode) document, vectorColumnDef);
+          candidateVectorizeFieldsPerDoc
+              .computeIfAbsent((ObjectNode) document, key -> new ArrayList<>())
+              .add(vectorColumnDef);
         }
       }
     }
 
     // Now check that the columns actually have vectorize enabled.
     Set<String> nonVectorizeFieldNames = new HashSet<>();
-    List<ApiColumnDef> supportedVectorizeFields = new ArrayList<>();
-    for (var columnDef : candidateVectorizeField.values()) {
-      if (((ApiVectorType) columnDef.type()).getVectorizeDefinition() == null) {
-        nonVectorizeFieldNames.add(columnDef.jsonKey());
-      } else {
-        supportedVectorizeFields.add(columnDef);
+    Set<ApiColumnDef> supportedVectorizeFields = new HashSet<>();
+    for (var columnDefs : candidateVectorizeFieldsPerDoc.values()) {
+      for (var columnDef : columnDefs) {
+        if (((ApiVectorType) columnDef.type()).getVectorizeDefinition() == null) {
+          nonVectorizeFieldNames.add(columnDef.jsonKey());
+        } else {
+          supportedVectorizeFields.add(columnDef);
+        }
       }
     }
 
     if (!nonVectorizeFieldNames.isEmpty()) {
-      throw DocumentException.Code.INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION.get(
+      throw noVectorizeDefinitionCode.get(
           errVars(
               tableSchemaObject,
               map -> {
@@ -213,20 +230,20 @@ public class DataVectorizerService {
               }));
     }
 
-    var vectorizeTasks =
-        new ArrayList<DataVectorizer.VectorizeTask>(candidateVectorizeField.size());
-    for (var entry : candidateVectorizeField.entrySet()) {
-      var parentNode = entry.getKey();
-      var vectorColumnDef = entry.getValue();
-
-      // if the user sent a blank string for the vectorize field, we just turn that into a null
-      // without vectorizing
-      // but that only applies if the column has a vectorize definition so do it here not above
-      var vectorizeText = parentNode.path(vectorColumnDef.jsonKey()).textValue();
-      if (vectorizeText.isBlank()) {
-        parentNode.putNull(vectorColumnDef.jsonKey());
-      } else {
-        vectorizeTasks.add(new DataVectorizer.VectorizeTask(parentNode, vectorColumnDef));
+    var vectorizeTasks = new ArrayList<DataVectorizer.VectorizeTask>();
+    for (var entry : candidateVectorizeFieldsPerDoc.entrySet()) {
+      var parentNodeDoc = entry.getKey();
+      var vectorColumnDefsPerDoc = entry.getValue();
+      for (var vectorColumnDef : vectorColumnDefsPerDoc) {
+        // if the user sent a blank string for the vectorize field, we just turn that into a null
+        // without vectorizing
+        // but that only applies if the column has a vectorize definition so do it here not above
+        var vectorizeText = parentNodeDoc.path(vectorColumnDef.jsonKey()).textValue();
+        if (vectorizeText.isBlank()) {
+          parentNodeDoc.putNull(vectorColumnDef.jsonKey());
+        } else {
+          vectorizeTasks.add(new DataVectorizer.VectorizeTask(parentNodeDoc, vectorColumnDef));
+        }
       }
     }
     return vectorizeTasks;
@@ -299,5 +316,33 @@ public class DataVectorizerService {
 
     return List.of(
         new DataVectorizer.SortVectorizeTask(sortClause, vectorizeSortExpression, vectorColumnDef));
+  }
+
+  /**
+   * Vectorize the '$vectorize' fields in the update clause
+   *
+   * @param updateClause - Update clause to be vectorized
+   */
+  private <T extends TableSchemaObject> List<DataVectorizer.VectorizeTask> taskforUpdate(
+      T tableSchemaObject, UpdateClause updateClause) {
+    if (updateClause == null) {
+      return List.of();
+    }
+
+    //    "$set": {
+    //      "vectorCol1" : "eat apple",
+    //      "vectorCol2" : "eat orange"
+    //    }
+    var setNode = updateClause.updateOperationDefs().get(UpdateOperator.SET);
+    // no need to vectorize $unset, cause vector would be updated to null
+    if (setNode == null) {
+      return List.of();
+    }
+
+    // can reuse the tasksForInsert
+    return tasksForVectorizeColumns(
+        tableSchemaObject,
+        List.of(setNode),
+        UpdateException.Code.INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION);
   }
 }

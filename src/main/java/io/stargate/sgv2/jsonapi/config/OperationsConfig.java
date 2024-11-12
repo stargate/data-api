@@ -69,7 +69,7 @@ public interface OperationsConfig {
   /**
    * @return Flag to extend error response with additional information.
    */
-  @WithDefault("false")
+  @WithDefault("true")
   boolean extendError();
 
   /**
