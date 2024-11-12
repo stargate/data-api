@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestDataNames;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.InTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer.StatementType;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,7 +37,8 @@ public class DeleteUpdateWhereAnalyzerTest {
             StatementType.DELETE_ONE, FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE),
         Arguments.of(
             StatementType.DELETE_MANY, FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE),
-        Arguments.of(StatementType.UPDATE, FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE));
+        Arguments.of(
+            StatementType.UPDATE_ONE, FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE));
   }
 
   @ParameterizedTest
@@ -54,7 +56,7 @@ public class DeleteUpdateWhereAnalyzerTest {
     return Stream.of(
         Arguments.of(StatementType.DELETE_ONE, null),
         Arguments.of(StatementType.DELETE_MANY, null),
-        Arguments.of(StatementType.UPDATE, null));
+        Arguments.of(StatementType.UPDATE_ONE, null));
   }
 
   @ParameterizedTest
@@ -81,7 +83,8 @@ public class DeleteUpdateWhereAnalyzerTest {
             StatementType.DELETE_MANY,
             FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE),
         Arguments.of(
-            StatementType.UPDATE, FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE));
+            StatementType.UPDATE_ONE,
+            FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE));
   }
 
   @ParameterizedTest
@@ -118,7 +121,7 @@ public class DeleteUpdateWhereAnalyzerTest {
             FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE),
         Arguments.of(StatementType.DELETE_MANY, FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER),
         Arguments.of(
-            StatementType.UPDATE,
+            StatementType.UPDATE_ONE,
             FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE));
   }
 
@@ -145,7 +148,7 @@ public class DeleteUpdateWhereAnalyzerTest {
             FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE),
         Arguments.of(StatementType.DELETE_MANY, FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER),
         Arguments.of(
-            StatementType.UPDATE,
+            StatementType.UPDATE_ONE,
             FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE));
   }
 
@@ -172,7 +175,7 @@ public class DeleteUpdateWhereAnalyzerTest {
             FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE),
         Arguments.of(StatementType.DELETE_MANY, FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER),
         Arguments.of(
-            StatementType.UPDATE,
+            StatementType.UPDATE_ONE,
             FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE));
   }
 
@@ -199,7 +202,7 @@ public class DeleteUpdateWhereAnalyzerTest {
             FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE),
         Arguments.of(StatementType.DELETE_MANY, null),
         Arguments.of(
-            StatementType.UPDATE,
+            StatementType.UPDATE_ONE,
             FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE));
   }
 
@@ -226,7 +229,7 @@ public class DeleteUpdateWhereAnalyzerTest {
             FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE),
         Arguments.of(StatementType.DELETE_MANY, FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER),
         Arguments.of(
-            StatementType.UPDATE,
+            StatementType.UPDATE_ONE,
             FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE));
   }
 
@@ -254,7 +257,7 @@ public class DeleteUpdateWhereAnalyzerTest {
             FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE),
         Arguments.of(StatementType.DELETE_MANY, null),
         Arguments.of(
-            StatementType.UPDATE,
+            StatementType.UPDATE_ONE,
             FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE));
   }
 
@@ -282,7 +285,7 @@ public class DeleteUpdateWhereAnalyzerTest {
             FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE),
         Arguments.of(StatementType.DELETE_MANY, FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER),
         Arguments.of(
-            StatementType.UPDATE,
+            StatementType.UPDATE_ONE,
             FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE));
   }
 
@@ -300,5 +303,28 @@ public class DeleteUpdateWhereAnalyzerTest {
         .expression()
         .eqOnlyOneClusteringKey(1)
         .analyzeMaybeFilterError(expectedCode);
+  }
+
+  private static Stream<Arguments> inFilterUsage() {
+    return Stream.of(
+        Arguments.of(StatementType.DELETE_ONE, InTableFilter.Operator.IN),
+        Arguments.of(StatementType.DELETE_ONE, InTableFilter.Operator.NIN),
+        Arguments.of(StatementType.UPDATE_ONE, InTableFilter.Operator.IN),
+        Arguments.of(StatementType.UPDATE_ONE, InTableFilter.Operator.NIN));
+  }
+
+  @ParameterizedTest
+  @MethodSource("inFilterUsage")
+  public void skip1and3of3ClusteringKey(
+      StatementType statementType, InTableFilter.Operator inTableFilterOperator) {
+
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index("in_filter_on_" + statementType.name(), statementType);
+    fixture
+        .expression()
+        .inOnOnePartitionKey(inTableFilterOperator)
+        .analyzeMaybeFilterError(FilterException.Code.INVALID_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE);
   }
 }

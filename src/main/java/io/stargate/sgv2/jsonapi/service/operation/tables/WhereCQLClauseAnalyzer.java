@@ -40,7 +40,8 @@ public class WhereCQLClauseAnalyzer {
   /** Different statementTypes for analyzer to work on, thus different strategies. */
   public enum StatementType {
     SELECT,
-    UPDATE,
+    // currently, table feature only supports updateOne
+    UPDATE_ONE,
     DELETE_ONE,
     DELETE_MANY;
 
@@ -63,12 +64,13 @@ public class WhereCQLClauseAnalyzer {
                     analyzer::warnNotInUnsupportedByIndexing,
                     analyzer::warnNoFilters,
                     analyzer::warnPkNotFullySpecified));
-        case DELETE_ONE, UPDATE ->
+        case DELETE_ONE, UPDATE_ONE ->
             new AnalysisStrategy(
                 List.of(
                     analyzer::checkNoFilters,
                     analyzer::checkAllColumnsExist,
                     analyzer::checkNonPrimaryKeyFilters,
+                    analyzer::checkNoInFilterUsage,
                     analyzer::checkFullPrimaryKey,
                     analyzer::checkFilteringOnComplexColumns),
                 List.of());
@@ -233,6 +235,35 @@ public class WhereCQLClauseAnalyzer {
               map -> {
                 map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
                 map.put("complexColumns", errFmtCqlIdentifier(filterOnComplexColumns));
+              }));
+    }
+  }
+
+  /**
+   * Check if any $in filter is used.
+   *
+   * <p>For UpdateOne and DeleteOne table commands, the use of $in/$nin can affect multiple rows, so
+   * add a check rule to ban the usage.
+   */
+  private void checkNoInFilterUsage(Map<CqlIdentifier, TableFilter> identifierToFilter) {
+
+    var inFilterColumns =
+        identifierToFilter.entrySet().stream()
+            .filter(
+                entry -> {
+                  TableFilter tableFilter = entry.getValue();
+                  return (tableFilter instanceof InTableFilter);
+                })
+            .map((Map.Entry::getKey))
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
+            .toList();
+
+    if (!inFilterColumns.isEmpty()) {
+      throw FilterException.Code.INVALID_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("inFilterColumns", errFmtCqlIdentifier(inFilterColumns));
               }));
     }
   }

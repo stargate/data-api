@@ -241,6 +241,16 @@ request-errors:
       Note, DeleteMany without a filter truncates the table.
 
   - scope: FILTER
+    code: INVALID_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE
+    title: In filter is not allowed for UpdateOne and DeleteOne commands
+    body: |-
+      An UpdateOne or DeleteOne command was issued with $in/$nin filter, filter columns are ${inFilterColumns}.
+      
+      $in/$nin is not allowed for UpdateOne and DeleteOne commands, since multiple rows could be affected. 
+      
+      Resend the request without using $in/$nin filters. 
+
+  - scope: FILTER
     code: NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE
     title: Only Primary Key columns can be filtered on for Update and Delete commands
     body: |-
