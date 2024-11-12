@@ -202,7 +202,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           false,
           0,
           SimilarityFunction.DEFAULT,
-          EmbeddingSourceModel.UNDEFINED,
+          EmbeddingSourceModel.DEFAULT,
           comment,
           objectMapper);
     }

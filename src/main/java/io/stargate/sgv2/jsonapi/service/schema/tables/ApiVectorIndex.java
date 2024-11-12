@@ -10,42 +10,22 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.VectorIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
-import io.stargate.sgv2.jsonapi.config.constants.VectorIndexDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.util.defaults.*;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ApiVectorIndex extends ApiSupportedIndex {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ApiVectorIndex.class);
 
   public static final IndexFactoryFromIndexDesc<ApiVectorIndex, VectorIndexDefinitionDesc>
       FROM_DESC_FACTORY = new UserDescFactory();
   public static final IndexFactoryFromCql FROM_CQL_FACTORY = new CqlTypeFactory();
-
-  public static final DefaultString SIMILARITY_FUNCTION_DEFAULT =
-      Defaults.of(VectorIndexDescDefaults.DEFAULT_METRIC_NAME);
-
-  public static final DefaultString SOURCE_MODEL_DEFAULT =
-      Defaults.of(EmbeddingSourceModel.DEFAULT.apiName());
-
-  private interface Options {
-    // No default when we read this from the options map, we cannot guess what it is
-    // The default above is for when we create a new index from user input
-    StringProperty SIMILARITY_FUNCTION =
-        Properties.ofRequired(VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION);
-
-    StringProperty SOURCE_MODEL =
-        Properties.of(
-            VectorConstants.CQLAnnIndex.SOURCE_MODEL, EmbeddingSourceModel.DEFAULT.apiName());
-  }
 
   // because we actually use the similarityFunction when doing reads better to avoid checking the
   // options where it is
@@ -95,6 +75,96 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   }
 
   /**
+   * Logic to map from the name of the similarity function, from either the user or the CQL index,
+   * to a {@link SimilarityFunction} enum value.
+   *
+   * @param functionName The raw name from the user input or CQL index, can be null or empty
+   * @param indexMetadata if the functionname came from driver {@link IndexMetadata} provide this,
+   *     otherwise null
+   * @return Optional of the similarity function, empty if the user did not provide a name
+   */
+  private static Optional<SimilarityFunction> similarityFunctionFromName(
+      String functionName, IndexMetadata indexMetadata) {
+
+    if (functionName == null || functionName.isBlank()) {
+      // nothing provided, so we return empty. There is no default function
+      return Optional.empty();
+    }
+
+    // calling from without the default means we will get an empty optional if the name is unknown
+    // we already checked above to for null, which would also result in an empty.
+    // so any empty means the name is provied and unknown
+    var userMetric =
+        (indexMetadata == null)
+            ? SimilarityFunction.fromApiName(functionName)
+            : SimilarityFunction.fromCqlIndexingFunction(functionName);
+
+    if (userMetric.isPresent()) {
+      return userMetric;
+    }
+
+    if (indexMetadata == null) {
+      // this request came from the user, so use user errors
+      throw SchemaException.Code.UNKNOWN_VECTOR_METRIC.get(
+          Map.of(
+              "knownMetrics",
+              errFmtJoin(List.of(SimilarityFunction.values()), SimilarityFunction::apiName),
+              "unknownMetric",
+              functionName));
+    }
+
+    // we have index metadata, it came from the driver, so an illegal state not a user error
+    throw new IllegalStateException(
+        "Unknown similarity function name: %s, index.name:%s, index.options%s"
+            .formatted(functionName, indexMetadata.getName(), indexMetadata.getOptions()));
+  }
+
+  private static EmbeddingSourceModel sourceModelFromName(
+      String modelName, IndexMetadata indexMetadata) {
+
+    LOGGER.warn(
+        "sourceModelFromName() - modelName: {}, indexMetadata: {}", modelName, indexMetadata);
+    // if the provided name is null or blank we will get the default
+    var maybeSourceModel =
+        (indexMetadata == null)
+            ? EmbeddingSourceModel.fromApiNameOrDefault(modelName)
+            : EmbeddingSourceModel.fromCqlNameOrDefault(modelName);
+
+    if (maybeSourceModel.isPresent()) {
+      return maybeSourceModel.get();
+    }
+
+    // the only way to not have a source model is a name was provided that is not known
+    if (indexMetadata == null) {
+      // request came from users, so use user errors
+      throw SchemaException.Code.UNKNOWN_VECTOR_SOURCE_MODEL.get(
+          Map.of(
+              "knownSourceModels",
+              errFmtJoin(EmbeddingSourceModel.allApiNames()),
+              "unknownSourceModel",
+              modelName));
+    }
+
+    throw new IllegalStateException(
+        "Unknown source model name: %s, index.name:%s, index.options%s"
+            .formatted(modelName, indexMetadata.getName(), indexMetadata.getOptions()));
+  }
+
+  /**
+   * The metric we will use will be the one from the user, or the one from the model if user did not
+   * specify metric we always have a model.
+   *
+   * @param sourceModel The source model we are using.
+   * @param userMetric Optional metric from the user.
+   * @return The metric to use.
+   */
+  private static SimilarityFunction decideSimilarityFunction(
+      EmbeddingSourceModel sourceModel, Optional<SimilarityFunction> userMetric) {
+    Objects.requireNonNull(sourceModel, "sourceModel must not be null");
+    return userMetric.orElse(sourceModel.similarityFunction());
+  }
+
+  /**
    * Factory to create a new {@link ApiVectorIndex} using {@link RegularIndexDefinitionDesc} from
    * the user request.
    */
@@ -136,74 +206,37 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
       Map<String, String> indexOptions = new HashMap<>();
 
-      // Work out the source model, we need to use defaults and catch bad model names from the user
-      // Use the default for the property, the only way we don't get a source mode is if the name
-      // was unknown
-      var userOrDefaultModelName =
-          SOURCE_MODEL_DEFAULT.apply(
-              indexDesc.options(), VectorIndexDefinitionDesc.VectorIndexDescOptions::sourceModel);
-      var maybeSourceModel = EmbeddingSourceModel.fromApiName(userOrDefaultModelName);
-      if (maybeSourceModel.isEmpty()) {
-        throw SchemaException.Code.UNKNOWN_VECTOR_SOURCE_MODEL.get(
-            Map.of(
-                "knownSourceModels",
-                EmbeddingSourceModel.getSupportedSourceModelNames(),
-                "unknownSourceModel",
-                userOrDefaultModelName));
+      // Work out the source model, we always have one even if the user did not provide one
+      var userModelName = (indexDesc.options() == null) ? null : indexDesc.options().sourceModel();
+      var sourceModelToUse = sourceModelFromName(userModelName, null);
+      // we always write the source model to the options
+      indexOptions.put(VectorConstants.CQLAnnIndex.SOURCE_MODEL, sourceModelToUse.cqlName());
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(
+            "create() - userModelName: {}, sourceModelToUse: {} ", userModelName, sourceModelToUse);
       }
-      var sourceModelToUse = maybeSourceModel.get();
-      Options.SOURCE_MODEL.putOrDefault(indexOptions, sourceModelToUse.cqlName());
+
+      // The user can provide a similarity function, if they do not we use the one for the model.
+      var userMetricName = (indexDesc.options() == null) ? null : indexDesc.options().metric();
+      var maybeUserMetric = similarityFunctionFromName(userMetricName, null);
+      // we only have one if the user specified one and it was valid, store in the options if this
+      // is the case
+      maybeUserMetric.ifPresent(
+          metric ->
+              indexOptions.put(
+                  VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION, metric.cqlIndexingFunction()));
+      var metricToUse = decideSimilarityFunction(sourceModelToUse, maybeUserMetric);
 
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug(
-            "create() - options.sourceModel: {}, userOrDefaultModelName: {}, sourceModelToUse: {} ",
-            (indexDesc.options() == null) ? "<options null>" : indexDesc.options().sourceModel(),
-            userOrDefaultModelName,
-            sourceModelToUse);
-      }
-
-      // Work out the similarity function, we need to use defaults and catch bad names from the
-      // user,
-      // and fall back to the source model if the user did not provide a function
-      // Using the default value, get the similarity function from the options
-      var userOrDefaultFunctionName =
-          SIMILARITY_FUNCTION_DEFAULT.apply(
-              indexDesc.options(), VectorIndexDefinitionDesc.VectorIndexDescOptions::metric);
-      // get the enum, the only way this fails is if the name is unknown
-      var userOrDefaultFunction = SimilarityFunction.fromApiName(userOrDefaultFunctionName);
-
-      if (userOrDefaultFunction.isEmpty()) {
-        throw SchemaException.Code.UNKNOWN_VECTOR_METRIC.get(
-            Map.of(
-                "knownMetrics",
-                errFmtJoin(List.of(SimilarityFunction.values()), SimilarityFunction::apiName),
-                "unknownMetric",
-                userOrDefaultFunctionName));
-      }
-
-      // Now need to work out what function we use, the one the user provided or the one from the
-      // source model.
-      var functionToUse =
-          SimilarityFunction.decideFromInputOrModel(
-              SIMILARITY_FUNCTION_DEFAULT.isPresent(
-                  indexDesc.options(), VectorIndexDefinitionDesc.VectorIndexDescOptions::metric),
-              userOrDefaultFunction.orElse(null),
-              maybeSourceModel.get());
-
-      // Unlike the source model, the similarity function is required, and because we are building
-      // the index we use the cqlIndexingFunction()
-      Options.SIMILARITY_FUNCTION.putOrDefault(indexOptions, functionToUse.cqlIndexingFunction());
-
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug(
-            "create() - options.metric: {}, userOrDefaultFunctionName: {}, functionToUse: {} ",
-            (indexDesc.options() == null) ? "<options null>" : indexDesc.options().metric(),
-            userOrDefaultFunctionName,
-            functionToUse);
+            "create() - userMetricName: {}, maybeUserMetric: {}, metricToUse: {}",
+            userMetricName,
+            maybeUserMetric,
+            metricToUse);
       }
 
       return new ApiVectorIndex(
-          indexIdentifier, targetIdentifier, indexOptions, functionToUse, sourceModelToUse);
+          indexIdentifier, targetIdentifier, indexOptions, metricToUse, sourceModelToUse);
     }
   }
 
@@ -211,6 +244,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
    * Factory to create a new {@link ApiVectorIndex} using the {@link IndexMetadata} from the driver.
    */
   private static class CqlTypeFactory extends IndexFactoryFromCql {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CqlTypeFactory.class);
 
     @Override
     protected ApiIndexDef create(
@@ -232,30 +266,31 @@ public class ApiVectorIndex extends ApiSupportedIndex {
                 + indexMetadata.getName());
       }
 
-      var sourceModel =
-          EmbeddingSourceModel.fromCqlName(
-                  Options.SOURCE_MODEL.getWithDefault(indexMetadata.getOptions()))
-              .orElseThrow(
-                  () ->
-                      new IllegalStateException(
-                          "Unknown source model index.name:%s, index.options%s"
-                              .formatted(indexMetadata.getName(), indexMetadata.getOptions())));
+      var indexModelName = indexMetadata.getOptions().get(VectorConstants.CQLAnnIndex.SOURCE_MODEL);
+      var indexModelToUse = sourceModelFromName(indexModelName, indexMetadata);
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(
+            "create() - indexModelName: {}, indexModelToUse: {} ", indexModelName, indexModelToUse);
+      }
 
-      var similarityFunction =
-          SimilarityFunction.fromCqlIndexingFunction(
-                  Options.SIMILARITY_FUNCTION.getWithDefault(indexMetadata.getOptions()))
-              .orElseThrow(
-                  () ->
-                      new IllegalStateException(
-                          "Unknown similarity function index.name:%s, index.options%s"
-                              .formatted(indexMetadata.getName(), indexMetadata.getOptions())));
+      var indexMetricName =
+          indexMetadata.getOptions().get(VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION);
+      var maybeIndexMetric = similarityFunctionFromName(indexMetricName, indexMetadata);
+      var indexMetricToUse = decideSimilarityFunction(indexModelToUse, maybeIndexMetric);
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(
+            "create() - indexMetricName: {}, maybeIndexMetric: {}, indexMetricToUse: {}",
+            indexMetricName,
+            maybeIndexMetric,
+            indexMetricToUse);
+      }
 
       return new ApiVectorIndex(
           indexMetadata.getName(),
           indexTarget.targetColumn(),
           indexMetadata.getOptions(),
-          similarityFunction,
-          sourceModel);
+          indexMetricToUse,
+          indexModelToUse);
     }
   }
 }

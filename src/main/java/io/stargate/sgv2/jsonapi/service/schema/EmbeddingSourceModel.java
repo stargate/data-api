@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -20,9 +21,7 @@ public enum EmbeddingSourceModel {
   NV_QA_4("nv-qa-4", "NV_QA_4", SimilarityFunction.DOT_PRODUCT),
   OPENAI_V3_LARGE("openai-v3-large", "OPENAI_V3_LARGE", SimilarityFunction.DOT_PRODUCT),
   OPENAI_V3_SMALL("openai-v3-small", "OPENAI_V3_SMALL", SimilarityFunction.DOT_PRODUCT),
-  OTHER("other", "OTHER", SimilarityFunction.COSINE),
-  // NOTE: was null originally for undefined
-  UNDEFINED("undefined", "undefined", null);
+  OTHER("other", "OTHER", SimilarityFunction.COSINE);
 
   // TODO: Add a comment why this is the default
   public static final EmbeddingSourceModel DEFAULT = OTHER;
@@ -35,6 +34,7 @@ public enum EmbeddingSourceModel {
       Arrays.stream(EmbeddingSourceModel.values())
           .collect(Collectors.toMap(model -> model.apiName().toLowerCase(), Function.identity()));
 
+  /** Do not use directly, see {@link #safeFromCqlName(String)}. */
   private static final Map<String, EmbeddingSourceModel> SOURCE_MODEL_BY_CQL_NAME =
       Arrays.stream(EmbeddingSourceModel.values())
           .collect(Collectors.toMap(model -> model.cqlName().toLowerCase(), Function.identity()));
@@ -45,10 +45,21 @@ public enum EmbeddingSourceModel {
     this.similarityFunction = similarityFunction;
   }
 
+  /**
+   * The name the API uses when talking to CQL about this model, see {@link
+   * #safeFromCqlName(String)} for some of the nuances.
+   *
+   * @return the name of the source model
+   */
   public String cqlName() {
     return cqlName;
   }
 
+  /**
+   * The name the API uses when talking to the user about this model.
+   *
+   * @return the name of the source model
+   */
   public String apiName() {
     return apiName;
   }
@@ -62,47 +73,59 @@ public enum EmbeddingSourceModel {
     return similarityFunction;
   }
 
-  public static String getSupportedSourceModelNames() {
-    return Arrays.stream(EmbeddingSourceModel.values())
-        .filter(v -> !v.equals(EmbeddingSourceModel.UNDEFINED))
-        .map(EmbeddingSourceModel::apiName)
-        .collect(Collectors.joining(", "));
+  /** Gets a list of all of API names of the supported source models. */
+  public static List<String> allApiNames() {
+    return Arrays.stream(EmbeddingSourceModel.values()).map(EmbeddingSourceModel::apiName).toList();
   }
 
   /**
-   * Get the recommended similarity function for the given source model.
+   * Converts a string representation of a source model name from the CQL index to its corresponding
+   * {@link EmbeddingSourceModel} enum if it exists.
    *
-   * @param sourceModel The source model
-   * @return The similarity function
+   * @param cqlName the name of the source model from the cql index, nullable.
+   * @return Optional of the corresponding {@link EmbeddingSourceModel} or empty if the cqlName was
+   *     null or is not known.
    */
-  //  public static SimilarityFunction getSimilarityFunction(EmbeddingSourceModel sourceModel) {
-  //    return SOURCE_MODEL_METRIC_MAP.get(sourceModel);
-  //  }
-
-  /**
-   * Get the recommended similarity function for the given source model name.
-   *
-   * @param sourceModelName The source model name
-   * @return The similarity function
-   */
-  //  public static SimilarityFunction getSimilarityFunction(String sourceModelName) {
-  //    return SOURCE_MODEL_NAME_MAP.get(sourceModelName) == null
-  //        ? null
-  //        : getSimilarityFunction(SOURCE_MODEL_NAME_MAP.get(sourceModelName));
-  //  }
-
   public static Optional<EmbeddingSourceModel> fromCqlName(String cqlName) {
-    return cqlName == null
-        ? Optional.empty()
-        : Optional.ofNullable(SOURCE_MODEL_BY_CQL_NAME.get(cqlName.toLowerCase()));
+    return cqlName == null ? Optional.empty() : Optional.ofNullable(safeFromCqlName(cqlName));
   }
 
+  /**
+   * Like {@link #fromCqlName(String)} but if the cqlName is null or blank it will return {@link
+   * #DEFAULT} model.
+   *
+   * @param cqlName the name of the source model from the cql index, nullable.
+   * @return Optional of the corresponding {@link EmbeddingSourceModel} or {@link #DEFAULT} if the
+   *     cqlName was null or blank, or empty if the cqlName was not known.
+   */
   public static Optional<EmbeddingSourceModel> fromCqlNameOrDefault(String cqlName) {
     return switch (cqlName) {
       case null -> Optional.of(DEFAULT);
       case String s when s.isBlank() -> Optional.of(DEFAULT);
       default -> fromCqlName(cqlName);
     };
+  }
+
+  /**
+   * The database will allow an index to be created with either "-" or "_" in the name. it replaces
+   * all "-" with "_" when mapping from the value on the index options, but will then leave the "-"
+   * in the options , so we have to suport both CQL names. See IndexWriterConfig in C* code
+   *
+   * <p>Examples of options from `system_schema.indexes` of valid indexes in the DB:
+   *
+   * <pre>
+   * {'class_name': 'StorageAttachedIndex', 'source_model': 'openai_v3_small', 'target': 'comment_vector'}
+   * {'class_name': 'StorageAttachedIndex', 'source_model': 'openai-v3-small', 'target': 'my_vector'}
+   * </pre>
+   *
+   * @param cqlName the name of the source model from the cql index.
+   * @return the source model or null if not found
+   */
+  private static EmbeddingSourceModel safeFromCqlName(String cqlName) {
+    var model = SOURCE_MODEL_BY_CQL_NAME.get(cqlName.toLowerCase());
+    return model != null
+        ? model
+        : SOURCE_MODEL_BY_CQL_NAME.get(cqlName.toLowerCase().replace("-", "_"));
   }
 
   /**
@@ -142,6 +165,6 @@ public enum EmbeddingSourceModel {
    */
   public static JsonApiException getUnknownSourceModelException(String apiName) {
     return ErrorCodeV1.VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME.toApiException(
-        "Received: '%s'; Accepted: %s", apiName, getSupportedSourceModelNames());
+        "Received: '%s'; Accepted: %s", apiName, String.join(", ", allApiNames()));
   }
 }
