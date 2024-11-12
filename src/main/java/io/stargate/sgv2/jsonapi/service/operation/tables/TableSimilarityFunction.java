@@ -63,7 +63,7 @@ public interface TableSimilarityFunction extends Function<Select, Select> {
 
     // similarityFunction is from index, default to cosine. In projection,
     // we do not care about if the vector column in indexed or not, capture by vector sort.
-    var similarityFunction = vectorColDefinition.get().similarityFunction().getFunction();
+    var similarityFunction = vectorColDefinition.get().similarityFunction().cqlProjectionFunction();
 
     return new TableSimilarityFunctionImpl(
         requestedVectorColumnPath,

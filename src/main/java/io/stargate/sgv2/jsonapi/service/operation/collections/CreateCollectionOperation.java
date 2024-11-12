@@ -19,16 +19,12 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,6 +135,16 @@ public record CreateCollectionOperation(
     // if table exists, compare existedCollectionSettings and newCollectionSettings
     CollectionSchemaObject existedCollectionSettings =
         CollectionSchemaObject.getCollectionSettings(tableMetadata, objectMapper);
+
+    // Use the fromNameOrDefault() so if not specified it will default
+    var embeddingSourceModel =
+        EmbeddingSourceModel.fromApiNameOrDefault(sourceModel)
+            .orElseThrow(() -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModel));
+
+    var similarityFunction =
+        SimilarityFunction.fromApiNameOrDefault(vectorFunction)
+            .orElseThrow(() -> SimilarityFunction.getUnknownFunctionException(vectorFunction));
+
     CollectionSchemaObject newCollectionSettings =
         CollectionSchemaObject.getCollectionSettings(
             currKeyspace.getName().asInternal(),
@@ -146,8 +152,8 @@ public record CreateCollectionOperation(
             tableMetadata,
             vectorSearch,
             vectorSize,
-            SimilarityFunction.fromString(vectorFunction),
-            SourceModel.fromString(sourceModel),
+            similarityFunction,
+            embeddingSourceModel,
             comment,
             objectMapper);
     // if table exists we have to choices:
