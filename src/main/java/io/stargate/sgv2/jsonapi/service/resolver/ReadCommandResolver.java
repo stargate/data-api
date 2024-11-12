@@ -84,6 +84,8 @@ class ReadCommandResolver<
                 operationsConfig,
                 orderByWithWarnings.target(),
                 commandSkip,
+                // Math.min is used because the max documents the api return is
+                // `operationsConfig.defaultPageSize()`
                 Math.min(commandLimit, operationsConfig.defaultPageSize()))
             .resolve(commandContext, command);
     attemptBuilder.addSorter(inMemorySort);
