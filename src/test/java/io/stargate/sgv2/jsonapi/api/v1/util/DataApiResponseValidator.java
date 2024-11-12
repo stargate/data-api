@@ -375,4 +375,12 @@ public class DataApiResponseValidator {
     }
     return toReturn;
   }
+
+  public DataApiResponseValidator hasNextPageState() {
+    return body("data.nextPageState", is(notNullValue()));
+  }
+
+  public DataApiResponseValidator doesNotHaveNextPageState() {
+    return body("$", not(hasKey("data.nextPageState")));
+  }
 }
