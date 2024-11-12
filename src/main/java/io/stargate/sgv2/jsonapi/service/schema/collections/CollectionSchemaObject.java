@@ -19,8 +19,8 @@ import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -163,17 +163,22 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       }
       // default function and source model
       SimilarityFunction function = SimilarityFunction.COSINE;
-      SourceModel sourceModel = SourceModel.OTHER;
+      EmbeddingSourceModel sourceModel = EmbeddingSourceModel.OTHER;
       if (vectorIndex != null) {
         final String functionName =
             vectorIndex.getOptions().get(VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION);
         final String sourceModelName =
             vectorIndex.getOptions().get(VectorConstants.CQLAnnIndex.SOURCE_MODEL);
         if (functionName != null) {
-          function = SimilarityFunction.fromString(functionName);
+          function =
+              SimilarityFunction.fromCqlIndexingFunction(functionName)
+                  .orElseThrow(() -> SimilarityFunction.getUnknownFunctionException(functionName));
         }
         if (sourceModelName != null) {
-          sourceModel = SourceModel.fromString(sourceModelName);
+          sourceModel =
+              EmbeddingSourceModel.fromApiNameOrDefault(sourceModelName)
+                  .orElseThrow(
+                      () -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModelName));
         }
       }
       final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
@@ -196,8 +201,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           table,
           false,
           0,
-          SimilarityFunction.UNDEFINED,
-          SourceModel.UNDEFINED,
+          SimilarityFunction.DEFAULT,
+          EmbeddingSourceModel.DEFAULT,
           comment,
           objectMapper);
     }
@@ -210,7 +215,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       boolean vectorEnabled,
       int vectorSize,
       SimilarityFunction similarityFunction,
-      SourceModel sourceModel,
+      EmbeddingSourceModel sourceModel,
       String comment,
       ObjectMapper objectMapper) {
     return createCollectionSettings(
@@ -232,7 +237,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       boolean vectorEnabled,
       int vectorSize,
       SimilarityFunction function,
-      SourceModel sourceModel,
+      EmbeddingSourceModel sourceModel,
       String comment,
       ObjectMapper objectMapper) {
 
@@ -337,7 +342,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           new CreateCollectionCommand.Options.VectorSearchConfig(
               vectorColumnDefinition.vectorSize(),
               vectorColumnDefinition.similarityFunction().name().toLowerCase(),
-              vectorColumnDefinition.sourceModel().getName(),
+              vectorColumnDefinition.sourceModel().apiName(),
               vectorizeConfig);
     }
 

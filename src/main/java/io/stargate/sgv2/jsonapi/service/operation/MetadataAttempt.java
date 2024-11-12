@@ -2,20 +2,27 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.EmptyAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /** An attempt to execute commands that need data from metadata */
 public abstract class MetadataAttempt<SchemaT extends SchemaObject>
     extends OperationAttempt<MetadataAttempt<SchemaT>, SchemaT> {
+
+  protected static final Predicate<TableMetadata> TABLE_MATCHER =
+      new CollectionTableMatcher().negate();
+
   // this will be set on executeStatement
   // TODO: BETTER CONTROL ON WHEN THIS IS SET AND NOT SET
   protected Optional<KeyspaceMetadata> keyspaceMetadata;

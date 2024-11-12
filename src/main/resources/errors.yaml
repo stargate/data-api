@@ -315,6 +315,18 @@ request-errors:
       
       Supported update operations are ${supportedUpdateOperations}.
 
+# Note INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION is a duplicate for Document scope, this one is used for Update scope.
+  - scope: UPDATE
+    code: INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION
+    title: Can not vectorize on column without vectorize definition
+    body: |-
+      Vectorize only supports on vector column that has vectorize definition.
+      
+      The table ${keyspace}.${table} defines the vector columns with vectorize definition: ${validVectorizeColumns}.
+      The request included the following vector columns without vectorize definition: ${invalidVectorizeColumns}.
+      
+      Resend the vectorize request using only vector column with vectorize definition.
+
   # ================================================================================================================
   # Family: REQUEST         Scope: WARNING
   # ================================================================================================================
@@ -651,31 +663,145 @@ request-errors:
       
       The command used the dimension: ${unsupportedValue}.
 
+  - scope: SCHEMA
+    code: UNKNOWN_INDEX_COLUMN
+    title: Index creation for unknown column
+    body: |-
+      The command attempted to create an index on a column that is not in the table schema.
+      
+      Indexes can only be created on existing columns.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to index the unknown columns: ${unknownColumns}.  
+      
+      Send the command using columns that are defined in the table schema.
+
+
+  - scope: SCHEMA
+    code: DATA_TYPE_NOT_SUPPORTED_BY_INDEXING
+    title: Index creation for unsupported data type
+    body: |-
+      The command attempted to create an index on a column that uses a data type not supported for indexing.
+      
+      Regular indexes can only be created on primitive data types such as `text` and `int`, vector columns can be indexed using the createVectorIndex command.
+      
+      Note: Indexing for `map`, `list`, and `set` types will be added at a later date. 
+      
+      The supported primitive data types are: ${supportedTypes}.
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to index the unsupported columns: ${unsupportedColumns}.
+      
+      Send the command using columns of the supported data types.
+
+  - scope: SCHEMA
+    code: TEXT_ANALYSIS_NOT_SUPPORTED_BY_DATA_TYPE
+    title: Index creation using text analysis for unsupported data type
+    body: |-
+      The command attempted to create an index that specified text analysis on a column that uses a data type not supported for text analysis.
+      
+      Text analysis options `ascii`, `caseSensitive`, and `normalize` can only be used on columns of type `text` or `ascii`. 
+  
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to index the unsupported columns: ${unsupportedColumns}.
+      
+      Send the command using columns of the supported data types.
+
+  - scope: SCHEMA
+    code: VECTOR_INDEX_NOT_SUPPORTED_BY_DATA_TYPE
+    title: Vector index creation for unsupported data type
+    body: |-
+      The command attempted to create an vector index on a column that is not a `vector` type.
+      
+      Vector indexes can only be created on columns of type `vector`, regular indexes can only be created on primitive data types such as `text` and `int` using the createIndex command.
+      
+      Note: Indexing for `map`, `list`, and `set` types will be added at a later date. 
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to vector index the unsupported columns: ${unsupportedColumns}.
+      
+      Send the command again using a vector column.
+
+  - scope: SCHEMA
+    code: UNKNOWN_VECTOR_SOURCE_MODEL
+    title: Vector index creation with unknown vector source model
+    body: |-
+      The command attempted to create an vector index using a vector source model that is not known by the API.
+      
+      Including the optional name of the model that created the vectors when creating a vector index can provide significant performance improvements. 
+      
+      The known source models are: ${knownSourceModels}.
+      The command attempted to use the source model: ${unknownSourceModel}.
+      
+      Send the command again using a known source model.
+
+  - scope: SCHEMA
+    code: UNKNOWN_VECTOR_METRIC
+    title: Vector index creation with unknown vector metric
+    body: |-
+      The command attempted to create an vector index using a metric that is not known by the API.
+            
+      The metric, also known as the similarity function, used to create the vector index is used to compare vectors to find the similar vectors.
+      
+      The known metrics are: ${knownMetrics}.
+      The command attempted to use the metric: ${unknownMetric}.
+      
+      Send the command again using a known source metric.
+
+  - scope: SCHEMA
+    code: CANNOT_DROP_UNKNOWN_INDEX
+    title: Dropped index is not present in the keyspace schema
+    body: |-
+      The command attempted to drop an index that is not in the keyspace schema.
+      
+      The command attempted to drop the unknown index: ${unknownIndex}.
+      
+      Send the command again using an index that exists in the keyspace.
+
+  - scope: SCHEMA
+    code: CANNOT_DROP_UNKNOWN_TABLE
+    title: Dropped table is not present in the keyspace schema
+    body: |-
+      The command attempted to drop a table that is not in the keyspace schema.
+      
+      The command attempted to drop the unknown table: ${unknownTable}.
+      
+      Send the command again using an table that exists in the keyspace.
+
+  - scope: SCHEMA
+    code: CANNOT_ADD_EXISTING_TABLE
+    title: Added table already exists in the keyspace schema
+    body: |-
+      The command attempted to add a table that already exists in the keyspace schema.
+      
+      The command attempted to add the existing table: ${existingTable}.
+      
+      Send the command again using an table name that does not exist in the keyspace.
+
+  - scope: SCHEMA
+    code: CANNOT_ADD_EXISTING_INDEX
+    title: Added index already exists in the keyspace schema
+    body: |-
+      The command attempted to add an index that already exists in the keyspace schema.
+      
+      The command attempted to add the existing index: ${existingIndex}.
+      
+      Send the command again using an index name that does not exist in the keyspace.
+
+
+
     # prev errors - all need to be reviewed
+
+  - scope: SCHEMA
+    code: INVALID_INDEX_DEFINITION
+    title: Provided index configuration is not valid.
+    body: |-
+      Provided index configuration is not valid: ${reason}.
 
   - scope: SCHEMA
     code: INVALID_KEYSPACE
     title: Keyspace used is not valid.
     body: |-
       Keyspace used is not valid: ${keyspace} 
-
-  - scope: SCHEMA
-    code: INDEX_NOT_FOUND
-    title: Index name used is not valid.
-    body: |-
-      Index name used not found: ${reason} 
-
-  - scope: SCHEMA
-    code: TABLE_NOT_FOUND
-    title: Table name used is not valid.
-    body: |-
-      Table name used bot found: ${reason} 
-
-  - scope: SCHEMA
-    code: TABLE_ALREADY_EXISTS
-    title: Table already exist in the keyspace.
-    body: |-
-      Table already exist in the keyspace: ${reason}
 
   - scope: SCHEMA
     code: COLUMN_TYPE_INCORRECT
@@ -723,12 +849,6 @@ request-errors:
     title: Unable to parse vectorize configuration, schema invalid.
     body: |-
       Unable to parse vectorize configuration, schema invalid for field ${field}.
-
-  - scope: SCHEMA
-    code: INVALID_INDEX_DEFINITION
-    title: Provided index configuration is not valid.
-    body: |-
-      Provided index configuration is not valid: ${reason}.
 
   - scope: SCHEMA
     code: COLUMN_NOT_FOUND

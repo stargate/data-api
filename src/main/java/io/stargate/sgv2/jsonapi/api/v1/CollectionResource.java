@@ -115,9 +115,11 @@ public class CollectionResource {
                         UpdateOneCommand.class,
                         // TODO, hide table feature detail before it goes public,
                         // https://github.com/stargate/data-api/pull/1360
+                        //                        AlterTableCommand.class,
                         //                        CreateIndexCommand.class,
                         //                        CreateVectorIndexCommand.class
                         //                        DropIndexCommand.class
+                        //                        ListIndexesCommand.class
                       }),
               examples = {
                 @ExampleObject(ref = "countDocuments"),

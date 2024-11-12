@@ -67,6 +67,7 @@ public interface Command {
     FIND_ONE("findOne", CommandType.DML),
     INSERT_MANY("insertMany", CommandType.DML),
     INSERT_ONE("insertOne", CommandType.DML),
+    LIST_INDEXES("listIndexes", CommandType.DDL),
     LIST_TABLES("listTables", CommandType.DDL),
     UPDATE_MANY("updateMany", CommandType.DML),
     UPDATE_ONE("updateOne", CommandType.DML),
@@ -95,6 +96,6 @@ public interface Command {
   /** Enum class for command types. This is used to categorize commands into DDL and DML. */
   enum CommandType {
     DDL,
-    DML;
+    DML
   }
 }
