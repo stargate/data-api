@@ -72,8 +72,9 @@ class ReadCommandResolver<
     var orderByWithWarnings = tableCqlSortClauseResolver.resolve(commandContext, command);
     attemptBuilder.addOrderBy(orderByWithWarnings);
 
-    // if the user did not provide a limit, we will use the default page size as read limit
-    int commandLimit = command.limit().orElseGet(operationsConfig::defaultPageSize);
+    // if the user did not provide a limit,we read all the possible rows. Paging is then handled
+    // by the driver pagination
+    int commandLimit = command.limit().orElseGet(() -> Integer.MAX_VALUE);
 
     int commandSkip = command.skip().orElse(0);
 
