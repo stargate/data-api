@@ -65,7 +65,7 @@ abstract class OperationAttemptPage<
 
   protected void addAttemptWarningsToResult() {
     attempts.stream()
-        .flatMap(attempt -> attempt.warnings().stream())
+        .flatMap(attempt -> attempt.warningsExcludingSupresed().stream())
         .forEach(resultBuilder::addWarning);
   }
 
