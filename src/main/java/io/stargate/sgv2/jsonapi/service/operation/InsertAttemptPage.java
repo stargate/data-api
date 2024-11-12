@@ -175,9 +175,7 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
     public InsertAttemptPage<SchemaT> getOperationPage() {
 
       return new InsertAttemptPage<>(
-          attempts,
-          CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode),
-          returnDocumentResponses);
+          attempts, CommandResult.statusOnlyBuilder(debugMode), returnDocumentResponses);
     }
   }
 }

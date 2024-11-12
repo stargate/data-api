@@ -36,8 +36,7 @@ public class SchemaAttemptPage<SchemaT extends SchemaObject>
 
     @Override
     public SchemaAttemptPage<SchemaT> getOperationPage() {
-      return new SchemaAttemptPage<>(
-          attempts, CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode));
+      return new SchemaAttemptPage<>(attempts, CommandResult.statusOnlyBuilder(debugMode));
     }
   }
 }

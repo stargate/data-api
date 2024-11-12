@@ -5,7 +5,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListTablesCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
@@ -52,8 +51,7 @@ public class ListTablesCommandResolver implements CommandResolver<ListTablesComm
         MetadataAttemptPage.builder()
             .showSchema(explain)
             .usingCommandStatus(CommandStatus.EXISTING_TABLES)
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled());
 
     return new GenericOperation(attempts, pageBuilder, new KeyspaceDriverExceptionHandler(command));
   }

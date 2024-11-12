@@ -139,8 +139,8 @@ public class ReadAttemptPage<SchemaT extends TableSchemaObject>
 
       var resultBuilder =
           singleResponse
-              ? CommandResult.singleDocumentBuilder(useErrorObjectV2, debugMode)
-              : CommandResult.multiDocumentBuilder(useErrorObjectV2, debugMode);
+              ? CommandResult.singleDocumentBuilder(debugMode)
+              : CommandResult.multiDocumentBuilder(debugMode);
 
       return new ReadAttemptPage<>(
           attempts, resultBuilder, pagingState, includeSortVector, sortVector);

@@ -110,9 +110,7 @@ class ReadCommandResolver<
     var attempts = new OperationAttemptContainer<>(attemptBuilder.build(where));
 
     // the common page builder options
-    pageBuilder
-        .debugMode(commandContext.getConfig(DebugModeConfig.class).enabled())
-        .useErrorObjectV2(commandContext.getConfig(OperationsConfig.class).extendError());
+    pageBuilder.debugMode(commandContext.getConfig(DebugModeConfig.class).enabled());
 
     return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
   }

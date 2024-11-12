@@ -42,8 +42,7 @@ public class TruncateAttemptPage<SchemaT extends TableBasedSchemaObject>
     @Override
     public TruncateAttemptPage<SchemaT> getOperationPage() {
 
-      return new TruncateAttemptPage<>(
-          attempts, CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode));
+      return new TruncateAttemptPage<>(attempts, CommandResult.statusOnlyBuilder(debugMode));
     }
   }
 }

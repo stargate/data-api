@@ -7,6 +7,6 @@ import java.util.function.Supplier;
 public record ServiceRegistrationResult() implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {
-    return CommandResult.singleDocumentBuilder(false, false).addStatus(CommandStatus.OK, 1).build();
+    return CommandResult.singleDocumentBuilder(false).addStatus(CommandStatus.OK, 1).build();
   }
 }

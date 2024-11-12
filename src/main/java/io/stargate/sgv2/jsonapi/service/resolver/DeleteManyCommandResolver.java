@@ -70,8 +70,7 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
       var attemptContainer = new OperationAttemptContainer<>(truncateAttempt);
       var truncatePageBuilder =
           TruncateAttemptPage.<TableSchemaObject>builder()
-              .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-              .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+              .debugMode(ctx.getConfig(DebugModeConfig.class).enabled());
       return new GenericOperation<>(
           attemptContainer, truncatePageBuilder, new TableDriverExceptionHandler());
     }
@@ -83,8 +82,7 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
             ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
     var deletePageBuilder =
         DeleteAttemptPage.<TableSchemaObject>builder()
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled());
 
     var attempts = new OperationAttemptContainer<>(deleteAttemptBuilder.build(where));
     return new GenericOperation<>(attempts, deletePageBuilder, new TableDriverExceptionHandler());

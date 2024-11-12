@@ -101,8 +101,7 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
 
     var pageBuilder =
         UpdateAttemptPage.<TableSchemaObject>builder()
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled());
 
     return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
   }
