@@ -8,7 +8,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.getCassa
 import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
 import jakarta.ws.rs.core.Response;
@@ -71,8 +71,7 @@ public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBas
    * @param jsonBody JSON body to POST
    * @return Response validator for further assertions
    */
-  protected final DataApiResponseValidator postJSON(
-      Command.CommandName commandName, String jsonBody) {
+  protected final DataApiResponseValidator postJSON(CommandName commandName, String jsonBody) {
     RequestSpecification request =
         given()
             .port(getTestPort())
@@ -90,8 +89,7 @@ public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBas
    * is public to make it iterate sending commands, if there is a missing function on the subclass
    * add it.
    */
-  public DataApiResponseValidator postCommand(
-      Command.CommandName commandName, String commandClause) {
+  public DataApiResponseValidator postCommand(CommandName commandName, String commandClause) {
     return postJSON(
         commandName, "{ \"%s\": %s }".formatted(commandName.getApiName(), commandClause));
   }

@@ -76,7 +76,7 @@ public class AccumulatingAsyncResultSet implements AsyncResultSet {
 
   @Override
   public int remaining() {
-    throw new NotImplementedException();
+    return -1;
   }
 
   @Override

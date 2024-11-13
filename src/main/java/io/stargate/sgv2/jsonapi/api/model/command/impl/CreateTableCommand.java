@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.TableOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDefinitionDesc;
 import jakarta.annotation.Nullable;

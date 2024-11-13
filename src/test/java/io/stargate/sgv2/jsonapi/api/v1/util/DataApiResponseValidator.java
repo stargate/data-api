@@ -6,7 +6,7 @@ import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.hasEntry;
 
 import io.restassured.response.ValidatableResponse;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.exception.*;
@@ -18,12 +18,12 @@ import org.hamcrest.TypeSafeMatcher;
 
 public class DataApiResponseValidator {
   protected final ValidatableResponse response;
-  protected final Command.CommandName commandName;
+  protected final CommandName commandName;
 
   private final TypeSafeMatcher<Map<String, ?>> responseIsSuccess;
   private final TypeSafeMatcher<Map<String, ?>> responseIsError;
 
-  public DataApiResponseValidator(Command.CommandName commandName, ValidatableResponse response) {
+  public DataApiResponseValidator(CommandName commandName, ValidatableResponse response) {
     this.commandName = commandName;
     this.response = response;
 
@@ -374,5 +374,13 @@ public class DataApiResponseValidator {
       toReturn = body("status.indexes", not(contains(index)));
     }
     return toReturn;
+  }
+
+  public DataApiResponseValidator hasNextPageState() {
+    return body("data.nextPageState", is(notNullValue()));
+  }
+
+  public DataApiResponseValidator doesNotHaveNextPageState() {
+    return body("$", not(hasKey("data.nextPageState")));
   }
 }
