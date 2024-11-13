@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import java.util.*;
 
 /**
@@ -113,7 +114,8 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
         seenErrors.add(cmdError);
       }
       results[attempt.position()] =
-          new InsertionResult(attempt.docRowID().orElseThrow(), InsertionStatus.ERROR, errorIdx);
+          new InsertionResult(
+              attempt.docRowID().orElse(RowId.EMPTY_ROWID), InsertionStatus.ERROR, errorIdx);
     }
 
     // And third, if any, skipped insertions; those that were not attempted (f.ex due
