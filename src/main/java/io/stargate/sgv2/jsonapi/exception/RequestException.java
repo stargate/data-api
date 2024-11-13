@@ -39,8 +39,9 @@ public class RequestException extends APIException {
   }
 
   public enum Code implements ErrorCode<RequestException> {
-    // TODO: remove fake error code, just here so it compiles
-    FAKE_CODE;
+    UNSUPPORTED_TABLE_COMMAND,
+    UNSUPPORTED_COLLECTION_COMMAND,
+    ;
 
     private final ErrorTemplate<RequestException> template;
 

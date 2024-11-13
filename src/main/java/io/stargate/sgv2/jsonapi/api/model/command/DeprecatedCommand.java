@@ -15,7 +15,7 @@ public interface DeprecatedCommand extends Command {
    *
    * @return commandName enum
    */
-  Command.CommandName useCommandName();
+  CommandName useCommandName();
 
   /** A warning message will be added to commandResult when deprecated command is used. */
   default APIException getDeprecationWarning() {
