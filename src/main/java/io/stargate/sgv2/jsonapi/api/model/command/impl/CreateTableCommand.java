@@ -13,9 +13,7 @@ import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-// TODO, hide table feature detail before it goes public,
-// https://github.com/stargate/data-api/pull/1360
-// @Schema(description = "Command that creates an api table.")
+@Schema(description = "Command that creates an api table.")
 @JsonTypeName("createTable")
 public record CreateTableCommand(
     @NotNull
