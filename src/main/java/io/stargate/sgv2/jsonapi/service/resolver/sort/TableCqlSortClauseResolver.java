@@ -251,7 +251,10 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
         "Vector sorting on column {}", cqlIdentifierToMessageString(vectorSortColumn.name()));
     var cqlVector = CqlVectorUtil.floatsToCqlVector(vectorSortExpression.vector());
     return WithWarnings.of(
-        new TableOrderByANNCqlClause(vectorSortColumn, cqlVector),
+        new TableOrderByANNCqlClause(
+            vectorSortColumn,
+            cqlVector,
+            commandContext.getConfig(OperationsConfig.class).maxVectorSearchLimit()),
         List.of(WarningException.Code.ZERO_FILTER_OPERATIONS));
   }
 

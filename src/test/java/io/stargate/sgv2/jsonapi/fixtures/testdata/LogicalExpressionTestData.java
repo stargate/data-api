@@ -71,6 +71,17 @@ public class LogicalExpressionTestData extends TestDataSuplier {
       return eqAllClusteringKeys();
     }
 
+    public FixtureT inOnOnePartitionKey(
+        InTableFilter.Operator inFilterOperator, ColumnMetadata firstPartitionKey) {
+      if (inFilterOperator == InTableFilter.Operator.IN) {
+        expression.addFilter(in(firstPartitionKey));
+      }
+      if (inFilterOperator == InTableFilter.Operator.NIN) {
+        expression.addFilter(nin(firstPartitionKey));
+      }
+      return fixture;
+    }
+
     public FixtureT eqAllPartitionKeys() {
       tableMetadata
           .getPartitionKey()
