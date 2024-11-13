@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.COLUMN_METADATA_COMPARATOR;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
@@ -113,6 +114,7 @@ public class WriteableTableRowBuilder {
                 column ->
                     (!suppliedColumns.containsKey(column.getName())
                         || suppliedColumns.get(column.getName()).value().value() == null))
+            .sorted(COLUMN_METADATA_COMPARATOR)
             .toList();
 
     if (!missingPrimaryKeys.isEmpty()) {
