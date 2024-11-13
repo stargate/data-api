@@ -135,6 +135,12 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
         // https://github.com/stargate/data-api/issues/1636 issue for adding nullOption
         if (columnValue == null) {
           skippedNullCount++;
+          // For set/list/map values, java driver wrap up as empty Collection/Map, Data API only
+          // returns non-sparse data currently.
+        } else if (columnValue instanceof Collection<?> collection && collection.isEmpty()) {
+          skippedNullCount++;
+        } else if (columnValue instanceof Map<?, ?> map && map.isEmpty()) {
+          skippedNullCount++;
         } else {
           nonNullCount++;
           result.put(columnName, codec.toJSON(objectMapper, columnValue));
