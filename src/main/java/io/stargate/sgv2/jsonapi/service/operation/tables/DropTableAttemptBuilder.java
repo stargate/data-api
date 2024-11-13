@@ -14,7 +14,8 @@ public class DropTableAttemptBuilder {
   private final KeyspaceSchemaObject schemaObject;
   private final CqlIdentifier name;
   private final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy;
-  private final CQLOptions<Drop> cqlOptions = new CQLOptions<>();
+  private final CQLOptions.BuildableCQLOptions<Drop> cqlOptions =
+      new CQLOptions.BuildableCQLOptions<>();
 
   public DropTableAttemptBuilder(
       KeyspaceSchemaObject schemaObject,

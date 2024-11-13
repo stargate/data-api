@@ -33,7 +33,8 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
   private WithWarnings<OrderByCqlClause> orderByWithWarnings;
   private WithWarnings<RowSorter> rowSorterWithWarnings;
   private CqlPagingState pagingState = CqlPagingState.EMPTY;
-  private final CQLOptions<Select> cqlOptions = new CQLOptions<>();
+  private final CQLOptions.BuildableCQLOptions<Select> cqlOptions =
+      new CQLOptions.BuildableCQLOptions<>();
 
   private OperationProjection projection;
 
@@ -95,7 +96,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
     var atttemptCqlOptions = cqlOptions;
     if (whereWithWarnings != null && whereWithWarnings.requiresAllowFiltering()) {
       // Create a copy of cqlOptions, so we do not impact other attempts
-      atttemptCqlOptions = new CQLOptions<>(atttemptCqlOptions);
+      atttemptCqlOptions = new CQLOptions.BuildableCQLOptions<>(atttemptCqlOptions);
       atttemptCqlOptions.addBuilderOption(CQLOption.ForSelect.allowFiltering());
     }
 

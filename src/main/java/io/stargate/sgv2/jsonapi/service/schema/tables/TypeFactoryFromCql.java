@@ -15,7 +15,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends DataType> {
+public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends DataType>
+    extends FactoryFromCql {
   private static final Logger LOGGER = LoggerFactory.getLogger(TypeFactoryFromCql.class);
 
   public static final TypeFactoryFromCql<ApiDataType, DataType> DEFAULT = new DefaultFactory();

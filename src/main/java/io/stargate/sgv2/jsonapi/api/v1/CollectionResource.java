@@ -3,10 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
 
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
@@ -115,9 +112,11 @@ public class CollectionResource {
                         UpdateOneCommand.class,
                         // TODO, hide table feature detail before it goes public,
                         // https://github.com/stargate/data-api/pull/1360
+                        //                        AlterTableCommand.class,
                         //                        CreateIndexCommand.class,
                         //                        CreateVectorIndexCommand.class
                         //                        DropIndexCommand.class
+                        //                        ListIndexesCommand.class
                       }),
               examples = {
                 @ExampleObject(ref = "countDocuments"),
@@ -181,7 +180,7 @@ public class CollectionResource {
             dataApiRequestInfo.getTenantId(),
             keyspace,
             collection,
-            Command.CommandType.DDL.equals(command.commandName().getCommandType()))
+            CommandType.DDL.equals(command.commandName().getCommandType()))
         .onItemOrFailure()
         .transformToUni(
             (schemaObject, throwable) -> {

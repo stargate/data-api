@@ -48,7 +48,7 @@ public class ReadAttemptTestData extends OperationAttemptTestData {
                 testData.selectCQLClause().selectAllFromTable(),
                 testData.whereCQLClause().emptySelect(),
                 OrderByCqlClause.NO_OP,
-                new CQLOptions<>(),
+                new CQLOptions.BuildableCQLOptions<>(),
                 CqlPagingState.EMPTY,
                 TableProjection.fromDefinition(
                     objectMapper,
