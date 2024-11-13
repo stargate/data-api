@@ -113,7 +113,8 @@ public class WriteableTableRowBuilder {
             .filter(
                 column ->
                     (!suppliedColumns.containsKey(column.getName())
-                        || suppliedColumns.get(column.getName()).value().value() == null))
+                        || (suppliedColumns.containsKey(column.getName())
+                            && suppliedColumns.get(column.getName()).value().value() == null)))
             .sorted(COLUMN_METADATA_COMPARATOR)
             .toList();
 
@@ -123,7 +124,7 @@ public class WriteableTableRowBuilder {
               .filter(
                   column ->
                       suppliedColumns.containsKey(column.getName())
-                          || suppliedColumns.get(column.getName()).value().value() != null)
+                          && suppliedColumns.get(column.getName()).value().value() != null)
               .toList();
       throw DocumentException.Code.MISSING_PRIMARY_KEY_COLUMNS.get(
           errVars(
