@@ -4,7 +4,10 @@ import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.EstimatedDocumentCountCommand;
@@ -15,6 +18,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.ListIndexesCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -110,13 +114,11 @@ public class CollectionResource {
                         InsertManyCommand.class,
                         UpdateManyCommand.class,
                         UpdateOneCommand.class,
-                        // TODO, hide table feature detail before it goes public,
-                        // https://github.com/stargate/data-api/pull/1360
-                        //                        AlterTableCommand.class,
-                        //                        CreateIndexCommand.class,
-                        //                        CreateVectorIndexCommand.class
-                        //                        DropIndexCommand.class
-                        //                        ListIndexesCommand.class
+                        // Table Only commands
+                        AlterTableCommand.class,
+                        CreateIndexCommand.class,
+                        CreateVectorIndexCommand.class,
+                        ListIndexesCommand.class
                       }),
               examples = {
                 @ExampleObject(ref = "countDocuments"),
@@ -134,6 +136,15 @@ public class CollectionResource {
                 @ExampleObject(ref = "insertMany"),
                 @ExampleObject(ref = "updateMany"),
                 @ExampleObject(ref = "updateOne"),
+                @ExampleObject(ref = "alterTableAddColumns"),
+                @ExampleObject(ref = "alterTableDropColumns"),
+                @ExampleObject(ref = "alterTableAddVectorize"),
+                @ExampleObject(ref = "alterTableDropVectorize"),
+                @ExampleObject(ref = "createIndex"),
+                @ExampleObject(ref = "createVectorIndex"),
+                @ExampleObject(ref = "listIndexes"),
+                @ExampleObject(ref = "insertOneTables"),
+                @ExampleObject(ref = "insertManyTables"),
               }))
   @APIResponses(
       @APIResponse(
@@ -160,6 +171,9 @@ public class CollectionResource {
                     @ExampleObject(ref = "resultUpdateMany"),
                     @ExampleObject(ref = "resultUpdateManyUpsert"),
                     @ExampleObject(ref = "resultError"),
+                    @ExampleObject(ref = "resultDdl"),
+                    @ExampleObject(ref = "resultListIndexes"),
+                    @ExampleObject(ref = "insertManyTablesResponse"),
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
