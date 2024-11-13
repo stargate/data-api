@@ -24,11 +24,12 @@ public class UpdateAttemptBuilder<SchemaT extends TableSchemaObject> {
   private final SchemaT tableBasedSchema;
   private final WhereCQLClauseAnalyzer whereCQLClauseAnalyzer;
 
-  public UpdateAttemptBuilder(SchemaT tableBasedSchema) {
+  public UpdateAttemptBuilder(SchemaT tableBasedSchema, boolean updateOne) {
 
     this.tableBasedSchema = tableBasedSchema;
     this.whereCQLClauseAnalyzer =
-        new WhereCQLClauseAnalyzer(tableBasedSchema, WhereCQLClauseAnalyzer.StatementType.UPDATE);
+        new WhereCQLClauseAnalyzer(
+            tableBasedSchema, WhereCQLClauseAnalyzer.StatementType.UPDATE_ONE);
   }
 
   public UpdateAttempt<SchemaT> build(

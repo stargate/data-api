@@ -265,7 +265,7 @@ public class QueryBuilder {
 
   public QueryBuilder similarityFunction(String columnName, SimilarityFunction similarityFunction) {
     switch (similarityFunction) {
-      case COSINE, UNDEFINED ->
+      case COSINE ->
           functionCalls.add(FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_COSINE"));
       case EUCLIDEAN ->
           functionCalls.add(
