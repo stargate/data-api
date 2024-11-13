@@ -36,4 +36,17 @@ public interface OrderByCqlClause extends Function<Select, Select>, CQLClause {
   default boolean fullyCoversCommand() {
     return false;
   }
+
+  /**
+   * Called to get the default limit for the query when using this order by.
+   *
+   * <p>ANN order by has a different default that regular queries to limit the number of rows in
+   * consideration.
+   *
+   * @return Default returns {@link Integer#MAX_VALUE} so queries can read all the rows in the
+   *     table.
+   */
+  default Integer getDefaultLimit() {
+    return Integer.MAX_VALUE;
+  }
 }
