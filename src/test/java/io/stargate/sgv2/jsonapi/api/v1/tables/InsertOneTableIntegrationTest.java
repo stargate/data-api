@@ -950,7 +950,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "data.document",
               """
                               { "id": "setValidPartial",
-                                "intSet": [-999, 3, 42],
+                                "intSet": [-999, 3, 42]
                               }
                               """);
 
@@ -1057,7 +1057,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "data.document",
               """
                                       { "id": "mapValidPartial",
-                                        "intMap": {"a": 3, "b": -999, "c": 42},
+                                        "intMap": {"a": 3, "b": -999, "c": 42}
                                       }
                                       """);
 
