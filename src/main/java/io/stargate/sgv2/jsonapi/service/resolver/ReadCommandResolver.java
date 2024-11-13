@@ -74,7 +74,8 @@ class ReadCommandResolver<
 
     // if the user did not provide a limit,we read all the possible rows. Paging is then handled
     // by the driver pagination
-    int commandLimit = command.limit().orElseGet(() -> Integer.MAX_VALUE);
+    int commandLimit =
+        command.limit().orElseGet(() -> orderByWithWarnings.target().getDefaultLimit());
 
     int commandSkip = command.skip().orElse(0);
 

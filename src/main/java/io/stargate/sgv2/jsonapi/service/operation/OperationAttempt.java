@@ -580,7 +580,6 @@ public abstract class OperationAttempt<
         var floatPos = start;
         for (int i = 0; i < 5; i++) {
           var nextPos = cql.indexOf(",", floatPos + 1, end);
-          System.out.println(nextPos);
           if (nextPos > -1) {
             floatPos = nextPos;
           } else {
