@@ -107,7 +107,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
             .collect(Collectors.toList());
 
     if (!duplicateColumns.isEmpty()) {
-      throw SchemaException.Code.COLUMN_ALREADY_EXISTS.get(
+      throw SchemaException.Code.CANNOT_ADD_EXISTING_COLUMNS.get(
           errVars(
               tableSchemaObject,
               map -> {

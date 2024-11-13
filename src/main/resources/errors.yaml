@@ -189,7 +189,7 @@ request-errors:
       Resend the request using only supported column values.
 
   - scope: DOCUMENT
-    code: INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION
+    code: UNSUPPORTED_VECTORIZE_WITHOUT_VECTORIZE_DEFINITION
     title: Can not vectorize on column without vectorize definition
     body: |-
       Vectorize only supports on vector column that has vectorize definition.
@@ -204,6 +204,7 @@ request-errors:
 # Family: REQUEST         Scope: FILTER
 # ================================================================================================================
 
+  # aaron 13 nov - I think this is not used, leaving until we can remove it safely
   - scope: FILTER
     code: INVALID_FILTER
     title: Invalid filter
@@ -236,7 +237,7 @@ request-errors:
       Resend the request using only supported column types.  
 
   - scope: FILTER
-    code: FILTERING_NOT_SUPPORTED_FOR_TYPE
+    code: UNSUPPORTED_FILTERING_FOR_COLUMN_TYPE
     title: The column type does not support filtering
     body: |-
       Filtering is only supported on primitive data types such as `text` not on container types such as `list`, `set`, `map`, or `vector`.
@@ -249,7 +250,7 @@ request-errors:
       Resend the request using only supported column types.  
 
   - scope: FILTER
-    code: COMPARISON_FILTER_AGAINST_DURATION
+    code: UNSUPPORTED_COMPARISON_FILTER_AGAINST_DURATION
     title: Cannot perform comparison filter against duration data type
     body: |-
       The filter used one of the comparison operations ($lt, $gt, $lte, $gte) against a column with a duration data type.
@@ -260,7 +261,7 @@ request-errors:
       Resend the request using only supported operations on duration columns. 
 
   - scope: FILTER
-    code: FILTER_REQUIRED_FOR_UPDATE_DELETE
+    code: MISSING_FILTER_FOR_UPDATE_DELETE
     title: A filter is required for Update and DeleteOne commands
     body: |-
       An Update or DeleteOne command was issued without a filter.
@@ -274,7 +275,7 @@ request-errors:
       Note, DeleteMany without a filter truncates the table.
 
   - scope: FILTER
-    code: INVALID_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE
+    code: UNSUPPORTED_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE
     title: In filter is not allowed for UpdateOne and DeleteOne commands
     body: |-
       The command used a $in or $nin filter to select the rows the modify, however these filters can select more than one row.
@@ -286,7 +287,7 @@ request-errors:
       Resend the request without using the $in or $nin filter.
 
   - scope: FILTER
-    code: NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE
+    code: UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE
     title: Only Primary Key columns can be filtered on for Update and Delete commands
     body: |-
       An Update or Delete command was issued with a filter that included columns that are not part of the primary key.
@@ -299,7 +300,7 @@ request-errors:
       Resend the request with an updated filter that only uses the primary key fields.
 
   - scope: FILTER
-    code: FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE
+    code: MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE
     title: The Primary Key must be filtered on for Update and Delete one commands
     body: |-
       An Update or Delete one command was issued with a filter that did not fully specify the primary key for the table.
@@ -312,11 +313,13 @@ request-errors:
       Resend the request with an updated filter that fully specifies the primary key fields.
 
   - scope: FILTER
-    code: INCOMPLETE_PRIMARY_KEY_FILTER
+    code: INVALID_PRIMARY_KEY_FILTER
     title: Cannot perform the request with an invalid primary key filtering
     body: |-
       Can not perform the request with an invalid primary key. 
+      
       The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
+      
       The filter has the following issues: 
         - Missing Partition Keys: ${missingPartitionKeys}.
         - Out of order Partition Sort Keys: ${outOfOrderClusteringKeys}.
@@ -337,7 +340,7 @@ request-errors:
       ${SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
 
   - scope: UPDATE
-    code: UPDATE_PRIMARY_KEY_COLUMNS
+    code: UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS
     title: Cannot update on primary key columns
     body: |-
       Cannot update primary key columns: ${updateOnPrimaryKeyColumns}.
@@ -345,7 +348,7 @@ request-errors:
       The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
 
   - scope: UPDATE
-    code: ZERO_UPDATE_OPERATIONS_FOR_TABLE
+    code: MISSING_UPDATE_OPERATIONS
     title: Cannot update with zero operations
     body: |-
       Cannot update with zero operations.
@@ -353,16 +356,16 @@ request-errors:
       Supported update operations are ${supportedUpdateOperations}.
 
   - scope: UPDATE
-    code: UNSUPPORTED_UPDATE_OPERATION_FOR_TABLE
+    code: UNSUPPORTED_UPDATE_OPERATIONS_FOR_TABLE
     title: Cannot update with unsupported operations
     body: |-
       Update has unsupported operations: ${usedUnsupportedUpdateOperations}.
       
       Supported update operations are ${supportedUpdateOperations}.
 
-# Note INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION is a duplicate for Document scope, this one is used for Update scope.
+# Note UNSUPPORTED_VECTORIZE_WITHOUT_VECTORIZE_DEFINITION is a duplicate for Document scope, this one is used for Update scope.
   - scope: UPDATE
-    code: INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION
+    code: UNSUPPORTED_VECTORIZE_WITHOUT_VECTORIZE_DEFINITION
     title: Can not vectorize on column without vectorize definition
     body: |-
       Vectorize only supports on vector column that has vectorize definition.
@@ -558,7 +561,7 @@ request-errors:
       TODO MORE 
 
   - scope: SCHEMA
-    code: ZERO_PARTITION_COLUMNS
+    code: MISSING_PARTITION_COLUMNS
     title: No partitioning keys defined in the table schema
     body: |-
         The table definition does not include any partition keys, each table must have atleast one partition key.
@@ -568,7 +571,7 @@ request-errors:
         TODO MORE 
 
   - scope: SCHEMA
-    code: COLUMN_ALREADY_EXISTS
+    code: CANNOT_ADD_EXISTING_COLUMNS
     title: Added columns already exists in the table
     body: |-
       The command attempted to add columns to the table that already exist in the table schema.
@@ -723,7 +726,7 @@ request-errors:
 
 
   - scope: SCHEMA
-    code: DATA_TYPE_NOT_SUPPORTED_BY_INDEXING
+    code: UNSUPPORTED_INDEXING_FOR_DATA_TYPES
     title: Index creation for unsupported data type
     body: |-
       The command attempted to create an index on a column that uses a data type not supported for indexing.
@@ -739,7 +742,7 @@ request-errors:
       Send the command using columns of the supported data types.
 
   - scope: SCHEMA
-    code: TEXT_ANALYSIS_NOT_SUPPORTED_BY_DATA_TYPE
+    code: UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES
     title: Index creation using text analysis for unsupported data type
     body: |-
       The command attempted to create an index that specified text analysis on a column that uses a data type not supported for text analysis.
@@ -752,7 +755,7 @@ request-errors:
       Send the command using columns of the supported data types.
 
   - scope: SCHEMA
-    code: VECTOR_INDEX_NOT_SUPPORTED_BY_DATA_TYPE
+    code: UNSUPPORTED_VECTOR_INDEX_FOR_DATA_TYPES
     title: Vector index creation for unsupported data type
     body: |-
       The command attempted to create an vector index on a column that is not a `vector` type.
@@ -906,7 +909,7 @@ request-errors:
 # ================================================================================================================
 
   - scope: SORT
-    code: MORE_THAN_ONE_VECTOR_SORT
+    code: CANNOT_SORT_ON_MULTIPLE_VECTORS
     title: More than one vector sort provided
     body: |-
       The command used a sort clause with more than one vector sort, only one vector sort is allowed.
@@ -930,7 +933,7 @@ request-errors:
       Resend the command using only columns that are defined in the table schema.
 
   - scope: SORT
-    code: CANNOT_SORT_TOO_MUCH_DATA
+    code: OVERLOADED_SORT_ROW_LIMIT
     title: Sort cannot be performed because query returned more than in-memory sortable rows.
     body: |-
       Sort cannot be performed because query returned more than in-memory sortable rows.
@@ -974,7 +977,7 @@ request-errors:
       Resend the command using only vector columns that have been indexed.
 
   - scope: SORT
-    code: CANNOT_MIX_VECTOR_AND_NON_VECTOR_SORT
+    code: CANNOT_SORT_VECTOR_AND_NON_VECTOR_COLUMNS
     title: Vector sort requested for vector column and non vector columns
     body: |-
       The command attempted to vector sort vector columns and other non vector columns.
@@ -990,7 +993,7 @@ request-errors:
       Resend the command using only vector columns that have been indexed.
 
   - scope: SORT
-    code: CANNOT_SORT_TABLE_DELETE_COMMAND
+    code: UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND
     title: Sort supplied for non sortable delete Table command
     body: |-
       The command attempted to sort a delete command running against a table. 
@@ -1000,7 +1003,7 @@ request-errors:
       Resend the command without the sort clause.
 
   - scope: SORT
-    code: CANNOT_SORT_TABLE_UPDATE_COMMAND
+    code: UNSUPPORTED_SORT_FOR_TABLE_UPDATE_COMMAND
     title: Sort supplied for non sortable update Table command
     body: |-
       The command attempted to sort a update command running against a table. 
@@ -1010,7 +1013,7 @@ request-errors:
       Resend the command without the sort clause.
 
   - scope: SORT
-    code: MORE_THAN_ONE_VECTORIZE_SORT
+    code: CANNOT_SORT_ON_MULTIPLE_VECTORIZE
     title: Can not have more than one vectorize in sort clause
     body: |-
       Sort clause does not support more than one vectorize sort.
@@ -1018,7 +1021,7 @@ request-errors:
       Request has vectorize sort on vector columns: ${sortVectorizeColumns}
 
   - scope: SORT
-    code: VECTORIZE_SORT_ON_NON_VECTOR_COLUMN
+    code: CANNOT_VECTORIZE_SORT_NON_VECTOR_COLUMN
     title: Can not vectorize on non-vector column
     body: |-
       Can not vectorize on non-vector column. 
@@ -1026,7 +1029,7 @@ request-errors:
       Request has vectorize sort on non-vector column: ${nonVectorColumn}
 
   - scope: SORT
-    code: VECTORIZE_SORT_ON_VECTOR_COLUMN_WITHOUT_VECTORIZE_DEFINITION
+    code: CANNOT_VECTORIZE_SORT_WITHOUT_VECTORIZE_DEFINITION
     title: Can not vectorize on vector column without vectorize definition
     body: |-
       Can not vectorize on vector column that has no vectorize definition. 

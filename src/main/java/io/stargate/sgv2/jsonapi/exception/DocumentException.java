@@ -15,11 +15,11 @@ public class DocumentException extends RequestException {
   }
 
   public enum Code implements ErrorCode<DocumentException> {
+    INVALID_COLUMN_VALUES,
     MISSING_PRIMARY_KEY_COLUMNS,
     UNKNOWN_TABLE_COLUMNS,
     UNSUPPORTED_COLUMN_TYPES,
-    INVALID_COLUMN_VALUES,
-    INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION;
+    UNSUPPORTED_VECTORIZE_WITHOUT_VECTORIZE_DEFINITION;
 
     private final ErrorTemplate<DocumentException> template;
 

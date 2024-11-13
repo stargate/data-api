@@ -121,7 +121,7 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
         .templated()
         .updateOne("{}", updateClauseJSON)
         .hasSingleApiError(
-            FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE, FilterException.class)
+            FilterException.Code.MISSING_FILTER_FOR_UPDATE_DELETE, FilterException.class)
         .hasNoWarnings();
   }
 
@@ -130,8 +130,7 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
         .templated()
         .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, "{}")
-        .hasSingleApiError(
-            UpdateException.Code.ZERO_UPDATE_OPERATIONS_FOR_TABLE, UpdateException.class)
+        .hasSingleApiError(UpdateException.Code.MISSING_UPDATE_OPERATIONS, UpdateException.class)
         .hasNoWarnings();
   }
 
@@ -150,7 +149,7 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
         .templated()
         .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
         .hasSingleApiError(
-            UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_FOR_TABLE, UpdateException.class)
+            UpdateException.Code.UNSUPPORTED_UPDATE_OPERATIONS_FOR_TABLE, UpdateException.class)
         .hasNoWarnings();
   }
 
@@ -171,7 +170,8 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
         .templated()
         .updateOne(filterJSON, updateJSON)
         .hasSingleApiError(
-            FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE, FilterException.class)
+            FilterException.Code.UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE,
+            FilterException.class)
         .hasNoWarnings();
   }
 
@@ -229,7 +229,8 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
         .templated()
         .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
-        .hasSingleApiError(UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMNS, UpdateException.class)
+        .hasSingleApiError(
+            UpdateException.Code.UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS, UpdateException.class)
         .hasNoWarnings();
   }
 
@@ -246,7 +247,8 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
         .templated()
         .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
-        .hasSingleApiError(UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMNS, UpdateException.class)
+        .hasSingleApiError(
+            UpdateException.Code.UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS, UpdateException.class)
         .hasNoWarnings();
   }
 
@@ -264,7 +266,8 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
         .templated()
         .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
-        .hasSingleApiError(UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMNS, UpdateException.class)
+        .hasSingleApiError(
+            UpdateException.Code.UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS, UpdateException.class)
         .hasNoWarnings();
   }
 
@@ -305,7 +308,8 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
         .templated()
         .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
-        .hasSingleApiError(UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMNS, UpdateException.class)
+        .hasSingleApiError(
+            UpdateException.Code.UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS, UpdateException.class)
         .hasNoWarnings();
   }
 

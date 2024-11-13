@@ -162,7 +162,7 @@ public class WhereCQLClauseAnalyzer {
    */
   private void checkNoFilters(Map<CqlIdentifier, TableFilter> identifierToFilter) {
     if (identifierToFilter.isEmpty()) {
-      throw FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE.get(
+      throw FilterException.Code.MISSING_FILTER_FOR_UPDATE_DELETE.get(
           errVars(
               tableSchemaObject,
               map -> {
@@ -189,7 +189,7 @@ public class WhereCQLClauseAnalyzer {
             .toList();
 
     if (!nonPkFilters.isEmpty()) {
-      throw FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE.get(
+      throw FilterException.Code.UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE.get(
           errVars(
               tableSchemaObject,
               map -> {
@@ -229,7 +229,7 @@ public class WhereCQLClauseAnalyzer {
             .toList();
 
     if (!filterOnComplexColumns.isEmpty()) {
-      throw FilterException.Code.FILTERING_NOT_SUPPORTED_FOR_TYPE.get(
+      throw FilterException.Code.UNSUPPORTED_FILTERING_FOR_COLUMN_TYPE.get(
           errVars(
               tableSchemaObject,
               map -> {
@@ -255,7 +255,7 @@ public class WhereCQLClauseAnalyzer {
             .toList();
 
     if (!inFilterColumns.isEmpty()) {
-      throw FilterException.Code.INVALID_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE.get(
+      throw FilterException.Code.UNSUPPORTED_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE.get(
           errVars(
               tableSchemaObject,
               map -> {
@@ -282,7 +282,7 @@ public class WhereCQLClauseAnalyzer {
             .toList();
 
     if (!missingPKColumns.isEmpty()) {
-      throw FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE.get(
+      throw FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE.get(
           errVars(
               tableSchemaObject,
               map -> {
@@ -303,7 +303,7 @@ public class WhereCQLClauseAnalyzer {
     var outOfOrderClusteringKeys = outOfOrderClusteringKeys(identifierToFilter);
 
     if (!missingPartitionKeys.isEmpty() || !outOfOrderClusteringKeys.isEmpty()) {
-      throw FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER.get(
+      throw FilterException.Code.INVALID_PRIMARY_KEY_FILTER.get(
           errVars(
               tableSchemaObject,
               map -> {
@@ -339,7 +339,7 @@ public class WhereCQLClauseAnalyzer {
             .toList();
 
     if (!filteredDurationColumns.isEmpty()) {
-      throw FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION.get(
+      throw FilterException.Code.UNSUPPORTED_COMPARISON_FILTER_AGAINST_DURATION.get(
           errVars(
               tableSchemaObject,
               map -> {

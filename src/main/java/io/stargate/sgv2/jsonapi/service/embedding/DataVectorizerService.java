@@ -139,12 +139,12 @@ public class DataVectorizerService {
               tasksForVectorizeColumns(
                   commandContext.schemaObject(),
                   imc.documents(),
-                  DocumentException.Code.INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION);
+                  DocumentException.Code.UNSUPPORTED_VECTORIZE_WITHOUT_VECTORIZE_DEFINITION);
           case InsertOneCommand ioc ->
               tasksForVectorizeColumns(
                   commandContext.schemaObject(),
                   List.of(ioc.document()),
-                  DocumentException.Code.INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION);
+                  DocumentException.Code.UNSUPPORTED_VECTORIZE_WITHOUT_VECTORIZE_DEFINITION);
             // Notice table update vectorize happens before UpdateCommand execution, since we can't
             // do readThenUpdate for table.
             // Collection update vectorize happens after the DB read.
@@ -275,7 +275,7 @@ public class DataVectorizerService {
       // clause will end up with
       //      thinking second one is not a vector sort, and say you can not combine vector sort and
       // non-vector sort
-      throw SortException.Code.MORE_THAN_ONE_VECTORIZE_SORT.get(
+      throw SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORIZE.get(
           errVars(
               tableSchemaObject,
               map -> {
@@ -296,7 +296,7 @@ public class DataVectorizerService {
     }
 
     if (vectorColumnDef.type().typeName() != ApiTypeName.VECTOR) {
-      throw SortException.Code.VECTORIZE_SORT_ON_NON_VECTOR_COLUMN.get(
+      throw SortException.Code.CANNOT_VECTORIZE_SORT_NON_VECTOR_COLUMN.get(
           errVars(
               tableSchemaObject,
               map -> {
@@ -306,7 +306,7 @@ public class DataVectorizerService {
 
     var vectorTypeDef = (ApiVectorType) vectorColumnDef.type();
     if (vectorTypeDef.getVectorizeDefinition() == null) {
-      throw SortException.Code.VECTORIZE_SORT_ON_VECTOR_COLUMN_WITHOUT_VECTORIZE_DEFINITION.get(
+      throw SortException.Code.CANNOT_VECTORIZE_SORT_WITHOUT_VECTORIZE_DEFINITION.get(
           errVars(
               tableSchemaObject,
               map -> {
@@ -343,6 +343,6 @@ public class DataVectorizerService {
     return tasksForVectorizeColumns(
         tableSchemaObject,
         List.of(setNode),
-        UpdateException.Code.INVALID_VECTORIZE_ON_COLUMN_WITHOUT_VECTORIZE_DEFINITION);
+        UpdateException.Code.UNSUPPORTED_VECTORIZE_WITHOUT_VECTORIZE_DEFINITION);
   }
 }
