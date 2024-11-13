@@ -834,9 +834,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "data.document",
               """
                       { "id": "listValidPartial",
-                        "stringList": [ ],
-                        "intList": [3, -999, 42],
-                        "doubleList": [ ]
+                        "intList": [3, -999, 42]
                       }
                       """);
 
@@ -952,9 +950,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "data.document",
               """
                               { "id": "setValidPartial",
-                                "doubleSet": [ ],
-                                "intSet": [-999, 3, 42],
-                                "stringSet": [ ]
+                                "intSet": [-999, 3, 42]
                               }
                               """);
 
@@ -1061,9 +1057,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "data.document",
               """
                                       { "id": "mapValidPartial",
-                                        "doubleMap": { },
-                                        "intMap": {"a": 3, "b": -999, "c": 42},
-                                        "stringMap": { }
+                                        "intMap": {"a": 3, "b": -999, "c": 42}
                                       }
                                       """);
 
