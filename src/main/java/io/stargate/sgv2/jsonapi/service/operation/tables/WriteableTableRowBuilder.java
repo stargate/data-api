@@ -120,7 +120,10 @@ public class WriteableTableRowBuilder {
     if (!missingPrimaryKeys.isEmpty()) {
       var suppliedPrimaryKeys =
           tableMetadata.getPrimaryKey().stream()
-              .filter(column -> suppliedColumns.containsKey(column.getName()))
+              .filter(
+                  column ->
+                      suppliedColumns.containsKey(column.getName())
+                          || suppliedColumns.get(column.getName()).value().value() != null)
               .toList();
       throw DocumentException.Code.MISSING_PRIMARY_KEY_COLUMNS.get(
           errVars(
