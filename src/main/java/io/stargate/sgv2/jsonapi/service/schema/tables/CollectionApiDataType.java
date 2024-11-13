@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 
-/** Interface defining the api data type for complex types */
+/** Interface defining the api data type for collection types */
 public abstract class CollectionApiDataType implements ApiDataType {
   private final ApiTypeName typeName;
   private final PrimitiveApiDataTypeDef valueType;

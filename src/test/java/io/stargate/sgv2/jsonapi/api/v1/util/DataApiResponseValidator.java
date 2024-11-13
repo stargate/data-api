@@ -6,7 +6,7 @@ import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.hasEntry;
 
 import io.restassured.response.ValidatableResponse;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.exception.*;
@@ -18,12 +18,12 @@ import org.hamcrest.TypeSafeMatcher;
 
 public class DataApiResponseValidator {
   protected final ValidatableResponse response;
-  protected final Command.CommandName commandName;
+  protected final CommandName commandName;
 
   private final TypeSafeMatcher<Map<String, ?>> responseIsSuccess;
   private final TypeSafeMatcher<Map<String, ?>> responseIsError;
 
-  public DataApiResponseValidator(Command.CommandName commandName, ValidatableResponse response) {
+  public DataApiResponseValidator(CommandName commandName, ValidatableResponse response) {
     this.commandName = commandName;
     this.response = response;
 
@@ -44,7 +44,8 @@ public class DataApiResponseValidator {
                   CREATE_INDEX,
                   DROP_INDEX,
                   CREATE_VECTOR_INDEX,
-                  LIST_TABLES ->
+                  LIST_TABLES,
+                  LIST_INDEXES ->
               responseIsDDLSuccess();
           case CREATE_COLLECTION -> responseIsDDLSuccess();
           default ->
@@ -103,7 +104,7 @@ public class DataApiResponseValidator {
       case ALTER_TABLE, CREATE_TABLE, DROP_TABLE, CREATE_INDEX, DROP_INDEX, CREATE_VECTOR_INDEX -> {
         return hasNoErrors().hasStatusOK();
       }
-      case LIST_TABLES -> {
+      case LIST_TABLES, LIST_INDEXES -> {
         return hasNoErrors();
       }
       case CREATE_COLLECTION -> {
@@ -360,5 +361,26 @@ public class DataApiResponseValidator {
     } else {
       return body("status.sortVector", is(nullValue()));
     }
+  }
+
+  public DataApiResponseValidator hasIndexes(String... indexes) {
+    return body("status.indexes", hasSize(indexes.length))
+        .body("status.indexes", containsInAnyOrder(indexes));
+  }
+
+  public DataApiResponseValidator doesNotHaveIndexes(String... indexes) {
+    DataApiResponseValidator toReturn = this;
+    for (String index : indexes) {
+      toReturn = body("status.indexes", not(contains(index)));
+    }
+    return toReturn;
+  }
+
+  public DataApiResponseValidator hasNextPageState() {
+    return body("data.nextPageState", is(notNullValue()));
+  }
+
+  public DataApiResponseValidator doesNotHaveNextPageState() {
+    return body("$", not(hasKey("data.nextPageState")));
   }
 }

@@ -58,6 +58,18 @@ public class CqlPagingState {
     return isEmpty ? Optional.empty() : Optional.of(pagingStateString);
   }
 
+  @Override
+  public String toString() {
+    return new StringBuilder("CqlPagingState{")
+        .append("isEmpty=")
+        .append(isEmpty)
+        .append(", pagingStateString='")
+        .append(pagingStateString)
+        .append('\'')
+        .append('}')
+        .toString();
+  }
+
   private static ByteBuffer decode(String pagingState) {
     return ByteBuffer.wrap(Base64.getDecoder().decode(pagingState));
   }

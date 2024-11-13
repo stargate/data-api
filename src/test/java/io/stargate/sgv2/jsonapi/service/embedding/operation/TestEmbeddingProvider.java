@@ -8,8 +8,8 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import java.util.ArrayList;
@@ -29,7 +29,7 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
                           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                           3,
                           SimilarityFunction.COSINE,
-                          SourceModel.OTHER,
+                          EmbeddingSourceModel.OTHER,
                           new VectorizeDefinition("custom", "custom", null, null)))),
               null),
           new TestEmbeddingProvider(),

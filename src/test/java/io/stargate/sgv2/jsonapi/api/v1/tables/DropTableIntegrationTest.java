@@ -86,7 +86,9 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
           .templated()
           .dropTable("invalid_table", false)
           .hasSingleApiError(
-              SchemaException.Code.TABLE_NOT_FOUND.name(), "Table name used bot found");
+              SchemaException.Code.CANNOT_DROP_UNKNOWN_TABLE,
+              SchemaException.class,
+              "The command attempted to drop the unknown table: invalid_table.");
     }
   }
 }
