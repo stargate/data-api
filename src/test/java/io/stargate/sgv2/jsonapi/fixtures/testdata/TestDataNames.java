@@ -31,7 +31,7 @@ public class TestDataNames {
       CqlIdentifier.fromInternal("regular-2-" + System.currentTimeMillis());
 
   public final CqlIdentifier COL_INDEXED_1 =
-      CqlIdentifier.fromInternal("indexed-1-" + System.currentTimeMillis());
+      CqlIdentifier.fromInternal("indexed_1_" + System.currentTimeMillis());
 
   // DO NOT ADD TO A TABLE
   public final CqlIdentifier COL_UNKNOWN_1 =

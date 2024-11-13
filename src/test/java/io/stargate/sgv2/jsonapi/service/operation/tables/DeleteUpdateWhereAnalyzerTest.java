@@ -316,7 +316,7 @@ public class DeleteUpdateWhereAnalyzerTest {
 
   @ParameterizedTest
   @MethodSource("inFilterUsage")
-  public void skip1and3of3ClusteringKey(
+  public void forbidInFilterUsage(
       StatementType statementType, InTableFilter.Operator inTableFilterOperator) {
 
     var fixture =
@@ -330,6 +330,6 @@ public class DeleteUpdateWhereAnalyzerTest {
         .expression()
         .inOnOnePartitionKey(inTableFilterOperator, firstPartitionKey)
         .analyzeMaybeFilterError(FilterException.Code.INVALID_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE)
-        .assertExceptionOnInFilerForUpdateOneAndDeleteOne();
+        .assertExceptionOnInFilerForUpdateOneAndDeleteOne(firstPartitionKey.getName());
   }
 }
