@@ -71,8 +71,8 @@ public class LogicalExpressionTestData extends TestDataSuplier {
       return eqAllClusteringKeys();
     }
 
-    public FixtureT inOnOnePartitionKey(InTableFilter.Operator inFilterOperator) {
-      final ColumnMetadata firstPartitionKey = tableMetadata.getPartitionKey().getFirst();
+    public FixtureT inOnOnePartitionKey(
+        InTableFilter.Operator inFilterOperator, ColumnMetadata firstPartitionKey) {
       if (inFilterOperator == InTableFilter.Operator.IN) {
         expression.addFilter(in(firstPartitionKey));
       }

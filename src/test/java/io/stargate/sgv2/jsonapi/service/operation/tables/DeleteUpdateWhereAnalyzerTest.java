@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestDataNames;
@@ -322,9 +323,13 @@ public class DeleteUpdateWhereAnalyzerTest {
         TEST_DATA
             .whereAnalyzer()
             .table2PK3Clustering1Index("in_filter_on_" + statementType.name(), statementType);
+    final ColumnMetadata firstPartitionKey =
+        TEST_DATA.tableMetadata().table2PK3Clustering1Index().getPartitionKey().getFirst();
+
     fixture
         .expression()
-        .inOnOnePartitionKey(inTableFilterOperator)
-        .analyzeMaybeFilterError(FilterException.Code.INVALID_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE);
+        .inOnOnePartitionKey(inTableFilterOperator, firstPartitionKey)
+        .analyzeMaybeFilterError(FilterException.Code.INVALID_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE)
+        .assertExceptionOnInFilerForUpdateOneAndDeleteOne();
   }
 }

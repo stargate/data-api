@@ -244,11 +244,13 @@ request-errors:
     code: INVALID_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE
     title: In filter is not allowed for UpdateOne and DeleteOne commands
     body: |-
-      An UpdateOne or DeleteOne command was issued with $in/$nin filter, filter columns are ${inFilterColumns}.
+      The command used a $in or $nin filter to select the rows the modify, however these filters can select more than one row.
       
-      $in/$nin is not allowed for UpdateOne and DeleteOne commands, since multiple rows could be affected. 
+      Update One and Delete One commands can only modify a single rows, and so cannot use $in or $nin.
       
-      Resend the request without using $in/$nin filters. 
+      The command used an invalid filter on the columns: ${inFilterColumns}.
+      
+      Resend the request without using the $in or $nin filter.
 
   - scope: FILTER
     code: NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE

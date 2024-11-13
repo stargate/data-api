@@ -249,11 +249,7 @@ public class WhereCQLClauseAnalyzer {
 
     var inFilterColumns =
         identifierToFilter.entrySet().stream()
-            .filter(
-                entry -> {
-                  TableFilter tableFilter = entry.getValue();
-                  return (tableFilter instanceof InTableFilter);
-                })
+            .filter(entry -> (entry.getValue() instanceof InTableFilter))
             .map((Map.Entry::getKey))
             .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
