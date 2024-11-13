@@ -201,6 +201,14 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
       this.resultSet = Objects.requireNonNull(resultSet, "resultSet must not be null");
       this.currentPage = resultSet.currentPage();
       this.pagingState = rowSorter.buildPagingState(resultSet);
+
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(
+            "ReadResult() created resultSet.remaining: {}, resultSet.hasMorePages={}, (api) pagingState:{}",
+            resultSet.remaining(),
+            resultSet.hasMorePages(),
+            pagingState);
+      }
     }
   }
 

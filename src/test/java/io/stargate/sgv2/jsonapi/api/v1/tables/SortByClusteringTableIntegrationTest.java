@@ -6,7 +6,7 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.ThreeClusteringKeysTableScenario;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
@@ -52,14 +52,14 @@ public class SortByClusteringTableIntegrationTest extends AbstractTableIntegrati
   private static Stream<Arguments> findCommandNames() {
 
     var commands = new ArrayList<Arguments>();
-    commands.add(Arguments.of(Command.CommandName.FIND));
-    commands.add(Arguments.of(Command.CommandName.FIND_ONE));
+    commands.add(Arguments.of(CommandName.FIND));
+    commands.add(Arguments.of(CommandName.FIND_ONE));
     return commands.stream();
   }
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void sortUnknownColumn(Command.CommandName commandName) {
+  public void sortUnknownColumn(CommandName commandName) {
 
     Map<String, Object> sort =
         ImmutableMap.of(
@@ -79,7 +79,7 @@ public class SortByClusteringTableIntegrationTest extends AbstractTableIntegrati
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void sortNonPartition(Command.CommandName commandName) {
+  public void sortNonPartition(CommandName commandName) {
 
     Map<String, Object> sort =
         ImmutableMap.of(fieldName(ThreeClusteringKeysTableScenario.OFFSET_COL), 1);
@@ -94,7 +94,7 @@ public class SortByClusteringTableIntegrationTest extends AbstractTableIntegrati
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void sortNonPartitionAndPartition(Command.CommandName commandName) {
+  public void sortNonPartitionAndPartition(CommandName commandName) {
 
     Map<String, Object> sort =
         ImmutableMap.of(
@@ -111,7 +111,7 @@ public class SortByClusteringTableIntegrationTest extends AbstractTableIntegrati
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void sortLastOnlyClusteringFirst(Command.CommandName commandName) {
+  public void sortLastOnlyClusteringFirst(CommandName commandName) {
 
     Map<String, Object> sort =
         ImmutableMap.of(fieldName(ThreeClusteringKeysTableScenario.CLUSTER_COL_3), 1);
@@ -127,7 +127,7 @@ public class SortByClusteringTableIntegrationTest extends AbstractTableIntegrati
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void sortLastThenFirstClusteringFirst(Command.CommandName commandName) {
+  public void sortLastThenFirstClusteringFirst(CommandName commandName) {
 
     Map<String, Object> sort =
         ImmutableMap.of(
@@ -147,7 +147,7 @@ public class SortByClusteringTableIntegrationTest extends AbstractTableIntegrati
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void sortFirstThenLastClusteringFirst(Command.CommandName commandName) {
+  public void sortFirstThenLastClusteringFirst(CommandName commandName) {
 
     Map<String, Object> sort =
         ImmutableMap.of(

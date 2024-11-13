@@ -2,13 +2,12 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 import static io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider.SAMPLE_VECTORIZE_CONTENTS;
-import static org.eclipse.jetty.util.Pool.StrategyType.RANDOM;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.v1.util.TemplateRunner;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.VectorizeTableScenario;
 import io.stargate.sgv2.jsonapi.exception.*;
@@ -50,7 +49,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
     // insertOne single vectorize in one doc
     commands.add(
         Arguments.of(
-            Command.CommandName.INSERT_ONE,
+            CommandName.INSERT_ONE,
             ImmutableMap.of(
                 VectorizeTableScenario.fieldName(
                     VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
@@ -60,7 +59,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
     // insertOne multiple vectorize in one doc
     commands.add(
         Arguments.of(
-            Command.CommandName.INSERT_ONE,
+            CommandName.INSERT_ONE,
             ImmutableMap.of(
                 VectorizeTableScenario.fieldName(
                     VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
@@ -74,7 +73,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
     // insertMany single vectorize in one doc
     commands.add(
         Arguments.of(
-            Command.CommandName.INSERT_MANY,
+            CommandName.INSERT_MANY,
             ImmutableMap.of(
                 VectorizeTableScenario.fieldName(
                     VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
@@ -84,7 +83,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
     // insertMany multiple vectorize in one doc
     commands.add(
         Arguments.of(
-            Command.CommandName.INSERT_MANY,
+            CommandName.INSERT_MANY,
             ImmutableMap.of(
                 VectorizeTableScenario.fieldName(
                     VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
@@ -100,13 +99,12 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
 
   @ParameterizedTest
   @MethodSource("insertCommandNames")
-  public void successVectorizeInsert(
-      Command.CommandName commandName, ImmutableMap<String, Object> document)
+  public void successVectorizeInsert(CommandName commandName, ImmutableMap<String, Object> document)
       throws JsonProcessingException {
 
     var json = objectMapper.writeValueAsString(document);
 
-    if (commandName.equals(Command.CommandName.INSERT_ONE)) {
+    if (commandName.equals(CommandName.INSERT_ONE)) {
       assertTableCommand(keyspaceName, TABLE_NAME).templated().insertOne(json).wasSuccessful();
     } else {
       assertTableCommand(keyspaceName, TABLE_NAME).templated().insertMany(json).wasSuccessful();
@@ -115,8 +113,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
 
   @ParameterizedTest
   @MethodSource("insertCommandNames")
-  public void vectorColNoVectorizeDef(Command.CommandName commandName)
-      throws JsonProcessingException {
+  public void vectorColNoVectorizeDef(CommandName commandName) throws JsonProcessingException {
 
     Map<String, Object> document =
         Map.of(
@@ -126,7 +123,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
             "id",
             String.valueOf(System.currentTimeMillis()));
     var json = objectMapper.writeValueAsString(document);
-    if (commandName.equals(Command.CommandName.INSERT_ONE)) {
+    if (commandName.equals(CommandName.INSERT_ONE)) {
       assertTableCommand(keyspaceName, TABLE_NAME)
           .templated()
           .insertOne(json)
@@ -185,20 +182,20 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
 
     assertTableCommand(keyspaceName, TABLE_NAME)
         .templated()
-        .find(Command.CommandName.FIND_ONE, null, null, sort, null)
+        .find(CommandName.FIND_ONE, null, null, sort, null)
         .hasSingleApiError(sortExceptionCode, SortException.class);
   }
 
   private static Stream<Arguments> findCommandNames() {
     var commands = new ArrayList<Arguments>();
-    commands.add(Arguments.of(Command.CommandName.FIND));
-    commands.add(Arguments.of(Command.CommandName.FIND_ONE));
+    commands.add(Arguments.of(CommandName.FIND));
+    commands.add(Arguments.of(CommandName.FIND_ONE));
     return commands.stream();
   }
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void successVectorizeSort(Command.CommandName commandName) {
+  public void successVectorizeSort(CommandName commandName) {
     ImmutableMap<String, Object> sort =
         ImmutableMap.of(
             VectorizeTableScenario.fieldName(
@@ -206,7 +203,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
             SAMPLE_VECTORIZE_CONTENT);
     var limit = 3;
     Map<String, Object> options =
-        commandName == Command.CommandName.FIND ? ImmutableMap.of("limit", limit) : null;
+        commandName == CommandName.FIND ? ImmutableMap.of("limit", limit) : null;
 
     var validator =
         assertTableCommand(keyspaceName, TABLE_NAME)
@@ -214,7 +211,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
             .find(commandName, null, null, sort, options)
             .wasSuccessful();
 
-    if (commandName == Command.CommandName.FIND) {
+    if (commandName == CommandName.FIND) {
       validator.hasDocuments(limit);
     } else {
       validator.hasSingleDocument();
@@ -286,7 +283,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
     // DeleteOne
     assertTableCommand(keyspaceName, TABLE_NAME)
         .templated()
-        .delete(Command.CommandName.DELETE_ONE, TemplateRunner.asJSON(filterOnRow))
+        .delete(CommandName.DELETE_ONE, TemplateRunner.asJSON(filterOnRow))
         .wasSuccessful();
   }
 

@@ -103,6 +103,39 @@ request-errors:
       
       ${SNIPPET.CONTACT_SUPPORT}
 
+  - scope:
+    code: UNSUPPORTED_TABLE_COMMAND
+    title: Commands is not supported by Tables
+    body: |-
+      The command is not supported by Tables in the API.  
+      
+      While many commands operate on both Tables and Collections, some commands can only be run against Tables or Collections. 
+      
+      The commands supported by tables are: ${tableCommands}.
+      The commands supported by collections are: ${collectionCommands}.
+      
+      The unsupported command ran against the table: ${keyspace}.${table}
+      The unsupported command was: ${unsupportedCommand}.
+      
+      Resend using one of the supported commands.
+  - scope:
+    code: UNSUPPORTED_COLLECTION_COMMAND
+    title: Commands is not supported by Collections
+    body: |-
+      The command is not supported by Collections in the API.  
+      
+      While many commands operate on both Tables and Collections, some commands can only be run against Tables or Collections. 
+      
+      The commands supported by collections are: ${collectionCommands}.
+      The commands supported by tables are: ${tableCommands}.
+      
+      
+      The unsupported command ran against the collection: ${keyspace}.${table}
+      The unsupported command was: ${unsupportedCommand}.
+      
+      Resend using one of the supported commands. 
+
+
 # ================================================================================================================
 # Family: REQUEST         Scope: DOCUMENT
 # ================================================================================================================
