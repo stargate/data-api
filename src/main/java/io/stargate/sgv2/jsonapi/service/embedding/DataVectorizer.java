@@ -163,6 +163,10 @@ public class DataVectorizer {
    * @return Uni<float[]> - result vector float array
    */
   public Uni<float[]> vectorize(String vectorizeContent) {
+    if (embeddingProvider == null) {
+      throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
+          schemaObject.name().table());
+    }
     Uni<List<float[]>> vectors =
         embeddingProvider
             .vectorize(
