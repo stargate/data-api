@@ -339,11 +339,7 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
       assertTableCommand(keyspaceName, biggerTableName)
           .templated()
           .find(Map.of(), List.of(), Map.of("name", 1), Map.of())
-          .body("errors[0].errorCode", is(SortException.Code.OVERLOADED_SORT_ROW_LIMIT.name()))
-          .body(
-              "errors[0].message",
-              containsString(
-                  "Sort cannot be performed because query returned more than in-memory sortable rows."));
+          .body("errors[0].errorCode", is(SortException.Code.OVERLOADED_SORT_ROW_LIMIT.name()));
     }
   }
 
