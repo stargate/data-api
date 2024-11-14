@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.util.JsonNodeComparator;
 import java.util.ArrayList;
@@ -338,7 +339,7 @@ public class FindTableOperationWithSortIntegrationTest extends AbstractTableInte
       assertTableCommand(keyspaceName, biggerTableName)
           .templated()
           .find(Map.of(), List.of(), Map.of("name", 1), Map.of())
-          .body("errors[0].errorCode", is("CANNOT_SORT_TOO_MUCH_DATA"))
+          .body("errors[0].errorCode", is(SortException.Code.OVERLOADED_SORT_ROW_LIMIT.name()))
           .body(
               "errors[0].message",
               containsString(
