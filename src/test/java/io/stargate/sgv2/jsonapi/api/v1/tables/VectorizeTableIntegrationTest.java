@@ -128,14 +128,14 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
           .templated()
           .insertOne(json)
           .hasSingleApiError(
-              DocumentException.Code.UNSUPPORTED_VECTORIZE_WITHOUT_VECTORIZE_DEFINITION,
+              DocumentException.Code.UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION,
               DocumentException.class);
     } else {
       assertTableCommand(keyspaceName, TABLE_NAME)
           .templated()
           .insertMany(json)
           .hasSingleApiError(
-              DocumentException.Code.UNSUPPORTED_VECTORIZE_WITHOUT_VECTORIZE_DEFINITION,
+              DocumentException.Code.UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION,
               DocumentException.class);
     }
   }
@@ -147,7 +147,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
                 VectorizeTableScenario.fieldName(
                     VectorizeTableScenario.INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF_1),
                 SAMPLE_VECTORIZE_CONTENT),
-            SortException.Code.CANNOT_VECTORIZE_SORT_WITHOUT_VECTORIZE_DEFINITION),
+            SortException.Code.CANNOT_VECTORIZE_SORT_WHEN_MISSING_VECTORIZE_DEFINITION),
         Arguments.of(
             ImmutableMap.of(
                 VectorizeTableScenario.fieldName(
@@ -246,7 +246,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
                 VectorizeTableScenario.fieldName(
                     VectorizeTableScenario.INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF_1),
                 SAMPLE_VECTORIZE_CONTENT),
-            UpdateException.Code.UNSUPPORTED_VECTORIZE_WITHOUT_VECTORIZE_DEFINITION));
+            UpdateException.Code.UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION));
   }
 
   @ParameterizedTest

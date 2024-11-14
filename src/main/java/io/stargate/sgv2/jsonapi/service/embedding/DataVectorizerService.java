@@ -139,12 +139,12 @@ public class DataVectorizerService {
               tasksForVectorizeColumns(
                   commandContext.schemaObject(),
                   imc.documents(),
-                  DocumentException.Code.UNSUPPORTED_VECTORIZE_WITHOUT_VECTORIZE_DEFINITION);
+                  DocumentException.Code.UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION);
           case InsertOneCommand ioc ->
               tasksForVectorizeColumns(
                   commandContext.schemaObject(),
                   List.of(ioc.document()),
-                  DocumentException.Code.UNSUPPORTED_VECTORIZE_WITHOUT_VECTORIZE_DEFINITION);
+                  DocumentException.Code.UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION);
             // Notice table update vectorize happens before UpdateCommand execution, since we can't
             // do readThenUpdate for table.
             // Collection update vectorize happens after the DB read.
@@ -306,7 +306,7 @@ public class DataVectorizerService {
 
     var vectorTypeDef = (ApiVectorType) vectorColumnDef.type();
     if (vectorTypeDef.getVectorizeDefinition() == null) {
-      throw SortException.Code.CANNOT_VECTORIZE_SORT_WITHOUT_VECTORIZE_DEFINITION.get(
+      throw SortException.Code.CANNOT_VECTORIZE_SORT_WHEN_MISSING_VECTORIZE_DEFINITION.get(
           errVars(
               tableSchemaObject,
               map -> {
@@ -343,6 +343,6 @@ public class DataVectorizerService {
     return tasksForVectorizeColumns(
         tableSchemaObject,
         List.of(setNode),
-        UpdateException.Code.UNSUPPORTED_VECTORIZE_WITHOUT_VECTORIZE_DEFINITION);
+        UpdateException.Code.UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION);
   }
 }

@@ -850,7 +850,7 @@ public class SelectWhereAnalyzerTest {
           .expression()
           .eqOn(complexColumnIdentifier)
           .analyzeThrows(FilterException.class)
-          .assertFilterExceptionCode(FilterException.Code.UNSUPPORTED_FILTERING_FOR_COLUMN_TYPE)
+          .assertFilterExceptionCode(FilterException.Code.UNSUPPORTED_FILTERING_FOR_COLUMN_TYPES)
           .assertExceptionOnComplexColumns(complexColumnIdentifier);
     }
   }
