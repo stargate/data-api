@@ -77,7 +77,7 @@ public class TableUpdateAnalyzer {
             .toList();
 
     if (!invalidUpdatePKColumns.isEmpty()) {
-      throw UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMNS.get(
+      throw UpdateException.Code.UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS.get(
           errVars(
               tableSchemaObject,
               map -> {
