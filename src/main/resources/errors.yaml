@@ -302,7 +302,7 @@ request-errors:
 
   - scope: FILTER
     code: UNSUPPORTED_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE
-    title: `updateOne` and `deleteOne` commands do not support `$in` or `$nin` filter operation
+    title: updateOne and deleteOne commands do not support `$in` or `$nin` filter operation
     body: |-
       The Filtering using the `$in` or `$nin` operations can select more than one row, and so cannot be used with the `updateOne` and `deleteOne` commands as they can only modify one row.
             
@@ -323,7 +323,7 @@ request-errors:
 
   - scope: FILTER
     code: MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE
-    title: `updateOne` and `deleteOne` commands require filtering on the full primary key
+    title: updateOne and deleteOne commands require filtering on the full primary key
     body: |-
       The `updateOne` and `deleteOne`commands can only filter using the fully specify the primary key for the table.
 
