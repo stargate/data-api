@@ -106,9 +106,7 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
 
   public ApiColumnDefContainer filterBy(Collection<CqlIdentifier> identifiers) {
     return new ApiColumnDefContainer(
-        values().stream()
-            .filter(columnDef -> identifiers.contains(columnDef.name()))
-            .toList());
+        values().stream().filter(columnDef -> identifiers.contains(columnDef.name())).toList());
   }
 
   public ApiColumnDefContainer filterByUnsupported() {
