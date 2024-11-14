@@ -64,13 +64,13 @@ snippets:
     body: |-
       The query was executed without taking advantage of the primary key or indexes on the table, this can have performance implications on large tables.
       
-      See documentation at XXXX for best practices for filtering.
+      See documentation for best practices for filtering.
 
   - name: INEFFICIENT_SORT
     body: |-
       The command was executed using in memory sorting rather than taking advantage of the partition sorting on disk. This can have performance implications on large tables.
       
-      See documentation at XXXX for best practices for sorting.
+      See documentation for best practices for sorting.
 
   - name: RESEND_USING_ONLY_DEFINED_COLUMNS
     body: |-
