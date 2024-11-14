@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.COLUMN_METADATA_COMPARATOR;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
@@ -71,7 +72,7 @@ public class WriteableTableRowBuilder {
     source.forEach((key, value) -> cqlIdentifierToJsonValue.put(createCqlIdentifier(key), value));
 
     // the validation steps
-    checkAllPrimaryKeys(cqlIdentifierToJsonValue.keySet());
+    checkAllPrimaryKeys(cqlIdentifierToJsonValue);
     checkUnknownColumns(cqlIdentifierToJsonValue.keySet());
     var decoded = encodeJsonToCql(cqlIdentifierToJsonValue);
 
@@ -104,18 +105,26 @@ public class WriteableTableRowBuilder {
    *
    * <p>Throws a {@link DocumentException.Code#MISSING_PRIMARY_KEY_COLUMNS}
    */
-  private void checkAllPrimaryKeys(Collection<CqlIdentifier> suppliedColumns) {
+  private void checkAllPrimaryKeys(Map<CqlIdentifier, JsonNamedValue> suppliedColumns) {
 
     // dont worry about set, there is normally only 1 to 3 primary key columns in a table
     var missingPrimaryKeys =
         tableMetadata.getPrimaryKey().stream()
-            .filter(column -> !suppliedColumns.contains(column.getName()))
+            .filter(
+                column ->
+                    (!suppliedColumns.containsKey(column.getName())
+                        || (suppliedColumns.containsKey(column.getName())
+                            && suppliedColumns.get(column.getName()).value().value() == null)))
+            .sorted(COLUMN_METADATA_COMPARATOR)
             .toList();
 
     if (!missingPrimaryKeys.isEmpty()) {
       var suppliedPrimaryKeys =
           tableMetadata.getPrimaryKey().stream()
-              .filter(column -> suppliedColumns.contains(column.getName()))
+              .filter(
+                  column ->
+                      suppliedColumns.containsKey(column.getName())
+                          && suppliedColumns.get(column.getName()).value().value() != null)
               .toList();
       throw DocumentException.Code.MISSING_PRIMARY_KEY_COLUMNS.get(
           errVars(
