@@ -81,7 +81,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
         .templated()
         .find(commandName, null, null, sort)
         .hasSingleApiError(
-            SortException.Code.MORE_THAN_ONE_VECTOR_SORT,
+            SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORS,
             SortException.class,
             "The command attempted to sort on the columns: %s, %s."
                 .formatted(
@@ -144,7 +144,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
         .templated()
         .find(commandName, null, null, sort)
         .hasSingleApiError(
-            SortException.Code.CANNOT_MIX_VECTOR_AND_NON_VECTOR_SORT,
+            SortException.Code.CANNOT_SORT_VECTOR_AND_NON_VECTOR_COLUMNS,
             SortException.class,
             "The command attempted to sort the vector columns: %s.\nThe command attempted to sort the non-vector columns: %s."
                 .formatted(

@@ -15,7 +15,6 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.util.defaults.*;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -193,7 +192,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
       // Vector indexes can only be on vector columns
       if (apiColumnDef.type().typeName() != ApiTypeName.VECTOR) {
-        throw SchemaException.Code.VECTOR_INDEX_NOT_SUPPORTED_BY_DATA_TYPE.get(
+        throw SchemaException.Code.UNSUPPORTED_VECTOR_INDEX_FOR_DATA_TYPES.get(
             errVars(
                 tableSchemaObject,
                 map -> {

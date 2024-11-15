@@ -79,13 +79,26 @@ public class WriteableTableRowBuilder {
     // now need to split the columns into key and non key columns
     var keyColumns = new CqlNamedValueContainer();
     var nonKeyColumns = new CqlNamedValueContainer();
-    for (var cqlNamedValue : decoded.values()) {
-      if (tableMetadata.getPrimaryKey().contains(cqlNamedValue.name())) {
-        keyColumns.put(cqlNamedValue);
+
+    // Get the primary keys out of the new values in the order they are defined on the table
+    for (var keyMetadata : tableMetadata.getPrimaryKey()) {
+      if (decoded.containsKey(keyMetadata)) {
+        keyColumns.put(decoded.get(keyMetadata));
       } else {
+        // the primary keys have been checked above
+        throw new IllegalStateException(
+            String.format(
+                "build: primary key column not found in decoded values, column=%s", keyMetadata));
+      }
+    }
+
+    // any column in decoded that is now not in keyColumns is a non key column
+    for (var cqlNamedValue : decoded.values()) {
+      if (!keyColumns.containsKey(cqlNamedValue.name())) {
         nonKeyColumns.put(cqlNamedValue);
       }
     }
+
     return new WriteableTableRow(tableSchemaObject, keyColumns, nonKeyColumns);
   }
 

@@ -84,7 +84,7 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
 
     // Sort clause is not supported for table updateOne command.
     if (command.sortClause() != null && !command.sortClause().isEmpty()) {
-      throw SortException.Code.CANNOT_SORT_TABLE_UPDATE_COMMAND.get(
+      throw SortException.Code.UNSUPPORTED_SORT_FOR_TABLE_UPDATE_COMMAND.get(
           errVars(ctx.schemaObject(), map -> {}));
     }
 
