@@ -103,6 +103,10 @@ public abstract class EmbeddingProvider {
     return !modelName.endsWith("-ada-002");
   }
 
+  protected static boolean accpetsJinaAIDimensions(String modelName) {
+    return modelName.endsWith("jina-embeddings-v3");
+  }
+
   /**
    * Helper method that has logic wrt whether AWS Titan accepts {@code "dimensions"} parameter or
    * not.

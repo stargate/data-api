@@ -345,6 +345,25 @@ stargate:
               vector-dimension: 768
             - name: jina-embeddings-v2-base-zh
               vector-dimension: 768
+            - name: jina-embeddings-v3
+              parameters:
+                - name: vectorDimension
+                  type: number
+                  required: true
+                  default-value: 1536
+                  validation:
+                    numeric-range: [1, 1024]
+                  help: "Vector dimension to use in the database and when calling Jina AI."
+                - name: task
+                  type: string
+                  required: false
+                  default-value: text-matching
+                  help: "Select the downstream task for which the embeddings will be used. The model will return the optimized embeddings for that task."
+                - name: late_chunking
+                  type: boolean
+                  required: false
+                  default-value: false
+                  help: "Apply the late chunking technique to leverage the model's long-context capabilities for generating contextual chunk embeddings."
         voyageAI:
           # see https://docs.voyageai.com/reference/embeddings-api
           # see https://docs.voyageai.com/docs/embeddings
