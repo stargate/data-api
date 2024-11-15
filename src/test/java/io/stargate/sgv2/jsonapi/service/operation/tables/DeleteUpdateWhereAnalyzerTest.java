@@ -35,11 +35,11 @@ public class DeleteUpdateWhereAnalyzerTest {
   private static Stream<Arguments> emptyFilterTests() {
     return Stream.of(
         Arguments.of(
-            StatementType.DELETE_ONE, FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE),
+            StatementType.DELETE_ONE, FilterException.Code.MISSING_FILTER_FOR_UPDATE_DELETE),
         Arguments.of(
-            StatementType.DELETE_MANY, FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE),
+            StatementType.DELETE_MANY, FilterException.Code.MISSING_FILTER_FOR_UPDATE_DELETE),
         Arguments.of(
-            StatementType.UPDATE_ONE, FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE));
+            StatementType.UPDATE_ONE, FilterException.Code.MISSING_FILTER_FOR_UPDATE_DELETE));
   }
 
   @ParameterizedTest
@@ -79,13 +79,13 @@ public class DeleteUpdateWhereAnalyzerTest {
     return Stream.of(
         Arguments.of(
             StatementType.DELETE_ONE,
-            FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE),
+            FilterException.Code.UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE),
         Arguments.of(
             StatementType.DELETE_MANY,
-            FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE),
+            FilterException.Code.UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE),
         Arguments.of(
             StatementType.UPDATE_ONE,
-            FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE));
+            FilterException.Code.UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE));
   }
 
   @ParameterizedTest
@@ -119,11 +119,11 @@ public class DeleteUpdateWhereAnalyzerTest {
     return Stream.of(
         Arguments.of(
             StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE),
-        Arguments.of(StatementType.DELETE_MANY, FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER),
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE),
+        Arguments.of(StatementType.DELETE_MANY, FilterException.Code.INVALID_PRIMARY_KEY_FILTER),
         Arguments.of(
             StatementType.UPDATE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE));
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE));
   }
 
   @ParameterizedTest
@@ -146,11 +146,11 @@ public class DeleteUpdateWhereAnalyzerTest {
     return Stream.of(
         Arguments.of(
             StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE),
-        Arguments.of(StatementType.DELETE_MANY, FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER),
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE),
+        Arguments.of(StatementType.DELETE_MANY, FilterException.Code.INVALID_PRIMARY_KEY_FILTER),
         Arguments.of(
             StatementType.UPDATE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE));
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE));
   }
 
   @ParameterizedTest
@@ -173,11 +173,11 @@ public class DeleteUpdateWhereAnalyzerTest {
     return Stream.of(
         Arguments.of(
             StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE),
-        Arguments.of(StatementType.DELETE_MANY, FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER),
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE),
+        Arguments.of(StatementType.DELETE_MANY, FilterException.Code.INVALID_PRIMARY_KEY_FILTER),
         Arguments.of(
             StatementType.UPDATE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE));
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE));
   }
 
   @ParameterizedTest
@@ -200,11 +200,11 @@ public class DeleteUpdateWhereAnalyzerTest {
     return Stream.of(
         Arguments.of(
             StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE),
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE),
         Arguments.of(StatementType.DELETE_MANY, null),
         Arguments.of(
             StatementType.UPDATE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE));
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE));
   }
 
   @ParameterizedTest
@@ -227,11 +227,11 @@ public class DeleteUpdateWhereAnalyzerTest {
     return Stream.of(
         Arguments.of(
             StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE),
-        Arguments.of(StatementType.DELETE_MANY, FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER),
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE),
+        Arguments.of(StatementType.DELETE_MANY, FilterException.Code.INVALID_PRIMARY_KEY_FILTER),
         Arguments.of(
             StatementType.UPDATE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE));
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE));
   }
 
   @ParameterizedTest
@@ -255,11 +255,11 @@ public class DeleteUpdateWhereAnalyzerTest {
     return Stream.of(
         Arguments.of(
             StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE),
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE),
         Arguments.of(StatementType.DELETE_MANY, null),
         Arguments.of(
             StatementType.UPDATE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE));
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE));
   }
 
   @ParameterizedTest
@@ -283,11 +283,11 @@ public class DeleteUpdateWhereAnalyzerTest {
     return Stream.of(
         Arguments.of(
             StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE),
-        Arguments.of(StatementType.DELETE_MANY, FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER),
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE),
+        Arguments.of(StatementType.DELETE_MANY, FilterException.Code.INVALID_PRIMARY_KEY_FILTER),
         Arguments.of(
             StatementType.UPDATE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE));
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE));
   }
 
   @ParameterizedTest
@@ -329,7 +329,8 @@ public class DeleteUpdateWhereAnalyzerTest {
     fixture
         .expression()
         .inOnOnePartitionKey(inTableFilterOperator, firstPartitionKey)
-        .analyzeMaybeFilterError(FilterException.Code.INVALID_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE)
+        .analyzeMaybeFilterError(
+            FilterException.Code.UNSUPPORTED_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE)
         .assertExceptionOnInFilerForUpdateOneAndDeleteOne(firstPartitionKey.getName());
   }
 }

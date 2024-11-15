@@ -109,7 +109,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .templated()
           .alterTable("add", Map.ofEntries(Map.entry("age", Map.of("type", "int"))))
           .hasSingleApiError(
-              SchemaException.Code.COLUMN_ALREADY_EXISTS,
+              SchemaException.Code.CANNOT_ADD_EXISTING_COLUMNS,
               SchemaException.class,
               "The request included the following duplicate columns: age(int).");
     }

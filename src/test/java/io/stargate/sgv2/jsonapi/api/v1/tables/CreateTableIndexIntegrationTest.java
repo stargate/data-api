@@ -169,7 +169,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                   }
                                   """)
           .hasSingleApiError(
-              SchemaException.Code.DATA_TYPE_NOT_SUPPORTED_BY_INDEXING,
+              SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES,
               SchemaException.class,
               "The command attempted to index the unsupported columns: list_type(list).");
     }
@@ -187,7 +187,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                   }
                                   """)
           .hasSingleApiError(
-              SchemaException.Code.DATA_TYPE_NOT_SUPPORTED_BY_INDEXING,
+              SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES,
               SchemaException.class,
               "The command attempted to index the unsupported columns: set_type(set).");
     }
@@ -205,7 +205,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                   }
                                   """)
           .hasSingleApiError(
-              SchemaException.Code.DATA_TYPE_NOT_SUPPORTED_BY_INDEXING,
+              SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES,
               SchemaException.class,
               "The command attempted to index the unsupported columns: map_type(map).");
     }
@@ -370,7 +370,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                               }
                               """)
           .hasSingleApiError(
-              SchemaException.Code.TEXT_ANALYSIS_NOT_SUPPORTED_BY_DATA_TYPE,
+              SchemaException.Code.UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES,
               SchemaException.class,
               "The command attempted to index the unsupported columns: invalid_text(int).");
     }

@@ -405,7 +405,8 @@ public class SelectWhereAnalyzerTest {
         .expression()
         .gtOn(names().COL_REGULAR_1)
         .analyzeThrows(FilterException.class)
-        .assertFilterExceptionCode(FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION)
+        .assertFilterExceptionCode(
+            FilterException.Code.UNSUPPORTED_COMPARISON_FILTER_AGAINST_DURATION)
         .assertExceptionOnDurationColumns(names().COL_REGULAR_1);
   }
 
@@ -423,7 +424,8 @@ public class SelectWhereAnalyzerTest {
         .expression()
         .gtOn(names().COL_REGULAR_2)
         .analyzeThrows(FilterException.class)
-        .assertFilterExceptionCode(FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION)
+        .assertFilterExceptionCode(
+            FilterException.Code.UNSUPPORTED_COMPARISON_FILTER_AGAINST_DURATION)
         .assertExceptionOnDurationColumns(names().COL_REGULAR_1, names().COL_REGULAR_2);
   }
 
@@ -441,7 +443,8 @@ public class SelectWhereAnalyzerTest {
         .expression()
         .eqAllPrimaryKeys()
         .analyzeThrows(FilterException.class)
-        .assertFilterExceptionCode(FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION)
+        .assertFilterExceptionCode(
+            FilterException.Code.UNSUPPORTED_COMPARISON_FILTER_AGAINST_DURATION)
         .assertExceptionOnDurationColumns(names().COL_REGULAR_1);
   }
 
@@ -769,7 +772,8 @@ public class SelectWhereAnalyzerTest {
             .expression()
             .gtOn(cqlDatatypeColumn)
             .analyzeThrows(FilterException.class)
-            .assertFilterExceptionCode(FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION)
+            .assertFilterExceptionCode(
+                FilterException.Code.UNSUPPORTED_COMPARISON_FILTER_AGAINST_DURATION)
             .assertExceptionOnDurationColumns(cqlDatatypeColumn);
         return;
       }
@@ -846,7 +850,7 @@ public class SelectWhereAnalyzerTest {
           .expression()
           .eqOn(complexColumnIdentifier)
           .analyzeThrows(FilterException.class)
-          .assertFilterExceptionCode(FilterException.Code.FILTERING_NOT_SUPPORTED_FOR_TYPE)
+          .assertFilterExceptionCode(FilterException.Code.UNSUPPORTED_FILTERING_FOR_COLUMN_TYPES)
           .assertExceptionOnComplexColumns(complexColumnIdentifier);
     }
   }

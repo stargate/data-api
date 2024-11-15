@@ -112,7 +112,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
       // regular indexes can only be on primitive. Adding indexes on maps, sets, lists will come
       // later.
       if (!apiColumnDef.type().isPrimitive()) {
-        throw SchemaException.Code.DATA_TYPE_NOT_SUPPORTED_BY_INDEXING.get(
+        throw SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES.get(
             errVars(
                 tableSchemaObject,
                 map -> {
@@ -137,7 +137,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
                   || Options.NORMALIZE.isPresent(optionsDesc.normalize());
 
           if (anyPresent) {
-            throw SchemaException.Code.TEXT_ANALYSIS_NOT_SUPPORTED_BY_DATA_TYPE.get(
+            throw SchemaException.Code.UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES.get(
                 errVars(
                     tableSchemaObject,
                     map -> {

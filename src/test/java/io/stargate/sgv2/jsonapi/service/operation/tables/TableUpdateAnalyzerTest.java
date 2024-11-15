@@ -33,7 +33,7 @@ public class TableUpdateAnalyzerTest {
         .columnAssignments()
         .setOnPrimaryKeys()
         .analyzeThrows(UpdateException.class)
-        .assertUpdateExceptionCode(UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMNS);
+        .assertUpdateExceptionCode(UpdateException.Code.UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS);
   }
 
   @Test

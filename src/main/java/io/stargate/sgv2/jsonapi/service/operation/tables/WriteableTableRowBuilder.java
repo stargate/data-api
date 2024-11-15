@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.COLUMN_METADATA_COMPARATOR;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
@@ -71,20 +72,33 @@ public class WriteableTableRowBuilder {
     source.forEach((key, value) -> cqlIdentifierToJsonValue.put(createCqlIdentifier(key), value));
 
     // the validation steps
-    checkAllPrimaryKeys(cqlIdentifierToJsonValue.keySet());
+    checkAllPrimaryKeys(cqlIdentifierToJsonValue);
     checkUnknownColumns(cqlIdentifierToJsonValue.keySet());
     var decoded = encodeJsonToCql(cqlIdentifierToJsonValue);
 
     // now need to split the columns into key and non key columns
     var keyColumns = new CqlNamedValueContainer();
     var nonKeyColumns = new CqlNamedValueContainer();
-    for (var cqlNamedValue : decoded.values()) {
-      if (tableMetadata.getPrimaryKey().contains(cqlNamedValue.name())) {
-        keyColumns.put(cqlNamedValue);
+
+    // Get the primary keys out of the new values in the order they are defined on the table
+    for (var keyMetadata : tableMetadata.getPrimaryKey()) {
+      if (decoded.containsKey(keyMetadata)) {
+        keyColumns.put(decoded.get(keyMetadata));
       } else {
+        // the primary keys have been checked above
+        throw new IllegalStateException(
+            String.format(
+                "build: primary key column not found in decoded values, column=%s", keyMetadata));
+      }
+    }
+
+    // any column in decoded that is now not in keyColumns is a non key column
+    for (var cqlNamedValue : decoded.values()) {
+      if (!keyColumns.containsKey(cqlNamedValue.name())) {
         nonKeyColumns.put(cqlNamedValue);
       }
     }
+
     return new WriteableTableRow(tableSchemaObject, keyColumns, nonKeyColumns);
   }
 
@@ -104,18 +118,26 @@ public class WriteableTableRowBuilder {
    *
    * <p>Throws a {@link DocumentException.Code#MISSING_PRIMARY_KEY_COLUMNS}
    */
-  private void checkAllPrimaryKeys(Collection<CqlIdentifier> suppliedColumns) {
+  private void checkAllPrimaryKeys(Map<CqlIdentifier, JsonNamedValue> suppliedColumns) {
 
     // dont worry about set, there is normally only 1 to 3 primary key columns in a table
     var missingPrimaryKeys =
         tableMetadata.getPrimaryKey().stream()
-            .filter(column -> !suppliedColumns.contains(column.getName()))
+            .filter(
+                column ->
+                    (!suppliedColumns.containsKey(column.getName())
+                        || (suppliedColumns.containsKey(column.getName())
+                            && suppliedColumns.get(column.getName()).value().value() == null)))
+            .sorted(COLUMN_METADATA_COMPARATOR)
             .toList();
 
     if (!missingPrimaryKeys.isEmpty()) {
       var suppliedPrimaryKeys =
           tableMetadata.getPrimaryKey().stream()
-              .filter(column -> suppliedColumns.contains(column.getName()))
+              .filter(
+                  column ->
+                      suppliedColumns.containsKey(column.getName())
+                          && suppliedColumns.get(column.getName()).value().value() != null)
               .toList();
       throw DocumentException.Code.MISSING_PRIMARY_KEY_COLUMNS.get(
           errVars(
