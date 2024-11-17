@@ -38,7 +38,7 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
         requestProperties,
         baseUrl,
         modelName,
-        accpetsJinaAIDimensions(modelName) ? dimension : 0,
+        acceptsJinaAIDimensions(modelName) ? dimension : 0,
         vectorizeServiceParameters);
 
     jinaAIEmbeddingProviderClient =

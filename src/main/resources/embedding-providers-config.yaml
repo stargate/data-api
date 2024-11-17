@@ -346,6 +346,7 @@ stargate:
             - name: jina-embeddings-v2-base-zh
               vector-dimension: 768
             - name: jina-embeddings-v3
+              # https://jina.ai/news/jina-embeddings-v3-a-frontier-multilingual-embedding-model/
               parameters:
                 - name: vectorDimension
                   type: number
