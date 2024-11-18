@@ -2,11 +2,25 @@
 
 ## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
 
-[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.19...HEAD)
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.20...HEAD)
+
+**Closed issues:**
+
+- primaryKeySchema and corresponding Id-tuples from insertion are not ordered like CQL \(\(primary\), clustering\) [\#1720](https://github.com/stargate/data-api/issues/1720)
+
+## [v1.0.20](https://github.com/stargate/data-api/tree/v1.0.20) (2024-11-14)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.19...v1.0.20)
 
 **Closed issues:**
 
 - Review all errors in errors.yaml [\#1662](https://github.com/stargate/data-api/issues/1662)
+
+**Merged pull requests:**
+
+- Ajm/fix 1720 bad order inserted return [\#1722](https://github.com/stargate/data-api/pull/1722) ([amorton](https://github.com/amorton))
+- remove XX from messages [\#1721](https://github.com/stargate/data-api/pull/1721) ([amorton](https://github.com/amorton))
+- Bumping version for next data-api release [\#1717](https://github.com/stargate/data-api/pull/1717) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.19](https://github.com/stargate/data-api/tree/v1.0.19) (2024-11-14)
 
