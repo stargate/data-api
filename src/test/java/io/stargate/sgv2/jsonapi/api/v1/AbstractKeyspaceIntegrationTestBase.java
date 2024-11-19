@@ -7,14 +7,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.core.Base64Variants;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.TenantAwareCqlSessionBuilder;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
+import io.stargate.sgv2.jsonapi.testresource.StargateTestResource;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
+import java.net.InetSocketAddress;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +47,9 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   // keyspace automatically created in this test
   protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
 
+  // driver session automatically created in this test
+  protected CqlSession cqlSession = null;
+
   @BeforeAll
   public static void enableLog() {
     RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
@@ -48,6 +58,25 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   @BeforeAll
   public void createKeyspace() {
     createKeyspace(keyspaceName);
+  }
+
+  @BeforeAll
+  public void createDriverSession() {
+    int port =
+        useCoordinator()
+            ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
+            : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
+    String dc = null;
+    if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
+      dc = "dc1";
+    } else {
+      dc = "datacenter1";
+    }
+    var builder = new TenantAwareCqlSessionBuilder("IntegrationTest").withLocalDatacenter(dc);
+    builder
+        .addContactPoint(new InetSocketAddress("localhost", port))
+        .withAuthCredentials(CQLSessionCache.CASSANDRA, CQLSessionCache.CASSANDRA);
+    cqlSession = builder.build();
   }
 
   protected void createKeyspace(String nsToCreate) {
@@ -273,5 +302,12 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     } catch (Exception e) {
       throw new RuntimeException("Not a valid binary vector", e);
     }
+  }
+
+  protected boolean executeCqlStatement(SimpleStatement statement) {
+    if (cqlSession == null) {
+      throw new IllegalArgumentException("Cql Session is null");
+    }
+    return cqlSession.execute(statement).wasApplied();
   }
 }
