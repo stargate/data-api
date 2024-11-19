@@ -61,7 +61,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
     var updateClause = command.updateClause();
 
     if (updateClause == null || updateClause.updateOperationDefs().isEmpty()) {
-      throw UpdateException.Code.ZERO_UPDATE_OPERATIONS_FOR_TABLE.get(
+      throw UpdateException.Code.MISSING_UPDATE_OPERATIONS.get(
           errVars(
               commandContext.schemaObject(),
               map -> {
@@ -88,7 +88,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
 
     // Collect all used unsupported operator and throw Update exception
     if (!usedUnsupportedOperators.isEmpty()) {
-      throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_FOR_TABLE.get(
+      throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATIONS_FOR_TABLE.get(
           errVars(
               commandContext.schemaObject(),
               map -> {

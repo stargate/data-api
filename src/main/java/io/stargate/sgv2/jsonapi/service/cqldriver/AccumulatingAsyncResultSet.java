@@ -47,7 +47,7 @@ public class AccumulatingAsyncResultSet implements AsyncResultSet {
                 // better to
                 // return false or throw a checked so the application can generate a better error
                 // message
-                throw SortException.Code.CANNOT_SORT_TOO_MUCH_DATA.get();
+                throw SortException.Code.OVERLOADED_SORT_ROW_LIMIT.get();
               }
             });
   }

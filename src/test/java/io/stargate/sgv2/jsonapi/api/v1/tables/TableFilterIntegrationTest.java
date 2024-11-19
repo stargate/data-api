@@ -480,7 +480,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
               Map.of(">", NO_DOC_FOUND, ">=", SAMPLE_ID, "<", NO_DOC_FOUND, "<=", SAMPLE_ID)),
           Arguments.of(
               "duration",
-              FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION,
+              FilterException.Code.UNSUPPORTED_COMPARISON_FILTER_AGAINST_DURATION,
               null,
               Map.of(
                   ">", NO_DOC_FOUND, ">=", NO_DOC_FOUND, "<", NO_DOC_FOUND, "<=", NO_DOC_FOUND)));

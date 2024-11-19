@@ -178,7 +178,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
       if (skip.isPresent()) {
         throw SortException.Code.CANNOT_VECTOR_SORT_WITH_SKIP_OPTION.get();
       }
-      throw SortException.Code.MORE_THAN_ONE_VECTOR_SORT.get(
+      throw SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORS.get(
           errVars(
               commandContext.schemaObject(),
               map -> {
@@ -194,7 +194,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
     // we have one vector sort - cannot have any other sorting
     var nonVectorSorts = sortClause.nonTableVectorSorts();
     if (!nonVectorSorts.isEmpty()) {
-      throw SortException.Code.CANNOT_MIX_VECTOR_AND_NON_VECTOR_SORT.get(
+      throw SortException.Code.CANNOT_SORT_VECTOR_AND_NON_VECTOR_COLUMNS.get(
           errVars(
               commandContext.schemaObject(),
               map -> {

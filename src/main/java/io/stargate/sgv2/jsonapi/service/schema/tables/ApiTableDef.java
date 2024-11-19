@@ -227,7 +227,7 @@ public class ApiTableDef {
       // TODO: not sure about the validation happening here, was part of the code I moved
       // should be in the builder for the attempt
       if (partitionIdentifiers.isEmpty()) {
-        throw SchemaException.Code.ZERO_PARTITION_COLUMNS.get(
+        throw SchemaException.Code.MISSING_PARTITION_COLUMNS.get(
             Map.of("tableColumns", errFmtCqlIdentifier(allColumnDefs.keySet())));
       }
 

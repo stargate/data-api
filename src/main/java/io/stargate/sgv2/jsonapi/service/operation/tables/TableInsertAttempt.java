@@ -44,8 +44,7 @@ public class TableInsertAttempt extends InsertAttempt<TableSchemaObject> {
       return Optional.empty();
     }
 
-    var apiColumns =
-        schemaObject.apiTableDef().allColumns().filterBy(row.keyColumns().getIdentifiers());
+    var apiColumns = schemaObject.apiTableDef().primaryKeys();
     if (!apiColumns.filterByUnsupported().isEmpty()) {
       throw new IllegalStateException(
           "Unsupported columns primary key: %s" + apiColumns.filterByUnsupported());
