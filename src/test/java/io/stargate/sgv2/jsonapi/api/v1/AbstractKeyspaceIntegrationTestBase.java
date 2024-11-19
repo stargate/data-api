@@ -47,9 +47,6 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   // keyspace automatically created in this test
   protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
 
-  // driver session automatically created in this test
-  protected CqlSession cqlSession = null;
-
   @BeforeAll
   public static void enableLog() {
     RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
@@ -58,25 +55,6 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   @BeforeAll
   public void createKeyspace() {
     createKeyspace(keyspaceName);
-  }
-
-  @BeforeAll
-  public void createDriverSession() {
-    int port =
-        useCoordinator()
-            ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
-            : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
-    String dc = null;
-    if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
-      dc = "dc1";
-    } else {
-      dc = "datacenter1";
-    }
-    var builder = new TenantAwareCqlSessionBuilder("IntegrationTest").withLocalDatacenter(dc);
-    builder
-        .addContactPoint(new InetSocketAddress("localhost", port))
-        .withAuthCredentials(CQLSessionCache.CASSANDRA, CQLSessionCache.CASSANDRA);
-    cqlSession = builder.build();
   }
 
   protected void createKeyspace(String nsToCreate) {
@@ -305,9 +283,27 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   }
 
   protected boolean executeCqlStatement(SimpleStatement statement) {
-    if (cqlSession == null) {
-      throw new IllegalArgumentException("Cql Session is null");
+    var cqlSession = createDriverSession();
+    var result = cqlSession.execute(statement).wasApplied();
+    cqlSession.close();
+    return result;
+  }
+
+  private CqlSession createDriverSession() {
+    int port =
+        useCoordinator()
+            ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
+            : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
+    String dc = null;
+    if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
+      dc = "dc1";
+    } else {
+      dc = "datacenter1";
     }
-    return cqlSession.execute(statement).wasApplied();
+    var builder = new TenantAwareCqlSessionBuilder("IntegrationTest").withLocalDatacenter(dc);
+    builder
+        .addContactPoint(new InetSocketAddress("localhost", port))
+        .withAuthCredentials(CQLSessionCache.CASSANDRA, CQLSessionCache.CASSANDRA);
+    return builder.build();
   }
 }
