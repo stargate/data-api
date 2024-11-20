@@ -151,6 +151,35 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
+    public void failWithSortAndPageState() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                {
+                 "find": {
+                    "filter" : {"username" : "user1"},
+                    "sort" : {"username" : 1},
+                    "options" : {
+                      "pageState" : "someState"
+                    }
+                  }
+                }
+                """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].message",
+              is("Invalid sort clause: pageState is not supported with sort clause"))
+          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
     public void noFilter() {
       given()
           .headers(getHeaders())
