@@ -102,6 +102,31 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(documentAmount - defaultPageSize))
           .body("data.nextPageState", nullValue());
+
+      // should be fine with the empty sort clause
+      String json2 =
+              """
+                  {
+                      "find": {
+                          "sort": {},
+                          "options": {
+                              "pageState": "%s"
+                          }
+                      }
+                  }
+                """.formatted(nextPageState);
+
+      given()
+              .headers(getHeaders())
+              .contentType(ContentType.JSON)
+              .body(json1)
+              .when()
+              .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+              .then()
+              .statusCode(200)
+              .body("$", responseIsFindSuccess())
+              .body("data.documents", hasSize(documentAmount - defaultPageSize))
+              .body("data.nextPageState", nullValue());
     }
 
     @Test
