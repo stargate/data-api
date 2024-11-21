@@ -163,6 +163,30 @@ public class FindCommandTest {
     }
 
     @Test
+    public void invalidOptionsPageStateWithSort() throws Exception {
+      String json =
+          """
+          {
+           "find": {
+              "filter" : {"username" : "user1"},
+              "sort" : {"username" : 1},
+              "options" : {
+                "pageState" : "someState"
+              }
+            }
+          }
+          """;
+
+      FindCommand command = objectMapper.readValue(json, FindCommand.class);
+      Set<ConstraintViolation<FindCommand>> result = validator.validate(command);
+
+      assertThat(result)
+          .isNotEmpty()
+          .extracting(ConstraintViolation::getMessage)
+          .contains("pageState is not supported with sort clause");
+    }
+
+    @Test
     public void invalidOptionsSkipVectorSearch() throws Exception {
       String json =
           """

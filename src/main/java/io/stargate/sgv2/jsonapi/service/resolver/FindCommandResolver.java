@@ -177,7 +177,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
 
     if (sortClause != null && pageState != null) {
       throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-          "pageState is not supported with sort clause");
+          "pageState is not supported with sort clause.");
     }
 
     SchemaValidatable.maybeValidate(ctx, sortClause);
