@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
@@ -174,12 +173,6 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     }
 
     SortClause sortClause = command.sortClause();
-
-    if (sortClause != null && pageState != null) {
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-          "pageState is not supported with sort clause.");
-    }
-
     SchemaValidatable.maybeValidate(ctx, sortClause);
 
     // if vector search
