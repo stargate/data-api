@@ -175,6 +175,15 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
       return assertExceptionContains(warning);
     }
 
+    public WhereAnalyzerFixture assertExceptionOnNonEqFilerForUpdateOneAndDeleteOne(
+        CqlIdentifier... columns) {
+      var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
+      var warning =
+          "The command used an invalid filter on the columns: %s."
+              .formatted(errFmtCqlIdentifier(identifiers));
+      return assertExceptionContains(warning);
+    }
+
     public WhereAnalyzerFixture assertExceptionOnInFilerForUpdateOneAndDeleteOne(
         CqlIdentifier... columns) {
       var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();

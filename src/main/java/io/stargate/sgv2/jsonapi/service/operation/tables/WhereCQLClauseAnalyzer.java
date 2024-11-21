@@ -70,6 +70,8 @@ public class WhereCQLClauseAnalyzer {
                     analyzer::checkNoFilters,
                     analyzer::checkAllColumnsExist,
                     analyzer::checkNonPrimaryKeyFilters,
+                    analyzer::checkOnlyEqUsage,
+                    // TODO, checkOnlyEqUsage rule make checkNoInFilterUsage redundant.
                     analyzer::checkNoInFilterUsage,
                     analyzer::checkFullPrimaryKey,
                     analyzer::checkFilteringOnComplexColumns),
@@ -235,6 +237,39 @@ public class WhereCQLClauseAnalyzer {
               map -> {
                 map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
                 map.put("complexColumns", errFmtCqlIdentifier(filterOnComplexColumns));
+              }));
+    }
+  }
+
+  /**
+   * Check if any non $eq filter is used.
+   *
+   * <p>e.g. Table UpdateOne and DeleteOne, DATA API does not know the exact modified row count in
+   * DB, so it needs to restrict on the filters. Make sure only $eq is used for DeleteOne and
+   * UpdateOne.
+   */
+  private void checkOnlyEqUsage(Map<CqlIdentifier, TableFilter> identifierToFilter) {
+
+    var nonEqFilterColumns =
+        identifierToFilter.entrySet().stream()
+            .filter(
+                entry -> {
+                  TableFilter tableFilter = entry.getValue();
+                  if (!(tableFilter instanceof NativeTypeTableFilter<?> nativeTypeTableFilter)) {
+                    return true;
+                  }
+                  return nativeTypeTableFilter.operator != NativeTypeTableFilter.Operator.EQ;
+                })
+            .map((Map.Entry::getKey))
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
+            .toList();
+
+    if (!nonEqFilterColumns.isEmpty()) {
+      throw FilterException.Code.UNSUPPORTED_FILTER_FOR_UPDATE_ONE_DELETE_ONE.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("unsupportedFilterColumns", errFmtCqlIdentifier(nonEqFilterColumns));
               }));
     }
   }
