@@ -21,7 +21,7 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
   @Order(1)
   class NormalFunction {
     private static final int defaultPageSize = 20;
-    private static final int documentAmount = 30;
+    private static final int documentAmount = 50;
     private static final int documentLimit = 5;
 
     @Test
@@ -56,7 +56,7 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
 
     @Test
     @Order(2)
-    public void twoPagesCheck() {
+    public void threePagesCheck() {
       String json =
           """
                             {
@@ -91,17 +91,19 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
                             """
               .formatted(nextPageState);
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json1)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(documentAmount - defaultPageSize))
-          .body("data.nextPageState", nullValue());
+      nextPageState =
+          given()
+              .headers(getHeaders())
+              .contentType(ContentType.JSON)
+              .body(json1)
+              .when()
+              .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+              .then()
+              .statusCode(200)
+              .body("$", responseIsFindSuccess())
+              .body("data.documents", hasSize(defaultPageSize))
+              .extract()
+              .path("data.nextPageState");
 
       // should be fine with the empty sort clause
       String json2 =
@@ -120,13 +122,13 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
-          .body(json1)
+          .body(json2)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(documentAmount - defaultPageSize))
+          .body("data.documents", hasSize(documentAmount - 2 * defaultPageSize))
           .body("data.nextPageState", nullValue());
     }
 
