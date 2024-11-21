@@ -114,19 +114,20 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
                           }
                       }
                   }
-                """.formatted(nextPageState);
+                """
+              .formatted(nextPageState);
 
       given()
-              .headers(getHeaders())
-              .contentType(ContentType.JSON)
-              .body(json1)
-              .when()
-              .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-              .then()
-              .statusCode(200)
-              .body("$", responseIsFindSuccess())
-              .body("data.documents", hasSize(documentAmount - defaultPageSize))
-              .body("data.nextPageState", nullValue());
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json1)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(documentAmount - defaultPageSize))
+          .body("data.nextPageState", nullValue());
     }
 
     @Test
