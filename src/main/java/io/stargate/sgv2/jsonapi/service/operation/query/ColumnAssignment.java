@@ -1,17 +1,25 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnMetadata;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.querybuilder.update.Assignment;
 import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 import java.util.Objects;
 
@@ -30,6 +38,8 @@ public class ColumnAssignment implements CQLAssignment {
   private final TableMetadata tableMetadata;
   public final CqlIdentifier column;
   private final JsonLiteral<?> value;
+
+  protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   /**
    * Create a new instance of the class to set the {@code column} to the {@code value} in the
@@ -82,13 +92,30 @@ public class ColumnAssignment implements CQLAssignment {
               .codecToCQL(tableMetadata, column, rawValue)
               .toCQL(rawValue));
     } catch (MissingJSONCodecException e) {
-      // TODO: Better error handling
-      throw new RuntimeException(e);
+      throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
+          errVars(
+              TableSchemaObject.from(tableMetadata, new ObjectMapper()),
+              map -> {
+                map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
+                map.put("unsupportedColumns", column.asInternal());
+              }));
     } catch (UnknownColumnException e) {
-      // TODO: Better error handling
-      throw new RuntimeException(e);
+      throw FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
+          errVars(
+              TableSchemaObject.from(tableMetadata, new ObjectMapper()),
+              map -> {
+                map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
+                map.put("unknownColumns", CqlIdentifierUtil.cqlIdentifierToJsonKey(column));
+              }));
     } catch (ToCQLCodecException e) {
-      throw new RuntimeException(e);
+      throw UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES.get(
+          errVars(
+              TableSchemaObject.from(tableMetadata, new ObjectMapper()),
+              map -> {
+                map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
+                map.put("invalidColumn", CqlIdentifierUtil.cqlIdentifierToJsonKey(column));
+                map.put("columnType", tableMetadata.getColumn(column).get().getType().toString());
+              }));
     }
   }
 }

@@ -326,4 +326,67 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
         .hasDocuments(1)
         .hasDocumentInPosition(0, expectedUpdatedRow);
   }
+
+  // ==================================================================================================================
+  // Update value does not match column dataType
+  // ==================================================================================================================
+
+  @Test
+  public void setWithUnmatchedDataType() {
+    var updateClauseJSON =
+        """
+                          {
+                            "$set": {
+                                  "indexed_column": 123,
+                                }
+                          }
+                      """;
+    // "index_column" has text type, so 123 is invalid
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
+        .hasSingleApiError(UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES, UpdateException.class)
+        .hasNoWarnings();
+  }
+
+  @Test
+  public void unsetWithUnmatchedDataType() {
+    // set first, to give "indexed_column" a value
+    var setJSON =
+        """
+                          {
+                            "$set": {
+                                  "indexed_column": "newValue",
+                                  "not_indexed_column": "newValue"
+                                }
+                          }
+                      """;
+    var expectedUpdatedRow =
+        DOC_JSON_DEFAULT_ROW_TEMPLATE.formatted(
+            wrapWithDoubleQuote("newValue"), wrapWithDoubleQuote("newValue"));
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, setJSON)
+        .hasNoErrors()
+        .hasNoWarnings();
+    checkUpdatedData(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, expectedUpdatedRow);
+    // then unset.
+    var unsetJSON =
+        """
+                          {
+                            "$unset": {
+                                   "indexed_column": 123,
+                                   "not_indexed_column": 456
+                                }
+                          }
+                      """;
+    // "index_column" has text type, so 123 is invalid, but $unset does not care about the assign
+    // value has the correct type or not
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, unsetJSON)
+        .hasSingleApiError(UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES, UpdateException.class)
+        .hasNoWarnings();
+    checkUpdatedData(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, removeNullValues(expectedUpdatedRow));
+  }
 }
