@@ -174,7 +174,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("$", responseIsError())
           .body(
               "errors[0].message",
-              is("Invalid sort clause: pageState is not supported with sort clause"))
+              is("Invalid sort clause: pageState is not supported with non-empty sort clause"))
           .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
