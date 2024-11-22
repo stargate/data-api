@@ -282,11 +282,17 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     }
   }
 
-  protected boolean executeCqlStatement(SimpleStatement statement) {
+  protected boolean executeCqlStatement(SimpleStatement... statements) {
     var cqlSession = createDriverSession();
-    var result = cqlSession.execute(statement).wasApplied();
+    boolean applied = false;
+    for (SimpleStatement statement : statements) {
+      if (!cqlSession.execute(statement).wasApplied()) {
+        cqlSession.close();
+        return false;
+      }
+    }
     cqlSession.close();
-    return result;
+    return true;
   }
 
   private CqlSession createDriverSession() {
