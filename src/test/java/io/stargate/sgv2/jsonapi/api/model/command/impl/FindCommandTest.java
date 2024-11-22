@@ -71,33 +71,6 @@ public class FindCommandTest {
     }
 
     @Test
-    public void happyWithEmptySortAndPageState() throws Exception {
-      String json =
-          """
-              {
-                  "find": {
-                      "sort": {},
-                      "options": {
-                          "pageState": "x"
-                      }
-                  }
-              }
-            """;
-
-      FindCommand command = objectMapper.readValue(json, FindCommand.class);
-      assertThat(command)
-          .isInstanceOfSatisfying(
-              FindCommand.class,
-              findCommand -> {
-                assertThat(findCommand.sortClause().isEmpty()).isTrue();
-                assertThat(findCommand.options().pageState()).isNotEmpty();
-              });
-      Set<ConstraintViolation<FindCommand>> result = validator.validate(command);
-
-      assertThat(result).isEmpty();
-    }
-
-    @Test
     public void invalidOptionsNegativeLimit() throws Exception {
       String json =
           """
@@ -187,30 +160,6 @@ public class FindCommandTest {
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
           .contains("skip options should be used with sort clause");
-    }
-
-    @Test
-    public void invalidOptionsPageStateWithSort() throws Exception {
-      String json =
-          """
-          {
-           "find": {
-              "filter" : {"username" : "user1"},
-              "sort" : {"username" : 1},
-              "options" : {
-                "pageState" : "someState"
-              }
-            }
-          }
-          """;
-
-      FindCommand command = objectMapper.readValue(json, FindCommand.class);
-      Set<ConstraintViolation<FindCommand>> result = validator.validate(command);
-
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("pageState is not supported with non empty sort clause");
     }
 
     @Test
