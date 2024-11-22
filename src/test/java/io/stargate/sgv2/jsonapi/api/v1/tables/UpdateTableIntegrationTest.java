@@ -337,7 +337,7 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
         """
                           {
                             "$set": {
-                                  "indexed_column": 123,
+                                  "indexed_column": 123
                                 }
                           }
                       """;
@@ -385,8 +385,10 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
         .templated()
         .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, unsetJSON)
-        .hasSingleApiError(UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES, UpdateException.class)
+        .hasNoErrors()
         .hasNoWarnings();
-    checkUpdatedData(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, removeNullValues(expectedUpdatedRow));
+    var expectedUpdatedRowWithNull = DOC_JSON_DEFAULT_ROW_TEMPLATE.formatted(null, null);
+    checkUpdatedData(
+        FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, removeNullValues(expectedUpdatedRowWithNull));
   }
 }
