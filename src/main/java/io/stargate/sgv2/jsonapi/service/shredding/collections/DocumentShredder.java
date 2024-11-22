@@ -549,8 +549,9 @@ public class DocumentShredder {
     }
 
     private void validateStringValue(String referringPropertyName, String value) {
-      if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(referringPropertyName)) {
-        // `$vectorize` field are not checked for length
+      if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(referringPropertyName)
+          || DocumentConstants.Fields.BINARY_VECTOR_TEXT_FIELD.equals(referringPropertyName)) {
+        // `$vectorize` and `$binary` field are not checked for length
         return;
       }
       OptionalInt encodedLength =
