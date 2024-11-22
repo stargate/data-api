@@ -240,6 +240,28 @@ public class DataApiResponseValidator {
     return validator;
   }
 
+  public DataApiResponseValidator hasWarning(
+      int position, WarningException.Code code, String... messageSnippet) {
+    var validator =
+        body(
+                "status.warnings[%s]".formatted(position),
+                hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+            .body(
+                "status.warnings[%s]".formatted(position),
+                hasEntry(
+                    ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+            .body(
+                "status.warnings[%s]".formatted(position),
+                hasEntry(ErrorObjectV2Constants.Fields.CODE, code.name()));
+
+    for (String snippet : messageSnippet) {
+      validator =
+          validator.body(
+              "status.warnings[%s].message".formatted(position), containsString(snippet));
+    }
+    return validator;
+  }
+
   public DataApiResponseValidator mayHasSingleWarning(WarningException.Code warningExceptionCode) {
     if (warningExceptionCode == null) {
       return hasNoWarnings();

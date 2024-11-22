@@ -1,9 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.IndexUsage;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 
 /**
@@ -15,6 +17,18 @@ public abstract class TableFilter extends DBFilterBase {
   // TIDY - the path is the column name here, maybe rename ?
   protected TableFilter(String path) {
     super(path, IndexUsage.NO_OP);
+  }
+
+  /**
+   * Default implementation to check if the filter applies to a partition key column.
+   *
+   * @param tableMetadata Metadata of the table to check against.
+   * @return true if the column is part of the partition key, false otherwise.
+   */
+  public boolean filterOnPartitionKey(TableMetadata tableMetadata) {
+    return tableMetadata.getPartitionKey().stream()
+        .anyMatch(
+            column -> column.getName().equals(CqlIdentifierUtil.cqlIdentifierFromUserInput(path)));
   }
 
   /**

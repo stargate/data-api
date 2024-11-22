@@ -1,15 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.resolver.sort;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.CQL_IDENTIFIER_COMPARATOR;
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.*;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
-import io.stargate.sgv2.jsonapi.api.model.command.Windowable;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -17,28 +14,35 @@ import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
+import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByANNCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByClusteringCqlClause;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Resolves a sort clause to determine if we want to apply a CQL ORDER BY clause to the operation.
  */
-public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Windowable>
+public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sortable & Windowable>
     extends TableSortClauseResolver<CmdT, TableSchemaObject, OrderByCqlClause> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TableCqlSortClauseResolver.class);
 
+  private final FilterResolver<CmdT, TableSchemaObject> tableFilterResolver;
+
   public TableCqlSortClauseResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
+    this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
   }
 
   /**
@@ -66,9 +70,11 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
     checkUnknownSortColumns(commandContext.schemaObject(), sortColumns);
 
     var vectorSorts = sortClause.tableVectorSorts();
+    var dbLogicalExpression = tableFilterResolver.resolve(commandContext, command).target();
 
     return vectorSorts.isEmpty()
-        ? resolveNonVectorSort(commandContext, sortClause, sortColumns, command.skip())
+        ? resolveNonVectorSort(
+            commandContext, dbLogicalExpression, sortClause, sortColumns, command.skip())
         : resolveVectorSort(commandContext, sortClause, vectorSorts, command.skip());
   }
 
@@ -82,6 +88,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
    */
   private WithWarnings<OrderByCqlClause> resolveNonVectorSort(
       CommandContext<TableSchemaObject> commandContext,
+      DBLogicalExpression dbLogicalExpression,
       SortClause sortClause,
       List<CqlIdentifier> sortColumns,
       Optional<Integer> skip) {
@@ -137,6 +144,48 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
                     map.put(
                         "sortColumns",
                         errFmtCqlIdentifier(sortColumns)); // no not change the order of the sorting
+                  }));
+
+      return WithWarnings.of(OrderByCqlClause.NO_OP, warn);
+    }
+
+    // We know all the order keys are partition sorting keys and no clustering key missing or
+    // skipping.
+    // If not all partitionKeys are restricted by $eq, enable in memory sort
+    // CQL has below rules:
+    // 1. "ORDER BY is only supported when the partition key is
+    // restricted by an EQ or an IN."
+    // 2. "Cannot page queries with both ORDER BY and a IN restriction on the partition key; you
+    // must either remove the ORDER BY or the IN and sort client side, or disable paging for this
+    // query"
+    Set<CqlIdentifier> validPartitionKey = new HashSet<>();
+    var tableMetadata = commandContext.schemaObject().tableMetadata();
+    var partitionKeys =
+        tableMetadata.getPartitionKey().stream().map(ColumnMetadata::getName).toList();
+    dbLogicalExpression.visitAllFilters(
+        TableFilter.class,
+        tableFilter -> {
+          var filterOnPartitionKey = tableFilter.filterOnPartitionKey(tableMetadata);
+          if (!filterOnPartitionKey) {
+            return;
+          }
+          if (tableFilter instanceof NativeTypeTableFilter<?> nativeTypeTableFilter
+              && nativeTypeTableFilter.operator == NativeTypeTableFilter.Operator.EQ) {
+            validPartitionKey.add(CqlIdentifierUtil.cqlIdentifierFromUserInput(tableFilter.path));
+          }
+        });
+    if (!validPartitionKey.containsAll(partitionKeys)) {
+      var warn =
+          WarningException.Code.IN_MEMORY_SORTING_DUE_TO_PARTITION_KEY_NOT_RESTRICTED.get(
+              errVars(
+                  commandContext.schemaObject(),
+                  map -> {
+                    map.put(
+                        "partitionKeys", errFmtApiColumnDef(apiTableDef.partitionKeys().values()));
+                    map.put(
+                        "partitionSorting",
+                        errFmtApiColumnDef(apiTableDef.clusteringKeys().values()));
+                    map.put("sortColumns", errFmtCqlIdentifier(sortColumns));
                   }));
 
       return WithWarnings.of(OrderByCqlClause.NO_OP, warn);
