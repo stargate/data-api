@@ -157,6 +157,17 @@ request-errors:
       
       Resend using one of the supported commands. 
 
+  - scope:
+    code: UNSUPPORTED_PAGINATION_WHEN_USING_IN_MEMORY_SORTING
+    title: Pagination not supported when using in memory sorting
+    body: |-
+      Pagination is not supported when the data is sorted in memory.
+#
+#      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+#      The command sorted on the columns: ${sortColumns}.
+#
+#      ${SNIPPET.INEFFICIENT_SORT}
+      
 
 # ================================================================================================================
 # Family: REQUEST         Scope: DOCUMENT

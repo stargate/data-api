@@ -380,6 +380,10 @@ public class DataApiResponseValidator {
     return body("data.nextPageState", is(notNullValue()));
   }
 
+  public String extractNextPageState() {
+    return response.extract().path("data.nextPageState");
+  }
+
   public DataApiResponseValidator doesNotHaveNextPageState() {
     return body("$", not(hasKey("data.nextPageState")));
   }
