@@ -460,6 +460,71 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     }
 
     @Test
+    public void insertLargeDimensionBinaryVector() {
+      // create collection
+      createVectorCollection(
+          keyspaceName,
+          "large_binary_vector_collection",
+          DocumentLimitsConfig.DEFAULT_MAX_VECTOR_EMBEDDING_LENGTH);
+
+      final String id = UUID.randomUUID().toString();
+      float[] expectedVector =
+          buildVectorElementsArray(1, DocumentLimitsConfig.DEFAULT_MAX_VECTOR_EMBEDDING_LENGTH);
+      final String base64Vector = generateBase64EncodedBinaryVector(expectedVector);
+      String doc =
+              """
+                  {
+                    "_id": "%s",
+                    "name": "aaron",
+                    "$vector": {"$binary": "%s"}
+                  }
+              """
+              .formatted(id, base64Vector);
+
+      // insert the document
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, "large_binary_vector_collection")
+          .then()
+          .statusCode(200)
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is(notNullValue()));
+
+      // get the document and verify the vector value
+      Response response =
+          given()
+              .headers(getHeaders())
+              .contentType(ContentType.JSON)
+              .body(
+                  "{\"find\": { \"filter\" : {\"_id\" : \"%s\"}, \"projection\" : {\"$vector\" : 1}}}"
+                      .formatted(id))
+              .when()
+              .post(CollectionResource.BASE_PATH, keyspaceName, "large_binary_vector_collection")
+              .then()
+              .statusCode(200)
+              .body("$", responseIsFindSuccess())
+              .body("data.documents[0]", jsonEquals(doc))
+              .extract()
+              .response();
+
+      // Extract the Base64 encoded string from the response
+      String base64VectorFromResponse =
+          response.jsonPath().getString("data.documents[0].$vector.$binary");
+
+      // Verify the Base64 encoded binary string is equal to the original base64Vector string
+      Assertions.assertEquals(base64VectorFromResponse, base64Vector);
+
+      // Convert the byte array to a float array
+      float[] decodedVector = decodeBase64BinaryVectorToFloatArray(base64VectorFromResponse);
+
+      // Verify that the decoded float array is equal to the expected vector
+      Assertions.assertArrayEquals(expectedVector, decodedVector, 0.0001f);
+    }
+
+    @Test
     public void failToInsertBinaryVectorWithInvalidBinaryString() {
       final String invalidBinaryString = "@#$%^&*()";
       String doc =
@@ -2095,6 +2160,18 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
       sb.append(nums[ix]);
     }
     return sb.toString();
+  }
+
+  private static float[] buildVectorElementsArray(int offset, int count) {
+    float[] elements = new float[count];
+    // Generate sequence with floating-point values that are exact in binary (like 0.5, 0.25)
+    // so that conversion won't prevent equality matching
+    final float[] nums = {0.25f, 0.5f, 0.75f, 0.975f, 0.0125f, 0.375f, 0.625f, 0.125f};
+    for (int i = 0; i < count; ++i) {
+      int ix = (offset + i) % nums.length;
+      elements[i] = nums[ix];
+    }
+    return elements;
   }
 
   @Nested
