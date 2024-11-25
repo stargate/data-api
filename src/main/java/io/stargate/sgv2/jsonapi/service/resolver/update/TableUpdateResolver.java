@@ -71,11 +71,18 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
 
     List<ColumnAssignment> assignments = new ArrayList<>();
     List<String> usedUnsupportedOperators = new ArrayList<>();
+    List<UpdateOperator> missingAssignmentsOperators = new ArrayList<>();
 
     for (var updateOperationDef : updateClause.updateOperationDefs().entrySet()) {
 
       UpdateOperator updateOperator = updateOperationDef.getKey();
       ObjectNode arguments = updateOperationDef.getValue();
+
+      // Do not allow empty update operation assignments, e.g. "$set": {} / "$unset": {}
+      if (arguments.isEmpty()) {
+        missingAssignmentsOperators.add(updateOperator);
+        continue;
+      }
 
       var resolverFunction = supportedOperatorsMap.get(updateOperator);
       if (resolverFunction == null) {
@@ -84,6 +91,20 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
       }
 
       assignments.addAll(resolverFunction.apply(commandContext.schemaObject(), arguments));
+    }
+
+    if (!missingAssignmentsOperators.isEmpty()) {
+      throw UpdateException.Code.MISSING_UPDATE_OPERATION_ASSIGNMENTS.get(
+          errVars(
+              commandContext.schemaObject(),
+              map -> {
+                map.put(
+                    "emptyAssignmentsOperator",
+                    errFmtJoin(
+                        missingAssignmentsOperators.stream()
+                            .map(UpdateOperator::operator)
+                            .toList()));
+              }));
     }
 
     // Collect all used unsupported operator and throw Update exception

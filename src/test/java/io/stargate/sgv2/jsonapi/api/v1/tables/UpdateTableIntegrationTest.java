@@ -9,10 +9,14 @@ import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -310,6 +314,28 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
         .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
         .hasSingleApiError(
             UpdateException.Code.UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS, UpdateException.class)
+        .hasNoWarnings();
+  }
+
+  // ==================================================================================================================
+  // Update with empty assignments update operation
+  // ==================================================================================================================
+
+  private static Stream<Arguments> EMPTY_ASSIGNMENTS() {
+    return Stream.of(
+        Arguments.of("{\"$set\":{}}"),
+        Arguments.of("{\"$unset\":{}}"),
+        Arguments.of("{\"$set\":{}, \"$unset\":{}}"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("EMPTY_ASSIGNMENTS")
+  public void emptyAssignments(String updateClauseJSON) {
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
+        .hasSingleApiError(
+            UpdateException.Code.MISSING_UPDATE_OPERATION_ASSIGNMENTS, UpdateException.class)
         .hasNoWarnings();
   }
 

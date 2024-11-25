@@ -387,6 +387,14 @@ request-errors:
       Resend the command using at least one update operation.
 
   - scope: UPDATE
+    code: MISSING_UPDATE_OPERATION_ASSIGNMENTS
+    title: Update operation assignments can not be empty
+    body: |-
+      The command include update operations ${emptyAssignmentsOperator} that have empty assignments.
+      
+      Resend the command using non-empty assignments update operation.
+
+  - scope: UPDATE
     code: UNSUPPORTED_UPDATE_OPERATIONS_FOR_TABLE
     title: Update operation not supported by Tables
     body: |-

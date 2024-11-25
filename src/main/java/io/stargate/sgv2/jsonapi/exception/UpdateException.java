@@ -15,6 +15,7 @@ public class UpdateException extends RequestException {
 
   public enum Code implements ErrorCode<UpdateException> {
     MISSING_UPDATE_OPERATIONS,
+    MISSING_UPDATE_OPERATION_ASSIGNMENTS,
     UNKNOWN_TABLE_COLUMNS,
     UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS,
     UNSUPPORTED_UPDATE_OPERATIONS_FOR_TABLE,
