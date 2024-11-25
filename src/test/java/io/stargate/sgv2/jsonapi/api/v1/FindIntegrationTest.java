@@ -151,7 +151,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
-    public void failWithSortAndPageState() {
+    public void failWithNonEmptySortAndPageState() {
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -177,6 +177,30 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               is("Invalid sort clause: pageState is not supported with non-empty sort clause"))
           .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void happyWithEmptyPageStateAndNonEmptySort() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                {
+                 "find": {
+                    "filter" : {"username" : "user1"},
+                    "sort" : {"username" : 1},
+                    "options" : {
+                      "pageState" : ""
+                    }
+                  }
+                }
+                """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsFindSuccess());
     }
 
     @Test

@@ -175,7 +175,9 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
 
     SortClause sortClause = command.sortClause();
 
-    if (sortClause != null && pageState != null && !sortClause.isEmpty()) {
+    // collection always uses in memory sorting, so we don't support page state with sort clause
+    // empty sort clause and empty page state are treated as no sort clause and no page state
+    if (sortClause != null && !sortClause.isEmpty() && pageState != null && !pageState.isEmpty()) {
       throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
           "pageState is not supported with non-empty sort clause");
     }
