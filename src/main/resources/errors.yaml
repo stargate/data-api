@@ -397,6 +397,16 @@ request-errors:
       
       Resend the command using only supported update operations.
 
+  - scope: UPDATE
+    code: DUPLICATE_UPDATE_OPERATION_ASSIGNMENTS
+    title: Duplicate column assignments in update operation is invalid
+    body: |-
+      The command included update operations that have duplicate column assignments.
+      
+      Duplicate assignments happen for columns: ${duplicateAssignmentColumns}
+      
+      Resend the command without duplicate column assignments in the update operation
+
 # Note UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION is a duplicate for Document scope, this one is used for Update scope.
   - scope: UPDATE
     code: UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION

@@ -175,6 +175,27 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
         .hasNoWarnings();
   }
 
+  @Test
+  public void updateWithDuplicateColumnAssignments() {
+    var updateJSON =
+        """
+                  {
+                       "$set": {
+                        "indexed_column": "abc"
+                      },
+                       "$unset": {
+                        "indexed_column": "def"
+                      }
+                  }
+             """;
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateJSON)
+        .hasSingleApiError(
+            UpdateException.Code.DUPLICATE_UPDATE_OPERATION_ASSIGNMENTS, UpdateException.class)
+        .hasNoWarnings();
+  }
+
   // ==================================================================================================================
   // FILTER has specified a full, existed PRIMARY KEY
   // 1. if update PRIMARY KEY, exception. Exception UPDATE_UNKNOWN_TABLE_COLUMN.

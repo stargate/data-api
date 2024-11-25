@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.update;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
@@ -19,10 +20,9 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DefaultUpdateValuesCQLCl
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 /**
  * Resolves the update clause for a command when the target schema object is a {@link
@@ -94,6 +94,29 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
               map -> {
                 map.put("usedUnsupportedUpdateOperations", errFmtJoin(usedUnsupportedOperators));
                 map.put("supportedUpdateOperations", errFmtJoin(supportedOperatorsStringList));
+              }));
+    }
+
+    // Duplicate column assignments is invalid
+    // e.g. {"update": {"$set": {"description": "123"},"$unset": {"description": "456"}}}
+    List<CqlIdentifier> assignmentColumns =
+        assignments.stream().map(columnAssignment -> columnAssignment.column).toList();
+    Set<CqlIdentifier> allItems = new HashSet<>();
+    Set<CqlIdentifier> duplicates =
+        assignmentColumns.stream()
+            .filter(column -> !allItems.add(column))
+            .collect(Collectors.toSet());
+    if (!duplicates.isEmpty()) {
+      throw UpdateException.Code.DUPLICATE_UPDATE_OPERATION_ASSIGNMENTS.get(
+          errVars(
+              commandContext.schemaObject(),
+              map -> {
+                map.put(
+                    "duplicateAssignmentColumns",
+                    errFmtJoin(
+                        duplicates.stream()
+                            .map(CqlIdentifierUtil::cqlIdentifierToMessageString)
+                            .toList()));
               }));
     }
 
