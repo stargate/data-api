@@ -18,6 +18,8 @@ public class DefaultUpdateValuesCQLClause implements UpdateValuesCQLClause {
   private final List<ColumnAssignment> assignments;
 
   public DefaultUpdateValuesCQLClause(List<ColumnAssignment> assignments) {
+    // Keep the assertions, assignments won't be null and empty, they are been checked in
+    // TableUpdateResolver
     this.assignments = Objects.requireNonNull(assignments, "assignments must not be null");
     if (assignments.isEmpty()) {
       throw new IllegalArgumentException("assignments must not be empty");
