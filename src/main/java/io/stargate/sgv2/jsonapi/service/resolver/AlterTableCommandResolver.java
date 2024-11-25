@@ -91,6 +91,13 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       TableSchemaObject tableSchemaObject,
       AlterTableOperationImpl.AddColumns addColumnsOperation) {
 
+    // 1. "add":{}
+    // 2. "add":{"columns":null}
+    // 3  "add":{"columns":{}}
+    if (addColumnsOperation.columns() == null || addColumnsOperation.columns().isEmpty()) {
+      return List.of();
+    }
+
     var apiTableDef = tableSchemaObject.apiTableDef();
     // we can have multiple attempts to run if we need to also update the custom properties on the
     // table
@@ -144,6 +151,13 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       AlterTableAttemptBuilder builder,
       TableSchemaObject tableSchemaObject,
       AlterTableOperationImpl.DropColumns dropColumnsOperation) {
+
+    // 1. "drop":{}
+    // 2. "drop":{"columns":null}
+    // 3  "drop":{"columns":[]}
+    if (dropColumnsOperation.columns() == null || dropColumnsOperation.columns().isEmpty()) {
+      return List.of();
+    }
 
     var apiTableDef = tableSchemaObject.apiTableDef();
     // have to run multiple attempts if a vectorized column is dropped
@@ -240,6 +254,13 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       TableSchemaObject tableSchemaObject,
       AlterTableOperationImpl.AddVectorize addVectorizeOperation) {
 
+    // 1. "addVectorize":{}
+    // 2. "addVectorize":{"columns":null}
+    // 3  "addVectorize":{"columns":{}}
+    if (addVectorizeOperation.columns() == null || addVectorizeOperation.columns().isEmpty()) {
+      return List.of();
+    }
+
     var apiTableDef = tableSchemaObject.apiTableDef();
 
     // First need to get the definition of the column, because we need to get the dimensions of the
@@ -308,6 +329,13 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       AlterTableAttemptBuilder builder,
       TableSchemaObject tableSchemaObject,
       AlterTableOperationImpl.DropVectorize dropVectorizeOperation) {
+
+    // 1. "dropVectorize":{}
+    // 2. "dropVectorize":{"columns":null}
+    // 3  "dropVectorize":{"columns":[]}
+    if (dropVectorizeOperation.columns() == null || dropVectorizeOperation.columns().isEmpty()) {
+      return List.of();
+    }
 
     var apiTableDef = tableSchemaObject.apiTableDef();
     var existingVectorizeDefs = apiTableDef.allColumns().getVectorizeDefs();

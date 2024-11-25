@@ -12,12 +12,16 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -274,6 +278,37 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
               SchemaException.Code.CANNOT_DROP_VECTORIZE_FROM_UNKNOWN_COLUMNS,
               SchemaException.class,
               "The command attempted to drop vectorize configuration from the unknown columns: invalid_column.");
+    }
+  }
+
+  @Nested
+  @Order(9)
+  class AlterNullOrEmptyColumns {
+
+    // Those combinations of alterTable should work as NO_OP
+    private static Stream<Arguments> nullOrEmptyColumns() {
+      return Stream.of(
+          Arguments.of("add", "{}"),
+          Arguments.of("add", "{\"columns\": null}"),
+          Arguments.of("add", "{\"columns\": {}}"),
+          Arguments.of("drop", "{}"),
+          Arguments.of("drop", "{\"columns\": null}"),
+          Arguments.of("drop", "{\"columns\": []}"),
+          Arguments.of("addVectorize", "{}"),
+          Arguments.of("addVectorize", "{\"columns\": null}"),
+          Arguments.of("addVectorize", "{\"columns\": {}}"),
+          Arguments.of("dropVectorize", "{}"),
+          Arguments.of("dropVectorize", "{\"columns\": null}"),
+          Arguments.of("dropVectorize", "{\"columns\": []}"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("nullOrEmptyColumns")
+    public void dropInvalidColumns(String operation, String columnsJson) {
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable(operation, columnsJson)
+          .wasSuccessful();
     }
   }
 }
