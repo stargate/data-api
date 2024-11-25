@@ -27,6 +27,9 @@ public interface DocumentConstants {
     /** Document field name that will have text value for which vectorize method in called */
     String VECTOR_EMBEDDING_TEXT_FIELD = "$vectorize";
 
+    /** Document field name that will have text value for which vectorize method in called */
+    String BINARY_VECTOR_TEXT_FIELD = "$binary";
+
     /** Field name used in projection clause to get similarity score in response. */
     String VECTOR_FUNCTION_SIMILARITY_FIELD = "$similarity";
 
