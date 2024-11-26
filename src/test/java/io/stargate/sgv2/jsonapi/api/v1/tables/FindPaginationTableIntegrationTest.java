@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.scenarios.TestDataScenario.fieldName;
 
+import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableMap;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.PaginationTable100Scenario;
@@ -12,7 +13,6 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.*;
-import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -116,8 +116,8 @@ public class FindPaginationTableIntegrationTest extends AbstractTableIntegration
         .templated()
         .find(FILTER_ID, List.of(), sort, options)
         .hasSingleApiError(
-            RequestException.Code.UNSUPPORTED_PAGINATION_WHEN_USING_IN_MEMORY_SORTING,
+            RequestException.Code.UNSUPPORTED_PAGINATION_WITH_IN_MEMORY_SORTING,
             RequestException.class,
-            "Pagination is not supported when the data is sorted in memory.");
+            "Pagination is not supported when the data is sorted in-memory");
   }
 }

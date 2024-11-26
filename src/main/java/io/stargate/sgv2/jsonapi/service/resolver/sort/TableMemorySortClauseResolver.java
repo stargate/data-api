@@ -81,7 +81,7 @@ public class TableMemorySortClauseResolver<CmdT extends Command & Sortable>
     if (!cqlPageState.isEmpty()) {
       var apiTableDef = commandContext.schemaObject().apiTableDef();
 
-      throw RequestException.Code.UNSUPPORTED_PAGINATION_WHEN_USING_IN_MEMORY_SORTING.get(
+      throw RequestException.Code.UNSUPPORTED_PAGINATION_WITH_IN_MEMORY_SORTING.get(
           errVars(
               commandContext.schemaObject(),
               map -> {
