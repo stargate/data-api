@@ -162,11 +162,11 @@ request-errors:
     title: Pagination not supported when using in memory sorting
     body: |-
       Pagination is not supported when the data is sorted in memory.
-#
-#      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
-#      The command sorted on the columns: ${sortColumns}.
-#
-#      ${SNIPPET.INEFFICIENT_SORT}
+
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The command sorted on the columns: ${sortColumns}.
+
+      ${SNIPPET.INEFFICIENT_SORT}
       
 
 # ================================================================================================================

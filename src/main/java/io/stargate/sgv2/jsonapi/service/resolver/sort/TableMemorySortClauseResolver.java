@@ -1,11 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.resolver.sort;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.InMemorySortComparator;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
@@ -27,6 +31,7 @@ public class TableMemorySortClauseResolver<CmdT extends Command & Sortable>
   private final OrderByCqlClause orderByCqlClause;
   private final int commandSkip;
   private final int commandLimit;
+  private final CqlPagingState cqlPageState;
 
   /**
    * @param operationsConfig
@@ -36,12 +41,14 @@ public class TableMemorySortClauseResolver<CmdT extends Command & Sortable>
       OperationsConfig operationsConfig,
       OrderByCqlClause orderByCqlClause,
       int commandSkip,
-      int commandLimit) {
+      int commandLimit,
+      CqlPagingState cqlPageState) {
     super(operationsConfig);
     this.orderByCqlClause =
         Objects.requireNonNull(orderByCqlClause, "orderByCqlClause must not be null");
     this.commandSkip = commandSkip;
     this.commandLimit = commandLimit;
+    this.cqlPageState = cqlPageState;
   }
 
   @Override
@@ -68,6 +75,20 @@ public class TableMemorySortClauseResolver<CmdT extends Command & Sortable>
     // there are vector sorts
     if (!sortClause.tableVectorSorts().isEmpty()) {
       throw new IllegalStateException("Cannot do table vector sorts in memory");
+    }
+
+    // in memory sort does not support page state, error out if it is present
+    if (!cqlPageState.isEmpty()) {
+      var apiTableDef = commandContext.schemaObject().apiTableDef();
+
+      throw RequestException.Code.UNSUPPORTED_PAGINATION_WHEN_USING_IN_MEMORY_SORTING.get(
+          errVars(
+              commandContext.schemaObject(),
+              map -> {
+                map.put(
+                    "partitionSorting", errFmtApiColumnDef(apiTableDef.clusteringKeys().values()));
+                map.put("sortColumns", errFmtCqlIdentifier(sortClause.sortColumnIdentifiers()));
+              }));
     }
 
     return resolveToTableInMemorySort(

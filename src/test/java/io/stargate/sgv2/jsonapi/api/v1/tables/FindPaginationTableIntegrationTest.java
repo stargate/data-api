@@ -38,10 +38,40 @@ public class FindPaginationTableIntegrationTest extends AbstractTableIntegration
 
   @Test
   public void findWithPageState() {
+    // `find_all` command to get the next page state
+    String nextPage =
+        assertTableCommand(keyspaceName, TABLE_NAME)
+            .templated()
+            .find(Map.of(), List.of())
+            .wasSuccessful()
+            .hasNextPageState()
+            .extractNextPageState();
 
+    // It works well with the next page state
+    Map<String, Object> options = ImmutableMap.of("pageState", nextPage);
     assertTableCommand(keyspaceName, TABLE_NAME)
         .templated()
-        .find(Map.of(), List.of())
+        .find(Map.of(), List.of(), null, options)
+        .wasSuccessful()
+        .hasNextPageState();
+  }
+
+  @Test
+  public void findWithEmptySortAndPageState() {
+    // This test use the empty sort (equals no sort), and it should be the same as the above test
+    String nextPage =
+        assertTableCommand(keyspaceName, TABLE_NAME)
+            .templated()
+            .find(Map.of(), List.of(), Map.of())
+            .wasSuccessful()
+            .hasNextPageState()
+            .extractNextPageState();
+
+    // It works well with the next page state
+    Map<String, Object> options = ImmutableMap.of("pageState", nextPage);
+    assertTableCommand(keyspaceName, TABLE_NAME)
+        .templated()
+        .find(Map.of(), List.of(), Map.of(), options)
         .wasSuccessful()
         .hasNextPageState();
   }

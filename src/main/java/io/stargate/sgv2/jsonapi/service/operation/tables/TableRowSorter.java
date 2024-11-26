@@ -6,7 +6,6 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SortedRowAccumulator;
@@ -74,9 +73,6 @@ public class TableRowSorter implements RowSorter {
   @Override
   public CqlPagingState updatePagingState(CqlPagingState pagingState) {
     // currently cannot support paging when doing in memory sorting
-    if (!pagingState.isEmpty()) {
-      throw RequestException.Code.UNSUPPORTED_PAGINATION_WHEN_USING_IN_MEMORY_SORTING.get();
-    }
     return CqlPagingState.EMPTY;
   }
 
