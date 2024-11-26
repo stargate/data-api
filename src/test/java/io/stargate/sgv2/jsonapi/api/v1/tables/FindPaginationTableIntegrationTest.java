@@ -6,9 +6,9 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.scenarios.TestDataScenario.fi
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableMap;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.PaginationTable100Scenario;
+import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.PartitionedKeyValueTable50Scenario;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.ThreeClusteringKeysTableScenario;
-import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.List;
 import java.util.Map;
@@ -20,8 +20,8 @@ import org.junit.jupiter.api.*;
 public class FindPaginationTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   private static final String TABLE_NAME = "findPaginationTableIntegrationTest";
-  private static final PaginationTable100Scenario SCENARIO =
-      new PaginationTable100Scenario(keyspaceName, TABLE_NAME);
+  private static final PartitionedKeyValueTable50Scenario SCENARIO =
+      new PartitionedKeyValueTable50Scenario(keyspaceName, TABLE_NAME);
 
   private static Map<String, Object> FILTER_ID =
       ImmutableMap.of(fieldName(ThreeClusteringKeysTableScenario.ID_COL), "row-1");
@@ -80,7 +80,7 @@ public class FindPaginationTableIntegrationTest extends AbstractTableIntegration
   public void findWithCQLSortAndPageState() {
     // find command with cql sort and extract page state
     Map<String, Object> sort =
-        ImmutableMap.of(fieldName(PaginationTable100Scenario.CLUSTER_COL_1), 1);
+        ImmutableMap.of(fieldName(PartitionedKeyValueTable50Scenario.CLUSTER_COL_1), 1);
 
     String nextPage =
         assertTableCommand(keyspaceName, TABLE_NAME)
@@ -102,7 +102,8 @@ public class FindPaginationTableIntegrationTest extends AbstractTableIntegration
   @Test
   public void findWithInMemorySortAndPageState() {
     // find command with in memory sort and it should not have page state
-    Map<String, Object> sort = ImmutableMap.of(fieldName(PaginationTable100Scenario.VALUE_COL), 1);
+    Map<String, Object> sort =
+        ImmutableMap.of(fieldName(PartitionedKeyValueTable50Scenario.VALUE_COL), 1);
 
     assertTableCommand(keyspaceName, TABLE_NAME)
         .templated()
@@ -116,8 +117,8 @@ public class FindPaginationTableIntegrationTest extends AbstractTableIntegration
         .templated()
         .find(FILTER_ID, List.of(), sort, options)
         .hasSingleApiError(
-            RequestException.Code.UNSUPPORTED_PAGINATION_WITH_IN_MEMORY_SORTING,
-            RequestException.class,
+            SortException.Code.UNSUPPORTED_PAGINATION_WITH_IN_MEMORY_SORTING,
+            SortException.class,
             "Pagination is not supported when the data is sorted in-memory");
   }
 }

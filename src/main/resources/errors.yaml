@@ -166,6 +166,8 @@ request-errors:
       The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
       The command sorted on the columns: ${sortColumns}.
       
+      Resend the command without pagination.
+      
 
 # ================================================================================================================
 # Family: REQUEST         Scope: DOCUMENT

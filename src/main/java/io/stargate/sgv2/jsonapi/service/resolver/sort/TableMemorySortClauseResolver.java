@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -77,11 +77,13 @@ public class TableMemorySortClauseResolver<CmdT extends Command & Sortable>
       throw new IllegalStateException("Cannot do table vector sorts in memory");
     }
 
-    // in memory sort does not support page state, error out if it is present
+    // because pagination currently only comes from the CQL driver and in memory sort reads all the
+    // data
+    // we cannot support pagination with in memory sorting.
     if (!cqlPageState.isEmpty()) {
       var apiTableDef = commandContext.schemaObject().apiTableDef();
 
-      throw RequestException.Code.UNSUPPORTED_PAGINATION_WITH_IN_MEMORY_SORTING.get(
+      throw SortException.Code.UNSUPPORTED_PAGINATION_WITH_IN_MEMORY_SORTING.get(
           errVars(
               commandContext.schemaObject(),
               map -> {

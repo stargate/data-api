@@ -8,15 +8,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** basic table with 100 rows to test pagination */
-public class PaginationTable100Scenario extends TestDataScenario {
+/** basic key-value table with 100 rows */
+public class KeyValueTable100Scenario extends TestDataScenario {
 
-  public static final ApiColumnDef CLUSTER_COL_1 =
-      new ApiColumnDef(CqlIdentifier.fromCql("cluster_col_1"), ApiDataTypeDefs.INT);
   public static final ApiColumnDef VALUE_COL =
       new ApiColumnDef(CqlIdentifier.fromCql("value_col"), ApiDataTypeDefs.TEXT);
 
-  public PaginationTable100Scenario(String keyspaceName, String tableName) {
+  public KeyValueTable100Scenario(String keyspaceName, String tableName) {
     super(
         keyspaceName,
         tableName,
@@ -30,14 +28,13 @@ public class PaginationTable100Scenario extends TestDataScenario {
 
     var columns = new ApiColumnDefContainer();
     columns.put(ID_COL);
-    columns.put(CLUSTER_COL_1);
     columns.put(VALUE_COL);
     return columns;
   }
 
   private static List<ApiClusteringDef> createClusteringDefs() {
 
-    return List.of(new ApiClusteringDef(CLUSTER_COL_1, ApiClusteringOrder.ASC));
+    return List.of();
   }
 
   @Override
@@ -46,8 +43,7 @@ public class PaginationTable100Scenario extends TestDataScenario {
     var rows = new ArrayList<Map<String, Object>>();
     for (int i = 0; i < 100; i++) {
       var row = new HashMap<String, Object>();
-      row.put(fieldName(ID_COL), "row-1");
-      row.put(fieldName(CLUSTER_COL_1), i);
+      row.put(fieldName(ID_COL), "row" + i);
       row.put(fieldName(VALUE_COL), "value-" + i);
       rows.add(row);
     }

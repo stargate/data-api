@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
-
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.select.Select;

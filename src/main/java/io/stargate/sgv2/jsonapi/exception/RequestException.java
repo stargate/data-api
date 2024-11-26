@@ -41,7 +41,6 @@ public class RequestException extends APIException {
   public enum Code implements ErrorCode<RequestException> {
     UNSUPPORTED_TABLE_COMMAND,
     UNSUPPORTED_COLLECTION_COMMAND,
-    UNSUPPORTED_PAGINATION_WITH_IN_MEMORY_SORTING,
     ;
 
     private final ErrorTemplate<RequestException> template;
