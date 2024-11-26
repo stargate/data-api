@@ -380,7 +380,7 @@ request-errors:
     code: MISSING_UPDATE_OPERATIONS
     title: Update operation requires at least one operation
     body: |-
-      The command did not include any update operations to change the columns in the table. 
+      The command did not include any valid update operations to change the columns in the table. A valid update operation needs to have non-empty assignments.
       
       Supported update operations are ${supportedUpdateOperations}.
       

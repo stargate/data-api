@@ -84,9 +84,14 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
         continue;
       }
 
+      // For empty assignment operator, we won't add it to assignments result list, e.g. "$set": {}
+      // / "$unset": {}
+      if (arguments.isEmpty()) {
+        continue;
+      }
+
       assignments.addAll(resolverFunction.apply(commandContext.schemaObject(), arguments));
     }
-
     // Collect all used unsupported operator and throw Update exception
     if (!usedUnsupportedOperators.isEmpty()) {
       throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATIONS_FOR_TABLE.get(
@@ -94,6 +99,17 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
               commandContext.schemaObject(),
               map -> {
                 map.put("usedUnsupportedUpdateOperations", errFmtJoin(usedUnsupportedOperators));
+                map.put("supportedUpdateOperations", errFmtJoin(supportedOperatorsStringList));
+              }));
+    }
+
+    // Assignments list is empty meaning user does not specify any non-empty assignment operator
+    // Data API does not have task to do, error out.
+    if (assignments.isEmpty()) {
+      throw UpdateException.Code.MISSING_UPDATE_OPERATIONS.get(
+          errVars(
+              commandContext.schemaObject(),
+              map -> {
                 map.put("supportedUpdateOperations", errFmtJoin(supportedOperatorsStringList));
               }));
     }
