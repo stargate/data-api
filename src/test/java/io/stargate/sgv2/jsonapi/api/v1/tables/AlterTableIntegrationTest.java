@@ -308,7 +308,8 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
       assertTableCommand(keyspaceName, testTableName)
           .templated()
           .alterTable(operation, columnsJson)
-          .wasSuccessful();
+          .hasSingleApiError(
+              SchemaException.Code.MISSING_ALTER_TABLE_OPERATIONS, SchemaException.class);
     }
   }
 }

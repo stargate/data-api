@@ -95,7 +95,12 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     // 2. "add":{"columns":null}
     // 3  "add":{"columns":{}}
     if (addColumnsOperation.columns() == null || addColumnsOperation.columns().isEmpty()) {
-      return List.of();
+      throw SchemaException.Code.MISSING_ALTER_TABLE_OPERATIONS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("missingTableOperation", "add");
+              }));
     }
 
     var apiTableDef = tableSchemaObject.apiTableDef();
@@ -156,7 +161,12 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     // 2. "drop":{"columns":null}
     // 3  "drop":{"columns":[]}
     if (dropColumnsOperation.columns() == null || dropColumnsOperation.columns().isEmpty()) {
-      return List.of();
+      throw SchemaException.Code.MISSING_ALTER_TABLE_OPERATIONS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("missingTableOperation", "drop");
+              }));
     }
 
     var apiTableDef = tableSchemaObject.apiTableDef();
@@ -258,7 +268,12 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     // 2. "addVectorize":{"columns":null}
     // 3  "addVectorize":{"columns":{}}
     if (addVectorizeOperation.columns() == null || addVectorizeOperation.columns().isEmpty()) {
-      return List.of();
+      throw SchemaException.Code.MISSING_ALTER_TABLE_OPERATIONS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("missingTableOperation", "addVectorize");
+              }));
     }
 
     var apiTableDef = tableSchemaObject.apiTableDef();
@@ -334,7 +349,12 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     // 2. "dropVectorize":{"columns":null}
     // 3  "dropVectorize":{"columns":[]}
     if (dropVectorizeOperation.columns() == null || dropVectorizeOperation.columns().isEmpty()) {
-      return List.of();
+      throw SchemaException.Code.MISSING_ALTER_TABLE_OPERATIONS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("dropVectorize", "add");
+              }));
     }
 
     var apiTableDef = tableSchemaObject.apiTableDef();

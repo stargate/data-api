@@ -605,6 +605,14 @@ request-errors:
         Resend the command using at least one partition key. 
 
   - scope: SCHEMA
+    code: MISSING_ALTER_TABLE_OPERATIONS
+    title: Alter table operation must be not null or empty
+    body: |-
+      The command has alter table operation ${missingTableOperation} that is null or empty.
+      
+      Resend the command with valid alter table operation.
+
+  - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_COLUMNS
     title: Columns with the same name are defined in the table schema
     body: |-

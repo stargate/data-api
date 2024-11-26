@@ -39,6 +39,8 @@ public class AlterTableAttempt extends SchemaAttempt<TableSchemaObject> {
     this.columnsToDrop = columnsToDrop;
     this.customProperties = customProperties;
 
+    // because this attempt is kind of overloaded we want to check that the right fields are set
+    alterTableType.validate(this);
     setStatus(OperationStatus.READY);
   }
 
@@ -90,5 +92,25 @@ public class AlterTableAttempt extends SchemaAttempt<TableSchemaObject> {
     ADD_COLUMNS,
     DROP_COLUMNS,
     UPDATE_EXTENSIONS;
+
+    void validate(AlterTableAttempt attempt) {
+      switch (this) {
+        case ADD_COLUMNS:
+          if (attempt.columnsToAdd == null || attempt.columnsToAdd.isEmpty()) {
+            throw new IllegalStateException("columnsToAdd must be non null and non empty");
+          }
+          break;
+        case DROP_COLUMNS:
+          if (attempt.columnsToDrop == null || attempt.columnsToDrop.isEmpty()) {
+            throw new IllegalStateException("columnsToDrop must be non null and non empty");
+          }
+          break;
+        case UPDATE_EXTENSIONS:
+          if (attempt.customProperties == null || attempt.customProperties.isEmpty()) {
+            throw new IllegalStateException("customProperties must be non null and non empty");
+          }
+          break;
+      }
+    }
   }
 }
