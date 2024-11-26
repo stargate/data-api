@@ -33,10 +33,10 @@ public interface DocumentConstants {
     // Current definition of valid JSON API names: note that this only validates
     // characters, not length limits (nor empty nor "too long" allowed but validated
     // separately)
-    Pattern VALID_NAME_PATTERN = Pattern.compile("[a-zA-Z0-9_\\-]*");
+    Pattern VALID_NAME_PATTERN = Pattern.compile("[a-zA-Z0-9_\\-:/]*");
 
     /** Field name pattern in sort and filter clause. */
-    Pattern VALID_PATH_PATTERN = Pattern.compile("[a-zA-Z0-9_.\\-]*");
+    Pattern VALID_PATH_PATTERN = Pattern.compile("[a-zA-Z0-9_\\-:/.]*");
   }
 
   interface KeyTypeId {
