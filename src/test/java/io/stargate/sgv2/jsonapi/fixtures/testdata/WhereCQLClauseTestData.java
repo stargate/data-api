@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.fixtures.testdata;
 
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import java.util.List;
@@ -21,6 +22,12 @@ public class WhereCQLClauseTestData extends TestDataSuplier {
       @Override
       public DBLogicalExpression getLogicalExpression() {
         return null;
+      }
+
+      @Override
+      public boolean partitionKeysFullyRestrictedByEq(TableSchemaObject tableSchemaObject) {
+        throw new IllegalArgumentException(
+            "WhereCQLClauseTestData does not support partitionKeysFullyRestrictedByEq");
       }
     };
   }

@@ -68,6 +68,14 @@ class ReadCommandResolver<
     if (cqlPageState != null) {
       attemptBuilder.addPagingState(cqlPageState);
     }
+
+    // TODO, we may want the ability to resolve API filter clause into multiple
+    // dbLogicalExpressions, which will map into multiple readAttempts
+    var where =
+        TableWhereCQLClause.forSelect(
+            commandContext.schemaObject(),
+            tableFilterResolver.resolve(commandContext, command).target());
+
     // work out the CQL order by
     var orderByWithWarnings = tableCqlSortClauseResolver.resolve(commandContext, command);
     attemptBuilder.addOrderBy(orderByWithWarnings);
@@ -106,13 +114,6 @@ class ReadCommandResolver<
 
     attemptBuilder.addSelect(WithWarnings.of(projection));
     attemptBuilder.addProjection(projection);
-
-    // TODO, we may want the ability to resolve API filter clause into multiple
-    // dbLogicalExpressions, which will map into multiple readAttempts
-    var where =
-        TableWhereCQLClause.forSelect(
-            commandContext.schemaObject(),
-            tableFilterResolver.resolve(commandContext, command).target());
 
     var attempts = new OperationAttemptContainer<>(attemptBuilder.build(where));
 
