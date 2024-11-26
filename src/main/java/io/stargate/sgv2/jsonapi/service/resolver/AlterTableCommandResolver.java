@@ -353,7 +353,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
           errVars(
               tableSchemaObject,
               map -> {
-                map.put("dropVectorize", "add");
+                map.put("missingTableOperation", "dropVectorize");
               }));
     }
 
