@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver.update;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.CQL_IDENTIFIER_COMPARATOR;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -107,7 +108,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
             .filter(column -> !allItems.add(column))
             .collect(Collectors.toSet());
     if (!duplicates.isEmpty()) {
-      throw UpdateException.Code.DUPLICATE_UPDATE_OPERATION_ASSIGNMENTS.get(
+      throw UpdateException.Code.UNSUPPORTED_OVERLAPPING_UPDATE_OPERATIONS.get(
           errVars(
               commandContext.schemaObject(),
               map -> {
@@ -115,6 +116,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
                     "duplicateAssignmentColumns",
                     errFmtJoin(
                         duplicates.stream()
+                            .sorted(CQL_IDENTIFIER_COMPARATOR)
                             .map(CqlIdentifierUtil::cqlIdentifierToMessageString)
                             .toList()));
               }));

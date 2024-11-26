@@ -192,7 +192,7 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
         .templated()
         .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateJSON)
         .hasSingleApiError(
-            UpdateException.Code.DUPLICATE_UPDATE_OPERATION_ASSIGNMENTS, UpdateException.class)
+            UpdateException.Code.UNSUPPORTED_OVERLAPPING_UPDATE_OPERATIONS, UpdateException.class)
         .hasNoWarnings();
   }
 

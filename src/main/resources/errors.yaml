@@ -398,14 +398,14 @@ request-errors:
       Resend the command using only supported update operations.
 
   - scope: UPDATE
-    code: DUPLICATE_UPDATE_OPERATION_ASSIGNMENTS
-    title: Duplicate column assignments in update operation is invalid
+    code: UNSUPPORTED_OVERLAPPING_UPDATE_OPERATIONS
+    title: Columns cannot be changed by multiple update operations
     body: |-
-      The command included update operations that have duplicate column assignments.
+      The command included multiple update operations that attempted to change the same column. For example, attempting to both $set and $unset a column.
+    
+      Multiple assignments attempted to change the columns: ${duplicateAssignmentColumns}
       
-      Duplicate assignments happen for columns: ${duplicateAssignmentColumns}
-      
-      Resend the command without duplicate column assignments in the update operation
+      Resend the command using a single update operation for each column.
 
 # Note UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION is a duplicate for Document scope, this one is used for Update scope.
   - scope: UPDATE
