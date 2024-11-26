@@ -94,7 +94,7 @@ public class ColumnAssignment implements CQLAssignment {
     } catch (MissingJSONCodecException e) {
       throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
           errVars(
-              TableSchemaObject.from(tableMetadata, new ObjectMapper()),
+              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
               map -> {
                 map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
                 map.put("unsupportedColumns", column.asInternal());
@@ -102,7 +102,7 @@ public class ColumnAssignment implements CQLAssignment {
     } catch (UnknownColumnException e) {
       throw FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
           errVars(
-              TableSchemaObject.from(tableMetadata, new ObjectMapper()),
+              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
               map -> {
                 map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
                 map.put("unknownColumns", CqlIdentifierUtil.cqlIdentifierToJsonKey(column));
@@ -110,7 +110,7 @@ public class ColumnAssignment implements CQLAssignment {
     } catch (ToCQLCodecException e) {
       throw UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES.get(
           errVars(
-              TableSchemaObject.from(tableMetadata, new ObjectMapper()),
+              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
               map -> {
                 map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
                 map.put("invalidColumn", CqlIdentifierUtil.cqlIdentifierToJsonKey(column));
