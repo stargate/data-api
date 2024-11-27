@@ -103,12 +103,18 @@ public abstract class TestDataScenario {
   }
 
   protected void insertManyRows(List<Map<String, Object>> rows) {
-    if (LOGGER.isWarnEnabled()) {
-      for (var row : rows) {
-        LOGGER.warn("Inserting row {}", row);
+    int batchSize = 100;
+    for (int i = 0; i < rows.size(); i += batchSize) {
+      // Get a sublist for the current batch
+      List<Map<String, Object>> batch = rows.subList(i, Math.min(i + batchSize, rows.size()));
+
+      if (LOGGER.isWarnEnabled()) {
+        for (var row : batch) {
+          LOGGER.warn("Inserting row {}", row);
+        }
       }
+      assertTableCommand(keyspaceName, tableName).templated().insertManyMap(batch).wasSuccessful();
     }
-    assertTableCommand(keyspaceName, tableName).templated().insertManyMap(rows).wasSuccessful();
   }
 
   protected static void addColumnsForTypes(

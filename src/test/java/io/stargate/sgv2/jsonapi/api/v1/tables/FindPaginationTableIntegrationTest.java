@@ -2,13 +2,11 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.scenarios.TestDataScenario.fieldName;
-import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.hasSize;
 
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableMap;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.PartitionedKeyValueTable50Scenario;
+import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.PartitionedKeyValueTableScenario;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.ThreeClusteringKeysTableScenario;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -22,10 +20,10 @@ import org.junit.jupiter.api.*;
 public class FindPaginationTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   private static final String TABLE_NAME = "findPaginationTableIntegrationTest";
-  private static final PartitionedKeyValueTable50Scenario SCENARIO =
-      new PartitionedKeyValueTable50Scenario(keyspaceName, TABLE_NAME);
+  private static final PartitionedKeyValueTableScenario SCENARIO =
+      new PartitionedKeyValueTableScenario(keyspaceName, TABLE_NAME);
 
-  private static Map<String, Object> FILTER_ID =
+  private static final Map<String, Object> FILTER_ID =
       ImmutableMap.of(fieldName(ThreeClusteringKeysTableScenario.ID_COL), "partition-1");
 
   @BeforeAll
@@ -38,50 +36,57 @@ public class FindPaginationTableIntegrationTest extends AbstractTableIntegration
     SCENARIO.drop();
   }
 
+  /**
+   * This test goes through all the pages in each partition and verifies the content. It also checks
+   * no sort clause.
+   *
+   * @throws Exception
+   */
   @Test
-  @Order(1)
   public void findWithNoSortAndPartitionedPageState() throws Exception {
-    // This test goes through all the pages in each partition and verifies the content
-    // It also checks no sort clause
+    // in total 3 partitions, iterate through each one
     for (int partition = 0; partition < 3; partition++) {
       String partitionedKeyValue = "partition-" + partition;
-      FILTER_ID =
+      Map<String, Object> filter =
           ImmutableMap.of(fieldName(ThreeClusteringKeysTableScenario.ID_COL), partitionedKeyValue);
-      String pageState =
-          assertTableCommand(keyspaceName, TABLE_NAME)
-              .templated()
-              .find(FILTER_ID, List.of(), null) // find all rows in each partition
-              .wasSuccessful()
-              .body("data.documents", hasSize(20)) // Verify that 20 rows are returned.
-              .body(
-                  "data.documents",
-                  jsonEquals(
-                      SCENARIO.getPageContent(0, 20, partitionedKeyValue))) // verify the content
-              .hasNextPageState()
-              .extractNextPageState();
 
-      Map<String, Object> options = ImmutableMap.of("pageState", pageState);
+      String pageState = null;
 
-      // The next page should have 10 rows and no page state
-      assertTableCommand(keyspaceName, TABLE_NAME)
-          .templated()
-          .find(FILTER_ID, List.of(), null, options)
-          .wasSuccessful()
-          .body("data.documents", hasSize(10)) // 10 rows for the last page
-          .body(
-              "data.documents",
-              jsonEquals(
-                  SCENARIO.getPageContent(20, 20, partitionedKeyValue))) // verify the content
-          .doesNotHaveNextPageState();
+      // each partition should have 3 pages
+      for (int page = 0; page < 3; page++) {
+        Map<String, Object> options =
+            pageState == null ? ImmutableMap.of() : ImmutableMap.of("pageState", pageState);
+
+        // send the command and get the result
+        var result =
+            assertTableCommand(keyspaceName, TABLE_NAME)
+                .templated()
+                .find(filter, List.of(), null, options) // find all rows in each partition
+                .wasSuccessful()
+                .hasDocuments(
+                    page < 2 ? 20 : 10) // verify the number of documents that are returned
+                .verifyDataDocuments(
+                    SCENARIO.getPageContent(
+                        page * 20, 20, partitionedKeyValue)); // verify the page content;
+
+        if (page < 2) {
+          // The first two pages should have next page state, extract it and use it for the next
+          // command
+          pageState = result.hasNextPageState().extractNextPageState();
+        } else {
+          // The last page should not have next page state
+          result.doesNotHaveNextPageState();
+        }
+      }
     }
   }
 
+  /**
+   * This test checks the empty sort (equals no sort clause). The return data has been verified in
+   * the previous test, so this test only checks the page
+   */
   @Test
-  @Order(2)
   public void findWithEmptySortAndPageState() {
-    // This test checks the empty sort (equals no sort clause)
-    // The return data has been verified in the previous test, so this test only checks the page
-    // state
     String nextPage =
         assertTableCommand(keyspaceName, TABLE_NAME)
             .templated()
@@ -100,11 +105,10 @@ public class FindPaginationTableIntegrationTest extends AbstractTableIntegration
   }
 
   @Test
-  @Order(3)
   public void findWithCQLSortAndPageState() {
     // find command with cql sort and extract page state
     Map<String, Object> sort =
-        ImmutableMap.of(fieldName(PartitionedKeyValueTable50Scenario.CLUSTER_COL_1), -1);
+        ImmutableMap.of(fieldName(PartitionedKeyValueTableScenario.CLUSTER_COL_1), -1);
 
     String nextPage =
         assertTableCommand(keyspaceName, TABLE_NAME)
@@ -138,11 +142,10 @@ public class FindPaginationTableIntegrationTest extends AbstractTableIntegration
   }
 
   @Test
-  @Order(4)
   public void findWithInMemorySortAndPageState() {
     // find command with in memory sort and it should not have page state
     Map<String, Object> sort =
-        ImmutableMap.of(fieldName(PartitionedKeyValueTable50Scenario.VALUE_COL), 1);
+        ImmutableMap.of(fieldName(PartitionedKeyValueTableScenario.VALUE_COL), 1);
 
     // should not have page state returned
     assertTableCommand(keyspaceName, TABLE_NAME)

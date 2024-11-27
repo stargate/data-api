@@ -287,6 +287,10 @@ public class DataApiResponseValidator {
     return body("data.documents", hasSize(size));
   }
 
+  public DataApiResponseValidator verifyDataDocuments(String expectedJson) {
+    return body("data.documents", jsonEquals(expectedJson));
+  }
+
   // // // Projection Schema // // //
   public DataApiResponseValidator hasProjectionSchema() {
     return hasField("status." + CommandStatus.PROJECTION_SCHEMA);
