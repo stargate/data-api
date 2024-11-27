@@ -204,6 +204,30 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
+    public void happyWithNullPageStateAndNonEmptySort() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                {
+                 "find": {
+                    "filter" : {"username" : "user1"},
+                    "sort" : {"username" : 1},
+                    "options" : {
+                      "pageState" : null
+                    }
+                  }
+                }
+                """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsFindSuccess());
+    }
+
+    @Test
     public void noFilter() {
       given()
           .headers(getHeaders())

@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 /** Base for classes that build a test data scenario */
 public abstract class TestDataScenario {
   private static final Logger LOGGER = LoggerFactory.getLogger(TestDataScenario.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  protected static final ObjectMapper MAPPER = new ObjectMapper();
 
   public static final ApiColumnDef ID_COL =
       new ApiColumnDef(CqlIdentifier.fromInternal("id"), ApiDataTypeDefs.TEXT);
