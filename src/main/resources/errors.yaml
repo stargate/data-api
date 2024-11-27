@@ -156,17 +156,6 @@ request-errors:
       The unsupported command was: ${unsupportedCommand}.
       
       Resend using one of the supported commands. 
-
-  - scope:
-    code: UNSUPPORTED_PAGINATION_WITH_IN_MEMORY_SORTING
-    title: Pagination not supported when using in-memory sorting
-    body: |-
-      Pagination is not supported when the data is sorted in-memory.
-
-      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
-      The command sorted on the columns: ${sortColumns}.
-      
-      Resend the command without pagination.
       
 
 # ================================================================================================================
@@ -1116,6 +1105,17 @@ request-errors:
       The sort included the non vectorized columns: ${noVectorizeDefinition}
       
       Resend the command using only `vector` columns with vectorize configuration.
+
+  - scope: SORT
+    code: UNSUPPORTED_PAGINATION_WITH_IN_MEMORY_SORTING
+    title: Pagination not supported when using in-memory sorting
+    body: |-
+      Pagination is not supported when the data is sorted in-memory.
+
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The command sorted on the columns: ${sortColumns}.
+      
+      Resend the command without pagination.    
 
 
 # ================================================================================================================
