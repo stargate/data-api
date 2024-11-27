@@ -2,11 +2,37 @@
 
 ## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
 
-[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.20...HEAD)
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.20-ct1...HEAD)
+
+**Fixed bugs:**
+
+- Unsupported column data type when trying to insert a map value [\#1747](https://github.com/stargate/data-api/issues/1747)
+- HTTP 500 on empty update $set/$unset [\#1727](https://github.com/stargate/data-api/issues/1727)
+- Creating a table with existing name returns with an HTTP 500. [\#1562](https://github.com/stargate/data-api/issues/1562)
+
+**Merged pull requests:**
+
+- Fix CI to build for pushes to "feature/\*" in addition to "main" [\#1743](https://github.com/stargate/data-api/pull/1743) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix `$binary` to Support 4096 Vector Dimensions in Collections [\#1738](https://github.com/stargate/data-api/pull/1738) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Update Nvidia Embedding URL [\#1734](https://github.com/stargate/data-api/pull/1734) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Add support for Jina-embeddings-v3 [\#1733](https://github.com/stargate/data-api/pull/1733) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Bumping version for next data-api release [\#1723](https://github.com/stargate/data-api/pull/1723) ([github-actions[bot]](https://github.com/apps/github-actions))
+
+## [v1.0.20-ct1](https://github.com/stargate/data-api/tree/v1.0.20-ct1) (2024-11-26)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.20...v1.0.20-ct1)
+
+**Fixed bugs:**
+
+- Add insert analysis of primary key requirements  [\#1691](https://github.com/stargate/data-api/issues/1691)
 
 **Closed issues:**
 
+- Insertion to Table SET and MAP columns does not necessarily preserve order [\#1724](https://github.com/stargate/data-api/issues/1724)
 - primaryKeySchema and corresponding Id-tuples from insertion are not ordered like CQL \(\(primary\), clustering\) [\#1720](https://github.com/stargate/data-api/issues/1720)
+- Binary Vector Support - Fix `$binary` to Support 4096 Vector Dimensions [\#1710](https://github.com/stargate/data-api/issues/1710)
+- \(regression\) countDocuments returns a count capped at 20 for collections [\#1708](https://github.com/stargate/data-api/issues/1708)
+- Add support for Jina-embeddings-v3 to vectorize [\#1671](https://github.com/stargate/data-api/issues/1671)
 
 ## [v1.0.20](https://github.com/stargate/data-api/tree/v1.0.20) (2024-11-14)
 
