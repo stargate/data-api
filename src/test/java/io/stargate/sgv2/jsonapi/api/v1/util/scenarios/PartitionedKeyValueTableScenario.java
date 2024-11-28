@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1.util.scenarios;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.stargate.sgv2.jsonapi.fixtures.data.DefaultData;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
 import java.util.ArrayList;

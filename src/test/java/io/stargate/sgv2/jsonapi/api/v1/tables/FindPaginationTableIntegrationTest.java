@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.scenarios.TestDataScenario.fieldName;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 
 import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableMap;
 import io.quarkus.test.common.WithTestResource;
@@ -145,7 +146,11 @@ public class FindPaginationTableIntegrationTest extends AbstractTableIntegration
   public void findWithInMemorySortAndPageState() {
     // find command with in memory sort and it should not have page state
     Map<String, Object> sort =
-        ImmutableMap.of(fieldName(PartitionedKeyValueTableScenario.VALUE_COL), 1);
+        ImmutableMap.of(
+            fieldName(PartitionedKeyValueTableScenario.VALUE_COL),
+            1,
+            fieldName(PartitionedKeyValueTableScenario.CLUSTER_COL_1),
+            -1);
 
     // should not have page state returned
     assertTableCommand(keyspaceName, TABLE_NAME)
@@ -162,7 +167,7 @@ public class FindPaginationTableIntegrationTest extends AbstractTableIntegration
         .hasSingleApiError(
             SortException.Code.UNSUPPORTED_PAGINATION_WITH_IN_MEMORY_SORTING,
             SortException.class,
-            "Pagination is not supported when the data is sorted in-memory");
+            "The command sorted on the columns: %s.".formatted(errFmtJoin(sort.keySet())));
 
     // ok to pass empty page state
     options = ImmutableMap.of("pageState", "");
