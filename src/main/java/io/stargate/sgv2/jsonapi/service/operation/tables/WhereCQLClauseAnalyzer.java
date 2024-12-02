@@ -71,8 +71,6 @@ public class WhereCQLClauseAnalyzer {
                     analyzer::checkAllColumnsExist,
                     analyzer::checkNonPrimaryKeyFilters,
                     analyzer::checkOnlyEqUsage,
-                    // TODO, checkOnlyEqUsage rule make checkNoInFilterUsage redundant.
-                    analyzer::checkNoInFilterUsage,
                     analyzer::checkFullPrimaryKey,
                     analyzer::checkFilteringOnComplexColumns),
                 List.of());
@@ -260,7 +258,7 @@ public class WhereCQLClauseAnalyzer {
                   }
                   return nativeTypeTableFilter.operator != NativeTypeTableFilter.Operator.EQ;
                 })
-            .map((Map.Entry::getKey))
+            .map(Map.Entry::getKey)
             .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
@@ -270,31 +268,6 @@ public class WhereCQLClauseAnalyzer {
               tableSchemaObject,
               map -> {
                 map.put("unsupportedFilterColumns", errFmtCqlIdentifier(nonEqFilterColumns));
-              }));
-    }
-  }
-
-  /**
-   * Check if any $in filter is used.
-   *
-   * <p>For UpdateOne and DeleteOne table commands, the use of $in/$nin can affect multiple rows, so
-   * add a check rule to ban the usage.
-   */
-  private void checkNoInFilterUsage(Map<CqlIdentifier, TableFilter> identifierToFilter) {
-
-    var inFilterColumns =
-        identifierToFilter.entrySet().stream()
-            .filter(entry -> (entry.getValue() instanceof InTableFilter))
-            .map((Map.Entry::getKey))
-            .sorted(CQL_IDENTIFIER_COMPARATOR)
-            .toList();
-
-    if (!inFilterColumns.isEmpty()) {
-      throw FilterException.Code.UNSUPPORTED_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE.get(
-          errVars(
-              tableSchemaObject,
-              map -> {
-                map.put("inFilterColumns", errFmtCqlIdentifier(inFilterColumns));
               }));
     }
   }
