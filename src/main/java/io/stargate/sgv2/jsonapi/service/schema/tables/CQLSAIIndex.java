@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexKind;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.internal.core.adminrequest.AdminRow;
+import com.datastax.oss.driver.internal.core.util.Strings;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownCqlIndexFunctionException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import io.stargate.sgv2.jsonapi.util.defaults.Properties;
@@ -93,6 +94,10 @@ public abstract class CQLSAIIndex {
    * {'class_name': 'StorageAttachedIndex', 'target': 'entries(query_timestamp_values)'}
    * {'class_name': 'StorageAttachedIndex', 'target': 'comment_vector'}
    * {'class_name': 'StorageAttachedIndex', 'similarity_function': 'cosine', 'target': 'my_vector'}
+   * ------------------------------------------------
+   * If column is doubleQuoted in the original CQL index
+   * {'class_name': 'StorageAttachedIndex', 'target': '"Age"'}
+   * {'class_name': 'StorageAttachedIndex', 'target': 'values("Age")'}
    * </pre>
    *
    * The target can just be the name of the column, or the name of the column in parentheses
@@ -102,11 +107,14 @@ public abstract class CQLSAIIndex {
    * <p>The Reg Exp below will match:
    *
    * <ul>
-   *   <li>"monkeys": group 1 - "monkeys", group 2 - null
-   *   <li>"values(monkeys)": group 1 - "values" group 2 - "monkeys"
+   *   <li>'monkeys': group 1 - 'monkeys', group 2 - null
+   *   <li>'values(monkeys)': group 1 - 'values' group 2 - 'monkeys'
+   *   <li>'"Monkeys": group 1 - '"Monkeys"', group 2 - null
+   *   <li>'values("Monkeys")': group 1 - 'values' group 2 - '"monkeys"'
    * </ul>
    */
-  private static Pattern INDEX_TARGET_PATTERN = Pattern.compile("^(\\w+)?(?:\\((\\w+)\\))?$");
+  private static Pattern INDEX_TARGET_PATTERN =
+      Pattern.compile("^(\"?\\w+\"?)?(?:\\((\"?\\w+\"?)\\))?$");
 
   /**
    * Parses the target from the IndexMetadata to extract the column name and the function if there
@@ -144,6 +152,16 @@ public abstract class CQLSAIIndex {
       columnName = matcher.group(2);
       functionName = matcher.group(1);
     }
+    // At this point, after matcher, we may get a columnName doubleQuoted string from the index
+    // target
+    // E.G. 'target': 'values("a_list_column")' -> "a_list_column", 'target':
+    // 'values("a_regular_column")' -> "a_regular_column"
+    // 1. We can NOT use fromInternal which will keep the double quote in the identifier
+    // 2. We can NOT use fromCQL, since it will lowercase the unquoted string, E.G. 'BigApple' ->
+    // bigapple
+    // So we should just stripe the doubleQuote if needed
+    columnName =
+        Strings.isDoubleQuoted(columnName) ? Strings.unDoubleQuote(columnName) : columnName;
 
     return functionName == null
         ? new IndexTarget(CqlIdentifier.fromInternal(columnName), null)

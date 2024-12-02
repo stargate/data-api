@@ -33,7 +33,7 @@ public abstract class IndexFactoryFromCql extends FactoryFromCql {
       if (apiColumnDef == null) {
         // Cassandra should not let there be an index on a column that is not on the table
         throw new IllegalStateException(
-            "Could not find target column index.name:%s target: "
+            "Could not find target column index.name:%s target:%s"
                 .formatted(indexMetadata.getName(), indexTarget.targetColumn()));
       }
       // will throw if we cannot work it out
