@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
@@ -173,6 +174,16 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     }
 
     SortClause sortClause = command.sortClause();
+
+    // collection always uses in memory sorting, so we don't support page state with sort clause
+    // empty sort clause and empty page state are treated as no sort clause and no page state
+    // any non-zero length string is considered page state - the same standard is used in
+    // Tables(CqlPagingState)
+    if (sortClause != null && !sortClause.isEmpty() && pageState != null && !pageState.isEmpty()) {
+      throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
+          "pageState is not supported with non-empty sort clause");
+    }
+
     SchemaValidatable.maybeValidate(ctx, sortClause);
 
     // if vector search
