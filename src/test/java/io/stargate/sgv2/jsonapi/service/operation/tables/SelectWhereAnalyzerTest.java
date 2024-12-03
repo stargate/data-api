@@ -342,7 +342,7 @@ public class SelectWhereAnalyzerTest {
                 "oneUnknownColumn()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
-        .expression
+        .rootImplicitAnd
         .addFilter(
             LogicalExpressionTestData.ExpressionBuilder.filter(
                 names().COL_UNKNOWN_1, DataTypes.TEXT, NativeTypeTableFilter.Operator.EQ, "value"));
@@ -363,7 +363,7 @@ public class SelectWhereAnalyzerTest {
                 "unknownAndFullPk()", WhereCQLClauseAnalyzer.StatementType.SELECT);
     fixture
         .expression()
-        .expression
+        .rootImplicitAnd
         .addFilter(
             LogicalExpressionTestData.ExpressionBuilder.filter(
                 names().COL_UNKNOWN_1, DataTypes.TEXT, NativeTypeTableFilter.Operator.EQ, "value"));

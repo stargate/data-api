@@ -17,7 +17,10 @@ import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedSelect;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
+import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -131,7 +134,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     var metadata = schemaObject.tableMetadata();
     List<Object> positionalValues = new ArrayList<>();
 
-    var selectFrom = selectFrom(metadata.getKeyspace(), metadata.getName());
+    var selectFrom = ExtendedSelect.selectFrom(metadata.getKeyspace(), metadata.getName());
     var select = applySelect(selectFrom, positionalValues);
     // these are options that go on the query builder, such as limit or allow filtering
     var bindableQuery = applyOptions(select);
