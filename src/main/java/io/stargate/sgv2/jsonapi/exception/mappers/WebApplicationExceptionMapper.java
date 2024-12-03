@@ -40,11 +40,9 @@ public class WebApplicationExceptionMapper {
     // V2 Error are returned as APIException, this is required to translate the exception to
     // CommandResult if the exception thrown as part of command deserialization
     if (toReport instanceof APIException ae) {
-      var errorBuilder =
-          new APIExceptionCommandErrorBuilder(
-              debugModeConfig.enabled(), operationsConfig.extendError());
+      var errorBuilder = new APIExceptionCommandErrorBuilder(debugModeConfig.enabled());
       return RestResponse.ok(
-          CommandResult.statusOnlyBuilder(false, false)
+          CommandResult.statusOnlyBuilder(false)
               .addCommandResultError(errorBuilder.buildLegacyCommandResultError(ae))
               .build());
     }
