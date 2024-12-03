@@ -63,7 +63,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
 
     List<ColumnAssignment> assignments = new ArrayList<>();
     List<String> usedUnsupportedOperators = new ArrayList<>();
-    // we check if there are no operstions below, so the check also looks at empty operations
+    // we check if there are no operations below, so the check also looks at empty operations
     EnumMap<UpdateOperator, ObjectNode> updateOperationDefs =
         updateClause != null
             ? updateClause.updateOperationDefs()
