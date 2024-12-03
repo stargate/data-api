@@ -403,7 +403,7 @@ request-errors:
     body: |-
       The command included multiple update operations that attempted to change the same column. For example, attempting to both $set and $unset a column.
     
-      Multiple assignments attempted to change the columns: ${duplicateAssignmentColumns}
+      Multiple assignments attempted to change the columns: ${duplicateAssignmentColumns}.
       
       Resend the command using a single update operation for each column.
 

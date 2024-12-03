@@ -196,7 +196,9 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
         .templated()
         .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateJSON)
         .hasSingleApiError(
-            UpdateException.Code.UNSUPPORTED_OVERLAPPING_UPDATE_OPERATIONS, UpdateException.class)
+            UpdateException.Code.UNSUPPORTED_OVERLAPPING_UPDATE_OPERATIONS,
+            UpdateException.class,
+            "Multiple assignments attempted to change the columns: indexed_column.")
         .hasNoWarnings();
   }
 
@@ -355,7 +357,8 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
   @ParameterizedTest
   @MethodSource("EMPTY_ASSIGNMENTS")
   public void emptyAssignments(String updateClauseJSON, UpdateException.Code expectedErrorCode) {
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
         .templated()
         .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
         // Notice, will error out if there is not a single one non-empty assignments update

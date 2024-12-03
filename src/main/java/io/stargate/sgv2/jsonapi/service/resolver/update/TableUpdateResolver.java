@@ -61,19 +61,15 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
 
     var updateClause = command.updateClause();
 
-    if (updateClause == null || updateClause.updateOperationDefs().isEmpty()) {
-      throw UpdateException.Code.MISSING_UPDATE_OPERATIONS.get(
-          errVars(
-              commandContext.schemaObject(),
-              map -> {
-                map.put("supportedUpdateOperations", errFmtJoin(supportedOperatorsStringList));
-              }));
-    }
-
     List<ColumnAssignment> assignments = new ArrayList<>();
     List<String> usedUnsupportedOperators = new ArrayList<>();
+    // we check if there are no operstions below, so the check also looks at empty operations
+    EnumMap<UpdateOperator, ObjectNode> updateOperationDefs =
+        updateClause != null
+            ? updateClause.updateOperationDefs()
+            : new EnumMap<>(UpdateOperator.class);
 
-    for (var updateOperationDef : updateClause.updateOperationDefs().entrySet()) {
+    for (var updateOperationDef : updateOperationDefs.entrySet()) {
 
       UpdateOperator updateOperator = updateOperationDef.getKey();
       ObjectNode arguments = updateOperationDef.getValue();
@@ -81,16 +77,12 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
       var resolverFunction = supportedOperatorsMap.get(updateOperator);
       if (resolverFunction == null) {
         usedUnsupportedOperators.add(updateOperator.operator());
-        continue;
+      } else if (!arguments.isEmpty()) {
+        // For empty assignment operator, we won't add it to assignments result list, e.g. "$set":
+        // {}
+        // / "$unset": {}
+        assignments.addAll(resolverFunction.apply(commandContext.schemaObject(), arguments));
       }
-
-      // For empty assignment operator, we won't add it to assignments result list, e.g. "$set": {}
-      // / "$unset": {}
-      if (arguments.isEmpty()) {
-        continue;
-      }
-
-      assignments.addAll(resolverFunction.apply(commandContext.schemaObject(), arguments));
     }
     // Collect all used unsupported operator and throw Update exception
     if (!usedUnsupportedOperators.isEmpty()) {
