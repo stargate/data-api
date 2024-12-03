@@ -606,11 +606,13 @@ request-errors:
 
   - scope: SCHEMA
     code: MISSING_ALTER_TABLE_OPERATIONS
-    title: Alter table operation must be not null or empty
+    title: Alter table command must include operations
     body: |-
-      The command has alter table operation ${missingTableOperation} that is null or empty.
+      The `alterTable` command must contain at least one operation to alter the table schema, such as adding or dropping columns.
       
-      Resend the command with valid alter table operation.
+      The command included the empty operation: ${missingTableOperation}
+      
+      Resend the command including changes to the table.
 
   - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_COLUMNS

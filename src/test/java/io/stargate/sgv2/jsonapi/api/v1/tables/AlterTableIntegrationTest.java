@@ -309,7 +309,9 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .templated()
           .alterTable(operation, columnsJson)
           .hasSingleApiError(
-              SchemaException.Code.MISSING_ALTER_TABLE_OPERATIONS, SchemaException.class);
+              SchemaException.Code.MISSING_ALTER_TABLE_OPERATIONS,
+              SchemaException.class,
+              "The command included the empty operation: " + operation);
     }
   }
 }
