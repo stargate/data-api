@@ -425,6 +425,8 @@ request-errors:
       And has indexes on the columns: ${indexedColumns}.
       The request filtered on the un-indexed columns: ${unindexedFilters}.
       
+      Note: There may be a small delay in newly created indexes propagating through the system, this warning may be ignored if the column(s) were recently indexed.
+      
       ${SNIPPET.INEFFICIENT_FILTER}
 
   - scope: WARNING
