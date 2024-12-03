@@ -66,7 +66,7 @@ public class DataVectorizerService {
       if (commandContext.schemaObject() instanceof TableSchemaObject) {
         return vectorizeTableCommand(dataVectorizer, commandContext.asTableContext(), command);
       }
-    } catch (APIException e) {
+    } catch (Exception e) {
       return Uni.createFrom().failure(e);
     }
 
