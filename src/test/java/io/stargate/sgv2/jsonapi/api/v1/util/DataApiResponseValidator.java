@@ -36,8 +36,10 @@ public class DataApiResponseValidator {
     this.responseIsSuccess =
         switch (commandName) {
           case FIND_ONE, FIND -> responseIsFindSuccessOptionalStatus();
-          case INSERT_ONE, INSERT_MANY, UPDATE_ONE, UPDATE_MANY, DELETE_ONE, DELETE_MANY ->
+          case INSERT_ONE, UPDATE_ONE, UPDATE_MANY, DELETE_ONE, DELETE_MANY ->
               responseIsWriteSuccess();
+          case INSERT_MANY -> responseIsPartialWriteSuccess();
+
           case ALTER_TABLE,
                   CREATE_TABLE,
                   DROP_TABLE,
@@ -157,6 +159,13 @@ public class DataApiResponseValidator {
         .body("errors", hasSize(1))
         .body("errors[0].exceptionClass", is(errorClass.getSimpleName()))
         .body("errors[0].errorCode", is(errorCode.toString()));
+  }
+
+  public <T extends APIException> DataApiResponseValidator hasApiErrorInPosition(
+      int position, ErrorCode<T> errorCode, Class<T> errorClass) {
+    return body("$", responseIsSuccess)
+        .body("errors[%s].exceptionClass".formatted(position), is(errorClass.getSimpleName()))
+        .body("errors[%s].errorCode".formatted(position), is(errorCode.toString()));
   }
 
   /**

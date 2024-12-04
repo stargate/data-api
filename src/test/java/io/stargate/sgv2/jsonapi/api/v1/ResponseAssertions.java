@@ -52,6 +52,11 @@ public class ResponseAssertions {
         "responseIsWriteSuccess", Presence.FORBIDDEN, Presence.REQUIRED, Presence.FORBIDDEN);
   }
 
+  public static TypeSafeMatcher<Map<String, ?>> responseIsPartialWriteSuccess() {
+    return envelopeChecker(
+        "responseIsPartialSuccess", Presence.FORBIDDEN, Presence.OPTIONAL, Presence.OPTIONAL);
+  }
+
   public static TypeSafeMatcher<Map<String, ?>> responseIsWritePartialSuccess() {
     return envelopeChecker(
         "responseIsWritePartialSuccess", Presence.FORBIDDEN, Presence.REQUIRED, Presence.REQUIRED);

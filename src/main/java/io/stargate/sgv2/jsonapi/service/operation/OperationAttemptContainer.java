@@ -99,17 +99,26 @@ public class OperationAttemptContainer<
   }
 
   /**
-   * Checks if, given the config of the container and the current state of the attempts, the
-   * container should fail fast and stop processing any further attempts.
+   * Since container is arrayList that preserves order, if any attempt before(include) targetAttempt
+   * has error status, then targetAttempt should failFast. Container should fail fast and stop
+   * processing any further attempts.
    *
    * @return <code>true</code> if the container is configured for sequential processing and there is
-   *     at least one error
+   *     at least one error before(include) the targetAttempt
    */
-  public boolean shouldFailFast() {
+  public boolean shouldFailFast(AttemptT targetAttempt) {
     if (!sequentialProcessing) {
       return false;
     }
-    return stream().anyMatch(attempt -> attempt.status() == OperationAttempt.OperationStatus.ERROR);
+    for (AttemptT attempt : this) {
+      if (attempt == targetAttempt) {
+        return targetAttempt.status() == OperationAttempt.OperationStatus.ERROR;
+      }
+      if (attempt.status() == OperationAttempt.OperationStatus.ERROR) {
+        return true; // Fail fast if any prior attempt is an error
+      }
+    }
+    return false;
   }
 
   @Override

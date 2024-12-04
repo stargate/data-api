@@ -113,7 +113,10 @@ public abstract class TestDataScenario {
           LOGGER.warn("Inserting row {}", row);
         }
       }
-      assertTableCommand(keyspaceName, tableName).templated().insertManyMap(batch).wasSuccessful();
+      assertTableCommand(keyspaceName, tableName)
+          .templated()
+          .insertManyMap(batch, false)
+          .wasSuccessful();
     }
   }
 
