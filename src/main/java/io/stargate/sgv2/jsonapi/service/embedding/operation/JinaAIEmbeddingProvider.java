@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
@@ -34,12 +33,7 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
       String modelName,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    super(
-        requestProperties,
-        baseUrl,
-        modelName,
-        acceptsJinaAIDimensions(modelName) ? dimension : 0,
-        vectorizeServiceParameters);
+    super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
 
     jinaAIEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()
@@ -92,12 +86,7 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
   }
 
   // By default, Jina Text Encoding Format is float
-  private record EmbeddingRequest(
-      List<String> input,
-      String model,
-      @JsonInclude(value = JsonInclude.Include.NON_DEFAULT) int dimensions,
-      @JsonInclude(value = JsonInclude.Include.NON_NULL) String task,
-      @JsonInclude(value = JsonInclude.Include.NON_NULL) Boolean late_chunking) {}
+  private record EmbeddingRequest(List<String> input, String model) {}
 
   private record EmbeddingResponse(String object, Data[] data, String model, Usage usage) {
     private record Data(String object, int index, float[] embedding) {}
@@ -113,13 +102,7 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
       EmbeddingRequestType embeddingRequestType) {
     checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
 
-    EmbeddingRequest request =
-        new EmbeddingRequest(
-            texts,
-            modelName,
-            dimension,
-            (String) vectorizeServiceParameters.get("task"),
-            (Boolean) vectorizeServiceParameters.get("late_chunking"));
+    EmbeddingRequest request = new EmbeddingRequest(texts, modelName);
 
     Uni<EmbeddingResponse> response =
         applyRetry(

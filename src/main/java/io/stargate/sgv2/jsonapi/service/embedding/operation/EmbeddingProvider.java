@@ -104,17 +104,6 @@ public abstract class EmbeddingProvider {
   }
 
   /**
-   * Helper method that has logic wrt whether JinaAI accepts {@code "dimensions"} parameter or not.
-   *
-   * @param modelName JinaAI model to check
-   * @return True if given JinaAI model accepts (and expects} {@code "dimensions"} parameter; false
-   *     if not.
-   */
-  protected static boolean acceptsJinaAIDimensions(String modelName) {
-    return modelName.endsWith("jina-embeddings-v3");
-  }
-
-  /**
    * Helper method that has logic wrt whether AWS Titan accepts {@code "dimensions"} parameter or
    * not.
    *
