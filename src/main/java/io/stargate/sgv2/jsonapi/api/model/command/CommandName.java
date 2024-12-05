@@ -15,7 +15,7 @@ public enum CommandName {
   // they should not be DDL, they are not changing schema, we should add an CommandType.ADMIN for
   // them ?
 
-  ALTER_TABLE("alterTable", CommandType.DDL, CommandTarget.TABLE),
+  ALTER_TABLE(Names.ALTER_TABLE_NAME, CommandType.DDL, CommandTarget.TABLE),
   COUNT_DOCUMENTS("countDocuments", CommandType.DML, CommandTarget.COLLECTION),
   CREATE_COLLECTION("createCollection", CommandType.DDL, CommandTarget.KEYSPACE),
   CREATE_INDEX("createIndex", CommandType.DDL, CommandTarget.TABLE),
@@ -95,5 +95,9 @@ public enum CommandName {
     return Stream.of(values())
         .filter(commandName -> commandName.getTargets().contains(target))
         .collect(Collectors.toList());
+  }
+
+  public interface Names {
+    String ALTER_TABLE_NAME = "alterTable";
   }
 }
