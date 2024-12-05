@@ -48,6 +48,7 @@ public class DataApiResponseValidator {
                   LIST_INDEXES ->
               responseIsDDLSuccess();
           case CREATE_COLLECTION -> responseIsDDLSuccess();
+          case COUNT_DOCUMENTS -> responseIsCountSuccess();
           default ->
               throw new IllegalArgumentException(
                   "DataApiResponseValidator: Unexpected command name: " + commandName);
