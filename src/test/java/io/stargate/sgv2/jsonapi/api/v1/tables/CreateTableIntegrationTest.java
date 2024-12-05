@@ -817,6 +817,136 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   true,
                   ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
                   "The provided options are invalid: The provided dimension value '1536' doesn't match the model's supported dimension value '1024'")));
+
+      // unspecified dimension with specified vectorize
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                        {
+                            "name": "validUnspecifiedDimension",
+                            "definition": {
+                                "columns": {
+                                    "t": "text",
+                                    "v": {
+                                        "type": "vector",
+                                        "service": {
+                                            "provider": "openai",
+                                            "modelName": "text-embedding-3-small"
+                                        }
+                                    }
+                                },
+                                "primaryKey": "t"
+                            }
+                        }
+                   """,
+                  "validUnspecifiedDimension",
+                  false,
+                  null,
+                  null)));
+
+      // empty dimension string with specified vectorize
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                        {
+                            "name": "validEmptyDimension",
+                            "definition": {
+                                "columns": {
+                                    "t": "text",
+                                    "v": {
+                                        "type": "vector",
+                                        "dimension": "",
+                                        "service": {
+                                            "provider": "openai",
+                                            "modelName": "text-embedding-3-small"
+                                        }
+                                    }
+                                },
+                                "primaryKey": "t"
+                            }
+                        }
+                   """,
+                  "validEmptyDimension",
+                  false,
+                  null,
+                  null)));
+
+      // blank dimension string with specified vectorize
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                            {
+                                "name": "validBlankDimension",
+                                "definition": {
+                                    "columns": {
+                                        "t": "text",
+                                        "v": {
+                                            "type": "vector",
+                                            "dimension": " ",
+                                            "service": {
+                                                "provider": "openai",
+                                                "modelName": "text-embedding-3-small"
+                                            }
+                                        }
+                                    },
+                                    "primaryKey": "t"
+                                }
+                            }
+                     """,
+                  "validBlankDimension",
+                  false,
+                  null,
+                  null)));
+
+      // unspecified dimension with unspecified vectorize
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                            {
+                                "name": "invalidUnspecifiedDimensionUnspecifiedVectorize",
+                                "definition": {
+                                    "columns": {
+                                        "t": "text",
+                                        "v": {
+                                            "type": "vector"
+                                        }
+                                    },
+                                    "primaryKey": "t"
+                                }
+                            }
+                     """,
+                  "invalidUnspecifiedDimensionUnspecifiedVectorize",
+                  true,
+                  SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN.name(),
+                  "The dimension is required for vector columns if the embedding service is not specified.")));
+
+      // invalid extra large dimension (max is 4096)
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                {
+                                    "name": "invalidExtraLargeDimension",
+                                    "definition": {
+                                        "columns": {
+                                            "t": "text",
+                                            "v": {
+                                                "type": "vector",
+                                                "dimension": 5000
+                                            }
+                                        },
+                                        "primaryKey": "t"
+                                    }
+                                }
+                         """,
+                  "invalidExtraLargeDimension",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.name(),
+                  "The command used the dimension: 5000.")));
       return testCases.stream();
     }
   }
