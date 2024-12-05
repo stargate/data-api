@@ -47,7 +47,7 @@ public class VectorColumnDesc extends ComplexColumnDesc {
       return false;
     }
     var vectDesc = (VectorColumnDesc) o;
-    return dimensions == vectDesc.dimensions
+    return Objects.equals(dimensions, vectDesc.dimensions)
         && Objects.equals(valueType, vectDesc.valueType)
         && Objects.equals(vectorizeConfig, vectDesc.vectorizeConfig);
   }
