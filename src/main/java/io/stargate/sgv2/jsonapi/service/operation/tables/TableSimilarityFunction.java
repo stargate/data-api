@@ -48,7 +48,7 @@ public interface TableSimilarityFunction extends Function<Select, Select> {
         table
             .apiTableDef()
             .allColumns()
-            .filterBy(ApiTypeName.VECTOR)
+            .filterBySupported(ApiTypeName.VECTOR)
             .get(requestedVectorColumnPath);
     if (apiColumnDef == null) {
       // column does not exist or is not a vector, ignore because sort will fail

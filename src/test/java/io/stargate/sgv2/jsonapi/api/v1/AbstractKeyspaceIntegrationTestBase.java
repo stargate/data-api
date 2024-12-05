@@ -7,14 +7,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.core.Base64Variants;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.TenantAwareCqlSessionBuilder;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
+import io.stargate.sgv2.jsonapi.testresource.StargateTestResource;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
+import java.net.InetSocketAddress;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -273,5 +280,36 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     } catch (Exception e) {
       throw new RuntimeException("Not a valid binary vector", e);
     }
+  }
+
+  protected boolean executeCqlStatement(SimpleStatement... statements) {
+    var cqlSession = createDriverSession();
+    boolean applied = false;
+    for (SimpleStatement statement : statements) {
+      if (!cqlSession.execute(statement).wasApplied()) {
+        cqlSession.close();
+        return false;
+      }
+    }
+    cqlSession.close();
+    return true;
+  }
+
+  private CqlSession createDriverSession() {
+    int port =
+        useCoordinator()
+            ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
+            : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
+    String dc = null;
+    if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
+      dc = "dc1";
+    } else {
+      dc = "datacenter1";
+    }
+    var builder = new TenantAwareCqlSessionBuilder("IntegrationTest").withLocalDatacenter(dc);
+    builder
+        .addContactPoint(new InetSocketAddress("localhost", port))
+        .withAuthCredentials(CQLSessionCache.CASSANDRA, CQLSessionCache.CASSANDRA);
+    return builder.build();
   }
 }
