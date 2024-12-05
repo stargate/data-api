@@ -184,7 +184,8 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
               map -> {
                 map.put(
                     "vectorColumns",
-                    errFmtApiColumnDef(apiTableDef.allColumns().filterBy(ApiTypeName.VECTOR)));
+                    errFmtApiColumnDef(
+                        apiTableDef.allColumns().filterBySupported(ApiTypeName.VECTOR)));
                 map.put(
                     "sortColumns",
                     errFmtJoin(vectorSorts.stream().map(SortExpression::path).toList()));
@@ -200,7 +201,8 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
               map -> {
                 map.put(
                     "vectorColumns",
-                    errFmtApiColumnDef(apiTableDef.allColumns().filterBy(ApiTypeName.VECTOR)));
+                    errFmtApiColumnDef(
+                        apiTableDef.allColumns().filterBySupported(ApiTypeName.VECTOR)));
                 map.put(
                     "sortVectorColumns",
                     errFmtJoin(vectorSorts.stream().map(SortExpression::path).toList()));
@@ -221,7 +223,8 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
               map -> {
                 map.put(
                     "vectorColumns",
-                    errFmtApiColumnDef(apiTableDef.allColumns().filterBy(ApiTypeName.VECTOR)));
+                    errFmtApiColumnDef(
+                        apiTableDef.allColumns().filterBySupported(ApiTypeName.VECTOR)));
                 map.put("sortColumns", errFmt(vectorSortIdentifier));
               }));
     }
@@ -235,7 +238,8 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
               map -> {
                 map.put(
                     "vectorColumns",
-                    errFmtApiColumnDef(apiTableDef.allColumns().filterBy(ApiTypeName.VECTOR)));
+                    errFmtApiColumnDef(
+                        apiTableDef.allColumns().filterBySupported(ApiTypeName.VECTOR)));
                 map.put(
                     "indexedColumns",
                     errFmtJoin(indexedVectorColumns(commandContext.schemaObject())));
@@ -267,7 +271,8 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
 
   private List<String> indexedVectorColumns(TableSchemaObject schemaObject) {
 
-    var apiVectorColumns = schemaObject.apiTableDef().allColumns().filterBy(ApiTypeName.VECTOR);
+    var apiVectorColumns =
+        schemaObject.apiTableDef().allColumns().filterBySupported(ApiTypeName.VECTOR);
     return schemaObject.tableMetadata().getIndexes().values().stream()
         .map(IndexMetadata::getTarget)
         .filter(target -> apiVectorColumns.containsKey(CqlIdentifier.fromInternal(target)))

@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.resolver.update;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.CQL_IDENTIFIER_COMPARATOR;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
@@ -19,10 +21,9 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DefaultUpdateValuesCQLCl
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 /**
  * Resolves the update clause for a command when the target schema object is a {@link
@@ -60,19 +61,15 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
 
     var updateClause = command.updateClause();
 
-    if (updateClause == null || updateClause.updateOperationDefs().isEmpty()) {
-      throw UpdateException.Code.MISSING_UPDATE_OPERATIONS.get(
-          errVars(
-              commandContext.schemaObject(),
-              map -> {
-                map.put("supportedUpdateOperations", errFmtJoin(supportedOperatorsStringList));
-              }));
-    }
-
     List<ColumnAssignment> assignments = new ArrayList<>();
     List<String> usedUnsupportedOperators = new ArrayList<>();
+    // we check if there are no operations below, so the check also looks at empty operations
+    EnumMap<UpdateOperator, ObjectNode> updateOperationDefs =
+        updateClause != null
+            ? updateClause.updateOperationDefs()
+            : new EnumMap<>(UpdateOperator.class);
 
-    for (var updateOperationDef : updateClause.updateOperationDefs().entrySet()) {
+    for (var updateOperationDef : updateOperationDefs.entrySet()) {
 
       UpdateOperator updateOperator = updateOperationDef.getKey();
       ObjectNode arguments = updateOperationDef.getValue();
@@ -80,12 +77,13 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
       var resolverFunction = supportedOperatorsMap.get(updateOperator);
       if (resolverFunction == null) {
         usedUnsupportedOperators.add(updateOperator.operator());
-        continue;
+      } else if (!arguments.isEmpty()) {
+        // For empty assignment operator, we won't add it to assignments result list, e.g. "$set":
+        // {}
+        // / "$unset": {}
+        assignments.addAll(resolverFunction.apply(commandContext.schemaObject(), arguments));
       }
-
-      assignments.addAll(resolverFunction.apply(commandContext.schemaObject(), arguments));
     }
-
     // Collect all used unsupported operator and throw Update exception
     if (!usedUnsupportedOperators.isEmpty()) {
       throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATIONS_FOR_TABLE.get(
@@ -94,6 +92,41 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
               map -> {
                 map.put("usedUnsupportedUpdateOperations", errFmtJoin(usedUnsupportedOperators));
                 map.put("supportedUpdateOperations", errFmtJoin(supportedOperatorsStringList));
+              }));
+    }
+
+    // Assignments list is empty meaning user does not specify any non-empty assignment operator
+    // Data API does not have task to do, error out.
+    if (assignments.isEmpty()) {
+      throw UpdateException.Code.MISSING_UPDATE_OPERATIONS.get(
+          errVars(
+              commandContext.schemaObject(),
+              map -> {
+                map.put("supportedUpdateOperations", errFmtJoin(supportedOperatorsStringList));
+              }));
+    }
+
+    // Duplicate column assignments is invalid
+    // e.g. {"update": {"$set": {"description": "123"},"$unset": {"description": "456"}}}
+    List<CqlIdentifier> assignmentColumns =
+        assignments.stream().map(columnAssignment -> columnAssignment.column).toList();
+    Set<CqlIdentifier> allItems = new HashSet<>();
+    Set<CqlIdentifier> duplicates =
+        assignmentColumns.stream()
+            .filter(column -> !allItems.add(column))
+            .collect(Collectors.toSet());
+    if (!duplicates.isEmpty()) {
+      throw UpdateException.Code.UNSUPPORTED_OVERLAPPING_UPDATE_OPERATIONS.get(
+          errVars(
+              commandContext.schemaObject(),
+              map -> {
+                map.put(
+                    "duplicateAssignmentColumns",
+                    errFmtJoin(
+                        duplicates.stream()
+                            .sorted(CQL_IDENTIFIER_COMPARATOR)
+                            .map(CqlIdentifierUtil::cqlIdentifierToMessageString)
+                            .toList()));
               }));
     }
 

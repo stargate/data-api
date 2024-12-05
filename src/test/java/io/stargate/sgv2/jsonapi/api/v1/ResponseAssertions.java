@@ -62,6 +62,12 @@ public class ResponseAssertions {
         "responseIsDDLSuccess", Presence.FORBIDDEN, Presence.REQUIRED, Presence.FORBIDDEN);
   }
 
+  // A countCommand success should only have status field required
+  public static TypeSafeMatcher<Map<String, ?>> responseIsCountSuccess() {
+    return envelopeChecker(
+        "responseIsCountSuccess", Presence.FORBIDDEN, Presence.REQUIRED, Presence.FORBIDDEN);
+  }
+
   private static TypeSafeMatcher<Map<String, ?>> envelopeChecker(
       String message, Presence hasData, Presence hasStatus, Presence hasErrors) {
 

@@ -380,7 +380,7 @@ request-errors:
     code: MISSING_UPDATE_OPERATIONS
     title: Update operation requires at least one operation
     body: |-
-      The command did not include any update operations to change the columns in the table. 
+      The command did not include any non empty update operations to change the columns in the table.
       
       Supported update operations are ${supportedUpdateOperations}.
       
@@ -396,6 +396,16 @@ request-errors:
       The update included the unsupported operations: ${usedUnsupportedUpdateOperations}.
       
       Resend the command using only supported update operations.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_OVERLAPPING_UPDATE_OPERATIONS
+    title: Columns cannot be changed by multiple update operations
+    body: |-
+      The command included multiple update operations that attempted to change the same column. For example, attempting to both $set and $unset a column.
+    
+      Multiple assignments attempted to change the columns: ${duplicateAssignmentColumns}.
+      
+      Resend the command using a single update operation for each column.
 
 # Note UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION is a duplicate for Document scope, this one is used for Update scope.
   - scope: UPDATE
@@ -603,6 +613,16 @@ request-errors:
         The table definition includes the columns: ${tableColumns}.
       
         Resend the command using at least one partition key. 
+
+  - scope: SCHEMA
+    code: MISSING_ALTER_TABLE_OPERATIONS
+    title: Alter table command must include operations
+    body: |-
+      The `alterTable` command must contain at least one operation to alter the table schema, such as adding or dropping columns.
+      
+      The command included the empty operation: ${missingTableOperation}
+      
+      Resend the command including changes to the table.
 
   - scope: SCHEMA
     code: MISSING_DIMENSION_IN_VECTOR_COLUMN
