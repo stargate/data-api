@@ -605,6 +605,16 @@ request-errors:
         Resend the command using at least one partition key. 
 
   - scope: SCHEMA
+    code: MISSING_DIMENSION_IN_VECTOR_COLUMN
+    title: Dimension is required for vector column if embedding service is not specified
+    body: |-
+        The dimension is required for vector columns if the embedding service is not specified.
+        
+        The command attempted to create the vector column without a dimension: ${missingDimensionVectorColumnName}.
+        
+        Resend the command using a dimension for the vector columns.
+
+  - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_COLUMNS
     title: Columns with the same name are defined in the table schema
     body: |-
@@ -767,7 +777,7 @@ request-errors:
     body: |-
       The command attempted to create a vector column that used an unsupported configuration.
       
-      The dimension of the vector must be an positive integer value.
+      The dimension of the vector must be an positive integer value and smaller than ${maxDimension}.
       
       The command used the dimension: ${unsupportedValue}.
       

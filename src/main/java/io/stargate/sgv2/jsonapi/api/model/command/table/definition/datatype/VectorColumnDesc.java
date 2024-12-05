@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Column type for {@link ApiVectorType} */
 public class VectorColumnDesc extends ComplexColumnDesc {
@@ -13,10 +14,10 @@ public class VectorColumnDesc extends ComplexColumnDesc {
 
   // Float will be default type for vector
   private final ColumnDesc valueType;
-  private final int dimensions;
+  private final Integer dimensions;
   private final VectorizeConfig vectorizeConfig;
 
-  public VectorColumnDesc(int dimensions, VectorizeConfig vectorizeConfig) {
+  public VectorColumnDesc(Integer dimensions, VectorizeConfig vectorizeConfig) {
     super(ApiTypeName.VECTOR, ApiSupportDesc.fullSupport(""));
 
     this.valueType = PrimitiveColumnDesc.FLOAT;
@@ -28,8 +29,8 @@ public class VectorColumnDesc extends ComplexColumnDesc {
     return vectorizeConfig;
   }
 
-  public int getDimensions() {
-    return dimensions;
+  public Optional<Integer> getDimensions() {
+    return Optional.ofNullable(dimensions);
   }
 
   public ColumnDesc valueType() {
@@ -60,7 +61,14 @@ public class VectorColumnDesc extends ComplexColumnDesc {
     FromJsonFactory() {}
 
     public VectorColumnDesc create(String dimensionString, VectorizeConfig vectorConfig) {
+      // if the string is null/empty/blank, we think the user doesn't provide the dimension
+      // we will check later if the null dimension is allowed
+      // same logic as the collection
+      if (dimensionString == null || dimensionString.isEmpty() || dimensionString.isBlank()) {
+        return new VectorColumnDesc(null, vectorConfig);
+      }
 
+      // dimensionString cannot be non-empty string or the value is negative
       Integer dimension = null;
       try {
         dimension = Integer.parseInt(dimensionString);
@@ -69,7 +77,11 @@ public class VectorColumnDesc extends ComplexColumnDesc {
       }
       if (dimension == null || !ApiVectorType.isDimensionSupported(dimension)) {
         throw SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.get(
-            Map.of("unsupportedValue", String.valueOf(dimensionString)));
+            Map.of(
+                "unsupportedValue",
+                dimensionString,
+                "maxDimension",
+                String.valueOf(ApiVectorType.DEFAULT_MAX_VECTOR_LENGTH)));
       }
       // aaron- not calling ApiVectorType isSupported because the value type is locked to float
       return new VectorColumnDesc(dimension, vectorConfig);

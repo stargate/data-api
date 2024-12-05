@@ -35,7 +35,8 @@ public class ColumnDescSerializer extends JsonSerializer<ColumnDesc> {
           jsonGenerator.writeStringField(
               TableDescConstants.ColumnDesc.VALUE_TYPE, st.valueType().getApiName());
       case VectorColumnDesc vt -> {
-        jsonGenerator.writeNumberField(TableDescConstants.ColumnDesc.DIMENSION, vt.getDimensions());
+        jsonGenerator.writeNumberField(
+            TableDescConstants.ColumnDesc.DIMENSION, vt.getDimensions().orElse(null));
         if (vt.getVectorizeConfig() != null)
           jsonGenerator.writeObjectField(
               TableDescConstants.ColumnDesc.SERVICE, vt.getVectorizeConfig());
