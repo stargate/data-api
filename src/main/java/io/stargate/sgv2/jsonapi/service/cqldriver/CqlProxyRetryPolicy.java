@@ -68,9 +68,9 @@ public class CqlProxyRetryPolicy implements RetryPolicy {
     }
     if (LOG.isInfoEnabled()) {
       LOG.info(
-          "Write timeout for request write type : {}, retryCount: {}, consistency level: {} -> retry decision is: {}",
+          "Write timeout for request writeType : {}, retryCount: {}, consistency level: {} -> retry decision is: {}",
           writeType,
-          retryCount + 1,
+          retryCount,
           cl,
           retryDecision);
     }
