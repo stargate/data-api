@@ -304,7 +304,7 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                     }
                }
               """
-                      .formatted(keyspaceName, PRE_EXISTED_CQL_TABLE);
+              .formatted(keyspaceName, PRE_EXISTED_CQL_TABLE);
       var expected_idx_quoted =
           """
                  {
@@ -329,9 +329,7 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                   jsonEquals(expected_idx_map_values),
                   jsonEquals(expected_idx_map_entries),
                   jsonEquals(expected_idx_list),
-                  jsonEquals(expected_idx_quoted)
-              )
-          );
+                  jsonEquals(expected_idx_quoted)));
     }
   }
 }
