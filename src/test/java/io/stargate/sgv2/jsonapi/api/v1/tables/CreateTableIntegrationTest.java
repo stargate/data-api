@@ -923,30 +923,6 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   true,
                   SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN.name(),
                   "The dimension is required for vector columns if the embedding service is not specified.")));
-
-      // invalid extra large dimension (max is 4096)
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                {
-                                    "name": "invalidExtraLargeDimension",
-                                    "definition": {
-                                        "columns": {
-                                            "t": "text",
-                                            "v": {
-                                                "type": "vector",
-                                                "dimension": 5000
-                                            }
-                                        },
-                                        "primaryKey": "t"
-                                    }
-                                }
-                         """,
-                  "invalidExtraLargeDimension",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.name(),
-                  "The command used the dimension: 5000.")));
       return testCases.stream();
     }
   }

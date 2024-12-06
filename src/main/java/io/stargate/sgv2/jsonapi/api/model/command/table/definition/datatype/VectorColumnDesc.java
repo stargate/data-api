@@ -77,11 +77,7 @@ public class VectorColumnDesc extends ComplexColumnDesc {
       }
       if (dimension == null || !ApiVectorType.isDimensionSupported(dimension)) {
         throw SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.get(
-            Map.of(
-                "unsupportedValue",
-                dimensionString,
-                "maxDimension",
-                String.valueOf(ApiVectorType.DEFAULT_MAX_VECTOR_LENGTH)));
+            Map.of("unsupportedValue", dimensionString));
       }
       // aaron- not calling ApiVectorType isSupported because the value type is locked to float
       return new VectorColumnDesc(dimension, vectorConfig);

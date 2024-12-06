@@ -19,7 +19,6 @@ public class ApiVectorType extends CollectionApiDataType {
       FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
   public static final TypeFactoryFromCql<ApiVectorType, VectorType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
-  public static final int DEFAULT_MAX_VECTOR_LENGTH = 4096;
 
   private final int dimension;
   private final VectorizeDefinition vectorizeDefinition;
@@ -51,7 +50,7 @@ public class ApiVectorType extends CollectionApiDataType {
   }
 
   public static boolean isDimensionSupported(int dimensions) {
-    return dimensions > 0 && dimensions <= DEFAULT_MAX_VECTOR_LENGTH;
+    return dimensions > 0;
   }
 
   /**
