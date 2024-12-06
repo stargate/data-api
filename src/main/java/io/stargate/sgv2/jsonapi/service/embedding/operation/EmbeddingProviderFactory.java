@@ -89,7 +89,7 @@ public class EmbeddingProviderFactory {
           dimension,
           tenant,
           authToken,
-          configuration.baseUrl(),
+          configuration.getBaseUrl(modelName),
           modelName,
           embeddingService,
           vectorizeServiceParameters,
@@ -119,7 +119,7 @@ public class EmbeddingProviderFactory {
     }
     return ctor.create(
         configuration.requestConfiguration(),
-        configuration.baseUrl(),
+        configuration.getBaseUrl(modelName),
         modelName,
         dimension,
         vectorizeServiceParameters);
