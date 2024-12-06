@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 public enum ApiIndexType {
   // map, set, list
   COLLECTION,
-  // Something on a scalar column, and non analsed text index
+  // Something on a scalar column, and non analysed text index
   REGULAR,
   // Not available yet
   TEXT_ANALYSED,

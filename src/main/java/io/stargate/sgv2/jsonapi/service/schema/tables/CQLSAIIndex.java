@@ -160,9 +160,7 @@ public abstract class CQLSAIIndex {
     // 2. We can NOT use fromCQL, since it will lowercase the unquoted string, E.G. 'BigApple' ->
     // bigapple
     // So we should just stripe the doubleQuote if needed
-    columnName =
-        Strings.isDoubleQuoted(columnName) ? Strings.unDoubleQuote(columnName) : columnName;
-
+    columnName = Strings.unDoubleQuote(columnName);
     return functionName == null
         ? new IndexTarget(CqlIdentifier.fromInternal(columnName), null)
         : new IndexTarget(

@@ -16,9 +16,10 @@ public abstract class IndexFactoryFromCql extends FactoryFromCql {
   public ApiIndexDef create(ApiColumnDefContainer allColumns, IndexMetadata indexMetadata)
       throws UnsupportedCqlIndexException {
 
-    // This first check is to see if there is anyway we can support this index, becase we are only
+    // This first check is to see if there is anyway we can support this index, because we are only
     // supporting
-    // SAI indexes, later on we may find something that we could support but dont like a new type of
+    // SAI indexes, later on we may find something that we could support but don't like a new type
+    // of
     // sai
     if (!isSupported(indexMetadata)) {
       return createUnsupported(indexMetadata);

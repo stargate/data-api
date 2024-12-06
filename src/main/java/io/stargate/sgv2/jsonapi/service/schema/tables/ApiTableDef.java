@@ -162,7 +162,7 @@ public class ApiTableDef {
   }
 
   /**
-   * Factory for creating a {@link ApiTableDef} from a users decription sent in a command {@link
+   * Factory for creating a {@link ApiTableDef} from a users description sent in a command {@link
    * TableDefinitionDesc}.
    *
    * <p>Use the singleton {@link #FROM_TABLE_DESC_FACTORY} to create an instance.

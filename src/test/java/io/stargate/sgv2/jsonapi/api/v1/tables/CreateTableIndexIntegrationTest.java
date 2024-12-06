@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
+import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
@@ -28,6 +29,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 Map.entry("id", Map.of("type", "text")),
                 Map.entry("age", Map.of("type", "int")),
                 Map.entry("comment", Map.of("type", "text")),
+                Map.entry("CapitalLetterColumn", Map.of("type", "text")),
                 Map.entry("vehicle_id", Map.of("type", "text")),
                 Map.entry("vehicle_id_1", Map.of("type", "text")),
                 Map.entry("vehicle_id_2", Map.of("type", "text")),
@@ -212,16 +214,75 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void createIndexForQuotedColumn() {
+      var createIndexJson =
+          """
+                  {
+                    "name": "physicalAddress_idx_0",
+                    "definition": {
+                      "column": "physicalAddress"
+                    }
+                  }
+              """;
       assertTableCommand(keyspaceName, testTableName)
-          .postCreateIndex(
-              """
-                                          {
-                                            "name": "physicalAddress_idx",
-                                            "definition": {
-                                              "column": "physicalAddress"
-                                            }
-                                          }
-                                          """)
+          .postCreateIndex(createIndexJson)
+          .wasSuccessful();
+
+      var createIndexJsonExpected =
+          """
+                      {
+                        "name": "physicalAddress_idx_0",
+                        "definition": {
+                             "column": "physicalAddress",
+                             "options": {
+                                 "ascii": false,
+                                 "caseSensitive": true,
+                                 "normalize": false
+                           }
+                         }
+                      }
+                  """;
+
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .listIndexes(true)
+          .wasSuccessful()
+          .body("status.indexes", hasItem(jsonEquals(createIndexJsonExpected)));
+
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .dropIndex("physicalAddress_idx_0", false)
+          .wasSuccessful();
+    }
+
+    @Test
+    public void createIndexWithOptionForQuotedColumn() {
+      var createIndexJson =
+          """
+                  {
+                    "name": "physicalAddress_idx_1",
+                    "definition": {
+                      "column": "physicalAddress",
+                      "options": {
+                        "ascii": false,
+                        "caseSensitive": true,
+                        "normalize": false
+                      }
+                    }
+                  }
+             """;
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(createIndexJson)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .listIndexes(true)
+          .wasSuccessful()
+          .body("status.indexes", hasItem(jsonEquals(createIndexJson)));
+
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .dropIndex("physicalAddress_idx_1", false)
           .wasSuccessful();
     }
 
