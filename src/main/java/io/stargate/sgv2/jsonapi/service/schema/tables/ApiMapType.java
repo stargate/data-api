@@ -74,16 +74,20 @@ public class ApiMapType extends CollectionApiDataType {
       extends TypeFactoryFromColumnDesc<ApiMapType, MapColumnDesc> {
 
     @Override
-    public ApiMapType create(MapColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
+    public ApiMapType create(
+        String fieldName, MapColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
       ApiDataType keyType;
       ApiDataType valueType;
       try {
-        keyType = TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.keyType(), validateVectorize);
+        keyType =
+            TypeFactoryFromColumnDesc.DEFAULT.create(
+                fieldName, columnDesc.keyType(), validateVectorize);
         valueType =
-            TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.valueType(), validateVectorize);
+            TypeFactoryFromColumnDesc.DEFAULT.create(
+                fieldName, columnDesc.valueType(), validateVectorize);
       } catch (UnsupportedUserType e) {
         throw new UnsupportedUserType(columnDesc, e);
       }
@@ -101,10 +105,11 @@ public class ApiMapType extends CollectionApiDataType {
 
       try {
         return isKeyTypeSupported(
-                TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.keyType(), validateVectorize))
+                TypeFactoryFromColumnDesc.DEFAULT.create(
+                    null, columnDesc.keyType(), validateVectorize))
             && isValueTypeSupported(
                 TypeFactoryFromColumnDesc.DEFAULT.create(
-                    columnDesc.valueType(), validateVectorize));
+                    null, columnDesc.valueType(), validateVectorize));
       } catch (UnsupportedUserType e) {
         return false;
       }

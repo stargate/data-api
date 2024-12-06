@@ -21,7 +21,8 @@ public abstract class TypeFactoryFromColumnDesc<ApiT extends ApiDataType, DescT 
   public static final TypeFactoryFromColumnDesc<ApiDataType, ColumnDesc> DEFAULT =
       new DefaultFactory();
 
-  public abstract ApiT create(DescT columnDesc, VectorizeConfigValidator validateVectorize)
+  public abstract ApiT create(
+      String fieldName, DescT columnDesc, VectorizeConfigValidator validateVectorize)
       throws UnsupportedUserType;
 
   public abstract boolean isSupported(DescT columnDesc, VectorizeConfigValidator validateVectorize);
@@ -40,7 +41,8 @@ public abstract class TypeFactoryFromColumnDesc<ApiT extends ApiDataType, DescT 
         new ConcurrentHashMap<>();
 
     @Override
-    public ApiDataType create(ColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
+    public ApiDataType create(
+        String fieldName, ColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
@@ -52,7 +54,7 @@ public abstract class TypeFactoryFromColumnDesc<ApiT extends ApiDataType, DescT 
       // Do not cache the Vector type because the ApiVectorType has the user defined vectorizarion
       // on it
       if (columnDesc instanceof VectorColumnDesc vt) {
-        return ApiVectorType.FROM_COLUMN_DESC_FACTORY.create(vt, validateVectorize);
+        return ApiVectorType.FROM_COLUMN_DESC_FACTORY.create(fieldName, vt, validateVectorize);
       }
 
       try {
@@ -62,11 +64,11 @@ public abstract class TypeFactoryFromColumnDesc<ApiT extends ApiDataType, DescT 
               try {
                 return switch (columnDesc) {
                   case ListColumnDesc lt ->
-                      ApiListType.FROM_COLUMN_DESC_FACTORY.create(lt, validateVectorize);
+                      ApiListType.FROM_COLUMN_DESC_FACTORY.create(fieldName, lt, validateVectorize);
                   case MapColumnDesc mt ->
-                      ApiMapType.FROM_COLUMN_DESC_FACTORY.create(mt, validateVectorize);
+                      ApiMapType.FROM_COLUMN_DESC_FACTORY.create(fieldName, mt, validateVectorize);
                   case SetColumnDesc st ->
-                      ApiSetType.FROM_COLUMN_DESC_FACTORY.create(st, validateVectorize);
+                      ApiSetType.FROM_COLUMN_DESC_FACTORY.create(fieldName, st, validateVectorize);
                   default -> throw new UnsupportedUserType(columnDesc);
                 };
               } catch (UnsupportedUserType e) {
