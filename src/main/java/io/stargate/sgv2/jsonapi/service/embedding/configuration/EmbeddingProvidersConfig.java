@@ -121,6 +121,10 @@ public interface EmbeddingProvidersConfig {
 
       @JsonProperty
       Map<String, String> properties();
+
+      @Nullable
+      @JsonProperty
+      Optional<String> serviceUrl();
     }
 
     interface ParameterConfig {
