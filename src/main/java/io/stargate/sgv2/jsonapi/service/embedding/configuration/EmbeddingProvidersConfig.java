@@ -122,6 +122,10 @@ public interface EmbeddingProvidersConfig {
       @JsonProperty
       Map<String, String> properties();
 
+      /**
+       * serviceUrl is not null if the model requires a different service URL than the provider URL.
+       * This is used for models that require a different service URL than the provider URL.
+       */
       @Nullable
       @JsonProperty
       Optional<String> serviceUrl();
