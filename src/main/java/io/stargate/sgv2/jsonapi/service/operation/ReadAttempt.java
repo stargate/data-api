@@ -232,8 +232,9 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     @Override
     public boolean shouldRetry(Throwable throwable) {
 
+      // retryContext could be null, this is when cql read statement build has an exception
       if (retryContext == null) {
-        throw new IllegalStateException("retryContext must not be null");
+        return false;
       }
       // clear the retry context so that we don't keep a reference to the last statement
       var currentRetryContext = retryContext;
