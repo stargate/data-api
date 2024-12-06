@@ -64,7 +64,7 @@ public class VectorColumnDesc extends ComplexColumnDesc {
       // if the string is null/empty/blank, we think the user doesn't provide the dimension
       // we will check later if the null dimension is allowed
       // same logic as the collection
-      if (dimensionString == null || dimensionString.isEmpty() || dimensionString.isBlank()) {
+      if (dimensionString == null || dimensionString.isBlank()) {
         return new VectorColumnDesc(null, vectorConfig);
       }
 
