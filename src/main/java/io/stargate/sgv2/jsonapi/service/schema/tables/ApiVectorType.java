@@ -86,7 +86,7 @@ public class ApiVectorType extends CollectionApiDataType {
 
     @Override
     public ApiVectorType create(
-        String fieldName, VectorColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
+        VectorColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
@@ -109,7 +109,7 @@ public class ApiVectorType extends CollectionApiDataType {
         // the same logic as the collection
         if (columnDesc.getDimensions().isEmpty()) {
           throw SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN.get(
-              Map.of("missingDimensionVectorColumnName", fieldName));
+              Map.of("missingDimensionVectorColumnName", "TODO"));
         }
         dimensions = columnDesc.getDimensions().get();
       }

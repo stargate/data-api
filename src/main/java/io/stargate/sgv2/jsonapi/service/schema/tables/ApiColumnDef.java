@@ -82,7 +82,7 @@ public class ApiColumnDef {
       try {
         return new ApiColumnDef(
             userNameToIdentifier(fieldName, "fieldName"),
-            TypeFactoryFromColumnDesc.DEFAULT.create(fieldName, columnDesc, validateVectorize));
+            TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc, validateVectorize));
       } catch (UnsupportedUserType e) {
         throw new UnsupportedUserColumn(fieldName, columnDesc, e);
       }

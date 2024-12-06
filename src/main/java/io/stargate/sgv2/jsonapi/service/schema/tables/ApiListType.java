@@ -45,16 +45,14 @@ public class ApiListType extends CollectionApiDataType {
       extends TypeFactoryFromColumnDesc<ApiListType, ListColumnDesc> {
 
     @Override
-    public ApiListType create(
-        String fieldName, ListColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
+    public ApiListType create(ListColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
       ApiDataType valueType;
       try {
         valueType =
-            TypeFactoryFromColumnDesc.DEFAULT.create(
-                fieldName, columnDesc.valueType(), validateVectorize);
+            TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.valueType(), validateVectorize);
       } catch (UnsupportedUserType e) {
         throw new UnsupportedUserType(columnDesc, e);
       }
@@ -72,8 +70,7 @@ public class ApiListType extends CollectionApiDataType {
 
       try {
         return isValueTypeSupported(
-            TypeFactoryFromColumnDesc.DEFAULT.create(
-                null, columnDesc.valueType(), validateVectorize));
+            TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.valueType(), validateVectorize));
       } catch (UnsupportedUserType e) {
         return false;
       }

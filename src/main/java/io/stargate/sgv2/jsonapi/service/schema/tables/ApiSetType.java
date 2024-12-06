@@ -44,16 +44,14 @@ public class ApiSetType extends CollectionApiDataType {
       extends TypeFactoryFromColumnDesc<ApiSetType, SetColumnDesc> {
 
     @Override
-    public ApiSetType create(
-        String fieldName, SetColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
+    public ApiSetType create(SetColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
       ApiDataType valueType;
       try {
         valueType =
-            TypeFactoryFromColumnDesc.DEFAULT.create(
-                fieldName, columnDesc.valueType(), validateVectorize);
+            TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.valueType(), validateVectorize);
       } catch (UnsupportedUserType e) {
         throw new UnsupportedUserType(columnDesc, e);
       }
@@ -71,8 +69,7 @@ public class ApiSetType extends CollectionApiDataType {
 
       try {
         return isValueTypeSupported(
-            TypeFactoryFromColumnDesc.DEFAULT.create(
-                null, columnDesc.valueType(), validateVectorize));
+            TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.valueType(), validateVectorize));
       } catch (UnsupportedUserType e) {
         return false;
       }
