@@ -630,7 +630,7 @@ request-errors:
     body: |-
         The dimension is required for vector columns if the embedding service is not specified.
         
-        The command attempted to create the vector column without a dimension: ${missingDimensionVectorColumnName}.
+        The command attempted to create the vector column without a dimension.
         
         Resend the command using a dimension for the vector columns.
 

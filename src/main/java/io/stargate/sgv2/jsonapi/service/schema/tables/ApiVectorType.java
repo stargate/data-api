@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
-import java.util.Map;
 import java.util.Objects;
 
 public class ApiVectorType extends CollectionApiDataType {
@@ -108,8 +107,7 @@ public class ApiVectorType extends CollectionApiDataType {
         // if the vectorize config is not specified, the dimension must be specified
         // the same logic as the collection
         if (columnDesc.getDimensions().isEmpty()) {
-          throw SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN.get(
-              Map.of("missingDimensionVectorColumnName", "TODO"));
+          throw SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN.get();
         }
         dimensions = columnDesc.getDimensions().get();
       }
