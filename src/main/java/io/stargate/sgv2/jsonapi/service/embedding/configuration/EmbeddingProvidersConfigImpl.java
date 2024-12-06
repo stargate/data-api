@@ -29,7 +29,7 @@ public record EmbeddingProvidersConfigImpl(
         Optional<Integer> vectorDimension,
         List<ParameterConfig> parameters,
         Map<String, String> properties,
-        Optional<String> serviceUrl)
+        Optional<String> serviceUrlOverride)
         implements ModelConfig {
 
       public ModelConfigImpl(
@@ -42,8 +42,8 @@ public record EmbeddingProvidersConfigImpl(
                 : Optional.empty(),
             modelParameterList,
             grpcModelConfig.getPropertiesMap(),
-            grpcModelConfig.hasServiceUrl()
-                ? Optional.of(grpcModelConfig.getServiceUrl())
+            grpcModelConfig.hasServiceUrlOverride()
+                ? Optional.of(grpcModelConfig.getServiceUrlOverride())
                 : Optional.empty());
       }
     }
