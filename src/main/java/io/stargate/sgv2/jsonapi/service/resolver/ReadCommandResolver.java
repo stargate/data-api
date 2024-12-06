@@ -87,7 +87,8 @@ class ReadCommandResolver<
                 commandSkip,
                 // Math.min is used because the max documents the api return is
                 // `operationsConfig.defaultPageSize()`
-                Math.min(commandLimit, operationsConfig.defaultPageSize()))
+                Math.min(commandLimit, operationsConfig.defaultPageSize()),
+                cqlPageState)
             .resolve(commandContext, command);
     attemptBuilder.addSorter(inMemorySort);
 

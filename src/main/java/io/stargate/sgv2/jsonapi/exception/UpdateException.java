@@ -14,6 +14,7 @@ public class UpdateException extends RequestException {
   }
 
   public enum Code implements ErrorCode<UpdateException> {
+    UNSUPPORTED_OVERLAPPING_UPDATE_OPERATIONS,
     MISSING_UPDATE_OPERATIONS,
     INVALID_UPDATE_COLUMN_VALUES,
     UNKNOWN_TABLE_COLUMNS,
