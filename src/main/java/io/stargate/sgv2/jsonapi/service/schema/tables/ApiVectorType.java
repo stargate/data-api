@@ -101,14 +101,14 @@ public class ApiVectorType extends CollectionApiDataType {
       if (columnDesc.getVectorizeConfig() != null) {
         dimensions =
             validateVectorize.validateService(
-                columnDesc.getVectorizeConfig(), columnDesc.getDimensions().orElse(null));
+                columnDesc.getVectorizeConfig(), columnDesc.getDimension());
       } else {
         // if the vectorize config is not specified, the dimension must be specified
         // the same logic as the collection
-        if (columnDesc.getDimensions().isEmpty()) {
+        if (columnDesc.getDimension() == null) {
           throw SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN.get();
         }
-        dimensions = columnDesc.getDimensions().get();
+        dimensions = columnDesc.getDimension();
       }
 
       var vectorDefn = VectorizeDefinition.from(columnDesc, dimensions, validateVectorize);

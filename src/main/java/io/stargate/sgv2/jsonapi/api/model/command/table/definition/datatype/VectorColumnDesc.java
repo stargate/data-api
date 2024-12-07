@@ -6,7 +6,6 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 /** Column type for {@link ApiVectorType} */
 public class VectorColumnDesc extends ComplexColumnDesc {
@@ -14,14 +13,14 @@ public class VectorColumnDesc extends ComplexColumnDesc {
 
   // Float will be default type for vector
   private final ColumnDesc valueType;
-  private final Integer dimensions;
+  private final Integer dimension;
   private final VectorizeConfig vectorizeConfig;
 
-  public VectorColumnDesc(Integer dimensions, VectorizeConfig vectorizeConfig) {
+  public VectorColumnDesc(Integer dimension, VectorizeConfig vectorizeConfig) {
     super(ApiTypeName.VECTOR, ApiSupportDesc.fullSupport(""));
 
     this.valueType = PrimitiveColumnDesc.FLOAT;
-    this.dimensions = dimensions;
+    this.dimension = dimension;
     this.vectorizeConfig = vectorizeConfig;
   }
 
@@ -29,8 +28,8 @@ public class VectorColumnDesc extends ComplexColumnDesc {
     return vectorizeConfig;
   }
 
-  public Optional<Integer> getDimensions() {
-    return Optional.ofNullable(dimensions);
+  public Integer getDimension() {
+    return dimension;
   }
 
   public ColumnDesc valueType() {
@@ -47,14 +46,14 @@ public class VectorColumnDesc extends ComplexColumnDesc {
       return false;
     }
     var vectDesc = (VectorColumnDesc) o;
-    return Objects.equals(dimensions, vectDesc.dimensions)
+    return Objects.equals(dimension, vectDesc.dimension)
         && Objects.equals(valueType, vectDesc.valueType)
         && Objects.equals(vectorizeConfig, vectDesc.vectorizeConfig);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(valueType, dimensions, vectorizeConfig);
+    return Objects.hash(valueType, dimension, vectorizeConfig);
   }
 
   public static class FromJsonFactory {
