@@ -810,7 +810,7 @@ request-errors:
     body: |-
       The command attempted to create a vector column that used an unsupported configuration.
       
-      The dimension of the vector must be an positive integer value and smaller than ${maxDimension}.
+      The dimension of the vector must be an positive integer value.
       
       The command used the dimension: ${unsupportedValue}.
       
