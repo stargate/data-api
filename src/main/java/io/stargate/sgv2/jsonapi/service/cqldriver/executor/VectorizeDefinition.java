@@ -37,10 +37,11 @@ public record VectorizeDefinition(
    * Integer)} throws.
    */
   public static VectorizeDefinition from(
-      VectorColumnDesc vectorColumnDesc, VectorizeConfigValidator validateVectorize) {
+      VectorColumnDesc vectorColumnDesc,
+      int dimensions,
+      VectorizeConfigValidator validateVectorize) {
 
-    return from(
-        vectorColumnDesc.getVectorizeConfig(), vectorColumnDesc.getDimensions(), validateVectorize);
+    return from(vectorColumnDesc.getVectorizeConfig(), dimensions, validateVectorize);
   }
 
   public static VectorizeDefinition from(

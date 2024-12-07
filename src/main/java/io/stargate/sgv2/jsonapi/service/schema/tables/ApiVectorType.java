@@ -5,6 +5,7 @@ import com.datastax.oss.driver.api.core.type.VectorType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.VectorColumnDesc;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
@@ -92,12 +93,26 @@ public class ApiVectorType extends CollectionApiDataType {
         throw new UnsupportedUserType(columnDesc);
       }
 
-      var vectorDefn = VectorizeDefinition.from(columnDesc, validateVectorize);
-      var dimensions =
-          columnDesc.getVectorizeConfig() == null
-              ? columnDesc.getDimensions()
-              : validateVectorize.validateService(
-                  columnDesc.getVectorizeConfig(), columnDesc.getDimensions());
+      Integer dimensions;
+
+      // if the vectorize config is specified, we validate the dimension or auto populate the
+      // default dimension
+      // the same logic as the collection
+      if (columnDesc.getVectorizeConfig() != null) {
+        dimensions =
+            validateVectorize.validateService(
+                columnDesc.getVectorizeConfig(), columnDesc.getDimension());
+      } else {
+        // if the vectorize config is not specified, the dimension must be specified
+        // the same logic as the collection
+        if (columnDesc.getDimension() == null) {
+          throw SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN.get();
+        }
+        dimensions = columnDesc.getDimension();
+      }
+
+      var vectorDefn = VectorizeDefinition.from(columnDesc, dimensions, validateVectorize);
+
       return ApiVectorType.from(dimensions, vectorDefn);
     }
 
@@ -106,8 +121,7 @@ public class ApiVectorType extends CollectionApiDataType {
         VectorColumnDesc columnDesc, VectorizeConfigValidator validateVectorize) {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
-      return columnDesc.valueType().equals(PrimitiveColumnDesc.FLOAT)
-          && columnDesc.getDimensions() >= 0;
+      return columnDesc.valueType().equals(PrimitiveColumnDesc.FLOAT);
     }
   }
 
