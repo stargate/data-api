@@ -334,12 +334,7 @@ public class WhereCQLClauseAnalyzer {
     // assumed the checkAllColumnsExist has already run and the columns exist
     var filteredDurationColumns =
         identifierToFilter.entrySet().stream()
-            .filter(
-                entry -> {
-                  TableFilter tableFilter = entry.getValue();
-                  return (tableFilter instanceof NativeTypeTableFilter<?> nativeTypeTableFilter)
-                      && nativeTypeTableFilter.operator.isComparisonOperator();
-                })
+            .filter(entry -> entry.getValue().filterIsSlice())
             .map((Map.Entry::getKey))
             .filter(
                 column -> tableMetadata.getColumns().get(column).getType() == DataTypes.DURATION)
@@ -483,10 +478,7 @@ public class WhereCQLClauseAnalyzer {
         identifierToFilter.entrySet().stream()
             .filter(
                 entry -> {
-                  TableFilter tableFilter = entry.getValue();
-                  return (tableFilter instanceof NativeTypeTableFilter<?> nativeTypeTableFilter
-                      && isIndexOnColumn(entry.getKey())
-                      && nativeTypeTableFilter.operator.isComparisonOperator());
+                  return isIndexOnColumn(entry.getKey()) && entry.getValue().filterIsSlice();
                 })
             .map(Map.Entry::getKey)
             .filter(

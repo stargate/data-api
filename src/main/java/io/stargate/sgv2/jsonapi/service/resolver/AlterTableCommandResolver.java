@@ -301,7 +301,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
               }));
     }
 
-    var vectorColumns = apiTableDef.allColumns().filterBy(ApiTypeName.VECTOR);
+    var vectorColumns = apiTableDef.allColumns().filterBySupported(ApiTypeName.VECTOR);
     var nonVectorColumns =
         addedVectorizeDesc.keySet().stream()
             .filter(identifier -> !vectorColumns.containsKey(identifier))
@@ -365,7 +365,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
             .map(CqlIdentifierUtil::cqlIdentifierFromUserInput)
             .toList();
 
-    var vectorColumns = apiTableDef.allColumns().filterBy(ApiTypeName.VECTOR);
+    var vectorColumns = apiTableDef.allColumns().filterBySupported(ApiTypeName.VECTOR);
     var unknownColumns =
         droppedColumns.stream()
             .filter(c -> !apiTableDef.allColumns().containsKey(c))
