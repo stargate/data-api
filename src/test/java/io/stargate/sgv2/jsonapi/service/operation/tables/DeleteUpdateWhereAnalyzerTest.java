@@ -342,7 +342,7 @@ public class DeleteUpdateWhereAnalyzerTest {
           .assertExceptionOnNonEqFilerForUpdateOneAndDeleteOne(firstPartitionKey.getName());
     }
 
-    if (operator.isComparisonOperator()) {
+    if (operator.filterBehaviour.filterIsSlice()) {
       fixture
           .expression()
           .gtOn(firstPartitionKey.getName())
