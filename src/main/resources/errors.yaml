@@ -303,14 +303,14 @@ request-errors:
       Resend the command using a filter.
 
   - scope: FILTER
-    code: UNSUPPORTED_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE
-    title: updateOne and deleteOne commands do not support `$in` or `$nin` filter operation
+    code: UNSUPPORTED_FILTER_FOR_UPDATE_ONE_DELETE_ONE
+    title: updateOne and deleteOne commands only support filtering using $eq
     body: |-
-      The Filtering using the `$in` or `$nin` operations can select more than one row, and so cannot be used with the `updateOne` and `deleteOne` commands as they can only modify one row.
-            
-      The command used an invalid filter on the columns: ${inFilterColumns}.
-  
-      Resend the command without using the `$in` or `$nin` filter.
+      The Filtering using the non `$eq` filter operations can select more than one row, and so cannot be used with the `updateOne` and `deleteOne` commands as they can only modify one row.
+      
+      The command used an invalid filter on the columns: ${unsupportedFilterColumns}.
+      
+      Resend the command only using `$eq` filters.
 
   - scope: FILTER
     code: UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE

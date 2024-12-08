@@ -153,35 +153,44 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
 
     public WhereAnalyzerFixture assertExceptionOnUnknownColumns(CqlIdentifier... columns) {
       var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
-      var warning =
+      var error =
           "The filter included the following unknown columns: %s."
               .formatted(errFmtCqlIdentifier(identifiers));
-      return assertExceptionContains(warning);
+      return assertExceptionContains(error);
     }
 
     public WhereAnalyzerFixture assertExceptionOnComplexColumns(CqlIdentifier... columns) {
       var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
-      var warning =
+      var error =
           "The request included unsupported filters on the columns: %s."
               .formatted(errFmtCqlIdentifier(identifiers));
-      return assertExceptionContains(warning);
+      return assertExceptionContains(error);
     }
 
     public WhereAnalyzerFixture assertExceptionOnDurationColumns(CqlIdentifier... columns) {
       var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
-      var warning =
+      var error =
           "The request used a comparison operation on duration columns: %s."
               .formatted(errFmtCqlIdentifier(identifiers));
-      return assertExceptionContains(warning);
+      return assertExceptionContains(error);
+    }
+
+    public WhereAnalyzerFixture assertExceptionOnNonEqFilerForUpdateOneAndDeleteOne(
+        CqlIdentifier... columns) {
+      var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
+      var error =
+          "The command used an invalid filter on the columns: %s."
+              .formatted(errFmtCqlIdentifier(identifiers));
+      return assertExceptionContains(error);
     }
 
     public WhereAnalyzerFixture assertExceptionOnInFilerForUpdateOneAndDeleteOne(
         CqlIdentifier... columns) {
       var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
-      var warning =
+      var error =
           "The command used an invalid filter on the columns: %s."
               .formatted(errFmtCqlIdentifier(identifiers));
-      return assertExceptionContains(warning);
+      return assertExceptionContains(error);
     }
 
     public WhereAnalyzerFixture assertExceptionContains(String contains) {
