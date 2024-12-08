@@ -63,10 +63,10 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
   public enum Operator {
     EQ(BuiltConditionPredicate.EQ, new FilterBehaviour.Behaviour(true, false)),
     NE(BuiltConditionPredicate.NEQ, new FilterBehaviour.Behaviour(false, false)),
-    LT(BuiltConditionPredicate.LT, new FilterBehaviour.Behaviour(false, false)),
-    GT(BuiltConditionPredicate.GT, new FilterBehaviour.Behaviour(false, false)),
-    LTE(BuiltConditionPredicate.LTE, new FilterBehaviour.Behaviour(false, false)),
-    GTE(BuiltConditionPredicate.GTE, new FilterBehaviour.Behaviour(false, false));
+    LT(BuiltConditionPredicate.LT, new FilterBehaviour.Behaviour(false, true)),
+    GT(BuiltConditionPredicate.GT, new FilterBehaviour.Behaviour(false, true)),
+    LTE(BuiltConditionPredicate.LTE, new FilterBehaviour.Behaviour(false, true)),
+    GTE(BuiltConditionPredicate.GTE, new FilterBehaviour.Behaviour(false, true));
 
     public final BuiltConditionPredicate predicate;
     public final FilterBehaviour filterBehaviour;
