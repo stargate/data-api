@@ -1,22 +1,14 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
-
-import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.querybuilder.delete.Delete;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.update.Update;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Builds the WHERE clause in a CQL statment when using the Java Driver Query Builder.
@@ -105,23 +97,27 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
   }
 
   @Override
-  public boolean partitionKeysFullyRestrictedByEq(TableSchemaObject tableSchemaObject) {
-    Set<CqlIdentifier> validPartitionKey = new HashSet<>();
-    var tableMetadata = tableSchemaObject.tableMetadata();
-    var partitionKeys =
-        tableMetadata.getPartitionKey().stream().map(ColumnMetadata::getName).toList();
-    dbLogicalExpression.visitAllFilters(
-        TableFilter.class,
-        tableFilter -> {
-          var filterOnPartitionKey = tableFilter.filterOnPartitionKey(tableMetadata);
-          if (!filterOnPartitionKey) {
-            return;
-          }
-          if (tableFilter instanceof NativeTypeTableFilter<?> nativeTypeTableFilter
-              && nativeTypeTableFilter.operator == NativeTypeTableFilter.Operator.EQ) {
-            validPartitionKey.add(CqlIdentifierUtil.cqlIdentifierFromUserInput(tableFilter.path));
-          }
-        });
-    return validPartitionKey.containsAll(partitionKeys);
+  public boolean selectsSinglePartition(TableSchemaObject tableSchemaObject) {
+
+    var apiTableDef =
+        Objects.requireNonNull(tableSchemaObject, "tableSchemaObject must not be null")
+            .apiTableDef();
+
+    final boolean[] isMatched = {false};
+    for (var apiColumnDef : apiTableDef.partitionKeys().values()) {
+      isMatched[0] = false;
+      dbLogicalExpression.visitAllFilters(
+          TableFilter.class,
+          tableFilter ->
+              isMatched[0] =
+                  isMatched[0]
+                      || tableFilter.isFor(apiColumnDef.name())
+                          && tableFilter.filterIsExactMatch());
+      // we only need to find one partition column that does not have an exact match filter on it
+      if (!isMatched[0]) {
+        return false;
+      }
+    }
+    return true;
   }
 }

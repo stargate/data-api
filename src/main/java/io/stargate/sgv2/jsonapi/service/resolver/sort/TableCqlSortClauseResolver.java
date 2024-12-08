@@ -150,17 +150,14 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
       return WithWarnings.of(OrderByCqlClause.NO_OP, warn);
     }
 
-    if (!whereCQLClause.partitionKeysFullyRestrictedByEq(commandContext.schemaObject())) {
+    if (!whereCQLClause.selectsSinglePartition(commandContext.schemaObject())) {
       var warn =
           WarningException.Code.IN_MEMORY_SORTING_DUE_TO_PARTITION_KEY_NOT_RESTRICTED.get(
               errVars(
                   commandContext.schemaObject(),
                   map -> {
-                    map.put(
-                        "partitionKeys", errFmtApiColumnDef(apiTableDef.partitionKeys().values()));
-                    map.put(
-                        "partitionSorting",
-                        errFmtApiColumnDef(apiTableDef.clusteringKeys().values()));
+                    map.put("partitionKeys", errFmtApiColumnDef(apiTableDef.partitionKeys()));
+                    map.put("partitionSorting", errFmtApiColumnDef(apiTableDef.clusteringKeys()));
                     map.put("sortColumns", errFmtCqlIdentifier(sortColumns));
                   }));
 

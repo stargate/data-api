@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.query;
 
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import java.util.List;
 import java.util.function.BiFunction;
 
@@ -27,25 +26,7 @@ import java.util.function.BiFunction;
  * {@link io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause} implementation.
  */
 public interface WhereCQLClause<T extends OngoingWhereClause<T>>
-    extends BiFunction<T, List<Object>, T>, CQLClause {
+    extends BiFunction<T, List<Object>, T>, WhereBehaviour, CQLClause {
 
   DBLogicalExpression getLogicalExpression();
-
-  /**
-   * Cql sort by clustering keys needs certain rules on partition keys.
-   *
-   * <p>E.G. CQL has below rules: 1. "ORDER BY is only supported when the partition key is
-   * restricted by an EQ or an IN." 2. "Cannot page queries with both ORDER BY and a IN restriction
-   * on the partition key; you must either remove the ORDER BY or the IN and sort client side, or
-   * disable paging for this query"
-   *
-   * <p>Then if not all partitionKeys are restricted by $eq, enable in memory sort.
-   *
-   * <p>So, clearly we need filter context when resolve a cqlSortClause, adding this method on
-   * WhereCQLClause.
-   *
-   * @param tableSchemaObject
-   * @return
-   */
-  boolean partitionKeysFullyRestrictedByEq(TableSchemaObject tableSchemaObject);
 }

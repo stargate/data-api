@@ -25,7 +25,7 @@ public class WhereCQLClauseTestData extends TestDataSuplier {
       }
 
       @Override
-      public boolean partitionKeysFullyRestrictedByEq(TableSchemaObject tableSchemaObject) {
+      public boolean selectsSinglePartition(TableSchemaObject tableSchemaObject) {
         throw new IllegalArgumentException(
             "WhereCQLClauseTestData does not support partitionKeysFullyRestrictedByEq");
       }
