@@ -156,7 +156,7 @@ request-errors:
       The unsupported command was: ${unsupportedCommand}.
       
       Resend using one of the supported commands. 
-
+      
 
 # ================================================================================================================
 # Family: REQUEST         Scope: DOCUMENT
@@ -228,15 +228,6 @@ request-errors:
 # Family: REQUEST         Scope: FILTER
 # ================================================================================================================
 
-  # aaron 13 nov - I think this is not used, leaving until we can remove it safely
-  - scope: FILTER
-    code: INVALID_FILTER
-    title: Invalid filter
-    body: |-
-      The filter clause is invalid. ${filter}
-      
-      ${SNIPPET.CONTACT_SUPPORT}
-
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the DOCUMENT scope
   - scope: FILTER
     code: UNKNOWN_TABLE_COLUMNS
@@ -248,6 +239,17 @@ request-errors:
       The filter included the following unknown columns: ${unknownColumns}.
       
       ${SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
+
+  - scope: FILTER
+    code: INVALID_FILTER_COLUMN_VALUES
+    title: Column value in filter is not valid
+    body: |-
+      Only values that are supported by the column data type can be included when filtering.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command included the column ${invalidColumn} that has ${columnType} type defined.
+      
+      Resend the command using only supported column values.
 
   - scope: FILTER
     code: UNSUPPORTED_COLUMN_TYPES
@@ -364,6 +366,17 @@ request-errors:
       ${SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
 
   - scope: UPDATE
+    code: INVALID_UPDATE_COLUMN_VALUES
+    title: Column value in update clause is not valid
+    body: |-
+      Only values that are supported by the column data type can be included when updating.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command included the column ${invalidColumn} that has ${columnType} type defined.
+      
+      Resend the command using only supported column values.
+
+  - scope: UPDATE
     code: UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS
     title: Primary key columns cannot be updated
     body: |-
@@ -380,7 +393,7 @@ request-errors:
     code: MISSING_UPDATE_OPERATIONS
     title: Update operation requires at least one operation
     body: |-
-      The command did not include any update operations to change the columns in the table. 
+      The command did not include any non empty update operations to change the columns in the table.
       
       Supported update operations are ${supportedUpdateOperations}.
       
@@ -396,6 +409,16 @@ request-errors:
       The update included the unsupported operations: ${usedUnsupportedUpdateOperations}.
       
       Resend the command using only supported update operations.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_OVERLAPPING_UPDATE_OPERATIONS
+    title: Columns cannot be changed by multiple update operations
+    body: |-
+      The command included multiple update operations that attempted to change the same column. For example, attempting to both $set and $unset a column.
+    
+      Multiple assignments attempted to change the columns: ${duplicateAssignmentColumns}.
+      
+      Resend the command using a single update operation for each column.
 
 # Note UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION is a duplicate for Document scope, this one is used for Update scope.
   - scope: UPDATE
@@ -617,6 +640,16 @@ request-errors:
         The table definition includes the columns: ${tableColumns}.
       
         Resend the command using at least one partition key. 
+
+  - scope: SCHEMA
+    code: MISSING_ALTER_TABLE_OPERATIONS
+    title: Alter table command must include operations
+    body: |-
+      The `alterTable` command must contain at least one operation to alter the table schema, such as adding or dropping columns.
+      
+      The command included the empty operation: ${missingTableOperation}
+      
+      Resend the command including changes to the table.
 
   - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_COLUMNS
@@ -1119,6 +1152,17 @@ request-errors:
       The sort included the non vectorized columns: ${noVectorizeDefinition}
       
       Resend the command using only `vector` columns with vectorize configuration.
+
+  - scope: SORT
+    code: UNSUPPORTED_PAGINATION_WITH_IN_MEMORY_SORTING
+    title: Pagination not supported when using in-memory sorting
+    body: |-
+      Pagination is not supported when the data is sorted in-memory.
+
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The command sorted on the columns: ${sortColumns}.
+      
+      Resend the command without pagination.    
 
 
 # ================================================================================================================

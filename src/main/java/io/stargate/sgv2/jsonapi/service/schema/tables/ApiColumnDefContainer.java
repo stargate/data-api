@@ -96,15 +96,18 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     return keySet().stream().toList();
   }
 
-  public List<ApiColumnDef> filterByTypeToList(ApiTypeName type) {
-    return values().stream().filter(columnDef -> columnDef.type().typeName() == type).toList();
+  public List<ApiColumnDef> filterBySupportedTypeToList(ApiTypeName type) {
+    return values().stream()
+        .filter(
+            columnDef -> !columnDef.type().isUnsupported() && columnDef.type().typeName() == type)
+        .toList();
   }
 
-  public ApiColumnDefContainer filterBy(ApiTypeName type) {
-    return new ApiColumnDefContainer(filterByTypeToList(type));
+  public ApiColumnDefContainer filterBySupported(ApiTypeName type) {
+    return new ApiColumnDefContainer(filterBySupportedTypeToList(type));
   }
 
-  public ApiColumnDefContainer filterBy(Collection<CqlIdentifier> identifiers) {
+  public ApiColumnDefContainer filterBySupported(Collection<CqlIdentifier> identifiers) {
     return new ApiColumnDefContainer(
         values().stream().filter(columnDef -> identifiers.contains(columnDef.name())).toList());
   }
@@ -117,7 +120,7 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
   }
 
   public Map<CqlIdentifier, VectorizeDefinition> getVectorizeDefs() {
-    return filterByTypeToList(ApiTypeName.VECTOR).stream()
+    return filterBySupportedTypeToList(ApiTypeName.VECTOR).stream()
         .filter(
             columnDef ->
                 columnDef.type() instanceof ApiVectorType vt && vt.getVectorizeDefinition() != null)

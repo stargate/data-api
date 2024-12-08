@@ -48,6 +48,7 @@ public class DataApiResponseValidator {
                   LIST_INDEXES ->
               responseIsDDLSuccess();
           case CREATE_COLLECTION -> responseIsDDLSuccess();
+          case COUNT_DOCUMENTS -> responseIsCountSuccess();
           default ->
               throw new IllegalArgumentException(
                   "DataApiResponseValidator: Unexpected command name: " + commandName);
@@ -309,6 +310,10 @@ public class DataApiResponseValidator {
     return body("data.documents", hasSize(size));
   }
 
+  public DataApiResponseValidator verifyDataDocuments(String expectedJson) {
+    return body("data.documents", jsonEquals(expectedJson));
+  }
+
   // // // Projection Schema // // //
   public DataApiResponseValidator hasProjectionSchema() {
     return hasField("status." + CommandStatus.PROJECTION_SCHEMA);
@@ -400,6 +405,10 @@ public class DataApiResponseValidator {
 
   public DataApiResponseValidator hasNextPageState() {
     return body("data.nextPageState", is(notNullValue()));
+  }
+
+  public String extractNextPageState() {
+    return response.extract().path("data.nextPageState");
   }
 
   public DataApiResponseValidator doesNotHaveNextPageState() {

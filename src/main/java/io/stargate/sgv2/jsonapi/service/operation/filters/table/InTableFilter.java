@@ -90,7 +90,19 @@ public class InTableFilter extends TableFilter {
                   map.put("unsupportedColumns", path);
                 }));
       } catch (ToCQLCodecException e) {
-        throw new RuntimeException(e);
+        throw FilterException.Code.INVALID_FILTER_COLUMN_VALUES.get(
+            errVars(
+                tableSchemaObject,
+                map -> {
+                  map.put(
+                      "allColumns",
+                      errFmtColumnMetadata(
+                          tableSchemaObject.tableMetadata().getColumns().values()));
+                  map.put("invalidColumn", path);
+                  map.put(
+                      "columnType",
+                      tableSchemaObject.tableMetadata().getColumn(path).get().getType().toString());
+                }));
       }
     }
 

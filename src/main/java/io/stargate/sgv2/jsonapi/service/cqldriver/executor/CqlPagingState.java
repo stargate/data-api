@@ -30,6 +30,9 @@ public class CqlPagingState {
 
   public static CqlPagingState from(String pagingState) {
     return switch (pagingState) {
+        // null and empty string are considered empty paging state
+        // any non-zero length string is considered page state
+        // the same standard is used in collections
       case null -> EMPTY;
       case "" -> EMPTY;
       default -> new CqlPagingState(false, pagingState, decode(pagingState));
