@@ -558,9 +558,23 @@ request-errors:
 
   - scope: WARNING
     code: IN_MEMORY_SORTING_DUE_SKIP_OPTIONS
-    title: Sorting uses skip option, performing as inmemory sory
+    title: Sorting uses skip option, performing as in memory sort
     body: |-
-      Sorting uses skip option, performing as inmemory sory
+      Sorting uses skip option, performing as in memory sort
+
+  - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_TO_PARTITION_KEY_NOT_RESTRICTED
+    title: Sorting with partition key not restricted correctly in filter clause
+    body: |-
+      The command wants to perform sort, however the filter clause does not have partition keys correctly restricted.
+      
+      When sorting by the partition sorting columns, partition keys needs to restricted by $eq in filter clause.
+      
+      The table ${keyspace}.${table} has the partition keys: ${partitionKeys}.
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The sort clause used the columns (in order) : ${sortColumns}.
+      
+      ${SNIPPET.INEFFICIENT_SORT}
 
   - scope: WARNING
     code: IN_MEMORY_SORTING_DUE_TO_MISSING_PARTITION_SORTING
