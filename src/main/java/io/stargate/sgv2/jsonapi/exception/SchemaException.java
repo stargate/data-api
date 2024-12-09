@@ -41,6 +41,7 @@ public class SchemaException extends RequestException {
     UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES,
     UNSUPPORTED_VECTOR_DIMENSION,
     UNSUPPORTED_VECTOR_INDEX_FOR_DATA_TYPES,
+    UNSUPPORTED_DIFFERENT_EMBEDDING_SERVICE_CONFIGS,
 
     // older below - seperated because they need to be confirmed
     INVALID_CONFIGURATION,
