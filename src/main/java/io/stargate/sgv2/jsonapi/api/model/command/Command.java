@@ -28,7 +28,6 @@ import io.stargate.sgv2.jsonapi.service.resolver.CommandResolver;
   @JsonSubTypes.Type(value = CollectionCommand.class),
 })
 public interface Command {
-
   /**
    * commandName that refers to the api command name
    *
