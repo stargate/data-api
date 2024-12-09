@@ -303,14 +303,14 @@ request-errors:
       Resend the command using a filter.
 
   - scope: FILTER
-    code: UNSUPPORTED_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE
-    title: updateOne and deleteOne commands do not support `$in` or `$nin` filter operation
+    code: UNSUPPORTED_FILTER_FOR_UPDATE_ONE_DELETE_ONE
+    title: updateOne and deleteOne commands only support filtering using $eq
     body: |-
-      The Filtering using the `$in` or `$nin` operations can select more than one row, and so cannot be used with the `updateOne` and `deleteOne` commands as they can only modify one row.
-            
-      The command used an invalid filter on the columns: ${inFilterColumns}.
-  
-      Resend the command without using the `$in` or `$nin` filter.
+      The Filtering using the non `$eq` filter operations can select more than one row, and so cannot be used with the `updateOne` and `deleteOne` commands as they can only modify one row.
+      
+      The command used an invalid filter on the columns: ${unsupportedFilterColumns}.
+      
+      Resend the command only using `$eq` filters.
 
   - scope: FILTER
     code: UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE
@@ -448,6 +448,8 @@ request-errors:
       And has indexes on the columns: ${indexedColumns}.
       The request filtered on the un-indexed columns: ${unindexedFilters}.
       
+      Note: There may be a small delay in newly created indexes propagating through the system, this warning may be ignored if the column(s) were recently indexed.
+      
       ${SNIPPET.INEFFICIENT_FILTER}
 
   - scope: WARNING
@@ -558,9 +560,23 @@ request-errors:
 
   - scope: WARNING
     code: IN_MEMORY_SORTING_DUE_SKIP_OPTIONS
-    title: Sorting uses skip option, performing as inmemory sory
+    title: Sorting uses skip option, performing as in memory sort
     body: |-
-      Sorting uses skip option, performing as inmemory sory
+      Sorting uses skip option, performing as in memory sort
+
+  - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_TO_PARTITION_KEY_NOT_RESTRICTED
+    title: Sorting with partition key not restricted correctly in filter clause
+    body: |-
+      The command wants to perform sort, however the filter clause does not have partition keys correctly restricted.
+      
+      When sorting by the partition sorting columns, partition keys needs to restricted by $eq in filter clause.
+      
+      The table ${keyspace}.${table} has the partition keys: ${partitionKeys}.
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The sort clause used the columns (in order) : ${sortColumns}.
+      
+      ${SNIPPET.INEFFICIENT_SORT}
 
   - scope: WARNING
     code: IN_MEMORY_SORTING_DUE_TO_MISSING_PARTITION_SORTING

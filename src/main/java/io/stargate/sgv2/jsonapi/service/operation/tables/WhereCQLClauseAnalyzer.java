@@ -70,7 +70,7 @@ public class WhereCQLClauseAnalyzer {
                     analyzer::checkNoFilters,
                     analyzer::checkAllColumnsExist,
                     analyzer::checkNonPrimaryKeyFilters,
-                    analyzer::checkNoInFilterUsage,
+                    analyzer::checkOnlyEqUsage,
                     analyzer::checkFullPrimaryKey,
                     analyzer::checkFilteringOnComplexColumns),
                 List.of());
@@ -240,26 +240,34 @@ public class WhereCQLClauseAnalyzer {
   }
 
   /**
-   * Check if any $in filter is used.
+   * Check if any non $eq filter is used.
    *
-   * <p>For UpdateOne and DeleteOne table commands, the use of $in/$nin can affect multiple rows, so
-   * add a check rule to ban the usage.
+   * <p>e.g. Table UpdateOne and DeleteOne, DATA API does not know the exact modified row count in
+   * DB, so it needs to restrict on the filters. Make sure only $eq is used for DeleteOne and
+   * UpdateOne.
    */
-  private void checkNoInFilterUsage(Map<CqlIdentifier, TableFilter> identifierToFilter) {
+  private void checkOnlyEqUsage(Map<CqlIdentifier, TableFilter> identifierToFilter) {
 
-    var inFilterColumns =
+    var nonEqFilterColumns =
         identifierToFilter.entrySet().stream()
-            .filter(entry -> (entry.getValue() instanceof InTableFilter))
-            .map((Map.Entry::getKey))
+            .filter(
+                entry -> {
+                  TableFilter tableFilter = entry.getValue();
+                  if (!(tableFilter instanceof NativeTypeTableFilter<?> nativeTypeTableFilter)) {
+                    return true;
+                  }
+                  return nativeTypeTableFilter.operator != NativeTypeTableFilter.Operator.EQ;
+                })
+            .map(Map.Entry::getKey)
             .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
-    if (!inFilterColumns.isEmpty()) {
-      throw FilterException.Code.UNSUPPORTED_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE.get(
+    if (!nonEqFilterColumns.isEmpty()) {
+      throw FilterException.Code.UNSUPPORTED_FILTER_FOR_UPDATE_ONE_DELETE_ONE.get(
           errVars(
               tableSchemaObject,
               map -> {
-                map.put("inFilterColumns", errFmtCqlIdentifier(inFilterColumns));
+                map.put("unsupportedFilterColumns", errFmtCqlIdentifier(nonEqFilterColumns));
               }));
     }
   }
@@ -326,12 +334,7 @@ public class WhereCQLClauseAnalyzer {
     // assumed the checkAllColumnsExist has already run and the columns exist
     var filteredDurationColumns =
         identifierToFilter.entrySet().stream()
-            .filter(
-                entry -> {
-                  TableFilter tableFilter = entry.getValue();
-                  return (tableFilter instanceof NativeTypeTableFilter<?> nativeTypeTableFilter)
-                      && nativeTypeTableFilter.operator.isComparisonOperator();
-                })
+            .filter(entry -> entry.getValue().filterIsSlice())
             .map((Map.Entry::getKey))
             .filter(
                 column -> tableMetadata.getColumns().get(column).getType() == DataTypes.DURATION)
@@ -475,10 +478,7 @@ public class WhereCQLClauseAnalyzer {
         identifierToFilter.entrySet().stream()
             .filter(
                 entry -> {
-                  TableFilter tableFilter = entry.getValue();
-                  return (tableFilter instanceof NativeTypeTableFilter<?> nativeTypeTableFilter
-                      && isIndexOnColumn(entry.getKey())
-                      && nativeTypeTableFilter.operator.isComparisonOperator());
+                  return isIndexOnColumn(entry.getKey()) && entry.getValue().filterIsSlice();
                 })
             .map(Map.Entry::getKey)
             .filter(
