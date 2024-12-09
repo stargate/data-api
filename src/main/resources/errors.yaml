@@ -854,6 +854,16 @@ request-errors:
       Resend the command using columns of `vector` type.
 
   - scope: SCHEMA
+    code: UNSUPPORTED_DIFFERENT_EMBEDDING_SERVICE_CONFIGS
+    title: Different embedding service configurations for different columns is not supported
+    body: |-
+      The command attempted to create table with different embedding service configurations for different columns.
+      
+      Vector column ${vectorColumn1} and vector column ${vectorColumn2} have different embedding service configurations.
+            
+      Resend the command using a single embedding service configuration or no embedding service configuration for all vector columns.
+
+  - scope: SCHEMA
     code: UNKNOWN_VECTOR_SOURCE_MODEL
     title: Vector source model is unknown
     body: |-

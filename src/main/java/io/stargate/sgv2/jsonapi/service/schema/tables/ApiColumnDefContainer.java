@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlColumn;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserColumn;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -165,11 +166,28 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
       Objects.requireNonNull(columnDescContainer, "columnDescContainer cannot be null");
 
       var container = new ApiColumnDefContainer(columnDescContainer.size());
+      var apiVectorTypeContainer = new LinkedHashMap<String, ApiVectorType>();
       for (Map.Entry<String, ColumnDesc> entry : columnDescContainer.entrySet()) {
         try {
-          container.put(
+          var apiColumnDef =
               ApiColumnDef.FROM_COLUMN_DESC_FACTORY.create(
-                  entry.getKey(), entry.getValue(), validateVectorize));
+                  entry.getKey(), entry.getValue(), validateVectorize);
+          // Check if multiple vector columns are supported
+          if (apiColumnDef.type() instanceof ApiVectorType vt) {
+            for (Map.Entry<String, ApiVectorType> existingApiVectorType :
+                apiVectorTypeContainer.entrySet()) {
+              if (!existingApiVectorType.getValue().isTwoVectorColumnSupported(vt)) {
+                throw SchemaException.Code.UNSUPPORTED_DIFFERENT_EMBEDDING_SERVICE_CONFIGS.get(
+                    Map.of(
+                        "vectorColumn1",
+                        existingApiVectorType.getKey(),
+                        "vectorColumn2",
+                        entry.getKey()));
+              }
+            }
+            apiVectorTypeContainer.put(entry.getKey(), vt);
+          }
+          container.put(apiColumnDef);
         } catch (UnsupportedUserColumn e) {
           container.put(
               ApiColumnDef.FROM_COLUMN_DESC_FACTORY.createUnsupported(
