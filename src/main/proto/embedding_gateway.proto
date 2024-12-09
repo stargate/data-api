@@ -165,6 +165,7 @@ message GetSupportedProvidersResponse {
       optional int32 vector_dimension = 2;
       repeated ParameterConfig parameters = 3;
       map<string, string> properties = 4;
+      optional string service_url_override = 5;
     }
   }
 
