@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;

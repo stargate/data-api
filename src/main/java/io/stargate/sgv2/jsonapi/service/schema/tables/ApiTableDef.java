@@ -93,7 +93,7 @@ public class ApiTableDef {
     var columnsDesc = new ColumnsDescContainer();
     allColumns
         .values()
-        .forEach(columnDef -> columnsDesc.put(columnDef.name(), columnDef.type().columnDesc()));
+        .forEach(columnDef -> columnsDesc.put(columnDef.name(), columnDef.columnDesc()));
 
     return io.stargate.sgv2.jsonapi.api.model.command.table.TableDesc.from(
         name, new TableDefinitionDesc(columnsDesc, primaryKey));

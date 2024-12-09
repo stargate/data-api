@@ -41,4 +41,35 @@ public interface ColumnDesc {
    * @return
    */
   ApiSupportDesc apiSupport();
+
+  /**
+   * Wrapper for a {@link ColumnDesc} that is for a static column.
+   *
+   * <p>These are not supported for create, and the concept is not well-supported in to Api schema
+   * because of that so we use this wrapper to change the description of the column at the last
+   * minute.
+   */
+  class StaticColumnDesc implements ColumnDesc {
+
+    private final ColumnDesc columnDesc;
+
+    public StaticColumnDesc(ColumnDesc columnDesc) {
+      this.columnDesc = columnDesc;
+    }
+
+    @Override
+    public ApiTypeName typeName() {
+      return columnDesc.typeName();
+    }
+
+    @Override
+    public ApiSupportDesc apiSupport() {
+      return new ApiSupportDesc(
+          false,
+          columnDesc.apiSupport().insert(),
+          columnDesc.apiSupport().read(),
+          columnDesc.apiSupport().filter(),
+          "static " + columnDesc.apiSupport().cqlDefinition());
+    }
+  }
 }

@@ -134,7 +134,7 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
 
   public ColumnsDescContainer toColumnsDesc() {
     ColumnsDescContainer columnsDesc = new ColumnsDescContainer(size());
-    forEach((name, columnDef) -> columnsDesc.put(name, columnDef.type().columnDesc()));
+    forEach((name, columnDef) -> columnsDesc.put(name, columnDef.columnDesc()));
     return columnsDesc;
   }
 
