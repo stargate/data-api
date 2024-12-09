@@ -23,11 +23,11 @@ public class ApiVectorType extends CollectionApiDataType {
   private final int dimension;
   private final VectorizeDefinition vectorizeDefinition;
 
-  private ApiVectorType(int dimensions, VectorizeDefinition vectorizeDefinition) {
+  private ApiVectorType(int dimension, VectorizeDefinition vectorizeDefinition) {
     super(
         ApiTypeName.VECTOR,
         ApiDataTypeDefs.FLOAT,
-        new ExtendedVectorType(ApiDataTypeDefs.FLOAT.cqlType(), dimensions),
+        new ExtendedVectorType(ApiDataTypeDefs.FLOAT.cqlType(), dimension),
         null);
     // passes null for the columnDesc, the vector type is not cached and we only need the column
     // desc
@@ -35,7 +35,7 @@ public class ApiVectorType extends CollectionApiDataType {
     // the column def
     // for the table even if we dont read / write the vector
     // create the column dec on demand
-    this.dimension = dimensions;
+    this.dimension = dimension;
     this.vectorizeDefinition = vectorizeDefinition;
   }
 
@@ -49,8 +49,8 @@ public class ApiVectorType extends CollectionApiDataType {
     return dimension;
   }
 
-  public static boolean isDimensionSupported(int dimensions) {
-    return dimensions > 0;
+  public static boolean isDimensionSupported(int dimension) {
+    return dimension > 0;
   }
 
   /**
@@ -88,18 +88,18 @@ public class ApiVectorType extends CollectionApiDataType {
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
-      // this will catch the dimensions aetc
+      // this will catch the dimension aetc
       if (!isSupported(columnDesc, validateVectorize)) {
         throw new UnsupportedUserType(columnDesc);
       }
 
-      Integer dimensions;
+      Integer dimension;
 
       // if the vectorize config is specified, we validate the dimension or auto populate the
       // default dimension
       // the same logic as the collection
       if (columnDesc.getVectorizeConfig() != null) {
-        dimensions =
+        dimension =
             validateVectorize.validateService(
                 columnDesc.getVectorizeConfig(), columnDesc.getDimension());
       } else {
@@ -108,12 +108,12 @@ public class ApiVectorType extends CollectionApiDataType {
         if (columnDesc.getDimension() == null) {
           throw SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN.get();
         }
-        dimensions = columnDesc.getDimension();
+        dimension = columnDesc.getDimension();
       }
 
-      var vectorDefn = VectorizeDefinition.from(columnDesc, dimensions, validateVectorize);
+      var vectorDefn = VectorizeDefinition.from(columnDesc, dimension, validateVectorize);
 
-      return ApiVectorType.from(dimensions, vectorDefn);
+      return ApiVectorType.from(dimension, vectorDefn);
     }
 
     @Override
