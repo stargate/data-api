@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.IndexUsage;
@@ -10,11 +13,47 @@ import java.util.List;
  * A {@link DBFilterBase} that is applied to a table (i.e. not a Collection) to filter the rows to
  * read.
  */
-public abstract class TableFilter extends DBFilterBase {
+public abstract class TableFilter extends DBFilterBase implements FilterBehaviour {
 
-  // TIDY - the path is the column name here, maybe rename ?
-  protected TableFilter(String path) {
+  private final CqlIdentifier column;
+  private final FilterBehaviour filterBehaviour;
+
+  /**
+   * Create a new filter for the given column.
+   *
+   * @param path user provided path for the column we are filtering on. The name "path" is a
+   *     hangover from collections.
+   * @param filterBehaviour Optional object to pass through calls to the {@link FilterBehaviour}
+   *     interface. If subclasses have an object representing an operator the operator can implement
+   *     the interface. Otherwise, the subclass <b>must</b> implement the methods for {@link
+   *     FilterBehaviour} itself, the default in this class will be to throw a {@link
+   *     UnsupportedOperationException}.
+   */
+  protected TableFilter(String path, FilterBehaviour filterBehaviour) {
     super(path, IndexUsage.NO_OP);
+    this.column = cqlIdentifierFromUserInput(path);
+    this.filterBehaviour = filterBehaviour == null ? UNSUPPORTED_BEHAVIOUR : filterBehaviour;
+  }
+
+  /**
+   * Tests if this filter matches the given column.
+   *
+   * @param column The column to test, may be <code>null</code>
+   * @return true if the filter matches the column, false otherwise or if the <code>column</code> is
+   *     null
+   */
+  public boolean isFor(CqlIdentifier column) {
+    return this.column.equals(column);
+  }
+
+  @Override
+  public boolean filterIsExactMatch() {
+    return filterBehaviour.filterIsExactMatch();
+  }
+
+  @Override
+  public boolean filterIsSlice() {
+    return filterBehaviour.filterIsSlice();
   }
 
   /**
@@ -41,4 +80,18 @@ public abstract class TableFilter extends DBFilterBase {
    */
   public abstract <StmtT extends OngoingWhereClause<StmtT>> StmtT apply(
       TableSchemaObject tableSchemaObject, StmtT ongoingWhereClause, List<Object> positionalValues);
+
+  /** Default "NO OP" implementation to keep the code above cleaner. */
+  private static final FilterBehaviour UNSUPPORTED_BEHAVIOUR =
+      new FilterBehaviour() {
+        @Override
+        public boolean filterIsExactMatch() {
+          throw new UnsupportedOperationException("isExactMatch not supported");
+        }
+
+        @Override
+        public boolean filterIsSlice() {
+          throw new UnsupportedOperationException("isSlice not supported");
+        }
+      };
 }
