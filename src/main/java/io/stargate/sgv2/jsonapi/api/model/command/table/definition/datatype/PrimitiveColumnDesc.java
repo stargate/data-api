@@ -20,6 +20,7 @@ public enum PrimitiveColumnDesc implements ColumnDesc {
   TEXT(ApiDataTypeDefs.TEXT),
   TIME(ApiDataTypeDefs.TIME),
   TIMESTAMP(ApiDataTypeDefs.TIMESTAMP),
+  TIMEUUID(ApiDataTypeDefs.TIMEUUID),
   TINYINT(ApiDataTypeDefs.TINYINT),
   UUID(ApiDataTypeDefs.UUID),
   VARINT(ApiDataTypeDefs.VARINT);
@@ -46,7 +47,7 @@ public enum PrimitiveColumnDesc implements ColumnDesc {
 
   PrimitiveColumnDesc(ApiDataType apiDataType) {
     this.apiDataType = apiDataType;
-    this.apiSupportDesc = ApiSupportDesc.fullSupport(apiDataType.cqlType().asCql(true, true));
+    this.apiSupportDesc = ApiSupportDesc.from(apiDataType);
   }
 
   @Override

@@ -73,6 +73,7 @@ public class ApiColumnDef {
 
   private static class ColumnDescFactory extends FactoryFromDesc
       implements ColumnFactoryFromColumnDesc {
+
     @Override
     public ApiColumnDef create(
         String fieldName, ColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
@@ -141,6 +142,7 @@ public class ApiColumnDef {
     public ApiColumnDef create(ColumnMetadata columnMetadata, VectorConfig vectorConfig)
         throws UnsupportedCqlColumn {
       Objects.requireNonNull(columnMetadata, "columnMetadata is must not be null");
+
       return create(
           columnMetadata.getName(),
           columnMetadata.getType(),
@@ -158,6 +160,7 @@ public class ApiColumnDef {
     private static ApiColumnDef create(
         CqlIdentifier column, DataType dataType, VectorizeDefinition vectorizeDef)
         throws UnsupportedCqlColumn {
+
       Objects.requireNonNull(column, "column is must not be null");
       Objects.requireNonNull(dataType, "dataType is must not be null");
 

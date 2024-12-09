@@ -64,7 +64,7 @@ public class ApiTableDef {
 
     this.unsupportedColumns =
         allColumns.values().stream()
-            .filter(columnDef -> columnDef.type().isUnsupported())
+            .filter(columnDef -> columnDef.type().apiSupport().isUnsupportedAny())
             .collect(
                 ApiColumnDefContainer::new,
                 ApiColumnDefContainer::put,

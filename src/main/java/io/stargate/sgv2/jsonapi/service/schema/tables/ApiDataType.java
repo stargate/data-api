@@ -29,7 +29,7 @@ public interface ApiDataType {
 
   boolean isContainer();
 
-  boolean isUnsupported();
+  ApiSupportDef apiSupport();
 
   ColumnDesc columnDesc();
 }

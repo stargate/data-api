@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.ListType;
 import com.datastax.oss.driver.internal.core.type.PrimitiveType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ListColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
@@ -17,12 +19,16 @@ public class ApiListType extends CollectionApiDataType {
   public static final TypeFactoryFromCql<ApiListType, ListType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
 
+  // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
+  public static final ApiSupportDef API_SUPPORT = CollectionApiDataType.DEFAULT_API_SUPPORT;
+
   private ApiListType(PrimitiveApiDataTypeDef valueType) {
-    super(
-        ApiTypeName.LIST,
-        valueType,
-        DataTypes.listOf(valueType.cqlType()),
-        new ListColumnDesc(valueType.columnDesc()));
+    super(ApiTypeName.LIST, valueType, DataTypes.listOf(valueType.cqlType()), API_SUPPORT);
+  }
+
+  @Override
+  public ColumnDesc columnDesc() {
+    return new ListColumnDesc(valueType.columnDesc(), ApiSupportDesc.from(this));
   }
 
   public static ApiListType from(ApiDataType valueType) {

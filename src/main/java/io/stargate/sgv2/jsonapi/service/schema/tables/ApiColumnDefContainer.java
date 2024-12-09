@@ -99,7 +99,9 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
   public List<ApiColumnDef> filterBySupportedTypeToList(ApiTypeName type) {
     return values().stream()
         .filter(
-            columnDef -> !columnDef.type().isUnsupported() && columnDef.type().typeName() == type)
+            columnDef ->
+                !columnDef.type().apiSupport().isUnsupportedAny()
+                    && columnDef.type().typeName() == type)
         .toList();
   }
 
@@ -115,7 +117,7 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
   public ApiColumnDefContainer filterByUnsupported() {
     return new ApiColumnDefContainer(
         entrySet().stream()
-            .filter(entry -> entry.getValue().type().isUnsupported())
+            .filter(entry -> entry.getValue().type().apiSupport().isUnsupportedAny())
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
   }
 

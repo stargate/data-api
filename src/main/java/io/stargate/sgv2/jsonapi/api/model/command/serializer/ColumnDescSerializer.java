@@ -45,7 +45,7 @@ public class ColumnDescSerializer extends JsonSerializer<ColumnDesc> {
       }
     }
 
-    if (columnDesc.apiSupport().anyUnsupported()) {
+    if (columnDesc.apiSupport().isAnyUnsupported()) {
       jsonGenerator.writeObjectField(
           TableDescConstants.ColumnDesc.API_SUPPORT, columnDesc.apiSupport());
     }

@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.MapType;
 import com.datastax.oss.driver.internal.core.type.PrimitiveType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
@@ -20,6 +22,9 @@ public class ApiMapType extends CollectionApiDataType {
   public static final TypeFactoryFromCql<ApiMapType, MapType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
 
+  // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
+  public static final ApiSupportDef API_SUPPORT = CollectionApiDataType.DEFAULT_API_SUPPORT;
+
   private final PrimitiveApiDataTypeDef keyType;
 
   public ApiMapType(PrimitiveApiDataTypeDef keyType, PrimitiveApiDataTypeDef valueType) {
@@ -27,7 +32,7 @@ public class ApiMapType extends CollectionApiDataType {
         ApiTypeName.MAP,
         valueType,
         DataTypes.mapOf(keyType.cqlType(), valueType.cqlType()),
-        new MapColumnDesc(keyType.columnDesc(), valueType.columnDesc()));
+        API_SUPPORT);
 
     this.keyType = keyType;
     // sanity checking
@@ -37,6 +42,12 @@ public class ApiMapType extends CollectionApiDataType {
     if (!isValueTypeSupported(valueType)) {
       throw new IllegalArgumentException("valueType is not supported");
     }
+  }
+
+  @Override
+  public ColumnDesc columnDesc() {
+    return new MapColumnDesc(
+        keyType.columnDesc(), valueType.columnDesc(), ApiSupportDesc.from(this));
   }
 
   public static io.stargate.sgv2.jsonapi.service.schema.tables.ApiMapType from(
