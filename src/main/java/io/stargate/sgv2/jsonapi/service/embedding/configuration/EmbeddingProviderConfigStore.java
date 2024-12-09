@@ -35,9 +35,7 @@ public interface EmbeddingProviderConfigStore {
     }
 
     public String getBaseUrl(String modelName) {
-      return modelUrlOverrides != null
-          ? modelUrlOverrides.get(modelName).orElse(baseUrl)
-          : baseUrl;
+      return modelUrlOverrides != null ? modelUrlOverrides.get(modelName).orElse(baseUrl) : baseUrl;
     }
   }
 
