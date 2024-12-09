@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestDataNames;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.InTableFilter;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer.StatementType;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -306,6 +307,51 @@ public class DeleteUpdateWhereAnalyzerTest {
         .analyzeMaybeFilterError(expectedCode);
   }
 
+  private static Stream<Arguments> neFilterUsage() {
+    return Stream.of(
+        Arguments.of(StatementType.UPDATE_ONE, NativeTypeTableFilter.Operator.NE),
+        Arguments.of(StatementType.UPDATE_ONE, NativeTypeTableFilter.Operator.GT),
+        Arguments.of(StatementType.UPDATE_ONE, NativeTypeTableFilter.Operator.GTE),
+        Arguments.of(StatementType.UPDATE_ONE, NativeTypeTableFilter.Operator.LTE),
+        Arguments.of(StatementType.UPDATE_ONE, NativeTypeTableFilter.Operator.LT),
+        Arguments.of(StatementType.DELETE_ONE, NativeTypeTableFilter.Operator.NE),
+        Arguments.of(StatementType.DELETE_ONE, NativeTypeTableFilter.Operator.GT),
+        Arguments.of(StatementType.DELETE_ONE, NativeTypeTableFilter.Operator.GTE),
+        Arguments.of(StatementType.DELETE_ONE, NativeTypeTableFilter.Operator.LTE),
+        Arguments.of(StatementType.DELETE_ONE, NativeTypeTableFilter.Operator.LT));
+  }
+
+  @ParameterizedTest
+  @MethodSource("neFilterUsage")
+  public void forbidFilterUsage(
+      StatementType statementType, NativeTypeTableFilter.Operator operator) {
+
+    var fixture =
+        TEST_DATA
+            .whereAnalyzer()
+            .table2PK3Clustering1Index("ne_filter_on_" + statementType.name(), statementType);
+    final ColumnMetadata firstPartitionKey =
+        TEST_DATA.tableMetadata().table2PK3Clustering1Index().getPartitionKey().getFirst();
+
+    if (operator == NativeTypeTableFilter.Operator.NE) {
+      fixture
+          .expression()
+          .notEqOn(firstPartitionKey.getName())
+          .analyzeMaybeFilterError(
+              FilterException.Code.UNSUPPORTED_FILTER_FOR_UPDATE_ONE_DELETE_ONE)
+          .assertExceptionOnNonEqFilerForUpdateOneAndDeleteOne(firstPartitionKey.getName());
+    }
+
+    if (operator.filterBehaviour.filterIsSlice()) {
+      fixture
+          .expression()
+          .gtOn(firstPartitionKey.getName())
+          .analyzeMaybeFilterError(
+              FilterException.Code.UNSUPPORTED_FILTER_FOR_UPDATE_ONE_DELETE_ONE)
+          .assertExceptionOnNonEqFilerForUpdateOneAndDeleteOne(firstPartitionKey.getName());
+    }
+  }
+
   private static Stream<Arguments> inFilterUsage() {
     return Stream.of(
         Arguments.of(StatementType.DELETE_ONE, InTableFilter.Operator.IN),
@@ -329,8 +375,7 @@ public class DeleteUpdateWhereAnalyzerTest {
     fixture
         .expression()
         .inOnOnePartitionKey(inTableFilterOperator, firstPartitionKey)
-        .analyzeMaybeFilterError(
-            FilterException.Code.UNSUPPORTED_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE)
+        .analyzeMaybeFilterError(FilterException.Code.UNSUPPORTED_FILTER_FOR_UPDATE_ONE_DELETE_ONE)
         .assertExceptionOnInFilerForUpdateOneAndDeleteOne(firstPartitionKey.getName());
   }
 }

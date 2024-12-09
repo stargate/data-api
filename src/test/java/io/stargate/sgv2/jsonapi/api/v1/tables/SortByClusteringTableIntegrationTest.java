@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.scenarios.TestDataScenario.ID_COL;
 import static io.stargate.sgv2.jsonapi.api.v1.util.scenarios.TestDataScenario.fieldName;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 
@@ -34,8 +35,8 @@ public class SortByClusteringTableIntegrationTest extends AbstractTableIntegrati
   private static final ThreeClusteringKeysTableScenario SCENARIO =
       new ThreeClusteringKeysTableScenario(keyspaceName, TABLE_NAME);
 
-  private static Map<String, Object> FILTER_ID =
-      ImmutableMap.of(fieldName(ThreeClusteringKeysTableScenario.ID_COL), "row-1");
+  private static Map<String, Object> FILTER_ID = ImmutableMap.of(fieldName(ID_COL), "row-1");
+
   private static List<String> PROJECT_OFFSET =
       List.of(fieldName(ThreeClusteringKeysTableScenario.OFFSET_COL));
 
@@ -315,5 +316,115 @@ public class SortByClusteringTableIntegrationTest extends AbstractTableIntegrati
         .hasDocumentInPosition(0, expected1)
         .hasDocumentInPosition(1, expected2)
         .hasDocumentInPosition(2, expected3);
+  }
+
+  @Test
+  public void emptyFilterTriggersImMemorySort() {
+
+    Map<String, Object> sort =
+        ImmutableMap.of(fieldName(ThreeClusteringKeysTableScenario.CLUSTER_COL_1), -1);
+
+    var expectedDoc =
+        """
+            {
+                "offset": 19
+            }
+            """;
+
+    assertTableCommand(keyspaceName, TABLE_NAME)
+        .templated()
+        .find(Map.of(), PROJECT_OFFSET, sort, ImmutableMap.of("limit", 1))
+        .wasSuccessful()
+        .hasWarning(
+            0,
+            WarningException.Code.IN_MEMORY_SORTING_DUE_TO_PARTITION_KEY_NOT_RESTRICTED,
+            "When sorting by the partition sorting columns, partition keys needs to restricted by $eq in filter clause")
+        .hasWarning(
+            1,
+            WarningException.Code.ZERO_FILTER_OPERATIONS,
+            "Providing zero filters will return all rows in the table, which may have poor performance when the table is large")
+        .hasDocuments(1)
+        .hasDocumentInPosition(0, expectedDoc);
+  }
+
+  private static Stream<Arguments> nonPartitionSelects() {
+
+    var builder = Stream.<Arguments>builder();
+    var expectedDoc =
+        """
+            {
+                "offset": 19
+            }
+            """;
+    var expectedDocs = List.of(expectedDoc);
+
+    // all the cases we need the sorting, this is when there is a non partition key in the filter
+    builder.add(
+        Arguments.of(
+            ImmutableMap.of(fieldName(ID_COL), ImmutableMap.of("$ne", "invalid")),
+            expectedDocs,
+            true));
+    builder.add(
+        Arguments.of(
+            ImmutableMap.of(fieldName(ID_COL), ImmutableMap.of("$in", new Object[] {"one", "two"})),
+            List.of(),
+            true));
+    builder.add(
+        Arguments.of(
+            ImmutableMap.of(fieldName(ID_COL), ImmutableMap.of("$gt", "one")), expectedDocs, true));
+    builder.add(
+        Arguments.of(
+            ImmutableMap.of(fieldName(ID_COL), ImmutableMap.of("$gte", "one")),
+            expectedDocs,
+            true));
+    builder.add(
+        Arguments.of(
+            ImmutableMap.of(fieldName(ID_COL), ImmutableMap.of("$lte", "one")), List.of(), true));
+    builder.add(
+        Arguments.of(
+            ImmutableMap.of(fieldName(ID_COL), ImmutableMap.of("$lt", "one")), List.of(), true));
+
+    // all the cases we don't need the sorting, this is when there is a partition key in the filter
+    builder.add(
+        Arguments.of(
+            ImmutableMap.of(fieldName(ID_COL), ImmutableMap.of("$eq", "row-1")),
+            expectedDocs,
+            false));
+    builder.add(
+        Arguments.of(
+            ImmutableMap.of(fieldName(ID_COL), ImmutableMap.of("$in", new Object[] {"row-1"})),
+            expectedDocs,
+            false));
+
+    return builder.build();
+  }
+
+  @ParameterizedTest
+  @MethodSource("nonPartitionSelects")
+  public void nonPartitionSelectTriggersImMemorySort(
+      Map<String, Object> filter, List<String> expectedDocs, boolean inMemorySort) {
+
+    Map<String, Object> sort =
+        ImmutableMap.of(fieldName(ThreeClusteringKeysTableScenario.CLUSTER_COL_1), -1);
+
+    var validator =
+        assertTableCommand(keyspaceName, TABLE_NAME)
+            .templated()
+            .find(filter, PROJECT_OFFSET, sort, ImmutableMap.of("limit", 1))
+            .wasSuccessful();
+
+    if (inMemorySort) {
+      validator.hasWarning(
+          0,
+          WarningException.Code.IN_MEMORY_SORTING_DUE_TO_PARTITION_KEY_NOT_RESTRICTED,
+          "When sorting by the partition sorting columns, partition keys needs to restricted by $eq in filter clause");
+    } else {
+      validator.hasNoWarnings();
+    }
+
+    validator.hasDocuments(expectedDocs.size());
+    for (int i = 0; i < expectedDocs.size(); i++) {
+      validator.hasDocumentInPosition(i, expectedDocs.get(i));
+    }
   }
 }
