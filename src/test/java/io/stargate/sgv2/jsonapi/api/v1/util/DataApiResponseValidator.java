@@ -48,6 +48,7 @@ public class DataApiResponseValidator {
                   LIST_INDEXES ->
               responseIsDDLSuccess();
           case CREATE_COLLECTION -> responseIsDDLSuccess();
+          case COUNT_DOCUMENTS -> responseIsCountSuccess();
           default ->
               throw new IllegalArgumentException(
                   "DataApiResponseValidator: Unexpected command name: " + commandName);
@@ -240,6 +241,28 @@ public class DataApiResponseValidator {
     return validator;
   }
 
+  public DataApiResponseValidator hasWarning(
+      int position, WarningException.Code code, String... messageSnippet) {
+    var validator =
+        body(
+                "status.warnings[%s]".formatted(position),
+                hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+            .body(
+                "status.warnings[%s]".formatted(position),
+                hasEntry(
+                    ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+            .body(
+                "status.warnings[%s]".formatted(position),
+                hasEntry(ErrorObjectV2Constants.Fields.CODE, code.name()));
+
+    for (String snippet : messageSnippet) {
+      validator =
+          validator.body(
+              "status.warnings[%s].message".formatted(position), containsString(snippet));
+    }
+    return validator;
+  }
+
   public DataApiResponseValidator mayHasSingleWarning(WarningException.Code warningExceptionCode) {
     if (warningExceptionCode == null) {
       return hasNoWarnings();
@@ -285,6 +308,10 @@ public class DataApiResponseValidator {
 
   public DataApiResponseValidator hasDocuments(int size) {
     return body("data.documents", hasSize(size));
+  }
+
+  public DataApiResponseValidator verifyDataDocuments(String expectedJson) {
+    return body("data.documents", jsonEquals(expectedJson));
   }
 
   // // // Projection Schema // // //
@@ -378,6 +405,10 @@ public class DataApiResponseValidator {
 
   public DataApiResponseValidator hasNextPageState() {
     return body("data.nextPageState", is(notNullValue()));
+  }
+
+  public String extractNextPageState() {
+    return response.extract().path("data.nextPageState");
   }
 
   public DataApiResponseValidator doesNotHaveNextPageState() {

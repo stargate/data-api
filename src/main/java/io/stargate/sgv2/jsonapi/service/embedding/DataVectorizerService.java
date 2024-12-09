@@ -179,7 +179,7 @@ public class DataVectorizerService {
           T tableSchemaObject, List<JsonNode> documents, ErrorCode<E> noVectorizeDefinitionCode) {
 
     var apiTableDef = tableSchemaObject.apiTableDef();
-    var vectorColumnDefs = apiTableDef.allColumns().filterByTypeToList(ApiTypeName.VECTOR);
+    var vectorColumnDefs = apiTableDef.allColumns().filterBySupportedTypeToList(ApiTypeName.VECTOR);
 
     if (vectorColumnDefs.isEmpty()) {
       return List.of();
