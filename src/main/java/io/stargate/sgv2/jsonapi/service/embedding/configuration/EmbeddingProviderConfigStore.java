@@ -12,16 +12,16 @@ public interface EmbeddingProviderConfigStore {
       // `implementationClass` is the custom class that implements the EmbeddingProvider interface
       Optional<Class<?>> implementationClass,
       RequestProperties requestConfiguration,
-      Map<String, Optional<String>> modelwiseServiceUrls) {
+      Map<String, Optional<String>> modelUrlOverrides) {
 
     public static ServiceConfig provider(
         String serviceName,
         String serviceProvider,
         String baseUrl,
         RequestProperties requestConfiguration,
-        Map<String, Optional<String>> modelwiseServiceUrls) {
+        Map<String, Optional<String>> modelUrlOverrides) {
       return new ServiceConfig(
-          serviceName, serviceProvider, baseUrl, null, requestConfiguration, modelwiseServiceUrls);
+          serviceName, serviceProvider, baseUrl, null, requestConfiguration, modelUrlOverrides);
     }
 
     public static ServiceConfig custom(Optional<Class<?>> implementationClass) {
@@ -35,8 +35,8 @@ public interface EmbeddingProviderConfigStore {
     }
 
     public String getBaseUrl(String modelName) {
-      return modelwiseServiceUrls != null
-          ? modelwiseServiceUrls.get(modelName).orElse(baseUrl)
+      return modelUrlOverrides != null
+          ? modelUrlOverrides.get(modelName).orElse(baseUrl)
           : baseUrl;
     }
   }
