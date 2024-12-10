@@ -13,22 +13,22 @@ public class VectorColumnDesc extends ComplexColumnDesc {
 
   // Float will be default type for vector
   private final ColumnDesc valueType;
-  private final int dimensions;
+  private final Integer dimension;
   private final VectorizeConfig vectorizeConfig;
 
-  public VectorColumnDesc(int dimensions, VectorizeConfig vectorizeConfig) {
+  public VectorColumnDesc(Integer dimension, VectorizeConfig vectorizeConfig) {
     this(
-        dimensions,
+        dimension,
         vectorizeConfig,
         ApiSupportDesc.withoutCqlDefinition(ApiVectorType.API_SUPPORT));
   }
 
   public VectorColumnDesc(
-      int dimensions, VectorizeConfig vectorizeConfig, ApiSupportDesc apiSupportDesc) {
+      int dimension, VectorizeConfig vectorizeConfig, ApiSupportDesc apiSupportDesc) {
     super(ApiTypeName.VECTOR, apiSupportDesc);
 
     this.valueType = PrimitiveColumnDesc.FLOAT;
-    this.dimensions = dimensions;
+    this.dimension = dimension;
     this.vectorizeConfig = vectorizeConfig;
   }
 
@@ -36,8 +36,8 @@ public class VectorColumnDesc extends ComplexColumnDesc {
     return vectorizeConfig;
   }
 
-  public int getDimensions() {
-    return dimensions;
+  public Integer getDimension() {
+    return dimension;
   }
 
   public ColumnDesc valueType() {
@@ -54,21 +54,28 @@ public class VectorColumnDesc extends ComplexColumnDesc {
       return false;
     }
     var vectDesc = (VectorColumnDesc) o;
-    return dimensions == vectDesc.dimensions
+    return Objects.equals(dimension, vectDesc.dimension)
         && Objects.equals(valueType, vectDesc.valueType)
         && Objects.equals(vectorizeConfig, vectDesc.vectorizeConfig);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(valueType, dimensions, vectorizeConfig);
+    return Objects.hash(valueType, dimension, vectorizeConfig);
   }
 
   public static class FromJsonFactory {
     FromJsonFactory() {}
 
     public VectorColumnDesc create(String dimensionString, VectorizeConfig vectorConfig) {
+      // if the string is null/empty/blank, we think the user doesn't provide the dimension
+      // we will check later if the null dimension is allowed
+      // same logic as the collection
+      if (dimensionString == null || dimensionString.isBlank()) {
+        return new VectorColumnDesc(null, vectorConfig);
+      }
 
+      // dimensionString cannot be non-empty string or the value is negative
       Integer dimension = null;
       try {
         dimension = Integer.parseInt(dimensionString);
@@ -77,7 +84,7 @@ public class VectorColumnDesc extends ComplexColumnDesc {
       }
       if (dimension == null || !ApiVectorType.isDimensionSupported(dimension)) {
         throw SchemaException.Code.UNSUPPORTED_VECTOR_DIMENSION.get(
-            Map.of("unsupportedValue", String.valueOf(dimensionString)));
+            Map.of("unsupportedValue", dimensionString));
       }
       // aaron- not calling ApiVectorType isSupported because the value type is locked to float
       return new VectorColumnDesc(dimension, vectorConfig);
