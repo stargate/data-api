@@ -60,6 +60,12 @@ public abstract class ApiDataTypeDefs {
       new PrimitiveApiDataTypeDef(
           ApiTypeName.BOOLEAN, DataTypes.BOOLEAN, ApiSupportDef.Support.FULL);
 
+  public static final PrimitiveApiDataTypeDef COUNTER =
+      new PrimitiveApiDataTypeDef(
+          ApiTypeName.COUNTER,
+          DataTypes.COUNTER,
+          new ApiSupportDef.Support(false, false, true, true));
+
   public static final PrimitiveApiDataTypeDef INET =
       new PrimitiveApiDataTypeDef(ApiTypeName.INET, DataTypes.INET, ApiSupportDef.Support.FULL);
 
@@ -76,6 +82,6 @@ public abstract class ApiDataTypeDefs {
   // below.
   static final List<PrimitiveApiDataTypeDef> PRIMITIVE_TYPES =
       List.of(
-          ASCII, BIGINT, BOOLEAN, BINARY, DATE, DECIMAL, DOUBLE, DURATION, FLOAT, INT, SMALLINT,
-          TEXT, TIME, TIMESTAMP, TINYINT, VARINT, INET, UUID, TIMEUUID);
+          ASCII, BIGINT, BOOLEAN, BINARY, COUNTER, DATE, DECIMAL, DOUBLE, DURATION, FLOAT, INT,
+          SMALLINT, TEXT, TIME, TIMESTAMP, TINYINT, VARINT, INET, UUID, TIMEUUID);
 }

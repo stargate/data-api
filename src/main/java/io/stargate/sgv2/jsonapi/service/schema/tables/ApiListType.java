@@ -20,10 +20,10 @@ public class ApiListType extends CollectionApiDataType {
       new CqlTypeFactory();
 
   // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
-  public static final ApiSupportDef API_SUPPORT = CollectionApiDataType.DEFAULT_API_SUPPORT;
+  public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
 
-  private ApiListType(PrimitiveApiDataTypeDef valueType) {
-    super(ApiTypeName.LIST, valueType, DataTypes.listOf(valueType.cqlType()), API_SUPPORT);
+  private ApiListType(PrimitiveApiDataTypeDef valueType, ApiSupportDef apiSupport) {
+    super(ApiTypeName.LIST, valueType, DataTypes.listOf(valueType.cqlType()), apiSupport);
   }
 
   @Override
@@ -31,11 +31,11 @@ public class ApiListType extends CollectionApiDataType {
     return new ListColumnDesc(valueType.columnDesc(), ApiSupportDesc.from(this));
   }
 
-  public static ApiListType from(ApiDataType valueType) {
+  private static ApiListType from(ApiDataType valueType, boolean isFrozen) {
     Objects.requireNonNull(valueType, "valueType must not be null");
 
     if (isValueTypeSupported(valueType)) {
-      return new ApiListType((PrimitiveApiDataTypeDef) valueType);
+      return new ApiListType((PrimitiveApiDataTypeDef) valueType, defaultApiSupport(isFrozen));
     }
 
     throw new IllegalArgumentException(
@@ -64,7 +64,8 @@ public class ApiListType extends CollectionApiDataType {
       }
       // Not calling isSupported to avoid double decoding of the valueType
       if (isValueTypeSupported(valueType)) {
-        return ApiListType.from(valueType);
+        // can never be frozen from the API
+        return ApiListType.from(valueType, false);
       }
       throw new UnsupportedUserType(columnDesc);
     }
@@ -96,7 +97,8 @@ public class ApiListType extends CollectionApiDataType {
 
       try {
         return ApiListType.from(
-            TypeFactoryFromCql.DEFAULT.create(cqlType.getElementType(), vectorizeDefn));
+            TypeFactoryFromCql.DEFAULT.create(cqlType.getElementType(), vectorizeDefn),
+            cqlType.isFrozen());
       } catch (UnsupportedCqlType e) {
         // make sure we have the list type, not just the key or value type
         throw new UnsupportedCqlType(cqlType, e);
@@ -107,10 +109,7 @@ public class ApiListType extends CollectionApiDataType {
     public boolean isSupported(ListType cqlType) {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
-      // cannot be frozen
-      if (cqlType.isFrozen()) {
-        return false;
-      }
+      ///  we accept frozen, but change the support.
       // must be a primitive type value
       return cqlType.getElementType() instanceof PrimitiveType;
     }

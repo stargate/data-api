@@ -6,8 +6,17 @@ import com.datastax.oss.driver.api.core.type.DataType;
 public abstract class CollectionApiDataType implements ApiDataType {
 
   // Default collection support, they cannot be used in filtering
-  protected static final ApiSupportDef DEFAULT_API_SUPPORT =
+  private static final ApiSupportDef DEFAULT_API_SUPPORT =
       new ApiSupportDef.Support(true, true, true, false);
+
+  // Default collection support when the type is frozen, they cannot be used for create but we can
+  // insert them
+  private static final ApiSupportDef DEFAULT_API_SUPPORT_FROZEN =
+      new ApiSupportDef.Support(false, true, true, false);
+
+  protected static ApiSupportDef defaultApiSupport(boolean isFrozen) {
+    return isFrozen ? DEFAULT_API_SUPPORT_FROZEN : DEFAULT_API_SUPPORT;
+  }
 
   protected final ApiTypeName typeName;
   protected final PrimitiveApiDataTypeDef valueType;

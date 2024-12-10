@@ -603,6 +603,21 @@ request-errors:
       ${SNIPPET.INEFFICIENT_SORT}
 
   # ================================================================================================================
+  # Family: REQUEST         Scope: PROJECTION
+  # ================================================================================================================
+
+  - scope: PROJECTION
+    code: UNSUPPORTED_COLUMN_TYPES
+    title: Column types in projection are not supported
+    body: |-
+      Only supported column types can be included when reading from a table.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command included the following columns cannot be read: ${unsupportedColumns}.
+      
+      Resend the command using only supported column types.
+
+  # ================================================================================================================
   # Family: REQUEST         Scope: SCHEMA
   # ================================================================================================================
 

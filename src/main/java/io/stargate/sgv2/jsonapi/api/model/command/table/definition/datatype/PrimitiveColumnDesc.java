@@ -9,6 +9,7 @@ public enum PrimitiveColumnDesc implements ColumnDesc {
   BIGINT(ApiDataTypeDefs.BIGINT),
   BINARY(ApiDataTypeDefs.BINARY),
   BOOLEAN(ApiDataTypeDefs.BOOLEAN),
+  COUNTER(ApiDataTypeDefs.COUNTER),
   DATE(ApiDataTypeDefs.DATE),
   DECIMAL(ApiDataTypeDefs.DECIMAL),
   DOUBLE(ApiDataTypeDefs.DOUBLE),

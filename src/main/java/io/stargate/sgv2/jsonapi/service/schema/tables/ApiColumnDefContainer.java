@@ -12,7 +12,9 @@ import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,12 +98,17 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     return keySet().stream().toList();
   }
 
+  private Stream<ApiColumnDef> streamBySupport(Predicate<ApiSupportDef> matcher) {
+    return values().stream().filter(columnDef -> matcher.test(columnDef.type().apiSupport()));
+  }
+
+  public List<ApiColumnDef> filterBySupportToList(Predicate<ApiSupportDef> matcher) {
+    return streamBySupport(matcher).toList();
+  }
+
   public List<ApiColumnDef> filterBySupportedTypeToList(ApiTypeName type) {
-    return values().stream()
-        .filter(
-            columnDef ->
-                !columnDef.type().apiSupport().isUnsupportedAny()
-                    && columnDef.type().typeName() == type)
+    return streamBySupport(ApiSupportDef.MATCH_FULL_SUPPORT)
+        .filter(columnDef -> columnDef.type().typeName() == type)
         .toList();
   }
 
@@ -109,16 +116,19 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     return new ApiColumnDefContainer(filterBySupportedTypeToList(type));
   }
 
-  public ApiColumnDefContainer filterBySupported(Collection<CqlIdentifier> identifiers) {
+  /**
+   * Filterings the columns without checking the support
+   *
+   * @param identifiers
+   * @return
+   */
+  public ApiColumnDefContainer filterBy(Collection<CqlIdentifier> identifiers) {
     return new ApiColumnDefContainer(
         values().stream().filter(columnDef -> identifiers.contains(columnDef.name())).toList());
   }
 
   public ApiColumnDefContainer filterByUnsupported() {
-    return new ApiColumnDefContainer(
-        entrySet().stream()
-            .filter(entry -> entry.getValue().type().apiSupport().isUnsupportedAny())
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    return new ApiColumnDefContainer(streamBySupport(ApiSupportDef.MATCH_ANY_UNSUPPORTED).toList());
   }
 
   public Map<CqlIdentifier, VectorizeDefinition> getVectorizeDefs() {

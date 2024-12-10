@@ -21,7 +21,8 @@ public class ApiVectorType extends CollectionApiDataType {
       new CqlTypeFactory();
 
   // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
-  public static final ApiSupportDef API_SUPPORT = CollectionApiDataType.DEFAULT_API_SUPPORT;
+  // NOTE: the vector type cannot be frozen so we do not need different support for frozen
+  public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
 
   private final int dimension;
   private final VectorizeDefinition vectorizeDefinition;
