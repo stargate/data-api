@@ -99,6 +99,8 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
   }
 
   private Stream<ApiColumnDef> streamBySupport(Predicate<ApiSupportDef> matcher) {
+    // TODO: this is not properly filtering by supported but is used in a way that expects this
+    // behaviour, shoudl be fixed
     return values().stream().filter(columnDef -> matcher.test(columnDef.type().apiSupport()));
   }
 

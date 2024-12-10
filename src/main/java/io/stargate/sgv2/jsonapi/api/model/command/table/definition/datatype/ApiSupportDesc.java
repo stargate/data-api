@@ -6,6 +6,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 
+/**
+ * Description of the API support for a data type to be used in the public API with users via the
+ * {@link ColumnDesc#apiSupport()}.
+ *
+ * <p>They are normally created from the {@link ApiDataType} , see {@link ApiDataType#apiSupport()}
+ * and {@link ApiDataType#columnDesc()} for more information.
+ */
 @JsonPropertyOrder({"createTable", "insert", "read", "filter", "cqlDefinition"})
 public record ApiSupportDesc(
     boolean createTable, boolean insert, boolean read, boolean filter, String cqlDefinition) {

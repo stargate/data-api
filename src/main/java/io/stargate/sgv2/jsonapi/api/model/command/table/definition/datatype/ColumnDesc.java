@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDescDeserializer;
 import io.stargate.sgv2.jsonapi.api.model.command.serializer.ColumnDescSerializer;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
+import java.util.Objects;
 
 /**
  * Describes a column in a table definition, from the user perspective.
@@ -53,8 +54,16 @@ public interface ColumnDesc {
 
     private final ColumnDesc columnDesc;
 
+    /**
+     * Creates a new instance that will wrap the existing {@link ColumnDesc}.
+     *
+     * <p>All methods will delegate to the wrapped instance, except {@link #apiSupport()} which
+     * modifies the results from the wrapped instance.
+     *
+     * @param columnDesc the column description to wrap
+     */
     public StaticColumnDesc(ColumnDesc columnDesc) {
-      this.columnDesc = columnDesc;
+      this.columnDesc = Objects.requireNonNull(columnDesc, "columnDesc must not be null");
     }
 
     @Override
@@ -62,6 +71,14 @@ public interface ColumnDesc {
       return columnDesc.typeName();
     }
 
+    /**
+     * Returns the wrapped column's {@link ApiSupportDesc} with the createTable flag set to false
+     * and the cqlDefinition set to "static " + the wrapped column's cqlDefinition. Because static
+     * columns cannot be created, and there no easy way to express static in CQL (it's a property of
+     * the column not type)
+     *
+     * @return A {@link ApiSupportDesc} describing the static type
+     */
     @Override
     public ApiSupportDesc apiSupport() {
       return new ApiSupportDesc(

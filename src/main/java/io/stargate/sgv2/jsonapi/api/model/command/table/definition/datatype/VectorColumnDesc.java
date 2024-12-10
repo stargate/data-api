@@ -18,9 +18,7 @@ public class VectorColumnDesc extends ComplexColumnDesc {
 
   public VectorColumnDesc(Integer dimension, VectorizeConfig vectorizeConfig) {
     this(
-        dimension,
-        vectorizeConfig,
-        ApiSupportDesc.withoutCqlDefinition(ApiVectorType.API_SUPPORT));
+        dimension, vectorizeConfig, ApiSupportDesc.withoutCqlDefinition(ApiVectorType.API_SUPPORT));
   }
 
   public VectorColumnDesc(
