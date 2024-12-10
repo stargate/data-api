@@ -33,7 +33,10 @@ public enum ApiTypeName {
   TIMEUUID("timeuuid"),
   VARINT("varint"),
 
-  // Complex Types
+  // Special Types
+  COUNTER("counter"),
+
+  // Collection Types
   LIST("list"),
   MAP("map"),
   SET("set"),

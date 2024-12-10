@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.VectorType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.VectorColumnDesc;
@@ -20,6 +21,10 @@ public class ApiVectorType extends CollectionApiDataType {
   public static final TypeFactoryFromCql<ApiVectorType, VectorType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
 
+  // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
+  // NOTE: the vector type cannot be frozen so we do not need different support for frozen
+  public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
+
   private final int dimension;
   private final VectorizeDefinition vectorizeDefinition;
 
@@ -28,13 +33,7 @@ public class ApiVectorType extends CollectionApiDataType {
         ApiTypeName.VECTOR,
         ApiDataTypeDefs.FLOAT,
         new ExtendedVectorType(ApiDataTypeDefs.FLOAT.cqlType(), dimension),
-        null);
-    // passes null for the columnDesc, the vector type is not cached and we only need the column
-    // desc
-    // when returning metadata so may not need it for general read and write (i.e. we will create
-    // the column def
-    // for the table even if we dont read / write the vector
-    // create the column dec on demand
+        API_SUPPORT);
     this.dimension = dimension;
     this.vectorizeDefinition = vectorizeDefinition;
   }
@@ -42,7 +41,9 @@ public class ApiVectorType extends CollectionApiDataType {
   @Override
   public ColumnDesc columnDesc() {
     return new VectorColumnDesc(
-        dimension, vectorizeDefinition == null ? null : vectorizeDefinition.toVectorizeConfig());
+        dimension,
+        vectorizeDefinition == null ? null : vectorizeDefinition.toVectorizeConfig(),
+        ApiSupportDesc.from(this));
   }
 
   public int getDimension() {

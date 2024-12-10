@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD;
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtApiColumnDef;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.Row;
@@ -14,13 +14,16 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.OperationProjection;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import java.util.*;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +38,13 @@ import org.slf4j.LoggerFactory;
  */
 public class TableProjection implements SelectCQLClause, OperationProjection {
   private static final Logger LOGGER = LoggerFactory.getLogger(TableProjection.class);
+
+  /**
+   * Match if a column does not support reads so we can find unsupported columns from the
+   * projection.
+   */
+  private static final Predicate<ApiSupportDef> MATCH_READ_UNSUPPORTED =
+      ApiSupportDef.Matcher.NO_MATCHES.withRead(false);
 
   private ObjectMapper objectMapper;
   private TableSchemaObject table;
@@ -85,11 +95,17 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
         table
             .apiTableDef()
             .allColumns()
-            .filterBySupported(columns.stream().map(ColumnMetadata::getName).toList());
-    if (!readApiColumns.filterByUnsupported().isEmpty()) {
-      throw new IllegalStateException(
-          "Unsupported columns in the result set: %s"
-              .formatted(errFmtApiColumnDef(readApiColumns.filterByUnsupported())));
+            .filterBy(columns.stream().map(ColumnMetadata::getName).toList());
+
+    var unsupportedColumns = readApiColumns.filterBySupportToList(MATCH_READ_UNSUPPORTED);
+    if (!unsupportedColumns.isEmpty()) {
+      throw ProjectionException.Code.UNSUPPORTED_COLUMN_TYPES.get(
+          errVars(
+              table,
+              map -> {
+                map.put("allColumns", errFmtApiColumnDef(table.apiTableDef().allColumns()));
+                map.put("unsupportedColumns", errFmtApiColumnDef(unsupportedColumns));
+              }));
     }
 
     return new TableProjection(

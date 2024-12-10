@@ -23,6 +23,8 @@ public class RequestException extends APIException {
     DOCUMENT,
     /** See {@link FilterException} */
     FILTER,
+    /** See {@link ProjectionException} */
+    PROJECTION,
     /** See {@link SchemaException} */
     SCHEMA,
     /** See {@link SortException} */
