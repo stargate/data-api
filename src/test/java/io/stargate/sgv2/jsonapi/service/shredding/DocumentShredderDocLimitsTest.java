@@ -405,7 +405,17 @@ public class DocumentShredderDocLimitsTest {
   @Nested
   class ValidationDocNameViolations {
     @ParameterizedTest
-    @ValueSource(strings = {"name", "a123", "snake_case", "camelCase", "ab-cd-ef"})
+    @ValueSource(
+        strings = {
+          "name",
+          "a123",
+          "snake_case",
+          "camelCase",
+          "ab-cd-ef",
+          "snake_case",
+          "colons:are:good:too",
+          "and/or"
+        })
     public void allowRegularPropertyNames(String validName) {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
@@ -430,7 +440,7 @@ public class DocumentShredderDocLimitsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"$function", "dot.ted", "index[1]", "a/b", "a\\b"})
+    @ValueSource(strings = {"$function", "dot.ted", "index[1]", "a\\b", "r&b"})
     public void catchInvalidPropertyName(String invalidName) {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
