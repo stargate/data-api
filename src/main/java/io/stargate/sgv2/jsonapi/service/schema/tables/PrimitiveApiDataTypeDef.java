@@ -19,10 +19,12 @@ public class PrimitiveApiDataTypeDef implements ApiDataType {
 
   private final ApiTypeName typeName;
   private final DataType cqlType;
+  private final ApiSupportDef apiSupport;
 
-  public PrimitiveApiDataTypeDef(ApiTypeName typeName, DataType cqlType) {
+  public PrimitiveApiDataTypeDef(ApiTypeName typeName, DataType cqlType, ApiSupportDef apiSupport) {
     this.typeName = typeName;
     this.cqlType = cqlType;
+    this.apiSupport = Objects.requireNonNull(apiSupport, "apiSupport must not be null");
   }
 
   @Override
@@ -46,8 +48,8 @@ public class PrimitiveApiDataTypeDef implements ApiDataType {
   }
 
   @Override
-  public boolean isUnsupported() {
-    return false;
+  public ApiSupportDef apiSupport() {
+    return apiSupport;
   }
 
   @Override

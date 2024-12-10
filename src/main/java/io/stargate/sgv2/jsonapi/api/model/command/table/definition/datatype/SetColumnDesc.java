@@ -15,7 +15,11 @@ public class SetColumnDesc extends ComplexColumnDesc {
   private final ColumnDesc valueType;
 
   public SetColumnDesc(ColumnDesc valueType) {
-    super(ApiTypeName.SET, ApiSupportDesc.fullSupport(""));
+    this(valueType, ApiSupportDesc.withoutCqlDefinition(ApiSetType.API_SUPPORT));
+  }
+
+  public SetColumnDesc(ColumnDesc valueType, ApiSupportDesc apiSupportDesc) {
+    super(ApiTypeName.SET, apiSupportDesc);
     this.valueType = valueType;
   }
 

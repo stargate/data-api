@@ -15,7 +15,11 @@ public class ListColumnDesc extends ComplexColumnDesc {
   private final ColumnDesc valueType;
 
   public ListColumnDesc(ColumnDesc valueType) {
-    super(ApiTypeName.LIST, ApiSupportDesc.fullSupport(""));
+    this(valueType, ApiSupportDesc.withoutCqlDefinition(ApiListType.API_SUPPORT));
+  }
+
+  public ListColumnDesc(ColumnDesc valueType, ApiSupportDesc apiSupportDesc) {
+    super(ApiTypeName.LIST, apiSupportDesc);
     this.valueType = valueType;
   }
 

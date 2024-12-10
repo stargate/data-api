@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
 import com.datastax.oss.driver.api.core.type.DataType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 
 /**
@@ -34,14 +35,14 @@ public abstract class UnsupportedColumnDesc implements ColumnDesc {
 
   public static class UnsupportedCqlColumnDesc extends UnsupportedColumnDesc {
 
-    public UnsupportedCqlColumnDesc(DataType cqlType) {
-      super(ApiSupportDesc.noSupport(cqlType.asCql(true, true)));
+    public UnsupportedCqlColumnDesc(ApiSupportDef apiSupportDef, DataType cqlType) {
+      super(ApiSupportDesc.from(apiSupportDef, cqlType));
     }
   }
 
   public static class UnsupportedUserColumnDesc extends UnsupportedColumnDesc {
     public UnsupportedUserColumnDesc() {
-      super(ApiSupportDesc.noSupport("User defined type"));
+      super(ApiSupportDesc.withoutCqlDefinition(ApiSupportDef.Support.NONE));
     }
   }
 }
