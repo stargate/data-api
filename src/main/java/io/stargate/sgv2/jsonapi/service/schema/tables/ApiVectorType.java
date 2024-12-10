@@ -73,23 +73,6 @@ public class ApiVectorType extends CollectionApiDataType {
     return new ApiVectorType(dimension, vectorizeDefinition);
   }
 
-  /**
-   * This method is only used for Dec hotfix. Currently, we don't support multiple vectorize service
-   * config. 1. If one doesn't have vectorizeDefinition (use user's own vector) and the other one
-   * have (use embedding service), it's ok 2. If both have vectorizeDefinition, only support if they
-   * are the same and have the same dimension
-   *
-   * @param v the other vector type to compare
-   * @return true if the two vector types are supported together
-   */
-  public boolean isTwoVectorColumnSupported(ApiVectorType v) {
-    if (this.vectorizeDefinition == null || v.getVectorizeDefinition() == null) {
-      return true;
-    }
-    return this.dimension == v.getDimension()
-        && Objects.equals(this.vectorizeDefinition, v.getVectorizeDefinition());
-  }
-
   private static boolean isValueTypeSupported(ApiDataType valueType) {
     Objects.requireNonNull(valueType, "valueType must not be null");
     return valueType == ApiDataTypeDefs.FLOAT;

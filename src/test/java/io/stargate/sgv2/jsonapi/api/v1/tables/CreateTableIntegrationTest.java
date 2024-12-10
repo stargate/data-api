@@ -851,129 +851,92 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   null)));
 
       // Two columns with same provider and model, but different dimension
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                        {
-                             "name": "twoVectorColumnsWithDifferentDimension",
-                             "definition": {
-                                "columns": {
-                                    "t": "text",
-                                    "v1": {
-                                        "type": "vector",
-                                        "dimension": "5",
-                                        "service": {
-                                            "provider": "openai",
-                                            "modelName": "text-embedding-3-small"
-                                        }
-                                    },
-                                    "v2":{
-                                        "type": "vector",
-                                        "dimension": "10",
-                                        "service": {
-                                            "provider": "openai",
-                                            "modelName": "text-embedding-3-small"
-                                        }
-                                    }
-                                },
-                                "primaryKey": "t"
-                             }
-                        }
-                        """,
-                  "twoVectorColumnsWithDifferentDimension",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_DIFFERENT_EMBEDDING_SERVICE_CONFIGS.name(),
-                  "Vector column v1 and vector column v2 have different embedding service configurations.")));
+      //      testCases.add(
+      //          Arguments.of(
+      //              new CreateTableTestData(
+      //                  """
+      //                        {
+      //                             "name": "twoVectorColumnsWithDifferentDimension",
+      //                             "definition": {
+      //                                "columns": {
+      //                                    "t": "text",
+      //                                    "v1": {
+      //                                        "type": "vector",
+      //                                        "dimension": "5",
+      //                                        "service": {
+      //                                            "provider": "openai",
+      //                                            "modelName": "text-embedding-3-small"
+      //                                        }
+      //                                    },
+      //                                    "v2":{
+      //                                        "type": "vector",
+      //                                        "dimension": "10",
+      //                                        "service": {
+      //                                            "provider": "openai",
+      //                                            "modelName": "text-embedding-3-small"
+      //                                        }
+      //                                    }
+      //                                },
+      //                                "primaryKey": "t"
+      //                             }
+      //                        }
+      //                        """,
+      //                  "twoVectorColumnsWithDifferentDimension",
+      //                  true,
+      //                  "TODO",
+      //                  "Vector column v1 and vector column v2 have different embedding service
+      // configurations.")));
 
       // Two columns with same provider, different models, different dimensions
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                            {
-                                 "name": "twoVectorColumnsWithDifferentModel",
-                                 "definition": {
-                                    "columns": {
-                                        "t": "text",
-                                        "v1": {
-                                            "type": "vector",
-                                            "dimension": "5",
-                                            "service": {
-                                                "provider": "openai",
-                                                "modelName": "text-embedding-3-small"
-                                            }
-                                        },
-                                        "v2":{
-                                            "type": "vector",
-                                            "dimension": "256",
-                                            "service": {
-                                                "provider": "openai",
-                                                "modelName": "text-embedding-3-large"
-                                            }
-                                        }
-                                    },
-                                    "primaryKey": "t"
-                                 }
-                            }
-                            """,
-                  "twoVectorColumnsWithDifferentModel",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_DIFFERENT_EMBEDDING_SERVICE_CONFIGS.name(),
-                  "Vector column v1 and vector column v2 have different embedding service configurations.")));
+      //      testCases.add(
+      //          Arguments.of(
+      //              new CreateTableTestData(
+      //                  """
+      //                            {
+      //                                 "name": "twoVectorColumnsWithDifferentModel",
+      //                                 "definition": {
+      //                                    "columns": {
+      //                                        "t": "text",
+      //                                        "v1": {
+      //                                            "type": "vector",
+      //                                            "dimension": "5",
+      //                                            "service": {
+      //                                                "provider": "openai",
+      //                                                "modelName": "text-embedding-3-small"
+      //                                            }
+      //                                        },
+      //                                        "v2":{
+      //                                            "type": "vector",
+      //                                            "dimension": "256",
+      //                                            "service": {
+      //                                                "provider": "openai",
+      //                                                "modelName": "text-embedding-3-large"
+      //                                            }
+      //                                        }
+      //                                    },
+      //                                    "primaryKey": "t"
+      //                                 }
+      //                            }
+      //                            """,
+      //                  "twoVectorColumnsWithDifferentModel",
+      //                  true,
+      //                  "TODO",
+      //                  "Vector column v1 and vector column v2 have different embedding service
+      // configurations.")));
 
       // Two columns with different providers
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                {
-                                     "name": "twoVectorColumnsWithDifferentProvider",
-                                     "definition": {
-                                        "columns": {
-                                            "t": "text",
-                                            "v1": {
-                                                "type": "vector",
-                                                "dimension": "5",
-                                                "service": {
-                                                    "provider": "openai",
-                                                    "modelName": "text-embedding-3-small"
-                                                }
-                                            },
-                                            "v2":{
-                                                "type": "vector",
-                                                "dimension": "768",
-                                                "service": {
-                                                    "provider": "jinaAI",
-                                                    "modelName": "jina-embeddings-v2-base-en"
-                                                }
-                                            }
-                                        },
-                                        "primaryKey": "t"
-                                     }
-                                }
-                                """,
-                  "twoVectorColumnsWithDifferentProvider",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_DIFFERENT_EMBEDDING_SERVICE_CONFIGS.name(),
-                  "Vector column v1 and vector column v2 have different embedding service configurations.")));
-
-      // Two columns with the same provider and model but one doesn't specify the dimension
-      // (implicitly default dimension)
-      // will be passed after merging PR #1780
-
       //      testCases.add(
       //          Arguments.of(
       //              new CreateTableTestData(
       //                  """
       //                                {
-      //                                     "name": "twoVectorColumnsWithOneDimension",
+      //                                     "name": "twoVectorColumnsWithDifferentProvider",
       //                                     "definition": {
       //                                        "columns": {
       //                                            "t": "text",
       //                                            "v1": {
       //                                                "type": "vector",
-      //                                                "dimension": "1536",
+      //                                                "dimension": "5",
       //                                                "service": {
       //                                                    "provider": "openai",
       //                                                    "modelName": "text-embedding-3-small"
@@ -981,9 +944,11 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       //                                            },
       //                                            "v2":{
       //                                                "type": "vector",
+      //                                                "dimension": "768",
       //                                                "service": {
-      //                                                    "provider": "openai",
-      //                                                    "modelName": "text-embedding-3-small"
+      //                                                    "provider": "jinaAI",
+      //                                                    "modelName":
+      // "jina-embeddings-v2-base-en"
       //                                                }
       //                                            }
       //                                        },
@@ -991,6 +956,45 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       //                                     }
       //                                }
       //                                """,
+      //                  "twoVectorColumnsWithDifferentProvider",
+      //                  true,
+      //                  "TODO",
+      //                  "Vector column v1 and vector column v2 have different embedding service
+      // configurations.")));
+
+      // Two columns with the same provider and model but one doesn't specify the dimension
+      // (implicitly default dimension)
+      //      testCases.add(
+      //          Arguments.of(
+      //              new CreateTableTestData(
+      //                  """
+      //                                      {
+      //                                           "name": "twoVectorColumnsWithOneDimension",
+      //                                           "definition": {
+      //                                              "columns": {
+      //                                                  "t": "text",
+      //                                                  "v1": {
+      //                                                      "type": "vector",
+      //                                                      "dimension": "1536",
+      //                                                      "service": {
+      //                                                          "provider": "openai",
+      //                                                          "modelName":
+      // "text-embedding-3-small"
+      //                                                      }
+      //                                                  },
+      //                                                  "v2":{
+      //                                                      "type": "vector",
+      //                                                      "service": {
+      //                                                          "provider": "openai",
+      //                                                          "modelName":
+      // "text-embedding-3-small"
+      //                                                      }
+      //                                                  }
+      //                                              },
+      //                                              "primaryKey": "t"
+      //                                           }
+      //                                      }
+      //                                      """,
       //                  "twoVectorColumnsWithOneDimension",
       //                  false,
       //                  null,
