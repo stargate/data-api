@@ -16,6 +16,7 @@ public abstract class JSONCodecRegistries {
               JSONCodecs.BIGINT_FROM_BIG_DECIMAL,
               JSONCodecs.BIGINT_FROM_BIG_INTEGER,
               JSONCodecs.BIGINT_FROM_LONG,
+              JSONCodecs.COUNTER_FROM_LONG,
               JSONCodecs.INT_FROM_BIG_DECIMAL,
               JSONCodecs.INT_FROM_BIG_INTEGER,
               JSONCodecs.INT_FROM_LONG,

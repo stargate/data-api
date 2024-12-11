@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.MapType;
 import com.datastax.oss.driver.internal.core.type.PrimitiveType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
@@ -20,14 +22,21 @@ public class ApiMapType extends CollectionApiDataType {
   public static final TypeFactoryFromCql<ApiMapType, MapType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
 
+  // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
+  public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
+
   private final PrimitiveApiDataTypeDef keyType;
 
-  public ApiMapType(PrimitiveApiDataTypeDef keyType, PrimitiveApiDataTypeDef valueType) {
+  private ApiMapType(
+      PrimitiveApiDataTypeDef keyType,
+      PrimitiveApiDataTypeDef valueType,
+      ApiSupportDef apiSupport,
+      boolean isFrozen) {
     super(
         ApiTypeName.MAP,
         valueType,
-        DataTypes.mapOf(keyType.cqlType(), valueType.cqlType()),
-        new MapColumnDesc(keyType.columnDesc(), valueType.columnDesc()));
+        DataTypes.mapOf(keyType.cqlType(), valueType.cqlType(), isFrozen),
+        apiSupport);
 
     this.keyType = keyType;
     // sanity checking
@@ -39,14 +48,22 @@ public class ApiMapType extends CollectionApiDataType {
     }
   }
 
-  public static io.stargate.sgv2.jsonapi.service.schema.tables.ApiMapType from(
-      ApiDataType keyType, ApiDataType valueType) {
+  @Override
+  public ColumnDesc columnDesc() {
+    return new MapColumnDesc(
+        keyType.columnDesc(), valueType.columnDesc(), ApiSupportDesc.from(this));
+  }
+
+  public static ApiMapType from(ApiDataType keyType, ApiDataType valueType, boolean isFrozen) {
     Objects.requireNonNull(keyType, "keyType must not be null");
     Objects.requireNonNull(valueType, "valueType must not be null");
 
     if (isKeyTypeSupported(keyType) && isValueTypeSupported(valueType)) {
-      return new io.stargate.sgv2.jsonapi.service.schema.tables.ApiMapType(
-          (PrimitiveApiDataTypeDef) keyType, (PrimitiveApiDataTypeDef) valueType);
+      return new ApiMapType(
+          (PrimitiveApiDataTypeDef) keyType,
+          (PrimitiveApiDataTypeDef) valueType,
+          defaultApiSupport(isFrozen),
+          isFrozen);
     }
     throw new IllegalArgumentException(
         "keyType and valueType must be primitive types, keyType: %s valueType: %s"
@@ -89,7 +106,8 @@ public class ApiMapType extends CollectionApiDataType {
       }
       // does not call isSupported to avoid two conversions for the key and value types
       if (isKeyTypeSupported(keyType) && isValueTypeSupported(valueType)) {
-        return ApiMapType.from(keyType, valueType);
+        // never frozen from the API
+        return ApiMapType.from(keyType, valueType, false);
       }
       throw new UnsupportedUserType(columnDesc);
     }
@@ -125,7 +143,8 @@ public class ApiMapType extends CollectionApiDataType {
       try {
         return ApiMapType.from(
             TypeFactoryFromCql.DEFAULT.create(cqlType.getKeyType(), vectorizeDefn),
-            TypeFactoryFromCql.DEFAULT.create(cqlType.getValueType(), vectorizeDefn));
+            TypeFactoryFromCql.DEFAULT.create(cqlType.getValueType(), vectorizeDefn),
+            cqlType.isFrozen());
       } catch (UnsupportedCqlType e) {
         // make sure we have the map type, not just the key or value type
         throw new UnsupportedCqlType(cqlType, e);
@@ -135,10 +154,7 @@ public class ApiMapType extends CollectionApiDataType {
     @Override
     public boolean isSupported(MapType cqlType) {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
-      // cannot be frozen
-      if (cqlType.isFrozen()) {
-        return false;
-      }
+      // we accept frozen and then change the support
       // keys must be text or ascii, because keys in JSON are string
       if (!(cqlType.getKeyType() == DataTypes.TEXT || cqlType.getKeyType() == DataTypes.ASCII)) {
         return false;
