@@ -1202,7 +1202,6 @@ server-errors:
   # UNSCOPED server errors
   - scope:
     code: UNEXPECTED_SERVER_ERROR
-    http-status-override: 500
     title: Unexpected server error
     body: |-
       An unexpected server error occurred while processing the request. 
