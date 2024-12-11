@@ -1051,6 +1051,13 @@ class ObjectMapperConfigurationTest {
                                                    "provider": "nvidia",
                                                    "modelName": "NV-Embed-QA"
                                                  }
+                                               },
+                                               "vector_1": {
+                                                 "type": "vector",
+                                                 "service": {
+                                                   "provider": "nvidia",
+                                                   "modelName": "NV-Embed-QA"
+                                                 }
                                                }
                                             }
                                         }
@@ -1072,7 +1079,7 @@ class ObjectMapperConfigurationTest {
                         addColumns -> {
                           Map<String, ColumnDesc> columns = addColumns.columns();
                           assertThat(columns).isNotNull();
-                          assertThat(columns).hasSize(3);
+                          assertThat(columns).hasSize(4);
                           assertThat(columns).containsEntry("new_col_1", PrimitiveColumnDesc.TEXT);
                           assertThat(columns)
                               .containsEntry(
@@ -1084,6 +1091,12 @@ class ObjectMapperConfigurationTest {
                                   "content",
                                   new VectorColumnDesc(
                                       1024,
+                                      new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
+                          assertThat(columns)
+                              .containsEntry(
+                                  "vector_1",
+                                  new VectorColumnDesc(
+                                      null,
                                       new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
                         });
               });
