@@ -923,6 +923,39 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   true,
                   SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN.name(),
                   "The dimension is required for vector columns if the embedding service is not specified.")));
+
+      // Two vector columns with the one has vectorizeDefinition and the other one doesn't.
+      // This should be allowed.
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                      {
+                         "name": "twoVectorColumnsWithOneVectorizeDefinition",
+                         "definition": {
+                            "columns": {
+                                "t": "text",
+                                "v1": {
+                                    "type": "vector",
+                                    "dimension": "5",
+                                    "service": {
+                                        "provider": "openai",
+                                        "modelName": "text-embedding-3-small"
+                                    }
+                                },
+                                "v2":{
+                                    "type": "vector",
+                                    "dimension": "1024"
+                                }
+                            },
+                            "primaryKey": "t"
+                         }
+                      }
+                      """,
+                  "twoVectorColumnsWithOneVectorizeDefinition",
+                  false,
+                  null,
+                  null)));
       return testCases.stream();
     }
   }

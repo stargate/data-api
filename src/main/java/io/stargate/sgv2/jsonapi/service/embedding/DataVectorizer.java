@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -261,21 +262,22 @@ public class DataVectorizer {
 
     // HACK: currently we only support one embedding provider because collections only supported one
     // so quick check here that we only have one, and then use it's name as the name to blame if
-    // anything
-    // goes wrong :)
-    var embeddingProviderNames =
-        tasks.stream()
-            .map(task -> task.vectorType.getVectorizeDefinition().provider())
-            .distinct()
-            .toList();
-    if (embeddingProviderNames.size() != 1) {
-      throw new IllegalArgumentException(
-          "Must be single embedding provider name, got " + embeddingProviderNames);
+    // anything goes wrong :)
+
+    // Hazel: This is a temporary fix for issue#1752. We only support one combination of
+    // "providerName", "modelName", and "dimension" vectorize config in insertion now. We will have
+    // the full support shortly.
+    var vectorizeIdentities =
+        tasks.stream().map(task -> new VectorizeIdentity(task.vectorType)).distinct().toList();
+    if (vectorizeIdentities.size() != 1) {
+      throw DocumentException.Code.UNSUPPORTED_VECTORIZE_CONFIGURATIONS.get(
+          Map.of("vectorizeIdentities", vectorizeIdentities.toString()));
     }
 
     var textToVectorize = tasks.stream().map(VectorizeTask::getVectorizeText).toList();
 
-    return vectorizeTexts(textToVectorize, embeddingProviderNames.getFirst(), requestType)
+    return vectorizeTexts(
+            textToVectorize, vectorizeIdentities.getFirst().providerName(), requestType)
         .onItem()
         .transform(
             vectorData -> {
@@ -416,6 +418,37 @@ public class DataVectorizer {
       sortClause
           .sortExpressions()
           .set(i, SortExpression.tableVectorSort(sortExpression.path(), vector));
+    }
+  }
+
+  /**
+   * We only support one combination of "providerName", "modelName", and "dimension" vectorize
+   * config in insertion. This record helps us check the configs in the request. This is a temporary
+   * fix and only for Dec hotfx.
+   *
+   * @param providerName
+   * @param modelName
+   * @param dimension
+   */
+  record VectorizeIdentity(String providerName, String modelName, int dimension) {
+    public VectorizeIdentity(ApiVectorType vectorType) {
+      this(
+          vectorType.getVectorizeDefinition().provider(),
+          vectorType.getVectorizeDefinition().modelName(),
+          vectorType.getDimension());
+    }
+
+    @Override
+    public String toString() {
+      return new StringBuilder()
+          .append("[provider=")
+          .append(providerName())
+          .append(", modelName=")
+          .append(modelName())
+          .append(", dimension=")
+          .append(dimension())
+          .append("]")
+          .toString();
     }
   }
 }
