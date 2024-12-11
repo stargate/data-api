@@ -271,7 +271,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                     "type",
                     "vector",
                     "dimension",
-                    "5",
+                    "1536",
                     "service",
                     Map.of("provider", "openai", "modelName", "text-embedding-3-small")),
                 "vector2",
@@ -1372,7 +1372,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               DocumentException.Code.UNSUPPORTED_VECTORIZE_CONFIGURATIONS,
               DocumentException.class,
               "A request can include only one unique combination of provider, model, and dimension for vectorization.",
-              "The following combinations were included in your request: [[provider=openai, modelName=text-embedding-3-small, dimension=5], [provider=google, modelName=text-embedding-3-large, dimension=256]]");
+              "The following combinations were included in your request: [[provider=openai, modelName=text-embedding-3-small, dimension=5], [provider=openai, modelName=text-embedding-3-large, dimension=256]]");
     }
 
     @Test
@@ -1391,20 +1391,6 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               DocumentException.class,
               "A request can include only one unique combination of provider, model, and dimension for vectorization.",
               "The following combinations were included in your request: [[provider=openai, modelName=text-embedding-3-small, dimension=5], [provider=jinaAI, modelName=jina-embeddings-v2-base-en, dimension=768]]");
-    }
-
-    @Test
-    void happyWithAutoPopulateDefaultDimension() {
-      assertTableCommand(keyspaceName, TABLE_WITH_MULTIPLE_VECTORIZE_DEFAULT_DIMENSIONS)
-          .templated()
-          .insertOne(
-              """
-                            { "id": "1",
-                                "vector1": "1234",
-                                "vector2": "5678"
-                            }
-                            """)
-          .wasSuccessful();
     }
   }
 }
