@@ -262,8 +262,11 @@ public class DataVectorizer {
 
     // HACK: currently we only support one embedding provider because collections only supported one
     // so quick check here that we only have one, and then use it's name as the name to blame if
-    // anything
-    // goes wrong :)
+    // anything goes wrong :)
+
+    // Hazel: This is a temporary fix for issue#1752. We only support one combination of
+    // "providerName", "modelName", and "dimension" vectorize config in insertion now. We will have
+    // the full support shortly.
     var vectorizeIdentities =
         tasks.stream().map(task -> new VectorizeIdentity(task.vectorType)).distinct().toList();
     if (vectorizeIdentities.size() != 1) {
@@ -418,6 +421,15 @@ public class DataVectorizer {
     }
   }
 
+  /**
+   * We only support one combination of "providerName", "modelName", and "dimension" vectorize
+   * config in insertion. This record helps us check the configs in the request. This is a temporary
+   * fix and only for Dec hotfx.
+   *
+   * @param providerName
+   * @param modelName
+   * @param dimension
+   */
   record VectorizeIdentity(String providerName, String modelName, int dimension) {
     public VectorizeIdentity(ApiVectorType vectorType) {
       this(

@@ -924,7 +924,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN.name(),
                   "The dimension is required for vector columns if the embedding service is not specified.")));
 
-      // Two vector columns with the one has vectorizeDefinition and the other one doesn't
+      // Two vector columns with the one has vectorizeDefinition and the other one doesn't.
+      // This should be allowed.
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
@@ -944,7 +945,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                 },
                                 "v2":{
                                     "type": "vector",
-                                    "dimension": "5"
+                                    "dimension": "1024"
                                 }
                             },
                             "primaryKey": "t"
