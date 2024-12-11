@@ -30,11 +30,12 @@ public class ApiMapType extends CollectionApiDataType {
   private ApiMapType(
       PrimitiveApiDataTypeDef keyType,
       PrimitiveApiDataTypeDef valueType,
-      ApiSupportDef apiSupport) {
+      ApiSupportDef apiSupport,
+      boolean isFrozen) {
     super(
         ApiTypeName.MAP,
         valueType,
-        DataTypes.mapOf(keyType.cqlType(), valueType.cqlType()),
+        DataTypes.mapOf(keyType.cqlType(), valueType.cqlType(), isFrozen),
         apiSupport);
 
     this.keyType = keyType;
@@ -61,7 +62,8 @@ public class ApiMapType extends CollectionApiDataType {
       return new ApiMapType(
           (PrimitiveApiDataTypeDef) keyType,
           (PrimitiveApiDataTypeDef) valueType,
-          defaultApiSupport(isFrozen));
+          defaultApiSupport(isFrozen),
+          isFrozen);
     }
     throw new IllegalArgumentException(
         "keyType and valueType must be primitive types, keyType: %s valueType: %s"

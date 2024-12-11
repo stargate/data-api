@@ -108,6 +108,10 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     return streamBySupport(matcher).toList();
   }
 
+  public ApiColumnDefContainer filterBySupport(Predicate<ApiSupportDef> matcher) {
+    return new ApiColumnDefContainer(filterBySupportToList(matcher));
+  }
+
   public List<ApiColumnDef> filterBySupportedTypeToList(ApiTypeName type) {
     return streamBySupport(ApiSupportDef.MATCH_FULL_SUPPORT)
         .filter(columnDef -> columnDef.type().typeName() == type)
@@ -134,7 +138,12 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
   }
 
   public Map<CqlIdentifier, VectorizeDefinition> getVectorizeDefs() {
-    return filterBySupportedTypeToList(ApiTypeName.VECTOR).stream()
+    // This is a hack, we need to refactor these methods in ApiColumnDefContainer.
+    // Currently, this matcher is just for match vector columns, and then to avoid hit the
+    // typeName() placeholder exception in UnsupportedApiDataType
+    var matcher =
+        ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true);
+    return filterBySupport(matcher).filterBySupportedTypeToList(ApiTypeName.VECTOR).stream()
         .filter(
             columnDef ->
                 columnDef.type() instanceof ApiVectorType vt && vt.getVectorizeDefinition() != null)

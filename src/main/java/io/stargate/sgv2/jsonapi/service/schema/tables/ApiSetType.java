@@ -22,8 +22,9 @@ public class ApiSetType extends CollectionApiDataType {
   // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
   public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
 
-  private ApiSetType(PrimitiveApiDataTypeDef valueType, ApiSupportDef apiSupport) {
-    super(ApiTypeName.SET, valueType, DataTypes.setOf(valueType.cqlType()), apiSupport);
+  private ApiSetType(
+      PrimitiveApiDataTypeDef valueType, ApiSupportDef apiSupport, boolean isFrozen) {
+    super(ApiTypeName.SET, valueType, DataTypes.setOf(valueType.cqlType(), isFrozen), apiSupport);
   }
 
   @Override
@@ -35,7 +36,8 @@ public class ApiSetType extends CollectionApiDataType {
     Objects.requireNonNull(valueType, "valueType must not be null");
 
     if (isValueTypeSupported(valueType)) {
-      return new ApiSetType((PrimitiveApiDataTypeDef) valueType, defaultApiSupport(isFrozen));
+      return new ApiSetType(
+          (PrimitiveApiDataTypeDef) valueType, defaultApiSupport(isFrozen), isFrozen);
     }
     throw new IllegalArgumentException(
         "valueType must be primitive type, valueType%s".formatted(valueType));
