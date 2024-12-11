@@ -22,7 +22,7 @@ public class VectorColumnDesc extends ComplexColumnDesc {
   }
 
   public VectorColumnDesc(
-      int dimension, VectorizeConfig vectorizeConfig, ApiSupportDesc apiSupportDesc) {
+      Integer dimension, VectorizeConfig vectorizeConfig, ApiSupportDesc apiSupportDesc) {
     super(ApiTypeName.VECTOR, apiSupportDesc);
 
     this.valueType = PrimitiveColumnDesc.FLOAT;
