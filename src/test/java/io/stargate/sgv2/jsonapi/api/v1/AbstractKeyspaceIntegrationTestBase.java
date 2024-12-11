@@ -284,7 +284,6 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
 
   protected boolean executeCqlStatement(SimpleStatement... statements) {
     var cqlSession = createDriverSession();
-    boolean applied = false;
     for (SimpleStatement statement : statements) {
       if (!cqlSession.execute(statement).wasApplied()) {
         cqlSession.close();

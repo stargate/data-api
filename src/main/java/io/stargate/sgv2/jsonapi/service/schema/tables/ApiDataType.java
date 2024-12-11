@@ -29,7 +29,15 @@ public interface ApiDataType {
 
   boolean isContainer();
 
-  boolean isUnsupported();
+  ApiSupportDef apiSupport();
 
+  /**
+   * Called to get the user API description of the type.
+   *
+   * <p><b>NOTE:</b> Because the static flag is on the column not the type, you should normally call
+   * {@link ApiColumnDef#columnDesc()} because it will handle static columns.
+   *
+   * @return {@link ColumnDesc} that describes the data type to the user.
+   */
   ColumnDesc columnDesc();
 }
