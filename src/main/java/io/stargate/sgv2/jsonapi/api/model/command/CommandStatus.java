@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-/** Enum with it's json property name which is returned in api response inside status */
+/** Enum with its json property name which is returned in api response inside status */
 public enum CommandStatus {
   /** The element has the count of document */
   @JsonProperty("count")

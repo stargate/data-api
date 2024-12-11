@@ -25,7 +25,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import java.util.*;
 
 /**
- * Utility class to execute embedding serive to get vector embeddings for the text fields in the
+ * Utility class to execute embedding service to get vector embeddings for the text fields in the
  * '$vectorize' field. The class has three utility methods to handle vectorization in json
  * documents, sort clause and update clause.
  */
