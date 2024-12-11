@@ -850,43 +850,6 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   null,
                   null)));
 
-      // Two columns with same provider and model, but different dimension
-      //      testCases.add(
-      //          Arguments.of(
-      //              new CreateTableTestData(
-      //                  """
-      //                        {
-      //                             "name": "twoVectorColumnsWithDifferentDimension",
-      //                             "definition": {
-      //                                "columns": {
-      //                                    "t": "text",
-      //                                    "v1": {
-      //                                        "type": "vector",
-      //                                        "dimension": "5",
-      //                                        "service": {
-      //                                            "provider": "openai",
-      //                                            "modelName": "text-embedding-3-small"
-      //                                        }
-      //                                    },
-      //                                    "v2":{
-      //                                        "type": "vector",
-      //                                        "dimension": "10",
-      //                                        "service": {
-      //                                            "provider": "openai",
-      //                                            "modelName": "text-embedding-3-small"
-      //                                        }
-      //                                    }
-      //                                },
-      //                                "primaryKey": "t"
-      //                             }
-      //                        }
-      //                        """,
-      //                  "twoVectorColumnsWithDifferentDimension",
-      //                  true,
-      //                  "TODO",
-      //                  "Vector column v1 and vector column v2 have different embedding service
-      // configurations.")));
-
       // Two columns with same provider, different models, different dimensions
       //      testCases.add(
       //          Arguments.of(

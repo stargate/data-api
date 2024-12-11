@@ -34,6 +34,14 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   static final String TABLE_WITH_SET_COLUMNS = "insertOneSetColumnsTable";
   static final String TABLE_WITH_MAP_COLUMNS = "insertOneMapColumnsTable";
   static final String TABLE_WITH_VECTOR_COLUMN = "insertOneVectorColumnTable";
+  static final String TABLE_WITH_MULTIPLE_VECTORIZE_DIFF_DIMENSIONS =
+      "insertOneMultipleVectorizeDiffDimensionsTable";
+  static final String TABLE_WITH_MULTIPLE_VECTORIZE_DIFF_MODELS =
+      "insertOneMultipleVectorizeDiffModelsTable";
+  static final String TABLE_WITH_MULTIPLE_VECTORIZE_DIFF_PROVIDERS =
+      "insertOneMultipleVectorizeDiffProvidersTable";
+  static final String TABLE_WITH_MULTIPLE_VECTORIZE_DEFAULT_DIMENSIONS =
+      "insertOneMultipleVectorizeDefaultDimensionsTable";
 
   final JSONCodecRegistryTestData codecTestData = new JSONCodecRegistryTestData();
 
@@ -171,6 +179,107 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                 "text",
                 "vector",
                 Map.of("type", "vector", "valueType", "float", "dimension", 3)),
+            "id")
+        .wasSuccessful();
+
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_MULTIPLE_VECTORIZE_DIFF_DIMENSIONS,
+            Map.of(
+                "id", "text",
+                "vector1",
+                    Map.of(
+                        "type",
+                        "vector",
+                        "dimension",
+                        "5",
+                        "service",
+                        Map.of("provider", "openai", "modelName", "text-embedding-3-small")),
+                "vector2",
+                    Map.of(
+                        "type",
+                        "vector",
+                        "dimension",
+                        "10",
+                        "service",
+                        Map.of("provider", "openai", "modelName", "text-embedding-3-small"))),
+            "id")
+        .wasSuccessful();
+
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_MULTIPLE_VECTORIZE_DIFF_MODELS,
+            Map.of(
+                "id",
+                "text",
+                "vector1",
+                Map.of(
+                    "type",
+                    "vector",
+                    "dimension",
+                    "5",
+                    "service",
+                    Map.of("provider", "openai", "modelName", "text-embedding-3-small")),
+                "vector2",
+                Map.of(
+                    "type",
+                    "vector",
+                    "dimension",
+                    "256",
+                    "service",
+                    Map.of("provider", "openai", "modelName", "text-embedding-3-large"))),
+            "id")
+        .wasSuccessful();
+
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_MULTIPLE_VECTORIZE_DIFF_PROVIDERS,
+            Map.of(
+                "id",
+                "text",
+                "vector1",
+                Map.of(
+                    "type",
+                    "vector",
+                    "dimension",
+                    "5",
+                    "service",
+                    Map.of("provider", "openai", "modelName", "text-embedding-3-small")),
+                "vector2",
+                Map.of(
+                    "type",
+                    "vector",
+                    "dimension",
+                    "768",
+                    "service",
+                    Map.of("provider", "jinaAI", "modelName", "jina-embeddings-v2-base-en"))),
+            "id")
+        .wasSuccessful();
+
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_MULTIPLE_VECTORIZE_DEFAULT_DIMENSIONS,
+            Map.of(
+                "id",
+                "text",
+                "vector1",
+                Map.of(
+                    "type",
+                    "vector",
+                    "dimension",
+                    "5",
+                    "service",
+                    Map.of("provider", "openai", "modelName", "text-embedding-3-small")),
+                "vector2",
+                Map.of(
+                    "type",
+                    "vector",
+                    "service",
+                    Map.of("provider", "openai", "modelName", "text-embedding-3-small"))),
             "id")
         .wasSuccessful();
   }
@@ -1228,6 +1337,74 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "Only values that are supported by",
               "Error trying to convert to targetCQLType `Vector(FLOAT",
               "expected vector of length 3, got one with 2 elements");
+    }
+
+    @Test
+    void failOnDifferentVectorizeDimensions() {
+      assertTableCommand(keyspaceName, TABLE_WITH_MULTIPLE_VECTORIZE_DIFF_DIMENSIONS)
+          .templated()
+          .insertOne(
+              """
+                          { "id": "1",
+                            "vector1": "1234",
+                            "vector2": "5678"
+                          }
+                          """)
+          .hasSingleApiError(
+              DocumentException.Code.UNSUPPORTED_VECTORIZE_CONFIGURATIONS,
+              DocumentException.class,
+              "A request can include only one unique combination of provider, model, and dimension for vectorization.",
+              "The following combinations were included in your request: [[provider=openai, modelName=text-embedding-3-small, dimension=5], [provider=openai, modelName=text-embedding-3-small, dimension=10]]");
+    }
+
+    @Test
+    void failOnDifferentVectorizeModels() {
+      assertTableCommand(keyspaceName, TABLE_WITH_MULTIPLE_VECTORIZE_DIFF_MODELS)
+          .templated()
+          .insertOne(
+              """
+                            { "id": "1",
+                                "vector1": "1234",
+                                "vector2": "5678"
+                            }
+                            """)
+          .hasSingleApiError(
+              DocumentException.Code.UNSUPPORTED_VECTORIZE_CONFIGURATIONS,
+              DocumentException.class,
+              "A request can include only one unique combination of provider, model, and dimension for vectorization.",
+              "The following combinations were included in your request: [[provider=openai, modelName=text-embedding-3-small, dimension=5], [provider=google, modelName=text-embedding-3-large, dimension=256]]");
+    }
+
+    @Test
+    void failOnDifferentVectorizeProviders() {
+      assertTableCommand(keyspaceName, TABLE_WITH_MULTIPLE_VECTORIZE_DIFF_PROVIDERS)
+          .templated()
+          .insertOne(
+              """
+                          { "id": "1",
+                            "vector1": "1234",
+                            "vector2": "5678"
+                          }
+                          """)
+          .hasSingleApiError(
+              DocumentException.Code.UNSUPPORTED_VECTORIZE_CONFIGURATIONS,
+              DocumentException.class,
+              "A request can include only one unique combination of provider, model, and dimension for vectorization.",
+              "The following combinations were included in your request: [[provider=openai, modelName=text-embedding-3-small, dimension=5], [provider=jinaAI, modelName=jina-embeddings-v2-base-en, dimension=768]]");
+    }
+
+    @Test
+    void happyWithAutoPopulateDefaultDimension() {
+      assertTableCommand(keyspaceName, TABLE_WITH_MULTIPLE_VECTORIZE_DEFAULT_DIMENSIONS)
+          .templated()
+          .insertOne(
+              """
+                            { "id": "1",
+                                "vector1": "1234",
+                                "vector2": "5678"
+                            }
+                            """)
+          .wasSuccessful();
     }
   }
 }
