@@ -301,7 +301,13 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
               }));
     }
 
-    var vectorColumns = apiTableDef.allColumns().filterBySupported(ApiTypeName.VECTOR);
+    // TODO: This is a hack, we need to refactor these methods in ApiColumnDefContainer.
+    // Currently, this matcher is just for match vector columns, and then to avoid hit the
+    // typeName() placeholder exception in UnsupportedApiDataType
+    var matcher =
+        ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true);
+    var vectorColumns =
+        apiTableDef.allColumns().filterBySupport(matcher).filterByApiTypeName(ApiTypeName.VECTOR);
     var nonVectorColumns =
         addedVectorizeDesc.keySet().stream()
             .filter(identifier -> !vectorColumns.containsKey(identifier))
@@ -365,7 +371,14 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
             .map(CqlIdentifierUtil::cqlIdentifierFromUserInput)
             .toList();
 
-    var vectorColumns = apiTableDef.allColumns().filterBySupported(ApiTypeName.VECTOR);
+    // TODO. This is a hack, we need to refactor these methods in ApiColumnDefContainer.
+    // Currently, this matcher is just for match vector columns, and then to avoid hit the
+    // typeName() placeholder exception in UnsupportedApiDataType
+    var matcher =
+        ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true);
+    var vectorColumns =
+        apiTableDef.allColumns().filterBySupport(matcher).filterByApiTypeName(ApiTypeName.VECTOR);
+
     var unknownColumns =
         droppedColumns.stream()
             .filter(c -> !apiTableDef.allColumns().containsKey(c))

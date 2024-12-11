@@ -13,9 +13,7 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
-import io.stargate.sgv2.jsonapi.exception.FilterException;
-import io.stargate.sgv2.jsonapi.exception.RequestException;
-import io.stargate.sgv2.jsonapi.exception.WarningException;
+import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import org.junit.jupiter.api.*;
@@ -26,6 +24,10 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
+  /**
+   * Data API support for frozen set/map/list column: CreateTable(false), Insert(true), Read(true),
+   * Filter(false)
+   */
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FrozenMapSetList {
@@ -134,46 +136,90 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
     }
   }
 
-  //
-  //    @Nested
-  //    class Counter{
-  //      private static final String TABLE_COUNTER = "tableCounter";
-  //      /**
-  //       * Data API support for counter:
-  //       * CreateTable(False), Insert(False), Read(True), Filter(True)
-  //       *
-  //       * <p>CREATE TABLE '%s'.%s ( order_id text PRIMARY KEY, customer_name text, item_details
-  //       * frozen<map<text, int>>, items frozen<list<text>> );
-  //       */
-  //      @Test
-  //      @Order(1)
-  //      public final void createDefaultTablesAndIndexes() {
-  //        CreateTable createTable =
-  //                SchemaBuilder.createTable(
-  //                                CqlIdentifierUtil.cqlIdentifierFromUserInput(keyspaceName),
-  //                                CqlIdentifierUtil.cqlIdentifierFromUserInput(TABLE_COUNTER))
-  //                        .withPartitionKey("id", DataTypes.TEXT) // Primary key
-  //                        .withColumn("counter", DataTypes.COUNTER); // Counter Column
-  //
-  //        assertThat(executeCqlStatement(createTable.build())).isTrue();
-  //      }
-  //
-  //      @Test
-  //      @Order(2)
-  //      public final void insertCounter() {
-  //        assertTableCommand(keyspaceName, TABLE_COUNTER)
-  //                .templated()
-  //                .insertOne(("")
-  //                .hasSingleApiError(
-  //                        DocumentException.Code.INVALID_COLUMN_VALUES,
-  //                        DocumentException.class,
-  //                        " value \"Bazillion\"",
-  //                        "Root cause: Unsupported String value: only");
-  //        assertThat(executeCqlStatement(createTable.build())).isTrue();
-  //      }
-  //
-  //    }
+  /**
+   * Data API support for counter column: CreateTable(False), Insert(false), Read(True),
+   * Filter(True)
+   */
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class Counter {
+    private static final String TABLE_COUNTER = "tableCounter";
 
+    @Test
+    @Order(1)
+    public final void createDefaultTablesAndIndexes() {
+      CreateTable createTable =
+          SchemaBuilder.createTable(
+                  CqlIdentifierUtil.cqlIdentifierFromUserInput(keyspaceName),
+                  CqlIdentifierUtil.cqlIdentifierFromUserInput(TABLE_COUNTER))
+              .withPartitionKey("id", DataTypes.TEXT) // Primary key
+              .withColumn("counter", DataTypes.COUNTER); // Counter Column
+
+      assertThat(executeCqlStatement(createTable.build())).isTrue();
+    }
+
+    // In Cassandra, you cannot use an INSERT statement directly for counters.
+    // Instead, counter columns require a special kind of update operation.
+    // Counters in Cassandra are designed to increment or decrement a value,
+    // and these operations are performed using the UPDATE statement, not INSERT.
+    @Test
+    @Order(2)
+    public final void insertCounter() {
+      String DOC =
+              """
+                      {
+                        "id": "%s",
+                        "counter": "%s"
+                      }
+                      """
+              .formatted("1", 1);
+      assertTableCommand(keyspaceName, TABLE_COUNTER)
+          .templated()
+          .insertOne(DOC)
+          .hasSingleApiError(
+              DocumentException.Code.UNSUPPORTED_COLUMN_TYPES,
+              DocumentException.class,
+              "Only supported column types can be included when inserting a document into a table");
+    }
+
+    // In Cassandra, Cannot set the value of counter column counter_value (counters can only be
+    // incremented/decremented, not set)
+    // Data API tables do not support incremented/decremented currently
+    @Test
+    @Order(3)
+    public final void updateCounter() {
+      ImmutableMap<String, Object> filterOnRow = ImmutableMap.of("id", "1");
+
+      ImmutableMap<String, Object> updateSet =
+          ImmutableMap.of("$set", ImmutableMap.of("counter", 1));
+
+      assertTableCommand(keyspaceName, TABLE_COUNTER)
+          .templated()
+          .updateOne(filterOnRow, updateSet)
+          .hasSingleApiError(
+              ServerException.Code.UNEXPECTED_SERVER_ERROR,
+              ServerException.class,
+              "Cannot set the value of counter column counter");
+    }
+
+    // TODO filter on counter, INVALID_FILTER_COLUMN_VALUES
+    @Test
+    @Order(4)
+    public final void filterCounter() {
+      assertTableCommand(keyspaceName, TABLE_COUNTER)
+          .templated()
+          .findOne(ImmutableMap.of("counter", 1), null)
+          .hasSingleApiError(
+              FilterException.Code.INVALID_FILTER_COLUMN_VALUES,
+              FilterException.class,
+              "Only values that are supported by the column data type can be included");
+    }
+  }
+
+  /**
+   * Data API support for TIMEUUID column: CreateTable(False), Insert(True), Read(True),
+   * Filter(True)
+   */
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class TimeUuid {
@@ -189,11 +235,6 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
               """
             .formatted(ONLY_ONE_ID, ONLY_ONE_TIMEUUID);
 
-    /**
-     * Data API support for counter: CreateTable(False), Insert(True), Read(True), Filter(True)
-     *
-     * <p>CREATE TABLE example_table (id TEXT PRIMARY KEY, created_at TIMEUUID);
-     */
     @Test
     @Order(1)
     public final void createDefaultTablesAndIndexes() {
@@ -245,6 +286,16 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
     }
   }
 
+  /**
+   * Data API support for static column: CreateTable(False), Insert(True), Read(True), Filter(True)
+   *
+   * <p>note, a static column is a special type of column that has a single value shared by all rows
+   * within the same partition. Static columns are only useful (and thus allowed) if the table has
+   * at least one clustering column
+   *
+   * <p>CREATE TABLE keyspace_name.table_static ( id text, static_int int STATIC, static_text text
+   * STATIC, PRIMARY KEY (id) );
+   */
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class StaticColumn {
@@ -264,17 +315,6 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
               """
             .formatted(ONLY_ONE_ID, ONLY_ONE_TEXT, ONLY_STATIC_INT, ONLY_STATIC_TEXT);
 
-    /**
-     * Data API support for static column: CreateTable(False), Insert(True), Read(True),
-     * Filter(True)
-     *
-     * <p>note, a static column is a special type of column that has a single value shared by all
-     * rows within the same partition. Static columns are only useful (and thus allowed) if the
-     * table has at least one clustering column
-     *
-     * <p>CREATE TABLE keyspace_name.table_static ( id text, static_int int STATIC, static_text text
-     * STATIC, PRIMARY KEY (id) );
-     */
     @Test
     @Order(1)
     public final void createDefaultTablesAndIndexes() {
@@ -346,7 +386,7 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
    */
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  public class CreatedIndexOnPreExistedCqlTable {
+  public class UnsupportedIndexOnPreExistedTable {
     private static final String TABLE_WITH_UNSUPPORTED_INDEX = "table_unsupported_index";
     private static final String ONLY_ONE_ID = "id1";
     private static final String ONLY_ONE_TEXT = "text1";
@@ -464,7 +504,7 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
                         "apiSupport": {
                             "createIndex": false,
                             "filter": false,
-                            "cqlDefinition": "CREATE CUSTOM INDEX idx_set ON \\"%s\\".\\"%s\\" (values(\\"setColumn\\"))\\nUSING 'StorageAttachedIndex'"
+                            "cqlDefinition": "CREATE CUSTOM INDEX idx_set ON \\"%s\\".%s (values(\\"setColumn\\"))\\nUSING 'StorageAttachedIndex'"
                         }
                     }
                }
@@ -479,7 +519,7 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
                         "apiSupport": {
                             "createIndex": false,
                             "filter": false,
-                            "cqlDefinition": "CREATE CUSTOM INDEX idx_map_values ON \\"%s\\".\\"%s\\" (values(\\"mapColumn\\"))\\nUSING 'StorageAttachedIndex'"
+                            "cqlDefinition": "CREATE CUSTOM INDEX idx_map_values ON \\"%s\\".%s (values(\\"mapColumn\\"))\\nUSING 'StorageAttachedIndex'"
                         }
                     }
                }
@@ -494,7 +534,7 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
                         "apiSupport": {
                             "createIndex": false,
                             "filter": false,
-                            "cqlDefinition": "CREATE CUSTOM INDEX idx_map_keys ON \\"%s\\".\\"%s\\" (keys(\\"mapColumn\\"))\\nUSING 'StorageAttachedIndex'"
+                            "cqlDefinition": "CREATE CUSTOM INDEX idx_map_keys ON \\"%s\\".%s (keys(\\"mapColumn\\"))\\nUSING 'StorageAttachedIndex'"
                         }
                     }
                }
@@ -509,7 +549,7 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
                         "apiSupport": {
                             "createIndex": false,
                             "filter": false,
-                            "cqlDefinition": "CREATE CUSTOM INDEX idx_map_entries ON \\"%s\\".\\"%s\\" (entries(\\"mapColumn\\"))\\nUSING 'StorageAttachedIndex'"
+                            "cqlDefinition": "CREATE CUSTOM INDEX idx_map_entries ON \\"%s\\".%s (entries(\\"mapColumn\\"))\\nUSING 'StorageAttachedIndex'"
                         }
                     }
                }
@@ -524,14 +564,14 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
                         "apiSupport": {
                             "createIndex": false,
                             "filter": false,
-                            "cqlDefinition": "CREATE CUSTOM INDEX idx_list ON \\"%s\\".\\"%s\\" (values(\\"listColumn\\"))\\nUSING 'StorageAttachedIndex'"
+                            "cqlDefinition": "CREATE CUSTOM INDEX idx_list ON \\"%s\\".%s (values(\\"listColumn\\"))\\nUSING 'StorageAttachedIndex'"
                         }
                     }
                }
               """
               .formatted(keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
       var expected_idx_quotedText =
-          """
+              """
                      {
                          "name": "idx_textQuoted",
                          "definition": {
@@ -539,11 +579,13 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
                              "apiSupport": {
                                "createIndex": false,
                                "filter": false,
-                               "cqlDefinition": "CREATE CUSTOM INDEX \\"idx_textQuoted\\" ON \\"%s\\".\\"%s\\" (\\"TextQuoted\\")\\nUSING 'StorageAttachedIndex'"
+                               "cqlDefinition": "CREATE CUSTOM INDEX \\"idx_textQuoted\\" ON \\"%s\\".%s (\\"TextQuoted\\")\\nUSING 'StorageAttachedIndex'"
                            }
                          }
                      }
-                     """;
+                     """
+              .formatted(keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
+
       var expected_idx_quotedInt =
               """
                  {
@@ -553,7 +595,7 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
                             "apiSupport": {
                                 "createIndex": false,
                                 "filter": false,
-                                "cqlDefinition": "CREATE INDEX \\"idx_intQuoted\\" ON \\"%s\\".\\"%s\\" (\\"IntQuoted\\");"
+                                "cqlDefinition": "CREATE INDEX \\"idx_intQuoted\\" ON \\"%s\\".%s (\\"IntQuoted\\");"
                             }
                      }
                  }

@@ -180,7 +180,7 @@ public class DataVectorizerService {
           T tableSchemaObject, List<JsonNode> documents, ErrorCode<E> noVectorizeDefinitionCode) {
 
     var apiTableDef = tableSchemaObject.apiTableDef();
-    // This is a hack, we need to refactor these methods in ApiColumnDefContainer.
+    // TODO: This is a hack, we need to refactor these methods in ApiColumnDefContainer.
     // Currently, this matcher is just for match vector columns, and then to avoid hit the
     // typeName() placeholder exception in UnsupportedApiDataType
     var matcher =
@@ -189,7 +189,7 @@ public class DataVectorizerService {
         apiTableDef
             .allColumns()
             .filterBySupport(matcher)
-            .filterBySupportedTypeToList(ApiTypeName.VECTOR);
+            .filterByApiTypeNameToList(ApiTypeName.VECTOR);
 
     if (vectorColumnDefs.isEmpty()) {
       return List.of();

@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
+import static io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName.VECTOR;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
@@ -100,7 +102,7 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
 
   private Stream<ApiColumnDef> streamBySupport(Predicate<ApiSupportDef> matcher) {
     // TODO: this is not properly filtering by supported but is used in a way that expects this
-    // behaviour, shoudl be fixed
+    // behaviour, should be fixed
     return values().stream().filter(columnDef -> matcher.test(columnDef.type().apiSupport()));
   }
 
@@ -112,14 +114,12 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     return new ApiColumnDefContainer(filterBySupportToList(matcher));
   }
 
-  public List<ApiColumnDef> filterBySupportedTypeToList(ApiTypeName type) {
-    return streamBySupport(ApiSupportDef.MATCH_FULL_SUPPORT)
-        .filter(columnDef -> columnDef.type().typeName() == type)
-        .toList();
+  public List<ApiColumnDef> filterByApiTypeNameToList(ApiTypeName type) {
+    return values().stream().filter(columnDef -> columnDef.type().typeName() == type).toList();
   }
 
-  public ApiColumnDefContainer filterBySupported(ApiTypeName type) {
-    return new ApiColumnDefContainer(filterBySupportedTypeToList(type));
+  public ApiColumnDefContainer filterByApiTypeName(ApiTypeName type) {
+    return new ApiColumnDefContainer(filterByApiTypeNameToList(type));
   }
 
   /**
@@ -138,12 +138,12 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
   }
 
   public Map<CqlIdentifier, VectorizeDefinition> getVectorizeDefs() {
-    // This is a hack, we need to refactor these methods in ApiColumnDefContainer.
+    // TODO: This is a hack, we need to refactor these methods in ApiColumnDefContainer.
     // Currently, this matcher is just for match vector columns, and then to avoid hit the
     // typeName() placeholder exception in UnsupportedApiDataType
     var matcher =
         ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true);
-    return filterBySupport(matcher).filterBySupportedTypeToList(ApiTypeName.VECTOR).stream()
+    return filterBySupport(matcher).filterByApiTypeNameToList(VECTOR).stream()
         .filter(
             columnDef ->
                 columnDef.type() instanceof ApiVectorType vt && vt.getVectorizeDefinition() != null)
