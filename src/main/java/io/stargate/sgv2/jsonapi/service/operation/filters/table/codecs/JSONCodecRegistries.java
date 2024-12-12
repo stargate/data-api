@@ -16,6 +16,7 @@ public abstract class JSONCodecRegistries {
               JSONCodecs.BIGINT_FROM_BIG_DECIMAL,
               JSONCodecs.BIGINT_FROM_BIG_INTEGER,
               JSONCodecs.BIGINT_FROM_LONG,
+              JSONCodecs.COUNTER_FROM_LONG,
               JSONCodecs.INT_FROM_BIG_DECIMAL,
               JSONCodecs.INT_FROM_BIG_INTEGER,
               JSONCodecs.INT_FROM_LONG,
@@ -47,7 +48,9 @@ public abstract class JSONCodecRegistries {
               JSONCodecs.DATE_FROM_STRING,
               JSONCodecs.DURATION_FROM_STRING,
               JSONCodecs.TIME_FROM_STRING,
+              JSONCodecs.TIMESTAMP_FROM_EJSON,
               JSONCodecs.TIMESTAMP_FROM_STRING,
+
               // UUID codecs
               JSONCodecs.UUID_FROM_STRING,
               JSONCodecs.TIMEUUID_FROM_STRING,

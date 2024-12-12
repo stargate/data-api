@@ -249,9 +249,9 @@ public record ReadAndUpdateCollectionOperation(
       WritableShreddedDocument writableShreddedDocument) {
     final SimpleStatement updateQuery =
         bindUpdateValues(
-            buildUpdateQuery(commandContext().schemaObject().isVectorEnabled()),
+            buildUpdateQuery(commandContext().schemaObject().vectorConfig().vectorEnabled()),
             writableShreddedDocument,
-            commandContext().schemaObject().isVectorEnabled());
+            commandContext().schemaObject().vectorConfig().vectorEnabled());
     return queryExecutor
         .executeWrite(dataApiRequestInfo, updateQuery)
         .onItem()

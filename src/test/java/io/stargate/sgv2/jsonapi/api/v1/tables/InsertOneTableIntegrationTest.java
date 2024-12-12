@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
+import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
@@ -31,6 +32,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   static final String TABLE_WITH_INET_COLUMN = "insertOneInetColumnTable";
   static final String TABLE_WITH_LIST_COLUMNS = "insertOneListColumnsTable";
   static final String TABLE_WITH_SET_COLUMNS = "insertOneSetColumnsTable";
+  static final String TABLE_WITH_MAP_COLUMNS = "insertOneMapColumnsTable";
   static final String TABLE_WITH_VECTOR_COLUMN = "insertOneVectorColumnTable";
 
   final JSONCodecRegistryTestData codecTestData = new JSONCodecRegistryTestData();
@@ -141,6 +143,22 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                 Map.of("type", "set", "valueType", "double"),
                 "stringSet",
                 Map.of("type", "set", "valueType", "text")),
+            "id")
+        .wasSuccessful();
+
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_MAP_COLUMNS,
+            Map.of(
+                "id",
+                "text",
+                "intMap",
+                Map.of("type", "map", "keyType", "text", "valueType", "int"),
+                "doubleMap",
+                Map.of("type", "map", "keyType", "ascii", "valueType", "double"),
+                "stringMap",
+                Map.of("type", "map", "keyType", "text", "valueType", "text")),
             "id")
         .wasSuccessful();
 
@@ -490,19 +508,93 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     void insertValidDateTimeValues() {
       // NOTE: While `CqlDuration.from()` accepts both ISO-8601 "P"-notation (like "PT2H45M")
       //   and Cassandra's standard compact/readable notation (like "2h45m"),
-      //   `CqlDuration.toString()` returns canonical representation so we use the latter here
-      //   to verify round-tripping
-      final String docJSON =
+      //   Output value will be ISO-8601 duration ("P"-notation)
+      final String inputJSON =
           datetimeDoc(
               "datetimeValid", "2024-09-24", "2h45m", "12:45:01.005", "2024-09-24T14:06:59Z");
+      final String outputJSON =
+          datetimeDoc(
+              "datetimeValid", "2024-09-24", "PT2H45M", "12:45:01.005", "2024-09-24T14:06:59Z");
       assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
           .templated()
-          .insertOne(docJSON)
+          .insertOne(inputJSON)
           .wasSuccessful();
       assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"datetimeValid\" } }")
           .wasSuccessful()
-          .hasJSONField("data.document", docJSON);
+          .hasJSONField("data.document", outputJSON);
+    }
+
+    @Test
+    void insertEJSONTimestampValue() {
+      // NOTE: test for alternate input format -- EJSON-wrapper for Collection compatibility
+      // -- for timestamp
+      final long rawTimestamp = 1693036410000L;
+      final String timestampISO8601 = Instant.ofEpochMilli(rawTimestamp).toString();
+      final String inputJSON =
+              """
+          {
+              "id": "datetimeValidAlt",
+              "timestampValue": { "$date":  %d }
+          }
+          """
+              .formatted(rawTimestamp);
+
+      final String outputJSON =
+              """
+           {
+              "id": "datetimeValidAlt",
+              "timestampValue": "%s"
+           }
+           """
+              .formatted(timestampISO8601);
+
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .templated()
+          .insertOne(inputJSON)
+          .wasSuccessful();
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .postFindOne(
+              """
+          {
+             "filter": { "id": "datetimeValidAlt" },
+             "projection": {
+                "id": 1,
+                "timestampValue": 1
+             }
+          }
+          """)
+          .wasSuccessful()
+          .hasJSONField("data.document", outputJSON);
+    }
+
+    @Test
+    void insertValidNegativeDurationValue() {
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .templated()
+          .insertOne(
+                  """
+                    {
+                        "id": "%s",
+                        "durationValue": "%s"
+                    }
+                    """
+                  .formatted("datetimeNegDuration", "-8h10m"))
+          .wasSuccessful();
+      assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .postFindOne(
+              """
+                                  { "filter": { "id": "datetimeNegDuration" },
+                                    "projection": { "durationValue": 1 }
+                                  }
+                              """)
+          .wasSuccessful()
+          .hasJSONField(
+              "data.document",
+                  """
+                    { "durationValue": "%s" }
+                    """
+                  .formatted("-PT8H10M"));
     }
 
     @Test
@@ -742,9 +834,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "data.document",
               """
                       { "id": "listValidPartial",
-                        "stringList": [ ],
-                        "intList": [3, -999, 42],
-                        "doubleList": [ ]
+                        "intList": [3, -999, 42]
                       }
                       """);
 
@@ -860,9 +950,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "data.document",
               """
                               { "id": "setValidPartial",
-                                "doubleSet": [ ],
-                                "intSet": [-999, 3, 42],
-                                "stringSet": [ ]
+                                "intSet": [-999, 3, 42]
                               }
                               """);
 
@@ -927,6 +1015,112 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
   @Nested
   @Order(10)
+  class InsertMapColumns {
+    @Test
+    void insertValidMapValues() {
+      // First with values for all fields (note: harder to use helper methods)
+      String docJSON =
+          """
+                          { "id": "mapValidFull",
+                            "doubleMap": {"a": 0.0,  "b":-0.5},
+                            "intMap": {"i1": 1, "i2": 2, "i3": -42},
+                            "stringMap": {"abc": "xyz"}
+                          }
+                          """;
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"mapValidFull\" } }")
+          .wasSuccessful()
+          .hasJSONField("data.document", docJSON);
+
+      // And then just for int-Map; null for string, missing double
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(
+              """
+                              { "id": "mapValidPartial",
+                                "stringMap": null,
+                                "intMap": {"a": 3, "b": -999, "c": 42}
+                              }
+                              """)
+          .wasSuccessful();
+
+      // If we ask for all (select * basically), get explicit empty Maps:
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"mapValidPartial\" } }")
+          .wasSuccessful()
+          .hasJSONField(
+              "data.document",
+              """
+                                      { "id": "mapValidPartial",
+                                        "intMap": {"a": 3, "b": -999, "c": 42}
+                                      }
+                                      """);
+
+      // But if specifically just for intMap, get just that
+      // NOTE: id column(s) not auto-included unlike with Collections and "_id"
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .postFindOne(
+              """
+                                          { "filter": { "id": "mapValidPartial" },
+                                            "projection": { "intMap": 1 }
+                                          }
+                                      """)
+          .wasSuccessful()
+          .hasJSONField(
+              "data.document",
+              """
+                                      {
+                                        "intMap": {"a": 3, "b": -999, "c": 42}
+                                      }
+                                      """);
+    }
+
+    @Test
+    void failOnNonObjectForMap() {
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(
+              """
+                      {
+                        "id":"mapInvalid",
+                        "intMap":"abc"
+                      }
+                      """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `Map(TEXT => INT",
+              "no codec matching value type");
+    }
+
+    @Test
+    void failOnWrongMapValueType() {
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(
+              """
+                      {
+                        "id":"mapInvalid",
+                        "intMap":{"i1": "abc"}
+                      }
+                      """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `INT`",
+              "actual value type `java.lang.String`");
+    }
+  }
+
+  @Nested
+  @Order(11)
   class InsertVectorColumns {
     @Test
     void insertValidVectorValueUsingList() {

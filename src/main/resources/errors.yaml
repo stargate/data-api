@@ -46,7 +46,9 @@
 #       new line after each entry, using the `|-` to trim trailing newlines.
 
 # ================================================================================================================
-# Snippets
+# ================================================================================================================
+#                                           SNIPPETS
+# ================================================================================================================
 # ================================================================================================================
 
 snippets:
@@ -58,20 +60,59 @@ snippets:
     body: |-
       It is safe to retry this request.
 
-  - name: INEFFICIENT_QUERY
+  - name: INEFFICIENT_FILTER
     body: |-
       The query was executed without taking advantage of the primary key or indexes on the table, this can have performance implications on large tables.
       
-      See documentation at XXXX for best practices for filtering.
+      See documentation for best practices for filtering.
+
+  - name: INEFFICIENT_SORT
+    body: |-
+      The command was executed using in memory sorting rather than taking advantage of the partition sorting on disk. This can have performance implications on large tables.
+      
+      See documentation for best practices for sorting.
 
   - name: RESEND_USING_ONLY_DEFINED_COLUMNS
     body: |-
-      Resend the request using only defined columns.
+      Resend the command using only defined columns.
+
+  - name: VECTOR_SORT_EXPLANATION
+    body: |-
+      A vector sort in the sort clause identifies the vector column by name and then provides either:  
+      - The vector as an array of decimal numbers.
+      - The vector as a base64 encoded `{"$binary": "base64-encoded-vector"}` object.
+      - A string to be vectorized if enabled for the column.
+
+  - name: CURRENTLY_UNSUPPORTED
+    body: |-
+      Currently API Tables has limited support for: 
+      
+      - Cassandra `timeuuid`, `counter` types.
+      - Cassandra User Defined Types (UDT) and Tuple types.
+      - Filtering and indexing on Cassandra collection types `list`, `map`, `set`.
+      - Defining `maps`, `list`, or `set` columns using any key type other than `text` or `ascii`.
+      
+      Support for these features will be expanded in future releases.
+
+  - name: ADD_VECTORIZE_CONFIG
+    body: |-
+      Vectorize configuration can be added when the table is created or later using the `alterTable` command.
+
+  - name: EXPLAIN_PARTITIONING
+    body: |-
+      Rows in API Tables are partitioned by the partition key, which can be one or more columns. All rows in the same partition share the same partition key values and can be very quickly read in the order of the partition sorting.
+
 
 
 
 # ================================================================================================================
-# Request Errors
+# ================================================================================================================
+#                                           REQUEST Errors
+# ================================================================================================================
+# ================================================================================================================
+
+# ================================================================================================================
+# Family: REQUEST         Scope: NONE
 # ================================================================================================================
 
 request-errors:
@@ -84,67 +125,113 @@ request-errors:
       
       ${SNIPPET.CONTACT_SUPPORT}
 
+  - scope:
+    code: UNSUPPORTED_TABLE_COMMAND
+    title: Command is not supported by Tables
+    body: |-
+      The command is not supported by Tables in the API.  
+      
+      While many commands operate on both Tables and Collections, some commands can only be run against Tables or Collections. 
+      
+      The commands supported by tables are: ${tableCommands}.
+      The commands supported by collections are: ${collectionCommands}.
+      
+      The unsupported command ran against the table: ${keyspace}.${table}
+      The unsupported command was: ${unsupportedCommand}.
+      
+      Resend using one of the supported commands.
+
+  - scope:
+    code: UNSUPPORTED_COLLECTION_COMMAND
+    title: Command is not supported by Collections
+    body: |-
+      The command is not supported by Collections in the API.  
+      
+      While many commands operate on both Tables and Collections, some commands can only be run against Tables or Collections. 
+      
+      The commands supported by collections are: ${collectionCommands}.
+      The commands supported by tables are: ${tableCommands}.
+      
+      The unsupported command ran against the collection: ${keyspace}.${table}
+      The unsupported command was: ${unsupportedCommand}.
+      
+      Resend using one of the supported commands. 
+      
+
+# ================================================================================================================
+# Family: REQUEST         Scope: DOCUMENT
+# ================================================================================================================
+
  # DOCUMENT request errors
   - scope: DOCUMENT
     code: MISSING_PRIMARY_KEY_COLUMNS
-    title: Missing table primary key columns in document
+    title: Primary key columns missing
     body: |-
       All primary key columns must be provided when inserting a document into a table. 
       
       The table ${keyspace}.${table} defines the primary key columns: ${primaryKeys}.
       
-      The request included values for primary key columns: ${providedKeys}.
-      The request did not include values for primary key columns: ${missingKeys}.
+      The command included values for primary key columns: ${providedKeys}.
+      The command did not include values for primary key columns: ${missingKeys}.
       
-      Resend the request with the missing primary key columns.
+      Resend the command including the missing primary key columns.
 
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the FILTER scope
   - scope: DOCUMENT
     code: UNKNOWN_TABLE_COLUMNS
-    title: Unknown table columns in document
+    title: Columns in documents are not defined in the table schema
     body: |-
       Only columns defined in the table schema can be included when inserted a document into a table.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      The request included the following unknown columns: ${unknownColumns}.
+      The command included the following unknown columns: ${unknownColumns}.
       
       {SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
 
   - scope: DOCUMENT
     code: UNSUPPORTED_COLUMN_TYPES
-    title: Unsupported table column data types in document
+    title: Column types in documents are not supported
     body: |-
       Only supported column types can be included when inserting a document into a table.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      The request included the following columns that have unsupported data types: ${unsupportedColumns}.
+      The command included the following columns that have unsupported data types: ${unsupportedColumns}.
       
-      Resend the request using only supported column types.
+      Resend the command using only supported column types.
 
   - scope: DOCUMENT
     code: INVALID_COLUMN_VALUES
-    title: Invalid values for table columns
+    title: Column values in documents are not valid
     body: |-
       Only values that are supported by the column data type can be included when inserting a document into a table.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      The request included the following columns that had values that are invalid: ${invalidColumns}.
+      The command included the following columns that had invalid values: ${invalidColumns}.
       
-      Resend the request using only supported column values.
+      Resend the command using only supported column values.
 
-  # FILTER request errors
-  - scope: FILTER
-    code: INVALID_FILTER
-    title: Invalid filter
+  - scope: DOCUMENT
+    code: UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION
+    title: Vectorize not supported on column with missing vectorize configuration
     body: |-
-      The filter clause is invalid. ${filter}
+      Vectorize can only be used with columns that have a vectorize configuration. 
       
-      ${SNIPPET.CONTACT_SUPPORT}
+      ${SNIPPET.ADD_VECTORIZE_CONFIG}
+      
+      The table ${keyspace}.${table} defines the vector columns with vectorize definition: ${validVectorizeColumns}.
+      The command included the following vector columns without vectorize definition: ${invalidVectorizeColumns}.
+      
+      Resend the command using only vector columns with a vectorize definition.
+      
+
+# ================================================================================================================
+# Family: REQUEST         Scope: FILTER
+# ================================================================================================================
 
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the DOCUMENT scope
   - scope: FILTER
     code: UNKNOWN_TABLE_COLUMNS
-    title: Unknown table columns in filter
+    title: Columns in the filter are not defined in the table schema
     body: |-
       Only columns defined in the table schema can be filtered on.
       
@@ -154,79 +241,202 @@ request-errors:
       ${SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
 
   - scope: FILTER
-    code: UNSUPPORTED_COLUMN_TYPES
-    title: Unsupported table column data types in filter
+    code: INVALID_FILTER_COLUMN_VALUES
+    title: Column value in filter is not valid
     body: |-
-      Only supported column types can be filtered.
+      Only values that are supported by the column data type can be included when filtering.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command included the column ${invalidColumn} that has ${columnType} type defined.
+      
+      Resend the command using only supported column values.
+
+  - scope: FILTER
+    code: UNSUPPORTED_COLUMN_TYPES
+    title: Column types in the filter are not supported
+    body: |-
+      Only column types supported by the API can be filtered on.
+      
+      ${SNIPPET.CURRENTLY_UNSUPPORTED}
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The request included the following columns that have unsupported data types: ${unsupportedColumns}.
       
-      Resend the request using only supported column types.  
+      Resend the command using only supported column types.  
 
   - scope: FILTER
-    code: COMPARISON_FILTER_AGAINST_DURATION
-    title: Cannot perform comparison filter against duration data type
+    code: UNSUPPORTED_FILTERING_FOR_COLUMN_TYPES
+    title: Column types in the filter do not support the filter operations
     body: |-
-      The filter used one of the comparison operations ($lt, $gt, $lte, $gte) against a column with a duration data type.
+      Filtering is only supported on primitive data types such as `text` not on container types such as `list`, `set`, `map`, or `vector`.
+      
+      ${SNIPPET.CURRENTLY_UNSUPPORTED}
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The request included unsupported filters on the columns: ${complexColumns}.
+      
+      Resend the command using only supported column types.  
+
+  - scope: FILTER
+    code: UNSUPPORTED_COMPARISON_FILTER_AGAINST_DURATION
+    title: Duration data type does not support comparison filters
+    body: |-
+      Filtering using the comparison operations ($lt, $gt, $lte, $gte) is not supported against `duration` column types.
     
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The request used a comparison operation on duration columns: ${durationFilters}.
       
-      Resend the request using only supported operations on duration columns. 
+      Resend the command using only supported operations on `duration` columns. 
 
   - scope: FILTER
-    code: FILTER_REQUIRED_FOR_UPDATE_DELETE
-    title: A filter is required for Update and Delete commands
+    code: MISSING_FILTER_FOR_UPDATE_DELETE
+    title: Update and delete commands require a filter
     body: |-
-      An Update or Delete command was issued without a filter.
+      Update and delete commands for Tables require a filter.
       
-      These commands require a valid filter that identifies a either a single row (for Update and to Delete one row) or a partition and a sequence or rows (for Delete many). 
-
-      The table ${keyspace}.${table} defines the primaryKeys: ${primaryKeyColumns}.
+      These commands require a filter that identifies a either a single row (for `updateOne` and `deleteOne`) or a partition and a sequence of rows (for `deleteMany`). 
       
-      Resend the request with an updated filter.
+      Note: using the `deleteMany` command without a filter truncates all rows from the table.
+      
+      The table ${keyspace}.${table} defines the primary keys: ${primaryKeyColumns}.
+      
+      Resend the command using a filter.
 
   - scope: FILTER
-    code: NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE
-    title: Only Primary Key columns can be filtered on for Update and Delete commands
+    code: UNSUPPORTED_FILTER_FOR_UPDATE_ONE_DELETE_ONE
+    title: updateOne and deleteOne commands only support filtering using $eq
     body: |-
-      An Update or Delete command was issued with a filter that included columns that are not part of the primary key.
+      The Filtering using the non `$eq` filter operations can select more than one row, and so cannot be used with the `updateOne` and `deleteOne` commands as they can only modify one row.
       
-      These commands require a valid filter that can only use the primary key columns of the table. 
+      The command used an invalid filter on the columns: ${unsupportedFilterColumns}.
+      
+      Resend the command only using `$eq` filters.
 
+  - scope: FILTER
+    code: UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE
+    title: Update and delete commands only support filtering on the primary key
+    body: |-
+      The Update or delete commands can only filter using columns that are part of the primary key.
+      
       The table ${keyspace}.${table} defines the primaryKeys: ${primaryKeyColumns}.
       The filter used the non primary key columns: ${nonPrimaryKeyFilters}
       
-      Resend the request with an updated filter that only uses the primary key fields.
+      Resend the command using with a filter that only uses the primary key columns.
 
   - scope: FILTER
-    code: FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE
-    title: The Primary Key must be filtered on for Update and Delete one commands
+    code: MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE
+    title: updateOne and deleteOne commands require filtering on the full primary key
     body: |-
-      An Update or Delete one command was issued with a filter that did not fully specify the primary key for the table.
-
-      These commands require a valid filter that identifies a single row using the primary key.
+      The `updateOne` and `deleteOne`commands can only filter using the fully specify the primary key for the table.
 
       The table ${keyspace}.${table} defines the primaryKeys: ${primaryKeyColumns}.
       The filter was missing the primary key columns: ${missingPrimaryKeyFilters}.
       
-      Resend the request with an updated filter that fully specifies the primary key fields.
+      Resend the command using a filter that fully specifies the primary key to identify a single row.
 
   - scope: FILTER
-    code: INCOMPLETE_PRIMARY_KEY_FILTER
-    title: Cannot perform the request with an invalid primary key filtering
+    code: INVALID_PRIMARY_KEY_FILTER
+    title: Primary key filtering must specify columns in schema order
     body: |-
-      Can not perform the request with an invalid primary key. 
+      The command requires a filter on the primary key that specifies all of the partitioning keys, and the partition sort keys in order.
+      
+      If a partititon sort key is excluded, then all following partition sort keys must be excluded. 
+      
       The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
+      
       The filter has the following issues: 
         - Missing Partition Keys: ${missingPartitionKeys}.
         - Out of order Partition Sort Keys: ${outOfOrderClusteringKeys}.
       
-  
-  
+      Resend the command using a filter that includes all partitioning keys and optionally the partitioning sort keys in order. 
 
-  # Warnings
+# ================================================================================================================
+# Family: REQUEST         Scope: UPDATE
+# ================================================================================================================
+
+  - scope: UPDATE
+    code: UNKNOWN_TABLE_COLUMNS
+    title: Columns in the update are not defined in the table schema
+    body: |-
+      Only columns defined in the table schema can be updated.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The update included the following unknown columns: ${unknownColumns}.
+      
+      ${SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
+
+  - scope: UPDATE
+    code: INVALID_UPDATE_COLUMN_VALUES
+    title: Column value in update clause is not valid
+    body: |-
+      Only values that are supported by the column data type can be included when updating.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command included the column ${invalidColumn} that has ${columnType} type defined.
+      
+      Resend the command using only supported column values.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS
+    title: Primary key columns cannot be updated
+    body: |-
+      Columns in the primary key for the table cannot be updated. 
+      
+      This includes both the partitioning keys and the partitioning sort keys. 
+      
+      The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
+      The update included the following primary keys: ${updateOnPrimaryKeyColumns}.
+      
+      Resend the command without updating primary key columns.
+
+  - scope: UPDATE
+    code: MISSING_UPDATE_OPERATIONS
+    title: Update operation requires at least one operation
+    body: |-
+      The command did not include any non empty update operations to change the columns in the table.
+      
+      Supported update operations are ${supportedUpdateOperations}.
+      
+      Resend the command using at least one update operation.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATIONS_FOR_TABLE
+    title: Update operation not supported by Tables
+    body: |-
+      The command included update operations that are not supported by Tables.
+      
+      API Tables supports the update operations: ${supportedUpdateOperations}.
+      The update included the unsupported operations: ${usedUnsupportedUpdateOperations}.
+      
+      Resend the command using only supported update operations.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_OVERLAPPING_UPDATE_OPERATIONS
+    title: Columns cannot be changed by multiple update operations
+    body: |-
+      The command included multiple update operations that attempted to change the same column. For example, attempting to both $set and $unset a column.
+    
+      Multiple assignments attempted to change the columns: ${duplicateAssignmentColumns}.
+      
+      Resend the command using a single update operation for each column.
+
+# Note UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION is a duplicate for Document scope, this one is used for Update scope.
+  - scope: UPDATE
+    code: UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION
+    title: Vectorize requires a column with vectorize definition
+    body: |-
+      Vectorize can onl be performed on columns that have a vectorize configuration.
+      
+      ${SNIPPET.ADD_VECTORIZE_CONFIG}
+      
+      The table ${keyspace}.${table} defines the vector columns with vectorize configuration: ${validVectorizeColumns}.
+      The update included the following vector columns without vectorize configuration: ${invalidVectorizeColumns}.
+      
+      Resend the command vector columns with vectorize enabled.
+
+  # ================================================================================================================
+  # Family: REQUEST         Scope: WARNING
+  # ================================================================================================================
 
   - scope: WARNING
     code: MISSING_INDEX
@@ -238,7 +448,9 @@ request-errors:
       And has indexes on the columns: ${indexedColumns}.
       The request filtered on the un-indexed columns: ${unindexedFilters}.
       
-      ${SNIPPET.INEFFICIENT_QUERY}
+      Note: There may be a small delay in newly created indexes propagating through the system, this warning may be ignored if the column(s) were recently indexed.
+      
+      ${SNIPPET.INEFFICIENT_FILTER}
 
   - scope: WARNING
     code: NOT_EQUALS_UNSUPPORTED_BY_INDEXING
@@ -251,7 +463,7 @@ request-errors:
       The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
       The request applied $ne to the columns: ${inefficientFilters}.
       
-      ${SNIPPET.INEFFICIENT_QUERY}
+      ${SNIPPET.INEFFICIENT_FILTER}
 
 
   - scope: WARNING
@@ -265,20 +477,33 @@ request-errors:
       The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
       The request applied $lt, $gt, $lte, $gte to the indexed columns: ${inefficientFilterColumns}.
       
-      ${SNIPPET.INEFFICIENT_QUERY}
+      ${SNIPPET.INEFFICIENT_FILTER}
+
+  - scope: WARNING
+    code: NOT_IN_FILTER_UNSUPPORTED_BY_INDEXING
+    title: Use of $nin on indexed columns
+    body: |-
+      The filter uses $nin on columns that, while indexed, are still inefficient to filter on.  
+      
+      Filtering using $nin on columns of type ${inefficientDataTypes} is inefficient, even when the columns are indexed.
+      
+      The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
+      The request applied $nin to the indexed columns: ${inefficientFilterColumns}.
+      
+      ${SNIPPET.INEFFICIENT_FILTER}
 
   - scope: WARNING
     code: ZERO_FILTER_OPERATIONS
     title: Zero operations provided in query filter
     body: |-
-      Zero filters were provided in the filer for this query. 
+      Zero filters were provided in the filter for this query. 
       
       Providing zero filters will return all rows in the table, which may have poor performance when the table is large. For the best performance, include one or more filters using the primary key or indexes.
       
       The table ${keyspace}.${table} has the primary key: ${primaryKey}.
       And has indexes on the columns: ${indexedColumns}.
       
-      ${SNIPPET.INEFFICIENT_QUERY}
+      ${SNIPPET.INEFFICIENT_FILTER}
 
   - scope: WARNING
     code: INCOMPLETE_PRIMARY_KEY_FILTER
@@ -293,7 +518,7 @@ request-errors:
       
       For the best performance, filter on all partition columns and optionally on clustering columns in the order they are specified. 
       
-      ${SNIPPET.INEFFICIENT_QUERY}      
+      ${SNIPPET.INEFFICIENT_FILTER}      
 
   - scope: WARNING
     code: DEPRECATED_COMMAND
@@ -306,13 +531,452 @@ request-errors:
       
       Please check the documentation for the new command and update your code.
 
-  # Schema Errors
+  - scope: WARNING
+    code: QUERY_RETRIED_DUE_TO_INDEXING
+    title: Query was retried due lack of primary or index usage
+    body: |-
+      The Data API failed to detect that the query generated by the command was inefficient due to a lack of primary key or index usage, and so it was retried after failing.
+      
+      To avoid needing to retry queries the Data API attempts to identify inefficient queries to the database before executing them, when doing this it can also provide detailed guidance on how to improve the command filter. If the analysis fails the query may need to be retried. 
+      
+      The original query used the CQL: ${originalCql}.
+      The original query used the parameters: ${originalParameters}.
+      
+      The API appended the CQL optional `ALLOW FILTERING` to the query and retried.
+      
+      ${SNIPPET.INEFFICIENT_FILTER}
+
+
+  - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_TO_NON_PARTITION_SORTING
+    title: Sorting by non partition sorting columns
+    body: |-
+      The command used columns in the sort clause that are not part of the partition sorting, and so the query was sorted in memory.
+            
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The command sorted on the columns: ${sortColumns}.
+      
+      ${SNIPPET.INEFFICIENT_SORT}
+
+  - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_SKIP_OPTIONS
+    title: Sorting uses skip option, performing as in memory sort
+    body: |-
+      Sorting uses skip option, performing as in memory sort
+
+  - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_TO_PARTITION_KEY_NOT_RESTRICTED
+    title: Sorting with partition key not restricted correctly in filter clause
+    body: |-
+      The command wants to perform sort, however the filter clause does not have partition keys correctly restricted.
+      
+      When sorting by the partition sorting columns, partition keys needs to restricted by $eq in filter clause.
+      
+      The table ${keyspace}.${table} has the partition keys: ${partitionKeys}.
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The sort clause used the columns (in order) : ${sortColumns}.
+      
+      ${SNIPPET.INEFFICIENT_SORT}
+
+  - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_TO_MISSING_PARTITION_SORTING
+    title: Sorting with missing partition sorting columns
+    body: |-
+      The command used columns in the sort clause that are all part of the partition sorting, however the sort clause was missing some of the partition sorting columns.
+      
+      When sorting by the partition sorting columns, if a column is skipped then all following columns must also be skipped.
+      
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The sort clause skipped a column and then included the columns : ${outOfOrderClusteringKeys}.
+      
+      ${SNIPPET.INEFFICIENT_SORT}
+
+  - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_TO_OUT_OF_ORDER_PARTITION_SORTING
+    title: Sorting on out of order partition sorting columns
+    body: |-
+      The command used columns in the sort clause that are all part of the partition sorting, however the sort clause used a different column order to the partition sorting.
+
+      When sorting by the partition sorting columns, the columns must be in the same order as the partition sorting.
+
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The sort clause used the columns (in order) : ${sortColumns}.
+      
+      ${SNIPPET.INEFFICIENT_SORT}
+
+  # ================================================================================================================
+  # Family: REQUEST         Scope: PROJECTION
+  # ================================================================================================================
+
+  - scope: PROJECTION
+    code: UNSUPPORTED_COLUMN_TYPES
+    title: Column types in projection are not supported
+    body: |-
+      Only supported column types can be included when reading from a table.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command included the following columns cannot be read: ${unsupportedColumns}.
+      
+      Resend the command using only supported column types.
+
+  # ================================================================================================================
+  # Family: REQUEST         Scope: SCHEMA
+  # ================================================================================================================
+
+  # aaron errors
+  - scope: SCHEMA
+    code: UNKNOWN_PARTITION_SORT_COLUMNS
+    title: Partition sort columns are not defined in the table schema
+    body: |-
+      The columns used for partition sorting are not present in the table schema.
+            
+      The table definition includes the columns: ${tableColumns}.
+      The partition sort includes the unknown columns: ${unknownColumns}.
+      
+      Resend the command using only columns included in the table definition.
 
   - scope: SCHEMA
-    code: COLUMN_DEFINITION_MISSING
-    title: Column definition is missing for the provided primary key column.
+    code: UNKNOWN_PARTITION_COLUMNS
+    title: Partition columns are not defined in the table schema
     body: |-
-      Column definition is missing for the provided primary key column: ${column_name}.
+      The column used to partition by are not present in the table schema.
+      
+      The table definition includes the columns: ${tableColumns}.
+      The partition includes the unknown columns: ${unknownColumns}.
+      
+      Resend the command using only columns included in the table definition.
+
+  - scope: SCHEMA
+    code: MISSING_PARTITION_COLUMNS
+    title: Partitioning keys are required for Tables
+    body: |-
+        The table definition must have at least one partition key.
+      
+        ${SNIPPET.EXPLAIN_PARTITIONING}
+      
+        The table definition includes the columns: ${tableColumns}.
+      
+        Resend the command using at least one partition key. 
+
+  - scope: SCHEMA
+    code: MISSING_ALTER_TABLE_OPERATIONS
+    title: Alter table command must include operations
+    body: |-
+      The `alterTable` command must contain at least one operation to alter the table schema, such as adding or dropping columns.
+      
+      The command included the empty operation: ${missingTableOperation}
+      
+      Resend the command including changes to the table.
+
+  - scope: SCHEMA
+    code: MISSING_DIMENSION_IN_VECTOR_COLUMN
+    title: Dimension is required for vector column if embedding service is not specified
+    body: |-
+        The dimension is required for vector columns if the embedding service is not specified.
+        
+        The command attempted to create the vector column without a dimension.
+        
+        Resend the command using a dimension for the vector columns.
+
+  - scope: SCHEMA
+    code: CANNOT_ADD_EXISTING_COLUMNS
+    title: Columns with the same name are defined in the table schema
+    body: |-
+      Column names must be unique in the table schema.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The request included the following duplicate columns: ${duplicateColumns}.
+      
+      Resend the command using only new columns.
+
+  - scope: SCHEMA
+    code: CANNOT_DROP_PRIMARY_KEY_COLUMNS
+    title: Primary key columns cannot be dropped from the table schema
+    body: |-
+      Primary key columns cannot be dropped from the table schema.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The table has the primary keys: ${primaryKeys}.
+      The command attempted to drop the primary key columns: ${droppedColumns}. 
+      
+      Resend the command without dropping the primary key columns.
+
+  - scope: SCHEMA
+    code: CANNOT_DROP_UNKNOWN_COLUMNS
+    title: Columns cannot be dropped if they are not defined in the table schema
+    body: |-
+      The command attempted to drop columns that are not in the table schema.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to drop the unknown columns: ${unknownColumns}.  
+      
+      Resend the command using only columns defined in the table schema.
+
+  - scope: SCHEMA
+    code: CANNOT_DROP_INDEXED_COLUMNS
+    title: Columns used in the indexes cannot be dropped
+    body: |-
+      Columns that are indexed cannot be dropped from the table schema.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      And has indexes on the columns: ${indexedColumns}.
+      The command attempted to drop the indexed columns: ${droppedIndexedColumns}.
+      
+      Resend the command without dropping the indexed columns.
+
+  - scope: SCHEMA
+    code: CANNOT_VECTORIZE_UNKNOWN_COLUMNS
+    title: Columns cannot be vectorized if they are not defined in the table schema
+    body: |-
+      The command attempted to vectorize columns that are not in the table schema.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to drop the unknown columns: ${unknownColumns}.  
+      
+      Resend the command using only columns defined in the table schema.
+
+  - scope: SCHEMA
+    code: CANNOT_VECTORIZE_NON_VECTOR_COLUMNS
+    title: Columns cannot be vectorized if they are not `vector` type
+    body: |-
+      Columns can only be vectorized if they use the `vector` column type.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      And has the vector columns: ${vectorColumns}.
+      The command attempted to vectorize the non-vector columns: ${nonVectorColumns}.
+      
+      Resend the command using only columns that use the `vector` type.
+
+  - scope: SCHEMA
+    code: CANNOT_DROP_VECTORIZE_FROM_UNKNOWN_COLUMNS
+    title: Vectorize configuration cannot be dropped from columns if they are not defined in the table schema
+    body: |-
+      The command attempted to drop vectorize configuration from columns that are not in the table schema.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      And has the vector columns: ${vectorColumns}.
+      The command attempted to drop vectorize configuration from the unknown columns: ${unknownColumns}.  
+      
+      Resend the command using only columns defined in the table schema.
+
+  - scope: SCHEMA
+    code: CANNOT_DROP_VECTORIZE_FROM_NON_VECTOR_COLUMNS
+    title: Vectorize configuration cannot be dropped from columns if they are not `vector` type
+    body: |-
+      Columns can only have the vectorize configuration dropped if they use the `vector` column type.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      And has the vector columns: ${vectorColumns}.
+      The command attempted to drop vectorize config from the non-vector columns: ${nonVectorColumns}.  
+      
+      Resend the command using only columns that use the `vector` type.
+
+  - scope: SCHEMA
+    code: UNKNOWN_DATA_TYPE
+    title: Data type is unknown
+    body: |-
+      The column definition used a data type that is not known.
+        
+      ${SNIPPET.CURRENTLY_UNSUPPORTED}
+      
+      The supported data types are: ${supportedTypes}.
+      The command used the unsupported data type: ${unsupportedType}.
+      
+      Resend the command using a known data types.
+
+  - scope: SCHEMA
+    code: UNKNOWN_PRIMITIVE_DATA_TYPE
+    title: Primitive data type is unknown
+    body: |-
+      The column definition used the short hand for the data type, which only supports primitive data types.
+            
+      The supported primitive data types are: ${supportedTypes}.
+      The command used the unsupported data type: ${unsupportedType}.
+      
+      Resend the command using a known primitive data type.
+
+  - scope: SCHEMA
+    code: UNSUPPORTED_MAP_DEFINITION
+    title: Map definition contains unsupported data types
+    body: |-
+      The command attempted to create a map column that used unsupported types for either the key or value.
+      
+      Maps can only use `text` or `ascii` types for the key type, and any primitive type for the value.
+      
+      The supported primitive data types are: ${supportedTypes}.
+      The command used the key type: ${unsupportedKeyType}.
+      The command used the value type: ${unsupportedValueType}.
+      
+      Resend the command using a supported key and value type.
+
+  - scope: SCHEMA
+    code: UNSUPPORTED_LIST_DEFINITION
+    title: List definition contains unsupported data types
+    body: |-
+      The command attempted to create a list column that used an unsupported type for the value.
+      
+      List can only use primitive types for the value.
+      
+      The supported primitive data types are: ${supportedTypes}.
+      The command used the value type: ${unsupportedValueType}.
+      
+      Resend the command using a supported value type.
+
+  - scope: SCHEMA
+    code: UNSUPPORTED_SET_DEFINITION
+    title: Set definition contains unsupported data types
+    body: |-
+      The command attempted to create a set column that used an unsupported type for the value.
+      
+      Sets can only use primitive types for the value.
+      
+      The supported primitive data types are: ${supportedTypes}.
+      The command used the value type: ${unsupportedValueType}.
+      
+      Resend the command using a supported value type.
+
+  - scope: SCHEMA
+    code: UNSUPPORTED_VECTOR_DIMENSION
+    title: Vector definition contains unsupported dimension
+    body: |-
+      The command attempted to create a vector column that used an unsupported configuration.
+      
+      The dimension of the vector must be an positive integer value.
+      
+      The command used the dimension: ${unsupportedValue}.
+      
+      Resend the command using a supported vector dimension.
+
+  - scope: SCHEMA
+    code: UNKNOWN_INDEX_COLUMN
+    title: Index column is not defined in the table schema
+    body: |-
+      The command attempted to create an index on a column that is not in the table schema.
+      
+      Indexes can only be created on existing columns.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to index the unknown columns: ${unknownColumns}.  
+      
+      Resend the command using only columns defined in the table schema.
+
+  - scope: SCHEMA
+    code: UNSUPPORTED_INDEXING_FOR_DATA_TYPES
+    title: Indexing not supported by data types
+    body: |-
+      The command attempted to create an index on a column that uses a data type not supported for indexing.
+      
+      Regular indexes can only be created on primitive data types such as `text` and `int`, vector columns can be indexed using the createVectorIndex command.
+      
+      ${SNIPPET.CURRENTLY_UNSUPPORTED}
+      
+      The supported primitive data types are: ${supportedTypes}.
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to index the unsupported columns: ${unsupportedColumns}.
+      
+      Resend the command using columns of the supported data types.
+
+  - scope: SCHEMA
+    code: UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES
+    title: Analysed text index not supported by data types
+    body: |-
+      The command attempted to create an index that specified text analysis on a column that uses a data type not supported for text analysis.
+      
+      Text analysis options `ascii`, `caseSensitive`, and `normalize` can only be used on columns of type `text` or `ascii`. 
+  
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to index the unsupported columns: ${unsupportedColumns}.
+      
+      Resend the command using columns that support text analysis.
+
+  - scope: SCHEMA
+    code: UNSUPPORTED_VECTOR_INDEX_FOR_DATA_TYPES
+    title: Vector index not supported by data types
+    body: |-
+      The command attempted to create an vector index on a column that is not a `vector` type.
+      
+      Vector indexes can only be created on columns of type `vector`, regular indexes can only be created on primitive data types such as `text` and `int` using the createIndex command.
+      
+      Note: Indexing for `map`, `list`, and `set` types will be added at a later date. 
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to vector index the unsupported columns: ${unsupportedColumns}.
+      
+      Resend the command using columns of `vector` type.
+
+  - scope: SCHEMA
+    code: UNKNOWN_VECTOR_SOURCE_MODEL
+    title: Vector source model is unknown
+    body: |-
+      The command attempted to create an vector index using a vector source model that is not known by the API.
+      
+      Including the optional name of the model that created the vectors when creating a vector index can provide significant performance improvements. 
+      
+      The known source models are: ${knownSourceModels}.
+      The command attempted to use the source model: ${unknownSourceModel}.
+      
+      Resend the command using a known source model.
+
+  - scope: SCHEMA
+    code: UNKNOWN_VECTOR_METRIC
+    title: Vector metric is unknown
+    body: |-
+      The command attempted to create an vector index using a metric that is not known by the API.
+            
+      The metric, also known as the similarity function, used to create the vector index is used to compare vectors to find the similar vectors.
+      
+      The known metrics are: ${knownMetrics}.
+      The command attempted to use the metric: ${unknownMetric}.
+      
+      Resend the command using a known metric.
+
+  - scope: SCHEMA
+    code: CANNOT_DROP_UNKNOWN_INDEX
+    title: Dropped index is not defined in the keyspace schema
+    body: |-
+      The command attempted to drop an index that is not in the keyspace schema.
+      
+      The command attempted to drop the unknown index: ${unknownIndex}.
+      
+      Resend the command using an index that exists in the keyspace.
+
+  - scope: SCHEMA
+    code: CANNOT_DROP_UNKNOWN_TABLE
+    title: Dropped table is not defined in the keyspace schema
+    body: |-
+      The command attempted to drop a table that is not in the keyspace schema.
+      
+      The command attempted to drop the unknown table: ${unknownTable}.
+      
+      Resend the command using a table that exists in the keyspace.
+
+  - scope: SCHEMA
+    code: CANNOT_ADD_EXISTING_TABLE
+    title: Table with the same name exists in the keyspace schema
+    body: |-
+      The command attempted to add a table that already exists in the keyspace schema.
+      
+      The command attempted to add the existing table: ${existingTable}.
+      
+      Resend the command using a table name that does not exist in the keyspace.
+
+  - scope: SCHEMA
+    code: CANNOT_ADD_EXISTING_INDEX
+    title: Index with the same name exists in the keyspace schema
+    body: |-
+      The command attempted to add an index that already exists in the keyspace schema.
+      
+      The command attempted to add the existing index: ${existingIndex}.
+      
+      Resend the command using an index name that does not exist in the keyspace.
+
+    # prev errors - all need to be reviewed
+
+  - scope: SCHEMA
+    code: INVALID_INDEX_DEFINITION
+    title: Provided index configuration is not valid.
+    body: |-
+      Provided index configuration is not valid: ${reason}.
 
   - scope: SCHEMA
     code: INVALID_KEYSPACE
@@ -332,51 +996,6 @@ request-errors:
         "column_name": {
           "type": "text"
         }
-
-  - scope: SCHEMA
-    code: COLUMN_TYPE_UNSUPPORTED
-    title: Column data type used in the definition is not supported.
-    body: |-
-      Column data type ${type} used in the definition is not supported.
-      Following are the supported data types: ${supported_types}
-
-  - scope: SCHEMA
-    code: MISSING_PRIMARY_KEYS
-    title: Primary key definition needs to be provided while creating the table.
-    body: |-
-      Primary key definition needs to be provided while creating the table.
-      They can be provided in the definition in 2 ways:
-        1. A single primary key column can be defined using the shorthand format as:
-          {
-            "name": "primaryKeyAsStringTable",
-              "definition": {
-                "columns": {
-                  "id": "text",
-                  "age": "int",
-                  "name": "type": "text",
-                },
-                "primaryKey": "id"
-              }
-            }
-        2. A composite primary key can be defined using the advanced nested object structure format as:
-          {
-            "name": "primaryKeyAsStringTable",
-              "definition": {
-                "columns": {
-                  "id": "text",
-                  "age": "int",
-                  "name": "type": "text",
-                },
-                "primaryKey": {
-                  "partitionBy": [
-                    "id"
-                  ],
-                  "partitionSort": {
-                    "name" : 1, "age" : -1
-                  }
-                }
-              }
-            }    
 
   - scope: SCHEMA
     code: PRIMARY_KEY_DEFINITION_INCORRECT
@@ -401,59 +1020,6 @@ request-errors:
           d. partitionSort values should be either `1` for ascending or `-1` for descending.
 
   - scope: SCHEMA
-    code: MAP_TYPE_INVALID_DEFINITION
-    title: Map column data type definition provided in the request is incorrect.
-    body: |-
-      Map column data type definition provided in the request is incorrect: ${reason}
-      Map type should also be provided with `keyType` and `valueType`. `keyType` and `valueType` should be a primitive data type.
-      Example map type definition:
-        "column_name": {
-          "type": "map",
-          "keyType": "text",
-          "valueType": "text"
-        }
-
-  - scope: SCHEMA
-    code: SET_TYPE_INVALID_DEFINITION
-    title: Set column data type definition provided in the request is incorrect.
-    body: |-
-      Set column data type definition provided in the request is incorrect.
-      Set type should also be provided with `valueType`. `valueType` should be a primitive data type.
-      Example map type definition:
-        "column_name": {
-          "type": "set",
-          "valueType": "text"
-        }
-
-  - scope: SCHEMA
-    code: LIST_TYPE_INVALID_DEFINITION
-    title: List column data type definition provided in the request is incorrect.
-    body: |-
-      List column data type definition provided in the request is incorrect.
-      List type should also be provided with a `valueType`. `valueType` should be a primitive data type.
-      Example map type definition:
-        "column_name": {
-          "type": "list",
-          "valueType": "text"
-        }
-
-  - scope: SCHEMA
-    code: VECTOR_TYPE_INVALID_DEFINITION
-    title: Vector column data type definition provided in the request is incorrect.
-    body: |-
-      Vector column data type definition provided in the request is incorrect.
-      Vector type accepts `dimension`. `dimension` is an integer value.
-      `service` definition is optional for vector type. It's used if the embedding needs to be done using data-api.
-      Example map type definition:
-        "column_name": {
-          "type": "vector",
-          "dimension": 1024,
-          "service": {
-            "provider": "nvidia",
-            "modelName": "NV-Embed-QA"
-          }
-        }
-  - scope: SCHEMA
     code: INVALID_CONFIGURATION
     title: Unable to parse configuration, schema invalid.
     body: |-
@@ -466,48 +1032,176 @@ request-errors:
       Unable to parse vectorize configuration, schema invalid for field ${field}.
 
   - scope: SCHEMA
-    code: INVALID_INDEX_DEFINITION
-    title: Provided index configuration is not valid.
-    body: |-
-      Provided index configuration is not valid: ${reason}.V
-
-  - scope: SCHEMA
-    code: COLUMN_ALREADY_EXISTS
-    title: Column already exist in the table.
-    body: |-
-      Column `${column}` already exist in the table.
-
-  - scope: SCHEMA
     code: COLUMN_NOT_FOUND
     title: Column doesn't exist in the table.
     body: |-
       Column `${column}` doesn't exist in the table.
 
-  - scope: SCHEMA
-    code: COLUMN_CANNOT_BE_DROPPED
-    title: Column can't be dropped.
+# ================================================================================================================
+# Family: REQUEST         Scope: SORT
+# ================================================================================================================
+
+  - scope: SORT
+    code: CANNOT_SORT_ON_MULTIPLE_VECTORS
+    title: More than one vector sort provided
     body: |-
-      Column can't be dropped: ${reason}.
+      The command used a sort clause with more than one vector sort, only one vector sort is allowed.
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
+      The command attempted to sort on the columns: ${sortColumns}.
+      
+      Resend the command with only one vector sort.
 
-  - scope: SCHEMA
-    code: NON_VECTOR_TYPE_COLUMN
-    title: Can not add vectorize service to non vector column.
+  - scope: SORT
+    code: CANNOT_SORT_UNKNOWN_COLUMNS
+    title: Sorted columns are not defined in the table schema
     body: |-
-      Can not add vectorize service to non vector column `${column}`.
+      The command attempted to sort using columns that are not in the table schema.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to sort the unknown columns: ${unknownColumns}.  
+      
+      Resend the command using only columns that are defined in the table schema.
 
+  - scope: SORT
+    code: OVERLOADED_SORT_ROW_LIMIT
+    title: Sort aborted due to in memory sort restriction
+    body: |-
+      The command used in memory sorting which has a limit of 10,000 rows. 
+      
+      Consult any warnings included in the response for how to improve the sort performance.
+      
+      Resend the command using a more specific filter to reduce the number of rows sorted.
 
+  - scope: SORT
+    code: CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS
+    title: Vector sort columns are not `vector` type
+    body: |-
+      The command attempted to vector sort columns that are not of vector type. 
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} defines the columns: ${vectorColumns}.
+      The command attempted to sort the non vector columns: ${sortColumns}.  
+      
+      Resend the command using only vector columns.
 
+  - scope: SORT
+    code: CANNOT_VECTOR_SORT_WITH_SKIP_OPTION
+    title: Skip option cannot be used with  vector sort
+    body: |-
+      The command attempted to vector sort columns along with skip option set. 
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      Resend the command without the skip option.
+
+  - scope: SORT
+    code: CANNOT_VECTOR_SORT_NON_INDEXED_VECTOR_COLUMNS
+    title: Vector sort cannot be used for non indexed vector columns
+    body: |-
+      The command attempted to vector sort vector columns that are not indexed.
+      
+      Vector sorting is only supported on vector columns that have been indexed.
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
+      And has indexes on the vector columns: ${indexedColumns}.
+      The command attempted to sort vector columns: ${sortColumns}.  
+      
+      Resend the command using only indexed vector columns.
+
+  - scope: SORT
+    code: CANNOT_SORT_VECTOR_AND_NON_VECTOR_COLUMNS
+    title: Vector sort cannot be used with non vector sorting
+    body: |-
+      The command attempted to vector sort vector columns and other non vector columns.
+      
+      Vector sorts must use a single vector column, and cannot include any other sort columns.
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
+      The command attempted to sort the vector columns: ${sortVectorColumns}.
+      The command attempted to sort the non-vector columns: ${sortNonVectorColumns}.
+      
+      Resend the command using either vector or non-vector sorting.
+
+  - scope: SORT
+    code: UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND
+    title: Sorting not supported by delete command on Tables
+    body: |-
+      The command attempted to sort a delete command running against a table. 
+
+      Deleting rows in a table does not support sorting, rows can only be deleted by specifying the partition key(s) and optionally the clustering key(s) for the row(s) to be deleted.
+      
+      Resend the command without the sort clause.
+
+  - scope: SORT
+    code: UNSUPPORTED_SORT_FOR_TABLE_UPDATE_COMMAND
+    title: Sorting not supported by update command on Tables
+    body: |-
+      The command attempted to sort a update command running against a table. 
+
+      Updating row in a table does not support sorting, a row can only be updated by specifying full primary key(s).
+      
+      Resend the command without the sort clause.
+
+  - scope: SORT
+    code: CANNOT_SORT_ON_MULTIPLE_VECTORIZE
+    title: More than one vectorize sort provided
+    body: |-
+      The command attempted to sort by vectorizing multiple vector columns. 
+
+      The sort included the vectrized columns: ${sortVectorizeColumns}
+      
+      Resend the command using a single vectorize sort.
+
+  - scope: SORT
+    code: CANNOT_VECTORIZE_SORT_NON_VECTOR_COLUMN
+    title: Vectorize sort columns are not `vector` type
+    body: |-
+      The command attempted to vectorize sort on a column that is not of `vector` type.
+      
+      The sort vectorized the non-vector columns: ${nonVectorColumn}
+      
+      Resend the command using only `vector` columns types.
+
+  - scope: SORT
+    code: CANNOT_VECTORIZE_SORT_WHEN_MISSING_VECTORIZE_DEFINITION
+    title: Vectorize sort columns require a vectorize configuration
+    body: |-
+      The command attempted to sort on a `vector` column that do not have a vectorize configuration.
+      
+      The sort included the non vectorized columns: ${noVectorizeDefinition}
+      
+      Resend the command using only `vector` columns with vectorize configuration.
+
+  - scope: SORT
+    code: UNSUPPORTED_PAGINATION_WITH_IN_MEMORY_SORTING
+    title: Pagination not supported when using in-memory sorting
+    body: |-
+      Pagination is not supported when the data is sorted in-memory.
+
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The command sorted on the columns: ${sortColumns}.
+      
+      Resend the command without pagination.    
 
 
 # ================================================================================================================
-# Server Errors
+# ================================================================================================================
+#                                           Server Errors
+# ================================================================================================================
 # ================================================================================================================
 
 server-errors:
   # UNSCOPED server errors
   - scope:
     code: UNEXPECTED_SERVER_ERROR
-    http-status-override: 500
     title: Unexpected server error
     body: |-
       An unexpected server error occurred while processing the request. 

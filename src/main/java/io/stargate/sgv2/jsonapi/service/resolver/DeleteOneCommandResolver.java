@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -9,12 +11,12 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -66,11 +68,18 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, DeleteOneCommand command) {
 
+    // Sort clause is not supported for table deleteOne command.
+    if (command.sortClause() != null && !command.sortClause().isEmpty()) {
+      throw SortException.Code.UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND.get(
+          errVars(ctx.schemaObject(), map -> {}));
+    }
+
     var builder = new DeleteAttemptBuilder<>(ctx.schemaObject(), true);
 
+    // need to update so we use WithWarnings correctly
     var where =
         TableWhereCQLClause.forDelete(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command));
+            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
 
     var attempts = new OperationAttemptContainer<>(builder.build(where));
 
@@ -99,8 +108,7 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> commandContext, DeleteOneCommand command) {
 
-    final DBLogicalExpression dbLogicalExpression =
-        collectionFilterResolver.resolve(commandContext, command);
+    var dbLogicalExpression = collectionFilterResolver.resolve(commandContext, command).target();
 
     final SortClause sortClause = command.sortClause();
     SchemaValidatable.maybeValidate(commandContext, sortClause);

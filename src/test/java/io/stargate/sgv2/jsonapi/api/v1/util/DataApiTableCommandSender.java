@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.util;
 
 import io.restassured.specification.RequestSpecification;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
 
 public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiTableCommandSender> {
@@ -23,12 +23,16 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     return request.post(CollectionResource.BASE_PATH, keyspace, tableName);
   }
 
+  public DataApiResponseValidator postUpdateOne(String jsonClause) {
+    return postCommand(CommandName.UPDATE_ONE, jsonClause);
+  }
+
   public DataApiResponseValidator postDeleteMany(String jsonClause) {
-    return postCommand(Command.CommandName.DELETE_MANY, jsonClause);
+    return postCommand(CommandName.DELETE_MANY, jsonClause);
   }
 
   public DataApiResponseValidator postDeleteOne(String jsonClause) {
-    return postCommand(Command.CommandName.DELETE_ONE, jsonClause);
+    return postCommand(CommandName.DELETE_ONE, jsonClause);
   }
 
   /**
@@ -40,34 +44,38 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
    * @return Response validator for further assertions
    */
   public DataApiResponseValidator postFindOne(String jsonClause) {
-    return postCommand(Command.CommandName.FIND_ONE, jsonClause);
+    return postCommand(CommandName.FIND_ONE, jsonClause);
   }
 
   public DataApiResponseValidator postFind(String jsonClause) {
-    return postCommand(Command.CommandName.FIND, jsonClause);
+    return postCommand(CommandName.FIND, jsonClause);
   }
 
   public DataApiResponseValidator postInsertOne(String jsonClause) {
-    return postCommand(Command.CommandName.INSERT_ONE, jsonClause);
+    return postCommand(CommandName.INSERT_ONE, jsonClause);
   }
 
   public DataApiResponseValidator postInsertMany(String jsonClause) {
-    return postCommand(Command.CommandName.INSERT_MANY, jsonClause);
+    return postCommand(CommandName.INSERT_MANY, jsonClause);
   }
 
   public DataApiResponseValidator postCreateIndex(String jsonClause) {
-    return postCommand(Command.CommandName.CREATE_INDEX, jsonClause);
+    return postCommand(CommandName.CREATE_INDEX, jsonClause);
+  }
+
+  public DataApiResponseValidator postListIndexes(String jsonClause) {
+    return postCommand(CommandName.LIST_INDEXES, jsonClause);
   }
 
   public DataApiResponseValidator postCreateVectorIndex(String jsonClause) {
-    return postCommand(Command.CommandName.CREATE_VECTOR_INDEX, jsonClause);
-  }
-
-  public DataApiResponseValidator postDropIndex(String jsonClause) {
-    return postCommand(Command.CommandName.DROP_INDEX, jsonClause);
+    return postCommand(CommandName.CREATE_VECTOR_INDEX, jsonClause);
   }
 
   public DataApiResponseValidator postAlterTable(String tableDefAsJSON) {
-    return postCommand(Command.CommandName.ALTER_TABLE, tableDefAsJSON);
+    return postCommand(CommandName.ALTER_TABLE, tableDefAsJSON);
+  }
+
+  public DataApiResponseValidator postCount() {
+    return postCommand(CommandName.COUNT_DOCUMENTS, "{}");
   }
 }

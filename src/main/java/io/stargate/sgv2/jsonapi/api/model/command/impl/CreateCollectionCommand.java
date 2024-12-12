@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.validation.Valid;
@@ -95,6 +96,20 @@ public record CreateCollectionCommand(
             @JsonProperty("metric")
             @JsonAlias("function") // old name
             String metric,
+        @Nullable
+            @Pattern(
+                regexp =
+                    "(ada002|bert|cohere-v3|gecko|nv-qa-4|openai-v3-large|openai-v3-small|other)",
+                message =
+                    "sourceModel options are 'ada002', 'bert', 'cohere-v3', 'gecko', 'nv-qa-4', 'openai-v3-large', 'openai-v3-small', and 'other'")
+            @Schema(
+                description =
+                    "The 'sourceModel' option configures the index with the fastest settings for a given source of embeddings vectors",
+                defaultValue = "other",
+                type = SchemaType.STRING,
+                implementation = String.class)
+            @JsonProperty("sourceModel")
+            String sourceModel,
         @Valid
             @Nullable
             @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -105,9 +120,11 @@ public record CreateCollectionCommand(
             @JsonProperty("service")
             VectorizeConfig vectorizeConfig) {
 
-      public VectorSearchConfig(Integer dimension, String metric, VectorizeConfig vectorizeConfig) {
+      public VectorSearchConfig(
+          Integer dimension, String metric, String sourceModel, VectorizeConfig vectorizeConfig) {
         this.dimension = dimension;
-        this.metric = metric == null ? "cosine" : metric;
+        this.metric = metric;
+        this.sourceModel = sourceModel;
         this.vectorizeConfig = vectorizeConfig;
       }
     }

@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -22,7 +24,7 @@ import java.io.IOException;
  * }
  * </pre>
  *
- * Formatting of the tpes handed to the {@link ApiDataTypeDef} and its serializer.
+ * Formatting of the tpes handed to the {@link PrimitiveApiDataTypeDef} and its serializer.
  */
 public class ApiColumnDefContainerSerializer extends JsonSerializer<ApiColumnDefContainer> {
 
@@ -32,7 +34,7 @@ public class ApiColumnDefContainerSerializer extends JsonSerializer<ApiColumnDef
       throws IOException {
     gen.writeStartObject();
     for (var apiColumnDef : container.values()) {
-      gen.writeFieldName(apiColumnDef.nameAsString());
+      gen.writeFieldName(cqlIdentifierToJsonKey(apiColumnDef.name()));
       gen.writeObject(apiColumnDef.type());
     }
     gen.writeEndObject();

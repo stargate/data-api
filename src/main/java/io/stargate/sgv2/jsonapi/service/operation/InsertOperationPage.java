@@ -47,7 +47,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   // Created in the Ctor
   private final APIExceptionCommandErrorBuilder apiExceptionToError;
 
-  /** Create an instance that has debug false and useErrorIbhectV2 false */
+  /** Create an instance that has debug false and useErrorObjectV2 false */
   public InsertOperationPage(
       List<? extends InsertAttempt<SchemaT>> allAttemptedInsertions,
       boolean returnDocumentResponses) {
@@ -107,7 +107,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   }
 
   /**
-   * Returns a insert command result in the newer style of detailed results per document
+   * Returns an insert command result in the newer style of detailed results per document
    *
    * <p>aaron - 3 sept -2024 - code moved from the get() method
    *
@@ -158,7 +158,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   }
 
   /**
-   * Returns a insert command result in the original style, without detailed document responses.
+   * Returns an insert command result in the original style, without detailed document responses.
    *
    * <p>aaron - 3 sept -2024 - code moved from the get() method
    *

@@ -4,4 +4,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptio
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 
 public class KeyspaceDriverExceptionHandler
-    extends DefaultDriverExceptionHandler<KeyspaceSchemaObject> {}
+    extends DefaultDriverExceptionHandler<KeyspaceSchemaObject> {
+
+  public KeyspaceDriverExceptionHandler() {}
+}

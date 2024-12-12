@@ -6,6 +6,8 @@ import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
@@ -16,6 +18,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class LogicalExpressionTestData extends TestDataSuplier {
+
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   public LogicalExpressionTestData(TestData testData) {
     super(testData);
@@ -57,9 +61,25 @@ public class LogicalExpressionTestData extends TestDataSuplier {
       return fixture;
     }
 
+    public FixtureT notInOn(CqlIdentifier column) {
+      expression.addFilter(nin(tableMetadata.getColumn(column).orElseThrow()));
+      return fixture;
+    }
+
     public FixtureT eqAllPrimaryKeys() {
       eqAllPartitionKeys();
       return eqAllClusteringKeys();
+    }
+
+    public FixtureT inOnOnePartitionKey(
+        InTableFilter.Operator inFilterOperator, ColumnMetadata firstPartitionKey) {
+      if (inFilterOperator == InTableFilter.Operator.IN) {
+        expression.addFilter(in(firstPartitionKey));
+      }
+      if (inFilterOperator == InTableFilter.Operator.NIN) {
+        expression.addFilter(nin(firstPartitionKey));
+      }
+      return fixture;
     }
 
     public FixtureT eqAllPartitionKeys() {
@@ -176,6 +196,13 @@ public class LogicalExpressionTestData extends TestDataSuplier {
           List.of(value(columnMetadata.getType()), value(columnMetadata.getType())));
     }
 
+    public static TableFilter nin(ColumnMetadata columnMetadata) {
+      return new InTableFilter(
+          InTableFilter.Operator.NIN,
+          columnMetadata.getName().asInternal(),
+          List.of(value(columnMetadata.getType()), value(columnMetadata.getType())));
+    }
+
     public static TableFilter filter(
         CqlIdentifier column,
         DataType type,
@@ -237,6 +264,23 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         return new TextTableFilter(column.asInternal(), operator, (String) value);
       }
       if (type.equals(DataTypes.TIMEUUID)) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+
+      // Sample Collection type values
+      // TODO, note tables feature does not support complex type now, the unit tests just mimic an
+      // invalid filter
+      // usage against complex datatype columns
+      if (type.equals(DataTypes.setOf(DataTypes.TEXT))) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.listOf(DataTypes.TEXT))) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.vectorOf(DataTypes.FLOAT, 3))) {
         return new TextTableFilter(column.asInternal(), operator, (String) value);
       }
 
@@ -302,7 +346,67 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         return "123e4567-e89b-12d3-a456-426655440000"; // Sample TIMEUUID
       }
 
+      if (type.equals(DataTypes.TIMEUUID)) {
+        return "123e4567-e89b-12d3-a456-426655440000"; // Sample TIMEUUID
+      }
+
+      // Sample Collection type values
+      // TODO, note tables feature does not support complex type now, the unit tests just mimic an
+      // invalid filter
+      // usage against complex datatype columns
+      if (type.equals(DataTypes.setOf(DataTypes.TEXT))) {
+        return null;
+      }
+      if (type.equals(DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))) {
+        return null;
+      }
+      if (type.equals(DataTypes.listOf(DataTypes.TEXT))) {
+        return null;
+      }
+      if (type.equals(DataTypes.vectorOf(DataTypes.FLOAT, 3))) {
+        return null;
+      }
       throw new IllegalArgumentException("Unsupported type");
+    }
+
+    public static JsonNode jsonNodeValue(DataType dataType) {
+      Object value = value(dataType);
+      if (value instanceof String) {
+        return MAPPER.getNodeFactory().textNode((String) value);
+      }
+      if (value instanceof Integer) {
+        return MAPPER.getNodeFactory().numberNode((Integer) value);
+      }
+      if (value instanceof Long) {
+        return MAPPER.getNodeFactory().numberNode((Long) value);
+      }
+      if (value instanceof BigDecimal) {
+        return MAPPER.getNodeFactory().numberNode((BigDecimal) value);
+      }
+      if (value instanceof Double) {
+        return MAPPER.getNodeFactory().numberNode((Double) value);
+      }
+      if (value instanceof Float) {
+        return MAPPER.getNodeFactory().numberNode((Float) value);
+      }
+      if (value instanceof Short) {
+        return MAPPER.getNodeFactory().numberNode((Short) value);
+      }
+      if (value instanceof Byte) {
+        return MAPPER.getNodeFactory().numberNode((Byte) value);
+      }
+      if (value instanceof BigInteger) {
+        return MAPPER.getNodeFactory().numberNode((BigInteger) value);
+      }
+      if (value instanceof Boolean) {
+        return MAPPER.getNodeFactory().booleanNode((Boolean) value);
+      }
+      if (value instanceof byte[]) {
+        return MAPPER.getNodeFactory().binaryNode((byte[]) value);
+      }
+
+      throw new IllegalArgumentException(
+          "Did not understand type %s to convert into JsonNode".formatted(dataType));
     }
   }
 }

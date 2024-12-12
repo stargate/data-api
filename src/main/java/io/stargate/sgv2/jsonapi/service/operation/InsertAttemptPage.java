@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import java.util.*;
 
 /**
@@ -75,7 +76,7 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
       // do not
       // the insertIds status will not be included. When we have per doc responses, we add the
       // schema in all cases.
-      maybeAddSchema();
+      maybeAddSchema(CommandStatus.PRIMARY_KEY_SCHEMA);
     }
   }
 
@@ -113,7 +114,8 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
         seenErrors.add(cmdError);
       }
       results[attempt.position()] =
-          new InsertionResult(attempt.docRowID().orElseThrow(), InsertionStatus.ERROR, errorIdx);
+          new InsertionResult(
+              attempt.docRowID().orElse(RowId.EMPTY_ROWID), InsertionStatus.ERROR, errorIdx);
     }
 
     // And third, if any, skipped insertions; those that were not attempted (f.ex due
@@ -125,7 +127,7 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
 
     seenErrors.forEach(resultBuilder::addCommandResultError);
     resultBuilder.addStatus(CommandStatus.DOCUMENT_RESPONSES, Arrays.asList(results));
-    maybeAddSchema();
+    maybeAddSchema(CommandStatus.PRIMARY_KEY_SCHEMA);
   }
 
   /**
@@ -147,24 +149,6 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
       }
     }
     return -1;
-  }
-
-  /**
-   * Adds the schema for the first insert attempt to the status map, if the first insert attempt has
-   * schema to report.
-   *
-   * <p>Uses the first, not the first successful, because we may fail to do an insert but will still
-   * have the _id or PK to report.
-   */
-  private void maybeAddSchema() {
-    if (attempts.isEmpty()) {
-      return;
-    }
-
-    attempts
-        .getFirst()
-        .schemaDescription()
-        .ifPresent(object -> resultBuilder.addStatus(CommandStatus.PRIMARY_KEY_SCHEMA, object));
   }
 
   enum InsertionStatus {

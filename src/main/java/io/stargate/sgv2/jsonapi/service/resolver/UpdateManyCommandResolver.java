@@ -12,7 +12,6 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -21,7 +20,10 @@ import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-/** Resolves the {@link UpdateManyCommand } */
+/**
+ * Resolves the {@link UpdateManyCommand } <b>NOTE:</b> cannot run updateMany command on a table!
+ * only on collections
+ */
 @ApplicationScoped
 public class UpdateManyCommandResolver implements CommandResolver<UpdateManyCommand> {
   private final DocumentShredder documentShredder;
@@ -87,7 +89,7 @@ public class UpdateManyCommandResolver implements CommandResolver<UpdateManyComm
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> ctx, UpdateManyCommand command) {
-    final DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
+    var dbLogicalExpression = collectionFilterResolver.resolve(ctx, command).target();
 
     // TODO this did not track the vector usage, correct ?
     addToMetrics(

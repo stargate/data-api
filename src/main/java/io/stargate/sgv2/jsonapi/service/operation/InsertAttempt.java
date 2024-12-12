@@ -7,7 +7,6 @@ import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
 import com.datastax.oss.driver.api.querybuilder.insert.OngoingValues;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
@@ -44,13 +43,7 @@ public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
     // bind and execute
     var statement = buildInsertStatement();
 
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
-          "execute() - {}, cql={}, values={}",
-          positionAndAttemptId(),
-          statement.getQuery(),
-          statement.getPositionalValues());
-    }
+    logStatement(LOGGER, "executeStatement()", statement);
     return queryExecutor.executeWrite(statement);
   }
 
@@ -82,12 +75,4 @@ public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
    * @return The {@link DocRowIdentifer} that identifies the document or row by ID
    */
   public abstract Optional<DocRowIdentifer> docRowID();
-
-  /**
-   * Called to get the description of the schema to use when building the response.
-   *
-   * @return The optional object that describes the schema, if present the object will be serialised
-   *     to JSON and included in the response status as {@link CommandStatus#PRIMARY_KEY_SCHEMA}.
-   */
-  public abstract Optional<Object> schemaDescription();
 }

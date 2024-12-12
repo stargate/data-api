@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
+
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import java.util.List;
 
 /** Attempt to list tables in a keyspace. */
@@ -19,10 +21,16 @@ public class ListTablesAttempt extends MetadataAttempt<KeyspaceSchemaObject> {
    */
   @Override
   protected List<String> getNames() {
-    return getTables().stream()
-        .map(
-            schemaObject ->
-                CqlIdentifierUtil.externalRepresentation(schemaObject.tableMetadata().getName()))
+
+    // TODO: BETTER CONTROL on KEYSPACE OPTIONAL
+    return keyspaceMetadata
+        .get()
+        // get all tables
+        .getTables()
+        .values()
+        .stream()
+        .filter(TABLE_MATCHER)
+        .map(tableMetadata -> cqlIdentifierToJsonKey(tableMetadata.getName()))
         .toList();
   }
 
@@ -33,6 +41,16 @@ public class ListTablesAttempt extends MetadataAttempt<KeyspaceSchemaObject> {
    */
   @Override
   protected Object getSchema() {
-    return getTables().stream().map(schema -> getTableSchema(schema)).toList();
+    // TODO: BETTER CONTROL on KEYSPACE OPTIONAL
+    return keyspaceMetadata
+        .get()
+        // get all tables
+        .getTables()
+        .values()
+        .stream()
+        .filter(TABLE_MATCHER)
+        .map(tableMetadata -> TableSchemaObject.from(tableMetadata, OBJECT_MAPPER))
+        .map(tableSchemaObject -> tableSchemaObject.apiTableDef().toTableDesc())
+        .toList();
   }
 }

@@ -51,7 +51,10 @@ public class PrettyToStringBuilder {
     this.indent = indent;
     this.parent = parent;
     this.sb = parent == null ? new StringBuilder() : parent.sb;
-    this.sb.append(clazz.getSimpleName()).append("{");
+    // See getSimpleName() may be an empty string at times, use th full name in these cases
+    var simpleName = clazz.getSimpleName();
+    var className = simpleName.isEmpty() ? clazz.getName() : simpleName;
+    this.sb.append(className).append("{");
     newLine();
   }
 

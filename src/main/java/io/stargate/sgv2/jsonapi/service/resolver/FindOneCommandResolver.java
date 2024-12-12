@@ -7,19 +7,16 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
-import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
-import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -36,7 +33,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final FilterResolver<FindOneCommand, CollectionSchemaObject> collectionFilterResolver;
-  private final FilterResolver<FindOneCommand, TableSchemaObject> tableFilterResolver;
+  private final ReadCommandResolver<FindOneCommand> readCommandResolver;
 
   @Inject
   public FindOneCommandResolver(
@@ -45,7 +42,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
       MeterRegistry meterRegistry,
       DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
-    super();
+    this.readCommandResolver = new ReadCommandResolver<>(objectMapper, operationsConfig);
     this.objectMapper = objectMapper;
     this.operationsConfig = operationsConfig;
 
@@ -54,7 +51,6 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
-    this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
   }
 
   @Override
@@ -66,36 +62,65 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, FindOneCommand command) {
 
-    var projection =
-        TableRowProjection.fromDefinition(
-            objectMapper, command.tableProjectionDefinition(), ctx.schemaObject());
-    var builder =
-        new TableReadAttemptBuilder(ctx.schemaObject(), projection, projection)
-            .addBuilderOption(CQLOption.ForSelect.limit(1));
+    var pageBuilder = ReadAttemptPage.builder().singleResponse(true).mayReturnVector(command);
 
-    // TODO, we may want the ability to resolve API filter clause into multiple
-    // dbLogicalExpressions, which will map into multiple readAttempts
-    var where =
-        TableWhereCQLClause.forSelect(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command));
+    // the skip is 0 and the limit is 1 always for findOne
+    return readCommandResolver.buildReadOperation(ctx, command, CqlPagingState.EMPTY, pageBuilder);
 
-    var attempts = new OperationAttemptContainer<>(builder.build(where));
+    // TODO: AARON MAHESH - this is what was here before, leaving until we confirm all good
 
-    var pageBuilder =
-        ReadAttemptPage.<TableSchemaObject>builder()
-            .singleResponse(true)
-            .includeSortVector(false)
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
-
-    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
+    //    var attemptBuilder = new TableReadAttemptBuilder(ctx.schemaObject());
+    //
+    //    // the skip is 0 and the limit is 1 always for findOne. just making that explicit
+    //    var commandSkip = 0;
+    //    var commandLimit = 1;
+    //    attemptBuilder.addBuilderOption(CQLOption.ForSelect.limit(commandLimit));
+    //
+    //    // work out the CQL order by
+    //    var orderByWithWarnings = tableCqlSortClauseResolver.resolve(ctx, command);
+    //    attemptBuilder.addOrderBy(orderByWithWarnings);
+    //
+    //    // and then if we need to do in memory sorting
+    //    attemptBuilder.addSorter(
+    //        new TableMemorySortClauseResolver<>(
+    //          operationsConfig,
+    //          orderByWithWarnings.target(),
+    //          commandSkip,
+    //          commandLimit)
+    //        .resolve(ctx, command));
+    //
+    //    // the columns the user wants
+    //    // NOTE: the projection is doing double duty as the select and the doc provider, this
+    // projection is still at POC leve
+    //    var projection = TableProjection.fromDefinition(objectMapper,
+    // command.tableProjectionDefinition(), ctx.schemaObject());
+    //    attemptBuilder.addSelect(WithWarnings.of(projection));
+    //    attemptBuilder.addDocumentSourceSupplier(projection);
+    //
+    //    // TODO, we may want the ability to resolve API filter clause into multiple
+    //    // dbLogicalExpressions, which will map into multiple readAttempts
+    //    var where =
+    //        TableWhereCQLClause.forSelect(
+    //            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
+    //
+    //    var attempts = new OperationAttemptContainer<>(attemptBuilder.build(where));
+    //
+    //    var pageBuilder =
+    //        ReadAttemptPage.<TableSchemaObject>builder()
+    //            .singleResponse(true)
+    //            .includeSortVector(false)
+    //            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
+    //            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+    //
+    //    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
   }
 
   @Override
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, FindOneCommand command) {
 
-    final DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
+    final DBLogicalExpression dbLogicalExpression =
+        collectionFilterResolver.resolve(ctx, command).target();
     final SortClause sortClause = command.sortClause();
     SchemaValidatable.maybeValidate(ctx, sortClause);
 

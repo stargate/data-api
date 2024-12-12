@@ -60,6 +60,14 @@ public abstract class JSONCodecs {
           JSONCodec.ToCQL.unsafeIdentity(),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
+  // we can only read counters from CQL, do not support writing them
+  public static final JSONCodec<Long, Long> COUNTER_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.COUNTER,
+          JSONCodec.ToCQL.unsafeIdentity(),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
   public static final JSONCodec<BigDecimal, BigDecimal> DECIMAL_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
@@ -244,9 +252,13 @@ public abstract class JSONCodecs {
           GenericType.STRING,
           DataTypes.DURATION,
           // CqlDuration.from() accepts 2 formats; ISO-8601 ("P1H30M") and "1h30m" (Cassandra
-          // compact) format
+          // compact) format. Note: negative values (preceding "-") also accepted
           JSONCodec.ToCQL.safeFromString(CqlDuration::from),
-          JSONCodec.ToJSON.toJSONUsingToString());
+          // But since we must produce ISO-8601, need custom JSON serialization
+          (objectMapper, fromCQLType, value) ->
+              objectMapper
+                  .getNodeFactory()
+                  .textNode(CqlDurationConverter.toISO8601Duration(value)));
 
   public static final JSONCodec<String, LocalTime> TIME_FROM_STRING =
       new JSONCodec<>(
@@ -260,6 +272,13 @@ public abstract class JSONCodecs {
           GenericType.STRING,
           DataTypes.TIMESTAMP,
           JSONCodec.ToCQL.safeFromString(Instant::parse),
+          JSONCodec.ToJSON.toJSONUsingToString());
+
+  public static final JSONCodec<EJSONWrapper, Instant> TIMESTAMP_FROM_EJSON =
+      new JSONCodec<>(
+          GenericType.of(EJSONWrapper.class),
+          DataTypes.TIMESTAMP,
+          JSONCodec.ToCQL::instantFromEJSON,
           JSONCodec.ToJSON.toJSONUsingToString());
 
   // Text Codecs

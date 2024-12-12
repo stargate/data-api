@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
+import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -140,13 +141,15 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
           .wasSuccessful()
           .hasJSONField(
               "data.document",
-              """
-                              {
-                                  "id": "c",
-                                  "age": null,
-                                  "name": null
-                              }
-                              """);
+              // By default, null values are not returned
+              removeNullValues(
+                  """
+                                  {
+                                      "id": "c",
+                                      "age": null,
+                                      "name": null
+                                  }
+                                  """));
     }
 
     @Test
@@ -177,7 +180,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                               "Id": 2,
                               "value": "b"
                           }
-                              """;
+                          """;
       assertTableCommand(keyspaceName, TABLE_NAME)
           .templated()
           .insertOne(DOC_B_JSON)
@@ -255,7 +258,54 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
               }
               """)
           .wasSuccessful()
-          .hasJSONField("data.document", DOC_B_JSON);
+          .hasJSONField("data.document", removeNullValues(DOC_B_JSON));
+    }
+
+    @Test
+    @Order(4)
+    public final void sparseDataForCollectionDataType() {
+      String tableName = "mapListSet";
+      String tableJson =
+              """
+                          {
+                              "name": "%s",
+                              "definition": {
+                                  "columns": {
+                                      "id": "text",
+                                      "map_type": {
+                                          "type": "map",
+                                          "keyType": "text",
+                                          "valueType": "text"
+                                      },
+                                      "list_type": {
+                                          "type": "list",
+                                          "valueType": "text"
+                                      },
+                                      "set_type": {
+                                          "type": "set",
+                                          "valueType": "text"
+                                      }
+                                  },
+                                  "primaryKey": "id"
+                              }
+                          }
+                          """
+              .formatted(tableName);
+      assertNamespaceCommand(keyspaceName).postCreateTable(tableJson).wasSuccessful();
+      // insert 1 document:
+      var docJSON =
+          """
+               {
+                   "id": "1"
+               }
+               """;
+      assertTableCommand(keyspaceName, tableName).templated().insertOne(docJSON).wasSuccessful();
+      // find the document, verify null set/list/map are not returned
+      assertTableCommand(keyspaceName, tableName)
+          .templated()
+          .findOne(ImmutableMap.of("id", "1"), null)
+          .wasSuccessful()
+          .hasJSONField("data.document", docJSON);
     }
   }
 

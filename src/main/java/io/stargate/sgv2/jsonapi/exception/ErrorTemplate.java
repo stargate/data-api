@@ -90,16 +90,15 @@ public record ErrorTemplate<T extends APIException>(
     // use the apache string substitution to replace the variables in the messageTemplate
     Map<String, String> allValues = new HashMap<>(values);
     allValues.putAll(ErrorConfig.getInstance().getSnippetVars());
-    var subs =
-        new StringSubstitutor(allValues)
-            .setEnableUndefinedVariableException(
-                true); // set so IllegalArgumentException thrown if template var missing a value
+
+    // set so IllegalArgumentException thrown if template var missing a value
+    var subs = new StringSubstitutor(allValues).setEnableUndefinedVariableException(true);
 
     String msg;
     try {
       msg = subs.replace(messageTemplate);
     } catch (IllegalArgumentException e) {
-      throw new UnresolvedErrorTemplateVariable(this, e.getMessage());
+      throw new UnresolvedErrorTemplateVariable(this, allValues, e.getMessage());
     }
 
     return new ErrorInstance(

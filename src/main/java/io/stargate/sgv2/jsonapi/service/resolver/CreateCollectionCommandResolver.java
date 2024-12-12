@@ -15,6 +15,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
+import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -106,6 +108,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           command.name(),
           vector.dimension(),
           vector.metric(),
+          vector.sourceModel(),
           comment,
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
@@ -192,13 +195,43 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
     Integer vectorDimension = vector.dimension();
     VectorizeConfig service = vector.vectorizeConfig();
+    String sourceModel = vector.sourceModel();
+    String metric = vector.metric();
+
+    // decide sourceModel and metric value
+    if (sourceModel != null) {
+      if (metric == null) {
+        // (1) sourceModel is provided but metric is not - set metric to cosine or dot_product based
+        // on the map
+        // TODO: HAZEL this says ^^ "cosine or dot_product based on the map" but this is just the
+        // default for model
+        final String sourceModelFromUser = sourceModel;
+        metric =
+            EmbeddingSourceModel.fromApiNameOrDefault(sourceModelFromUser)
+                .orElseThrow(
+                    () -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModelFromUser))
+                .similarityFunction()
+                .apiName();
+      }
+      // (2) both sourceModel and metric are provided - do nothing
+    } else {
+      if (metric != null) {
+        // (3) sourceModel is not provided but metric is - set sourceModel to 'other'
+        sourceModel = EmbeddingSourceModel.OTHER.cqlName();
+      } else {
+        // (4) both sourceModel and metric are not provided - set sourceModel to 'other' and metric
+        // to 'cosine'
+        sourceModel = EmbeddingSourceModel.DEFAULT.cqlName();
+        metric = SimilarityFunction.DEFAULT.cqlIndexingFunction();
+      }
+    }
 
     if (service != null) {
       // Validate service configuration and auto populate vector dimension.
       vectorDimension = validateVectorize.validateService(service, vectorDimension);
       vector =
           new CreateCollectionCommand.Options.VectorSearchConfig(
-              vectorDimension, vector.metric(), vector.vectorizeConfig());
+              vectorDimension, metric, sourceModel, vector.vectorizeConfig());
     } else {
       // Ensure vector dimension is provided when service configuration is absent.
       if (vectorDimension == null) {
@@ -209,6 +242,9 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         throw ErrorCodeV1.VECTOR_SEARCH_TOO_BIG_VALUE.toApiException(
             "%d (max %d)", vectorDimension, documentLimitsConfig.maxVectorEmbeddingLength());
       }
+      vector =
+          new CreateCollectionCommand.Options.VectorSearchConfig(
+              vectorDimension, metric, sourceModel, null);
     }
     return vector;
   }

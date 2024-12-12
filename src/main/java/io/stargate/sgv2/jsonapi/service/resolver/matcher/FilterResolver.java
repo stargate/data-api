@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
@@ -52,14 +53,15 @@ public abstract class FilterResolver<
   protected abstract FilterMatchRules<CmdT> buildMatchRules();
 
   /**
-   * Users of the class should call this function to convert the filer on the command into a {@link
+   * Users of the class should call this function to convert the filter on the command into a {@link
    * DBLogicalExpression}.
    *
    * @param commandContext
    * @param command
    * @return DBLogicalExpression
    */
-  public DBLogicalExpression resolve(CommandContext<SchemaT> commandContext, CmdT command) {
+  public WithWarnings<DBLogicalExpression> resolve(
+      CommandContext<SchemaT> commandContext, CmdT command) {
     Preconditions.checkNotNull(commandContext, "commandContext is required");
     Preconditions.checkNotNull(command, "command is required");
     SchemaValidatable.maybeValidate(commandContext, command.filterClause());
@@ -79,6 +81,6 @@ public abstract class FilterResolver<
               command.filterClause().logicalExpression().getTotalComparisonExpressionCount(),
               operationsConfig.maxFilterObjectProperties()));
     }
-    return dbLogicalExpression;
+    return WithWarnings.of(dbLogicalExpression);
   }
 }

@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-/** Enum with it's json property name which is returned in api response inside status */
+/** Enum with its json property name which is returned in api response inside status */
 public enum CommandStatus {
   /** The element has the count of document */
   @JsonProperty("count")
@@ -26,9 +26,12 @@ public enum CommandStatus {
   /** Status for reporting existing collections. */
   @JsonProperty("collections")
   EXISTING_COLLECTIONS,
-  /** Status for reporting existing collections. */
+  /** Status for reporting existing tables. */
   @JsonProperty("tables")
   EXISTING_TABLES,
+  /** Status for reporting existing indexes. */
+  @JsonProperty("indexes")
+  EXISTING_INDEXES,
 
   /**
    * List of response entries, one for each document we tried to insert with {@code insertMany}
@@ -102,5 +105,31 @@ public enum CommandStatus {
    * definitions as the is used in createTable command.
    */
   @JsonProperty("primaryKeySchema")
-  PRIMARY_KEY_SCHEMA;
+  PRIMARY_KEY_SCHEMA,
+
+  /**
+   * The schema of the columns that were requested in the projection.
+   *
+   * <p>When doing a read, the result of the read by default does not columns that have null values.
+   * Additionally, in the default JSON representation multiple Column types may be represented as a
+   * single JSON type, such as dates, timestamps, duration all represented as a string. Or all
+   * numeric types as a JSON number.
+   *
+   * <p>Clients can use the schema returned here to understand where null values were omitted and
+   * what the database type of the column is.
+   */
+  @JsonProperty("projectionSchema")
+  PROJECTION_SCHEMA,
+
+  /**
+   * The count of the number of rows that were read from the database and sorted in memory.
+   *
+   * <p>Sorting in memory is done when a sort clause uses columns that are not from the partition
+   * sort key. This type of sorting usually needs to read the entire table to sort the rows, and
+   * needs to keep in memory the skip + limit number of rows. Check documentation for ways to avoid
+   * in memory sorting.
+   */
+  @JsonProperty("sortedRowCount")
+  SORTED_ROW_COUNT,
+  ;
 }

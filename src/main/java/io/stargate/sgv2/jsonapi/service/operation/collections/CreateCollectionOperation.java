@@ -19,15 +19,12 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +38,7 @@ public record CreateCollectionOperation(
     boolean vectorSearch,
     int vectorSize,
     String vectorFunction,
+    String sourceModel,
     String comment,
     int ddlDelayMillis,
     boolean tooManyIndexesRollbackEnabled,
@@ -60,6 +58,7 @@ public record CreateCollectionOperation(
       String name,
       int vectorSize,
       String vectorFunction,
+      String sourceModel,
       String comment,
       int ddlDelayMillis,
       boolean tooManyIndexesRollbackEnabled,
@@ -73,6 +72,7 @@ public record CreateCollectionOperation(
         true,
         vectorSize,
         vectorFunction,
+        sourceModel,
         comment,
         ddlDelayMillis,
         tooManyIndexesRollbackEnabled,
@@ -97,6 +97,7 @@ public record CreateCollectionOperation(
         name,
         false,
         0,
+        null,
         null,
         comment,
         ddlDelayMillis,
@@ -134,6 +135,16 @@ public record CreateCollectionOperation(
     // if table exists, compare existedCollectionSettings and newCollectionSettings
     CollectionSchemaObject existedCollectionSettings =
         CollectionSchemaObject.getCollectionSettings(tableMetadata, objectMapper);
+
+    // Use the fromNameOrDefault() so if not specified it will default
+    var embeddingSourceModel =
+        EmbeddingSourceModel.fromApiNameOrDefault(sourceModel)
+            .orElseThrow(() -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModel));
+
+    var similarityFunction =
+        SimilarityFunction.fromApiNameOrDefault(vectorFunction)
+            .orElseThrow(() -> SimilarityFunction.getUnknownFunctionException(vectorFunction));
+
     CollectionSchemaObject newCollectionSettings =
         CollectionSchemaObject.getCollectionSettings(
             currKeyspace.getName().asInternal(),
@@ -141,7 +152,8 @@ public record CreateCollectionOperation(
             tableMetadata,
             vectorSearch,
             vectorSize,
-            SimilarityFunction.fromString(vectorFunction),
+            similarityFunction,
+            embeddingSourceModel,
             comment,
             objectMapper);
     // if table exists we have to choices:
@@ -492,6 +504,8 @@ public record CreateCollectionOperation(
           appender
               + " \"%s_query_vector_value\" ON \"%s\".\"%s\" (query_vector_value) USING 'StorageAttachedIndex' WITH OPTIONS = { 'similarity_function': '"
               + vectorFunction()
+              + "', 'source_model': '"
+              + sourceModel()
               + "'}";
       statements.add(
           SimpleStatement.newInstance(String.format(vectorSearch, table, keyspace, table)));
