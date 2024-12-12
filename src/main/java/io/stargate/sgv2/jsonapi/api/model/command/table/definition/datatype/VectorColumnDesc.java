@@ -17,7 +17,13 @@ public class VectorColumnDesc extends ComplexColumnDesc {
   private final VectorizeConfig vectorizeConfig;
 
   public VectorColumnDesc(Integer dimension, VectorizeConfig vectorizeConfig) {
-    super(ApiTypeName.VECTOR, ApiSupportDesc.fullSupport(""));
+    this(
+        dimension, vectorizeConfig, ApiSupportDesc.withoutCqlDefinition(ApiVectorType.API_SUPPORT));
+  }
+
+  public VectorColumnDesc(
+      Integer dimension, VectorizeConfig vectorizeConfig, ApiSupportDesc apiSupportDesc) {
+    super(ApiTypeName.VECTOR, apiSupportDesc);
 
     this.valueType = PrimitiveColumnDesc.FLOAT;
     this.dimension = dimension;

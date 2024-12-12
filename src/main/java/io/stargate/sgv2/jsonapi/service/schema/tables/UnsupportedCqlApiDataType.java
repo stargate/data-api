@@ -5,14 +5,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.Colu
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.UnsupportedColumnDesc;
 import java.util.Objects;
 
+/** A data type that we read from a CQL table and do not support. */
 public class UnsupportedCqlApiDataType extends UnsupportedApiDataType {
 
   private final DataType cqlType;
-  private final ColumnDesc columnDesc;
 
   UnsupportedCqlApiDataType(DataType cqlType) {
     this.cqlType = Objects.requireNonNull(cqlType, "cqlType must not be null");
-    this.columnDesc = new UnsupportedColumnDesc.UnsupportedCqlColumnDesc(cqlType);
   }
 
   @Override
@@ -22,6 +21,6 @@ public class UnsupportedCqlApiDataType extends UnsupportedApiDataType {
 
   @Override
   public ColumnDesc columnDesc() {
-    return columnDesc;
+    return new UnsupportedColumnDesc.UnsupportedCqlColumnDesc(apiSupport(), cqlType);
   }
 }
