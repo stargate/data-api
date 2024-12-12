@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
@@ -195,7 +196,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_TEXT_COLUMNS)
           .templated()
           .insertOne(DOC_JSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("abc"));
 
       // And verify that we can read it back
       assertTableCommand(keyspaceName, TABLE_WITH_TEXT_COLUMNS)
@@ -236,7 +238,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
           .templated()
           .insertOne(intDoc("zero-fraction", "5.00"))
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("zero-fraction"));
 
       // and out comes 5
       assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
@@ -253,7 +256,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
           .templated()
           .insertOne(intDoc("scientific-but-int", "1.23E+02"))
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("scientific-but-int"));
 
       // and out comes 123
       assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
@@ -300,7 +304,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .templated()
           .insertOne(docJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("fpRegular"));
 
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"fpRegular\" } }")
@@ -316,7 +321,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .templated()
           .insertOne(docJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("floatNan"));
 
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"floatNan\" } }")
@@ -328,7 +334,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .templated()
           .insertOne(docJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("doubleNan"));
 
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"doubleNan\" } }")
@@ -344,7 +351,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .templated()
           .insertOne(docJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("floatInf"));
 
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"floatInf\" } }")
@@ -356,7 +364,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .templated()
           .insertOne(docJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("doubleInf"));
 
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"doubleInf\" } }")
@@ -372,7 +381,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .templated()
           .insertOne(docJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("floatNegInf"));
 
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"floatNegInf\" } }")
@@ -384,7 +394,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .templated()
           .insertOne(docJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("doubleNegInf"));
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"doubleNegInf\" } }")
           .wasSuccessful()
@@ -448,7 +459,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
           .templated()
           .insertOne(docJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("binarySimple"));
       assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
           .postFindOne("{ \"filter\": { \"id\": \"binarySimple\" } }")
           .wasSuccessful()
@@ -518,7 +530,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
           .templated()
           .insertOne(inputJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("datetimeValid"));
       assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"datetimeValid\" } }")
           .wasSuccessful()
@@ -552,7 +565,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
           .templated()
           .insertOne(inputJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("datetimeValidAlt"));
       assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
           .postFindOne(
               """
@@ -580,7 +594,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                     }
                     """
                   .formatted("datetimeNegDuration", "-8h10m"))
-          .wasSuccessful();
+            .wasSuccessful()
+            .hasInsertedIds(List.of("datetimeNegDuration"));
       assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
           .postFindOne(
               """
@@ -686,7 +701,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_UUID_COLUMN)
           .templated()
           .insertOne(docJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("uuidValid"));
 
       assertTableCommand(keyspaceName, TABLE_WITH_UUID_COLUMN)
           .postFindOne("{ \"filter\": { \"id\": \"uuidValid\" } }")
@@ -742,7 +758,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_INET_COLUMN)
           .templated()
           .insertOne(docJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("inetValid"));
 
       assertTableCommand(keyspaceName, TABLE_WITH_INET_COLUMN)
           .postFindOne("{ \"filter\": { \"id\": \"inetValid\" } }")
@@ -806,7 +823,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
           .templated()
           .insertOne(docJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("listValidFull"));
 
       assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"listValidFull\" } }")
@@ -824,7 +842,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
           .templated()
           .insertOne(insertDoc)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("listValidPartial"));
 
       // If we ask for all (select * basically), get explicit empty Lists:
       assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
@@ -913,7 +932,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
           .templated()
           .insertOne(docJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("setValidFull"));
 
       assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"setValidFull\" } }")
@@ -940,7 +960,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                         "intSet": [3, -999, 42]
                       }
                       """)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("setValidPartial"));
 
       // If we ask for all (select * basically), get explicit empty Sets:
       assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
@@ -1030,7 +1051,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
           .templated()
           .insertOne(docJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("mapValidFull"));
 
       assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"mapValidFull\" } }")
@@ -1047,7 +1069,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                 "intMap": {"a": 3, "b": -999, "c": 42}
                               }
                               """)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("mapValidPartial"));
 
       // If we ask for all (select * basically), get explicit empty Maps:
       assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
@@ -1133,7 +1156,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
           .templated()
           .insertOne(docJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("vectorValid"));
 
       assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
           .postFindOne("{ \"filter\": { \"id\": \"vectorValid\" } }")
@@ -1163,7 +1187,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
           .templated()
           .insertOne(inputJSON)
-          .wasSuccessful();
+          .wasSuccessful()
+          .hasInsertedIds(List.of("vectorValidBase64"));
 
       assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
           .postFindOne("{ \"filter\": { \"id\": \"vectorValidBase64\" } }")
