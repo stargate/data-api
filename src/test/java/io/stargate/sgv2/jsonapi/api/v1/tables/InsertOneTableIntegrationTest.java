@@ -1224,8 +1224,10 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .wasSuccessful()
           .hasInsertedIds(List.of(List.of(0.75f, -0.25f, 0.5f)));
 
+      // NOTE: cannot filter by Vector (yet?) so just verify without one knowing
+      // we inserted just one row
       assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_KEY)
-          .postFindOne("{ \"filter\": { \"vectorId\": [0.75, 0.25, 0.5] } }")
+          .postFindOne("{ }")
           .wasSuccessful()
           .hasJSONField("data.document", docJSON);
     }
