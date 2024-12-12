@@ -15,7 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * @param name Name of the collection
  */
 @Schema(description = "Command that deletes a collection if one exists.")
-@JsonTypeName("deleteCollection")
+@JsonTypeName(CommandName.Names.DELETE_COLLECTION)
 public record DeleteCollectionCommand(
     @NotNull
         @Size(min = 1, max = 48)
