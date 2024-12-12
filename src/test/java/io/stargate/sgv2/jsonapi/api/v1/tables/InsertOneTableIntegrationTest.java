@@ -35,6 +35,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   static final String TABLE_WITH_SET_COLUMNS = "insertOneSetColumnsTable";
   static final String TABLE_WITH_MAP_COLUMNS = "insertOneMapColumnsTable";
   static final String TABLE_WITH_VECTOR_COLUMN = "insertOneVectorColumnTable";
+  static final String TABLE_WITH_VECTOR_KEY = "insertOneVectorKeyTable";
 
   final JSONCodecRegistryTestData codecTestData = new JSONCodecRegistryTestData();
 
@@ -173,6 +174,18 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                 "vector",
                 Map.of("type", "vector", "valueType", "float", "dimension", 3)),
             "id")
+        .wasSuccessful();
+
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_VECTOR_KEY,
+            Map.of(
+                "vectorId",
+                Map.of("type", "vector", "valueType", "float", "dimension", 3),
+                "textValue",
+                "text"),
+            "vectorId")
         .wasSuccessful();
   }
 
@@ -594,8 +607,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                     }
                     """
                   .formatted("datetimeNegDuration", "-8h10m"))
-            .wasSuccessful()
-            .hasInsertedIds(List.of("datetimeNegDuration"));
+          .wasSuccessful()
+          .hasInsertedIds(List.of("datetimeNegDuration"));
       assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
           .postFindOne(
               """

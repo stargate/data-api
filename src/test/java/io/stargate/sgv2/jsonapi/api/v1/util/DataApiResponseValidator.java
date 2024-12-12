@@ -289,8 +289,7 @@ public class DataApiResponseValidator {
     return body("status.insertedIds", hasSize(count));
   }
 
-  public DataApiResponseValidator hasInsertedIds(List<?>... ids)
-  {
+  public DataApiResponseValidator hasInsertedIds(List<?>... ids) {
     body("status.insertedIds", hasSize(ids.length));
     return body("status.insertedIds", is(List.of(ids)));
   }
