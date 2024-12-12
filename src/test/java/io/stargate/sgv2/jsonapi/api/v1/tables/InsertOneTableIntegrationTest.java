@@ -1210,6 +1210,27 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     }
 
     @Test
+    void insertValidVectorKey() {
+      String docJSON =
+          """
+                          {
+                            "vectorId": [0.75, -0.25, 0.5],
+                            "textValue": "stuff"
+                          }
+                          """;
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_KEY)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful()
+          .hasInsertedIds(List.of(List.of(0.75f, -0.25f, 0.5f)));
+
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_KEY)
+          .postFindOne("{ \"filter\": { \"vectorId\": [0.75, 0.25, 0.5] } }")
+          .wasSuccessful()
+          .hasJSONField("data.document", docJSON);
+    }
+
+    @Test
     void failOnNonArrayVectorValue() {
       assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
           .templated()
