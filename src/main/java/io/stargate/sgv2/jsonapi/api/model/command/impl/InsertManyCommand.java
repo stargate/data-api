@@ -20,7 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * @param options Options for this command.
  */
 @Schema(description = "Command that inserts multiple JSON document to a collection.")
-@JsonTypeName("insertMany")
+@JsonTypeName(CommandName.Names.INSERT_MANY)
 public record InsertManyCommand(
     @NotNull
         @NotEmpty
