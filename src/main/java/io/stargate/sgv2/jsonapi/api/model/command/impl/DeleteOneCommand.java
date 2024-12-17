@@ -15,7 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * @param filterClause {@link FilterClause} used to identify a document.
  */
 @Schema(description = "Command that finds a single document and deletes it from a collection")
-@JsonTypeName("deleteOne")
+@JsonTypeName(CommandName.Names.DELETE_ONE)
 public record DeleteOneCommand(
     @NotNull
         @Schema(
