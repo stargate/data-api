@@ -6,7 +6,9 @@ import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.core.StreamWriteFeature;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.stargate.sgv2.jsonapi.api.model.command.serializer.CqlVectorSerializer;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
@@ -58,15 +60,20 @@ public class ObjectMapperConfiguration {
              */
             .disable(StreamWriteFeature.WRITE_BIGDECIMAL_AS_PLAIN)
             .build();
+    // For now, just one custom serializer to register
+    SimpleModule cqlSerializersModule =
+        new SimpleModule("CqlSerializersModule").addSerializer(new CqlVectorSerializer());
     JsonMapper mapper =
         JsonMapper.builder(jsonFactory)
             // important for retaining number accuracy!
             .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
-
             // case-insensitive enums, so "before" will match to "BEFORE" in an enum
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+            // Add custom serializers/deserializers:
+            .addModule(cqlSerializersModule)
+            // And problem (error) handler too
+            .addHandler(new CommandObjectMapperHandler())
             .build();
-    mapper.addHandler(new CommandObjectMapperHandler());
     return mapper;
   }
 }
