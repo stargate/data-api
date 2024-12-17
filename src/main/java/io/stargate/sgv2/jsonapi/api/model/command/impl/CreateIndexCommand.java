@@ -15,7 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that creates an index for a column in a table.")
-@JsonTypeName("createIndex")
+@JsonTypeName(CommandName.Names.CREATE_INDEX)
 @JsonPropertyOrder({"name", "definition", "options"})
 public record CreateIndexCommand(
     @NotNull
