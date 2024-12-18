@@ -15,7 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * @param name Name of the table
  */
 @Schema(description = "Command that drops a table if one exists.")
-@JsonTypeName("dropTable")
+@JsonTypeName(CommandName.Names.DROP_TABLE)
 public record DropTableCommand(
     @NotNull @Schema(description = "Name of the table") String name,
     @Nullable @Schema(description = "Dropping table command option.", type = SchemaType.OBJECT)

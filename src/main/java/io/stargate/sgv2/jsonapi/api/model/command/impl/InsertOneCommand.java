@@ -16,7 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * @param document The document to insert.
  */
 @Schema(description = "Command that inserts a single JSON document to a collection.")
-@JsonTypeName("insertOne")
+@JsonTypeName(CommandName.Names.INSERT_ONE)
 public record InsertOneCommand(
     @NotNull
         @Schema(

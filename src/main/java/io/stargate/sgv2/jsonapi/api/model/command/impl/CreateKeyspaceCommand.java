@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that creates a keyspace.")
-@JsonTypeName("createKeyspace")
+@JsonTypeName(CommandName.Names.CREATE_KEYSPACE)
 public record CreateKeyspaceCommand(
     @NotNull
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
