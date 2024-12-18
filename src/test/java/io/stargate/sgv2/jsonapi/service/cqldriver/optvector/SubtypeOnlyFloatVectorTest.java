@@ -38,7 +38,7 @@ public class SubtypeOnlyFloatVectorTest {
     MutableCodecRegistry registry = new DefaultCodecRegistry("subtype_only");
     registry.register(SubtypeOnlyFloatVectorToArrayCodec.instance());
 
-    AtomicReference<TypeCodec<float[]>> codecRef = new AtomicReference<TypeCodec<float[]>>();
+    AtomicReference<TypeCodec<float[]>> codecRef = new AtomicReference<>();
     for (int i = 1; i <= 2000; ++i) {
 
       TypeCodec<float[]> codec = registry.codecFor(DataTypes.vectorOf(DataTypes.FLOAT, i));
@@ -65,8 +65,8 @@ public class SubtypeOnlyFloatVectorTest {
   }
 
   private float[] randomFloatArray(int size) {
-
-    Random random = new Random();
+    // Use fixed seed for reproducibility
+    Random random = new Random(size);
     float[] rv = new float[size];
     for (int i = 0; i < size; ++i) {
       rv[0] = random.nextFloat();
