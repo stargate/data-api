@@ -290,7 +290,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
           .postFindOne(filter)
           .mayHaveSingleApiError(expectedFilterException, FilterException.class)
-          .mayHasSingleWarning(expectedWarningException)
+          .mayHaveSingleWarning(expectedWarningException)
           .mayFoundSingleDocumentIdByFindOne(expectedFilterException, expectedDocId);
     }
 
@@ -337,7 +337,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
           .postFindOne(filter)
           .mayHaveSingleApiError(expectedFilterException, FilterException.class)
-          .mayHasSingleWarning(expectedWarningException)
+          .mayHaveSingleWarning(expectedWarningException)
           .mayFoundSingleDocumentIdByFindOne(expectedFilterException, expectedDocId);
     }
 
@@ -380,7 +380,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
           .postFindOne(filter)
           .mayHaveSingleApiError(expectedFilterException, FilterException.class)
-          .mayHasSingleWarning(expectedWarningException)
+          .mayHaveSingleWarning(expectedWarningException)
           .mayFoundSingleDocumentIdByFindOne(expectedFilterException, expectedDocId);
     }
 
@@ -427,7 +427,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
           .postFindOne(filter)
           .mayHaveSingleApiError(expectedFilterException, FilterException.class)
-          .mayHasSingleWarning(expectedWarningException)
+          .mayHaveSingleWarning(expectedWarningException)
           .mayFoundSingleDocumentIdByFindOne(expectedFilterException, expectedDocId);
     }
 
@@ -548,7 +548,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
         assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
             .postFindOne(filter)
             .mayHaveSingleApiError(expectedFilterException, FilterException.class)
-            .mayHasSingleWarning(expectedWarningException)
+            .mayHaveSingleWarning(expectedWarningException)
             .mayFoundSingleDocumentIdByFindOne(expectedFilterException, expectedDocId);
       }
     }

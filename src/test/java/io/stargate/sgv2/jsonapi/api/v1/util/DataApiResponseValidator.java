@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import java.util.List;
 import java.util.Map;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -263,7 +264,7 @@ public class DataApiResponseValidator {
     return validator;
   }
 
-  public DataApiResponseValidator mayHasSingleWarning(WarningException.Code warningExceptionCode) {
+  public DataApiResponseValidator mayHaveSingleWarning(WarningException.Code warningExceptionCode) {
     if (warningExceptionCode == null) {
       return hasNoWarnings();
     }
@@ -286,6 +287,11 @@ public class DataApiResponseValidator {
   // // // Insert Command Validation // // //
   public DataApiResponseValidator hasInsertedIdCount(int count) {
     return body("status.insertedIds", hasSize(count));
+  }
+
+  public DataApiResponseValidator hasInsertedIds(List<?>... ids) {
+    body("status.insertedIds", hasSize(ids.length));
+    return body("status.insertedIds", is(List.of(ids)));
   }
 
   // // // Read Command Validation // // //

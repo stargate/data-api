@@ -658,7 +658,7 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
       assertTableCommand(keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX)
           .templated()
           .findOne(ImmutableMap.of("IntQuoted", ONLY_ONE_INT), null)
-          .mayHasSingleWarning(WarningException.Code.MISSING_INDEX)
+          .mayHaveSingleWarning(WarningException.Code.MISSING_INDEX)
           .mayFoundSingleDocumentIdByFindOne(null, ONLY_ONE_ID);
 
       assertTableCommand(keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX)
