@@ -23,11 +23,14 @@ public class WithWarnings<T> implements Consumer<OperationAttempt<?, ?>> {
 
   private final T target;
   private final List<WarningException> warnings;
+  private final List<WarningException.Code> suppressedWarnings;
 
-  public WithWarnings(T target, List<WarningException> warnings) {
+  public WithWarnings(
+      T target, List<WarningException> warnings, List<WarningException.Code> suppressedWarnings) {
     Preconditions.checkNotNull(target, "target must not be null");
     this.target = target;
     this.warnings = warnings == null ? new ArrayList<>() : warnings;
+    this.suppressedWarnings = suppressedWarnings == null ? new ArrayList<>() : suppressedWarnings;
   }
 
   /**
@@ -50,6 +53,17 @@ public class WithWarnings<T> implements Consumer<OperationAttempt<?, ?>> {
     return warnings;
   }
 
+  /**
+   * The suppressed warnings generated for the target object.
+   *
+   * <p>This is a mutable, so you can add more suppressed warnings to it.
+   *
+   * @return The list of warnings, never null.
+   */
+  public List<WarningException.Code> suppressedWarnings() {
+    return suppressedWarnings;
+  }
+
   /** Returns true if there are no warnings. */
   public boolean isEmpty() {
     return warnings.isEmpty();
@@ -61,7 +75,17 @@ public class WithWarnings<T> implements Consumer<OperationAttempt<?, ?>> {
    * @return an instance with no warnings
    */
   public static <T> WithWarnings<T> of(T target) {
-    return new WithWarnings<>(target, new ArrayList<>());
+    return new WithWarnings<>(target, new ArrayList<>(), null);
+  }
+
+  /*
+   * Constructor an instance with no warnings.
+   * @param target the target object that has no warnings
+   *
+   * @return an instance with no warnings
+   */
+  public static <T> WithWarnings<T> of(T target, List<WarningException.Code> suppressedWarnings) {
+    return new WithWarnings<>(target, new ArrayList<>(), suppressedWarnings);
   }
 
   /**
@@ -76,7 +100,7 @@ public class WithWarnings<T> implements Consumer<OperationAttempt<?, ?>> {
     Objects.requireNonNull(warning, "warning is required");
     var warnings = new ArrayList<WarningException>();
     warnings.add(warning);
-    return new WithWarnings<>(target, warnings);
+    return new WithWarnings<>(target, warnings, null);
   }
 
   /**
@@ -88,5 +112,6 @@ public class WithWarnings<T> implements Consumer<OperationAttempt<?, ?>> {
   public void accept(OperationAttempt<?, ?> operationAttempt) {
     Objects.requireNonNull(operationAttempt, "operationAttempt must not be null");
     warnings.forEach(operationAttempt::addWarning);
+    suppressedWarnings.forEach(operationAttempt::addSuppressedWarning);
   }
 }

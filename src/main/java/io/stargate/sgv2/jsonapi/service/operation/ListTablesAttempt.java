@@ -2,18 +2,12 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.util.List;
-import java.util.function.Predicate;
 
 /** Attempt to list tables in a keyspace. */
 public class ListTablesAttempt extends MetadataAttempt<KeyspaceSchemaObject> {
-
-  private static final Predicate<TableMetadata> TABLE_MATCHER =
-      new CollectionTableMatcher().negate();
 
   protected ListTablesAttempt(int position, KeyspaceSchemaObject schemaObject) {
     super(position, schemaObject, RetryPolicy.NO_RETRY);

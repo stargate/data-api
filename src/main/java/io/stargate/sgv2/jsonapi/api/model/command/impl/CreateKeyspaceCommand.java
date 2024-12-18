@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -13,7 +14,7 @@ import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that creates a keyspace.")
-@JsonTypeName("createKeyspace")
+@JsonTypeName(CommandName.Names.CREATE_KEYSPACE)
 public record CreateKeyspaceCommand(
     @NotNull
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")

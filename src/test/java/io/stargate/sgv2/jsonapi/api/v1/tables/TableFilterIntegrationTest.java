@@ -237,6 +237,42 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           Arguments.of("duration", null, WarningException.Code.MISSING_INDEX, SAMPLE_ID));
     }
 
+    @Test
+    public void invalidFilterValueEq() {
+      var filter =
+              """
+                {
+                      "filter": {
+                          "age": {"$eq" : %s}
+                       }
+                }
+                """
+              .formatted("\"invalidType\"");
+      // Target column has index.
+      assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
+          .postFindOne(filter)
+          .mayHaveSingleApiError(
+              FilterException.Code.INVALID_FILTER_COLUMN_VALUES, FilterException.class);
+    }
+
+    @Test
+    public void invalidFilterValueIn() {
+      var filter =
+              """
+                {
+                      "filter": {
+                          "age": {"$in" : [ 123 , %s] }
+                       }
+                }
+                """
+              .formatted("\"invalidType\"");
+      // Target column has index.
+      assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
+          .postFindOne(filter)
+          .mayHaveSingleApiError(
+              FilterException.Code.INVALID_FILTER_COLUMN_VALUES, FilterException.class);
+    }
+
     @ParameterizedTest
     @MethodSource("EQ_ON_SCALAR_COLUMN")
     public void eq(
@@ -480,7 +516,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
               Map.of(">", NO_DOC_FOUND, ">=", SAMPLE_ID, "<", NO_DOC_FOUND, "<=", SAMPLE_ID)),
           Arguments.of(
               "duration",
-              FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION,
+              FilterException.Code.UNSUPPORTED_COMPARISON_FILTER_AGAINST_DURATION,
               null,
               Map.of(
                   ">", NO_DOC_FOUND, ">=", NO_DOC_FOUND, "<", NO_DOC_FOUND, "<=", NO_DOC_FOUND)));

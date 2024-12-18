@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
@@ -18,7 +17,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.List;
 
 /** Resolves the {@link InsertManyCommand}. */
 @ApplicationScoped
@@ -45,7 +43,6 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
     final InsertManyCommand.Options options = command.options();
     final boolean ordered = (null != options) && options.ordered();
     final boolean returnDocumentResponses = (null != options) && options.returnDocumentResponses();
-    final List<JsonNode> inputDocs = command.documents();
 
     var builder =
         new CollectionInsertAttemptBuilder(ctx.schemaObject(), documentShredder, ctx.commandName());

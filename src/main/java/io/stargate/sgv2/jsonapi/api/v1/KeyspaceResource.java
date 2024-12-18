@@ -6,8 +6,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.TableOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.DropIndexCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.ListTablesCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
@@ -73,17 +77,23 @@ public class KeyspaceResource {
                       anyOf = {
                         CreateCollectionCommand.class,
                         FindCollectionsCommand.class,
-                        DeleteCollectionCommand.class
-                        // TODO, hide table feature detail before it goes public,
-                        // https://github.com/stargate/data-api/pull/1360
-                        //                        CreateTableCommand.class,
-                        //                        DropTableCommand.class
+                        DeleteCollectionCommand.class,
+                        // Table only commands
+                        CreateTableCommand.class,
+                        DropIndexCommand.class,
+                        DropTableCommand.class,
+                        ListTablesCommand.class
                       }),
               examples = {
                 @ExampleObject(ref = "createCollection"),
                 @ExampleObject(ref = "createCollectionVectorSearch"),
                 @ExampleObject(ref = "findCollections"),
                 @ExampleObject(ref = "deleteCollection"),
+                @ExampleObject(ref = "createTableWithSingleKey"),
+                @ExampleObject(ref = "createTableWithMultipleKeys"),
+                @ExampleObject(ref = "dropTable"),
+                @ExampleObject(ref = "dropIndex"),
+                @ExampleObject(ref = "listTables")
               }))
   @APIResponses(
       @APIResponse(
@@ -98,6 +108,8 @@ public class KeyspaceResource {
                     @ExampleObject(ref = "resultCreate"),
                     @ExampleObject(ref = "resultFindCollections"),
                     @ExampleObject(ref = "resultError"),
+                    @ExampleObject(ref = "resultDdl"),
+                    @ExampleObject(ref = "listTablesResponse"),
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(

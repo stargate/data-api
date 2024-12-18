@@ -1,15 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.resolver.sort;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.CQL_IDENTIFIER_COMPARATOR;
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.*;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
-import io.stargate.sgv2.jsonapi.api.model.command.Windowable;
+import com.datastax.oss.driver.api.querybuilder.select.Select;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -18,27 +15,33 @@ import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
+import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByANNCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByClusteringCqlClause;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Resolves a sort clause to determine if we want to apply a CQL ORDER BY clause to the operation.
  */
-public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Windowable>
+public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sortable & Windowable>
     extends TableSortClauseResolver<CmdT, TableSchemaObject, OrderByCqlClause> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TableCqlSortClauseResolver.class);
 
+  private final FilterResolver<CmdT, TableSchemaObject> tableFilterResolver;
+
   public TableCqlSortClauseResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
+    this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
   }
 
   /**
@@ -66,9 +69,14 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
     checkUnknownSortColumns(commandContext.schemaObject(), sortColumns);
 
     var vectorSorts = sortClause.tableVectorSorts();
+    var whereCQLClause =
+        TableWhereCQLClause.forSelect(
+            commandContext.schemaObject(),
+            tableFilterResolver.resolve(commandContext, command).target());
 
     return vectorSorts.isEmpty()
-        ? resolveNonVectorSort(commandContext, sortClause, sortColumns, command.skip())
+        ? resolveNonVectorSort(
+            commandContext, whereCQLClause, sortClause, sortColumns, command.skip())
         : resolveVectorSort(commandContext, sortClause, vectorSorts, command.skip());
   }
 
@@ -82,6 +90,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
    */
   private WithWarnings<OrderByCqlClause> resolveNonVectorSort(
       CommandContext<TableSchemaObject> commandContext,
+      WhereCQLClause<Select> whereCQLClause,
       SortClause sortClause,
       List<CqlIdentifier> sortColumns,
       Optional<Integer> skip) {
@@ -142,6 +151,20 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
       return WithWarnings.of(OrderByCqlClause.NO_OP, warn);
     }
 
+    if (!whereCQLClause.selectsSinglePartition(commandContext.schemaObject())) {
+      var warn =
+          WarningException.Code.IN_MEMORY_SORTING_DUE_TO_PARTITION_KEY_NOT_RESTRICTED.get(
+              errVars(
+                  commandContext.schemaObject(),
+                  map -> {
+                    map.put("partitionKeys", errFmtApiColumnDef(apiTableDef.partitionKeys()));
+                    map.put("partitionSorting", errFmtApiColumnDef(apiTableDef.clusteringKeys()));
+                    map.put("sortColumns", errFmtCqlIdentifier(sortColumns));
+                  }));
+
+      return WithWarnings.of(OrderByCqlClause.NO_OP, warn);
+    }
+
     var orderByTerms =
         sortClause.sortExpressions().stream()
             .map(
@@ -178,13 +201,26 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
       if (skip.isPresent()) {
         throw SortException.Code.CANNOT_VECTOR_SORT_WITH_SKIP_OPTION.get();
       }
-      throw SortException.Code.MORE_THAN_ONE_VECTOR_SORT.get(
+      throw SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORS.get(
           errVars(
               commandContext.schemaObject(),
               map -> {
                 map.put(
+                    // TODO: This is a hack, we need to refactor these methods in
+                    // ApiColumnDefContainer.
+                    // Currently, this matcher is just for match vector columns, and then to avoid
+                    // hit the
+                    // typeName() placeholder exception in UnsupportedApiDataType
                     "vectorColumns",
-                    errFmtApiColumnDef(apiTableDef.allColumns().filterBy(ApiTypeName.VECTOR)));
+                    errFmtApiColumnDef(
+                        apiTableDef
+                            .allColumns()
+                            .filterBySupport(
+                                ApiSupportDef.Matcher.NO_MATCHES
+                                    .withCreateTable(true)
+                                    .withInsert(true)
+                                    .withRead(true))
+                            .filterByApiTypeNameToList(ApiTypeName.VECTOR)));
                 map.put(
                     "sortColumns",
                     errFmtJoin(vectorSorts.stream().map(SortExpression::path).toList()));
@@ -194,13 +230,26 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
     // we have one vector sort - cannot have any other sorting
     var nonVectorSorts = sortClause.nonTableVectorSorts();
     if (!nonVectorSorts.isEmpty()) {
-      throw SortException.Code.CANNOT_MIX_VECTOR_AND_NON_VECTOR_SORT.get(
+      throw SortException.Code.CANNOT_SORT_VECTOR_AND_NON_VECTOR_COLUMNS.get(
           errVars(
               commandContext.schemaObject(),
               map -> {
                 map.put(
+                    // TODO: This is a hack, we need to refactor these methods in
+                    // ApiColumnDefContainer.
+                    // Currently, this matcher is just for match vector columns, and then to avoid
+                    // hit the
+                    // typeName() placeholder exception in UnsupportedApiDataType
                     "vectorColumns",
-                    errFmtApiColumnDef(apiTableDef.allColumns().filterBy(ApiTypeName.VECTOR)));
+                    errFmtApiColumnDef(
+                        apiTableDef
+                            .allColumns()
+                            .filterBySupport(
+                                ApiSupportDef.Matcher.NO_MATCHES
+                                    .withCreateTable(true)
+                                    .withInsert(true)
+                                    .withRead(true))
+                            .filterByApiTypeNameToList(ApiTypeName.VECTOR)));
                 map.put(
                     "sortVectorColumns",
                     errFmtJoin(vectorSorts.stream().map(SortExpression::path).toList()));
@@ -220,8 +269,21 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
               commandContext.schemaObject(),
               map -> {
                 map.put(
+                    // TODO: This is a hack, we need to refactor these methods in
+                    // ApiColumnDefContainer.
+                    // Currently, this matcher is just for match vector columns, and then to avoid
+                    // hit the
+                    // typeName() placeholder exception in UnsupportedApiDataType
                     "vectorColumns",
-                    errFmtApiColumnDef(apiTableDef.allColumns().filterBy(ApiTypeName.VECTOR)));
+                    errFmtApiColumnDef(
+                        apiTableDef
+                            .allColumns()
+                            .filterBySupport(
+                                ApiSupportDef.Matcher.NO_MATCHES
+                                    .withCreateTable(true)
+                                    .withInsert(true)
+                                    .withRead(true))
+                            .filterByApiTypeNameToList(ApiTypeName.VECTOR)));
                 map.put("sortColumns", errFmt(vectorSortIdentifier));
               }));
     }
@@ -235,7 +297,20 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
               map -> {
                 map.put(
                     "vectorColumns",
-                    errFmtApiColumnDef(apiTableDef.allColumns().filterBy(ApiTypeName.VECTOR)));
+                    // TODO: This is a hack, we need to refactor these methods in
+                    // ApiColumnDefContainer.
+                    // Currently, this matcher is just for match vector columns, and then to avoid
+                    // hit the
+                    // typeName() placeholder exception in UnsupportedApiDataType
+                    errFmtApiColumnDef(
+                        apiTableDef
+                            .allColumns()
+                            .filterBySupport(
+                                ApiSupportDef.Matcher.NO_MATCHES
+                                    .withCreateTable(true)
+                                    .withInsert(true)
+                                    .withRead(true))
+                            .filterByApiTypeNameToList(ApiTypeName.VECTOR)));
                 map.put(
                     "indexedColumns",
                     errFmtJoin(indexedVectorColumns(commandContext.schemaObject())));
@@ -250,7 +325,12 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
     LOGGER.debug(
         "Vector sorting on column {}", cqlIdentifierToMessageString(vectorSortColumn.name()));
     var cqlVector = CqlVectorUtil.floatsToCqlVector(vectorSortExpression.vector());
-    return WithWarnings.of(new TableOrderByANNCqlClause(vectorSortColumn, cqlVector));
+    return WithWarnings.of(
+        new TableOrderByANNCqlClause(
+            vectorSortColumn,
+            cqlVector,
+            commandContext.getConfig(OperationsConfig.class).maxVectorSearchLimit()),
+        List.of(WarningException.Code.ZERO_FILTER_OPERATIONS));
   }
 
   private Optional<IndexMetadata> findIndexMetadata(
@@ -261,8 +341,19 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Sortable & Window
   }
 
   private List<String> indexedVectorColumns(TableSchemaObject schemaObject) {
-
-    var apiVectorColumns = schemaObject.apiTableDef().allColumns().filterBy(ApiTypeName.VECTOR);
+    // TODO: This is a hack, we need to refactor these methods in ApiColumnDefContainer.
+    // Currently, this matcher is just for match vector columns, and then to avoid hit the
+    // typeName() placeholder exception in UnsupportedApiDataType
+    var apiVectorColumns =
+        schemaObject
+            .apiTableDef()
+            .allColumns()
+            .filterBySupport(
+                ApiSupportDef.Matcher.NO_MATCHES
+                    .withCreateTable(true)
+                    .withInsert(true)
+                    .withRead(true))
+            .filterByApiTypeName(ApiTypeName.VECTOR);
     return schemaObject.tableMetadata().getIndexes().values().stream()
         .map(IndexMetadata::getTarget)
         .filter(target -> apiVectorColumns.containsKey(CqlIdentifier.fromInternal(target)))

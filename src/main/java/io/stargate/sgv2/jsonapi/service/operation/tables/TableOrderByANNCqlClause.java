@@ -17,11 +17,13 @@ public class TableOrderByANNCqlClause implements OrderByCqlClause {
 
   private final ApiColumnDef apiColumnDef;
   private final CqlVector<Float> vector;
+  private final Integer defaultLimit;
 
-  public TableOrderByANNCqlClause(ApiColumnDef apiColumnDef, CqlVector<Float> vector) {
+  public TableOrderByANNCqlClause(
+      ApiColumnDef apiColumnDef, CqlVector<Float> vector, Integer defaultLimit) {
     this.apiColumnDef = Objects.requireNonNull(apiColumnDef, "apiColumnDef must not be null");
     this.vector = Objects.requireNonNull(vector, "vector must not be null");
-
+    this.defaultLimit = Objects.requireNonNull(defaultLimit, "defaultLimit must not be null");
     // sanity check
     if (apiColumnDef.type().typeName() != ApiTypeName.VECTOR) {
       throw new IllegalArgumentException(
@@ -37,5 +39,10 @@ public class TableOrderByANNCqlClause implements OrderByCqlClause {
   @Override
   public boolean fullyCoversCommand() {
     return true;
+  }
+
+  @Override
+  public Integer getDefaultLimit() {
+    return defaultLimit;
   }
 }

@@ -5,7 +5,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -52,11 +52,10 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
                             }
                           """;
 
-  private static Command.CommandName toCommandName(
-      WhereCQLClauseAnalyzer.StatementType statementType) {
+  private static CommandName toCommandName(WhereCQLClauseAnalyzer.StatementType statementType) {
     return switch (statementType) {
-      case DELETE_ONE -> Command.CommandName.DELETE_ONE;
-      case DELETE_MANY -> Command.CommandName.DELETE_MANY;
+      case DELETE_ONE -> CommandName.DELETE_ONE;
+      case DELETE_MANY -> CommandName.DELETE_MANY;
       default -> throw new IllegalArgumentException("Unexpected statement type: " + statementType);
     };
   }
@@ -87,7 +86,7 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FILTER_FOR_UPDATE_DELETE,
             0));
   }
 
@@ -153,11 +152,11 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE,
+            FilterException.Code.UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE,
             0),
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_MANY,
-            FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE,
+            FilterException.Code.UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE,
             0));
   }
 
@@ -212,11 +211,11 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE,
             0),
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_MANY,
-            FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER,
+            FilterException.Code.INVALID_PRIMARY_KEY_FILTER,
             0));
   }
 
@@ -255,11 +254,11 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE,
             0),
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_MANY,
-            FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER,
+            FilterException.Code.INVALID_PRIMARY_KEY_FILTER,
             0));
   }
 
@@ -292,11 +291,11 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE,
             0),
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_MANY,
-            FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER,
+            FilterException.Code.INVALID_PRIMARY_KEY_FILTER,
             0));
   }
 
@@ -329,7 +328,7 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE,
             0),
         Arguments.of(WhereCQLClauseAnalyzer.StatementType.DELETE_MANY, null, 2));
   }
@@ -363,11 +362,11 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE,
             0),
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_MANY,
-            FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER,
+            FilterException.Code.INVALID_PRIMARY_KEY_FILTER,
             0));
   }
 
@@ -399,7 +398,7 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE,
             0),
         Arguments.of(WhereCQLClauseAnalyzer.StatementType.DELETE_MANY, null, 2));
   }
@@ -433,11 +432,11 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE,
             0),
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_MANY,
-            FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER,
+            FilterException.Code.INVALID_PRIMARY_KEY_FILTER,
             0));
   }
 

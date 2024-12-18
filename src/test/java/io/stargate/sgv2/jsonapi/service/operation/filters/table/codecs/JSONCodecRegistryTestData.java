@@ -8,6 +8,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.internal.core.type.UserDefinedTypeBuilder;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -17,7 +18,13 @@ import java.util.Optional;
 public class JSONCodecRegistryTestData {
 
   // A CQL data type we are not going to support soon
-  public final DataType UNSUPPORTED_CQL_DATA_TYPE = DataTypes.COUNTER;
+  // UDT is a datatype we don't support current, use following logic to mock it
+  public final DataType UNSUPPORTED_CQL_DATA_TYPE =
+      new UserDefinedTypeBuilder("ks", "udt")
+          .withField("a", DataTypes.INT)
+          .withField("b", DataTypes.TEXT)
+          .withField("c", DataTypes.FLOAT)
+          .build();
 
   public final CqlIdentifier TABLE_NAME =
       CqlIdentifier.fromInternal("table-" + System.currentTimeMillis());

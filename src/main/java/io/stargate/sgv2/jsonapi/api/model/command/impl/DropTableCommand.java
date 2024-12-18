@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
 import jakarta.annotation.Nullable;
@@ -14,7 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * @param name Name of the table
  */
 @Schema(description = "Command that drops a table if one exists.")
-@JsonTypeName("dropTable")
+@JsonTypeName(CommandName.Names.DROP_TABLE)
 public record DropTableCommand(
     @NotNull @Schema(description = "Name of the table") String name,
     @Nullable @Schema(description = "Dropping table command option.", type = SchemaType.OBJECT)

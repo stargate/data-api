@@ -68,19 +68,35 @@ class ReadCommandResolver<
     if (cqlPageState != null) {
       attemptBuilder.addPagingState(cqlPageState);
     }
+
+    // TODO, we may want the ability to resolve API filter clause into multiple
+    // dbLogicalExpressions, which will map into multiple readAttempts
+    var where =
+        TableWhereCQLClause.forSelect(
+            commandContext.schemaObject(),
+            tableFilterResolver.resolve(commandContext, command).target());
+
     // work out the CQL order by
     var orderByWithWarnings = tableCqlSortClauseResolver.resolve(commandContext, command);
     attemptBuilder.addOrderBy(orderByWithWarnings);
 
-    // if the user did not provide a limit, we will use the default page size as read limit
-    int commandLimit = command.limit().orElseGet(operationsConfig::defaultPageSize);
+    // if the user did not provide a limit,we read all the possible rows. Paging is then handled
+    // by the driver pagination
+    int commandLimit =
+        command.limit().orElseGet(() -> orderByWithWarnings.target().getDefaultLimit());
 
     int commandSkip = command.skip().orElse(0);
 
     // and then if we need to do in memory sorting
     var inMemorySort =
         new TableMemorySortClauseResolver<>(
-                operationsConfig, orderByWithWarnings.target(), commandSkip, commandLimit)
+                operationsConfig,
+                orderByWithWarnings.target(),
+                commandSkip,
+                // Math.min is used because the max documents the api return is
+                // `operationsConfig.defaultPageSize()`
+                Math.min(commandLimit, operationsConfig.defaultPageSize()),
+                cqlPageState)
             .resolve(commandContext, command);
     attemptBuilder.addSorter(inMemorySort);
 
@@ -99,13 +115,6 @@ class ReadCommandResolver<
 
     attemptBuilder.addSelect(WithWarnings.of(projection));
     attemptBuilder.addProjection(projection);
-
-    // TODO, we may want the ability to resolve API filter clause into multiple
-    // dbLogicalExpressions, which will map into multiple readAttempts
-    var where =
-        TableWhereCQLClause.forSelect(
-            commandContext.schemaObject(),
-            tableFilterResolver.resolve(commandContext, command).target());
 
     var attempts = new OperationAttemptContainer<>(attemptBuilder.build(where));
 

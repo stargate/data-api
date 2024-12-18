@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class TypeFactoryFromColumnDesc<
-    ApiT extends ApiDataType, DescT extends ColumnDesc> {
+public abstract class TypeFactoryFromColumnDesc<ApiT extends ApiDataType, DescT extends ColumnDesc>
+    extends FactoryFromDesc {
   private static final Logger LOGGER = LoggerFactory.getLogger(TypeFactoryFromColumnDesc.class);
 
   public static final TypeFactoryFromColumnDesc<ApiDataType, ColumnDesc> DEFAULT =
@@ -46,6 +46,10 @@ public abstract class TypeFactoryFromColumnDesc<
 
       var primitiveType = PRIMITIVE_TYPES_BY_API_NAME.get(columnDesc.typeName());
       if (primitiveType != null) {
+        // this will catch things like the counter type
+        if (!primitiveType.apiSupport().createTable()) {
+          throw new UnsupportedUserType(columnDesc);
+        }
         return primitiveType;
       }
 

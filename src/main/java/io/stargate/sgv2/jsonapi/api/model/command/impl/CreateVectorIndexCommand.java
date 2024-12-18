@@ -1,8 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
-import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
+import io.stargate.sgv2.jsonapi.api.model.command.IndexCreationCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.VectorIndexDefinitionDesc;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -11,7 +15,8 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that creates an index for a column in a table.")
-@JsonTypeName("createVectorIndex")
+@JsonTypeName(CommandName.Names.CREATE_VECTOR_INDEX)
+@JsonPropertyOrder({"name", "definition", "options"})
 public record CreateVectorIndexCommand(
     @NotNull
         @Size(min = 1, max = 48)
@@ -22,40 +27,15 @@ public record CreateVectorIndexCommand(
         @Schema(
             description = "Definition for created index for a column.",
             type = SchemaType.OBJECT)
-        Definition definition,
-    @Nullable @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
-        Options options)
-    implements CollectionCommand {
-  public record Definition(
-      @NotNull
-          @Size(min = 1, max = 48)
-          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-          @Schema(description = "Name of the column for which index to be created.")
-          String column,
-      @Nullable @Schema(description = "Different indexing options.", type = SchemaType.OBJECT)
-          Options options) {
-    // This is index definition options for vector column types.
-    public record Options(
+        VectorIndexDefinitionDesc definition,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
-            @Pattern(
-                regexp = "(dot_product|cosine|euclidean)",
-                message = "function name can only be 'dot_product', 'cosine' or 'euclidean'")
-            @Schema(
-                description =
-                    "Similarity function algorithm that needs to be used for vector search",
-                defaultValue = "cosine",
-                type = SchemaType.STRING,
-                implementation = String.class)
-            SimilarityFunction metric,
-        @Nullable
-            @Size(min = 1, max = 48)
-            @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-            @Schema(description = "Model name used to generate the embeddings.")
-            String sourceModel) {}
-  }
+        @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
+        CreateVectorIndexCommandOptions options)
+    implements CollectionCommand, IndexCreationCommand {
 
   // This is index command option irrespective of column definition.
-  public record Options(
+  public record CreateVectorIndexCommandOptions(
       @Nullable
           @Schema(
               description = "Flag to ignore if index already exists",

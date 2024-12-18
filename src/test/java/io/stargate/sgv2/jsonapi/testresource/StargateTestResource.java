@@ -269,14 +269,14 @@ public abstract class StargateTestResource
         "testing.containers.cluster-persistence", "persistence-cassandra-4.0");
   }
 
-  protected boolean isDse() {
+  public static boolean isDse() {
     String dse =
         System.getProperty(
             "testing.containers.cluster-dse", StargateTestResource.Defaults.CLUSTER_DSE);
     return "true".equals(dse);
   }
 
-  protected boolean isHcd() {
+  public static boolean isHcd() {
     String dse =
         System.getProperty(
             "testing.containers.cluster-hcd", StargateTestResource.Defaults.CLUSTER_HCD);

@@ -2,7 +2,14 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.UnsupportedColumnDesc;
 
+/**
+ * A that we do not support in the API, this could have come from the user request or from a CQL
+ * table.
+ */
 public abstract class UnsupportedApiDataType implements ApiDataType {
+
+  // for now do not know what level we have of support other than none
+  protected static final ApiSupportDef API_SUPPORT = ApiSupportDef.Support.NONE;
 
   protected UnsupportedApiDataType() {}
 
@@ -27,7 +34,7 @@ public abstract class UnsupportedApiDataType implements ApiDataType {
   }
 
   @Override
-  public boolean isUnsupported() {
-    return true;
+  public ApiSupportDef apiSupport() {
+    return API_SUPPORT;
   }
 }

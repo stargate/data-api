@@ -67,7 +67,6 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     this.pagingState = pagingState;
     this.projection = Objects.requireNonNull(projection, "projection must not be null");
     this.rowSorter = Objects.requireNonNull(rowSorter, "rowSorter must not be null");
-
     downcastRetryPolicy();
     Objects.requireNonNull(readAttemptRetryPolicy, "readAttemptRetryPolicy must not be null");
     setStatus(OperationStatus.READY);
@@ -202,6 +201,14 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
       this.resultSet = Objects.requireNonNull(resultSet, "resultSet must not be null");
       this.currentPage = resultSet.currentPage();
       this.pagingState = rowSorter.buildPagingState(resultSet);
+
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(
+            "ReadResult() created resultSet.remaining: {}, resultSet.hasMorePages={}, (api) pagingState:{}",
+            resultSet.remaining(),
+            resultSet.hasMorePages(),
+            pagingState);
+      }
     }
   }
 
@@ -225,8 +232,9 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     @Override
     public boolean shouldRetry(Throwable throwable) {
 
+      // retryContext could be null, this is when cql read statement build has an exception
       if (retryContext == null) {
-        throw new IllegalStateException("retryContext must not be null");
+        return false;
       }
       // clear the retry context so that we don't keep a reference to the last statement
       var currentRetryContext = retryContext;
