@@ -15,7 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(
     description =
         "Command that finds documents based on the filter and deletes them from a collection")
-@JsonTypeName("deleteMany")
+@JsonTypeName(CommandName.Names.DELETE_MANY)
 public record DeleteManyCommand(
     @Schema(
             description = "Filter clause based on which documents are identified",

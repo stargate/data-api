@@ -8,7 +8,7 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that lists all available indexes in a table.")
-@JsonTypeName("listIndexes")
+@JsonTypeName(CommandName.Names.LIST_INDEXES)
 public record ListIndexesCommand(
     @Nullable
         @Schema(

@@ -16,7 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that creates a collection.")
-@JsonTypeName("createCollection")
+@JsonTypeName(CommandName.Names.CREATE_COLLECTION)
 public record CreateCollectionCommand(
     @NotNull
         @Size(min = 1, max = 48)

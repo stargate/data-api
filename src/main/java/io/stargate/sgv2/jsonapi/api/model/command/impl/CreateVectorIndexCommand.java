@@ -15,7 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that creates an index for a column in a table.")
-@JsonTypeName("createVectorIndex")
+@JsonTypeName(CommandName.Names.CREATE_VECTOR_INDEX)
 @JsonPropertyOrder({"name", "definition", "options"})
 public record CreateVectorIndexCommand(
     @NotNull
