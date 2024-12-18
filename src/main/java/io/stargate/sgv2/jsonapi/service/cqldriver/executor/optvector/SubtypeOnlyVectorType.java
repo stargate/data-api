@@ -12,8 +12,7 @@ import java.util.Objects;
  * by dimension.
  */
 public class SubtypeOnlyVectorType extends DefaultVectorType {
-
-  public static final int NO_DIMENSION = -1;
+  private static final int NO_DIMENSION = -1;
 
   public SubtypeOnlyVectorType(DataType subtype) {
     super(subtype, NO_DIMENSION);
@@ -29,17 +28,13 @@ public class SubtypeOnlyVectorType extends DefaultVectorType {
   public boolean equals(Object o) {
     if (o == this) {
       return true;
-    } else if (o instanceof VectorType) {
-      VectorType that = (VectorType) o;
-      return that.getElementType().equals(this.getElementType());
-    } else {
-      return false;
     }
+    return (o instanceof VectorType that) && that.getElementType().equals(getElementType());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), this.getElementType());
+    return super.hashCode() ^ Objects.hashCode(getElementType());
   }
 
   @Override
