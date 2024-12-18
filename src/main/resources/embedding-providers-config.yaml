@@ -352,7 +352,7 @@ stargate:
                 - name: vectorDimension
                   type: number
                   required: true
-                  default-value: 1536
+                  default-value: 1024
                   validation:
                     numeric-range: [1, 1024]
                   help: "Vector dimension to use in the database and when calling Jina AI."
@@ -360,12 +360,12 @@ stargate:
                   type: string
                   required: false
                   default-value: text-matching
-                  help: "Select the downstream task for which the embeddings will be used. The model will return the optimized embeddings for that task."
+                  help: "Select the downstream task for which the embeddings will be used. The model will return the optimized embeddings for that task. Available options are: retrieval.passage, retrieval.query, separation, classification, text-matching. For more information, please refer to the Jina AI documentation: https://jina.ai/news/jina-embeddings-v3-a-frontier-multilingual-embedding-model/."
                 - name: late_chunking
                   type: boolean
                   required: false
                   default-value: false
-                  help: "Apply the late chunking technique to leverage the model's long-context capabilities for generating contextual chunk embeddings."
+                  help: "Apply the late chunking technique to leverage the model's long-context capabilities for generating contextual chunk embeddings. For more information, please refer to the Jina AI documentation: https://jina.ai/news/jina-embeddings-v3-a-frontier-multilingual-embedding-model/."
         voyageAI:
           # see https://docs.voyageai.com/reference/embeddings-api
           # see https://docs.voyageai.com/docs/embeddings
