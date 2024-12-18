@@ -53,7 +53,7 @@ public abstract class VectorCodecs {
             vectorType,
             // This codec only for to-json case, not to-cql, so we don't need this
             null,
-            (objectMapper, cqlType, value) -> toJsonNode(objectMapper, (CqlVector<Number>) value));
+            (objectMapper, cqlType, value) -> toJsonNode(objectMapper, value));
   }
 
   /** Method for actual conversion from JSON Number Array into CQL Float Vector. */
@@ -110,14 +110,37 @@ public abstract class VectorCodecs {
     }
   }
 
-  static JsonNode toJsonNode(ObjectMapper objectMapper, CqlVector<Number> vectorValue) {
-    final ArrayNode result = objectMapper.createArrayNode();
+  static JsonNode toJsonNode(ObjectMapper objectMapper, Object vectorValue) {
+    // 18-Dec-2024, tatu: [data-api#1775] Support for more efficient but still
+    //   allow old binding to work too; test type here, use appropriate logic
+    if (vectorValue instanceof float[] floats) {
+      return toJsonNodeFromFloats(objectMapper, floats);
+    }
+    if (vectorValue instanceof CqlVector<?> vector) {
+      return toJsonNodeFromCqlVector(objectMapper, (CqlVector<Number>) vector);
+    }
+    throw new IllegalArgumentException(
+        "Unrecognized type for CQL Vector value: " + vectorValue.getClass().getCanonicalName());
+  }
+
+  static JsonNode toJsonNodeFromCqlVector(
+      ObjectMapper objectMapper, CqlVector<Number> vectorValue) {
+    final ArrayNode result = objectMapper.getNodeFactory().arrayNode(vectorValue.size());
     for (Number element : vectorValue) {
       if (element == null) { // is this even legal?
         result.addNull();
       } else {
         result.add(element.floatValue());
       }
+    }
+    return result;
+  }
+
+  static JsonNode toJsonNodeFromFloats(ObjectMapper objectMapper, float[] vectorValue) {
+    // For now, output still as array of floats; in future maybe as Base64-encoded packed binary
+    final ArrayNode result = objectMapper.getNodeFactory().arrayNode(vectorValue.length);
+    for (float f : vectorValue) {
+      result.add(f);
     }
     return result;
   }
