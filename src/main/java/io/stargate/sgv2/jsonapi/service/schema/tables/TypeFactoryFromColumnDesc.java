@@ -46,6 +46,10 @@ public abstract class TypeFactoryFromColumnDesc<ApiT extends ApiDataType, DescT 
 
       var primitiveType = PRIMITIVE_TYPES_BY_API_NAME.get(columnDesc.typeName());
       if (primitiveType != null) {
+        // this will catch things like the counter type
+        if (!primitiveType.apiSupport().createTable()) {
+          throw new UnsupportedUserType(columnDesc);
+        }
         return primitiveType;
       }
 

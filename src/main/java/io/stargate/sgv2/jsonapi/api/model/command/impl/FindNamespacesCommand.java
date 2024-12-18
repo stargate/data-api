@@ -11,7 +11,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     description =
         "Command that lists all available namespaces. This findNamespaces has been deprecated and will be removed in future releases, use findKeyspaces instead.",
     deprecated = true)
-@JsonTypeName("findNamespaces")
+@JsonTypeName(CommandName.Names.FIND_NAMESPACES)
 public record FindNamespacesCommand()
     implements GeneralCommand, NoOptionsCommand, DeprecatedCommand {
 

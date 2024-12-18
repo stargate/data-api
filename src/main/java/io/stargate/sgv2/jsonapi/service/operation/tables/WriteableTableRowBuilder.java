@@ -14,10 +14,13 @@ import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * Builds a {@link WriteableTableRow} from a {@link JsonNamedValueContainer}.
@@ -26,6 +29,10 @@ import java.util.*;
  * enforces the rules that {@link WriteableTableRow} has to be valid.
  */
 public class WriteableTableRowBuilder {
+
+  /** Match if a column does not support insert. */
+  private static final Predicate<ApiSupportDef> MATCH_INSERT_UNSUPPORTED =
+      ApiSupportDef.Matcher.NO_MATCHES.withInsert(false);
 
   private final TableSchemaObject tableSchemaObject;
   private final TableMetadata tableMetadata;
@@ -74,6 +81,7 @@ public class WriteableTableRowBuilder {
     // the validation steps
     checkAllPrimaryKeys(cqlIdentifierToJsonValue);
     checkUnknownColumns(cqlIdentifierToJsonValue.keySet());
+    checkApiSupport(cqlIdentifierToJsonValue.keySet());
     var decoded = encodeJsonToCql(cqlIdentifierToJsonValue);
 
     // now need to split the columns into key and non key columns
@@ -174,6 +182,40 @@ public class WriteableTableRowBuilder {
   }
 
   /**
+   * Checks if the row has any columns that we do not support writing to.
+   *
+   * <p>While we also can hit a problem with not having a codec, we check using the {@link
+   * io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef} because some types are read only
+   * and so they have a codec entry.
+   */
+  private void checkApiSupport(Collection<CqlIdentifier> suppliedColumns) {
+
+    // TODO: this class was created before the API Schema, we should update the whole thing at some
+    // point for now use the same signature as the other checks passing in the CQLIdentifiers
+    var unsupportedColumns =
+        tableSchemaObject
+            .apiTableDef()
+            .allColumns()
+            .filterBy(suppliedColumns)
+            .filterBySupportToList(MATCH_INSERT_UNSUPPORTED);
+
+    if (!unsupportedColumns.isEmpty()) {
+      // list is immutable
+      var sortedUnsupportedColumns = new ArrayList<>(unsupportedColumns);
+      sortedUnsupportedColumns.sort(ApiColumnDef.NAME_COMPARATOR);
+
+      // NOTE: SAME ERROR IS THROWN  in encodeJsonToCql -OK until we re-factor
+      throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
+                map.put("unsupportedColumns", errFmtApiColumnDef(sortedUnsupportedColumns));
+              }));
+    }
+  }
+
+  /**
    * Converts the raw JSON values to CQL values using the codec registry.
    *
    * <p>NOTE: CHECK FOR UNKNOWN COLUMNS MUST GO FIRST, this will raise server error if there is an
@@ -226,6 +268,7 @@ public class WriteableTableRowBuilder {
     // Check these first and throw, writing to types we don't support is more serious than sending
     // out of range values.
     if (!unsupportedErrors.isEmpty()) {
+      // NOTE: SAME ERROR IS THROWN  in checkApiSupport -OK until we re-factor
       throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
           errVars(
               tableSchemaObject,

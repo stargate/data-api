@@ -16,7 +16,11 @@ public class MapColumnDesc extends ComplexColumnDesc {
   private final ColumnDesc valueType;
 
   public MapColumnDesc(ColumnDesc keyType, ColumnDesc valueType) {
-    super(ApiTypeName.MAP, ApiSupportDesc.fullSupport(""));
+    this(keyType, valueType, ApiSupportDesc.withoutCqlDefinition(ApiMapType.API_SUPPORT));
+  }
+
+  public MapColumnDesc(ColumnDesc keyType, ColumnDesc valueType, ApiSupportDesc apiSupportDesc) {
+    super(ApiTypeName.MAP, apiSupportDesc);
 
     this.keyType = keyType;
     this.valueType = valueType;

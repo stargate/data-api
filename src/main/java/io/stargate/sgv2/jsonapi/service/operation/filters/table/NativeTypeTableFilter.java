@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
+import io.stargate.sgv2.jsonapi.service.operation.query.FilterBehaviour;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
@@ -60,17 +61,19 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
    * <p>TODO, other operators that apply to scaler / native tyes
    */
   public enum Operator {
-    EQ(BuiltConditionPredicate.EQ),
-    NE(BuiltConditionPredicate.NEQ),
-    LT(BuiltConditionPredicate.LT),
-    GT(BuiltConditionPredicate.GT),
-    LTE(BuiltConditionPredicate.LTE),
-    GTE(BuiltConditionPredicate.GTE);
+    EQ(BuiltConditionPredicate.EQ, new FilterBehaviour.Behaviour(true, false)),
+    NE(BuiltConditionPredicate.NEQ, new FilterBehaviour.Behaviour(false, false)),
+    LT(BuiltConditionPredicate.LT, new FilterBehaviour.Behaviour(false, true)),
+    GT(BuiltConditionPredicate.GT, new FilterBehaviour.Behaviour(false, true)),
+    LTE(BuiltConditionPredicate.LTE, new FilterBehaviour.Behaviour(false, true)),
+    GTE(BuiltConditionPredicate.GTE, new FilterBehaviour.Behaviour(false, true));
 
     public final BuiltConditionPredicate predicate;
+    public final FilterBehaviour filterBehaviour;
 
-    Operator(BuiltConditionPredicate predicate) {
+    Operator(BuiltConditionPredicate predicate, FilterBehaviour filterBehaviour) {
       this.predicate = predicate;
+      this.filterBehaviour = filterBehaviour;
     }
 
     public static Operator from(ValueComparisonOperator operator) {
@@ -84,17 +87,13 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
         default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
       };
     }
-
-    public boolean isComparisonOperator() {
-      return this == LTE || this == GTE || this == LT || this == GT;
-    }
   }
 
   public final Operator operator;
   protected final CqlT columnValue;
 
   protected NativeTypeTableFilter(String path, Operator operator, CqlT columnValue) {
-    super(path);
+    super(path, operator.filterBehaviour);
     this.columnValue = columnValue;
     this.operator = operator;
   }
@@ -137,7 +136,18 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
                 map.put("unsupportedColumns", path);
               }));
     } catch (ToCQLCodecException e) {
-      throw new RuntimeException(e);
+      throw FilterException.Code.INVALID_FILTER_COLUMN_VALUES.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put(
+                    "allColumns",
+                    errFmtColumnMetadata(tableSchemaObject.tableMetadata().getColumns().values()));
+                map.put("invalidColumn", path);
+                map.put(
+                    "columnType",
+                    tableSchemaObject.tableMetadata().getColumn(path).get().getType().toString());
+              }));
     }
 
     return ongoingWhereClause.where(
