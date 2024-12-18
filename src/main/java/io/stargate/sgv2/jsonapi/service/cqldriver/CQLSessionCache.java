@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.InetSocketAddress;
@@ -149,7 +150,7 @@ public class CQLSessionCache {
     }
 
     // Add optimized CqlVector codec (see [data-api#1775])
-    // builder = builder.addTypeCodecs(SubtypeOnlyFloatVectorToArrayCodec.instance());
+    builder = builder.addTypeCodecs(SubtypeOnlyFloatVectorToArrayCodec.instance());
 
     // aaron - this used to have an if / else that threw an exception if the database type was not
     // known but we test that when creating the credentials for the cache key so no need to do it

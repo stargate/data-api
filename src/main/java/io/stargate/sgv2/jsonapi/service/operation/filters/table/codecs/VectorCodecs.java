@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -22,7 +21,7 @@ public abstract class VectorCodecs {
   private static final GenericType<List<Float>> FLOAT_LIST_TYPE = GenericType.listOf(Float.class);
   private static final GenericType<EJSONWrapper> EJSON_TYPE = GenericType.of(EJSONWrapper.class);
 
-  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> arrayToCQLFloatVectorCodec(
+  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> arrayToCQLFloatArrayCodec(
       VectorType vectorType) {
     // Unfortunately we cannot simply construct and return a single Codec instance here
     // because ApiVectorType's dimensions vary, and we need to know the expected dimensions
@@ -31,18 +30,18 @@ public abstract class VectorCodecs {
         new JSONCodec<>(
             FLOAT_LIST_TYPE,
             vectorType,
-            (cqlType, value) -> listToCQLFloatVector(vectorType, value),
+            (cqlType, value) -> listToCQLFloatArray(vectorType, value),
             // This codec only for to-cql case, not to-json, so we don't need this
             null);
   }
 
-  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> binaryToCQLFloatVectorCodec(
+  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> binaryToCQLFloatArrayCodec(
       VectorType vectorType) {
     return (JSONCodec<JavaT, CqlT>)
         new JSONCodec<>(
             EJSON_TYPE,
             vectorType,
-            (cqlType, value) -> binaryToCQLFloatVector(vectorType, value),
+            (cqlType, value) -> binaryToCQLFloatArray(vectorType, value),
             null);
   }
 
@@ -56,17 +55,21 @@ public abstract class VectorCodecs {
             (objectMapper, cqlType, value) -> toJsonNode(objectMapper, value));
   }
 
-  /** Method for actual conversion from JSON Number Array into CQL Float Vector. */
-  static CqlVector<Float> listToCQLFloatVector(VectorType vectorType, Collection<?> listValue)
+  /**
+   * Method for actual conversion from JSON Number Array into float array for Codec to use as Vector
+   * value.
+   */
+  static float[] listToCQLFloatArray(VectorType vectorType, Collection<?> listValue)
       throws ToCQLCodecException {
     Collection<JsonLiteral<?>> vectorIn = (Collection<JsonLiteral<?>>) listValue;
     validateVectorLength(vectorType, vectorIn, vectorIn.size());
 
-    List<Float> floats = new ArrayList<>(vectorIn.size());
+    float[] floats = new float[vectorIn.size()];
+    int ix = 0;
     for (JsonLiteral<?> literalElement : vectorIn) {
       Object element = literalElement.value();
       if (element instanceof Number num) {
-        floats.add(num.floatValue());
+        floats[ix++] = num.floatValue();
         continue;
       }
       throw new ToCQLCodecException(
@@ -74,28 +77,29 @@ public abstract class VectorCodecs {
           vectorType,
           String.format(
               "expected JSON Number value as Vector element at position #%d (of %d), instead have: %s",
-              floats.size(), vectorIn.size(), literalElement));
+              ix, vectorIn.size(), literalElement));
     }
-    return CqlVector.newInstance(floats);
+    return floats;
   }
 
   /**
-   * Method for actual conversion from EJSON-wrapped Base64-encoded String into CQL Float Vector.
+   * Method for actual conversion from EJSON-wrapped Base64-encoded String into float array for
+   * Codec to use as Vector value.
    */
-  static CqlVector<Float> binaryToCQLFloatVector(VectorType vectorType, EJSONWrapper binaryValue)
+  static float[] binaryToCQLFloatArray(VectorType vectorType, EJSONWrapper binaryValue)
       throws ToCQLCodecException {
     byte[] binary = JSONCodec.ToCQL.byteArrayFromEJSON(vectorType, binaryValue);
-    CqlVector<Float> vector;
+    float[] floats;
     try {
-      vector = CqlVectorUtil.bytesToCqlVector(binary);
+      floats = CqlVectorUtil.bytesToFloats(binary);
     } catch (IllegalArgumentException e) {
       throw new ToCQLCodecException(
           binaryValue,
           vectorType,
           String.format("failed to decode Base64-encoded packed Vector value: %s", e.getMessage()));
     }
-    validateVectorLength(vectorType, binaryValue, vector.size());
-    return vector;
+    validateVectorLength(vectorType, binaryValue, floats.length);
+    return floats;
   }
 
   private static void validateVectorLength(VectorType vectorType, Object value, int actualLen)
