@@ -29,7 +29,7 @@ public class DataApiResponseValidator {
 
     this.responseIsError =
         switch (commandName) {
-          case DROP_TABLE, DROP_INDEX, CREATE_INDEX, CREATE_TABLE, ALTER_TABLE ->
+          case DROP_TABLE, DROP_INDEX, CREATE_INDEX, CREATE_TABLE, ALTER_TABLE, FIND_ONE, FIND ->
               responseIsErrorWithOptionalStatus();
           default -> responseIsError();
         };
@@ -316,7 +316,7 @@ public class DataApiResponseValidator {
 
   // // // Projection Schema // // //
   public DataApiResponseValidator hasProjectionSchema() {
-    return hasField("status." + CommandStatus.PROJECTION_SCHEMA);
+    return hasField("status." + CommandStatus.PROJECTION_SCHEMA.apiName());
   }
 
   public DataApiResponseValidator hasProjectionSchemaWith(ApiColumnDef columnDef) {

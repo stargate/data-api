@@ -173,7 +173,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES,
               SchemaException.class,
-              "The command attempted to index the unsupported columns: list_type(list).");
+              "The command attempted to index the unsupported columns: list_type(UNSUPPORTED CQL type: list<text>).");
     }
 
     @Test
@@ -191,7 +191,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES,
               SchemaException.class,
-              "The command attempted to index the unsupported columns: set_type(set).");
+              "The command attempted to index the unsupported columns: set_type(UNSUPPORTED CQL type: set<text>).");
     }
 
     @Test
@@ -209,7 +209,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES,
               SchemaException.class,
-              "The command attempted to index the unsupported columns: map_type(map).");
+              "The command attempted to index the unsupported columns: map_type(UNSUPPORTED CQL type: map<text, text>).");
     }
 
     @Test

@@ -14,7 +14,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(
     description =
         "Command that finds a single JSON document from a collection and updates the value provided in the update clause.")
-@JsonTypeName("updateOne")
+@JsonTypeName(CommandName.Names.UPDATE_ONE)
 public record UpdateOneCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
     @NotNull @Valid @JsonProperty("update") UpdateClause updateClause,

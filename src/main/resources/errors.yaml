@@ -605,6 +605,21 @@ request-errors:
       ${SNIPPET.INEFFICIENT_SORT}
 
   # ================================================================================================================
+  # Family: REQUEST         Scope: PROJECTION
+  # ================================================================================================================
+
+  - scope: PROJECTION
+    code: UNSUPPORTED_COLUMN_TYPES
+    title: Column types in projection are not supported
+    body: |-
+      Only supported column types can be included when reading from a table.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command included the following columns cannot be read: ${unsupportedColumns}.
+      
+      Resend the command using only supported column types.
+
+  # ================================================================================================================
   # Family: REQUEST         Scope: SCHEMA
   # ================================================================================================================
 
@@ -652,6 +667,16 @@ request-errors:
       The command included the empty operation: ${missingTableOperation}
       
       Resend the command including changes to the table.
+
+  - scope: SCHEMA
+    code: MISSING_DIMENSION_IN_VECTOR_COLUMN
+    title: Dimension is required for vector column if embedding service is not specified
+    body: |-
+        The dimension is required for vector columns if the embedding service is not specified.
+        
+        The command attempted to create the vector column without a dimension.
+        
+        Resend the command using a dimension for the vector columns.
 
   - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_COLUMNS
@@ -1177,7 +1202,6 @@ server-errors:
   # UNSCOPED server errors
   - scope:
     code: UNEXPECTED_SERVER_ERROR
-    http-status-override: 500
     title: Unexpected server error
     body: |-
       An unexpected server error occurred while processing the request. 
