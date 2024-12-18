@@ -3,11 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
-import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
-import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
-import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
@@ -20,7 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(
     description =
         "Command that finds a single JSON document from a collection and updates the value provided in the update clause.")
-@JsonTypeName("findOneAndUpdate")
+@JsonTypeName(CommandName.Names.FIND_ONE_AND_UPDATE)
 public record FindOneAndUpdateCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
     @JsonProperty("projection") JsonNode projectionDefinition,

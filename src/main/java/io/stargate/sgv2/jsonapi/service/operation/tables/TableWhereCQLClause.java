@@ -6,9 +6,7 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.update.Update;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
-import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
-import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.query.*;
 import java.util.List;
 import java.util.Objects;
 
@@ -27,11 +25,12 @@ import java.util.Objects;
  */
 public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements WhereCQLClause<T> {
 
-  private final TableSchemaObject table;
+  private final TableSchemaObject tableSchemaObject;
   private final DBLogicalExpression dbLogicalExpression;
 
-  private TableWhereCQLClause(TableSchemaObject table, DBLogicalExpression dbLogicalExpression) {
-    this.table = Objects.requireNonNull(table, "table must not be null");
+  private TableWhereCQLClause(
+      TableSchemaObject tableSchemaObject, DBLogicalExpression dbLogicalExpression) {
+    this.tableSchemaObject = Objects.requireNonNull(tableSchemaObject, "table must not be null");
     this.dbLogicalExpression =
         Objects.requireNonNull(dbLogicalExpression, "logicalExpression must not be null");
   }
@@ -79,16 +78,46 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
   }
 
   @Override
+  public DBLogicalExpression getLogicalExpression() {
+    return dbLogicalExpression;
+  }
+
+  @Override
   public T apply(T tOngoingWhereClause, List<Object> objects) {
     // TODO BUG: this probably breaks order for nested expressions, for now enough to get this
     // tested
     var tableFilters =
-        dbLogicalExpression.dBFilters().stream().map(dbFilter -> (TableFilter) dbFilter).toList();
+        dbLogicalExpression.filters().stream().map(dbFilter -> (TableFilter) dbFilter).toList();
 
     // Add the where clause operations
     for (TableFilter tableFilter : tableFilters) {
-      tOngoingWhereClause = tableFilter.apply(table, tOngoingWhereClause, objects);
+      tOngoingWhereClause = tableFilter.apply(tableSchemaObject, tOngoingWhereClause, objects);
     }
     return tOngoingWhereClause;
+  }
+
+  @Override
+  public boolean selectsSinglePartition(TableSchemaObject tableSchemaObject) {
+
+    var apiTableDef =
+        Objects.requireNonNull(tableSchemaObject, "tableSchemaObject must not be null")
+            .apiTableDef();
+
+    final boolean[] isMatched = {false};
+    for (var apiColumnDef : apiTableDef.partitionKeys().values()) {
+      isMatched[0] = false;
+      dbLogicalExpression.visitAllFilters(
+          TableFilter.class,
+          tableFilter ->
+              isMatched[0] =
+                  isMatched[0]
+                      || tableFilter.isFor(apiColumnDef.name())
+                          && tableFilter.filterIsExactMatch());
+      // we only need to find one partition column that does not have an exact match filter on it
+      if (!isMatched[0]) {
+        return false;
+      }
+    }
+    return true;
   }
 }

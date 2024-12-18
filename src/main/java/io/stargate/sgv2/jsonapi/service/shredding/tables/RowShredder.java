@@ -29,6 +29,12 @@ import java.util.Map;
  */
 @ApplicationScoped
 public class RowShredder {
+  private static final JsonLiteral<Object> NULL_LITERAL = new JsonLiteral<>(null, JsonType.NULL);
+
+  private static final JsonLiteral<Boolean> BOOLEAN_FALSE_LITERAL =
+      new JsonLiteral<>(Boolean.FALSE, JsonType.BOOLEAN);
+  private static final JsonLiteral<Boolean> BOOLEAN_TRUE_LITERAL =
+      new JsonLiteral<>(Boolean.TRUE, JsonType.BOOLEAN);
 
   private final DocumentLimitsConfig documentLimits;
 
@@ -88,12 +94,13 @@ public class RowShredder {
     return switch (value.getNodeType()) {
       case NUMBER -> shredNumber(value);
       case STRING -> new JsonLiteral<>(value.textValue(), JsonType.STRING);
-      case BOOLEAN -> new JsonLiteral<>(value.booleanValue(), JsonType.BOOLEAN);
-      case NULL -> new JsonLiteral<>(null, JsonType.NULL);
+      case BOOLEAN -> value.booleanValue() ? BOOLEAN_TRUE_LITERAL : BOOLEAN_FALSE_LITERAL;
+      case NULL -> NULL_LITERAL;
       case ARRAY -> {
         ArrayNode arrayNode = (ArrayNode) value;
         List<JsonLiteral<?>> list = new ArrayList<>();
         for (JsonNode node : arrayNode) {
+          // Leave JsonLiteral wrapping as-is; removed by JsonCodec
           list.add(shredValue(node));
         }
         yield new JsonLiteral<>(list, JsonType.ARRAY);
@@ -105,11 +112,9 @@ public class RowShredder {
           yield new JsonLiteral<>(wrapper, JsonType.EJSON_WRAPPER);
         }
         // If not, treat as a regular sub-document
-        Map<JsonPath, JsonLiteral<?>> map = new HashMap<>();
+        Map<String, JsonLiteral<?>> map = new HashMap<>();
         for (var entry : objectNode.properties()) {
-          map.put(
-              JsonPath.rootBuilder().property(entry.getKey()).build(),
-              shredValue(entry.getValue()));
+          map.put(entry.getKey(), shredValue(entry.getValue()));
         }
         yield new JsonLiteral<>(map, JsonType.SUB_DOC);
       }

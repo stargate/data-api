@@ -1,19 +1,24 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.table;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
+import io.stargate.sgv2.jsonapi.service.operation.query.FilterBehaviour;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
+import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.util.List;
 
 /**
@@ -46,7 +51,8 @@ import java.util.List;
  *
  * @param <CqlT> The JSON Type , BigDecimal, String etc
  */
-public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
+public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements PrettyPrintable {
+
   /**
    * The operations that can be performed to filter a column TIDY: we have operations defined in
    * multiple places, once we have refactored the collection operations we should centralize these
@@ -55,21 +61,25 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
    * <p>TODO, other operators that apply to scaler / native tyes
    */
   public enum Operator {
-    EQ(BuiltConditionPredicate.EQ),
-    LT(BuiltConditionPredicate.LT),
-    GT(BuiltConditionPredicate.GT),
-    LTE(BuiltConditionPredicate.LTE),
-    GTE(BuiltConditionPredicate.GTE);
+    EQ(BuiltConditionPredicate.EQ, new FilterBehaviour.Behaviour(true, false)),
+    NE(BuiltConditionPredicate.NEQ, new FilterBehaviour.Behaviour(false, false)),
+    LT(BuiltConditionPredicate.LT, new FilterBehaviour.Behaviour(false, true)),
+    GT(BuiltConditionPredicate.GT, new FilterBehaviour.Behaviour(false, true)),
+    LTE(BuiltConditionPredicate.LTE, new FilterBehaviour.Behaviour(false, true)),
+    GTE(BuiltConditionPredicate.GTE, new FilterBehaviour.Behaviour(false, true));
 
-    final BuiltConditionPredicate predicate;
+    public final BuiltConditionPredicate predicate;
+    public final FilterBehaviour filterBehaviour;
 
-    Operator(BuiltConditionPredicate predicate) {
+    Operator(BuiltConditionPredicate predicate, FilterBehaviour filterBehaviour) {
       this.predicate = predicate;
+      this.filterBehaviour = filterBehaviour;
     }
 
     public static Operator from(ValueComparisonOperator operator) {
       return switch (operator) {
         case EQ -> EQ;
+        case NE -> NE;
         case GT -> GT;
         case GTE -> GTE;
         case LT -> LT;
@@ -79,11 +89,11 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
     }
   }
 
-  protected final Operator operator;
+  public final Operator operator;
   protected final CqlT columnValue;
 
   protected NativeTypeTableFilter(String path, Operator operator, CqlT columnValue) {
-    super(path);
+    super(path, operator.filterBehaviour);
     this.columnValue = columnValue;
     this.operator = operator;
   }
@@ -91,7 +101,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
   @Override
   public BuiltCondition get() {
     throw new UnsupportedOperationException(
-        "No supported - will be modified when we migrate collections filters java driver");
+        "Not supported - will be modified when we migrate collections filters java driver");
   }
 
   @Override
@@ -103,18 +113,67 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
     try {
       var codec =
           JSONCodecRegistries.DEFAULT_REGISTRY.codecToCQL(
-              tableSchemaObject.tableMetadata, getPathAsCqlIdentifier(), columnValue);
+              tableSchemaObject.tableMetadata(), getPathAsCqlIdentifier(), columnValue);
       positionalValues.add(codec.toCQL(columnValue));
     } catch (UnknownColumnException e) {
-      throw ErrorCodeV1.TABLE_COLUMN_UNKNOWN.toApiException(e.getMessage());
+      throw FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put(
+                    "allColumns",
+                    errFmtColumnMetadata(tableSchemaObject.tableMetadata().getColumns().values()));
+                map.put("unknownColumns", path);
+              }));
     } catch (MissingJSONCodecException e) {
-      throw ErrorCodeV1.TABLE_COLUMN_TYPE_UNSUPPORTED.toApiException(e.getMessage());
+      throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put(
+                    "allColumns",
+                    errFmtColumnMetadata(tableSchemaObject.tableMetadata().getColumns().values()));
+                map.put("unsupportedColumns", path);
+              }));
     } catch (ToCQLCodecException e) {
-      // TODO AARON - Handle error
-      throw new RuntimeException(e);
+      throw FilterException.Code.INVALID_FILTER_COLUMN_VALUES.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put(
+                    "allColumns",
+                    errFmtColumnMetadata(tableSchemaObject.tableMetadata().getColumns().values()));
+                map.put("invalidColumn", path);
+                map.put(
+                    "columnType",
+                    tableSchemaObject.tableMetadata().getColumn(path).get().getType().toString());
+              }));
     }
 
     return ongoingWhereClause.where(
         Relation.column(getPathAsCqlIdentifier()).build(operator.predicate.cql, bindMarker()));
+  }
+
+  @Override
+  public String toString() {
+    return toString(false);
+  }
+
+  public String toString(boolean pretty) {
+    return toString(new PrettyToStringBuilder(getClass(), pretty)).toString();
+  }
+
+  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+    prettyToStringBuilder
+        .append("path", path)
+        .append("operator", operator)
+        .append("columnValue", columnValue);
+    return prettyToStringBuilder;
+  }
+
+  @Override
+  public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
+    var sb = prettyToStringBuilder.beginSubBuilder(getClass());
+    return toString(sb).endSubBuilder();
   }
 }

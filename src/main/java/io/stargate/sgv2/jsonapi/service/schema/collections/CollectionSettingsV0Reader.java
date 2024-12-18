@@ -3,9 +3,13 @@ package io.stargate.sgv2.jsonapi.service.schema.collections;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import java.util.List;
 
 /**
  * schema_version 0 is before we introduce schema_version into the C* table comment of data api
@@ -24,9 +28,20 @@ public class CollectionSettingsV0Reader implements CollectionSettingsReader {
       TableMetadata tableMetadata,
       boolean vectorEnabled,
       int vectorSize,
-      SimilarityFunction function) {
+      SimilarityFunction function,
+      EmbeddingSourceModel sourceModel) {
 
-    VectorConfig vectorConfig = new VectorConfig(vectorEnabled, vectorSize, function, null);
+    VectorConfig vectorConfig =
+        vectorEnabled
+            ? VectorConfig.fromColumnDefinitions(
+                List.of(
+                    new VectorColumnDefinition(
+                        DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                        vectorSize,
+                        function,
+                        sourceModel,
+                        null)))
+            : VectorConfig.NOT_ENABLED_CONFIG;
     CollectionIndexingConfig indexingConfig = null;
     JsonNode indexing = commentConfigNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
     if (!indexing.isMissingNode()) {

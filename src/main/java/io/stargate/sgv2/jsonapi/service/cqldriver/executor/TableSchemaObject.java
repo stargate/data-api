@@ -1,29 +1,45 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class TableSchemaObject extends SchemaObject {
+public class TableSchemaObject extends TableBasedSchemaObject {
+  private static final Logger LOGGER = LoggerFactory.getLogger(TableSchemaObject.class);
 
   public static final SchemaObjectType TYPE = SchemaObjectType.TABLE;
 
-  public final TableMetadata tableMetadata;
+  private final VectorConfig vectorConfig;
+  private final ApiTableDef apiTableDef;
 
-  public TableSchemaObject(TableMetadata tableMetadata) {
-    // uses asCql(pretty) so the names do not always include double quotes
-    super(
-        TYPE,
-        new SchemaObjectName(
-            tableMetadata.getKeyspace().asCql(true), tableMetadata.getName().asCql(true)));
-    this.tableMetadata = tableMetadata;
+  private TableSchemaObject(
+      TableMetadata tableMetadata, VectorConfig vectorConfig, ApiTableDef apiTableDef) {
+    super(TYPE, tableMetadata);
+    this.vectorConfig = vectorConfig;
+    this.apiTableDef = apiTableDef;
   }
 
   @Override
   public VectorConfig vectorConfig() {
-    return VectorConfig.notEnabledVectorConfig();
+    return vectorConfig;
   }
 
   @Override
   public IndexUsage newIndexUsage() {
     return IndexUsage.NO_OP;
+  }
+
+  public ApiTableDef apiTableDef() {
+    return apiTableDef;
+  }
+
+  /** Get table schema object from table metadata */
+  public static TableSchemaObject from(TableMetadata tableMetadata, ObjectMapper objectMapper) {
+
+    var vectorConfig = VectorConfig.from(tableMetadata, objectMapper);
+    var apiTableDef = ApiTableDef.FROM_CQL_FACTORY.create(tableMetadata, vectorConfig);
+    return new TableSchemaObject(tableMetadata, vectorConfig, apiTableDef);
   }
 }

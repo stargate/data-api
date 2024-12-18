@@ -1,56 +1,43 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
-import io.stargate.sgv2.jsonapi.exception.catchable.UnknownApiDataType;
-import java.util.HashMap;
-import java.util.Map;
+import com.datastax.oss.driver.api.core.type.DataType;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 
-/**
- * Names of the table column data types the API supports
- *
- * <p>NOTE: Use {@link #apiName} and {@link #fromApiName(String)} to convert to and from the name
- * used in requests and responses.
- */
-public enum ApiDataType {
-  BIGINT("bigint"),
-  BOOLEAN("boolean"),
-  DECIMAL("decimal"),
-  DOUBLE("double"),
-  FLOAT("float"),
-  INT("int"),
-  SMALLINT("smallint"),
-  TEXT("text"),
-  TINYINT("tinyint"),
-  VARINT("varint");
+/** TODO WORDS */
+@JsonSerialize(using = ApiDataTypeDefSerializer.class)
+public interface ApiDataType {
 
-  private static final Map<String, ApiDataType> TYPE_BY_API_NAME = new HashMap<>();
-
-  static {
-    // cannot access the static map from the constructor
-    for (ApiDataType type : ApiDataType.values()) {
-      TYPE_BY_API_NAME.put(type.apiName, type);
-    }
-  }
-
-  private final String apiName;
-
-  ApiDataType(String apiName) {
-    this.apiName = apiName;
-  }
-
-  /** The name to use for this type in requests and responses */
-  public String getApiName() {
-    return apiName;
-  }
+  ApiTypeName typeName();
 
   /**
-   * Get the {@link ApiDataType} for the given apiName
+   * Gets the API name of the type.
    *
-   * @throws UnknownApiDataType if the name is not recognized
+   * <p>This is here because {@link UnsupportedApiDataType} will not have a {@link ApiTypeName} so
+   * call this if you need the name of the type as a string so the UnsupportedApiDataType can return
+   * a string.
+   *
+   * @return
    */
-  public static ApiDataType fromApiName(String apiName) throws UnknownApiDataType {
-    if (TYPE_BY_API_NAME.containsKey(apiName)) {
-      return TYPE_BY_API_NAME.get(apiName);
-    }
-    throw new UnknownApiDataType(apiName);
+  default String apiName() {
+    return typeName().apiName();
   }
+
+  DataType cqlType();
+
+  boolean isPrimitive();
+
+  boolean isContainer();
+
+  ApiSupportDef apiSupport();
+
+  /**
+   * Called to get the user API description of the type.
+   *
+   * <p><b>NOTE:</b> Because the static flag is on the column not the type, you should normally call
+   * {@link ApiColumnDef#columnDesc()} because it will handle static columns.
+   *
+   * @return {@link ColumnDesc} that describes the data type to the user.
+   */
+  ColumnDesc columnDesc();
 }

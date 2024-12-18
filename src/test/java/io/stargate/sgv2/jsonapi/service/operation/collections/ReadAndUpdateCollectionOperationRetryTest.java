@@ -209,7 +209,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     DBLogicalExpression implicitAnd =
         new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-    implicitAnd.addDBFilter(
+    implicitAnd.addFilter(
         new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
 
     FindCollectionOperation findCollectionOperation =
@@ -259,7 +259,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
         .hasSize(2)
         .containsEntry(CommandStatus.MATCHED_COUNT, 1)
         .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
-    assertThat(result.errors()).isNull();
+    assertThat(result.errors()).isEmpty();
   }
 
   @Test
@@ -351,7 +351,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     DBLogicalExpression implicitAnd =
         new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-    implicitAnd.addDBFilter(
+    implicitAnd.addFilter(
         new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
 
     FindCollectionOperation findCollectionOperation =
@@ -501,7 +501,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     DBLogicalExpression implicitAnd =
         new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-    implicitAnd.addDBFilter(
+    implicitAnd.addFilter(
         new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
 
     FindCollectionOperation findCollectionOperation =
@@ -683,7 +683,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     DBLogicalExpression implicitAnd =
         new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-    implicitAnd.addDBFilter(
+    implicitAnd.addFilter(
         new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
 
     FindCollectionOperation findCollectionOperation =
@@ -893,7 +893,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     DBLogicalExpression implicitAnd =
         new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-    implicitAnd.addDBFilter(
+    implicitAnd.addFilter(
         new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
 
     FindCollectionOperation findCollectionOperation =

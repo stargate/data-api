@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.util.ExceptionUtil;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -29,13 +28,22 @@ public record UpdateCollectionOperationPage(
     final DocumentId[] upsertedId = new DocumentId[1];
     List<JsonNode> updatedDocs = new ArrayList<>(updatedDocuments().size());
 
+    var builder =
+        returnDocs
+            ? CommandResult.singleDocumentBuilder(false, false)
+            : CommandResult.statusOnlyBuilder(false, false);
+
     // aggregate the errors by error code or error class
     Multimap<String, ReadAndUpdateCollectionOperation.UpdatedDocument> groupedErrorUpdates =
         ArrayListMultimap.create();
     updatedDocuments.forEach(
         update -> {
-          if (update.upserted()) upsertedId[0] = update.id();
-          if (returnDocs) updatedDocs.add(update.document());
+          if (update.upserted()) {
+            upsertedId[0] = update.id();
+          }
+          if (returnDocs) {
+            updatedDocs.add(update.document());
+          }
           //
           if (update.error() != null) {
             String key = ExceptionUtil.getThrowableGroupingKey(update.error());
@@ -56,28 +64,29 @@ public record UpdateCollectionOperationPage(
                   ExceptionUtil.getError(
                       ERROR, documentIds, updatedDocuments.stream().findFirst().get().error()));
             });
-    EnumMap<CommandStatus, Object> updateStatus = new EnumMap<>(CommandStatus.class);
+
     if (upsertedId[0] != null) {
-      updateStatus.put(CommandStatus.UPSERTED_ID, upsertedId[0]);
+      builder.addStatus(CommandStatus.UPSERTED_ID, upsertedId[0]);
     }
-    updateStatus.put(CommandStatus.MATCHED_COUNT, matchedCount());
-    updateStatus.put(CommandStatus.MODIFIED_COUNT, modifiedCount());
+    builder.addStatus(CommandStatus.MATCHED_COUNT, matchedCount());
+    builder.addStatus(CommandStatus.MODIFIED_COUNT, modifiedCount());
 
     if (pagingState != null) {
-      updateStatus.put(CommandStatus.MORE_DATA, true);
-      updateStatus.put(CommandStatus.PAGE_STATE, pagingState);
+      builder.addStatus(CommandStatus.MORE_DATA, true);
+      builder.addStatus(CommandStatus.PAGE_STATE, pagingState);
     }
 
+    // aaron - 9-oct-2024 - these two line comments were below....
     // note that we always target a single document to be returned
     // thus fixed to the SingleResponseData
-    if (returnDocs) {
-      JsonNode node = updatedDocs.size() > 0 ? updatedDocs.get(0) : null;
-      return new CommandResult(
-          new CommandResult.SingleResponseData(node),
-          updateStatus,
-          errors.isEmpty() ? null : errors);
-    } else {
-      return new CommandResult(null, updateStatus, errors.isEmpty() ? null : errors);
+    // ... but I think they are wrong, because it would previously pass null for the data if
+    // returnedDocs was false
+    // so at the top of the function we make the appropriate builder
+    // (comment could have been about how it handles have zero docs and returnDocs is true)
+    if (returnDocs && !updatedDocs.isEmpty()) {
+      builder.addDocument(updatedDocs.getFirst());
     }
+    builder.addCommandResultError(errors);
+    return builder.build();
   }
 }

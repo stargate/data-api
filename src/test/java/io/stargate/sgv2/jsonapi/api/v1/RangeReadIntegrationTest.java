@@ -1,11 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,8 +70,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(2))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -101,8 +101,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(3))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -133,8 +132,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(2))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -165,8 +163,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(3))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -197,8 +194,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(2))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -206,17 +202,19 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
     @Test
     @Order(8)
     public void rangeWithText() throws Exception {
-      int[] ids = {24, 25};
-      List<Object> testDatas = getDocuments(ids);
       String json =
           """
         {
           "find": {
-            "filter" : {"activeUser" : {"$gt" : "data"}},
+            "filter" : {"username" : {"$gt" : "user23"}},
             "sort" : {"userId" : 1}
           }
         }
         """;
+      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
+      final ArrayNode arrayNode = nodefactory.arrayNode(testDatas.size());
+      for (int i = 0; i < testDatas.size(); i++)
+        arrayNode.add(objectMapper.valueToTree(testDatas.get(i)));
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -225,12 +223,32 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body(
-              "errors[0].message",
-              is("Invalid filter expression: $gt operator must have `DATE` or `NUMBER` value"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", notNullValue());
+    }
+
+    @Test
+    @Order(8)
+    public void rangeWithBoolean() throws Exception {
+      String json =
+          """
+            {
+              "find": {
+                "filter" : {"activeUser" : {"$gt" : false}},
+                "sort" : {"userId" : 1}
+              }
+            }
+            """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", notNullValue());
     }
 
     @Test
@@ -256,8 +274,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(expected));
     }
 
@@ -284,8 +301,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.document", is(notNullValue()))
           .body("data.document", jsonEquals(expected));
     }
@@ -310,7 +326,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
+          .body("$", responseIsStatusOnly())
           .body("status.deletedCount", is(1));
     }
 
@@ -332,7 +348,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
+          .body("$", responseIsStatusOnly())
           .body("status.deletedCount", is(2));
     }
   }

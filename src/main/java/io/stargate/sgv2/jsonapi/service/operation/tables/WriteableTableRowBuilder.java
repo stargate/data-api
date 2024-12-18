@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.COLUMN_METADATA_COMPARATOR;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
@@ -8,15 +9,18 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.internal.core.util.Strings;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
-import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
+import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * Builds a {@link WriteableTableRow} from a {@link JsonNamedValueContainer}.
@@ -25,6 +29,10 @@ import java.util.*;
  * enforces the rules that {@link WriteableTableRow} has to be valid.
  */
 public class WriteableTableRowBuilder {
+
+  /** Match if a column does not support insert. */
+  private static final Predicate<ApiSupportDef> MATCH_INSERT_UNSUPPORTED =
+      ApiSupportDef.Matcher.NO_MATCHES.withInsert(false);
 
   private final TableSchemaObject tableSchemaObject;
   private final TableMetadata tableMetadata;
@@ -41,7 +49,7 @@ public class WriteableTableRowBuilder {
       TableSchemaObject tableSchemaObject, JSONCodecRegistry codecRegistry) {
     this.tableSchemaObject =
         Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
-    this.tableMetadata = tableSchemaObject.tableMetadata;
+    this.tableMetadata = tableSchemaObject.tableMetadata();
     this.codecRegistry = Objects.requireNonNull(codecRegistry, "codecRegistry cannot be null");
   }
 
@@ -71,20 +79,34 @@ public class WriteableTableRowBuilder {
     source.forEach((key, value) -> cqlIdentifierToJsonValue.put(createCqlIdentifier(key), value));
 
     // the validation steps
-    checkAllPrimaryKeys(cqlIdentifierToJsonValue.keySet());
+    checkAllPrimaryKeys(cqlIdentifierToJsonValue);
     checkUnknownColumns(cqlIdentifierToJsonValue.keySet());
+    checkApiSupport(cqlIdentifierToJsonValue.keySet());
     var decoded = encodeJsonToCql(cqlIdentifierToJsonValue);
 
     // now need to split the columns into key and non key columns
     var keyColumns = new CqlNamedValueContainer();
     var nonKeyColumns = new CqlNamedValueContainer();
-    for (var cqlNamedValue : decoded.values()) {
-      if (tableMetadata.getPrimaryKey().contains(cqlNamedValue.name())) {
-        keyColumns.put(cqlNamedValue);
+
+    // Get the primary keys out of the new values in the order they are defined on the table
+    for (var keyMetadata : tableMetadata.getPrimaryKey()) {
+      if (decoded.containsKey(keyMetadata)) {
+        keyColumns.put(decoded.get(keyMetadata));
       } else {
+        // the primary keys have been checked above
+        throw new IllegalStateException(
+            String.format(
+                "build: primary key column not found in decoded values, column=%s", keyMetadata));
+      }
+    }
+
+    // any column in decoded that is now not in keyColumns is a non key column
+    for (var cqlNamedValue : decoded.values()) {
+      if (!keyColumns.containsKey(cqlNamedValue.name())) {
         nonKeyColumns.put(cqlNamedValue);
       }
     }
+
     return new WriteableTableRow(tableSchemaObject, keyColumns, nonKeyColumns);
   }
 
@@ -104,18 +126,26 @@ public class WriteableTableRowBuilder {
    *
    * <p>Throws a {@link DocumentException.Code#MISSING_PRIMARY_KEY_COLUMNS}
    */
-  private void checkAllPrimaryKeys(Collection<CqlIdentifier> suppliedColumns) {
+  private void checkAllPrimaryKeys(Map<CqlIdentifier, JsonNamedValue> suppliedColumns) {
 
     // dont worry about set, there is normally only 1 to 3 primary key columns in a table
     var missingPrimaryKeys =
         tableMetadata.getPrimaryKey().stream()
-            .filter(column -> !suppliedColumns.contains(column.getName()))
+            .filter(
+                column ->
+                    (!suppliedColumns.containsKey(column.getName())
+                        || (suppliedColumns.containsKey(column.getName())
+                            && suppliedColumns.get(column.getName()).value().value() == null)))
+            .sorted(COLUMN_METADATA_COMPARATOR)
             .toList();
 
     if (!missingPrimaryKeys.isEmpty()) {
       var suppliedPrimaryKeys =
           tableMetadata.getPrimaryKey().stream()
-              .filter(column -> suppliedColumns.contains(column.getName()))
+              .filter(
+                  column ->
+                      suppliedColumns.containsKey(column.getName())
+                          && suppliedColumns.get(column.getName()).value().value() != null)
               .toList();
       throw DocumentException.Code.MISSING_PRIMARY_KEY_COLUMNS.get(
           errVars(
@@ -147,6 +177,40 @@ public class WriteableTableRowBuilder {
               map -> {
                 map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
                 map.put("unknownColumns", errFmtCqlIdentifier(unknownColumns));
+              }));
+    }
+  }
+
+  /**
+   * Checks if the row has any columns that we do not support writing to.
+   *
+   * <p>While we also can hit a problem with not having a codec, we check using the {@link
+   * io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef} because some types are read only
+   * and so they have a codec entry.
+   */
+  private void checkApiSupport(Collection<CqlIdentifier> suppliedColumns) {
+
+    // TODO: this class was created before the API Schema, we should update the whole thing at some
+    // point for now use the same signature as the other checks passing in the CQLIdentifiers
+    var unsupportedColumns =
+        tableSchemaObject
+            .apiTableDef()
+            .allColumns()
+            .filterBy(suppliedColumns)
+            .filterBySupportToList(MATCH_INSERT_UNSUPPORTED);
+
+    if (!unsupportedColumns.isEmpty()) {
+      // list is immutable
+      var sortedUnsupportedColumns = new ArrayList<>(unsupportedColumns);
+      sortedUnsupportedColumns.sort(ApiColumnDef.NAME_COMPARATOR);
+
+      // NOTE: SAME ERROR IS THROWN  in encodeJsonToCql -OK until we re-factor
+      throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
+                map.put("unsupportedColumns", errFmtApiColumnDef(sortedUnsupportedColumns));
               }));
     }
   }
@@ -204,6 +268,7 @@ public class WriteableTableRowBuilder {
     // Check these first and throw, writing to types we don't support is more serious than sending
     // out of range values.
     if (!unsupportedErrors.isEmpty()) {
+      // NOTE: SAME ERROR IS THROWN  in checkApiSupport -OK until we re-factor
       throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
           errVars(
               tableSchemaObject,

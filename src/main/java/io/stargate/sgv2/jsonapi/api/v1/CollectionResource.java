@@ -1,10 +1,13 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
+
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.EstimatedDocumentCountCommand;
@@ -15,6 +18,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.ListIndexesCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -28,7 +32,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
@@ -109,11 +113,12 @@ public class CollectionResource {
                         InsertOneCommand.class,
                         InsertManyCommand.class,
                         UpdateManyCommand.class,
-                        UpdateOneCommand.class
-                        // TODO, hide table feature detail before it goes public,
-                        // https://github.com/stargate/data-api/pull/1360
-                        //                        AddIndexCommand.class,
-                        //                        DropIndexCommand.class
+                        UpdateOneCommand.class,
+                        // Table Only commands
+                        AlterTableCommand.class,
+                        CreateIndexCommand.class,
+                        CreateVectorIndexCommand.class,
+                        ListIndexesCommand.class
                       }),
               examples = {
                 @ExampleObject(ref = "countDocuments"),
@@ -131,6 +136,15 @@ public class CollectionResource {
                 @ExampleObject(ref = "insertMany"),
                 @ExampleObject(ref = "updateMany"),
                 @ExampleObject(ref = "updateOne"),
+                @ExampleObject(ref = "alterTableAddColumns"),
+                @ExampleObject(ref = "alterTableDropColumns"),
+                @ExampleObject(ref = "alterTableAddVectorize"),
+                @ExampleObject(ref = "alterTableDropVectorize"),
+                @ExampleObject(ref = "createIndex"),
+                @ExampleObject(ref = "createVectorIndex"),
+                @ExampleObject(ref = "listIndexes"),
+                @ExampleObject(ref = "insertOneTables"),
+                @ExampleObject(ref = "insertManyTables"),
               }))
   @APIResponses(
       @APIResponse(
@@ -157,6 +171,9 @@ public class CollectionResource {
                     @ExampleObject(ref = "resultUpdateMany"),
                     @ExampleObject(ref = "resultUpdateManyUpsert"),
                     @ExampleObject(ref = "resultError"),
+                    @ExampleObject(ref = "resultDdl"),
+                    @ExampleObject(ref = "resultListIndexes"),
+                    @ExampleObject(ref = "insertManyTablesResponse"),
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
@@ -172,11 +189,18 @@ public class CollectionResource {
           @Size(min = 1, max = 48)
           String collection) {
     return schemaCache
-        .getSchemaObject(dataApiRequestInfo, dataApiRequestInfo.getTenantId(), keyspace, collection)
+        .getSchemaObject(
+            dataApiRequestInfo,
+            dataApiRequestInfo.getTenantId(),
+            keyspace,
+            collection,
+            CommandType.DDL.equals(command.commandName().getCommandType()))
         .onItemOrFailure()
         .transformToUni(
             (schemaObject, throwable) -> {
               if (throwable != null) {
+
+                // We failed to get the schema object, or failed to build it.
                 Throwable error = throwable;
                 if (throwable instanceof RuntimeException && throwable.getCause() != null) {
                   error = throwable.getCause();
@@ -185,9 +209,11 @@ public class CollectionResource {
                 }
                 // otherwise use generic for now
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
+
               } else {
+
                 // TODO No need for the else clause here, simplify
-                final ApiFeatures apiFeatures =
+                var apiFeatures =
                     ApiFeatures.fromConfigAndRequest(
                         apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
                 if ((schemaObject.type() == SchemaObject.SchemaObjectType.TABLE)
@@ -195,22 +221,37 @@ public class CollectionResource {
                   return Uni.createFrom()
                       .failure(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException());
                 }
-                // TODO: refactor this code to be cleaner so it assigns on one line
-                EmbeddingProvider embeddingProvider = null;
-                final VectorConfig.VectorizeConfig vectorizeConfig =
-                    schemaObject.vectorConfig().vectorizeConfig();
-                if (vectorizeConfig != null) {
-                  embeddingProvider =
-                      embeddingProviderFactory.getConfiguration(
-                          dataApiRequestInfo.getTenantId(),
-                          dataApiRequestInfo.getCassandraToken(),
-                          vectorizeConfig.provider(),
-                          vectorizeConfig.modelName(),
-                          schemaObject.vectorConfig().vectorSize(),
-                          vectorizeConfig.parameters(),
-                          vectorizeConfig.authentication(),
-                          command.getClass().getSimpleName());
+
+                // TODO: This needs to change, currenty it is only checking if there is vecotrize
+                // for
+                // the $vector column in a collection
+
+                VectorColumnDefinition vectorColDef = null;
+                if (schemaObject.type() == SchemaObject.SchemaObjectType.COLLECTION) {
+                  vectorColDef =
+                      schemaObject
+                          .vectorConfig()
+                          .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
+                          .orElse(null);
+                } else if (schemaObject.type() == SchemaObject.SchemaObjectType.TABLE) {
+                  vectorColDef =
+                      schemaObject
+                          .vectorConfig()
+                          .getFirstVectorColumnWithVectorizeDefinition()
+                          .orElse(null);
                 }
+                EmbeddingProvider embeddingProvider =
+                    (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)
+                        ? null
+                        : embeddingProviderFactory.getConfiguration(
+                            dataApiRequestInfo.getTenantId(),
+                            dataApiRequestInfo.getCassandraToken(),
+                            vectorColDef.vectorizeDefinition().provider(),
+                            vectorColDef.vectorizeDefinition().modelName(),
+                            vectorColDef.vectorSize(),
+                            vectorColDef.vectorizeDefinition().parameters(),
+                            vectorColDef.vectorizeDefinition().authentication(),
+                            command.getClass().getSimpleName());
 
                 var commandContext =
                     CommandContext.forSchemaObject(

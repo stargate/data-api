@@ -3,6 +3,9 @@ package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -28,6 +31,12 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
       throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(serviceName);
     }
     final var properties = config.providers().get(serviceName).properties();
+    Map<String, Optional<String>> modelwiseServiceUrlOverrides =
+        Objects.requireNonNull(config.providers().get(serviceName).models()).stream()
+            .collect(
+                HashMap::new,
+                (map, modelConfig) -> map.put(modelConfig.name(), modelConfig.serviceUrlOverride()),
+                HashMap::putAll);
     return ServiceConfig.provider(
         serviceName,
         serviceName,
@@ -40,6 +49,7 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
             properties.jitter(),
             properties.taskTypeRead(),
             properties.taskTypeStore(),
-            properties.maxBatchSize()));
+            properties.maxBatchSize()),
+        modelwiseServiceUrlOverrides);
   }
 }

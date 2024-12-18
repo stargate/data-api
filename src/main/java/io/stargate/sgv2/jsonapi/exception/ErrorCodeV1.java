@@ -1,11 +1,6 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.SmallRyeConfigBuilder;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.config.ConfigProvider;
 
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCodeV1 {
@@ -65,6 +60,8 @@ public enum ErrorCodeV1 {
   ID_NOT_INDEXED("_id is not indexed"),
 
   KEYSPACE_DOES_NOT_EXIST("The provided keyspace does not exist"),
+
+  SHRED_BAD_BINARY_VECTOR_VALUE("Bad binary vector value to shred"),
 
   SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
 
@@ -144,6 +141,8 @@ public enum ErrorCodeV1 {
 
   VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name"),
 
+  VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME("Unrecognized vector search source model name"),
+
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
   VECTOR_SIZE_MISMATCH("Length of vector parameter different from declared '$vector' dimension"),
 
@@ -154,7 +153,7 @@ public enum ErrorCodeV1 {
   VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
 
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
-  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail"),
+  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
 
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   COLLECTION_CREATION_ERROR(
@@ -200,9 +199,7 @@ public enum ErrorCodeV1 {
   TABLE_FEATURE_NOT_ENABLED("API Table feature is not enabled"),
 
   TABLE_COLUMN_TYPE_NOT_PROVIDED("Column data type not provided as part of definition"),
-  TABLE_PRIMARY_KEY_DEFINITION_INCORRECT("Primary key definition is incorrect"),
-  TABLE_MISSING_PARTITIONING_KEYS("Key needs to be provided as part of partitioning definition"),
-  TABLE_COLUMN_DEFINITION_MISSING("Column definition is missing for the provided key field"),
+
   TABLE_COLUMN_TYPE_UNSUPPORTED("Unsupported column types"),
   TABLE_COLUMN_UNKNOWN("Column unknown");
 
@@ -230,9 +227,6 @@ public enum ErrorCodeV1 {
   }
 
   private String getErrorMessage(String format, Object... args) {
-    if (ExtendError.enabled()) {
-      return String.format(format, args);
-    }
     return message + ": " + String.format(format, args);
   }
 
@@ -242,34 +236,5 @@ public enum ErrorCodeV1 {
 
   public JsonApiException toApiException(Response.Status httpStatus) {
     return new JsonApiException(this, message, null, httpStatus);
-  }
-
-  /**
-   * Helper class to cache loading of settings from the configuration. This is used to avoid having
-   * to access Config during Enum class initialization. It will also prevent repeated configuration
-   * loading calls.
-   */
-  static class ExtendError {
-    private static final ExtendError instance = new ExtendError();
-
-    private final boolean enabled;
-
-    public ExtendError() {
-      enabled =
-          ApiConstants.isOffline()
-              ? new SmallRyeConfigBuilder()
-                  .withMapping(OperationsConfig.class)
-                  .build()
-                  .getConfigMapping(OperationsConfig.class)
-                  .extendError()
-              : ConfigProvider.getConfig()
-                  .unwrap(SmallRyeConfig.class)
-                  .getConfigMapping(OperationsConfig.class)
-                  .extendError();
-    }
-
-    public static boolean enabled() {
-      return instance.enabled;
-    }
   }
 }

@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
@@ -27,6 +28,7 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(401)
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               is(
@@ -46,6 +48,7 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           //  (we want to return 4xx because we cannot actually process the request
           //  as JSON is unparseable) but right now this is not working for some reason.
           .statusCode(200)
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_REQUEST_NOT_JSON"))
@@ -73,13 +76,14 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"CollectionCommand\"s: known commands are [addIndex, countDocuments,"));
+                  "Provided command unknown: \"unknownCommand\" not one of \"CollectionCommand\"s: known commands are ["));
     }
 
     @Test
@@ -101,6 +105,7 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_REQUEST_UNKNOWN_FIELD"))
@@ -130,6 +135,7 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .post(CollectionResource.BASE_PATH, "7_no_leading_number", collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
@@ -158,6 +164,7 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .post(CollectionResource.BASE_PATH, keyspaceName, "7_no_leading_number")
           .then()
           .statusCode(200)
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
@@ -176,6 +183,7 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))

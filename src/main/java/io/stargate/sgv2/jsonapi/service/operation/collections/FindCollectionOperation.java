@@ -26,6 +26,8 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Operation that returns the documents or its key based on the filter condition. */
 public record FindCollectionOperation(
@@ -51,6 +53,8 @@ public record FindCollectionOperation(
     /** Whether to include the sort vector in the response. This is used for vector search. */
     boolean includeSortVector)
     implements CollectionReadOperation {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(FindCollectionOperation.class);
 
   /**
    * Constructs find operation for unsorted single document find.
@@ -301,7 +305,7 @@ public record FindCollectionOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-    final boolean vectorEnabled = commandContext().schemaObject().isVectorEnabled();
+    final boolean vectorEnabled = commandContext().schemaObject().vectorConfig().vectorEnabled();
     if (vector() != null && !vectorEnabled) {
       return Uni.createFrom()
           .failure(
@@ -402,7 +406,7 @@ public record FindCollectionOperation(
     while (!stack.empty()) {
       var currentDbLogicalExpression = stack.pop();
 
-      for (DBFilterBase filter : dbLogicalExpression.dBFilters()) {
+      for (DBFilterBase filter : dbLogicalExpression.filters()) {
         // every filter must be a collection filter, because we are making a new document and we
         // only do this for docs
         if (filter instanceof IDCollectionFilter) {
@@ -422,7 +426,7 @@ public record FindCollectionOperation(
         }
       }
 
-      currentDbLogicalExpression.dbLogicalExpressions().forEach(stack::push);
+      currentDbLogicalExpression.subExpressions().forEach(stack::push);
     }
     return ReadDocument.from(documentId, null, rootNode);
   }

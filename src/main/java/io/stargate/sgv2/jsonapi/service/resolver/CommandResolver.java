@@ -1,13 +1,19 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandTarget;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
@@ -78,11 +84,28 @@ public interface CommandResolver<C extends Command> {
   default Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "%s Command does not support operating on Collections, target was %s",
-        command.getClass().getSimpleName(), ctx.schemaObject().name());
+
+    // this is duplicated because do not want to put it on the interface where it is public, nor
+    // on the enum, it already has a filter* helper.
+    var tableCommands =
+        CommandName.filterByTarget(CommandTarget.TABLE).stream()
+            .map(CommandName::getApiName)
+            .sorted()
+            .toList();
+    var collectionCommands =
+        CommandName.filterByTarget(CommandTarget.COLLECTION).stream()
+            .map(CommandName::getApiName)
+            .sorted()
+            .toList();
+    throw RequestException.Code.UNSUPPORTED_COLLECTION_COMMAND.get(
+        errVars(
+            ctx.schemaObject(),
+            map -> {
+              map.put("tableCommands", errFmtJoin(tableCommands));
+              map.put("collectionCommands", errFmtJoin(collectionCommands));
+              map.put("unsupportedCommand", command.commandName().getApiName());
+            }));
   }
-  ;
 
   /**
    * Implementors should use this method when they can resolve commands for a table.
@@ -93,9 +116,27 @@ public interface CommandResolver<C extends Command> {
    */
   default Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "%s Command does not support operating on Tables, target was %s",
-        command.getClass().getSimpleName(), ctx.schemaObject().name());
+
+    // this is duplicated because do not want to put it on the interface where it is public, nor
+    // on the enum, it already has a filter* helper.
+    var tableCommands =
+        CommandName.filterByTarget(CommandTarget.TABLE).stream()
+            .map(CommandName::getApiName)
+            .sorted()
+            .toList();
+    var collectionCommands =
+        CommandName.filterByTarget(CommandTarget.COLLECTION).stream()
+            .map(CommandName::getApiName)
+            .sorted()
+            .toList();
+    throw RequestException.Code.UNSUPPORTED_TABLE_COMMAND.get(
+        errVars(
+            ctx.schemaObject(),
+            map -> {
+              map.put("tableCommands", errFmtJoin(tableCommands));
+              map.put("collectionCommands", errFmtJoin(collectionCommands));
+              map.put("unsupportedCommand", command.commandName().getApiName());
+            }));
   }
 
   /**
@@ -165,10 +206,10 @@ public interface CommandResolver<C extends Command> {
   }
 
   private void getIndexUsageTags(DBLogicalExpression dbLogicalExpression, IndexUsage indexUsage) {
-    for (DBFilterBase dbFilter : dbLogicalExpression.dBFilters()) {
+    for (DBFilterBase dbFilter : dbLogicalExpression.filters()) {
       indexUsage.merge(dbFilter.indexUsage);
     }
-    for (DBLogicalExpression subDBLogicalExpression : dbLogicalExpression.dbLogicalExpressions()) {
+    for (DBLogicalExpression subDBLogicalExpression : dbLogicalExpression.subExpressions()) {
       getIndexUsageTags(subDBLogicalExpression, indexUsage);
     }
   }

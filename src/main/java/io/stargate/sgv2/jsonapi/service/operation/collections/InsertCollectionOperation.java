@@ -31,48 +31,54 @@ public record InsertCollectionOperation(
     boolean returnDocumentResponses)
     implements CollectionModifyOperation {
 
-  public static InsertCollectionOperation create(
-      CommandContext commandContext,
-      List<WritableShreddedDocument> documents,
-      boolean ordered,
-      boolean offlineMode,
-      boolean returnDocumentResponses) {
-    return new InsertCollectionOperation(
-        commandContext,
-        CollectionInsertAttempt.from(documents),
-        ordered,
-        offlineMode,
-        returnDocumentResponses);
+  public InsertCollectionOperation(
+      CommandContext<CollectionSchemaObject> commandContext,
+      List<CollectionInsertAttempt> insertions) {
+    this(commandContext, insertions, false, false, false);
   }
 
-  public static InsertCollectionOperation create(
-      CommandContext commandContext,
-      List<WritableShreddedDocument> documents,
-      boolean ordered,
-      boolean returnDocumentResponses) {
-    return new InsertCollectionOperation(
-        commandContext,
-        CollectionInsertAttempt.from(documents),
-        ordered,
-        false,
-        returnDocumentResponses);
-  }
-
-  public static InsertCollectionOperation create(
-      CommandContext commandContext, WritableShreddedDocument document) {
-    return new InsertCollectionOperation(
-        commandContext,
-        Collections.singletonList(CollectionInsertAttempt.from(0, document)),
-        false,
-        false,
-        false);
-  }
+  //  public static InsertCollectionOperation create(
+  //      CommandContext commandContext,
+  //      List<WritableShreddedDocument> documents,
+  //      boolean ordered,
+  //      boolean offlineMode,
+  //      boolean returnDocumentResponses) {
+  //    return new InsertCollectionOperation(
+  //        commandContext,
+  //        CollectionInsertAttempt.from(documents),
+  //        ordered,
+  //        offlineMode,
+  //        returnDocumentResponses);
+  //  }
+  //
+  //  public static InsertCollectionOperation create(
+  //      CommandContext commandContext,
+  //      List<WritableShreddedDocument> documents,
+  //      boolean ordered,
+  //      boolean returnDocumentResponses) {
+  //    return new InsertCollectionOperation(
+  //        commandContext,
+  //        CollectionInsertAttempt.from(documents),
+  //        ordered,
+  //        false,
+  //        returnDocumentResponses);
+  //  }
+  //
+  //  public static InsertCollectionOperation create(
+  //      CommandContext commandContext, WritableShreddedDocument document) {
+  //    return new InsertCollectionOperation(
+  //        commandContext,
+  //        Collections.singletonList(CollectionInsertAttempt.from(0, document)),
+  //        false,
+  //        false,
+  //        false);
+  //  }
 
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-    final boolean vectorEnabled = commandContext().schemaObject().isVectorEnabled();
+    final boolean vectorEnabled = commandContext().schemaObject().vectorConfig().vectorEnabled();
     if (!vectorEnabled && insertions.stream().anyMatch(insertion -> insertion.hasVectorValues())) {
       throw ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
           commandContext().schemaObject().name().table());

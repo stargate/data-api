@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
@@ -55,6 +56,40 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   class InsertOne {
 
     @Test
+    public void shredFailure() {
+      // This used to be a unit test for the InsertOneCommandResolver calld shredderFailure(), but
+      // the resolver does not throw this
+      // error any more, it is instead handed in the result.
+
+      String json =
+          """
+            {
+              "insertOne": {
+                "document" : null
+              }
+            }
+          """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsWritePartialSuccess())
+          .body("status.insertedIds", jsonEquals("[]"))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("SHRED_BAD_DOCUMENT_TYPE"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Bad document type to shred: document to shred must be a JSON Object, instead got NULL"));
+    }
+
+    @Test
     public void insertDocument() {
       String json =
           """
@@ -76,9 +111,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is("doc3"))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("doc3"));
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -94,6 +128,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body(
               "data.documents[0]",
               jsonEquals(
@@ -102,8 +137,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                 "_id":"doc3",
                 "username":"user3"
               }
-              """))
-          .body("errors", is(nullValue()));
+              """));
     }
 
     // [https://github.com/stargate/jsonapi/issues/521]: allow hyphens in property names
@@ -129,9 +163,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is("doc-hyphen"))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("doc-hyphen"));
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -147,6 +180,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body(
               "data.documents[0]",
               jsonEquals(
@@ -155,8 +189,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                 "_id": "doc-hyphen",
                 "user-name": "user #1"
               }
-              """))
-          .body("errors", is(nullValue()));
+              """));
     }
 
     @Test
@@ -182,9 +215,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is("doc_date"))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("doc_date"));
 
       String expected =
           """
@@ -212,8 +244,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(expected))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -239,9 +271,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", jsonEquals("{\"$date\":1672539900000}"))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", jsonEquals("{\"$date\":1672539900000}"));
 
       String expected =
           """
@@ -269,7 +300,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
 
@@ -295,9 +326,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is(4))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is(4));
 
       json =
           """
@@ -323,8 +353,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(expected))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
@@ -350,9 +380,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is("doc3"))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("doc3"));
     }
 
     @Test
@@ -377,9 +406,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document", is(nullValue()))
-          .body("status", is(nullValue()))
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -408,9 +435,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is("duplicate"))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("duplicate"));
 
       json =
           """
@@ -431,11 +457,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsWritePartialSuccess())
           .body("status.insertedIds", jsonEquals("[]"))
-          .body(
-              "errors[0].message",
-              is(
-                  "Failed to insert document with _id 'duplicate': Document already exists with the given _id"))
+          .body("errors[0].message", is("Document already exists with the given _id"))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"));
 
       json =
@@ -462,6 +486,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
 
@@ -485,9 +510,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is(notNullValue()))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is(notNullValue()));
     }
 
     @Test
@@ -508,6 +532,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
@@ -560,9 +585,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
-          .body("status.insertedIds[0]", is(Map.of("$uuid", UUID_KEY)))
-          .body("data", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is(Map.of("$uuid", UUID_KEY)));
 
       // Find by UUID, full $uuid notation
       given()
@@ -573,8 +597,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(doc))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]", jsonEquals(doc));
 
       // Find by UUID, short-cut (unwrapped)
       given()
@@ -585,8 +609,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(doc))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]", jsonEquals(doc));
     }
 
     @Test
@@ -609,9 +633,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
-          .body("status.insertedIds[0]", is(Map.of("$objectId", OBJECTID_KEY)))
-          .body("data", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is(Map.of("$objectId", OBJECTID_KEY)));
+
       // Find by ObjectId, full $objectId notation
       given()
           .headers(getHeaders())
@@ -623,8 +647,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(doc))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]", jsonEquals(doc));
       // Find by ObjectId, shortcut notation
       given()
           .headers(getHeaders())
@@ -634,8 +658,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(doc))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]", jsonEquals(doc));
     }
 
     @Test
@@ -656,10 +680,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               .post(CollectionResource.BASE_PATH, keyspaceName, COLLECTION_WITH_AUTO_OBJECTID)
               .then()
               .statusCode(200)
-              .body("errors", is(nullValue()))
+              .body("$", responseIsWriteSuccess())
               .body("status.insertedIds", hasSize(1))
               .body("status.insertedIds[0]", any(Map.class))
-              .body("data", is(nullValue()))
               .extract()
               .response();
       Object insertedIdRaw = response.path("status.insertedIds[0]");
@@ -682,7 +705,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, COLLECTION_WITH_AUTO_OBJECTID)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body("data.documents[0].value", is("random"));
     }
@@ -712,9 +735,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is(KEY))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is(KEY));
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -723,8 +745,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(doc))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]", jsonEquals(doc));
     }
 
     @Test
@@ -752,9 +774,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is(KEY))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is(KEY));
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -763,8 +784,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(doc))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]", jsonEquals(doc));
     }
 
     // // // Failing cases
@@ -787,7 +808,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(nullValue()))
+          .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
@@ -815,7 +836,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(nullValue()))
+          .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
@@ -843,7 +864,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(nullValue()))
+          .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
@@ -895,6 +916,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
@@ -947,6 +969,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
@@ -1000,7 +1023,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
@@ -1049,7 +1072,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
@@ -1090,6 +1113,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(bigDoc));
     }
 
@@ -1114,7 +1138,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
@@ -1151,7 +1175,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
@@ -1194,7 +1218,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
@@ -1223,9 +1247,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is(docId))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is(docId));
 
       // But let's also verify doc can be fetched and is what we inserted
       given()
@@ -1244,7 +1267,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(doc.toString()));
     }
   }
@@ -1277,9 +1300,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, COLLECTION_MIXED)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is("mixed1"))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("mixed1"));
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -1295,6 +1317,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, COLLECTION_MIXED)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body(
               "data.documents[0]",
@@ -1304,8 +1327,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                                         "_id": "mixed1",
                                         "userName": "userA"
                                       }
-                                      """))
-          .body("errors", is(nullValue()));
+                                      """));
     }
   }
 
@@ -1338,9 +1360,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds", is(Arrays.asList("doc4", "doc5")))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds", is(Arrays.asList("doc4", "doc5")));
 
       verifyDocCount(2);
     }
@@ -1372,8 +1393,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsWriteSuccess())
           .body(
               "status.documentResponses",
               is(
@@ -1409,8 +1429,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsWriteSuccess())
           .body("status.insertedIds", is(nullValue()))
           .body("status.failedDocuments", is(nullValue()))
           // now tricky part: [0, <UUID>] check
@@ -1445,9 +1464,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"));
 
       verifyDocCount(2);
     }
@@ -1476,9 +1494,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsWritePartialSuccess())
           .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
-          .body("data", is(nullValue()))
-          .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"))
+          .body("errors[0].message", startsWith("Failed to insert document with _id doc4"))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"));
 
       verifyDocCount(2);
@@ -1512,9 +1530,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds", containsInAnyOrder("5", 5))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds", containsInAnyOrder("5", 5));
 
       json =
           """
@@ -1540,6 +1557,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
 
       json =
@@ -1566,6 +1584,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
 
@@ -1598,9 +1617,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"));
     }
 
     @Test
@@ -1625,9 +1643,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds", hasSize(2))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds", hasSize(2));
     }
   }
 
@@ -1666,7 +1683,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               startsWith("Document size limitation violated: Number value length"))
@@ -1704,7 +1721,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
-          .statusCode(200);
+          .statusCode(200)
+          .body("$", responseIsWriteSuccess());
     }
 
     // Testing Quarkus max payload (20M); separate from Max Doc Size limit (4M)
@@ -1784,12 +1802,12 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsWritePartialSuccess())
           .body("status.insertedIds", is(Arrays.asList("doc4")))
-          .body("data", is(nullValue()))
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"));
+          .body("errors[0].message", startsWith("Failed to insert document with _id doc4"));
 
       verifyDocCount(1);
     }
@@ -1819,7 +1837,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(nullValue()))
+          .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -1862,7 +1880,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(nullValue()))
+          .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_DOC_KEY_NAME_VIOLATION"))
@@ -1908,6 +1926,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsWritePartialSuccess())
           // Insertions can occur in any order, so we can't predict which is first
           // within the input list
           .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
@@ -1962,7 +1981,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(nullValue()))
+          .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_DOC_KEY_NAME_VIOLATION"))
@@ -2004,8 +2023,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, "something_else", collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsError())
           .body("status.insertedIds", is(nullValue()))
-          .body("data", is(nullValue()))
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
@@ -2049,7 +2068,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))

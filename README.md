@@ -246,3 +246,13 @@ We regularly update the integration tests and [Docker compose](docker-compose) s
   - We will want to merge any changes in the source configuration file while preserving our own updates to the authentication configuration.
   - For DSE 6.9, you will want to review/update, the files `src/test/resources/dse.yaml` and `docker-compose/dse.yaml` based on the [latest version](https://github.com/riptano/bdp/blob/6.9-dev/resources/dse/conf/dse.yaml). The two local copies should have the same contents.
   - For HCD, you will want to review/update, the files `src/test/resources/dse.yaml` and `docker-compose/dse.yaml` based on the [latest version](https://github.com/riptano/bdp/blob/7.0-dev/conf/cassandra.yaml). The two local copies should have the same contents.
+
+### Run Data API against on-prem DSE/HCD
+- Have your Backend DSE/HCD ready, package Data API as `quarkus-run.jar` to the `target/quarkus-app/` directory. 
+    ```
+    ./mvnw clean package -DskipTests
+    ```
+- The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`. Set the correct `local-datacenter` as the jvm option. 
+    ```
+     java -Dstargate.jsonapi.operations.database-config.local-datacenter=dc1 -jar target/quarkus-app/quarkus-run.jar
+    ```

@@ -2,11 +2,271 @@
 
 ## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
 
-[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.16...HEAD)
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.20...HEAD)
 
 **Closed issues:**
 
+- primaryKeySchema and corresponding Id-tuples from insertion are not ordered like CQL \(\(primary\), clustering\) [\#1720](https://github.com/stargate/data-api/issues/1720)
+
+## [v1.0.20](https://github.com/stargate/data-api/tree/v1.0.20) (2024-11-14)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.19...v1.0.20)
+
+**Closed issues:**
+
+- Review all errors in errors.yaml [\#1662](https://github.com/stargate/data-api/issues/1662)
+
+**Merged pull requests:**
+
+- Ajm/fix 1720 bad order inserted return [\#1722](https://github.com/stargate/data-api/pull/1722) ([amorton](https://github.com/amorton))
+- remove XX from messages [\#1721](https://github.com/stargate/data-api/pull/1721) ([amorton](https://github.com/amorton))
+- Bumping version for next data-api release [\#1717](https://github.com/stargate/data-api/pull/1717) ([github-actions[bot]](https://github.com/apps/github-actions))
+
+## [v1.0.19](https://github.com/stargate/data-api/tree/v1.0.19) (2024-11-14)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.18...v1.0.19)
+
+**Implemented enhancements:**
+
+- validate null values insertion for PK columns [\#1678](https://github.com/stargate/data-api/issues/1678)
+
+**Fixed bugs:**
+
+- HTTP 500 when vector search w/ no limit [\#1700](https://github.com/stargate/data-api/issues/1700)
+- Improve the error for commands that are not supported on tables, and table commands not on collections  [\#1692](https://github.com/stargate/data-api/issues/1692)
+- Bug - exclude empty map / list / set from sparse data return [\#1690](https://github.com/stargate/data-api/issues/1690)
+- Forbid the use of $in for Table updateOne and deleteOne command [\#1688](https://github.com/stargate/data-api/issues/1688)
+- \(tables\) nextPageState always null for find on tables [\#1677](https://github.com/stargate/data-api/issues/1677)
+- Create Index error message typo [\#1659](https://github.com/stargate/data-api/issues/1659)
+- Empty `options` object in various new commands errors [\#1658](https://github.com/stargate/data-api/issues/1658)
+- Where Clause analysis gives warnings when ANN sort used  with no filtering  [\#1621](https://github.com/stargate/data-api/issues/1621)
+- \(nit\) Typo in the warning message for allow-filtering [\#1611](https://github.com/stargate/data-api/issues/1611)
+- TODO: WhereClauseAnalyzer should error for filtering on a complex type  [\#1602](https://github.com/stargate/data-api/issues/1602)
+- \(tables\) findOne with no matches returns a bare `{}` \(v1.0.18\) [\#1580](https://github.com/stargate/data-api/issues/1580)
+- Reading from \(unfrozen\) MAP\<text,...\> errors out [\#1575](https://github.com/stargate/data-api/issues/1575)
+- Validation missing for column type definition in createTable [\#1560](https://github.com/stargate/data-api/issues/1560)
+
+**Closed issues:**
+
+- NPE for some bad embedding provider set up or arguments \(Prod, Splunk\) [\#1714](https://github.com/stargate/data-api/issues/1714)
+- `InsertOperationPage` throws uncaught error for missing `docRowID` for failed insertion [\#1702](https://github.com/stargate/data-api/issues/1702)
+- Enable error objects returned in V2 format by default [\#1666](https://github.com/stargate/data-api/issues/1666)
+- Support vectorize for Tables - Update  command [\#1651](https://github.com/stargate/data-api/issues/1651)
+- Support use of negative CQL `duration` values [\#1647](https://github.com/stargate/data-api/issues/1647)
+- Support Vectorize for Tables - Insert and Read \(sort\) [\#1643](https://github.com/stargate/data-api/issues/1643)
+- support includeSortVector for tables  [\#1640](https://github.com/stargate/data-api/issues/1640)
+- support includeSimilarity option for find and findOne for tables [\#1634](https://github.com/stargate/data-api/issues/1634)
+- Turn table sort clause that uses clustering keys correctly into CQL order by  [\#1628](https://github.com/stargate/data-api/issues/1628)
+- Return an error if a sort clause is used for delete and update with a table [\#1622](https://github.com/stargate/data-api/issues/1622)
+- Support $binary vectors for sorting with collections and tables [\#1618](https://github.com/stargate/data-api/issues/1618)
+- Output `duration` values as ISO-8601, not Cassandra "standard" notation [\#1617](https://github.com/stargate/data-api/issues/1617)
+- Implement `listIndexes` command [\#1605](https://github.com/stargate/data-api/issues/1605)
+- Measure performance benefits of "Packed Base64" representation for Vector values \(Java\) [\#1604](https://github.com/stargate/data-api/issues/1604)
+- Refactor : ComplexApiDataType - remove properties on the super type that are not common  [\#1601](https://github.com/stargate/data-api/issues/1601)
+- Update Data API to use Jackson 2.18.0 for latest FP improvements [\#1597](https://github.com/stargate/data-api/issues/1597)
+- Refactor: TableFilterIntegrationTest to remove code duplication   [\#1591](https://github.com/stargate/data-api/issues/1591)
+- Refactor for table.definition.datatype.ColumnType [\#1588](https://github.com/stargate/data-api/issues/1588)
+- Allow use of  `$date` \(EJSON wrapper\) for API Table `timestamp` values \(similar to Collections\) [\#1586](https://github.com/stargate/data-api/issues/1586)
+- Return the schema of the projection for read commands   [\#1584](https://github.com/stargate/data-api/issues/1584)
+- \(Tables\) Cannot truncate a table \(generated CQL has syntax errors\) [\#1577](https://github.com/stargate/data-api/issues/1577)
+- How to analyze the updateClause for table [\#1572](https://github.com/stargate/data-api/issues/1572)
+- Confirm sparse data is returned for table reads [\#1571](https://github.com/stargate/data-api/issues/1571)
+- Restrict map key types to be text or ascii for create table [\#1570](https://github.com/stargate/data-api/issues/1570)
+- Bug? - UpdateOne for table, with a filter Exception, status map is still returned. [\#1569](https://github.com/stargate/data-api/issues/1569)
+- Mismatch between param name "indexName" in dropIndex command vs. "name" in createIndex [\#1567](https://github.com/stargate/data-api/issues/1567)
+- Bug - use Cql Identifier for specifying clustering key order [\#1565](https://github.com/stargate/data-api/issues/1565)
+- Implement `alterTable` command [\#1563](https://github.com/stargate/data-api/issues/1563)
+- Support sorting by vector for API Tables  [\#1559](https://github.com/stargate/data-api/issues/1559)
+- WhereClauseAnalyzer for table update and delete  [\#1556](https://github.com/stargate/data-api/issues/1556)
+- Improve `DataApiCommandSenders` by exposing `as\(\)` method for setting test description; also set default description [\#1547](https://github.com/stargate/data-api/issues/1547)
+- Code tidy: refactor getTableSchema\(\)  [\#1544](https://github.com/stargate/data-api/issues/1544)
+- Table feature fail due to missing CQL Driver profiles [\#1540](https://github.com/stargate/data-api/issues/1540)
+- Update to DSE 6.9.3 [\#1537](https://github.com/stargate/data-api/issues/1537)
+- Add swagger documentation for table operations [\#1534](https://github.com/stargate/data-api/issues/1534)
+- Table Filter, inet, uuid, timeuuid [\#1530](https://github.com/stargate/data-api/issues/1530)
+- Code Tidy - Improve the code in TableSchemaObject.from\(\) [\#1521](https://github.com/stargate/data-api/issues/1521)
+- Move toTableResponse\(\) off the TableSchemaObject  [\#1520](https://github.com/stargate/data-api/issues/1520)
+- Stop publishing jsonapi images [\#1516](https://github.com/stargate/data-api/issues/1516)
+- Implement `createIndex` command for Api Tables [\#1514](https://github.com/stargate/data-api/issues/1514)
+- Change the warnings section of the status to be full error object  [\#1497](https://github.com/stargate/data-api/issues/1497)
+- Data API JsonCodec: Base64-binary support for vectors [\#1493](https://github.com/stargate/data-api/issues/1493)
+- Data API JsonCodec: Vector, add support for `vector\<float\>` [\#1492](https://github.com/stargate/data-api/issues/1492)
+- Add retry on ALLOW FILTERing required for ReadAttempt  [\#1491](https://github.com/stargate/data-api/issues/1491)
+- Only use APIException \(v2 errors\) in the filter code  [\#1488](https://github.com/stargate/data-api/issues/1488)
+- $nin for table filter [\#1478](https://github.com/stargate/data-api/issues/1478)
+- Change UpdateTableCommand to use OperationAttempt [\#1468](https://github.com/stargate/data-api/issues/1468)
+- Change DeleteTableCommand to use OperationAttempt [\#1467](https://github.com/stargate/data-api/issues/1467)
+- Data API JsonCodec impl: unfrozen `map` type [\#1451](https://github.com/stargate/data-api/issues/1451)
+- provide instructions of running Data API for on-prem usage of DSE6.9  [\#1440](https://github.com/stargate/data-api/issues/1440)
+- CqlSessionCache test fixedToken\(\) config then ignores it  [\#1438](https://github.com/stargate/data-api/issues/1438)
+- support ordered flag for insert operations on tables  [\#1423](https://github.com/stargate/data-api/issues/1423)
+- Add support for $in for API Tables  [\#1415](https://github.com/stargate/data-api/issues/1415)
+- incorporate warning message into new API exception design. [\#1406](https://github.com/stargate/data-api/issues/1406)
+- Update to DSE 6.9.2 [\#1381](https://github.com/stargate/data-api/issues/1381)
+- Refactor command validation using ValidatableCommandClause [\#1310](https://github.com/stargate/data-api/issues/1310)
+- Try to speed up slow\(est\) "unit" tests -- ones for CQL Session caching -- somehow \(possibly change to Integration Tests\) [\#1245](https://github.com/stargate/data-api/issues/1245)
+- SERVER\_UNHANDLED\_ERROR if collection name is a list \(during createCollection\) [\#1240](https://github.com/stargate/data-api/issues/1240)
+- `SERVER\_UNHANDLED\_ERROR` from unmapped `io.grpc.StatusRuntimeException` \(DEADLINE\_EXCEEDED\) [\#1215](https://github.com/stargate/data-api/issues/1215)
+- Documentation revisit after quarkus-common-module removal. [\#1193](https://github.com/stargate/data-api/issues/1193)
+- SPEC - document role of \_id in a document [\#127](https://github.com/stargate/data-api/issues/127)
+
+**Merged pull requests:**
+
+- Fix \#1714: check for `null` value for "provider" parameter \(seen in Prod\) [\#1716](https://github.com/stargate/data-api/pull/1716) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- remove diver config for global page size setting [\#1715](https://github.com/stargate/data-api/pull/1715) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- review for existing error messages  [\#1713](https://github.com/stargate/data-api/pull/1713) ([amorton](https://github.com/amorton))
+- Added swagger examples for tables [\#1709](https://github.com/stargate/data-api/pull/1709) ([maheshrajamani](https://github.com/maheshrajamani))
+- fixes \#1700 default limit for ANN find now 1k [\#1706](https://github.com/stargate/data-api/pull/1706) ([amorton](https://github.com/amorton))
+- Fix for insert if any of the primary key column is null. [\#1705](https://github.com/stargate/data-api/pull/1705) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix for insert many if any of the primary key column is null. [\#1704](https://github.com/stargate/data-api/pull/1704) ([maheshrajamani](https://github.com/maheshrajamani))
+- fix tests, from dash to underscore. [\#1703](https://github.com/stargate/data-api/pull/1703) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fixes \#1692 - improved error for unsupported commands [\#1695](https://github.com/stargate/data-api/pull/1695) ([amorton](https://github.com/amorton))
+- return sparse data when set/list/map are empty or null [\#1694](https://github.com/stargate/data-api/pull/1694) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- forbid inFilter for table updateOne and deleteOne command [\#1693](https://github.com/stargate/data-api/pull/1693) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fixes \#1677 - page state returned [\#1689](https://github.com/stargate/data-api/pull/1689) ([amorton](https://github.com/amorton))
+- Revert "Added flag to mark if a model is deprecated" [\#1680](https://github.com/stargate/data-api/pull/1680) ([kathirsvn](https://github.com/kathirsvn))
+- Revert "Added display name for models" [\#1679](https://github.com/stargate/data-api/pull/1679) ([kathirsvn](https://github.com/kathirsvn))
+- Table vectorize update [\#1669](https://github.com/stargate/data-api/pull/1669) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Enable error objects returned in V2 format by default [\#1667](https://github.com/stargate/data-api/pull/1667) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Changes to handle warning overrides [\#1665](https://github.com/stargate/data-api/pull/1665) ([maheshrajamani](https://github.com/maheshrajamani))
+- Support empty options for DDL commands [\#1663](https://github.com/stargate/data-api/pull/1663) ([maheshrajamani](https://github.com/maheshrajamani))
+- Binary vector handling for sort clause [\#1661](https://github.com/stargate/data-api/pull/1661) ([maheshrajamani](https://github.com/maheshrajamani))
+- Create index error typo [\#1660](https://github.com/stargate/data-api/pull/1660) ([maheshrajamani](https://github.com/maheshrajamani))
+- Added display name for models [\#1657](https://github.com/stargate/data-api/pull/1657) ([kathirsvn](https://github.com/kathirsvn))
+- Table, includeSimilarityScore, includeSortVector [\#1656](https://github.com/stargate/data-api/pull/1656) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Schema refresh call for DDL commands made async. [\#1653](https://github.com/stargate/data-api/pull/1653) ([maheshrajamani](https://github.com/maheshrajamani))
+- Vectorize for insert and sort on tables  [\#1650](https://github.com/stargate/data-api/pull/1650) ([amorton](https://github.com/amorton))
+- Fix \#1647: support negative CqlDuration/duration values [\#1648](https://github.com/stargate/data-api/pull/1648) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Can not sort table update delete [\#1638](https://github.com/stargate/data-api/pull/1638) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- error typo, filter exception on complex type [\#1637](https://github.com/stargate/data-api/pull/1637) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Use CQL Order By for non ANN sort  [\#1635](https://github.com/stargate/data-api/pull/1635) ([amorton](https://github.com/amorton))
+- Table read sparse data [\#1633](https://github.com/stargate/data-api/pull/1633) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#1586: allow EJSON/$date wrapper use for CQL timestamp, for Collection compatibility [\#1627](https://github.com/stargate/data-api/pull/1627) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Added flag to mark if a model is deprecated [\#1625](https://github.com/stargate/data-api/pull/1625) ([kathirsvn](https://github.com/kathirsvn))
+- In-memory sort for tables [\#1624](https://github.com/stargate/data-api/pull/1624) ([maheshrajamani](https://github.com/maheshrajamani))
+- Truncate Attempt for table DeleteMany command [\#1623](https://github.com/stargate/data-api/pull/1623) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Support ANN sorting for tables [\#1620](https://github.com/stargate/data-api/pull/1620) ([amorton](https://github.com/amorton))
+- Change serialization of `CqlDuration` to ISO-8601 duration compliant String [\#1619](https://github.com/stargate/data-api/pull/1619) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Test Java Driver QueryBuilder private build, 4.19.0-preview1 [\#1615](https://github.com/stargate/data-api/pull/1615) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#1537: update DSE dep to 6.9.3 [\#1614](https://github.com/stargate/data-api/pull/1614) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- $nin filter operator for table scalar dataTypes [\#1613](https://github.com/stargate/data-api/pull/1613) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- List indexes implementation [\#1609](https://github.com/stargate/data-api/pull/1609) ([maheshrajamani](https://github.com/maheshrajamani))
+- check in driver queryBuilder private build [\#1607](https://github.com/stargate/data-api/pull/1607) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Expose source\_model parameter for vector-enabled collections [\#1606](https://github.com/stargate/data-api/pull/1606) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fix \#1451: add Codec support for non-nested unfrozen Maps [\#1600](https://github.com/stargate/data-api/pull/1600) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#1597: upgrade Jackson 2.17-\>2.18; Quarkus to latest patch [\#1598](https://github.com/stargate/data-api/pull/1598) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Return projectionSchema status for read operations  [\#1590](https://github.com/stargate/data-api/pull/1590) ([amorton](https://github.com/amorton))
+- Drop table and drop index commands [\#1581](https://github.com/stargate/data-api/pull/1581) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix \#1493: support Base64-encoded Vectors [\#1579](https://github.com/stargate/data-api/pull/1579) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Create table issue fixes. [\#1574](https://github.com/stargate/data-api/pull/1574) ([maheshrajamani](https://github.com/maheshrajamani))
+- Use Stargate v2.1.0-BETA-19 [\#1566](https://github.com/stargate/data-api/pull/1566) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Alter table command implementation [\#1564](https://github.com/stargate/data-api/pull/1564) ([maheshrajamani](https://github.com/maheshrajamani))
+- Add WhereCQLClauseAnalyzer strategies for Update, Delete [\#1557](https://github.com/stargate/data-api/pull/1557) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Changes for vector index and code improvement [\#1554](https://github.com/stargate/data-api/pull/1554) ([maheshrajamani](https://github.com/maheshrajamani))
+- Update on tables using OperationAttempt [\#1552](https://github.com/stargate/data-api/pull/1552) ([amorton](https://github.com/amorton))
+- deleteOne deleteMany for tables using OperationAttempt [\#1551](https://github.com/stargate/data-api/pull/1551) ([amorton](https://github.com/amorton))
+- Bumping version for next data-api release [\#1546](https://github.com/stargate/data-api/pull/1546) ([github-actions[bot]](https://github.com/apps/github-actions))
+-   Retry operation when fail due to missing ALLOW FILTERING [\#1525](https://github.com/stargate/data-api/pull/1525) ([amorton](https://github.com/amorton))
+- Use WarningException, expand CommandResultBuilder  [\#1519](https://github.com/stargate/data-api/pull/1519) ([amorton](https://github.com/amorton))
+
+## [v1.0.18](https://github.com/stargate/data-api/tree/v1.0.18) (2024-10-15)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.17...v1.0.18)
+
+**Closed issues:**
+
+- Can't insert vector field with tables [\#1533](https://github.com/stargate/data-api/issues/1533)
+- Issue with `COLLECTION\_NOT\_EXIST` error w/ Errors v2 [\#1531](https://github.com/stargate/data-api/issues/1531)
+- Table Filter, $binary EJSON for Blob column datatype. [\#1513](https://github.com/stargate/data-api/issues/1513)
+- Enable HTTP request log \(access log\) in Production [\#1498](https://github.com/stargate/data-api/issues/1498)
+- Data API JsonCodec: Vector, add support for `vector\<float\>` [\#1492](https://github.com/stargate/data-api/issues/1492)
+- Refactor WhereCQLClauseAnalyzer [\#1485](https://github.com/stargate/data-api/issues/1485)
+- Table Primary Key filtering, multiple corner cases. [\#1481](https://github.com/stargate/data-api/issues/1481)
+- Further detailed consideration of how we enable ALLOW FILTERING  [\#1476](https://github.com/stargate/data-api/issues/1476)
+- code tidy: use  the CommandResultBuilder  everywhere  [\#1463](https://github.com/stargate/data-api/issues/1463)
+- code tidy: tweak CommandResultBuilder to make it more buildery  [\#1461](https://github.com/stargate/data-api/issues/1461)
+- accommodate ALLOW FILTERING to OnGoingWhereClause for table [\#1445](https://github.com/stargate/data-api/issues/1445)
+- Data API JsonCodec impl: misc other type\(s\) \(inet\) [\#1386](https://github.com/stargate/data-api/issues/1386)
+
+**Merged pull requests:**
+
+- Implement \#1492: basic Vector\<Float\> support with Number arrays [\#1542](https://github.com/stargate/data-api/pull/1542) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- `createVectorIndex` command implementation [\#1541](https://github.com/stargate/data-api/pull/1541) ([maheshrajamani](https://github.com/maheshrajamani))
+- Table filter scalar, uuid/timeuuid/inet [\#1538](https://github.com/stargate/data-api/pull/1538) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#1531: revert change to error messages [\#1536](https://github.com/stargate/data-api/pull/1536) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- List tables refactor [\#1535](https://github.com/stargate/data-api/pull/1535) ([maheshrajamani](https://github.com/maheshrajamani))
+- Add unit tests, filter operators against scalar column datatypes [\#1528](https://github.com/stargate/data-api/pull/1528) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Add one IT for binary vector support [\#1527](https://github.com/stargate/data-api/pull/1527) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Create index command implementation [\#1526](https://github.com/stargate/data-api/pull/1526) ([maheshrajamani](https://github.com/maheshrajamani))
+- Do not publish json-api image to dockerhub [\#1522](https://github.com/stargate/data-api/pull/1522) ([Yuqi-Du](https://github.com/Yuqi-Du))
+
+## [v1.0.17](https://github.com/stargate/data-api/tree/v1.0.17) (2024-10-09)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.16...v1.0.17)
+
+**Implemented enhancements:**
+
+- adding tracing ID [\#593](https://github.com/stargate/data-api/issues/593)
+
+**Closed issues:**
+
+- Implement `listTables` command [\#1500](https://github.com/stargate/data-api/issues/1500)
+- Support binary vectors for Collections [\#1494](https://github.com/stargate/data-api/issues/1494)
+- Unexpected Field "embeddingsByType" in Response from `amazon.titan-embed-text-v2:0` Model Causing Deserialization Error [\#1486](https://github.com/stargate/data-api/issues/1486)
+- Handle `null` from CQL driver when converting column values to JSON \(`findOne` etc\) [\#1460](https://github.com/stargate/data-api/issues/1460)
+- Data API JsonCodec impl: unfrozen container types \(Set, List\) [\#1450](https://github.com/stargate/data-api/issues/1450)
+- Incorporate warning msg with Table read path [\#1447](https://github.com/stargate/data-api/issues/1447)
+- Data API JsonCodec impl: UUID \(uuid, timeuuid\) [\#1442](https://github.com/stargate/data-api/issues/1442)
+- bridge related documentation cleanups  [\#1441](https://github.com/stargate/data-api/issues/1441)
+- Add tests to ensure that "fractional" values like `10.0` and scientific notation like `1.23E+02` accepted as integer values [\#1429](https://github.com/stargate/data-api/issues/1429)
+- Tables number codec: support "NaN", "Infinity", "-Infinity" for `float`, `double` CQL types [\#1428](https://github.com/stargate/data-api/issues/1428)
+- refactor table insert operation, move calling the driver to TableInsertAttempt [\#1424](https://github.com/stargate/data-api/issues/1424)
+- Optimize `JSONCodecRegistry` to-CQL codec lookup: linear search won't scale [\#1417](https://github.com/stargate/data-api/issues/1417)
+- addIndex seems to fail on names with uppercase \(missing double quotes\)? [\#1404](https://github.com/stargate/data-api/issues/1404)
+- Data API JsonCodec impl: "blob" \(Binary\) type [\#1403](https://github.com/stargate/data-api/issues/1403)
+- Data API JsonCodec impl: misc other type\(s\) \(inet\) [\#1386](https://github.com/stargate/data-api/issues/1386)
+- Data API JsonCodec impl: date/time values \(date, duration, time, timestamp\) [\#1385](https://github.com/stargate/data-api/issues/1385)
+- Add new keyspace commands, deprecate namespace commands [\#1376](https://github.com/stargate/data-api/issues/1376)
 - Data API, JsonCodec testing: textual values \(ascii, text, varchar\) [\#1364](https://github.com/stargate/data-api/issues/1364)
+- Create collection fails if there is an existing CQL table of the same name [\#1198](https://github.com/stargate/data-api/issues/1198)
+- Azure OpenAI: use "deployment name" instead of "deployment ID" [\#1126](https://github.com/stargate/data-api/issues/1126)
+
+**Merged pull requests:**
+
+- Add "inet" codec [\#1517](https://github.com/stargate/data-api/pull/1517) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- use stargate-v2.1.0-BETA-18 [\#1512](https://github.com/stargate/data-api/pull/1512) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- List tables command [\#1510](https://github.com/stargate/data-api/pull/1510) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix bump\_stargate script [\#1507](https://github.com/stargate/data-api/pull/1507) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Support binary vectors for Collections [\#1506](https://github.com/stargate/data-api/pull/1506) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- use stargate-v2.1.0-BETA-17 [\#1505](https://github.com/stargate/data-api/pull/1505) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#1498: enable access/request log by default [\#1503](https://github.com/stargate/data-api/pull/1503) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add instruction for Data API on-prem support [\#1502](https://github.com/stargate/data-api/pull/1502) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- SchemaObject changes to support multiple vector configs [\#1499](https://github.com/stargate/data-api/pull/1499) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix \#1442: add codecs for UUID type\(s\) [\#1496](https://github.com/stargate/data-api/pull/1496) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Table filter refactor [\#1490](https://github.com/stargate/data-api/pull/1490) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Add vectorize config to tables [\#1489](https://github.com/stargate/data-api/pull/1489) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix `Unable to parse embedding provider response message` errors from Bedrock `amazon.titan-embed-text-v2:0` [\#1487](https://github.com/stargate/data-api/pull/1487) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Update display name and help text for Azure OpenAI parameters [\#1483](https://github.com/stargate/data-api/pull/1483) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Offline Mode Fix [\#1475](https://github.com/stargate/data-api/pull/1475) ([kathirsvn](https://github.com/kathirsvn))
+- Create table command implementation [\#1473](https://github.com/stargate/data-api/pull/1473) ([maheshrajamani](https://github.com/maheshrajamani))
+- Unit tests for operation attempt [\#1472](https://github.com/stargate/data-api/pull/1472) ([amorton](https://github.com/amorton))
+- Fix \#1450: add support for List, Set codecs [\#1471](https://github.com/stargate/data-api/pull/1471) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#1460, handle CQL nulls to  JSON gracefully [\#1464](https://github.com/stargate/data-api/pull/1464) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Offline mode fix [\#1456](https://github.com/stargate/data-api/pull/1456) ([kathirsvn](https://github.com/kathirsvn))
+- Refactor CQLSessionCache and CqlCredentials [\#1455](https://github.com/stargate/data-api/pull/1455) ([amorton](https://github.com/amorton))
+- Include error ID in the error response for new error format [\#1454](https://github.com/stargate/data-api/pull/1454) ([amorton](https://github.com/amorton))
+- Add CommandResultBuilder [\#1453](https://github.com/stargate/data-api/pull/1453) ([amorton](https://github.com/amorton))
+- Fix \#1404: failing addIndex with case-sensitive name [\#1452](https://github.com/stargate/data-api/pull/1452) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#1385: add date/time codec support [\#1449](https://github.com/stargate/data-api/pull/1449) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Table Filters for scalar column, ALLOW FILTERING, WARNING [\#1448](https://github.com/stargate/data-api/pull/1448) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- clean up stargate bridge related documentation [\#1444](https://github.com/stargate/data-api/pull/1444) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#1417: optimize/improve codec lookup handling [\#1443](https://github.com/stargate/data-api/pull/1443) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#1403: Add support for Blob types for insert [\#1435](https://github.com/stargate/data-api/pull/1435) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Refactor to add  OperationAttempt [\#1434](https://github.com/stargate/data-api/pull/1434) ([amorton](https://github.com/amorton))
+- Fixes \#1428: support "not a number" values for 'float', 'double' columns [\#1433](https://github.com/stargate/data-api/pull/1433) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#1429: add ITs to verify handling of "fractional ints" \(allowed/non-allowed\) [\#1432](https://github.com/stargate/data-api/pull/1432) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- add xml-format plugin [\#1430](https://github.com/stargate/data-api/pull/1430) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Start refactoring CollectionSchemaObject [\#1427](https://github.com/stargate/data-api/pull/1427) ([amorton](https://github.com/amorton))
 
 ## [v1.0.16](https://github.com/stargate/data-api/tree/v1.0.16) (2024-09-17)
 
@@ -73,7 +333,6 @@
 - Fixes \#1343: Upgrade Jackson to 2.17\(.2\) from 2.16\(.2\) [\#1344](https://github.com/stargate/data-api/pull/1344) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Second part of Quarkus 3.13 upgrade: convert ITs to use @WithTestResource [\#1342](https://github.com/stargate/data-api/pull/1342) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fix find command limit option for tables [\#1340](https://github.com/stargate/data-api/pull/1340) ([maheshrajamani](https://github.com/maheshrajamani))
-- Bumping version for next data-api release [\#1339](https://github.com/stargate/data-api/pull/1339) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Added support for addIndex and dropIndex commands [\#1322](https://github.com/stargate/data-api/pull/1322) ([maheshrajamani](https://github.com/maheshrajamani))
 - Update Data API to the latest Quarkus \(3.13.2\) [\#1253](https://github.com/stargate/data-api/pull/1253) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 
@@ -138,7 +397,6 @@
 - Fix Nvidia header problem [\#1280](https://github.com/stargate/data-api/pull/1280) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - fix stargate log level to info [\#1279](https://github.com/stargate/data-api/pull/1279) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
 - run unit and integration tests in parallel in CI [\#1278](https://github.com/stargate/data-api/pull/1278) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
-- Bumping version for next data-api release [\#1277](https://github.com/stargate/data-api/pull/1277) ([github-actions[bot]](https://github.com/apps/github-actions))
 - vectorization on demand [\#1258](https://github.com/stargate/data-api/pull/1258) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - CreateCollection: Check if a table follows Data API collection pattern [\#1249](https://github.com/stargate/data-api/pull/1249) ([Yuqi-Du](https://github.com/Yuqi-Du))
 
@@ -191,7 +449,6 @@
 - Fix \#1232: unify/rename 2 different ErrorCodes for similar thing [\#1233](https://github.com/stargate/data-api/pull/1233) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fixed the index usage metrics for IDFilter and InFilter [\#1227](https://github.com/stargate/data-api/pull/1227) ([maheshrajamani](https://github.com/maheshrajamani))
 - Update READMEs wrt running things locally [\#1225](https://github.com/stargate/data-api/pull/1225) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next data-api release [\#1222](https://github.com/stargate/data-api/pull/1222) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Support AWS Bedrock Embedding Provider [\#1219](https://github.com/stargate/data-api/pull/1219) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Refactoring to allow fixing \#1216 by making `JsonApiException` accept HTTP status code, propagate [\#1217](https://github.com/stargate/data-api/pull/1217) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Bridge-Removal - Detach the quarkus-common-module dependency \(OFF WE GO!\) [\#1191](https://github.com/stargate/data-api/pull/1191) ([Yuqi-Du](https://github.com/Yuqi-Du))
@@ -244,7 +501,6 @@
 - Update UpstageAI discontinued model [\#1183](https://github.com/stargate/data-api/pull/1183) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Fix modelName constraint for huggingFace Dedicated provider [\#1181](https://github.com/stargate/data-api/pull/1181) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - Fix \#1167: handle shredding failures properly for `insertMany` [\#1180](https://github.com/stargate/data-api/pull/1180) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next data-api release [\#1178](https://github.com/stargate/data-api/pull/1178) ([github-actions[bot]](https://github.com/apps/github-actions))
 - adding highlights to changelog [\#1174](https://github.com/stargate/data-api/pull/1174) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
 - Add 'returnDocumentResponses' for "insertMany" [\#1161](https://github.com/stargate/data-api/pull/1161) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 
@@ -272,7 +528,6 @@
 - Add namespace and collection mdc log as needed [\#1176](https://github.com/stargate/data-api/pull/1176) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - upstage displayName and huggingFaceDedicated modelName small fix [\#1175](https://github.com/stargate/data-api/pull/1175) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - Improve message for ErrorCode.SHRED\_DOC\_KEY\_NAME\_VIOLATION [\#1171](https://github.com/stargate/data-api/pull/1171) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next data-api release [\#1166](https://github.com/stargate/data-api/pull/1166) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Improve Error Messages from Embedding Providers [\#1159](https://github.com/stargate/data-api/pull/1159) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 
 ## [v1.0.11](https://github.com/stargate/data-api/tree/v1.0.11) (2024-06-13)
@@ -308,7 +563,6 @@
 - Fix \#1038: improve error message for unknown dollar-starting field [\#1156](https://github.com/stargate/data-api/pull/1156) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Align gateway request properties with Mutiny HTTP client and Defaults [\#1154](https://github.com/stargate/data-api/pull/1154) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Support `includeSortVector` option for `find` and `findOne` command [\#1151](https://github.com/stargate/data-api/pull/1151) ([maheshrajamani](https://github.com/maheshrajamani))
-- Bumping version for next data-api release [\#1150](https://github.com/stargate/data-api/pull/1150) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Docker compose scripts to use  dse 6.9 as backend [\#1147](https://github.com/stargate/data-api/pull/1147) ([maheshrajamani](https://github.com/maheshrajamani))
 - Fix null header exception from embedding provider's response [\#1139](https://github.com/stargate/data-api/pull/1139) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - \(for 1.0.11\) Fixes \#1032, re-does \#1005: exclude $vector and $vectorize from default projection [\#1037](https://github.com/stargate/data-api/pull/1037) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
@@ -337,7 +591,6 @@
 - Fix c2-3338, add more info on exception message [\#1133](https://github.com/stargate/data-api/pull/1133) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Run CI using HCD image  [\#1130](https://github.com/stargate/data-api/pull/1130) ([maheshrajamani](https://github.com/maheshrajamani))
 - Changes for using dse 6.9  for CI [\#1129](https://github.com/stargate/data-api/pull/1129) ([maheshrajamani](https://github.com/maheshrajamani))
-- Bumping version for next data-api release [\#1127](https://github.com/stargate/data-api/pull/1127) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.9](https://github.com/stargate/data-api/tree/v1.0.9) (2024-05-29)
 
@@ -377,7 +630,6 @@
 - Error out in findEmbeddingProviders when vectorize is disabled [\#1104](https://github.com/stargate/data-api/pull/1104) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Fix \#1102: move hyphen from UpstageAI model base name to suffix \(for better UI exp\) [\#1103](https://github.com/stargate/data-api/pull/1103) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Update config to accept environment variable [\#1101](https://github.com/stargate/data-api/pull/1101) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
-- Bumping version for next data-api release [\#1100](https://github.com/stargate/data-api/pull/1100) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Fix \#1098: prevent NPE for unknown embedding provider id [\#1099](https://github.com/stargate/data-api/pull/1099) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 
 ## [v1.0.8](https://github.com/stargate/data-api/tree/v1.0.8) (2024-05-16)
@@ -427,7 +679,6 @@
 - Add support for dimension range in createCollection [\#1070](https://github.com/stargate/data-api/pull/1070) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Add support for Mistral [\#1069](https://github.com/stargate/data-api/pull/1069) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - Fix \#1066: Implement VoyageAI embedding client [\#1068](https://github.com/stargate/data-api/pull/1068) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next data-api release [\#1067](https://github.com/stargate/data-api/pull/1067) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Update authentication verification in createCollection [\#1065](https://github.com/stargate/data-api/pull/1065) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Added validate credential service in proto [\#1064](https://github.com/stargate/data-api/pull/1064) ([maheshrajamani](https://github.com/maheshrajamani))
 - Remove histograms from command processor metrics [\#1029](https://github.com/stargate/data-api/pull/1029) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
@@ -474,7 +725,6 @@
 - Change CI to always runs for pull request, not just for specified changes [\#1046](https://github.com/stargate/data-api/pull/1046) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fix \#1042: increase `DEFAULT\_MAX\_DOCUMENT\_INSERT\_COUNT` to 100 \(from 20\) [\#1043](https://github.com/stargate/data-api/pull/1043) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fixed change log for v1.0.6 manually. [\#1040](https://github.com/stargate/data-api/pull/1040) ([kathirsvn](https://github.com/kathirsvn))
-- Bumping version for next data-api release [\#1039](https://github.com/stargate/data-api/pull/1039) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Publish Data API jar to internal repo in offline mode [\#1025](https://github.com/stargate/data-api/pull/1025) ([kathirsvn](https://github.com/kathirsvn))
 - Data API as library - Offline Mode [\#905](https://github.com/stargate/data-api/pull/905) ([kathirsvn](https://github.com/kathirsvn))
 
@@ -515,7 +765,6 @@
 - Username/Password credential based token format [\#1023](https://github.com/stargate/data-api/pull/1023) ([maheshrajamani](https://github.com/maheshrajamani))
 - Quarkus Common Removal: Data API queryBuilder [\#1022](https://github.com/stargate/data-api/pull/1022) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - Retry on truncate error `Failed to interrupt compactions` [\#1021](https://github.com/stargate/data-api/pull/1021) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
-- Bumping version for next data-api release [\#1019](https://github.com/stargate/data-api/pull/1019) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Add support for default exclusion of $vector and $vectorize [\#1016](https://github.com/stargate/data-api/pull/1016) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Refactor `ThrowableToErrorMapper` class [\#1013](https://github.com/stargate/data-api/pull/1013) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Changes for dse-7 integration [\#1012](https://github.com/stargate/data-api/pull/1012) ([maheshrajamani](https://github.com/maheshrajamani))
@@ -548,7 +797,6 @@
 - Add support for "star" inclusion/exclusion \(include all/exclude all\) [\#1008](https://github.com/stargate/data-api/pull/1008) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Refactor DocumentProjector by splitting out IndexingProjector [\#1007](https://github.com/stargate/data-api/pull/1007) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Deny all improvement to not create super shredder indexes [\#1004](https://github.com/stargate/data-api/pull/1004) ([maheshrajamani](https://github.com/maheshrajamani))
-- Bumping version for next data-api release [\#1003](https://github.com/stargate/data-api/pull/1003) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.4](https://github.com/stargate/data-api/tree/v1.0.4) (2024-03-27)
 
@@ -619,7 +867,6 @@
 - Fixes \#895: truncate reported value that fails constraint violation if too long [\#899](https://github.com/stargate/jsonapi/pull/899) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fixes \#893: add IT for InsertMany failure due to doc count exceeding limit [\#894](https://github.com/stargate/jsonapi/pull/894) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - remove some bridge related dependencies [\#890](https://github.com/stargate/jsonapi/pull/890) ([Yuqi-Du](https://github.com/Yuqi-Du))
-- Bumping version for next jsonapi release [\#886](https://github.com/stargate/jsonapi/pull/886) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Rename jsonapi -\> dataapi [\#864](https://github.com/stargate/jsonapi/pull/864) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - Build doc json size metrics and doc counter metrics [\#829](https://github.com/stargate/jsonapi/pull/829) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 
@@ -658,7 +905,6 @@
 - Bug fix for array size filter for `0` length [\#863](https://github.com/stargate/jsonapi/pull/863) ([maheshrajamani](https://github.com/maheshrajamani))
 - 05-Feb-2024 backup of Postman Data API collection [\#861](https://github.com/stargate/jsonapi/pull/861) ([johnsmartco](https://github.com/johnsmartco))
 - removed merge conflict in CONFIGURATION.md [\#859](https://github.com/stargate/jsonapi/pull/859) ([shubanker](https://github.com/shubanker))
-- Bumping version for next jsonapi release [\#858](https://github.com/stargate/jsonapi/pull/858) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Update pom.xml version for 1.0.0 \(final\) release [\#857](https://github.com/stargate/jsonapi/pull/857) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Build Docker image with profiling tools [\#855](https://github.com/stargate/jsonapi/pull/855) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
 - \(incremental\) Catch and re-throw Java CQL Driver fail exceptions as JsonApiException [\#851](https://github.com/stargate/jsonapi/pull/851) ([Yuqi-Du](https://github.com/Yuqi-Du))
@@ -701,7 +947,6 @@
 - Refactor exception mappers into single package \(instead of split\) [\#842](https://github.com/stargate/jsonapi/pull/842) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - increase max doc length limit: 1M -\> 4M [\#841](https://github.com/stargate/jsonapi/pull/841) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - Fixes \#822: only limit array size for indexed fields \(ignore non-indexed\) [\#838](https://github.com/stargate/jsonapi/pull/838) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next jsonapi release [\#837](https://github.com/stargate/jsonapi/pull/837) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Fix \#823: increase max number length limit to 100 \(from 50\) [\#826](https://github.com/stargate/jsonapi/pull/826) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 
 ## [v1.0.0-RC-2](https://github.com/stargate/jsonapi/tree/v1.0.0-RC-2) (2024-01-25)
@@ -725,7 +970,6 @@
 - error out with invalid option when createCollection [\#832](https://github.com/stargate/jsonapi/pull/832) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - improve error msg, too many indexes and can not create a collection [\#831](https://github.com/stargate/jsonapi/pull/831) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - Fix \#818: increase max doc depth allowed from 8 to 16 [\#825](https://github.com/stargate/jsonapi/pull/825) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next jsonapi release [\#824](https://github.com/stargate/jsonapi/pull/824) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.0-RC-1](https://github.com/stargate/jsonapi/tree/v1.0.0-RC-1) (2024-01-22)
 
@@ -764,7 +1008,6 @@
 - Fixes \#797: update document limits in CONFIGURATION.md [\#799](https://github.com/stargate/jsonapi/pull/799) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Command level logging changes [\#794](https://github.com/stargate/jsonapi/pull/794) ([kathirsvn](https://github.com/kathirsvn))
 - Fixes \#767: Second part of "no-index" changes: allow large non-indexed String values, implicit allow for "$vector" [\#792](https://github.com/stargate/jsonapi/pull/792) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next jsonapi release [\#789](https://github.com/stargate/jsonapi/pull/789) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Error out when using non indexed fields [\#781](https://github.com/stargate/jsonapi/pull/781) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - `$not` operator [\#760](https://github.com/stargate/jsonapi/pull/760) ([maheshrajamani](https://github.com/maheshrajamani))
 
@@ -804,7 +1047,6 @@
 - Changes for indexing option - create collection and cache [\#771](https://github.com/stargate/jsonapi/pull/771) ([maheshrajamani](https://github.com/maheshrajamani))
 - Fixes \#745: increase max array length limit to 1,000 \(from 100\) [\#770](https://github.com/stargate/jsonapi/pull/770) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fix \#744: increase maximum property name length \(48-\>100\), add new path limit \(250\) [\#762](https://github.com/stargate/jsonapi/pull/762) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next jsonapi release [\#758](https://github.com/stargate/jsonapi/pull/758) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.0-BETA-6](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-6) (2024-01-02)
 
@@ -861,7 +1103,6 @@
 - Change Stargate Coordinator Docker tag to use to make IT runs on IDE\(A\) work [\#714](https://github.com/stargate/jsonapi/pull/714) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Change the consistency level for vector search [\#706](https://github.com/stargate/jsonapi/pull/706) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Range query support  [\#705](https://github.com/stargate/jsonapi/pull/705) ([maheshrajamani](https://github.com/maheshrajamani))
-- Bumping version for next jsonapi release [\#704](https://github.com/stargate/jsonapi/pull/704) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Filter and sort clause field name validation [\#697](https://github.com/stargate/jsonapi/pull/697) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Fix \#686: add ITs to verify Max-String-Value-Length constaints [\#687](https://github.com/stargate/jsonapi/pull/687) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 
@@ -905,7 +1146,6 @@
 - Unit test for JsonapiTableMatcher and CqlColumnMatcher [\#663](https://github.com/stargate/jsonapi/pull/663) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Add manually exported JSON API Postman collections from Stargate-Cass… [\#660](https://github.com/stargate/jsonapi/pull/660) ([johnsmartco](https://github.com/johnsmartco))
 - Add truncate/empty collection support [\#658](https://github.com/stargate/jsonapi/pull/658) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
-- Bumping version for next jsonapi release [\#657](https://github.com/stargate/jsonapi/pull/657) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Fix \#639: add testing of CreateCollection with mixed-case name, fix quoting for FindCollections [\#654](https://github.com/stargate/jsonapi/pull/654) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Update Jackson to 2.16.0 \(from 2.15.3\) [\#651](https://github.com/stargate/jsonapi/pull/651) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 
@@ -943,7 +1183,6 @@
 - Fix \#446: expose StreamConstaintsException as ApiException [\#619](https://github.com/stargate/jsonapi/pull/619) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Use Stargate v2.1.0-BETA-3 [\#618](https://github.com/stargate/jsonapi/pull/618) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Fix \#596: renaming "pagingState"/"nextPagingState" as "pageState"/"nextPageState" [\#614](https://github.com/stargate/jsonapi/pull/614) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next jsonapi release [\#613](https://github.com/stargate/jsonapi/pull/613) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Native cql changes [\#606](https://github.com/stargate/jsonapi/pull/606) ([maheshrajamani](https://github.com/maheshrajamani))
 - add more in createCollection [\#605](https://github.com/stargate/jsonapi/pull/605) ([johnsmartco](https://github.com/johnsmartco))
 
@@ -980,7 +1219,6 @@
 - Verify max 5 collections creation \(per namespace\) [\#595](https://github.com/stargate/jsonapi/pull/595) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Update dse-next reference for ITs to latest one as well [\#592](https://github.com/stargate/jsonapi/pull/592) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - provide additional detail on swagger docs for insertMany [\#591](https://github.com/stargate/jsonapi/pull/591) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
-- Bumping version for next jsonapi release [\#590](https://github.com/stargate/jsonapi/pull/590) ([github-actions[bot]](https://github.com/apps/github-actions))
 - expose ExceptionClass only in debug mode [\#584](https://github.com/stargate/jsonapi/pull/584) ([Yuqi-Du](https://github.com/Yuqi-Du))
 
 ## [v1.0.0-BETA-2](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-2) (2023-10-24)
@@ -1033,7 +1271,6 @@
 - update base image to smaller runtime version [\#553](https://github.com/stargate/jsonapi/pull/553) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
 - Use Stargate v2.1.0-BETA-1 [\#551](https://github.com/stargate/jsonapi/pull/551) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Update Docker base images to address Python vuln/CVE [\#549](https://github.com/stargate/jsonapi/pull/549) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next jsonapi release [\#544](https://github.com/stargate/jsonapi/pull/544) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.0-BETA-1](https://github.com/stargate/jsonapi/tree/v1.0.0-BETA-1) (2023-09-27)
 
@@ -1071,7 +1308,6 @@
 - Fixes \#516: add validation to fail on attempts to filter on $vector \(except with $exists\) [\#519](https://github.com/stargate/jsonapi/pull/519) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - fix NPE when concurrent delete [\#518](https://github.com/stargate/jsonapi/pull/518) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - add fallout configuration and fallout nosqlbench workload [\#515](https://github.com/stargate/jsonapi/pull/515) ([Yuqi-Du](https://github.com/Yuqi-Du))
-- Bumping version for next jsonapi release [\#514](https://github.com/stargate/jsonapi/pull/514) ([github-actions[bot]](https://github.com/apps/github-actions))
 - add nb test cases for vector search jsonapi [\#512](https://github.com/stargate/jsonapi/pull/512) ([Yuqi-Du](https://github.com/Yuqi-Du))
 
 ## [v1.0.0-ALPHA-14](https://github.com/stargate/jsonapi/tree/v1.0.0-ALPHA-14) (2023-08-21)
@@ -1090,7 +1326,6 @@
 - Use Stargate v2.1.0-ALPHA-7 [\#513](https://github.com/stargate/jsonapi/pull/513) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Swagger vector search [\#511](https://github.com/stargate/jsonapi/pull/511) ([maheshrajamani](https://github.com/maheshrajamani))
 - User friendly unsupported feature notification [\#510](https://github.com/stargate/jsonapi/pull/510) ([Yuqi-Du](https://github.com/Yuqi-Du))
-- Bumping version for next jsonapi release [\#507](https://github.com/stargate/jsonapi/pull/507) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Create integration test for vector unmatched size\(insert/find\) [\#503](https://github.com/stargate/jsonapi/pull/503) ([Yuqi-Du](https://github.com/Yuqi-Du))
 
 ## [v1.0.0-ALPHA-13](https://github.com/stargate/jsonapi/tree/v1.0.0-ALPHA-13) (2023-08-16)
@@ -1104,7 +1339,6 @@
 **Merged pull requests:**
 
 - Merge array\_equals and sub\_doc\_equals field into query\_text\_value [\#506](https://github.com/stargate/jsonapi/pull/506) ([maheshrajamani](https://github.com/maheshrajamani))
-- Bumping version for next jsonapi release [\#501](https://github.com/stargate/jsonapi/pull/501) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.0-ALPHA-12](https://github.com/stargate/jsonapi/tree/v1.0.0-ALPHA-12) (2023-08-10)
 

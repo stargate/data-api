@@ -1,7 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
+import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+
 /** A Collection or Table the command works on */
-public abstract class SchemaObject {
+public abstract class SchemaObject implements PrettyPrintable {
 
   // Because a lot of code needs to make decisions based on the type of the SchemaObject use an
   // enum and we also have generics for strong type checking
@@ -29,8 +32,8 @@ public abstract class SchemaObject {
   }
 
   /**
-   * Subclasses must always return an instance of VectorConfig, if there is no vector config they
-   * should return VectorConfig.notEnabledVectorConfig()
+   * Subclasses must always return VectorConfig, if there is no vector config they should return
+   * VectorConfig.notEnabledVectorConfig().
    *
    * @return
    */
@@ -42,4 +45,19 @@ public abstract class SchemaObject {
    * @return non null, IndexUsage instance
    */
   public abstract IndexUsage newIndexUsage();
+
+  @Override
+  public String toString() {
+    return toString(false);
+  }
+
+  @Override
+  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+    return prettyToStringBuilder
+        .append("type", type)
+        .append("name.keyspace", name.keyspace())
+        .append("name.table", name.table())
+        .append("vectorConfig", vectorConfig())
+        .append("indexUsage", newIndexUsage());
+  }
 }

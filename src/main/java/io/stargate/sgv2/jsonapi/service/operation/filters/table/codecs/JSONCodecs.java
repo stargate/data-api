@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.UUID;
 
 /**
  * Defines the {@link JSONCodec} instances that are added to the {@link
@@ -56,6 +57,14 @@ public abstract class JSONCodecs {
       new JSONCodec<>(
           GenericType.LONG,
           DataTypes.BIGINT,
+          JSONCodec.ToCQL.unsafeIdentity(),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  // we can only read counters from CQL, do not support writing them
+  public static final JSONCodec<Long, Long> COUNTER_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.COUNTER,
           JSONCodec.ToCQL.unsafeIdentity(),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
@@ -243,9 +252,13 @@ public abstract class JSONCodecs {
           GenericType.STRING,
           DataTypes.DURATION,
           // CqlDuration.from() accepts 2 formats; ISO-8601 ("P1H30M") and "1h30m" (Cassandra
-          // compact) format
+          // compact) format. Note: negative values (preceding "-") also accepted
           JSONCodec.ToCQL.safeFromString(CqlDuration::from),
-          JSONCodec.ToJSON.toJSONUsingToString());
+          // But since we must produce ISO-8601, need custom JSON serialization
+          (objectMapper, fromCQLType, value) ->
+              objectMapper
+                  .getNodeFactory()
+                  .textNode(CqlDurationConverter.toISO8601Duration(value)));
 
   public static final JSONCodec<String, LocalTime> TIME_FROM_STRING =
       new JSONCodec<>(
@@ -259,6 +272,13 @@ public abstract class JSONCodecs {
           GenericType.STRING,
           DataTypes.TIMESTAMP,
           JSONCodec.ToCQL.safeFromString(Instant::parse),
+          JSONCodec.ToJSON.toJSONUsingToString());
+
+  public static final JSONCodec<EJSONWrapper, Instant> TIMESTAMP_FROM_EJSON =
+      new JSONCodec<>(
+          GenericType.of(EJSONWrapper.class),
+          DataTypes.TIMESTAMP,
+          JSONCodec.ToCQL::instantFromEJSON,
           JSONCodec.ToJSON.toJSONUsingToString());
 
   // Text Codecs
@@ -275,4 +295,31 @@ public abstract class JSONCodecs {
           DataTypes.TEXT,
           JSONCodec.ToCQL.unsafeIdentity(),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::textNode));
+
+  // UUID Codecs
+
+  public static final JSONCodec<String, java.util.UUID> UUID_FROM_STRING =
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.UUID,
+          JSONCodec.ToCQL.safeFromString(UUID::fromString),
+          JSONCodec.ToJSON.toJSONUsingToString());
+
+  // While not allowed to be created as column type, we do support reading/writing
+  // of columns of this type in existing tables.
+  public static final JSONCodec<String, java.util.UUID> TIMEUUID_FROM_STRING =
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.TIMEUUID,
+          JSONCodec.ToCQL.safeFromString(UUID::fromString),
+          JSONCodec.ToJSON.toJSONUsingToString());
+
+  // Misc other Codecs
+  public static final JSONCodec<String, java.net.InetAddress> INET_FROM_STRING =
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.INET,
+          JSONCodec.ToCQL.safeFromString(JSONCodec.ToCQL::inetAddressFromString),
+          (objectMapper, fromCQLType, value) ->
+              objectMapper.getNodeFactory().textNode(value.getHostAddress()));
 }

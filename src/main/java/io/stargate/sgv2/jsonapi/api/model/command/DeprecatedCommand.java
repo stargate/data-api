@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
-import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.WarningException;
 
 /**
  * All deprecated commands will implement this interface. It has default deprecation message
@@ -14,18 +15,12 @@ public interface DeprecatedCommand extends Command {
    *
    * @return commandName enum
    */
-  Command.CommandName useCommandName();
+  CommandName useCommandName();
 
-  /**
-   * A warning message will be added to commandResult when deprecated command is used. Template:
-   * This ${commandName} has been deprecated and will be removed in future releases, use
-   * ${useCommandName} instead.
-   *
-   * @return String
-   */
-  default String getDeprecationMessage() {
-    return String.format(
-        "This %s has been deprecated and will be removed in future releases, use %s instead.",
-        this.commandName().getApiName(), useCommandName().getApiName());
+  /** A warning message will be added to commandResult when deprecated command is used. */
+  default APIException getDeprecationWarning() {
+    return WarningException.Code.DEPRECATED_COMMAND.get(
+        "deprecatedCommand", this.commandName().getApiName(),
+        "replacementCommand", useCommandName().getApiName());
   }
 }

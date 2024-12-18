@@ -19,11 +19,21 @@ public class RequestException extends APIException {
   }
 
   public enum Scope implements ErrorScope {
-    DOCUMENT,
     /** See {@link DocumentException} */
-    FILTER;
-
+    DOCUMENT,
     /** See {@link FilterException} */
+    FILTER,
+    /** See {@link ProjectionException} */
+    PROJECTION,
+    /** See {@link SchemaException} */
+    SCHEMA,
+    /** See {@link SortException} */
+    SORT,
+    /** See {@link UpdateException} */
+    UPDATE,
+    /** See {@link WarningException} */
+    WARNING;
+
     @Override
     public String scope() {
       return name();
@@ -31,8 +41,9 @@ public class RequestException extends APIException {
   }
 
   public enum Code implements ErrorCode<RequestException> {
-    // TODO: remove fake error code, just here so it compiles
-    FAKE_CODE;
+    UNSUPPORTED_TABLE_COMMAND,
+    UNSUPPORTED_COLLECTION_COMMAND,
+    ;
 
     private final ErrorTemplate<RequestException> template;
 

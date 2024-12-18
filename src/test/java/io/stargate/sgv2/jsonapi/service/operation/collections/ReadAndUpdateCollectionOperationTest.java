@@ -23,7 +23,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
@@ -32,6 +34,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollecti
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
@@ -117,7 +120,14 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 SCHEMA_OBJECT_NAME,
                 null,
                 IdConfig.defaultIdConfig(),
-                new VectorConfig(true, -1, SimilarityFunction.COSINE, null),
+                VectorConfig.fromColumnDefinitions(
+                    List.of(
+                        new VectorColumnDefinition(
+                            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                            -1,
+                            SimilarityFunction.COSINE,
+                            EmbeddingSourceModel.OTHER,
+                            null))),
                 null),
             null,
             "testCommand",
@@ -209,7 +219,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addDBFilter(
+      implicitAnd.addFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
@@ -282,7 +292,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -315,7 +325,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addDBFilter(
+      implicitAnd.addFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       CommandContext commandContext = createCommandContextWithCommandName("ReadNoWriteCommand");
@@ -367,7 +377,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
       assertThat(result.data().getResponseDocuments()).hasSize(1);
 
       // verify metrics
@@ -610,7 +620,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addDBFilter(
+      implicitAnd.addFilter(
           new TextCollectionFilter("filter_me", MapCollectionFilter.Operator.EQ, "happy"));
 
       CommandContext commandContext = createCommandContextWithCommandName("ReadAndWriteCommand");
@@ -666,7 +676,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
 
       // verify metrics
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
@@ -820,7 +830,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addDBFilter(
+      implicitAnd.addFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
@@ -894,7 +904,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -927,7 +937,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addDBFilter(
+      implicitAnd.addFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
@@ -994,7 +1004,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .containsEntry(CommandStatus.MATCHED_COUNT, 0)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0)
           .containsEntry(CommandStatus.UPSERTED_ID, new DocumentId.StringId("doc1"));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -1102,7 +1112,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addDBFilter(
+      implicitAnd.addFilter(
           new TextCollectionFilter("filter_me", MapCollectionFilter.Operator.EQ, "happy"));
 
       FindCollectionOperation findCollectionOperation =
@@ -1160,7 +1170,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -1268,7 +1278,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addDBFilter(
+      implicitAnd.addFilter(
           new TextCollectionFilter("filter_me", MapCollectionFilter.Operator.EQ, "happy"));
 
       FindCollectionOperation findCollectionOperation =
@@ -1321,7 +1331,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -1347,7 +1357,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addDBFilter(
+      implicitAnd.addFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
@@ -1418,7 +1428,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .containsEntry(CommandStatus.MATCHED_COUNT, 0)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0)
           .containsEntry(CommandStatus.UPSERTED_ID, new DocumentId.StringId("doc1"));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -1443,7 +1453,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addDBFilter(
+      implicitAnd.addFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
@@ -1491,7 +1501,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 0)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
   }
 
@@ -1590,7 +1600,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addDBFilter(
+      implicitAnd.addFilter(
           new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
 
       FindCollectionOperation findCollectionOperation =
@@ -1642,7 +1652,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 2)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 2);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -1688,7 +1698,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addDBFilter(
+      implicitAnd.addFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
@@ -1739,7 +1749,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .containsEntry(CommandStatus.MATCHED_COUNT, 0)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0)
           .containsEntry(CommandStatus.UPSERTED_ID, new DocumentId.StringId("doc1"));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -1765,7 +1775,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addDBFilter(
+      implicitAnd.addFilter(
           new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
 
       FindCollectionOperation findCollectionOperation =
@@ -1814,7 +1824,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 0)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
   }
 }

@@ -4,11 +4,18 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
-import com.google.common.base.Preconditions;
-import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
+import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.core.type.ListType;
+import com.datastax.oss.driver.api.core.type.MapType;
+import com.datastax.oss.driver.api.core.type.SetType;
+import com.datastax.oss.driver.api.core.type.VectorType;
+import com.datastax.oss.driver.api.core.type.reflect.GenericType;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
+import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +35,18 @@ import java.util.Objects;
  * for the identity mapping.
  */
 public class JSONCodecRegistry {
+  private static final GenericType<Object> GENERIC_TYPE_OBJECT = GenericType.of(Object.class);
+
+  /**
+   * Dummy codec used to convert a JSON null value in CQL. Same "codec" usable for all CQL types,
+   * since null CQL driver needs is just plain Java null.
+   */
+  private static final JSONCodec<Object, DataType> TO_CQL_NULL_CODEC =
+      new JSONCodec<>(
+          GENERIC_TYPE_OBJECT,
+          /* There's no type for Object so just use something */ DataTypes.BOOLEAN,
+          (cqlType, value) -> null,
+          null);
 
   private final Map<DataType, List<JSONCodec<?, ?>>> codecsByCQLType;
 
@@ -61,17 +80,78 @@ public class JSONCodecRegistry {
       TableMetadata table, CqlIdentifier column, Object value)
       throws UnknownColumnException, MissingJSONCodecException, ToCQLCodecException {
 
-    Preconditions.checkNotNull(table, "table must not be null");
-    Preconditions.checkNotNull(column, "column must not be null");
+    Objects.requireNonNull(table, "table must not be null");
+    Objects.requireNonNull(column, "column must not be null");
 
     var columnMetadata =
         table.getColumn(column).orElseThrow(() -> new UnknownColumnException(table, column));
 
+    // Next, simplify later code by handling nulls directly here (but after column lookup)
+    if (value == null) {
+      return (JSONCodec<JavaT, CqlT>) TO_CQL_NULL_CODEC;
+    }
+
     // First find candidates for CQL target type in question (if any)
-    List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(columnMetadata.getType());
-    if (candidates == null) { // No codec for this CQL type
-      throw new MissingJSONCodecException(
-          table, columnMetadata, (value == null) ? null : value.getClass(), value);
+    final DataType columnType = columnMetadata.getType();
+    List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(columnType);
+    if (candidates == null) { // No scalar codec for this CQL type
+      // But maybe structured type?
+      if (columnType instanceof ListType lt) {
+        List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(lt.getElementType());
+        if (valueCodecCandidates != null) {
+          // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
+          if (!(value instanceof Collection<?>)) {
+            throw new ToCQLCodecException(value, columnType, "no codec matching value type");
+          }
+          return (JSONCodec<JavaT, CqlT>)
+              CollectionCodecs.buildToCqlListCodec(valueCodecCandidates, lt.getElementType());
+        }
+
+        // fall through
+      } else if (columnType instanceof SetType st) {
+        List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(st.getElementType());
+        if (valueCodecCandidates != null) {
+          // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
+          if (!(value instanceof Collection<?>)) {
+            throw new ToCQLCodecException(value, columnType, "no codec matching value type");
+          }
+          return (JSONCodec<JavaT, CqlT>)
+              CollectionCodecs.buildToCqlSetCodec(valueCodecCandidates, st.getElementType());
+        }
+        // fall through
+      } else if (columnType instanceof MapType mt) {
+        List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(mt.getValueType());
+        if (valueCodecCandidates != null) {
+          // Must check key type: only text/ascii supported
+          if (!isSupportedMapKeyType(mt.getKeyType())) {
+            throw new ToCQLCodecException(value, columnType, "unsupported map key type");
+          }
+
+          // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
+          if (!(value instanceof Map<?, ?>)) {
+            throw new ToCQLCodecException(value, columnType, "no codec matching value type");
+          }
+          return (JSONCodec<JavaT, CqlT>)
+              MapCodecs.buildToCqlMapCodec(
+                  valueCodecCandidates, mt.getKeyType(), mt.getValueType());
+        }
+        // fall through
+      } else if (columnType instanceof VectorType vt) {
+        // Only Float<Vector> supported for now
+        if (!vt.getElementType().equals(DataTypes.FLOAT)) {
+          throw new ToCQLCodecException(value, columnType, "only Vector<Float> supported");
+        }
+        if (value instanceof Collection<?>) {
+          return VectorCodecs.arrayToCQLFloatVectorCodec(vt);
+        }
+        if (value instanceof EJSONWrapper) {
+          return VectorCodecs.binaryToCQLFloatVectorCodec(vt);
+        }
+
+        throw new ToCQLCodecException(value, columnType, "no codec matching value type");
+      }
+
+      throw new MissingJSONCodecException(table, columnMetadata, value.getClass(), value);
     }
 
     // And if any found try to match with the incoming Java value
@@ -84,8 +164,7 @@ public class JSONCodecRegistry {
     if (match == null) {
       // Different exception for this case: CQL type supported but not from given Java type
       // (f.ex, CQL Boolean from Java/JSON number)
-      throw new ToCQLCodecException(
-          value, columnMetadata.getType(), "no codec matching value type");
+      throw new ToCQLCodecException(value, columnType, "no codec matching value type");
     }
     return match;
   }
@@ -94,8 +173,8 @@ public class JSONCodecRegistry {
       TableMetadata table, CqlIdentifier columnId)
       throws UnknownColumnException, MissingJSONCodecException {
 
-    Preconditions.checkNotNull(table, "table must not be null");
-    Preconditions.checkNotNull(columnId, "column must not be null");
+    Objects.requireNonNull(table, "table must not be null");
+    Objects.requireNonNull(columnId, "column must not be null");
 
     var columnMetadata =
         table.getColumn(columnId).orElseThrow(() -> new UnknownColumnException(table, columnId));
@@ -120,6 +199,53 @@ public class JSONCodecRegistry {
    */
   public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(DataType fromCQLType) {
     List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(fromCQLType);
-    return (candidates == null) ? null : JSONCodec.unchecked(candidates.get(0));
+    if (candidates
+        != null) { // Scalar type codecs found: use first one (all have same to-json handling)
+      return JSONCodec.unchecked(candidates.get(0));
+    }
+    // No? Maybe structured type?
+    if (fromCQLType instanceof ListType lt) {
+      List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(lt.getElementType());
+      // Can choose any one of codecs (since to-JSON is same for all); but must get one
+      if (valueCodecCandidates == null) {
+        return null; // so caller reports problem
+      }
+      return (JSONCodec<JavaT, CqlT>)
+          CollectionCodecs.buildToJsonListCodec(valueCodecCandidates.get(0));
+    }
+    if (fromCQLType instanceof SetType st) {
+      List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(st.getElementType());
+      // Can choose any one of codecs (since to-JSON is same for all); but must get one
+      if ((valueCodecCandidates == null)) {
+        return null; // so caller reports problem
+      }
+      return (JSONCodec<JavaT, CqlT>)
+          CollectionCodecs.buildToJsonSetCodec(valueCodecCandidates.get(0));
+    }
+    if (fromCQLType instanceof MapType mt) {
+      final DataType keyType = mt.getKeyType();
+      if (!isSupportedMapKeyType(keyType)) {
+        return null; // so caller reports problem
+      }
+      List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(mt.getValueType());
+      if (valueCodecCandidates == null) {
+        return null; // so caller reports problem
+      }
+      return (JSONCodec<JavaT, CqlT>) MapCodecs.buildToJsonMapCodec(valueCodecCandidates.get(0));
+    }
+
+    if (fromCQLType instanceof VectorType vt) {
+      // Only Float<Vector> supported for now
+      if (vt.getElementType().equals(DataTypes.FLOAT)) {
+        return VectorCodecs.toJSONFloatVectorCodec(vt);
+      }
+      // fall through
+    }
+
+    return null;
+  }
+
+  private boolean isSupportedMapKeyType(DataType keyType) {
+    return keyType.equals(DataTypes.TEXT) || keyType.equals(DataTypes.ASCII);
   }
 }

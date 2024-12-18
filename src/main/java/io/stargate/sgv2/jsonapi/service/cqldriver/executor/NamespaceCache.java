@@ -40,11 +40,13 @@ public class NamespaceCache {
   }
 
   protected Uni<SchemaObject> getSchemaObject(
-      DataApiRequestInfo dataApiRequestInfo, String collectionName) {
+      DataApiRequestInfo dataApiRequestInfo, String collectionName, boolean forceRefresh) {
 
     // TODO: why is this not using the loader pattern ?
-    SchemaObject schemaObject = schemaObjectCache.getIfPresent(collectionName);
-
+    SchemaObject schemaObject = null;
+    if (!forceRefresh) {
+      schemaObject = schemaObjectCache.getIfPresent(collectionName);
+    }
     if (null != schemaObject) {
       return Uni.createFrom().item(schemaObject);
     } else {
@@ -103,8 +105,7 @@ public class NamespaceCache {
                     optionalTable.get(), objectMapper);
               }
 
-              // 04-Sep-2024, tatu: Used to check that API Tables enabled; no longer checked here
-              return new TableSchemaObject(table);
+              return TableSchemaObject.from(table, objectMapper);
             });
   }
 

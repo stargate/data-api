@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
@@ -56,6 +58,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(0));
     }
 
@@ -79,6 +82,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // then find
@@ -95,6 +99,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(greaterThanOrEqualTo(1)))
           .body("status.collections", hasItem("collection1"));
     }
@@ -129,6 +134,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       String expected1 =
@@ -146,7 +152,8 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                   "options": {
                     "vector": {
                       "dimension": 5,
-                      "metric": "cosine"
+                      "metric": "cosine",
+                      "sourceModel": "other"
                     },"indexing": {
                       "deny" : ["comment"]
                     }
@@ -174,6 +181,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(2))
           .body(
               "status.collections",
@@ -198,6 +206,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // then find
@@ -214,6 +223,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(greaterThanOrEqualTo(1)))
           .body("status.collections", hasItem("TableName"));
     }
@@ -241,6 +251,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // then find
@@ -260,6 +271,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(KeyspaceResource.BASE_PATH, namespace)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(0));
 
       // cleanup
@@ -281,6 +293,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
     }
 
@@ -304,6 +317,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(KeyspaceResource.BASE_PATH, "should_not_be_there")
           .then()
           .statusCode(200)
+          .body("$", responseIsError())
           .body("errors[0].errorCode", is("KEYSPACE_DOES_NOT_EXIST"))
           .body(
               "errors[0].message",
@@ -339,6 +353,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       json =
@@ -361,7 +376,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
               """;
       String expected3 =
           """
-      {"name":"collection2", "options": {"vector": {"dimension":5, "metric":"cosine"}, "indexing":{"deny":["comment"]}}}
+      {"name":"collection2", "options": {"vector": {"dimension":5, "metric":"cosine", "sourceModel": "other"}, "indexing":{"deny":["comment"]}}}
       """;
       String expected4 =
           """
@@ -386,6 +401,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(4))
           .body(
               "status.collections",

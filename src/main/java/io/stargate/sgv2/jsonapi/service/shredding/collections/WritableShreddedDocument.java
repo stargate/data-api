@@ -5,18 +5,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * The fully shredded document, everything we need to write the document. Override of hashcode and
@@ -302,6 +294,18 @@ public record WritableShreddedDocument(
         arrayVals[i] = element.floatValue();
       }
       queryVectorValues = arrayVals;
+    }
+
+    @Override
+    public void shredVector(JsonPath path, byte[] binaryVector) {
+      // vector data is added only to queryVectorValues and exists keys index
+      addKey(path);
+
+      try {
+        queryVectorValues = CqlVectorUtil.bytesToFloats(binaryVector);
+      } catch (IllegalArgumentException e) {
+        throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(e.getMessage());
+      }
     }
 
     public void shredExtendedType(JsonPath path, JsonExtensionType type, Object extensionValue) {
