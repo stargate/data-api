@@ -16,7 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * @param options
  */
 @Schema(description = "Command that drops an index for a column.")
-@JsonTypeName("dropIndex")
+@JsonTypeName(CommandName.Names.DROP_INDEX)
 public record DropIndexCommand(
     @NotNull @Schema(description = "Name for the index to be dropped.") String name,
     @Nullable @Schema(description = "Dropping index command option.", type = SchemaType.OBJECT)

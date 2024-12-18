@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that deletes a Keyspace.")
-@JsonTypeName("dropKeyspace")
+@JsonTypeName(CommandName.Names.DROP_KEYSPACE)
 public record DropKeyspaceCommand(
     @NotNull
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
