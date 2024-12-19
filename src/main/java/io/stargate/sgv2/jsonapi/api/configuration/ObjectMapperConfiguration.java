@@ -62,7 +62,7 @@ public class ObjectMapperConfiguration {
             .build();
     // For now, just one custom serializer to register
     SimpleModule cqlSerializersModule =
-        new SimpleModule("CqlSerializersModule").addSerializer(new CqlVectorSerializer());
+        new SimpleModule("CqlVectorSerializerModule").addSerializer(new CqlVectorSerializer());
     JsonMapper mapper =
         JsonMapper.builder(jsonFactory)
             // important for retaining number accuracy!
