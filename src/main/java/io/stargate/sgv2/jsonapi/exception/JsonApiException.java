@@ -135,7 +135,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
       message = errorCode.getMessage();
     }
 
-    var builder = CommandResult.statusOnlyBuilder(false, false);
+    var builder = CommandResult.statusOnlyBuilder(false);
 
     // construct and return
     builder.addCommandResultError(getCommandResultError(message, httpStatus));
@@ -163,26 +163,21 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     }
     DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
     final boolean debugEnabled = debugModeConfig.enabled();
-    final boolean extendError = config.getConfigMapping(OperationsConfig.class).extendError();
     Map<String, Object> fields;
 
-    if (extendError) {
-      fields =
-          new HashMap<>(
-              Map.of(
-                  "id",
-                  id,
-                  "errorCode",
-                  errorCode.name(),
-                  "family",
-                  errorFamily,
-                  "scope",
-                  errorScope,
-                  "title",
-                  title));
-    } else {
-      fields = new HashMap<>(Map.of("errorCode", errorCode.name()));
-    }
+    fields =
+        new HashMap<>(
+            Map.of(
+                "id",
+                id,
+                "errorCode",
+                errorCode.name(),
+                "family",
+                errorFamily,
+                "scope",
+                errorScope,
+                "title",
+                title));
 
     if (debugEnabled) {
       fields.put("exceptionClass", this.getClass().getSimpleName());
