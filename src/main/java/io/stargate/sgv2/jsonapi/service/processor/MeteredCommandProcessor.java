@@ -25,6 +25,7 @@ import jakarta.inject.Singleton;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -106,9 +107,17 @@ public class MeteredCommandProcessor {
         .onItem()
         .invoke(
             result -> {
-              Tags tags = getCustomTags(commandContext, command, result);
-              // add metrics
-              sample.stop(meterRegistry.timer(jsonApiMetricsConfig.metricsName(), tags));
+              Tags complexTags = getCustomTags(commandContext, command, result);
+              Tags simpleTags = getSimpleTags(command);
+              // add command metrics with complex tags
+              long durationNs =
+                  sample.stop(meterRegistry.timer(jsonApiMetricsConfig.metricsName(), complexTags));
+              // add command metrics with simple tags for histogram (reassigned the timer to ensure
+              // two metrics are identical)
+              Timer.builder(jsonApiMetricsConfig.commandProcessorLatencyMetrics())
+                  .tags(simpleTags)
+                  .register(meterRegistry)
+                  .record(durationNs, TimeUnit.NANOSECONDS);
 
               if (isCommandLevelLoggingEnabled(result, false)) {
                 logger.info(buildCommandLog(commandContext, command, result));
@@ -258,6 +267,13 @@ public class MeteredCommandProcessor {
     return tags;
   }
 
+  private Tags getSimpleTags(Command command) {
+    Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
+    String tenant = dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE);
+    Tag tenantTag = Tag.of(tenantConfig.tenantTag(), tenant);
+    return Tags.of(commandTag, tenantTag);
+  }
+
   private JsonApiMetricsConfig.SortType getVectorTypeTag(Command command) {
     int filterCount = 0;
     if (command instanceof Filterable fc && fc.filterClause() != null) {
@@ -301,6 +317,22 @@ public class MeteredCommandProcessor {
           return DistributionStatisticConfig.builder()
               .percentiles(0.5, 0.90, 0.95, 0.99) // median and 95th percentile, not aggregable
               .percentilesHistogram(true) // histogram buckets (e.g. prometheus histogram_quantile)
+              .build()
+              .merge(config);
+        }
+
+        // reduce the number of buckets by setting the min and max expected values to avoid the high
+        // cardinality problem in Grafana
+        if (id.getName().startsWith(jsonApiMetricsConfig.commandProcessorLatencyMetrics())) {
+          return DistributionStatisticConfig.builder()
+              .percentiles(0.5, 0.90, 0.95, 0.99)
+              .percentilesHistogram(true)
+              .minimumExpectedValue(
+                  TimeUnit.MILLISECONDS.toNanos(
+                      jsonApiMetricsConfig.MinExpectedCommandProcessorLatency())) // 0.05 seconds
+              .maximumExpectedValue(
+                  TimeUnit.MILLISECONDS.toNanos(
+                      jsonApiMetricsConfig.MaxExpectedCommandProcessorLatency())) // 15 seconds
               .build()
               .merge(config);
         }
