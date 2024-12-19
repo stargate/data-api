@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
 import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
@@ -10,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.VectorSortable;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.util.function.Function;
 
 public interface TableSimilarityFunction extends Function<Select, Select> {
@@ -71,18 +73,20 @@ public interface TableSimilarityFunction extends Function<Select, Select> {
     var similarityFunction = vectorColDefinition.get().similarityFunction().cqlProjectionFunction();
 
     return new TableSimilarityFunctionImpl(
-        requestedVectorColumnPath, sortExpression.vector(), similarityFunction);
+        requestedVectorColumnPath,
+        CqlVectorUtil.floatsToCqlVector(sortExpression.vector()),
+        similarityFunction);
   }
 
   boolean canProjectSimilarity();
 
   class TableSimilarityFunctionImpl implements TableSimilarityFunction {
     private final CqlIdentifier requestedVectorColumnPath;
-    private final float[] vector;
+    private final CqlVector<Float> vector;
     private final String function;
 
     public TableSimilarityFunctionImpl(
-        CqlIdentifier requestedVectorColumnPath, float[] vector, String function) {
+        CqlIdentifier requestedVectorColumnPath, CqlVector<Float> vector, String function) {
       this.requestedVectorColumnPath = requestedVectorColumnPath;
       this.vector = vector;
       this.function = function;
