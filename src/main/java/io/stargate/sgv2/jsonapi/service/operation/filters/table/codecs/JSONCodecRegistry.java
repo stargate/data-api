@@ -142,10 +142,10 @@ public class JSONCodecRegistry {
           throw new ToCQLCodecException(value, columnType, "only Vector<Float> supported");
         }
         if (value instanceof Collection<?>) {
-          return VectorCodecs.arrayToCQLFloatVectorCodec(vt);
+          return VectorCodecs.arrayToCQLFloatArrayCodec(vt);
         }
         if (value instanceof EJSONWrapper) {
-          return VectorCodecs.binaryToCQLFloatVectorCodec(vt);
+          return VectorCodecs.binaryToCQLFloatArrayCodec(vt);
         }
 
         throw new ToCQLCodecException(value, columnType, "no codec matching value type");
