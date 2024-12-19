@@ -186,7 +186,7 @@ request-errors:
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The command included the following unknown columns: ${unknownColumns}.
       
-      {SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
+      ${SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
 
   - scope: DOCUMENT
     code: UNSUPPORTED_COLUMN_TYPES
