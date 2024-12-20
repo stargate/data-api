@@ -30,15 +30,6 @@ public class TableProjectionDefinition {
     this.columnNames = columnNames;
   }
 
-  /**
-   * Return the column defined in the projection.
-   *
-   * @return a new {@code ArrayList} containing the column names.
-   */
-  public List<String> getColumnNames() {
-    return new ArrayList<>(columnNames);
-  }
-
   public static TableProjectionDefinition createFromDefinition(JsonNode projectionDefinition) {
     // First special case: "simple" default projection; "include all"
     if (projectionDefinition == null || projectionDefinition.isEmpty()) {

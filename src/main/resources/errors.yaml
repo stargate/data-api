@@ -619,17 +619,6 @@ request-errors:
       
       Resend the command using only supported column types.
 
-  - scope: PROJECTION
-    code: UNKNOWN_TABLE_COLUMNS
-    title: Columns in the projection are not defined in the table schema
-    body: |-
-      Only columns defined in the table schema can be included in the projection.
-      
-      The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      The projection included the following unknown columns: ${unknownColumns}.
-      
-      ${SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
-
   # ================================================================================================================
   # Family: REQUEST         Scope: SCHEMA
   # ================================================================================================================
