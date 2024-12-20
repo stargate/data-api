@@ -85,8 +85,15 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
 
     // TODO: A table can't be with empty columns. Think a redundant check.
     if (columns.isEmpty()) {
-      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_DEFINITION.toApiException(
-          "did not include any Table columns");
+      throw ProjectionException.Code.UNKNOWN_TABLE_COLUMNS.get(
+          errVars(
+              table,
+              map -> {
+                map.put("allColumns", errFmtApiColumnDef(table.apiTableDef().allColumns()));
+                map.put(
+                    "unknownColumns",
+                    command.tableProjectionDefinition().getColumnNames().toString());
+              }));
     }
 
     // result set has ColumnDefinitions not ColumnMetadata kind of weird
