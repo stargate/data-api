@@ -77,7 +77,8 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     return vectorSorts.isEmpty()
         ? resolveNonVectorSort(
             commandContext, whereCQLClause, sortClause, sortColumns, command.skip())
-        : resolveVectorSort(commandContext, sortClause, vectorSorts, command.skip());
+        : resolveVectorSort(
+            commandContext, sortClause, vectorSorts, command.skip(), command.limit());
   }
 
   /**
@@ -193,7 +194,25 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
       CommandContext<TableSchemaObject> commandContext,
       SortClause sortClause,
       List<SortExpression> vectorSorts,
-      Optional<Integer> skip) {
+      Optional<Integer> skip,
+      Optional<Integer> limit) {
+
+    if (limit.isPresent()
+        && limit.get() > commandContext.getConfig(OperationsConfig.class).maxVectorSearchLimit()) {
+      throw SortException.Code.CANNOT_VECTOR_SORT_WITH_LIMIT_EXCEEDS_MAX.get(
+          errVars(
+              commandContext.schemaObject(),
+              map -> {
+                map.put(
+                    "sortColumn",
+                    errFmtJoin(vectorSorts.stream().map(SortExpression::path).toList()));
+                map.put("limit", String.valueOf(limit.get()));
+                map.put(
+                    "maxLimit",
+                    String.valueOf(
+                        commandContext.getConfig(OperationsConfig.class).maxVectorSearchLimit()));
+              }));
+    }
 
     var apiTableDef = commandContext.schemaObject().apiTableDef();
 
