@@ -141,13 +141,13 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
     // insert 3 sample row
     assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
         .templated()
-        .insertMany(sampleRowJson)
+        .insertOne(sampleRowJson)
         .wasSuccessful()
         .hasInsertedIdCount(1);
 
     assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_NOT_INDEXED)
         .templated()
-        .insertMany(sampleRowJson)
+        .insertOne(sampleRowJson)
         .wasSuccessful()
         .hasInsertedIdCount(1);
   }
