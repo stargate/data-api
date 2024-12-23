@@ -477,14 +477,10 @@ public class JSONCodecRegistryTest {
                 numberLiteral(0L),
                 numberLiteral(new BigDecimal(-0.5)),
                 numberLiteral(new BigDecimal(0.25))),
-            CqlVectorUtil.floatsToCqlVector(rawFloats3)),
+            rawFloats3),
         // Second: Base64-encoded representation (Base64 of 4-byte "packed" float values)
-        Arguments.of(
-            vector3Type, binaryWrapper(packedFloats3), CqlVectorUtil.floatsToCqlVector(rawFloats3)),
-        Arguments.of(
-            vector4Type,
-            binaryWrapper(packedFloats4),
-            CqlVectorUtil.floatsToCqlVector(rawFloats4)));
+        Arguments.of(vector3Type, binaryWrapper(packedFloats3), rawFloats3),
+        Arguments.of(vector4Type, binaryWrapper(packedFloats4), rawFloats4));
   }
 
   private static JsonLiteral<Number> numberLiteral(Number value) {
