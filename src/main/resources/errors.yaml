@@ -1089,6 +1089,17 @@ request-errors:
       Resend the command using only vector columns.
 
   - scope: SORT
+    code: CANNOT_VECTOR_SORT_WITH_LIMIT_EXCEEDS_MAX
+    title: Limit exceeds the maximum allowed for vector sort
+    body: |-
+        The command attempted to vector sort columns with a limit that exceeds the maximum allowed.
+        
+        Vector sorting is limited to a maximum of ${maxLimit} rows.
+        The command attempted to sort the vector column: ${sortColumn} with a limit of ${limit}.
+        
+        Resend the command using a limit of ${maxLimit} or less.
+
+  - scope: SORT
     code: CANNOT_VECTOR_SORT_WITH_SKIP_OPTION
     title: Skip option cannot be used with  vector sort
     body: |-
