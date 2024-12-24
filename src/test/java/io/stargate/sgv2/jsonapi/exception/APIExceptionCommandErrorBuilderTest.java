@@ -22,14 +22,14 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
   public void productionModeCommandResult() {
     var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
     var result =
-        new APIExceptionCommandErrorBuilder(false, true).buildLegacyCommandResultError(exception);
+        new APIExceptionCommandErrorBuilder(false).buildLegacyCommandResultError(exception);
     assertCommandError(exception, result, 5, true);
   }
 
   @Test
   public void productionModeCommandErrorV2() {
     var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-    var result = new APIExceptionCommandErrorBuilder(false, true).buildCommandErrorV2(exception);
+    var result = new APIExceptionCommandErrorBuilder(false).buildCommandErrorV2(exception);
     assertCommandErrorV2(exception, result);
   }
 
@@ -37,15 +37,14 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
   public void preErrorV2ModeCommandResult() {
     var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
     var result =
-        new APIExceptionCommandErrorBuilder(false, true).buildLegacyCommandResultError(exception);
+        new APIExceptionCommandErrorBuilder(false).buildLegacyCommandResultError(exception);
     assertCommandError(exception, result, 1, false);
   }
 
   @Test
   public void debugModeCommandResult() {
     var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-    var result =
-        new APIExceptionCommandErrorBuilder(true, true).buildLegacyCommandResultError(exception);
+    var result = new APIExceptionCommandErrorBuilder(true).buildLegacyCommandResultError(exception);
     assertCommandError(exception, result, 6, true);
 
     assertThat(result)
@@ -61,7 +60,7 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
   @Test
   public void debugModeCommandErrorV2() {
     var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-    var result = new APIExceptionCommandErrorBuilder(true, true).buildCommandErrorV2(exception);
+    var result = new APIExceptionCommandErrorBuilder(true).buildCommandErrorV2(exception);
     assertCommandErrorV2(exception, result);
 
     assertThat(result)

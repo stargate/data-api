@@ -13,7 +13,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 
 /**
  * Use the {@link CommandResultBuilder} to create a {@link CommandResult} for a command response,
- * for creation see {@link #singleDocumentBuilder(boolean, boolean)} and the other factory methods.
+ * for creation see {@link #singleDocumentBuilder(boolean)} and the other factory methods.
  *
  * <p>Comments on {@link CommandResultBuilder} explain future work here.
  */
@@ -65,24 +65,18 @@ public record CommandResult(
    * Also the {@link io.stargate.sgv2.jsonapi.service.operation.OperationAttemptPageBuilder} is how
    * things will turn out.
    */
-  public static CommandResultBuilder singleDocumentBuilder(
-      boolean useErrorObjectV2, boolean debugMode) {
-    return new CommandResultBuilder(
-        CommandResultBuilder.ResponseType.SINGLE_DOCUMENT, useErrorObjectV2, debugMode);
+  public static CommandResultBuilder singleDocumentBuilder(boolean debugMode) {
+    return new CommandResultBuilder(CommandResultBuilder.ResponseType.SINGLE_DOCUMENT, debugMode);
   }
 
-  /** See {@link #singleDocumentBuilder(boolean, boolean)} */
-  public static CommandResultBuilder multiDocumentBuilder(
-      boolean useErrorObjectV2, boolean debugMode) {
-    return new CommandResultBuilder(
-        CommandResultBuilder.ResponseType.MULTI_DOCUMENT, useErrorObjectV2, debugMode);
+  /** See {@link #singleDocumentBuilder(boolean)} */
+  public static CommandResultBuilder multiDocumentBuilder(boolean debugMode) {
+    return new CommandResultBuilder(CommandResultBuilder.ResponseType.MULTI_DOCUMENT, debugMode);
   }
 
-  /** See {@link #singleDocumentBuilder(boolean, boolean)} */
-  public static CommandResultBuilder statusOnlyBuilder(
-      boolean useErrorObjectV2, boolean debugMode) {
-    return new CommandResultBuilder(
-        CommandResultBuilder.ResponseType.STATUS_ONLY, useErrorObjectV2, debugMode);
+  /** See {@link #singleDocumentBuilder(boolean)} */
+  public static CommandResultBuilder statusOnlyBuilder(boolean debugMode) {
+    return new CommandResultBuilder(CommandResultBuilder.ResponseType.STATUS_ONLY, debugMode);
   }
 
   /**

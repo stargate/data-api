@@ -79,7 +79,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
     this.failedInsertions = new ArrayList<>(allAttemptedInsertions.size());
     this.debugMode = debugMode;
     this.useErrorObjectV2 = useErrorObjectV2;
-    this.apiExceptionToError = new APIExceptionCommandErrorBuilder(debugMode, useErrorObjectV2);
+    this.apiExceptionToError = new APIExceptionCommandErrorBuilder(debugMode);
   }
 
   enum InsertionStatus {
@@ -102,7 +102,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
     // TODO AARON used to only sort the success list when not returning detailed responses, check OK
     Collections.sort(successfulInsertions);
 
-    var builder = CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode);
+    var builder = CommandResult.statusOnlyBuilder(debugMode);
     return returnDocumentResponses ? perDocumentResult(builder) : nonPerDocumentResult(builder);
   }
 
