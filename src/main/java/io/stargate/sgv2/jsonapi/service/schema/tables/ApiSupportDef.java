@@ -57,10 +57,6 @@ public interface ApiSupportDef {
     return !insert() || !read() || !filter();
   }
 
-  default boolean isUnsupportedInsert() {
-    return !insert();
-  }
-
   /**
    * Helper record to be used when the support can be determined at compile time, or easily cached.
    */
