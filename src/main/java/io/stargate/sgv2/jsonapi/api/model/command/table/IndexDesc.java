@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.IndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 
 /**
  * Top level description of an index, used in the create index commands when we want to describe
@@ -17,6 +18,9 @@ public interface IndexDesc<DefinitionT extends IndexDefinitionDesc<?>> {
 
   @JsonProperty(TableDescConstants.IndexDesc.NAME)
   String name();
+
+  @JsonProperty(TableDescConstants.IndexDesc.INDEX_TYPE)
+  ApiIndexType indexType();
 
   @JsonProperty(TableDescConstants.IndexDesc.DEFINITION)
   DefinitionT definition();

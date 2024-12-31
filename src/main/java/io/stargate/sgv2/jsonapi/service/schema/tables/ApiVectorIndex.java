@@ -47,6 +47,11 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   }
 
   @Override
+  public ApiIndexType indexType() {
+    return ApiIndexType.VECTOR;
+  }
+
+  @Override
   public IndexDesc<VectorIndexDefinitionDesc> indexDesc() {
 
     var definitionOptions =
@@ -60,6 +65,11 @@ public class ApiVectorIndex extends ApiSupportedIndex {
       @Override
       public String name() {
         return cqlIdentifierToJsonKey(indexName);
+      }
+
+      @Override
+      public ApiIndexType indexType() {
+        return ApiIndexType.VECTOR;
       }
 
       @Override
