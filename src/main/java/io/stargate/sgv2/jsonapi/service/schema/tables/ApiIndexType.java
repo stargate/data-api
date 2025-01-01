@@ -2,17 +2,49 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /** Defines what type of index configuration (vector or regular) */
 public enum ApiIndexType {
   // map, set, list
-  COLLECTION,
+  COLLECTION("collection"),
   // Something on a scalar column, and non analsed text index
-  REGULAR,
+  REGULAR("regular"),
   // Not available yet
-  TEXT_ANALYSED,
+  TEXT_ANALYSED("text-analysed"),
   // on a vector
-  VECTOR;
+  VECTOR("vector");
+
+  private final String indexTypeName;
+
+  private static final List<String> all =
+      Arrays.stream(values()).map(ApiIndexType::typeName).toList();
+  private static final Map<String, ApiIndexType> BY_API_NAME = new HashMap<>();
+
+  static {
+    for (ApiIndexType type : ApiIndexType.values()) {
+      BY_API_NAME.put(type.indexTypeName, type);
+    }
+  }
+
+  ApiIndexType(String indexTypeName) {
+    this.indexTypeName = indexTypeName;
+  }
+
+  public String typeName() {
+    return indexTypeName;
+  }
+
+  public static List<String> all() {
+    return all;
+  }
+
+  public static ApiIndexType fromTypeName(String typeName) {
+    return BY_API_NAME.get(typeName);
+  }
 
   static ApiIndexType fromCql(
       ApiColumnDef apiColumnDef, CQLSAIIndex.IndexTarget indexTarget, IndexMetadata indexMetadata)

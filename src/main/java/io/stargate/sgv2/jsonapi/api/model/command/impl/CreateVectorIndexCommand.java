@@ -16,7 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that creates an index for a column in a table.")
 @JsonTypeName(CommandName.Names.CREATE_VECTOR_INDEX)
-@JsonPropertyOrder({"name", "definition", "options"})
+@JsonPropertyOrder({"name", "definition", "indexType", "options"})
 public record CreateVectorIndexCommand(
     @NotNull
         @Size(min = 1, max = 48)
@@ -28,6 +28,10 @@ public record CreateVectorIndexCommand(
             description = "Definition for created index for a column.",
             type = SchemaType.OBJECT)
         VectorIndexDefinitionDesc definition,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+        @Nullable
+        @Schema(description = "Type for created index for a column.", type = SchemaType.STRING)
+        String indexType,
     @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
         @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)

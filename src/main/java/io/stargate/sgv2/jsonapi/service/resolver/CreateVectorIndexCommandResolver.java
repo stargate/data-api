@@ -4,15 +4,18 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorIndex;
 import io.stargate.sgv2.jsonapi.util.defaults.DefaultBoolean;
 import io.stargate.sgv2.jsonapi.util.defaults.Defaults;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
+import java.util.Map;
 
 /** Resolver for the {@link CreateVectorIndexCommand}. */
 @ApplicationScoped
@@ -29,6 +32,27 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
   @Override
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, CreateVectorIndexCommand command) {
+
+    ApiIndexType indexType =
+        command.indexType() == null
+            ? ApiIndexType.VECTOR
+            : ApiIndexType.fromTypeName(command.indexType());
+
+    if (indexType == null) {
+      // UNKNOWN_INDEX_TYPES
+      throw SchemaException.Code.UNKNOWN_INDEX_TYPES.get(
+          Map.of(
+              "supportedTypes", ApiIndexType.all().toString(), "unknownType", command.indexType()));
+    }
+
+    if (indexType != ApiIndexType.VECTOR) {
+      throw SchemaException.Code.UNSUPPORTED_INDEX_TYPES.get(
+          Map.of(
+              "supportedTypes",
+              ApiIndexType.VECTOR.toString(),
+              "unsupportedType",
+              command.indexType()));
+    }
 
     var attemptBuilder = new CreateIndexAttemptBuilder(ctx.schemaObject());
 

@@ -68,8 +68,8 @@ public class ApiVectorIndex extends ApiSupportedIndex {
       }
 
       @Override
-      public ApiIndexType indexType() {
-        return ApiIndexType.VECTOR;
+      public String indexType() {
+        return ApiIndexType.VECTOR.typeName();
       }
 
       @Override

@@ -65,8 +65,8 @@ public class ApiRegularIndex extends ApiSupportedIndex {
       }
 
       @Override
-      public ApiIndexType indexType() {
-        return ApiIndexType.REGULAR;
+      public String indexType() {
+        return ApiIndexType.REGULAR.typeName();
       }
 
       @Override

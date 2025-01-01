@@ -60,7 +60,7 @@ public class UnsupportedIndex implements ApiIndexDef {
       }
 
       @Override
-      public ApiIndexType indexType() {
+      public String indexType() {
         return null;
       }
 
