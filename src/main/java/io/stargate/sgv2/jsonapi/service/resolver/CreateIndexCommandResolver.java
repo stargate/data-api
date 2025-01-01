@@ -45,7 +45,6 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
             : ApiIndexType.fromTypeName(command.indexType());
 
     if (indexType == null) {
-      // UNKNOWN_INDEX_TYPES
       throw SchemaException.Code.UNKNOWN_INDEX_TYPES.get(
           Map.of(
               "supportedTypes", ApiIndexType.all().toString(), "unknownType", command.indexType()));
