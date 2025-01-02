@@ -98,7 +98,7 @@ public class NamespaceCache {
                   optionalTable.orElseThrow(
                       () -> ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
 
-              // check if its a valid json api table
+              // check if its a valid json API Table
               // TODO: re-use the table matcher this is on the request hot path
               if (new CollectionTableMatcher().test(table)) {
                 return CollectionSchemaObject.getCollectionSettings(
