@@ -54,7 +54,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
       throw SchemaException.Code.UNSUPPORTED_INDEX_TYPES.get(
           Map.of(
               "supportedTypes",
-              ApiIndexType.REGULAR.toString(),
+              ApiIndexType.REGULAR.typeName(),
               "unsupportedType",
               command.indexType()));
     }

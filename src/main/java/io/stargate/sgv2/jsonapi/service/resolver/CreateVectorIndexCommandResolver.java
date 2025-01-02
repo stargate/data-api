@@ -48,7 +48,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
       throw SchemaException.Code.UNSUPPORTED_INDEX_TYPES.get(
           Map.of(
               "supportedTypes",
-              ApiIndexType.VECTOR.toString(),
+              ApiIndexType.VECTOR.typeName(),
               "unsupportedType",
               command.indexType()));
     }
