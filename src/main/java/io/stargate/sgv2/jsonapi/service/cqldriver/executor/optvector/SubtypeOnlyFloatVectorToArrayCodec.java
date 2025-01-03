@@ -9,8 +9,6 @@ import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.internal.core.type.codec.FloatCodec;
 import com.datastax.oss.driver.shaded.guava.common.base.Splitter;
 import com.datastax.oss.driver.shaded.guava.common.collect.Iterators;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -29,15 +27,15 @@ public class SubtypeOnlyFloatVectorToArrayCodec implements TypeCodec<float[]> {
 
   private static final int ELEMENT_SIZE = 4;
 
-  @NonNull protected final VectorType cqlType;
-  @NonNull protected final GenericType<float[]> javaType;
+  protected final VectorType cqlType;
+  protected final GenericType<float[]> javaType;
 
   private final FloatCodec floatCodec = new FloatCodec();
 
   private static final SubtypeOnlyFloatVectorToArrayCodec INSTANCE =
       new SubtypeOnlyFloatVectorToArrayCodec(DataTypes.FLOAT);
 
-  private SubtypeOnlyFloatVectorToArrayCodec(@NonNull DataType subType) {
+  private SubtypeOnlyFloatVectorToArrayCodec(DataType subType) {
     cqlType = new SubtypeOnlyVectorType(Objects.requireNonNull(subType, "subType cannot be null"));
     javaType = GenericType.of(float[].class);
   }
@@ -46,30 +44,28 @@ public class SubtypeOnlyFloatVectorToArrayCodec implements TypeCodec<float[]> {
     return INSTANCE;
   }
 
-  @NonNull
   @Override
   public GenericType<float[]> getJavaType() {
     return javaType;
   }
 
-  @NonNull
   @Override
   public DataType getCqlType() {
     return cqlType;
   }
 
   @Override
-  public boolean accepts(@NonNull Class<?> javaClass) {
+  public boolean accepts(Class<?> javaClass) {
     return float[].class.equals(javaClass);
   }
 
   @Override
-  public boolean accepts(@NonNull Object value) {
+  public boolean accepts(Object value) {
     return value instanceof float[];
   }
 
   @Override
-  public boolean accepts(@NonNull DataType value) {
+  public boolean accepts(DataType value) {
     if (!(value instanceof VectorType)) {
       return false;
     }
@@ -77,9 +73,8 @@ public class SubtypeOnlyFloatVectorToArrayCodec implements TypeCodec<float[]> {
     return this.cqlType.getElementType().equals(valueVectorType.getElementType());
   }
 
-  @Nullable
   @Override
-  public ByteBuffer encode(@Nullable float[] array, @NonNull ProtocolVersion protocolVersion) {
+  public ByteBuffer encode(float[] array, ProtocolVersion protocolVersion) {
     if (array == null) {
       return null;
     }
@@ -93,9 +88,8 @@ public class SubtypeOnlyFloatVectorToArrayCodec implements TypeCodec<float[]> {
     return output;
   }
 
-  @Nullable
   @Override
-  public float[] decode(@Nullable ByteBuffer bytes, @NonNull ProtocolVersion protocolVersion) {
+  public float[] decode(ByteBuffer bytes, ProtocolVersion protocolVersion) {
     if (bytes == null || bytes.remaining() == 0) {
       throw new IllegalArgumentException(
           "Input ByteBuffer must not be null and must have non-zero remaining bytes");
@@ -124,10 +118,7 @@ public class SubtypeOnlyFloatVectorToArrayCodec implements TypeCodec<float[]> {
    * @param protocolVersion The protocol version to use.
    */
   protected void serializeElement(
-      @NonNull ByteBuffer output,
-      @NonNull float[] array,
-      int index,
-      @NonNull ProtocolVersion protocolVersion) {
+      ByteBuffer output, float[] array, int index, ProtocolVersion protocolVersion) {
     output.putFloat(array[index]);
   }
 
@@ -140,22 +131,17 @@ public class SubtypeOnlyFloatVectorToArrayCodec implements TypeCodec<float[]> {
    * @param protocolVersion The protocol version to use.
    */
   protected void deserializeElement(
-      @NonNull ByteBuffer input,
-      @NonNull float[] array,
-      int index,
-      @NonNull ProtocolVersion protocolVersion) {
+      ByteBuffer input, float[] array, int index, ProtocolVersion protocolVersion) {
     array[index] = input.getFloat();
   }
 
-  @NonNull
   @Override
-  public String format(@Nullable float[] value) {
+  public String format(float[] value) {
     return value == null ? "NULL" : Arrays.toString(value);
   }
 
-  @Nullable
   @Override
-  public float[] parse(@Nullable String str) {
+  public float[] parse(String str) {
     /* TODO: Logic below requires a double traversal through the input String but there's no other obvious way to
      * get the size.  It's still probably worth the initial pass through in order to avoid having to deal with
      * resizing ops.  Fortunately we're only dealing with the format/parse pair here so this shouldn't impact
