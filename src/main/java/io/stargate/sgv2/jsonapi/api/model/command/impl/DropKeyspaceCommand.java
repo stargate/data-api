@@ -13,8 +13,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonTypeName(CommandName.Names.DROP_KEYSPACE)
 public record DropKeyspaceCommand(
     @NotNull
-        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-        @Size(min = 1, max = 48)
         @Schema(description = "Name of the Keyspace")
         String name)
     implements GeneralCommand, NoOptionsCommand {

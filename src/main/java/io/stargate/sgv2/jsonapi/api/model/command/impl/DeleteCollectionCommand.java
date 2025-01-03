@@ -18,8 +18,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonTypeName(CommandName.Names.DELETE_COLLECTION)
 public record DeleteCollectionCommand(
     @NotNull
-        @Size(min = 1, max = 48)
-        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the collection")
         String name)
     implements CollectionOnlyCommand, NoOptionsCommand {

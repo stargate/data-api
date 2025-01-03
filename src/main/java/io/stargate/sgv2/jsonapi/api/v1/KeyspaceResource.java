@@ -116,8 +116,6 @@ public class KeyspaceResource {
       @NotNull @Valid KeyspaceCommand command,
       @PathParam("keyspace")
           @NotNull
-          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-          @Size(min = 1, max = 48)
           String keyspace) {
 
     final ApiFeatures apiFeatures =

@@ -180,13 +180,9 @@ public class CollectionResource {
       @NotNull @Valid CollectionCommand command,
       @PathParam("keyspace")
           @NotNull
-          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-          @Size(min = 1, max = 48)
           String keyspace,
       @PathParam("collection")
           @NotNull
-          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-          @Size(min = 1, max = 48)
           String collection) {
     return schemaCache
         .getSchemaObject(

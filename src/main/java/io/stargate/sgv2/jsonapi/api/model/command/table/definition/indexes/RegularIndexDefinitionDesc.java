@@ -12,8 +12,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonPropertyOrder({"column", "options"})
 public record RegularIndexDefinitionDesc(
     @NotNull
-        @Size(min = 1, max = 48)
-        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the column for which index to be created.")
         String column,
     @JsonInclude(JsonInclude.Include.NON_NULL)

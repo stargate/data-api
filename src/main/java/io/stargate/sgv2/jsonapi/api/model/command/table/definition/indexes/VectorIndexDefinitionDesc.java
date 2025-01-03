@@ -13,8 +13,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonPropertyOrder({"column", "options"})
 public record VectorIndexDefinitionDesc(
     @NotNull
-        @Size(min = 1, max = 48)
-        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the column for which index to be created.")
         String column,
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -38,8 +36,6 @@ public record VectorIndexDefinitionDesc(
           @JsonInclude(JsonInclude.Include.NON_NULL)
           String metric,
       @Nullable
-          @Size(min = 1, max = 48)
-          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
           @Schema(description = "Model name used to generate the embeddings.")
           @JsonInclude(JsonInclude.Include.NON_NULL)
           String sourceModel) {}

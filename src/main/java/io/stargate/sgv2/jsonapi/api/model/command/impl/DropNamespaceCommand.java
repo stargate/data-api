@@ -17,8 +17,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonTypeName(CommandName.Names.DROP_NAMESPACE)
 public record DropNamespaceCommand(
     @NotNull
-        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-        @Size(min = 1, max = 48)
         @Schema(
             description =
                 "Name of the namespace. This dropNamespace has been deprecated and will be removed in future releases, use dropKeyspace instead.",
