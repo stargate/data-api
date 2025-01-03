@@ -22,7 +22,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
         .templated()
         .listIndexes(false)
         .wasSuccessful()
-        .hasIndexes(indexName);
+        .hasIndex(indexName);
   }
 
   @BeforeAll
