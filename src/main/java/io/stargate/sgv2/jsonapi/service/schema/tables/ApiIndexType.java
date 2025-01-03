@@ -20,8 +20,8 @@ public enum ApiIndexType {
 
   private final String indexTypeName;
 
-  private static final List<String> all =
-      Arrays.stream(values()).map(ApiIndexType::typeName).toList();
+  private static final List<String> ALL_TYPE_NAMES =
+      Arrays.stream(values()).map(ApiIndexType::indexTypeName).toList();
   private static final Map<String, ApiIndexType> BY_API_NAME = new HashMap<>();
 
   static {
@@ -34,14 +34,20 @@ public enum ApiIndexType {
     this.indexTypeName = indexTypeName;
   }
 
-  public String typeName() {
+  public String indexTypeName() {
     return indexTypeName;
   }
 
-  public static List<String> all() {
-    return all;
+  public static List<String> allTypeNames() {
+    return ALL_TYPE_NAMES;
   }
 
+  /**
+   * Get the ApiIndexType from the index type name. If the type name is not known, then null is
+   *
+   * @param typeName
+   * @return
+   */
   public static ApiIndexType fromTypeName(String typeName) {
     return BY_API_NAME.get(typeName);
   }

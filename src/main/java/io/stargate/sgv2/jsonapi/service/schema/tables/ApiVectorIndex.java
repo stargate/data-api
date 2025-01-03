@@ -69,7 +69,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
       @Override
       public String indexType() {
-        return ApiIndexType.VECTOR.typeName();
+        return ApiIndexType.VECTOR.indexTypeName();
       }
 
       @Override

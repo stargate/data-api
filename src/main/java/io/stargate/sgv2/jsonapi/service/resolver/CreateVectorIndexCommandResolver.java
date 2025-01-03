@@ -39,16 +39,19 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
             : ApiIndexType.fromTypeName(command.indexType());
 
     if (indexType == null) {
-      throw SchemaException.Code.UNKNOWN_INDEX_TYPES.get(
+      throw SchemaException.Code.UNKNOWN_INDEX_TYPE.get(
           Map.of(
-              "supportedTypes", ApiIndexType.all().toString(), "unknownType", command.indexType()));
+              "knownTypes",
+              ApiIndexType.allTypeNames().toString(),
+              "unknownType",
+              command.indexType()));
     }
 
     if (indexType != ApiIndexType.VECTOR) {
-      throw SchemaException.Code.UNSUPPORTED_INDEX_TYPES.get(
+      throw SchemaException.Code.UNSUPPORTED_INDEX_TYPE.get(
           Map.of(
               "supportedTypes",
-              ApiIndexType.VECTOR.typeName(),
+              ApiIndexType.VECTOR.indexTypeName(),
               "unsupportedType",
               command.indexType()));
     }

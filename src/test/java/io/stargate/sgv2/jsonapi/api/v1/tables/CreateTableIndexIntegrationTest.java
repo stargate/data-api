@@ -424,7 +424,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                               }
                               """)
           .hasSingleApiError(
-              SchemaException.Code.UNSUPPORTED_INDEX_TYPES,
+              SchemaException.Code.UNSUPPORTED_INDEX_TYPE,
               SchemaException.class,
               "The supported index types are: regular.",
               "The command used the unsupported index type: vector.");
@@ -444,9 +444,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                       }
                                       """)
           .hasSingleApiError(
-              SchemaException.Code.UNKNOWN_INDEX_TYPES,
+              SchemaException.Code.UNKNOWN_INDEX_TYPE,
               SchemaException.class,
-              "The supported index types are: [collection, regular, text-analysed, vector].",
+              "The known index types are: [collection, regular, text-analysed, vector].",
               "The command used the unknown index type: unknown.");
     }
   }
@@ -508,7 +508,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                               }
                               """)
           .hasSingleApiError(
-              SchemaException.Code.UNSUPPORTED_INDEX_TYPES,
+              SchemaException.Code.UNSUPPORTED_INDEX_TYPE,
               SchemaException.class,
               "The supported index types are: vector.",
               "The command used the unsupported index type: regular.");
@@ -528,9 +528,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                 }
                                 """)
           .hasSingleApiError(
-              SchemaException.Code.UNKNOWN_INDEX_TYPES,
+              SchemaException.Code.UNKNOWN_INDEX_TYPE,
               SchemaException.class,
-              "The supported index types are: [collection, regular, text-analysed, vector].",
+              "The known index types are: [collection, regular, text-analysed, vector].",
               "The command used the unknown index type: unknown.");
     }
   }

@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
-
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
@@ -45,16 +43,19 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
             : ApiIndexType.fromTypeName(command.indexType());
 
     if (indexType == null) {
-      throw SchemaException.Code.UNKNOWN_INDEX_TYPES.get(
+      throw SchemaException.Code.UNKNOWN_INDEX_TYPE.get(
           Map.of(
-              "supportedTypes", ApiIndexType.all().toString(), "unknownType", command.indexType()));
+              "knownTypes",
+              ApiIndexType.allTypeNames().toString(),
+              "unknownType",
+              command.indexType()));
     }
 
     if (indexType != ApiIndexType.REGULAR) {
-      throw SchemaException.Code.UNSUPPORTED_INDEX_TYPES.get(
+      throw SchemaException.Code.UNSUPPORTED_INDEX_TYPE.get(
           Map.of(
               "supportedTypes",
-              ApiIndexType.REGULAR.typeName(),
+              ApiIndexType.REGULAR.indexTypeName(),
               "unsupportedType",
               command.indexType()));
     }

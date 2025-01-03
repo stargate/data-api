@@ -872,15 +872,15 @@ request-errors:
       Resend the command using only columns defined in the table schema.
 
   - scope: SCHEMA
-    code: UNKNOWN_INDEX_TYPES
+    code: UNKNOWN_INDEX_TYPE
     title: Index type is unknown
     body: |-
       The command attempted to create an index using an unknown type.
       
-      The supported index types are: ${supportedTypes}.
+      The known index types are: ${knownTypes}.
       The command used the unknown index type: ${unknownType}.
       
-      Resend the command using a supported index type.
+      Resend the command using a known index type.
 
   - scope: SCHEMA
     code: UNSUPPORTED_INDEXING_FOR_DATA_TYPES
@@ -899,7 +899,7 @@ request-errors:
       Resend the command using columns of the supported data types.
 
   - scope: SCHEMA
-    code: UNSUPPORTED_INDEX_TYPES
+    code: UNSUPPORTED_INDEX_TYPE
     title: Index type is not supported
     body: |-
       The command attempted to create an index using an unsupported type.
