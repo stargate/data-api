@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
@@ -16,7 +15,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that creates an index for a column in a table.")
 @JsonTypeName(CommandName.Names.CREATE_VECTOR_INDEX)
-@JsonPropertyOrder({"name", "definition", "options"})
 public record CreateVectorIndexCommand(
     @NotNull
         // TODO: the issue similar to CreateIndexCommand
@@ -24,11 +22,12 @@ public record CreateVectorIndexCommand(
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the column to create the index on")
         String name,
-    @NotNull
-        @Schema(
-            description = "Definition for created index for a column.",
-            type = SchemaType.OBJECT)
+    @NotNull @Schema(description = "Definition of the index to create.", type = SchemaType.OBJECT)
         VectorIndexDefinitionDesc definition,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+        @Nullable
+        @Schema(description = "Type of the index to create.", type = SchemaType.STRING)
+        String indexType,
     @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
         @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
