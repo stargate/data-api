@@ -44,9 +44,7 @@ public enum ApiIndexType {
 
   /**
    * Get the ApiIndexType from the index type name. If the type name is not known, then null is
-   *
-   * @param typeName
-   * @return
+   * returned.
    */
   public static ApiIndexType fromTypeName(String typeName) {
     return BY_API_NAME.get(typeName);
