@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
@@ -15,7 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that deletes a collection if one exists.")
 @JsonTypeName(CommandName.Names.DELETE_COLLECTION)
 public record DeleteCollectionCommand(
-    @NotNull @Schema(description = "Name of the collection") String name)
+    @NotEmpty @Schema(description = "Name of the collection") String name)
     implements CollectionOnlyCommand, NoOptionsCommand {
 
   /** {@inheritDoc} */
