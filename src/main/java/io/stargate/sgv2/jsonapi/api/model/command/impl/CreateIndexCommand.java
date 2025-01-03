@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
@@ -23,13 +22,9 @@ public record CreateIndexCommand(
         String name,
     @NotNull @Schema(description = "Definition of the index to create.", type = SchemaType.OBJECT)
         RegularIndexDefinitionDesc definition,
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-        @Nullable
-        @Schema(description = "Type of the index to create.", type = SchemaType.STRING)
+    @Nullable @Schema(description = "Type of the index to create.", type = SchemaType.STRING)
         String indexType,
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-        @Nullable
-        @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
+    @Nullable @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
         CreateIndexCommandOptions options)
     implements CollectionCommand, IndexCreationCommand {
 
