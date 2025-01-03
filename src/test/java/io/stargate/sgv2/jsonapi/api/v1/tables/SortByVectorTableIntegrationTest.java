@@ -4,7 +4,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.VectorDimension5TableScenario;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -40,14 +40,14 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
   private static Stream<Arguments> findCommandNames() {
 
     var commands = new ArrayList<Arguments>();
-    commands.add(Arguments.of(Command.CommandName.FIND));
-    commands.add(Arguments.of(Command.CommandName.FIND_ONE));
+    commands.add(Arguments.of(CommandName.FIND));
+    commands.add(Arguments.of(CommandName.FIND_ONE));
     return commands.stream();
   }
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void findUnindexedVector(Command.CommandName commandName) {
+  public void findUnindexedVector(CommandName commandName) {
 
     var sort =
         ImmutableMap.of(
@@ -68,7 +68,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void findMoreThanOneVector(Command.CommandName commandName) {
+  public void findMoreThanOneVector(CommandName commandName) {
 
     var sort =
         ImmutableMap.of(
@@ -81,7 +81,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
         .templated()
         .find(commandName, null, null, sort)
         .hasSingleApiError(
-            SortException.Code.MORE_THAN_ONE_VECTOR_SORT,
+            SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORS,
             SortException.class,
             "The command attempted to sort on the columns: %s, %s."
                 .formatted(
@@ -91,7 +91,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void findUnknownVectorColumn(Command.CommandName commandName) {
+  public void findUnknownVectorColumn(CommandName commandName) {
 
     var sort =
         ImmutableMap.of(
@@ -112,7 +112,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void findNonVectorCol(Command.CommandName commandName) {
+  public void findNonVectorCol(CommandName commandName) {
 
     var sort =
         ImmutableMap.of(
@@ -131,7 +131,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void findSortVectorAndNon(Command.CommandName commandName) {
+  public void findSortVectorAndNon(CommandName commandName) {
 
     var sort =
         ImmutableMap.of(
@@ -144,7 +144,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
         .templated()
         .find(commandName, null, null, sort)
         .hasSingleApiError(
-            SortException.Code.CANNOT_MIX_VECTOR_AND_NON_VECTOR_SORT,
+            SortException.Code.CANNOT_SORT_VECTOR_AND_NON_VECTOR_COLUMNS,
             SortException.class,
             "The command attempted to sort the vector columns: %s.\nThe command attempted to sort the non-vector columns: %s."
                 .formatted(
@@ -154,7 +154,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void findRandomVector(Command.CommandName commandName) {
+  public void findRandomVector(CommandName commandName) {
     // Doing a sort for a vector we do not know if is in the table
 
     var sort =
@@ -164,7 +164,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
     var limit = 3;
     Map<String, Object> options =
-        commandName == Command.CommandName.FIND ? ImmutableMap.of("limit", limit) : null;
+        commandName == CommandName.FIND ? ImmutableMap.of("limit", limit) : null;
 
     var validator =
         assertTableCommand(keyspaceName, TABLE_NAME)
@@ -172,7 +172,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
             .find(commandName, null, null, sort, options)
             .wasSuccessful();
 
-    if (commandName == Command.CommandName.FIND) {
+    if (commandName == CommandName.FIND) {
       validator.hasDocuments(limit).includeSimilarityScoreDocuments(false);
     } else {
       validator.hasSingleDocument().includeSimilarityScoreSingleDocument(false);
@@ -181,7 +181,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void findSimilarityScore(Command.CommandName commandName) {
+  public void findSimilarityScore(CommandName commandName) {
 
     var sort =
         ImmutableMap.of(
@@ -190,7 +190,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
     var limit = 3;
     Map<String, Object> options =
-        commandName == Command.CommandName.FIND
+        commandName == CommandName.FIND
             ? ImmutableMap.of("limit", limit, "includeSimilarity", true)
             : ImmutableMap.of("includeSimilarity", true);
 
@@ -200,7 +200,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
             .find(commandName, null, null, sort, options)
             .wasSuccessful();
 
-    if (commandName == Command.CommandName.FIND) {
+    if (commandName == CommandName.FIND) {
       validator.hasDocuments(limit).includeSimilarityScoreDocuments(true).includeSortVector(false);
     } else {
       validator
@@ -212,12 +212,12 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void findSimilarityScoreWithoutANN(Command.CommandName commandName) {
+  public void findSimilarityScoreWithoutANN(CommandName commandName) {
     // Without Vector sort clause, similarityScore won't be included
 
     var limit = 3;
     Map<String, Object> options =
-        commandName == Command.CommandName.FIND
+        commandName == CommandName.FIND
             ? ImmutableMap.of("limit", limit, "includeSimilarity", true)
             : ImmutableMap.of("includeSimilarity", true);
 
@@ -227,7 +227,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
             .find(commandName, null, null, null, options)
             .wasSuccessful();
 
-    if (commandName == Command.CommandName.FIND) {
+    if (commandName == CommandName.FIND) {
       validator.hasDocuments(limit).includeSimilarityScoreDocuments(false).includeSortVector(false);
     } else {
       validator
@@ -239,7 +239,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void findReturnVector(Command.CommandName commandName) {
+  public void findReturnVector(CommandName commandName) {
 
     var sort =
         ImmutableMap.of(
@@ -248,7 +248,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
     var limit = 3;
     Map<String, Object> options =
-        commandName == Command.CommandName.FIND
+        commandName == CommandName.FIND
             ? ImmutableMap.of("limit", limit, "includeSortVector", true)
             : ImmutableMap.of("includeSortVector", true);
 
@@ -258,7 +258,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
             .find(commandName, null, null, sort, options)
             .wasSuccessful();
 
-    if (commandName == Command.CommandName.FIND) {
+    if (commandName == CommandName.FIND) {
       validator.hasDocuments(limit).includeSimilarityScoreDocuments(false).includeSortVector(true);
     } else {
       validator
@@ -270,12 +270,12 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void returnVectorWithoutANN(Command.CommandName commandName) {
+  public void returnVectorWithoutANN(CommandName commandName) {
     // Without Vector sort clause, vector won't be included in status map.
 
     var limit = 3;
     Map<String, Object> options =
-        commandName == Command.CommandName.FIND
+        commandName == CommandName.FIND
             ? ImmutableMap.of("limit", limit, "includeSortVector", true)
             : ImmutableMap.of("includeSortVector", true);
 
@@ -285,7 +285,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
             .find(commandName, null, null, null, options)
             .wasSuccessful();
 
-    if (commandName == Command.CommandName.FIND) {
+    if (commandName == CommandName.FIND) {
       validator.hasDocuments(limit).includeSimilarityScoreDocuments(false).includeSortVector(false);
     } else {
       validator
@@ -297,7 +297,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void findRandomBinaryVector(Command.CommandName commandName) {
+  public void findRandomBinaryVector(CommandName commandName) {
     // Doing a sort for a vector we do not know if is in the table
 
     Object[] rawData =
@@ -314,7 +314,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
     var limit = 3;
     Map<String, Object> options =
-        commandName == Command.CommandName.FIND ? ImmutableMap.of("limit", limit) : null;
+        commandName == CommandName.FIND ? ImmutableMap.of("limit", limit) : null;
 
     var validator =
         assertTableCommand(keyspaceName, TABLE_NAME)
@@ -322,7 +322,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
             .find(commandName, null, null, sort, options)
             .wasSuccessful();
 
-    if (commandName == Command.CommandName.FIND) {
+    if (commandName == CommandName.FIND) {
       validator.hasDocuments(limit);
     } else {
       validator.hasSingleDocument();
@@ -331,7 +331,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void findKnownVector(Command.CommandName commandName) {
+  public void findKnownVector(CommandName commandName) {
     // Doing a sort for a vector we know the vector is in the table, we can match on the expected
     // doc
 
@@ -342,7 +342,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
     var limit = 1;
     Map<String, Object> options =
-        commandName == Command.CommandName.FIND ? ImmutableMap.of("limit", limit) : null;
+        commandName == CommandName.FIND ? ImmutableMap.of("limit", limit) : null;
 
     var validator =
         assertTableCommand(keyspaceName, TABLE_NAME)
@@ -350,7 +350,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
             .find(commandName, null, null, sort, options)
             .wasSuccessful();
 
-    if (commandName == Command.CommandName.FIND) {
+    if (commandName == CommandName.FIND) {
       validator
           .hasDocuments(limit)
           .hasDocumentInPosition(0, VectorDimension5TableScenario.KNOWN_VECTOR_ROW_JSON)
@@ -367,7 +367,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
   @ParameterizedTest
   @MethodSource("findCommandNames")
-  public void findKnownVectorAsBinary(Command.CommandName commandName) {
+  public void findKnownVectorAsBinary(CommandName commandName) {
     // Doing a sort for a vector we know the vector is in the table, we can match on the expected
     // doc
     var vectorString =
@@ -379,7 +379,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
 
     var limit = 1;
     Map<String, Object> options =
-        commandName == Command.CommandName.FIND ? ImmutableMap.of("limit", limit) : null;
+        commandName == CommandName.FIND ? ImmutableMap.of("limit", limit) : null;
 
     var validator =
         assertTableCommand(keyspaceName, TABLE_NAME)
@@ -387,7 +387,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
             .find(commandName, null, null, sort, options)
             .wasSuccessful();
 
-    if (commandName == Command.CommandName.FIND) {
+    if (commandName == CommandName.FIND) {
       validator
           .hasDocuments(limit)
           .hasDocumentInPosition(0, VectorDimension5TableScenario.KNOWN_VECTOR_ROW_JSON);

@@ -6,30 +6,31 @@ import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.hasEntry;
 
 import io.restassured.response.ValidatableResponse;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import java.util.List;
 import java.util.Map;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
 public class DataApiResponseValidator {
   protected final ValidatableResponse response;
-  protected final Command.CommandName commandName;
+  protected final CommandName commandName;
 
   private final TypeSafeMatcher<Map<String, ?>> responseIsSuccess;
   private final TypeSafeMatcher<Map<String, ?>> responseIsError;
 
-  public DataApiResponseValidator(Command.CommandName commandName, ValidatableResponse response) {
+  public DataApiResponseValidator(CommandName commandName, ValidatableResponse response) {
     this.commandName = commandName;
     this.response = response;
 
     this.responseIsError =
         switch (commandName) {
-          case DROP_TABLE, DROP_INDEX, CREATE_INDEX, CREATE_TABLE, ALTER_TABLE ->
+          case DROP_TABLE, DROP_INDEX, CREATE_INDEX, CREATE_TABLE, ALTER_TABLE, FIND_ONE, FIND ->
               responseIsErrorWithOptionalStatus();
           default -> responseIsError();
         };
@@ -44,9 +45,11 @@ public class DataApiResponseValidator {
                   CREATE_INDEX,
                   DROP_INDEX,
                   CREATE_VECTOR_INDEX,
-                  LIST_TABLES ->
+                  LIST_TABLES,
+                  LIST_INDEXES ->
               responseIsDDLSuccess();
           case CREATE_COLLECTION -> responseIsDDLSuccess();
+          case COUNT_DOCUMENTS -> responseIsCountSuccess();
           default ->
               throw new IllegalArgumentException(
                   "DataApiResponseValidator: Unexpected command name: " + commandName);
@@ -103,7 +106,7 @@ public class DataApiResponseValidator {
       case ALTER_TABLE, CREATE_TABLE, DROP_TABLE, CREATE_INDEX, DROP_INDEX, CREATE_VECTOR_INDEX -> {
         return hasNoErrors().hasStatusOK();
       }
-      case LIST_TABLES -> {
+      case LIST_TABLES, LIST_INDEXES -> {
         return hasNoErrors();
       }
       case CREATE_COLLECTION -> {
@@ -239,7 +242,29 @@ public class DataApiResponseValidator {
     return validator;
   }
 
-  public DataApiResponseValidator mayHasSingleWarning(WarningException.Code warningExceptionCode) {
+  public DataApiResponseValidator hasWarning(
+      int position, WarningException.Code code, String... messageSnippet) {
+    var validator =
+        body(
+                "status.warnings[%s]".formatted(position),
+                hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+            .body(
+                "status.warnings[%s]".formatted(position),
+                hasEntry(
+                    ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+            .body(
+                "status.warnings[%s]".formatted(position),
+                hasEntry(ErrorObjectV2Constants.Fields.CODE, code.name()));
+
+    for (String snippet : messageSnippet) {
+      validator =
+          validator.body(
+              "status.warnings[%s].message".formatted(position), containsString(snippet));
+    }
+    return validator;
+  }
+
+  public DataApiResponseValidator mayHaveSingleWarning(WarningException.Code warningExceptionCode) {
     if (warningExceptionCode == null) {
       return hasNoWarnings();
     }
@@ -264,6 +289,11 @@ public class DataApiResponseValidator {
     return body("status.insertedIds", hasSize(count));
   }
 
+  public DataApiResponseValidator hasInsertedIds(List<?>... ids) {
+    body("status.insertedIds", hasSize(ids.length));
+    return body("status.insertedIds", is(List.of(ids)));
+  }
+
   // // // Read Command Validation // // //
 
   public DataApiResponseValidator hasSingleDocument() {
@@ -286,9 +316,13 @@ public class DataApiResponseValidator {
     return body("data.documents", hasSize(size));
   }
 
+  public DataApiResponseValidator verifyDataDocuments(String expectedJson) {
+    return body("data.documents", jsonEquals(expectedJson));
+  }
+
   // // // Projection Schema // // //
   public DataApiResponseValidator hasProjectionSchema() {
-    return hasField("status." + CommandStatus.PROJECTION_SCHEMA);
+    return hasField("status." + CommandStatus.PROJECTION_SCHEMA.apiName());
   }
 
   public DataApiResponseValidator hasProjectionSchemaWith(ApiColumnDef columnDef) {
@@ -360,5 +394,30 @@ public class DataApiResponseValidator {
     } else {
       return body("status.sortVector", is(nullValue()));
     }
+  }
+
+  public DataApiResponseValidator hasIndexes(String... indexes) {
+    return body("status.indexes", hasSize(indexes.length))
+        .body("status.indexes", containsInAnyOrder(indexes));
+  }
+
+  public DataApiResponseValidator doesNotHaveIndexes(String... indexes) {
+    DataApiResponseValidator toReturn = this;
+    for (String index : indexes) {
+      toReturn = body("status.indexes", not(contains(index)));
+    }
+    return toReturn;
+  }
+
+  public DataApiResponseValidator hasNextPageState() {
+    return body("data.nextPageState", is(notNullValue()));
+  }
+
+  public String extractNextPageState() {
+    return response.extract().path("data.nextPageState");
+  }
+
+  public DataApiResponseValidator doesNotHaveNextPageState() {
+    return body("$", not(hasKey("data.nextPageState")));
   }
 }

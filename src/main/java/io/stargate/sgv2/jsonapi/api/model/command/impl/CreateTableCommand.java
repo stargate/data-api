@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.TableOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDefinitionDesc;
 import jakarta.annotation.Nullable;
@@ -12,10 +13,8 @@ import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-// TODO, hide table feature detail before it goes public,
-// https://github.com/stargate/data-api/pull/1360
-// @Schema(description = "Command that creates an api table.")
-@JsonTypeName("createTable")
+@Schema(description = "Command that creates an API Table.")
+@JsonTypeName(CommandName.Names.CREATE_TABLE)
 public record CreateTableCommand(
     @NotNull
         @Size(min = 1, max = 48)

@@ -53,6 +53,6 @@ public class ListTablesCommandResolver implements CommandResolver<ListTablesComm
             .usingCommandStatus(CommandStatus.EXISTING_TABLES)
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled());
 
-    return new GenericOperation(attempts, pageBuilder, new KeyspaceDriverExceptionHandler(command));
+    return new GenericOperation(attempts, pageBuilder, new KeyspaceDriverExceptionHandler());
   }
 }

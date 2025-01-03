@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
 import jakarta.annotation.Nullable;
@@ -15,7 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * @param options
  */
 @Schema(description = "Command that drops an index for a column.")
-@JsonTypeName("dropIndex")
+@JsonTypeName(CommandName.Names.DROP_INDEX)
 public record DropIndexCommand(
     @NotNull @Schema(description = "Name for the index to be dropped.") String name,
     @Nullable @Schema(description = "Dropping index command option.", type = SchemaType.OBJECT)

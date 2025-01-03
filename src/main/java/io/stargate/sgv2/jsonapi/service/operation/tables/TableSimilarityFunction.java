@@ -9,6 +9,7 @@ import com.datastax.oss.driver.api.querybuilder.select.Selector;
 import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
 import io.stargate.sgv2.jsonapi.api.model.command.VectorSortable;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.util.function.Function;
@@ -44,11 +45,17 @@ public interface TableSimilarityFunction extends Function<Select, Select> {
     }
 
     var requestedVectorColumnPath = sortExpression.pathAsCqlIdentifier();
+    // TODO: This is a hack, we need to refactor these methods in ApiColumnDefContainer.
+    // Currently, this matcher is just for match vector columns, and then to avoid hit the
+    // typeName() placeholder exception in UnsupportedApiDataType
+    var matcher =
+        ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true);
     var apiColumnDef =
         table
             .apiTableDef()
             .allColumns()
-            .filterBy(ApiTypeName.VECTOR)
+            .filterBySupport(matcher)
+            .filterByApiTypeName(ApiTypeName.VECTOR)
             .get(requestedVectorColumnPath);
     if (apiColumnDef == null) {
       // column does not exist or is not a vector, ignore because sort will fail
@@ -63,7 +70,7 @@ public interface TableSimilarityFunction extends Function<Select, Select> {
 
     // similarityFunction is from index, default to cosine. In projection,
     // we do not care about if the vector column in indexed or not, capture by vector sort.
-    var similarityFunction = vectorColDefinition.get().similarityFunction().getFunction();
+    var similarityFunction = vectorColDefinition.get().similarityFunction().cqlProjectionFunction();
 
     return new TableSimilarityFunctionImpl(
         requestedVectorColumnPath,

@@ -14,8 +14,6 @@ import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Configured to execute queries for a specific command that relies on drive profiles MORE TODO
@@ -57,8 +55,6 @@ public class CommandQueryExecutor {
       this.profileSuffix = name().toLowerCase();
     }
   }
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(CommandQueryExecutor.class);
 
   private final CQLSessionCache cqlSessionCache;
   private final RequestContext requestContext;
@@ -133,7 +129,7 @@ public class CommandQueryExecutor {
   public Uni<AsyncResultSet> executeTruncate(SimpleStatement statement) {
     Objects.requireNonNull(statement, "statement must not be null");
 
-    statement = withExecutionProfile(statement, QueryType.WRITE);
+    statement = withExecutionProfile(statement, QueryType.TRUNCATE);
     return executeAndWrap(statement);
   }
 

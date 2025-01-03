@@ -139,7 +139,7 @@ public class CommandResultBuilder {
       cmdStatus.put(CommandStatus.WARNINGS, warnings);
     }
 
-    // null out values that are empty, the CommandResult serialiser will ignore them when the JSON
+    // null out values that are empty, the CommandResult serializer will ignore them when the JSON
     // is built
     var finalStatus = cmdStatus.isEmpty() ? null : cmdStatus;
     var finalErrors = cmdErrors.isEmpty() ? null : cmdErrors;

@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1.util;
 
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,12 +42,12 @@ public class TableTemplates extends TemplateRunner {
   }
 
   public DataApiResponseValidator find(
-      Command.CommandName commandName, Map<String, Object> filter, List<String> columns) {
+      CommandName commandName, Map<String, Object> filter, List<String> columns) {
     return find(commandName, filter, columns, null);
   }
 
   public DataApiResponseValidator find(
-      Command.CommandName commandName,
+      CommandName commandName,
       Map<String, Object> filter,
       List<String> columns,
       Map<String, Object> sort) {
@@ -55,7 +55,7 @@ public class TableTemplates extends TemplateRunner {
   }
 
   public DataApiResponseValidator find(
-      Command.CommandName commandName,
+      CommandName commandName,
       Map<String, Object> filter,
       List<String> columns,
       Map<String, Object> sort,
@@ -166,7 +166,7 @@ public class TableTemplates extends TemplateRunner {
     return sender.postDeleteOne(json);
   }
 
-  public DataApiResponseValidator delete(Command.CommandName deleteCommand, String filterJSON) {
+  public DataApiResponseValidator delete(CommandName deleteCommand, String filterJSON) {
     return switch (deleteCommand) {
       case DELETE_ONE -> deleteOne(filterJSON);
       case DELETE_MANY -> deleteMany(filterJSON);
@@ -246,5 +246,39 @@ public class TableTemplates extends TemplateRunner {
           """
             .formatted(alterOperation, asJSON(columns));
     return sender.postAlterTable(json);
+  }
+
+  public DataApiResponseValidator alterTable(String alterOperation, String columns) {
+    var json =
+            """
+            {
+              "operation" : {
+                "%s": %s
+              }
+            }
+          """
+            .formatted(alterOperation, columns);
+    return sender.postAlterTable(json);
+  }
+
+  public DataApiResponseValidator listIndexes(boolean explain) {
+    String json =
+            """
+        {
+          "options" : {
+            "explain" : %s
+          }
+       }
+        """
+            .formatted(explain);
+    return sender.postListIndexes(json);
+  }
+
+  // ==================================================================================================================
+  // DQL - COUNT
+  // ==================================================================================================================
+
+  public DataApiResponseValidator count() {
+    return sender.postCount();
   }
 }

@@ -23,6 +23,8 @@ public class RequestException extends APIException {
     DOCUMENT,
     /** See {@link FilterException} */
     FILTER,
+    /** See {@link ProjectionException} */
+    PROJECTION,
     /** See {@link SchemaException} */
     SCHEMA,
     /** See {@link SortException} */
@@ -39,8 +41,9 @@ public class RequestException extends APIException {
   }
 
   public enum Code implements ErrorCode<RequestException> {
-    // TODO: remove fake error code, just here so it compiles
-    FAKE_CODE;
+    UNSUPPORTED_TABLE_COMMAND,
+    UNSUPPORTED_COLLECTION_COMMAND,
+    ;
 
     private final ErrorTemplate<RequestException> template;
 

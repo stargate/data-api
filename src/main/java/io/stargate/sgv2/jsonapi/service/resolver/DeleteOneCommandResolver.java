@@ -70,7 +70,7 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
 
     // Sort clause is not supported for table deleteOne command.
     if (command.sortClause() != null && !command.sortClause().isEmpty()) {
-      throw SortException.Code.CANNOT_SORT_TABLE_DELETE_COMMAND.get(
+      throw SortException.Code.UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND.get(
           errVars(ctx.schemaObject(), map -> {}));
     }
 

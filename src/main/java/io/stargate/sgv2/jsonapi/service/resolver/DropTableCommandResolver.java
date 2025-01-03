@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+
 import com.datastax.oss.driver.api.querybuilder.schema.Drop;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
@@ -13,7 +15,7 @@ import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DropTableAttemptBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.tables.DropTableExceptionHandler;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.util.List;
@@ -30,10 +32,13 @@ public class DropTableCommandResolver implements CommandResolver<DropTableComman
   @Override
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, DropTableCommand command) {
+
+    var tableName = cqlIdentifierFromUserInput(command.name());
     final boolean ifExists =
         Optional.ofNullable(command.options())
             .map(DropTableCommand.Options::ifExists)
             .orElse(false);
+
     final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
         new SchemaAttempt.SchemaRetryPolicy(
             ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
@@ -53,7 +58,6 @@ public class DropTableCommandResolver implements CommandResolver<DropTableComman
         SchemaAttemptPage.<KeyspaceSchemaObject>builder()
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled());
 
-    return new GenericOperation<>(
-        attempts, pageBuilder, new KeyspaceDriverExceptionHandler(command));
+    return new GenericOperation<>(attempts, pageBuilder, new DropTableExceptionHandler(tableName));
   }
 }

@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
@@ -17,7 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(
     description =
         "Command that finds documents from a collection and updates it with the values provided in the update clause.")
-@JsonTypeName("updateMany")
+@JsonTypeName(CommandName.Names.UPDATE_MANY)
 public record UpdateManyCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
     @NotNull @Valid @JsonProperty("update") UpdateClause updateClause,

@@ -30,6 +30,9 @@ public class CqlPagingState {
 
   public static CqlPagingState from(String pagingState) {
     return switch (pagingState) {
+        // null and empty string are considered empty paging state
+        // any non-zero length string is considered page state
+        // the same standard is used in collections
       case null -> EMPTY;
       case "" -> EMPTY;
       default -> new CqlPagingState(false, pagingState, decode(pagingState));
@@ -56,6 +59,18 @@ public class CqlPagingState {
 
   public Optional<String> getPagingStateString() {
     return isEmpty ? Optional.empty() : Optional.of(pagingStateString);
+  }
+
+  @Override
+  public String toString() {
+    return new StringBuilder("CqlPagingState{")
+        .append("isEmpty=")
+        .append(isEmpty)
+        .append(", pagingStateString='")
+        .append(pagingStateString)
+        .append('\'')
+        .append('}')
+        .toString();
   }
 
   private static ByteBuffer decode(String pagingState) {

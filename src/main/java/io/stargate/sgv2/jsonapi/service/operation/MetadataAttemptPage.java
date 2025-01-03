@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.util.function.Supplier;
 
@@ -27,8 +26,7 @@ public abstract class MetadataAttemptPage<SchemaT extends SchemaObject>
     this.statusKey = statusKey;
   }
 
-  public static <SchemaT extends KeyspaceSchemaObject>
-      MetadataAttemptPage.Builder<SchemaT> builder() {
+  public static <SchemaT extends SchemaObject> MetadataAttemptPage.Builder<SchemaT> builder() {
     return new MetadataAttemptPage.Builder<>();
   }
 
