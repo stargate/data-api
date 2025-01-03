@@ -909,7 +909,7 @@ request-errors:
             
       `regular` index type should be used in `createIndex` command and `vector` index type should be used in `createVectorIndex` command. 
       
-      Support for `collection` and `text-analysed` index types will be expanded in future releases.
+      Support for `collection` and `text-analysed` index types may be expanded in future releases.
       
       Resend the command using a supported index type.    
 
