@@ -22,17 +22,6 @@ import java.util.*;
  */
 public interface CqlVectorUtil {
   /**
-   * Method for converting binary-packed representation of a CQL {@code float} vector into a {@link
-   * CqlVector} instance.
-   *
-   * @param packedBytes binary-packed representation of the vector
-   * @return {@link CqlVector} instance representing the vector
-   */
-  static CqlVector<Float> bytesToCqlVector(byte[] packedBytes) {
-    return floatsToCqlVector(bytesToFloats(packedBytes));
-  }
-
-  /**
    * Method for converting binary-packed representation of a CQL {@code float} vector into a raw
    * {@code float[]} array.
    *
