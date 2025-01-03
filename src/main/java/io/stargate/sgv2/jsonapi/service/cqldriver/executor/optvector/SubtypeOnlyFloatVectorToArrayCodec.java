@@ -169,8 +169,7 @@ public class SubtypeOnlyFloatVectorToArrayCodec implements TypeCodec<float[]> {
     Iterator<String> strIterator = strIterable.iterator();
     for (int i = 0; i < rv.length; ++i) {
       String strVal = strIterator.next();
-      // TODO: String.isBlank() should be included here but it's only available with Java11+
-      if (strVal == null || strVal.isEmpty()) {
+      if (strVal == null || strVal.isBlank()) {
         throw new IllegalArgumentException("Null element observed in float array string");
       }
       rv[i] = floatCodec.parse(strVal).floatValue();

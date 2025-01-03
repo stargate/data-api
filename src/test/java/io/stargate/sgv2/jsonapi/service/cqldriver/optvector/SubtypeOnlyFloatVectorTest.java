@@ -33,7 +33,7 @@ import org.junit.Test;
 public class SubtypeOnlyFloatVectorTest {
 
   @Test
-  public void should_find_subtype_only_codec_regardless_of_size() {
+  public void shouldFindSubtypeOnlyCodecRegardlessOfSize() {
 
     MutableCodecRegistry registry = new DefaultCodecRegistry("subtype_only");
     registry.register(SubtypeOnlyFloatVectorToArrayCodec.instance());
@@ -49,7 +49,7 @@ public class SubtypeOnlyFloatVectorTest {
   }
 
   @Test
-  public void should_encode_and_decode_vectors_of_arbitrary_size() {
+  public void shouldEncodeAndDecodeVectorsOfArbitrarySize() {
 
     MutableCodecRegistry registry = new DefaultCodecRegistry("subtype_only");
     registry.register(SubtypeOnlyFloatVectorToArrayCodec.instance());
