@@ -18,6 +18,14 @@ import org.junit.jupiter.api.*;
 class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   String testTableName = "tableForCreateIndexTest";
 
+  private void verifyCreatedIndex(String indexName) {
+    assertTableCommand(keyspaceName, testTableName)
+        .templated()
+        .listIndexes(false)
+        .wasSuccessful()
+        .hasIndexes(indexName);
+  }
+
   @BeforeAll
   public final void createSimpleTable() {
     assertNamespaceCommand(keyspaceName)
@@ -68,6 +76,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                   }
                   """)
           .wasSuccessful();
+
+      verifyCreatedIndex("age_idx");
     }
 
     @Test
@@ -83,6 +93,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                           }
                           """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_idx");
     }
 
     @Test
@@ -101,6 +113,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
             }
             """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_1_idx");
     }
 
     @Test
@@ -119,6 +133,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                   }
                                   """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_2_idx");
     }
 
     @Test
@@ -137,6 +153,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                   }
                                   """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_3_idx");
     }
 
     @Test
@@ -157,6 +175,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                       }
                               """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_4_idx");
     }
 
     @Test
@@ -226,6 +246,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                           }
                                           """)
           .wasSuccessful();
+
+      verifyCreatedIndex("physicalAddress_idx");
     }
 
     @Test
@@ -256,6 +278,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                 }
                                 """)
           .wasSuccessful();
+
+      verifyCreatedIndex("comment_idx");
     }
 
     @Test
@@ -272,6 +296,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                 }
                                 """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_5_idx");
     }
   }
 
@@ -291,6 +317,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                           }
                                           """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vector_type_1_idx");
     }
 
     @Test
@@ -309,6 +337,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                           }
                                           """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vector_type_2_idx");
     }
 
     @Test
@@ -327,6 +357,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                       }
                       """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vector_type_3_idx");
     }
 
     @Test
@@ -345,8 +377,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                 }
                               }
                               """)
-          .hasNoErrors()
-          .body("status.ok", is(1));
+          .wasSuccessful();
+
+      verifyCreatedIndex("vector_type_4_idx");
     }
 
     @Test
@@ -363,6 +396,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                 }
                                 """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vector_type_6_idx");
     }
   }
 
