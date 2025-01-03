@@ -872,6 +872,17 @@ request-errors:
       Resend the command using only columns defined in the table schema.
 
   - scope: SCHEMA
+    code: UNKNOWN_INDEX_TYPE
+    title: Index type is unknown
+    body: |-
+      The command attempted to create an index using an unknown type.
+      
+      The known index types are: ${knownTypes}.
+      The command used the unknown index type: ${unknownType}.
+      
+      Resend the command using a known index type.
+
+  - scope: SCHEMA
     code: UNSUPPORTED_INDEXING_FOR_DATA_TYPES
     title: Indexing not supported by data types
     body: |-
@@ -886,6 +897,21 @@ request-errors:
       The command attempted to index the unsupported columns: ${unsupportedColumns}.
       
       Resend the command using columns of the supported data types.
+
+  - scope: SCHEMA
+    code: UNSUPPORTED_INDEX_TYPE
+    title: Index type is not supported
+    body: |-
+      The command attempted to create an index using an unsupported type.
+      
+      The supported index types are: ${supportedTypes}.
+      The command used the unsupported index type: ${unsupportedType}.
+            
+      `regular` index type should be used in `createIndex` command and `vector` index type should be used in `createVectorIndex` command. 
+      
+      Support for `collection` and `text-analysed` index types may be expanded in future releases.
+      
+      Resend the command using a supported index type.    
 
   - scope: SCHEMA
     code: UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES

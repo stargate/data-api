@@ -401,6 +401,10 @@ public class DataApiResponseValidator {
         .body("status.indexes", containsInAnyOrder(indexes));
   }
 
+  public DataApiResponseValidator hasIndex(String index) {
+    return body("status.indexes", hasItem(index));
+  }
+
   public DataApiResponseValidator doesNotHaveIndexes(String... indexes) {
     DataApiResponseValidator toReturn = this;
     for (String index : indexes) {

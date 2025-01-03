@@ -60,6 +60,11 @@ public class UnsupportedIndex implements ApiIndexDef {
       }
 
       @Override
+      public String indexType() {
+        return "UNKNOWN";
+      }
+
+      @Override
       public UnsupportedIndexDefinitionDesc definition() {
         return definition;
       }
