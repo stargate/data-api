@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
-import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -173,7 +172,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                           }
                         }
                       }
-                              """)
+                      """)
           .wasSuccessful();
 
       verifyCreatedIndex("vehicle_id_4_idx");
