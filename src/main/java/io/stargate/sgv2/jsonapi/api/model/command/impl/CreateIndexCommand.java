@@ -19,7 +19,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonPropertyOrder({"name", "definition", "options"})
 public record CreateIndexCommand(
     @NotNull
-        // TODO: it seems CQL allows index name to begin with and contain any character. Should we completely remove it?
+        // TODO: it seems CQL allows index name to begin with and contain any character. Should we
+        // completely remove it?
         // https://docs.datastax.com/en/cql-oss/3.x/cql/cql_reference/ref-lexical-valid-chars.html
         @Size(min = 1, max = 48)
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")

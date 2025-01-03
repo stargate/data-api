@@ -17,8 +17,11 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonTypeName(CommandName.Names.CREATE_KEYSPACE)
 public record CreateKeyspaceCommand(
     @NotNull
-        // TODO: according to issue #1814, it's ok to create a keyspace with a name that starts with a number like "2DQJAUtSzzzKP9buDTvUvPk3", should make it align with CQL?
-        // "Keyspace names can have up to 48 alpha-numeric characters and contain underscores; only letters and numbers are supported as the first character. Cassandra forces keyspace names to lowercase when entered without quotes."
+        // TODO: according to issue #1814, it's ok to create a keyspace with a name that starts with
+        // a number like "2DQJAUtSzzzKP9buDTvUvPk3", should make it align with CQL?
+        // "Keyspace names can have up to 48 alpha-numeric characters and contain underscores; only
+        // letters and numbers are supported as the first character. Cassandra forces keyspace names
+        // to lowercase when entered without quotes."
         // https://docs.datastax.com/en/cql-oss/3.3/cql/cql_reference/cqlCreateKeyspace.html
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Size(min = 1, max = 48)

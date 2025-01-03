@@ -6,14 +6,12 @@ import io.stargate.sgv2.jsonapi.config.constants.VectorIndexDescDefaults;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @JsonPropertyOrder({"column", "options"})
 public record VectorIndexDefinitionDesc(
-    @NotNull
-        @Schema(description = "Name of the column for which index to be created.")
+    @NotNull @Schema(description = "Name of the column for which index to be created.")
         String column,
     @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable

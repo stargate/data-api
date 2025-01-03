@@ -4,15 +4,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @JsonPropertyOrder({"column", "options"})
 public record RegularIndexDefinitionDesc(
-    @NotNull
-        @Schema(description = "Name of the column for which index to be created.")
+    @NotNull @Schema(description = "Name of the column for which index to be created.")
         String column,
     @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable

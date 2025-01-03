@@ -39,8 +39,6 @@ import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -178,12 +176,8 @@ public class CollectionResource {
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
       @NotNull @Valid CollectionCommand command,
-      @PathParam("keyspace")
-          @NotNull
-          String keyspace,
-      @PathParam("collection")
-          @NotNull
-          String collection) {
+      @PathParam("keyspace") @NotNull String keyspace,
+      @PathParam("collection") @NotNull String collection) {
     return schemaCache
         .getSchemaObject(
             dataApiRequestInfo,

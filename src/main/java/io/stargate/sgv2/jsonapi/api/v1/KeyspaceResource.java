@@ -24,8 +24,6 @@ import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -113,10 +111,7 @@ public class KeyspaceResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
-      @NotNull @Valid KeyspaceCommand command,
-      @PathParam("keyspace")
-          @NotNull
-          String keyspace) {
+      @NotNull @Valid KeyspaceCommand command, @PathParam("keyspace") @NotNull String keyspace) {
 
     final ApiFeatures apiFeatures =
         ApiFeatures.fromConfigAndRequest(apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
