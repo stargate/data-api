@@ -8,6 +8,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiResponseValidator;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.AllScalarTypesTableScenario;
+import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import io.stargate.sgv2.jsonapi.fixtures.types.ApiDataTypesForTesting;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
@@ -141,6 +142,19 @@ public class ProjectionSchemaIntegrationTest extends AbstractTableIntegrationTes
         .hasDocuments(1)
         .hasProjectionSchemaWith("id", ApiDataTypeDefs.TEXT)
         .doesNotHaveProjectionSchemaWith("MISSING_COLUMN");
+  }
+
+  @Test
+  public void findProjectionUnknownColumns() {
+
+    // Select a column that does not exist, should not be in the projection schema
+    assertTableCommand(keyspaceName, TABLE_NAME)
+        .templated()
+        .find(Map.of("id", "row-1"), List.of("FAKE2", "FAKE1"), Map.of(), Map.of())
+        .hasSingleApiError(
+            ProjectionException.Code.UNKNOWN_TABLE_COLUMNS,
+            ProjectionException.class,
+            "The projection included the following unknown columns: [FAKE2, FAKE1]");
   }
 
   private DataApiResponseValidator assertProjectionSchema(
