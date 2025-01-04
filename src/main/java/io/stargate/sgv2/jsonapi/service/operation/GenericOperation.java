@@ -112,16 +112,15 @@ public class GenericOperation<
 
       return attemptMulti.transformToUniAndConcatenate(
           attempt -> {
-            var failFast = attempts.shouldFailFast();
+            var failFast = attempts.shouldFailFast(attempt);
             LOGGER.debug(
                 "startMulti() - dequeuing attempt for sequential processing, failFast={}, attempt={}",
                 failFast,
                 attempt);
-
             if (failFast) {
-              // Stop processing attemps, but we do not want to return a UniFailure, so we set the
+              // Stop processing attempts, but we do not want to return a UniFailure, so we set the
               // attempt to skipped
-              // and do not call exectute() on it.
+              // and do not call execute() on it.
               return Uni.createFrom().item(attempt.setSkippedIfReady());
             }
             return attempt.execute(commandQueryExecutor, driverExceptionHandler);
