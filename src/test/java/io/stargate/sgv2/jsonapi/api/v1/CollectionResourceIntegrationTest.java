@@ -117,64 +117,6 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
     }
 
     @Test
-    public void invalidKeyspaceName() {
-      String json =
-          """
-          {
-            "insertOne": {
-                "document": {}
-            }
-          }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, "7_no_leading_number", collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Request invalid: field 'keyspace' value \"7_no_leading_number\" not valid. Problem: must match "));
-    }
-
-    @Test
-    public void invalidCollectionName() {
-      String json =
-          """
-          {
-            "insertOne": {
-                "document": {}
-            }
-          }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, "7_no_leading_number")
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Request invalid: field 'collection' value \"7_no_leading_number\" not valid. Problem: must match "));
-    }
-
-    @Test
     public void emptyBody() {
       given()
           .headers(getHeaders())

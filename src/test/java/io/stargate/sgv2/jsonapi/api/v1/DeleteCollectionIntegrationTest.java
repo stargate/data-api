@@ -103,7 +103,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].message",
               is(
-                  "Request invalid: field 'command.name' value `null` not valid. Problem: must not be null."));
+                  "Request invalid: field 'command.name' value `null` not valid. Problem: must not be empty."));
     }
   }
 

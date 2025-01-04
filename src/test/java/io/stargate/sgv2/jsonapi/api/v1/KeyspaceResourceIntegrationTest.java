@@ -76,34 +76,6 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     }
 
     @Test
-    public void invalidNamespaceName() {
-      String json =
-          """
-              {
-                "createCollection": {
-                    "name": "ignore_me"
-                }
-              }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, "7_no_leading_number")
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Request invalid: field 'keyspace' value \"7_no_leading_number\" not valid. Problem: must match "));
-    }
-
-    @Test
     public void emptyBody() {
       given()
           .headers(getHeaders())

@@ -21,6 +21,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonTypeName(CommandName.Names.CREATE_NAMESPACE)
 public record CreateNamespaceCommand(
     @NotNull
+        // TODO: similar issue to createKeyspace
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Size(min = 1, max = 48)
         @Schema(

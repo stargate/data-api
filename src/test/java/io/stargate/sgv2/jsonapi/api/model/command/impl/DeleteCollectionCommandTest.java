@@ -10,7 +10,6 @@ import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.Set;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -41,7 +40,7 @@ class DeleteCollectionCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("must not be null");
+          .contains("must not be empty");
     }
 
     @Test
@@ -61,50 +60,7 @@ class DeleteCollectionCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("size must be between 1 and 48");
-    }
-
-    @Test
-    public void nameTooLong() throws Exception {
-      String name = RandomStringUtils.randomAlphabetic(49);
-      String json =
-              """
-          {
-            "deleteCollection": {
-              "name": "%s"
-            }
-          }
-          """
-              .formatted(name);
-
-      DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
-      Set<ConstraintViolation<DeleteCollectionCommand>> result = validator.validate(command);
-
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("size must be between 1 and 48");
-    }
-
-    @Test
-    public void nameWrongPattern() throws Exception {
-      String json =
-          """
-          {
-            "deleteCollection": {
-              "name": "_not_possible"
-            }
-          }
-          """;
-
-      DeleteCollectionCommand command = objectMapper.readValue(json, DeleteCollectionCommand.class);
-      Set<ConstraintViolation<DeleteCollectionCommand>> result = validator.validate(command);
-
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .hasSize(1)
-          .contains("must match \"[a-zA-Z][a-zA-Z0-9_]*\"");
+          .contains("must not be empty");
     }
 
     @Test

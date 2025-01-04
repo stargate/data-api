@@ -17,6 +17,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonTypeName(CommandName.Names.CREATE_VECTOR_INDEX)
 public record CreateVectorIndexCommand(
     @NotNull
+        // TODO: the issue similar to CreateIndexCommand
         @Size(min = 1, max = 48)
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the column to create the index on")
