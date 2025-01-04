@@ -50,8 +50,7 @@ public class DeleteAttemptPage<SchemaT extends TableBasedSchemaObject>
       // returning a document
       // e.g. for findOneAndDelete, for now it is always status only
 
-      return new DeleteAttemptPage<>(
-          attempts, CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode));
+      return new DeleteAttemptPage<>(attempts, CommandResult.statusOnlyBuilder(debugMode));
     }
   }
 }

@@ -18,20 +18,15 @@ import java.util.Map;
 public class APIExceptionCommandErrorBuilder {
 
   private final boolean debugEnabled;
-  private final boolean returnErrorObjectV2;
 
   /**
    * Create a new instance that will create a {@link CommandResult.Error} with the given options.
    *
    * @param debugEnabled if <code>true</code> the {@link CommandResult.Error} will include the
    *     {@link ErrorObjectV2Constants.Fields#EXCEPTION_CLASS} field.
-   * @param returnErrorObjectV2 if <code>true</code> will include the fields for the V2 error object
-   *     such as family etc
    */
-  public APIExceptionCommandErrorBuilder(boolean debugEnabled, boolean returnErrorObjectV2) {
-
+  public APIExceptionCommandErrorBuilder(boolean debugEnabled) {
     this.debugEnabled = debugEnabled;
-    this.returnErrorObjectV2 = returnErrorObjectV2;
   }
 
   /**
@@ -57,12 +52,11 @@ public class APIExceptionCommandErrorBuilder {
     // errorFields.put(ErrorObjectV2Constants.Fields.MESSAGE, apiException.body);
     errorFields.put(ErrorObjectV2Constants.Fields.CODE, apiException.code);
 
-    if (returnErrorObjectV2) {
-      errorFields.put(ErrorObjectV2Constants.Fields.FAMILY, apiException.family.name());
-      errorFields.put(ErrorObjectV2Constants.Fields.SCOPE, apiException.scope);
-      errorFields.put(ErrorObjectV2Constants.Fields.TITLE, apiException.title);
-      errorFields.put(ErrorObjectV2Constants.Fields.ID, apiException.errorId);
-    }
+    errorFields.put(ErrorObjectV2Constants.Fields.FAMILY, apiException.family.name());
+    errorFields.put(ErrorObjectV2Constants.Fields.SCOPE, apiException.scope);
+    errorFields.put(ErrorObjectV2Constants.Fields.TITLE, apiException.title);
+    errorFields.put(ErrorObjectV2Constants.Fields.ID, apiException.errorId);
+
     if (debugEnabled) {
       errorFields.put(
           ErrorObjectV2Constants.Fields.EXCEPTION_CLASS, apiException.getClass().getSimpleName());
@@ -83,16 +77,6 @@ public class APIExceptionCommandErrorBuilder {
    * @return a {@link CommandErrorV2} that represents the <code>apiException</code>.
    */
   public CommandErrorV2 buildCommandErrorV2(APIException apiException) {
-    if (!returnErrorObjectV2) {
-      // aaron - oct 9 - I know this seems silly, we are in the process on moving all the errors to
-      // the V2
-      // i added this function to be used with WARNING errors, once we have rolled out the use of
-      // CommandErrorV2
-      // everywhere we wont need this test and there will be one build function
-      throw new IllegalStateException(
-          "Cannot build a V2 error object when returnErrorObjectV2 is false");
-    }
-
     var builder = CommandErrorV2.builderV2();
 
     if (debugEnabled) {

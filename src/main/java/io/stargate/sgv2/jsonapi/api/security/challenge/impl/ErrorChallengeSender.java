@@ -44,8 +44,7 @@ public class ErrorChallengeSender
     CommandResult.Error error =
         new CommandResult.Error(
             message, Collections.emptyMap(), Collections.emptyMap(), Response.Status.UNAUTHORIZED);
-    commandResult =
-        CommandResult.statusOnlyBuilder(false, false).addCommandResultError(error).build();
+    commandResult = CommandResult.statusOnlyBuilder(false).addCommandResultError(error).build();
   }
 
   /** {@inheritDoc} */
