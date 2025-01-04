@@ -15,9 +15,12 @@ import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 @JsonPropertyOrder({TableDescConstants.IndexDesc.NAME, TableDescConstants.IndexDesc.DEFINITION})
 public interface IndexDesc<DefinitionT extends IndexDefinitionDesc<?>> {
 
-  @JsonProperty(TableDescConstants.IndexDesc.NAME)
+  @JsonProperty
   String name();
 
-  @JsonProperty(TableDescConstants.IndexDesc.DEFINITION)
+  @JsonProperty
+  String indexType();
+
+  @JsonProperty
   DefinitionT definition();
 }

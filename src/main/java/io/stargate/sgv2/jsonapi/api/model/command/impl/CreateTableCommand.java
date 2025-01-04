@@ -13,7 +13,7 @@ import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(description = "Command that creates an api table.")
+@Schema(description = "Command that creates an API Table.")
 @JsonTypeName(CommandName.Names.CREATE_TABLE)
 public record CreateTableCommand(
     @NotNull
