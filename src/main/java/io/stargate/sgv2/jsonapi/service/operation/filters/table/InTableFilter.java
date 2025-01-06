@@ -24,7 +24,7 @@ import java.util.List;
 /** API filter $in and $nin against table column. */
 public class InTableFilter extends TableFilter {
 
-  // TODO: this is prob subvlass NativeTypeTableFilter because it is not against a collection
+  // TODO: this is prob sub-class NativeTypeTableFilter because it is not against a collection
   private final List<Object> arrayValue;
 
   public final Operator operator;

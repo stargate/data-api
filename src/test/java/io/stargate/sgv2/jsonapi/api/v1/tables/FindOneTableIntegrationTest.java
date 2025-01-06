@@ -264,7 +264,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
     // for [data-api#1532]
     @Test
     @Order(4)
-    public final void documentIdWith$in() {
+    void documentIdWith$in() {
       final String TABLE_NAME = "findOneIdAndDollarInTable";
       assertNamespaceCommand(keyspaceName)
           .templated()
