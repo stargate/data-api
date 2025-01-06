@@ -61,10 +61,26 @@ jobs:
           mask-password: 'true'
 
       - name: Build and push (Amazon ECR)
+        env:
+          QUARKUS_APPLICATION_NAME: 'Astra DB Serverless Data API'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_DESCRIPTION: 'The Astra DB Serverless Data API modifies and queries data stored as unstructured JSON documents in collections. See the [documentation site](https://docs.datastax.com/en/astra/astra-db-vector/api-reference/data-api.html) for additional information.'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_TERMS_OF_SERVICE: 'https://www.datastax.com/legal'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_CONTACT_NAME: 'DataStax'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_CONTACT_URL: 'https://www.datastax.com/contact-us'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_LICENSE_NAME: ''
+          QUARKUS_SMALLRYE_OPENAPI_INFO_LICENSE_URL: ''
         run: |
           ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true -Dquarkus.container-image.registry=${{ secrets.ECR_REPOSITORY }} -Dquarkus.container-image.tag=${{ github.sha }} -Dquarkus.container-image.additional-tags='' ${{ matrix.profile }}
 
       - name: Build and push image for profiling (Amazon ECR)
+        env:
+          QUARKUS_APPLICATION_NAME: 'Astra DB Serverless Data API'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_DESCRIPTION: 'The Astra DB Serverless Data API modifies and queries data stored as unstructured JSON documents in collections. See the [documentation site](https://docs.datastax.com/en/astra/astra-db-vector/api-reference/data-api.html) for additional information.'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_TERMS_OF_SERVICE: 'https://www.datastax.com/legal'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_CONTACT_NAME: 'DataStax'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_CONTACT_URL: 'https://www.datastax.com/contact-us'
+          QUARKUS_SMALLRYE_OPENAPI_INFO_LICENSE_NAME: ''
+          QUARKUS_SMALLRYE_OPENAPI_INFO_LICENSE_URL: ''
         run: |
           ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true -Dquarkus.container-image.registry=${{ secrets.ECR_REPOSITORY }} -Dquarkus.container-image.tag=${{ github.sha }} -Dquarkus.container-image.additional-tags='' -Dquarkus.container-image.name=jsonapi-profiling -Dquarkus.docker.dockerfile-jvm-path=src/main/docker/Dockerfile-profiling.jvm ${{ matrix.profile }}
 
