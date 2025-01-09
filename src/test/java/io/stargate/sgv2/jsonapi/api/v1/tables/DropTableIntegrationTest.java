@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.hasSize;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
@@ -78,9 +79,14 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
           .wasSuccessful()
           .body("status.tables", hasSize(0));
     }
+  }
 
+  @Nested
+  @Order(2)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class DropTableFails {
     @Test
-    @Order(3)
+    @Order(1)
     public void dropInvalidTableIfExistsFalse() {
       assertNamespaceCommand(keyspaceName)
           .templated()
@@ -89,6 +95,18 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
               SchemaException.Code.CANNOT_DROP_UNKNOWN_TABLE,
               SchemaException.class,
               "The command attempted to drop the unknown table: invalid_table.");
+    }
+
+    // [data-api#1811]: 500 for empty Table name
+    @Test
+    @Order(2)
+    public void dropInvalidTableWithEmptyName() {
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .dropTable("", false)
+          .hasSingleApiError(
+              ErrorCodeV1.COMMAND_FIELD_INVALID,
+              "field 'command.name' value \"\" not valid. Problem: must not be empty.");
     }
   }
 }
