@@ -47,6 +47,8 @@ public enum ErrorCodeV1 {
   /** note: Only used by EmbeddingGateway */
   INVALID_REQUEST("Request not supported by the data store"),
 
+  INVALID_REQUEST_BAD_SYNTAX("Request invalid, JSON syntax incorrect"),
+
   INVALID_REQUEST_NOT_JSON("Request invalid, cannot parse as JSON"),
 
   INVALID_REQUEST_UNKNOWN_FIELD("Request invalid, unrecognized JSON field"),
