@@ -135,6 +135,7 @@ public class DataVectorizerService {
     // Update is handled later because we need to check if the update actually changed a value
     // check the UpdateOperationResult class
     List<DataVectorizer.VectorizeTask> tasks =
+        // TODO(Hazel): remove it once support vectorize in operation
         switch (command) {
           case InsertManyCommand imc ->
               tasksForVectorizeColumns(

@@ -6,7 +6,10 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.COLUMN_METADATA_CO
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.type.VectorType;
 import com.datastax.oss.driver.internal.core.util.Strings;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
@@ -16,11 +19,15 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Builds a {@link WriteableTableRow} from a {@link JsonNamedValueContainer}.
@@ -82,7 +89,29 @@ public class WriteableTableRowBuilder {
     checkAllPrimaryKeys(cqlIdentifierToJsonValue);
     checkUnknownColumns(cqlIdentifierToJsonValue.keySet());
     checkApiSupport(cqlIdentifierToJsonValue.keySet());
-    var decoded = encodeJsonToCql(cqlIdentifierToJsonValue);
+
+    // partition the columns into vectorize and non vectorize columns and encode the non vectorize
+    // columns first
+    Map<Boolean, Map<CqlIdentifier, JsonNamedValue>> partitionedMaps =
+        cqlIdentifierToJsonValue.entrySet().stream()
+            .collect(
+                Collectors.partitioningBy(
+                    entry ->
+                        requiresVectorization(
+                            entry.getKey(), entry.getValue()), // Predicate to check "vector"
+                    Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    Map<CqlIdentifier, JsonNamedValue> cqlIdentifierToJsonValueVectorize =
+        partitionedMaps.get(true);
+    Map<CqlIdentifier, JsonNamedValue> cqlIdentifierToJsonValueNonVectorize =
+        partitionedMaps.get(false);
+    // create the vectorize tasks if any
+    var vectorizeTasks =
+        taskForVectorizeColumns(
+            cqlIdentifierToJsonValueVectorize, cqlIdentifierToJsonValueNonVectorize);
+
+    // TODO(Hazel): previously the "decoded" contains all the columns, but now we only have part of
+    // them. It seems they are not used in anywhere, can we remove them?
+    var decoded = encodeJsonToCql(cqlIdentifierToJsonValueNonVectorize);
 
     // now need to split the columns into key and non key columns
     var keyColumns = new CqlNamedValueContainer();
@@ -107,7 +136,108 @@ public class WriteableTableRowBuilder {
       }
     }
 
-    return new WriteableTableRow(tableSchemaObject, keyColumns, nonKeyColumns);
+    return new WriteableTableRow(tableSchemaObject, keyColumns, nonKeyColumns, vectorizeTasks);
+  }
+
+  // create a method to identify if the vector column needs to be vectorized
+  private boolean requiresVectorization(
+      CqlIdentifier columnCqlIdentifier, JsonNamedValue rawJsonValue) {
+    return tableMetadata
+        .getColumn(columnCqlIdentifier)
+        .map(
+            columnMetadata ->
+                columnMetadata.getType() instanceof VectorType
+                    && rawJsonValue.value().type() == JsonType.STRING)
+        .orElse(false); // Return false if column is not present
+  }
+
+  /**
+   * Creates a list of {@link WriteableTableRow.VectorizeTask} for the columns that are vector
+   * columns and have a vectorize definition.
+   *
+   * <p>Throws a {@link
+   * DocumentException.Code#UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION} if a vector
+   * column is missing a vectorize definition.
+   */
+  private List<WriteableTableRow.VectorizeTask> taskForVectorizeColumns(
+      Map<CqlIdentifier, JsonNamedValue> cqlIdentifierToJsonValueVectorize,
+      Map<CqlIdentifier, JsonNamedValue> cqlIdentifierToJsonValueNonVectorize) {
+
+    var apiTableDef = tableSchemaObject.apiTableDef();
+    // TODO: This is a hack, we need to refactor these methods in ApiColumnDefContainer.
+    // Currently, this matcher is just for match vector columns, and then to avoid hit the
+    // typeName() placeholder exception in UnsupportedApiDataType
+    var matcher =
+        ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true);
+    var vectorColumnDefs =
+        apiTableDef
+            .allColumns()
+            .filterBySupport(matcher)
+            .filterByApiTypeNameToList(ApiTypeName.VECTOR);
+
+    if (vectorColumnDefs.isEmpty()) {
+      return List.of();
+    }
+
+    // get all the fields in the document that are vector columns, and the value of the node is a
+    // string, so we can check if they have a vectorize def.
+    List<ApiColumnDef> candidateVectorizeFields = new ArrayList<>();
+    for (var vectorColumnDef : vectorColumnDefs) {
+      var vectorField =
+          cqlIdentifierToJsonValueVectorize.get(
+              CqlIdentifierUtil.cqlIdentifierFromUserInput(vectorColumnDef.jsonKey()));
+      if (vectorField != null && vectorField.value().type() == JsonType.STRING) {
+        candidateVectorizeFields.add(vectorColumnDef);
+      }
+    }
+
+    // Now check that the columns actually have vectorize enabled.
+    Set<String> nonVectorizeFieldNames = new HashSet<>();
+    Set<ApiColumnDef> supportedVectorizeFields = new HashSet<>();
+    for (var columnDef : candidateVectorizeFields) {
+      if (((ApiVectorType) columnDef.type()).getVectorizeDefinition() == null) {
+        nonVectorizeFieldNames.add(columnDef.jsonKey());
+      } else {
+        supportedVectorizeFields.add(columnDef);
+      }
+    }
+
+    if (!nonVectorizeFieldNames.isEmpty()) {
+      throw DocumentException.Code.UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("validVectorizeColumns", errFmtApiColumnDef(supportedVectorizeFields));
+                map.put("invalidVectorizeColumns", errFmtJoin(nonVectorizeFieldNames));
+              }));
+    }
+
+    var vectorizeTasks = new ArrayList<WriteableTableRow.VectorizeTask>();
+    for (var vectorColumnDef : candidateVectorizeFields) {
+      // if the user sent a blank string for the vectorize field, we just turn that into a null
+      // without vectorizing
+      // but that only applies if the column has a vectorize definition so do it here not above
+      String vectorizeText =
+          (String)
+              cqlIdentifierToJsonValueVectorize
+                  .get(CqlIdentifierUtil.cqlIdentifierFromUserInput(vectorColumnDef.jsonKey()))
+                  .value()
+                  .value();
+      if (vectorizeText.isBlank()) {
+        // change the vector value to null and put it in the non vectorize map, so it will be
+        // encoded to CQL first
+        cqlIdentifierToJsonValueNonVectorize.put(
+            CqlIdentifierUtil.cqlIdentifierFromUserInput(vectorColumnDef.jsonKey()),
+            new JsonNamedValue(
+                JsonPath.rootBuilder().property(vectorColumnDef.jsonKey()).build(),
+                new JsonLiteral<>(null, JsonType.NULL)));
+      } else {
+        // design the task structure - change parentNodeDoc type
+
+      }
+    }
+
+    return vectorizeTasks;
   }
 
   /**

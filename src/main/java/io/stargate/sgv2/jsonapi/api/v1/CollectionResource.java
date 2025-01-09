@@ -234,12 +234,14 @@ public class CollectionResource {
                           .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
                           .orElse(null);
                 } else if (schemaObject.type() == SchemaObject.SchemaObjectType.TABLE) {
+                  // TODO(Hazel): remove get first column, should get all
                   vectorColDef =
                       schemaObject
                           .vectorConfig()
                           .getFirstVectorColumnWithVectorizeDefinition()
                           .orElse(null);
                 }
+                // TODO(Hazel): at least remove this for table
                 EmbeddingProvider embeddingProvider =
                     (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)
                         ? null

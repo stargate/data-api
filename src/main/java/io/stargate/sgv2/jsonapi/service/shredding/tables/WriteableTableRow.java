@@ -1,9 +1,20 @@
 package io.stargate.sgv2.jsonapi.service.shredding.tables;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
+
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -27,6 +38,7 @@ public class WriteableTableRow implements PrettyPrintable {
   private final TableSchemaObject tableSchemaObject;
   private final CqlNamedValueContainer keyColumns;
   private final CqlNamedValueContainer nonKeyColumns;
+  private final List<VectorizeTask> vectorizeTasks;
   private final CqlNamedValueContainer allColumns;
 
   private final RowId id;
@@ -45,11 +57,13 @@ public class WriteableTableRow implements PrettyPrintable {
   public WriteableTableRow(
       TableSchemaObject tableSchemaObject,
       CqlNamedValueContainer keyColumns,
-      CqlNamedValueContainer nonKeyColumns) {
+      CqlNamedValueContainer nonKeyColumns,
+      List<VectorizeTask> vectorizeTasks) {
     this.tableSchemaObject =
         Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     this.keyColumns = Objects.requireNonNull(keyColumns, "keyColumns must not be null");
     this.nonKeyColumns = Objects.requireNonNull(nonKeyColumns, "nonKeyColumns must not be null");
+    this.vectorizeTasks = Objects.requireNonNull(vectorizeTasks, "vectorizeTasks must not be null");
     this.allColumns = new CqlNamedValueContainer();
     this.allColumns.putAll(keyColumns);
     this.allColumns.putAll(nonKeyColumns);
@@ -102,5 +116,86 @@ public class WriteableTableRow implements PrettyPrintable {
   public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
     var sb = prettyToStringBuilder.beginSubBuilder(getClass());
     return toString(sb).endSubBuilder();
+  }
+
+  /** A task to vectorize a single field in a document */
+  public static class VectorizeTask {
+
+    private final Map<CqlIdentifier, JsonNamedValue> cqlIdentifierToRawJson;
+    final ApiColumnDef columnDef;
+    final ApiVectorType vectorType;
+
+    public VectorizeTask(
+        Map<CqlIdentifier, JsonNamedValue> cqlIdentifierToRawJson, ApiColumnDef columnDef) {
+      this.cqlIdentifierToRawJson = cqlIdentifierToRawJson;
+      // Parent can be null if a subclass wants to handle updating the target.
+      this.columnDef = columnDef;
+      // sanity checks
+
+      if (columnDef.type().typeName() != ApiTypeName.VECTOR) {
+        throw new IllegalArgumentException(
+            "Column must be of type VECTOR, columnDef: " + columnDef);
+      }
+      this.vectorType = (ApiVectorType) columnDef.type();
+      Objects.requireNonNull(
+          vectorType.getVectorizeDefinition(),
+          "vectorType.getVectorizeDefinition() must not be null");
+    }
+
+    /**
+     * Call to get the text this task wants to be vectorized
+     *
+     * @return Text to be vectorized
+     */
+    public String getVectorizeText() {
+      return (String)
+          cqlIdentifierToRawJson
+              .get(CqlIdentifierUtil.cqlIdentifierFromUserInput(columnDef.jsonKey()))
+              .value()
+              .value();
+    }
+
+    /**
+     * Call to get this task to set the vector that was created to replace the text.
+     *
+     * @param vector vector to replace the text with
+     */
+    public void setVector(float[] vector) {
+      validateVector(vector);
+      updateTarget(vector);
+    }
+
+    /** Validate the vector length against the definition of what we expected. */
+    private void validateVector(float[] vector) {
+      // Copied from vectorize(List<JsonNode> documents) above leaving as is for now - aaron
+      if (vector.length != vectorType.getDimension()) {
+        throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
+            "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
+            vectorType.getVectorizeDefinition().provider(),
+            vectorType.getDimension(),
+            vector.length);
+      }
+    }
+
+    /**
+     * Update the target with the vector, subclasses should override this if they want to write the
+     * vector somewhere
+     */
+    private void updateTarget(float[] vector) {
+      Objects.requireNonNull(cqlIdentifierToRawJson, "parentObject must not be null");
+
+      var arrayNode = JsonNodeFactory.instance.arrayNode(vector.length);
+      for (float v : vector) {
+        arrayNode.add(JsonNodeFactory.instance.numberNode(v));
+      }
+
+      var value =
+          new JsonNamedValue(
+              JsonPath.rootBuilder().property(columnDef.jsonKey()).build(),
+              RowShredder.shredValue(arrayNode));
+
+      cqlIdentifierToRawJson.put(
+          CqlIdentifierUtil.cqlIdentifierFromUserInput(columnDef.jsonKey()), value);
+    }
   }
 }
