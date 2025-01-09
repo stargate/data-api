@@ -83,10 +83,8 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   @Nested
   @Order(2)
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class DropTableFails {
     @Test
-    @Order(1)
     public void dropInvalidTableIfExistsFalse() {
       assertNamespaceCommand(keyspaceName)
           .templated()
@@ -99,7 +97,6 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
     // [data-api#1811]: 500 for empty Table name
     @Test
-    @Order(2)
     public void dropInvalidTableWithEmptyName() {
       assertNamespaceCommand(keyspaceName)
           .templated()
