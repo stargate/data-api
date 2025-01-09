@@ -18,7 +18,9 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that drops a table if one exists.")
 @JsonTypeName(CommandName.Names.DROP_TABLE)
 public record DropTableCommand(
-    @NotNull @Schema(description = "Name of the table") @NotEmpty // prevent error from empty String
+    @NotNull
+        @Schema(description = "Name of the table")
+        @NotEmpty // prevent empty String from breaking CQL statement, validate early
         String name,
     @Nullable @Schema(description = "Dropping table command option.", type = SchemaType.OBJECT)
         Options options)
