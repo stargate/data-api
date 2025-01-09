@@ -138,7 +138,7 @@ public class DataApiResponseValidator {
     return hasSingleApiError(errorCode, containsString(messageSnippet));
   }
 
-  // aaron 19-oct-2024 added wheile redoing a lot of errors, we still need to cleanup the error code
+  // aaron 19-oct-2024 added while redoing a lot of errors, we still need to cleanup the error code
   // world
   public DataApiResponseValidator hasSingleApiError(String errorCode, String messageSnippet) {
     return body("$", responseIsError)
