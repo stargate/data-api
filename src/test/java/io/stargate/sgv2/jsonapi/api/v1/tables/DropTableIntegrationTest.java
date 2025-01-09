@@ -63,8 +63,8 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
           .body("status.tables[0]", equalTo(duplicateTableName));
     }
 
-    @Order(2)
     @Test
+    @Order(2)
     public void dropTableWithIfExists() {
       for (int i = 0; i < 2; i++) {
         assertNamespaceCommand(keyspaceName)
