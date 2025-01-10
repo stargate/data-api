@@ -34,7 +34,7 @@ public class ApiTableDef {
   private final ApiColumnDefContainer nonPKColumns;
   private final ApiColumnDefContainer unsupportedColumns;
 
-  // split into two so we do not accidentally reference an index we cannot use.
+  // split into two, so we do not accidentally reference an index we cannot use.
   private final ApiIndexDefContainer supportedIndexes;
   private final ApiIndexDefContainer indexesIncludingUnsupported;
 
@@ -152,7 +152,7 @@ public class ApiTableDef {
   }
 
   /** Get all the indexes on this table that are supported by the API */
-  public ApiIndexDefContainer indexes() {
+  public ApiIndexDefContainer supportedIndexes() {
     return supportedIndexes;
   }
 
