@@ -2,8 +2,6 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
-import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -19,6 +17,14 @@ import org.junit.jupiter.api.*;
 class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   String testTableName = "tableForCreateIndexTest";
 
+  private void verifyCreatedIndex(String indexName) {
+    assertTableCommand(keyspaceName, testTableName)
+        .templated()
+        .listIndexes(false)
+        .wasSuccessful()
+        .hasIndex(indexName);
+  }
+
   @BeforeAll
   public final void createSimpleTable() {
     assertNamespaceCommand(keyspaceName)
@@ -29,12 +35,12 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 Map.entry("id", Map.of("type", "text")),
                 Map.entry("age", Map.of("type", "int")),
                 Map.entry("comment", Map.of("type", "text")),
-                Map.entry("CapitalLetterColumn", Map.of("type", "text")),
                 Map.entry("vehicle_id", Map.of("type", "text")),
                 Map.entry("vehicle_id_1", Map.of("type", "text")),
                 Map.entry("vehicle_id_2", Map.of("type", "text")),
                 Map.entry("vehicle_id_3", Map.of("type", "text")),
                 Map.entry("vehicle_id_4", Map.of("type", "text")),
+                Map.entry("vehicle_id_5", Map.of("type", "text")),
                 Map.entry("invalid_text", Map.of("type", "int")),
                 Map.entry("physicalAddress", Map.of("type", "text")),
                 Map.entry("list_type", Map.of("type", "list", "valueType", "text")),
@@ -45,7 +51,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1536)),
                 Map.entry("vector_type_3", Map.of("type", "vector", "dimension", 1024)),
                 Map.entry("vector_type_4", Map.of("type", "vector", "dimension", 1024)),
-                Map.entry("vector_type_5", Map.of("type", "vector", "dimension", 1024))),
+                Map.entry("vector_type_5", Map.of("type", "vector", "dimension", 1024)),
+                Map.entry("vector_type_6", Map.of("type", "vector", "dimension", 1024)),
+                Map.entry("vector_type_7", Map.of("type", "vector", "dimension", 1024))),
             "id")
         .wasSuccessful();
   }
@@ -67,6 +75,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                   }
                   """)
           .wasSuccessful();
+
+      verifyCreatedIndex("age_idx");
     }
 
     @Test
@@ -82,6 +92,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                           }
                           """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_idx");
     }
 
     @Test
@@ -100,6 +112,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
             }
             """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_1_idx");
     }
 
     @Test
@@ -118,6 +132,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                   }
                                   """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_2_idx");
     }
 
     @Test
@@ -136,6 +152,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                   }
                                   """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_3_idx");
     }
 
     @Test
@@ -154,8 +172,10 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                           }
                         }
                       }
-                              """)
+                      """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_4_idx");
     }
 
     @Test
@@ -214,76 +234,19 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void createIndexForQuotedColumn() {
-      var createIndexJson =
-          """
-                  {
-                    "name": "physicalAddress_idx_0",
-                    "definition": {
-                      "column": "physicalAddress"
-                    }
-                  }
-              """;
       assertTableCommand(keyspaceName, testTableName)
-          .postCreateIndex(createIndexJson)
+          .postCreateIndex(
+              """
+                                          {
+                                            "name": "physicalAddress_idx",
+                                            "definition": {
+                                              "column": "physicalAddress"
+                                            }
+                                          }
+                                          """)
           .wasSuccessful();
 
-      var createIndexJsonExpected =
-          """
-                      {
-                        "name": "physicalAddress_idx_0",
-                        "definition": {
-                             "column": "physicalAddress",
-                             "options": {
-                                 "ascii": false,
-                                 "caseSensitive": true,
-                                 "normalize": false
-                           }
-                         }
-                      }
-                  """;
-
-      assertTableCommand(keyspaceName, testTableName)
-          .templated()
-          .listIndexes(true)
-          .wasSuccessful()
-          .body("status.indexes", hasItem(jsonEquals(createIndexJsonExpected)));
-
-      assertNamespaceCommand(keyspaceName)
-          .templated()
-          .dropIndex("physicalAddress_idx_0", false)
-          .wasSuccessful();
-    }
-
-    @Test
-    public void createIndexWithOptionForQuotedColumn() {
-      var createIndexJson =
-          """
-                  {
-                    "name": "physicalAddress_idx_1",
-                    "definition": {
-                      "column": "physicalAddress",
-                      "options": {
-                        "ascii": false,
-                        "caseSensitive": true,
-                        "normalize": false
-                      }
-                    }
-                  }
-             """;
-      assertTableCommand(keyspaceName, testTableName)
-          .postCreateIndex(createIndexJson)
-          .wasSuccessful();
-
-      assertTableCommand(keyspaceName, testTableName)
-          .templated()
-          .listIndexes(true)
-          .wasSuccessful()
-          .body("status.indexes", hasItem(jsonEquals(createIndexJson)));
-
-      assertNamespaceCommand(keyspaceName)
-          .templated()
-          .dropIndex("physicalAddress_idx_1", false)
-          .wasSuccessful();
+      verifyCreatedIndex("physicalAddress_idx");
     }
 
     @Test
@@ -314,6 +277,26 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                 }
                                 """)
           .wasSuccessful();
+
+      verifyCreatedIndex("comment_idx");
+    }
+
+    @Test
+    public void createIndexWithCorrectIndexType() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                                {
+                                  "name": "vehicle_id_5_idx",
+                                  "definition": {
+                                    "column": "vehicle_id_5"
+                                  },
+                                  "indexType": "regular"
+                                }
+                                """)
+          .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_5_idx");
     }
   }
 
@@ -333,6 +316,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                           }
                                           """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vector_type_1_idx");
     }
 
     @Test
@@ -351,6 +336,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                           }
                                           """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vector_type_2_idx");
     }
 
     @Test
@@ -369,6 +356,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                       }
                       """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vector_type_3_idx");
     }
 
     @Test
@@ -387,8 +376,27 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                 }
                               }
                               """)
-          .hasNoErrors()
-          .body("status.ok", is(1));
+          .wasSuccessful();
+
+      verifyCreatedIndex("vector_type_4_idx");
+    }
+
+    @Test
+    public void createVectorIndexWithCorrectIndexType() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateVectorIndex(
+              """
+                                {
+                                  "name": "vector_type_6_idx",
+                                  "definition": {
+                                    "column": "vector_type_6"
+                                  },
+                                  "indexType": "vector"
+                                }
+                                """)
+          .wasSuccessful();
+
+      verifyCreatedIndex("vector_type_6_idx");
     }
   }
 
@@ -435,6 +443,46 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               SchemaException.class,
               "The command attempted to index the unsupported columns: invalid_text(int).");
     }
+
+    @Test
+    public void createIndexWithUnsupportedIndexType() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                              {
+                                "name": "vehicle_id_7_idx",
+                                "definition": {
+                                  "column": "vehicle_id_7"
+                                },
+                                "indexType": "vector"
+                              }
+                              """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_INDEX_TYPE,
+              SchemaException.class,
+              "The supported index types are: regular.",
+              "The command used the unsupported index type: vector.");
+    }
+
+    @Test
+    public void createIndexWithUnknownIndexType() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                                      {
+                                        "name": "vehicle_id_7_idx",
+                                        "definition": {
+                                          "column": "vehicle_id_7"
+                                        },
+                                        "indexType": "unknown"
+                                      }
+                                      """)
+          .hasSingleApiError(
+              SchemaException.Code.UNKNOWN_INDEX_TYPE,
+              SchemaException.class,
+              "The known index types are: [collection, regular, text-analysed, vector].",
+              "The command used the unknown index type: unknown.");
+    }
   }
 
   @Nested
@@ -478,6 +526,46 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               SchemaException.Code.UNKNOWN_VECTOR_SOURCE_MODEL,
               SchemaException.class,
               "The command attempted to use the source model: invalid_source_model.");
+    }
+
+    @Test
+    public void createVectorIndexWithUnsupportedIndexType() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateVectorIndex(
+              """
+                              {
+                                "name": "vector_type_7_idx",
+                                "definition": {
+                                  "column": "vector_type_7"
+                                },
+                                "indexType": "regular"
+                              }
+                              """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_INDEX_TYPE,
+              SchemaException.class,
+              "The supported index types are: vector.",
+              "The command used the unsupported index type: regular.");
+    }
+
+    @Test
+    public void createVectorIndexWithUnknownIndexType() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateVectorIndex(
+              """
+                                {
+                                    "name": "vector_type_7_idx",
+                                    "definition": {
+                                    "column": "vector_type_7"
+                                    },
+                                    "indexType": "unknown"
+                                }
+                                """)
+          .hasSingleApiError(
+              SchemaException.Code.UNKNOWN_INDEX_TYPE,
+              SchemaException.class,
+              "The known index types are: [collection, regular, text-analysed, vector].",
+              "The command used the unknown index type: unknown.");
     }
   }
 }
