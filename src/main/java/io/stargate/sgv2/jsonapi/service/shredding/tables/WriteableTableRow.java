@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.shredding.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
@@ -10,11 +9,9 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -121,13 +118,12 @@ public class WriteableTableRow implements PrettyPrintable {
   /** A task to vectorize a single field in a document */
   public static class VectorizeTask {
 
-    private final Map<CqlIdentifier, JsonNamedValue> cqlIdentifierToRawJson;
+    private JsonNamedValue columnJsonNamedValue;
     final ApiColumnDef columnDef;
     final ApiVectorType vectorType;
 
-    public VectorizeTask(
-        Map<CqlIdentifier, JsonNamedValue> cqlIdentifierToRawJson, ApiColumnDef columnDef) {
-      this.cqlIdentifierToRawJson = cqlIdentifierToRawJson;
+    public VectorizeTask(JsonNamedValue columnJsonNamedValue, ApiColumnDef columnDef) {
+      this.columnJsonNamedValue = columnJsonNamedValue;
       // Parent can be null if a subclass wants to handle updating the target.
       this.columnDef = columnDef;
       // sanity checks
@@ -148,11 +144,7 @@ public class WriteableTableRow implements PrettyPrintable {
      * @return Text to be vectorized
      */
     public String getVectorizeText() {
-      return (String)
-          cqlIdentifierToRawJson
-              .get(CqlIdentifierUtil.cqlIdentifierFromUserInput(columnDef.jsonKey()))
-              .value()
-              .value();
+      return (String) columnJsonNamedValue.value().value();
     }
 
     /**
@@ -182,20 +174,17 @@ public class WriteableTableRow implements PrettyPrintable {
      * vector somewhere
      */
     private void updateTarget(float[] vector) {
-      Objects.requireNonNull(cqlIdentifierToRawJson, "parentObject must not be null");
+      Objects.requireNonNull(columnJsonNamedValue, "parentObject must not be null");
 
       var arrayNode = JsonNodeFactory.instance.arrayNode(vector.length);
       for (float v : vector) {
         arrayNode.add(JsonNodeFactory.instance.numberNode(v));
       }
 
-      var value =
+      columnJsonNamedValue =
           new JsonNamedValue(
               JsonPath.rootBuilder().property(columnDef.jsonKey()).build(),
               RowShredder.shredValue(arrayNode));
-
-      cqlIdentifierToRawJson.put(
-          CqlIdentifierUtil.cqlIdentifierFromUserInput(columnDef.jsonKey()), value);
     }
   }
 }

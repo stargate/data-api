@@ -217,12 +217,10 @@ public class WriteableTableRowBuilder {
       // if the user sent a blank string for the vectorize field, we just turn that into a null
       // without vectorizing
       // but that only applies if the column has a vectorize definition so do it here not above
-      String vectorizeText =
-          (String)
-              cqlIdentifierToJsonValueVectorize
-                  .get(CqlIdentifierUtil.cqlIdentifierFromUserInput(vectorColumnDef.jsonKey()))
-                  .value()
-                  .value();
+      JsonNamedValue columnJsonNameValue =
+          cqlIdentifierToJsonValueVectorize.get(
+              CqlIdentifierUtil.cqlIdentifierFromUserInput(vectorColumnDef.jsonKey()));
+      String vectorizeText = (String) columnJsonNameValue.value().value();
       if (vectorizeText.isBlank()) {
         // change the vector value to null and put it in the non vectorize map, so it will be
         // encoded to CQL first
@@ -232,8 +230,8 @@ public class WriteableTableRowBuilder {
                 JsonPath.rootBuilder().property(vectorColumnDef.jsonKey()).build(),
                 new JsonLiteral<>(null, JsonType.NULL)));
       } else {
-        // design the task structure - change parentNodeDoc type
-
+        vectorizeTasks.add(
+            new WriteableTableRow.VectorizeTask(columnJsonNameValue, vectorColumnDef));
       }
     }
 
