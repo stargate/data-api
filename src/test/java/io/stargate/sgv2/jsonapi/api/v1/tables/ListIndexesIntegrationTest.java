@@ -244,7 +244,8 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                             "filter": false,
                             "cqlDefinition": "CREATE CUSTOM INDEX idx_set ON \\"%s\\".\\"%s\\" (values(\\"setColumn\\"))\\nUSING 'StorageAttachedIndex'"
                         }
-                    }
+                    },
+                    "indexType": "UNKNOWN"
                }
               """
               .formatted(keyspaceName, PRE_EXISTED_CQL_TABLE);
@@ -259,7 +260,8 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                             "filter": false,
                             "cqlDefinition": "CREATE CUSTOM INDEX idx_map_values ON \\"%s\\".\\"%s\\" (values(\\"mapColumn\\"))\\nUSING 'StorageAttachedIndex'"
                         }
-                    }
+                    },
+                    "indexType": "UNKNOWN"
                }
               """
               .formatted(keyspaceName, PRE_EXISTED_CQL_TABLE);
@@ -274,7 +276,8 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                             "filter": false,
                             "cqlDefinition": "CREATE CUSTOM INDEX idx_map_keys ON \\"%s\\".\\"%s\\" (keys(\\"mapColumn\\"))\\nUSING 'StorageAttachedIndex'"
                         }
-                    }
+                    },
+                    "indexType": "UNKNOWN"
                }
               """
               .formatted(keyspaceName, PRE_EXISTED_CQL_TABLE);
@@ -289,7 +292,8 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                             "filter": false,
                             "cqlDefinition": "CREATE CUSTOM INDEX idx_map_entries ON \\"%s\\".\\"%s\\" (entries(\\"mapColumn\\"))\\nUSING 'StorageAttachedIndex'"
                         }
-                    }
+                    },
+                    "indexType": "UNKNOWN"
                }
               """
               .formatted(keyspaceName, PRE_EXISTED_CQL_TABLE);
@@ -304,7 +308,8 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                             "filter": false,
                             "cqlDefinition": "CREATE CUSTOM INDEX idx_list ON \\"%s\\".\\"%s\\" (values(\\"listColumn\\"))\\nUSING 'StorageAttachedIndex'"
                         }
-                    }
+                    },
+                    "indexType": "UNKNOWN"
                }
               """
               .formatted(keyspaceName, PRE_EXISTED_CQL_TABLE);
@@ -316,7 +321,8 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                          "column": "TextQuoted",
                          "options": {
                          }
-                     }
+                     },
+                     "indexType": "regular"
                  }
                  """;
       assertTableCommand(keyspaceName, PRE_EXISTED_CQL_TABLE)

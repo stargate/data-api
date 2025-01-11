@@ -186,14 +186,6 @@ public class ApiRegularIndex extends ApiSupportedIndex {
                 .formatted(ApiIndexType.REGULAR, apiIndexType));
       }
 
-      //      // also, we should not have an index function
-      //      if (indexTarget.indexFunction() != null) {
-      //        throw new IllegalStateException(
-      //            "ApiRegularIndex factory does not support index functions,
-      // indexTarget.indexFunction: "
-      //                + indexTarget.indexFunction());
-      //      }
-
       return new ApiRegularIndex(
           indexMetadata.getName(), indexTarget.targetColumn(), indexMetadata.getOptions());
     }
