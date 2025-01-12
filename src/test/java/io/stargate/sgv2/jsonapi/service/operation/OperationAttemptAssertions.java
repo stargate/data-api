@@ -26,13 +26,13 @@ public class OperationAttemptAssertions<
   private final FixtureT fixture;
   public final OperationAttempt<SubT, SchemaT> target;
   private final CommandQueryExecutor queryExecutor;
-  private final DriverExceptionHandler<SchemaT> exceptionHandler;
+  private final DriverExceptionHandler exceptionHandler;
 
   public OperationAttemptAssertions(
       FixtureT fixture,
       OperationAttempt<SubT, SchemaT> target,
       CommandQueryExecutor queryExecutor,
-      DriverExceptionHandler<SchemaT> exceptionHandler) {
+      DriverExceptionHandler exceptionHandler) {
     this.fixture = fixture;
     this.target = target;
     this.queryExecutor = queryExecutor;
@@ -168,7 +168,7 @@ public class OperationAttemptAssertions<
             target,
             times(1)
                 .description(
-                    "onSuccess() called with expected resultset %s when: %s"
+                    "onSuccess() called with assertions resultset %s when: %s"
                         .formatted(expected, message)))
         .onSuccess(expected);
     return fixture;
@@ -187,7 +187,7 @@ public class OperationAttemptAssertions<
   public FixtureT verifyWarningContains(String contains, String message) {
 
     assertThat(target.warnings())
-        .as("Warning message contains expected when: %s".formatted(message))
+        .as("Warning message contains assertions when: %s".formatted(message))
         .hasSize(1)
         .first()
         .satisfies(

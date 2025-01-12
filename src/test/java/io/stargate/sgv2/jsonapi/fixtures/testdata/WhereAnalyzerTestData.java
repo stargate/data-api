@@ -196,7 +196,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     public WhereAnalyzerFixture assertExceptionContains(String contains) {
 
       assertThat(exception)
-          .as("Exception message contains expected when: %s".formatted(message))
+          .as("Exception message contains assertions when: %s".formatted(message))
           .isNotNull()
           .hasMessageContaining(contains);
       return this;
@@ -290,7 +290,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
 
     public WhereAnalyzerFixture assertWarningContains(String contains) {
       assertThat(analysisResult.warnings())
-          .as("Warning message contains expected when: %s".formatted(message))
+          .as("Warning message contains assertions when: %s".formatted(message))
           .hasSize(1)
           .first()
           .satisfies(

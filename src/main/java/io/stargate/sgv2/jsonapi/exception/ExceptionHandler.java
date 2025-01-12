@@ -33,7 +33,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
  * io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler}:
  *
  * <ul>
- *   <li>Create an interface that implements the <code>handle()</code> for the <code>BaseT</code>
+ *   <li>Create an interface that implements the <code>handle()</code> for the <code>T</code>
  *       and downcasts to subclasses, then defines <code>handle()</code> overrides for the sub
  *       classes that have a default that returns the exception unchanged.
  *   <li>Create a "Default" class implementation of the interface that implements the <code>handle()
@@ -64,73 +64,65 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
  * <p><b>NOTE:</b> Subclass {@link DefaultDriverExceptionHandler} rather than implement this
  * interface directly.
  *
- * @param <SchemaT> The type of the {@link SchemaObject} that the code was operating against,
- *     provides context for the error.
- * @param <BaseT> The base type of the exception that this handler handles, e.g. <code>
+ * @param <T> The base type of the exception that this handler handles, e.g. <code>
  *     DriverException</code>
  */
-public interface ExceptionHandler<SchemaT extends SchemaObject, BaseT extends RuntimeException> {
+public interface ExceptionHandler<T extends RuntimeException> {
 
   /**
    * Handles the <code>runtimeException</code> returning an exception that can be thrown or
    * otherwise handled.
    *
-   * @param schemaObject Schema object the code was operating against, provides context for the
-   *     error.
    * @param runtimeException The exception to handle
    * @return The exception to throw or otherwise handle, may be:
    *     <ul>
    *       <li><code>null</code> if null passed in
    *       <li>The exact <code>runtimeException</code> object if it is not an instance of <code>
-   *           BaseT</code> using {@link Class#isInstance(Object)}
+   *           T</code> using {@link Class#isInstance(Object)}
    *       <li>The handled exception, usuaully translated into an {@link APIException}
    *       <li>If not specifially handler, the exception returned from {@link
    *           #handleUnhandled(SchemaObject, RuntimeException)}
    *     </ul>
    */
-  default RuntimeException maybeHandle(SchemaT schemaObject, RuntimeException runtimeException) {
+  default RuntimeException maybeHandle(RuntimeException runtimeException) {
 
     if (getExceptionClass().isInstance(runtimeException)) {
-      BaseT baseT = getExceptionClass().cast(runtimeException);
-      var handled = handle(schemaObject, baseT);
-      return handled == runtimeException ? handleUnhandled(schemaObject, baseT) : handled;
+      T t = getExceptionClass().cast(runtimeException);
+      var handled = handle(t);
+      return handled == runtimeException ? handleUnhandled(t) : handled;
     }
     return runtimeException;
   }
 
   /**
-   * Implementations must return the class of the exception they handle, the class of <code>BaseT
+   * Implementations must return the class of the exception they handle, the class of <code>T
    * </code>
    *
    * @return The class of the exception that this handler handles, e.g. <code>DriverException.class
    *     </code>
    */
-  Class<BaseT> getExceptionClass();
+  Class<T> getExceptionClass();
 
   /**
-   * Called to handle the exception, when it is the same class as <code>BaseT</code>.
+   * Called to handle the exception, when it is the same class as <code>T</code>.
    *
    * <p>See class description for full responsibilities of this function.
    *
-   * @param schemaObject The schema object code was operating against, provides context for the
-   *     error.
-   * @param exception The exception to handle, of type <code>BaseT</code>
+   * @param exception The exception to handle, of type <code>T</code>
    * @return The exception passed in, or a new exception to throw or otherwise handle.
    */
-  default RuntimeException handle(SchemaT schemaObject, BaseT exception) {
+  default RuntimeException handle(T exception) {
     return exception;
   }
 
   /**
-   * Called by {@link #maybeHandle(SchemaObject, RuntimeException)} when an exception was not
+   * Called by {@link #maybeHandle(RuntimeException)} when an exception was not
    * changed by any handler functions.
    *
-   * @param schemaObject The schema object code was operating against, provides context for the
-   *     error.
    * @param exception The exception that was not handled.
    * @return A {@link ServerException.Code#UNEXPECTED_SERVER_ERROR}.
    */
-  default RuntimeException handleUnhandled(SchemaT schemaObject, BaseT exception) {
+  default RuntimeException handleUnhandled(T exception) {
     return ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(exception));
   }
 }

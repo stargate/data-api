@@ -150,7 +150,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
       UpdateOperation oper =
           UpdateOperator.UNSET.resolveOperation(objectFromJson("{\"subdoc.b\": 1, \"x.y\": 1 }"));
       assertThat(oper.updateDocument(doc).modified()).isFalse();
-      // and no modifications expected
+      // and no modifications assertions
       assertThat(doc).isEqualTo(orig);
     }
 

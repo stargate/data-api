@@ -1259,6 +1259,24 @@ server-errors:
 
   # DATABASE scope server errors
   - scope: DATABASE
+    code: UNEXPECTED_DRIVER_ERROR
+    title: Unexpected driver error
+    body: |-
+      An unexpected server error occurred while using the driver with the database. 
+      
+      The command against the ${schemaType} ${keyspace}.${table} may be in an inconsistent state due to the error encountered. It may have either: 
+      * Failed to start communicating with the database.
+      * Encountered an error when being processed by the database.
+      * Completed successfully, but returned an unexpected response.
+      
+      Consult the the detailed error message below for more information:
+      
+      Error Class: ${errorClass}
+      Error Message: ${errorMessage}
+      
+      Determine the cause of the error before resending.
+
+  - scope: DATABASE
     code: CLOSED_CONNECTION
     title: Database connection was closed while processing the request
     body: |-
@@ -1269,6 +1287,57 @@ server-errors:
       The detailed response from the database was: ${errorMessage}    
       
       ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    # NOTE: this is here as a server error because the API should have caught missing keyspace before sending to the database
+    code: UNKNOWN_KEYSPACE
+    title: Unknown keyspace
+    body: |-
+      The command referenced a keyspace that does not exist in the database. 
+      
+      The Data API believed the keyspace existed, but the database returned an error that the keyspace does not exist. This may be a temporary issue.
+      
+      The command used the keyspace: ${keyspace}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    code: UNAVAILABLE_DATABASE
+    title: The database is unavailable
+    body: |-
+      The Data API was unable to connect to the database. 
+      
+      The Data API could not contact any of the database nodes to process the request. This may be a temporary issue.
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    code: UNAUTHORIZED_ACCESS
+    title: Unauthorized access to the database
+    body: |-
+      The command is not authorized to perform the action on the database. 
+      
+      The authentication details provided with the command do not allow it to perform the action is was attempting, such as reading or writing data. 
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      
+      Resend the command using the correct authentication details.
+
+  - scope: DATABASE
+    code: INVALID_DATABASE_QUERY
+    title: Invalid database query
+    body: |-
+      The Data API command generated a database query that while syntactically correct, was invalid.  
+      
+      The Data API should have generated a valid query, or returned an error before sending the query to the database. 
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      The command generated the CQL query: ${cql}.
+      
+      Resend the command using the correct authentication details.      
+
   - scope: DATABASE
     code: TABLE_WRITE_TIMEOUT
     title: Timeout writing to table

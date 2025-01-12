@@ -9,14 +9,4 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 
 public class TableDriverExceptionHandler extends DefaultDriverExceptionHandler<TableSchemaObject> {
 
-  @Override
-  public RuntimeException handle(TableSchemaObject schemaObject, WriteTimeoutException exception) {
-    return DatabaseException.Code.TABLE_WRITE_TIMEOUT.get(
-        errVars(
-            schemaObject,
-            m -> {
-              m.put("blockFor", String.valueOf(exception.getBlockFor()));
-              m.put("received", String.valueOf(exception.getReceived()));
-            }));
-  }
 }

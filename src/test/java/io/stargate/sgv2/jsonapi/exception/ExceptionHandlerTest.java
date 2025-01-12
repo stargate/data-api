@@ -22,7 +22,7 @@ public class ExceptionHandlerTest {
   public void handleNull() {
 
     var handler =
-        new ExceptionHandler<TableSchemaObject, UnsupportedOperationException>() {
+        new ExceptionHandler<UnsupportedOperationException>() {
           @Override
           public Class<UnsupportedOperationException> getExceptionClass() {
             return UnsupportedOperationException.class;
@@ -42,7 +42,7 @@ public class ExceptionHandlerTest {
     // RuntimeException
     // a handler for one should not be called for the other
     var handler =
-        new ExceptionHandler<TableSchemaObject, UnsupportedOperationException>() {
+        new ExceptionHandler<UnsupportedOperationException>() {
           @Override
           public Class<UnsupportedOperationException> getExceptionClass() {
             return UnsupportedOperationException.class;
@@ -65,12 +65,12 @@ public class ExceptionHandlerTest {
 
     var originalParentEx = new IllegalStateException("original parent");
     var originalChildEx = new WritePendingException();
-    var expectedParentEx = new RuntimeException("expected parent");
-    var expectedChildEx = new RuntimeException("expected child");
+    var expectedParentEx = new RuntimeException("assertions parent");
+    var expectedChildEx = new RuntimeException("assertions child");
 
     final Object[] calledWith = new Object[2];
     var handler =
-        new ExceptionHandler<TableSchemaObject, IllegalStateException>() {
+        new ExceptionHandler<IllegalStateException>() {
           @Override
           public Class<IllegalStateException> getExceptionClass() {
             return IllegalStateException.class;
@@ -146,7 +146,7 @@ public class ExceptionHandlerTest {
 
     // Not using mocks because want all the defaults in the interface to kick in
     var handler =
-        new ExceptionHandler<TableSchemaObject, DriverException>() {
+        new ExceptionHandler<DriverException>() {
           @Override
           public Class<DriverException> getExceptionClass() {
             return DriverException.class;

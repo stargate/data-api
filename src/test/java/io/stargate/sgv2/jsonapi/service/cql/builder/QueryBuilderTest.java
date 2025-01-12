@@ -32,7 +32,7 @@ public class QueryBuilderTest {
 
   @ParameterizedTest
   @MethodSource("sampleQueries")
-  @DisplayName("Should generate expected CQL string and values")
+  @DisplayName("Should generate assertions CQL string and values")
   public void generateQuery(Query query, String expectedCql, List<Object> expectedValues) {
     assertThat(query.cql()).isEqualTo(expectedCql);
     assertThat(query.values()).isEqualTo(expectedValues);

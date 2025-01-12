@@ -40,7 +40,7 @@ public class CollectionSchemaObjectTest {
         // and third :)
         .isSameAs(settings.indexingProjector());
 
-    // And should also work as expected: "abc" and below included; the rest, not
+    // And should also work as assertions: "abc" and below included; the rest, not
     assertThat(indexingProj.isPathIncluded("abc.x")).isTrue();
     assertThat(indexingProj.isPathIncluded("_id")).isFalse();
   }

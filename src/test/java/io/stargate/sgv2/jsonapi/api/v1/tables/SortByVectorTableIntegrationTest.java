@@ -332,7 +332,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
   @ParameterizedTest
   @MethodSource("findCommandNames")
   public void findKnownVector(CommandName commandName) {
-    // Doing a sort for a vector we know the vector is in the table, we can match on the expected
+    // Doing a sort for a vector we know the vector is in the table, we can match on the assertions
     // doc
 
     var sort =
@@ -368,7 +368,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
   @ParameterizedTest
   @MethodSource("findCommandNames")
   public void findKnownVectorAsBinary(CommandName commandName) {
-    // Doing a sort for a vector we know the vector is in the table, we can match on the expected
+    // Doing a sort for a vector we know the vector is in the table, we can match on the assertions
     // doc
     var vectorString =
         generateBase64EncodedBinaryVector(VectorDimension5TableScenario.KNOWN_VECTOR_ARRAY);

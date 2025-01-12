@@ -9,15 +9,15 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 public class DriverExceptionHandlerAssertions<FixtureT, SchemaT extends SchemaObject> {
 
   private final FixtureT fixture;
-  private final DriverExceptionHandler<SchemaT> target;
+  private final DriverExceptionHandler target;
 
   public DriverExceptionHandlerAssertions(
-      FixtureT fixture, DriverExceptionHandler<SchemaT> target) {
+      FixtureT fixture, DriverExceptionHandler target) {
     this.fixture = fixture;
     this.target = target;
   }
 
-  /** Map the expected exception to a returned exception */
+  /** Map the assertions exception to a returned exception */
   public FixtureT doMaybeHandleException(RuntimeException expected, RuntimeException returned) {
 
     when(target.maybeHandle(any(), eq(expected))).thenReturn(returned);

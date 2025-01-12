@@ -19,7 +19,7 @@ public class DriverExceptionHandlerTest {
     var originalEx = new RuntimeException("original");
 
     // Not using mocks because want all the defaults in the interface to kick in
-    var handler = new DriverExceptionHandler<TableSchemaObject>() {};
+    var handler = new DriverExceptionHandler() {};
     var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, originalEx));
 
     assertThat(actualEx)
@@ -32,12 +32,12 @@ public class DriverExceptionHandlerTest {
 
     var originalEx =
         new WriteTimeoutException(null, ConsistencyLevel.QUORUM, 1, 2, WriteType.SIMPLE);
-    var expectedEx = new RuntimeException("expected");
+    var expectedEx = new RuntimeException("assertions");
 
     // Not using mocks because want all the defaults in the interface to kick in
     final Object[] calledWith = new Object[1];
     var handler =
-        new DriverExceptionHandler<TableSchemaObject>() {
+        new DriverExceptionHandler() {
           public RuntimeException handle(
               TableSchemaObject schemaObject, WriteTimeoutException exception) {
             calledWith[0] = exception;
@@ -63,7 +63,7 @@ public class DriverExceptionHandlerTest {
         new WriteTimeoutException(null, ConsistencyLevel.QUORUM, 1, 2, WriteType.SIMPLE);
 
     // Not using mocks because want all the defaults in the interface to kick in
-    var handler = new DriverExceptionHandler<TableSchemaObject>() {};
+    var handler = new DriverExceptionHandler() {};
 
     var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, originalEx));
 

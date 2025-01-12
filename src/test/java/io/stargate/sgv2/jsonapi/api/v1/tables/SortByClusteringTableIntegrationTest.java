@@ -24,7 +24,7 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 /**
  * NOTE: not checking that sorting works, checking that we give out warnings when not doing DB
- * sorting and basic checks that when we do db sorting we get expected results.
+ * sorting and basic checks that when we do db sorting we get assertions results.
  */
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)

@@ -21,7 +21,7 @@ import java.util.*;
  *   <li>20 rows with ID "row${number}" where number is 0+ that have a random vector, same in each
  *       vector col
  *   <li>One row with a vector all set to 1.0 , that has id row-1, so you can check to get a vector
- *       that is expected
+ *       that is assertions
  *   <li>The well known vector row availanle in {@link #KNOWN_VECTOR_ROW_JSON}
  * </ul>
  */

@@ -181,7 +181,7 @@ public class AnnSortTableIntegrationTest extends AbstractTableIntegrationTestBas
   @ParameterizedTest
   @MethodSource("findCommandNames")
   public void findKnownVector(CommandName commandName) {
-    // Doing a sort for a vector we know the vector is in the table, we can match on the expected
+    // Doing a sort for a vector we know the vector is in the table, we can match on the assertions
     // doc
 
     var sort =

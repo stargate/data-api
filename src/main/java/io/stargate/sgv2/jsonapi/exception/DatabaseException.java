@@ -9,8 +9,13 @@ public class DatabaseException extends ServerException {
   }
 
   public enum Code implements ErrorCode<DatabaseException> {
+    CLOSED_CONNECTION,
     TABLE_WRITE_TIMEOUT,
-    CLOSED_CONNECTION;
+    UNAVAILABLE_DATABASE,
+    UNAUTHORIZED_ACCESS,
+    UNEXPECTED_DRIVER_ERROR,
+    UNKNOWN_KEYSPACE
+    ;
 
     private final ErrorTemplate<DatabaseException> template;
 

@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.time.Duration;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,14 +120,14 @@ public abstract class OperationAttempt<
    *
    * @param queryExecutor The {@link CommandQueryExecutor} to use for executing the query, this
    *     handles interacting with the driver.
-   * @param exceptionHandler The handler to use for exceptions thrown by the driver, exceptions
+   * @param exceptionHandlerFactory The handler to use for exceptions thrown by the driver, exceptions
    *     thrown by the driver are passed through here before being added to the {@link
    *     OperationAttempt}.
    * @return A {@link Uni} of this object, cast to the {@link SubT} for chaining methods. This
    *     object's state will be updated as the operation runs.
    */
   public Uni<SubT> execute(
-      CommandQueryExecutor queryExecutor, DriverExceptionHandler<SchemaT> exceptionHandler) {
+      CommandQueryExecutor queryExecutor, DriverExceptionHandler.Factory exceptionHandlerFactory) {
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
@@ -149,7 +150,7 @@ public abstract class OperationAttempt<
         .withBackOff(retryPolicy.delay(), retryPolicy.delay())
         .atMost(retryPolicy.maxRetries())
         .onItemOrFailure()
-        .transform((resultSet, throwable) -> onCompletion(exceptionHandler, resultSet, throwable))
+        .transform((resultSet, throwable) -> onCompletion(exceptionHandlerFactory, resultSet, throwable))
         .invoke(
             () -> {
               if (LOGGER.isDebugEnabled()) {
@@ -189,7 +190,7 @@ public abstract class OperationAttempt<
   /**
    * Sublasses must implement this method to build the query and execute it, they should not do
    * anything with Uni for retry etc, that is handled in the base class {@link
-   * #execute(CommandQueryExecutor, DriverExceptionHandler)}.
+   * #execute(CommandQueryExecutor, DriverExceptionHandler.Factory)}.
    *
    * @param queryExecutor the {@link CommandQueryExecutor} , subclasses should call the appropriate
    *     execute method
@@ -237,7 +238,7 @@ public abstract class OperationAttempt<
    * If you want to do something like capture the result set on success (non error) then override
    * {@link #onSuccess(AsyncResultSet)}.
    *
-   * @param exceptionHandler The handler to use for exceptions thrown by the driver, exceptions
+   * @param exceptionHandlerFactory The handler to use for exceptions thrown by the driver, exceptions
    *     thrown by the driver are passed through here before being added to the {@link
    *     OperationAttempt}.
    * @param resultSet The result set from the driver, this is the result of the query. May be null
@@ -247,7 +248,7 @@ public abstract class OperationAttempt<
    * @return this object, cast to {@link SubT} for chaining methods.
    */
   protected SubT onCompletion(
-      DriverExceptionHandler<SchemaT> exceptionHandler,
+      DriverExceptionHandler.Factory exceptionHandlerFactory,
       AsyncResultSet resultSet,
       Throwable throwable) {
 
@@ -269,7 +270,7 @@ public abstract class OperationAttempt<
 
     var handledException =
         throwable instanceof RuntimeException
-            ? exceptionHandler.maybeHandle(schemaObject, (RuntimeException) throwable)
+            ? exceptionHandlerFactory.maybeHandle(schemaObject, (RuntimeException) throwable)
             : throwable;
 
     if ((handledException == null && throwable != null) && LOGGER.isWarnEnabled()) {
@@ -515,12 +516,12 @@ public abstract class OperationAttempt<
    *
    * @return An unmodifiable list of warnings, never <code>null</code>
    */
-  protected List<WarningException> warningsExcludingSupresed() {
+  protected List<WarningException> warningsExcludingSuppressed() {
     if (suppressedWarnings.isEmpty()) {
       return warnings;
     }
     var suppressedWarningsToCheck =
-        suppressedWarnings.stream().map(warn -> warn.name()).collect(Collectors.toSet());
+        suppressedWarnings.stream().map(Enum::name).collect(Collectors.toSet());
 
     return warnings.stream()
         .filter(warn -> !suppressedWarningsToCheck.contains(warn.code))
@@ -633,6 +634,7 @@ public abstract class OperationAttempt<
         .append("warnings", warnings)
         .append("failure", failure);
   }
+
 
   /**
    * A policy for retrying an attempt, if the attempt does not want to retry then it should use

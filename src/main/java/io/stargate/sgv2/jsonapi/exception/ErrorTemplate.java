@@ -58,6 +58,12 @@ public record ErrorTemplate<T extends APIException>(
     String messageTemplate,
     Optional<Integer> httpStatusOverride) {
 
+  public static final String NULL_REPLACEMENT = "(null)";
+
+  public static String replaceIfNull(String value) {
+    return value == null ? NULL_REPLACEMENT : value;
+  }
+
   public T toException(Map<String, String> values) {
     var errorInstance = toInstance(values);
 
@@ -90,6 +96,10 @@ public record ErrorTemplate<T extends APIException>(
     // use the apache string substitution to replace the variables in the messageTemplate
     Map<String, String> allValues = new HashMap<>(values);
     allValues.putAll(ErrorConfig.getInstance().getSnippetVars());
+
+    // the substitution will throw an exception if a variable is null
+    // easy way to handle this is to pre-process the map rather than custom substitutor
+    allValues.replaceAll((k, v) -> replaceIfNull(v));
 
     // set so IllegalArgumentException thrown if template var missing a value
     var subs = new StringSubstitutor(allValues).setEnableUndefinedVariableException(true);

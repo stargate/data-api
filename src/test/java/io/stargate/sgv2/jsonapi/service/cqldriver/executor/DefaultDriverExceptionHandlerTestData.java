@@ -9,12 +9,14 @@ import java.util.UUID;
 
 public class DefaultDriverExceptionHandlerTestData {
 
-  public final DriverExceptionHandler<TableSchemaObject> TABLE_HANDLER =
+  public final DriverExceptionHandler DRIVER_HANDLER =
       new DefaultDriverExceptionHandler<>();
+
   public final TableSchemaObject TABLE_SCHEMA_OBJECT;
 
   public final CqlIdentifier KEYSPACE_NAME =
       CqlIdentifier.fromInternal("keyspace-" + System.currentTimeMillis());
+
   public final CqlIdentifier TABLE_NAME =
       CqlIdentifier.fromInternal("table-" + System.currentTimeMillis());
 

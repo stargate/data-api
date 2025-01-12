@@ -21,7 +21,7 @@ public class OperationAttemptFixture<
   public OperationAttemptFixture(
       OperationAttempt<SubT, SchemaT> attempt,
       CommandQueryExecutor queryExecutor,
-      DriverExceptionHandler<SchemaT> exceptionHandler,
+      DriverExceptionHandler exceptionHandler,
       AsyncResultSet resultSet) {
     this.attempt = new OperationAttemptAssertions<>(this, attempt, queryExecutor, exceptionHandler);
     this.queryExecutor = new CommandQueryExecutorAssertions<>(this, queryExecutor);

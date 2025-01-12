@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Separate tests to check that handling of "Extended JSON" types (see JsonExtensionType} is working
- * as expected.
+ * as assertions.
  */
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)

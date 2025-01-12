@@ -28,7 +28,7 @@ public class GenericOperation<
 
   private static final Logger LOGGER = LoggerFactory.getLogger(GenericOperation.class);
 
-  private final DriverExceptionHandler<SchemaT> driverExceptionHandler;
+  private final DriverExceptionHandler.Factory exceptionHandlerFactory;
   private final OperationAttemptContainer<SchemaT, AttemptT> attempts;
   private final OperationAttemptPageBuilder<SchemaT, AttemptT> pageBuilder;
 
@@ -38,19 +38,19 @@ public class GenericOperation<
    * @param attempts The attempts to run, grouped into a container that has config about how to run
    *     them as a group.
    * @param pageBuilder The builder to use for creating the {@link CommandResult} from the attempts.
-   * @param driverExceptionHandler The handler to use for exceptions thrown by the driver,
+   * @param exceptionHandlerFactory The handler to use for exceptions thrown by the driver,
    *     exceptions thrown by the driver are passed through here before being added to the {@link
    *     OperationAttempt}.
    */
   public GenericOperation(
       OperationAttemptContainer<SchemaT, AttemptT> attempts,
       OperationAttemptPageBuilder<SchemaT, AttemptT> pageBuilder,
-      DriverExceptionHandler<SchemaT> driverExceptionHandler) {
+      DriverExceptionHandler.Factory exceptionHandlerFactory) {
 
     this.attempts = Objects.requireNonNull(attempts, "attempts cannot be null");
     this.pageBuilder = Objects.requireNonNull(pageBuilder, "pageBuilder cannot be null");
-    this.driverExceptionHandler =
-        Objects.requireNonNull(driverExceptionHandler, "driverExceptionHandler cannot be null");
+    this.exceptionHandlerFactory =
+        Objects.requireNonNull(exceptionHandlerFactory, "exceptionHandlerFactory cannot be null");
   }
 
   /**
@@ -124,12 +124,12 @@ public class GenericOperation<
               // and do not call exectute() on it.
               return Uni.createFrom().item(attempt.setSkippedIfReady());
             }
-            return attempt.execute(commandQueryExecutor, driverExceptionHandler);
+            return attempt.execute(commandQueryExecutor, exceptionHandlerFactory);
           });
     }
 
     // Parallel processing using transformToUniAndMerge() - no extra testing.
     return attemptMulti.transformToUniAndMerge(
-        readAttempt -> readAttempt.execute(commandQueryExecutor, driverExceptionHandler));
+        readAttempt -> readAttempt.execute(commandQueryExecutor, exceptionHandlerFactory));
   }
 }

@@ -142,7 +142,7 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
           .body("status.tables", hasSize(2))
           .body("status.tables[0].name", equalTo("allTypesTable"))
 
-          // Validate that the table contains the expected columns and types
+          // Validate that the table contains the assertions columns and types
           .body("status.tables[0].definition.columns.date_type.type", equalTo("date"))
           .body("status.tables[0].definition.columns.time_type.type", equalTo("time"))
           .body("status.tables[0].definition.columns.text_type.type", equalTo("text"))
