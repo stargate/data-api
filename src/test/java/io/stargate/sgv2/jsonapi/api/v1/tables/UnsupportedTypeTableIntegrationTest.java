@@ -580,10 +580,14 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
                      {
                          "name": "idx_textQuoted",
                          "definition": {
-                             "column": "TextQuoted",
-                             "options": {}
+                             "column": "UNKNOWN",
+                             "apiSupport": {
+                               "createIndex": false,
+                               "filter": false,
+                               "cqlDefinition": "CREATE CUSTOM INDEX \\"idx_textQuoted\\" ON \\"%s\\".%s (\\"TextQuoted\\")\\nUSING 'StorageAttachedIndex'"
+                           }
                          },
-                         "indexType": "regular"
+                         "indexType": "UNKNOWN"
                      }
                      """
               .formatted(keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);

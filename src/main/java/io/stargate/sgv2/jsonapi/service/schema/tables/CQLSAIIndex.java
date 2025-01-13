@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.util.defaults.StringProperty;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.lang3.StringUtils;
 
 /** Shared methods / constants for CQL SAI indexes. */
 public abstract class CQLSAIIndex {
@@ -37,7 +36,7 @@ public abstract class CQLSAIIndex {
   private static final String SAI_CLASS_NAME_ENDS_WITH = "." + SAI_CLASS_NAME;
 
   /**
-   * Checks if the indexMetadata describes an SAI index.
+   * Checks if the indexMetadata deacribes an SAI index.
    *
    * <p>We only support {@link IndexKind#CUSTOM} , these are from using CQL <code>
    * CREATE CUSTOM INDEX
@@ -83,44 +82,38 @@ public abstract class CQLSAIIndex {
    * options
    * ------------------------------------------------
    * {'class_name': 'StorageAttachedIndex', 'target': 'age'}
-   * {'class_name': 'StorageAttachedIndex', 'target': '"myVectorColumn"'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'full(frozen_list_column)'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'values(listcolumn)'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'entries(mapcolumn)'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'keys(mapcolumn)'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'values(mapcolumn)'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'values(setcolumn)'}
-   *
-   * ------------------------------------------------
-   * Then it is clear for Regex TARGET_REGEX. Valid Matches are:
-   * keys(foo) -> keys(group1), foo(group2)
-   * entries(bar) -> entries(group1), bar(group2)
-   * values(some_column) -> values(group1), some_column(group2)
-   * full(indexed_field) -> full(group1), index_field(group2)
-   * values("capitalColumn") -> values(group1), "capitalColumn"(group2)
-   * age -> not match, so resolve as simple columnName
-   * "age" -> not match, so resolve as simple columnName
-   *
-   * ------------------------------------------------
-   * If column is doubleQuoted in the original CQL index
-   * we need to unquote to get the real column name
-   * {'class_name': 'StorageAttachedIndex', 'target': '"myVectorColumn"'}
-   * {'class_name': 'StorageAttachedIndex', 'target': 'values("listWithCapitalLetters")'}
-   *
+   * {'class_name': 'StorageAttachedIndex', 'target': 'country'}
+   * {'class_name': 'StorageAttachedIndex', 'target': 'values(array_contains)'}
+   * {'class_name': 'StorageAttachedIndex', 'target': 'entries(array_size)'}
+   * {'class_name': 'StorageAttachedIndex', 'target': 'values(exist_keys)'}
+   * {'class_name': 'StorageAttachedIndex', 'target': 'entries(query_bool_values)'}
+   * {'class_name': 'StorageAttachedIndex', 'target': 'entries(query_dbl_values)'}
+   * {'class_name': 'StorageAttachedIndex', 'target': 'values(query_null_values)'}
+   * {'class_name': 'StorageAttachedIndex', 'target': 'entries(query_text_values)'}
+   * {'class_name': 'StorageAttachedIndex', 'target': 'entries(query_timestamp_values)'}
+   * {'class_name': 'StorageAttachedIndex', 'target': 'comment_vector'}
+   * {'class_name': 'StorageAttachedIndex', 'similarity_function': 'cosine', 'target': 'my_vector'}
    * </pre>
+   *
+   * The target can just be the name of the column, or the name of the column in parentheses
+   * prefixed by the index type for a map type: values(column), keys(column), and entries(column)
+   * see https://docs.datastax.com/en/cql/hcd-1.0/develop/indexing/sai/collections.html
+   *
+   * <p>The Reg Exp below will match:
+   *
+   * <ul>
+   *   <li>"monkeys": group 1 - "monkeys", group 2 - null
+   *   <li>"values(monkeys)": group 1 - "values" group 2 - "monkeys"
+   * </ul>
    */
-  private static final Pattern TARGET_REGEX =
-      Pattern.compile("^(keys|entries|values|full)\\((.+)\\)$");
-
-  private static final Pattern TWO_QUOTES = Pattern.compile("\"\"");
-  private static final String QUOTE = "\"";
+  private static Pattern INDEX_TARGET_PATTERN = Pattern.compile("^(\\w+)?(?:\\((\\w+)\\))?$");
 
   /**
    * Parses the target from the IndexMetadata to extract the column name and the function if there
    * is one.
    *
-   * <p>Index functions are used for indexing collections, see {@link #TARGET_REGEX} for the format
-   * of the target
+   * <p>Index functions are used for indexing collections, see {@link #INDEX_TARGET_PATTERN} for the
+   * format of the target
    *
    * <p>
    *
@@ -135,68 +128,29 @@ public abstract class CQLSAIIndex {
       throws UnknownCqlIndexFunctionException, UnsupportedCqlIndexException {
     Objects.requireNonNull(indexMetadata, "indexMetadata must not be null");
 
-    // if the regex matches then the target is in the form "keys(foo)", "entries(bar)" etc
-    // if not, then it must be a simple column name and implicitly its type is VALUES
-    var target = indexMetadata.getTarget();
-    Matcher matcher = TARGET_REGEX.matcher(target);
+    var target = CQLSAIIndex.Options.TARGET.getWithDefault(indexMetadata.getOptions());
+    Matcher matcher = INDEX_TARGET_PATTERN.matcher(target);
+    if (!matcher.matches()) {
+      throw new UnsupportedCqlIndexException(
+          "Could not parse index target: '" + target + "'", indexMetadata);
+    }
+
     String columnName;
-    CqlIndexType cqlIndexType;
-    if (matcher.matches()) {
-      cqlIndexType = CqlIndexType.fromString(matcher.group(1));
-      columnName = matcher.group(2);
+    String functionName;
+    if (matcher.group(2) == null) {
+      columnName = matcher.group(1);
+      functionName = null;
     } else {
-      columnName = target;
-      cqlIndexType = CqlIndexType.VALUES;
+      columnName = matcher.group(2);
+      functionName = matcher.group(1);
     }
 
-    // 1. In the case of a quoted column name the name in the target string
-    // will be enclosed in quotes, which we need to unwrap.
-    // 2. It may also include quote characters internally, escaped like so:
-    // abc"def -> abc""def, then we need to un-escape as abc"def -> abc"def
-    // to get the actual column name
-    if (columnName.startsWith(QUOTE)) {
-      columnName = StringUtils.substring(StringUtils.substring(columnName, 1), 0, -1);
-      columnName = TWO_QUOTES.matcher(columnName).replaceAll(QUOTE);
-    }
-
-    return new IndexTarget(CqlIdentifier.fromInternal(columnName), cqlIndexType);
+    return functionName == null
+        ? new IndexTarget(CqlIdentifier.fromInternal(columnName), null)
+        : new IndexTarget(
+            CqlIdentifier.fromInternal(columnName), ApiIndexFunction.fromCql(functionName));
   }
 
   /** For internal to this package use only */
-  public record IndexTarget(CqlIdentifier targetColumn, CqlIndexType cqlIndexType) {}
-
-  public enum CqlIndexType {
-    VALUES,
-    KEYS,
-    KEYS_AND_VALUES,
-    FULL,
-    SIMPLE;
-
-    public String toString() {
-      switch (this) {
-        case KEYS:
-          return "keys";
-        case KEYS_AND_VALUES:
-          return "entries";
-        case FULL:
-          return "full";
-        case VALUES:
-          return "values";
-        case SIMPLE:
-          return "";
-        default:
-          return "";
-      }
-    }
-
-    public static CqlIndexType fromString(String s) {
-      if ("".equals(s)) return SIMPLE;
-      else if ("values".equals(s)) return VALUES;
-      else if ("keys".equals(s)) return KEYS;
-      else if ("entries".equals(s)) return KEYS_AND_VALUES;
-      else if ("full".equals(s)) return FULL;
-
-      throw new AssertionError("Unrecognized index target type " + s);
-    }
-  }
+  protected record IndexTarget(CqlIdentifier targetColumn, ApiIndexFunction indexFunction) {}
 }

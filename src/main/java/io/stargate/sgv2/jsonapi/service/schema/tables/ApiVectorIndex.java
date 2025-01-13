@@ -268,6 +268,13 @@ public class ApiVectorIndex extends ApiSupportedIndex {
                 .formatted(ApiIndexType.VECTOR, apiIndexType));
       }
 
+      // also, we  must not have an index function
+      if (indexTarget.indexFunction() != null) {
+        throw new IllegalStateException(
+            "ApiVectorIndex factory must not have index function, indexMetadata.name: "
+                + indexMetadata.getName());
+      }
+
       var indexModelName = indexMetadata.getOptions().get(VectorConstants.CQLAnnIndex.SOURCE_MODEL);
       var indexModelToUse = sourceModelFromName(indexModelName, indexMetadata);
       if (LOGGER.isDebugEnabled()) {
