@@ -84,7 +84,7 @@ public class WriteableTableRowBuilder {
     checkApiSupport(cqlIdentifierToJsonValue.keySet());
     var decoded = encodeJsonToCql(cqlIdentifierToJsonValue);
 
-    // now need to split the columns into key and non key columns
+    // now need to split the columns into key and non-key columns
     var keyColumns = new CqlNamedValueContainer();
     var nonKeyColumns = new CqlNamedValueContainer();
 

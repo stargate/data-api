@@ -6,11 +6,16 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.querybuilder.BindMarker;
 import com.datastax.oss.driver.api.querybuilder.update.Assignment;
 import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
@@ -19,9 +24,15 @@ import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
+import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdateResolver;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import org.checkerframework.checker.units.qual.A;
+
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiFunction;
 
 /**
  * Assigns a single column a value in a CQL Update statement build with the Java Driver Query
@@ -35,6 +46,15 @@ import java.util.Objects;
  */
 public class ColumnAssignment implements CQLAssignment {
 
+    private static final Map<
+            UpdateOperator, BiFunction<OngoingAssignment, CqlIdentifier, UpdateWithAssignments>>
+            supportedOperatorsMap =
+            Map.of(
+                    UpdateOperator.SET, ColumnAssignment::resolveSetUnsetToAssignment,
+                    UpdateOperator.UNSET, ColumnAssignment::resolveSetUnsetToAssignment,
+                    UpdateOperator.PUSH, ColumnAssignment::resolvePushToAssignment);
+
+  private final UpdateOperator updateOperator;
   private final TableMetadata tableMetadata;
   public final CqlIdentifier column;
   private final JsonLiteral<?> value;
@@ -45,12 +65,14 @@ public class ColumnAssignment implements CQLAssignment {
    * Create a new instance of the class to set the {@code column} to the {@code value} in the
    * specified {@code tableMetadata}.
    *
+   * @param updateOperator The {@link UpdateOperator} for current column assignment operation
    * @param tableMetadata The {@link TableMetadata} for the target table.
    * @param column The name of the column to set.
    * @param value the {@link JsonLiteral} value created by shredding the value from the update
    *     clause in the request.
    */
-  public ColumnAssignment(TableMetadata tableMetadata, CqlIdentifier column, JsonLiteral<?> value) {
+  public ColumnAssignment(UpdateOperator updateOperator, TableMetadata tableMetadata, CqlIdentifier column, JsonLiteral<?> value) {
+    this.updateOperator = updateOperator;
     this.tableMetadata = Objects.requireNonNull(tableMetadata, "tableMetadata cannot be null");
     this.column = Objects.requireNonNull(column, "column cannot be null");
     // Value may be null, this is how to clear a column in CQL
@@ -62,7 +84,7 @@ public class ColumnAssignment implements CQLAssignment {
       OngoingAssignment ongoingAssignment, List<Object> positionalValues) {
 
     addPositionalValues(positionalValues);
-    return ongoingAssignment.set(getAssignment());
+    return supportedOperatorsMap.get(updateOperator).apply(ongoingAssignment,column);
   }
 
   /**
@@ -86,7 +108,9 @@ public class ColumnAssignment implements CQLAssignment {
   protected void addPositionalValues(List<Object> positionalValues) {
 
     var rawValue = value.value();
+      Log.error("position value 123 " + rawValue);
     try {
+
       positionalValues.add(
           JSONCodecRegistries.DEFAULT_REGISTRY
               .codecToCQL(tableMetadata, column, rawValue)
@@ -118,4 +142,23 @@ public class ColumnAssignment implements CQLAssignment {
               }));
     }
   }
+
+    private static UpdateWithAssignments resolveSetUnsetToAssignment(
+            OngoingAssignment ongoingAssignment, CqlIdentifier column) {
+       return ongoingAssignment.set(Assignment.setColumn(column, bindMarker()));
+    }
+
+    /**
+     * list, push to the tail
+     * set, push
+     * map, push
+     * @param ongoingAssignment
+     * @param column
+     * @return
+     */
+    private static UpdateWithAssignments resolvePushToAssignment(
+            OngoingAssignment ongoingAssignment, CqlIdentifier column) {
+      return ongoingAssignment.append(column, bindMarker());
+    }
+
 }

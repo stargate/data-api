@@ -39,14 +39,15 @@ import java.util.stream.Collectors;
 public class TableUpdateResolver<CmdT extends Command & Updatable>
     extends UpdateResolver<CmdT, TableSchemaObject> {
 
-  // Using map here so we can expose the list of supported operators for validation to check.
+  // Using map here, so we can expose the list of supported operators for validation to check.
   // Keep this immutable, we return the key set in a property below.
   private static final Map<
           UpdateOperator, BiFunction<TableSchemaObject, ObjectNode, List<ColumnAssignment>>>
       supportedOperatorsMap =
           Map.of(
               UpdateOperator.SET, TableUpdateResolver::resolveSet,
-              UpdateOperator.UNSET, TableUpdateResolver::resolveUnset);
+              UpdateOperator.UNSET, TableUpdateResolver::resolveUnset,
+                  UpdateOperator.PUSH,TableUpdateResolver::resolvePush);
 
   private static final List<String> supportedOperatorsStringList =
       ImmutableList.of(UpdateOperator.SET.operator(), UpdateOperator.UNSET.operator());
@@ -70,7 +71,6 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
             : new EnumMap<>(UpdateOperator.class);
 
     for (var updateOperationDef : updateOperationDefs.entrySet()) {
-
       UpdateOperator updateOperator = updateOperationDef.getKey();
       ObjectNode arguments = updateOperationDef.getValue();
 
@@ -78,9 +78,8 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
       if (resolverFunction == null) {
         usedUnsupportedOperators.add(updateOperator.operator());
       } else if (!arguments.isEmpty()) {
-        // For empty assignment operator, we won't add it to assignments result list, e.g. "$set":
-        // {}
-        // / "$unset": {}
+        // For empty assignment operator, we won't add it to assignments result list
+        // e.g. "$set": {}, "$unset": {}
         assignments.addAll(resolverFunction.apply(commandContext.schemaObject(), arguments));
       }
     }
@@ -155,6 +154,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
         .map(
             entry ->
                 new ColumnAssignment(
+                        UpdateOperator.SET,
                     table.tableMetadata(),
                     CqlIdentifierUtil.cqlIdentifierFromUserInput(entry.getKey()),
                     RowShredder.shredValue(entry.getValue())))
@@ -183,9 +183,40 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
         .map(
             entry ->
                 new ColumnAssignment(
+                        UpdateOperator.UNSET,
                     table.tableMetadata(),
                     CqlIdentifierUtil.cqlIdentifierFromUserInput(entry.getKey()),
                     new JsonLiteral<>(null, JsonType.NULL)))
         .toList();
   }
+
+  /**
+   * Resolve the {@link UpdateOperator#PUSH} operation
+   * <p>Example:
+   * <pre>
+   *    Table column type: list
+   *    {"$push" : {"listColumn1" : "textValue", "listColumn2" : 111}}
+   *    Table column type: set
+   *    {"$push" : { "age" : 51 , "human" : false}}
+   *    Table column type: map
+   *    {"$push" : { "age" : 51 , "human" : false}}
+   * </pre>
+   *
+   * @param table TableSchemaObject
+   * @param arguments ObjectNode value for $push entry
+   * @return list of columnAssignment for $push ????
+   */
+  private static List<ColumnAssignment> resolvePush(TableSchemaObject table, ObjectNode arguments) {
+    // Checking if the columns exist in the table should be validated in the clause validation
+    return arguments.properties().stream()
+            .map(
+                    entry ->
+                            new ColumnAssignment(
+                                    UpdateOperator.PUSH,
+                                    table.tableMetadata(),
+                                    CqlIdentifierUtil.cqlIdentifierFromUserInput(entry.getKey()),
+                                    RowShredder.shredValue(entry.getValue())))
+            .toList();
+  }
+
 }

@@ -10,6 +10,7 @@ import com.datastax.oss.driver.api.core.type.MapType;
 import com.datastax.oss.driver.api.core.type.SetType;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
@@ -97,10 +98,14 @@ public class JSONCodecRegistry {
     if (candidates == null) { // No scalar codec for this CQL type
       // But maybe structured type?
       if (columnType instanceof ListType lt) {
+        Log.error("pass1 "  + columnType + "   " + lt.getElementType());
         List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(lt.getElementType());
+        Log.error("pass2");
+
         if (valueCodecCandidates != null) {
           // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
           if (!(value instanceof Collection<?>)) {
+            Log.error("oh no");
             throw new ToCQLCodecException(value, columnType, "no codec matching value type");
           }
           return (JSONCodec<JavaT, CqlT>)

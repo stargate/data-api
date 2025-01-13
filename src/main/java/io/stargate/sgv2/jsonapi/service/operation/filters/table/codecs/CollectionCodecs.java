@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToJSONCodecException;
@@ -86,6 +87,7 @@ public abstract class CollectionCodecs {
       if (elementCodec == null || !elementCodec.handlesJavaValue(element)) {
         elementCodec = findCollectionElementCodec(valueCodecs, elementType, element);
       }
+      Log.error("find elementCoded "  + elementCodec);
       result.add(elementCodec.toCQL(element));
     }
     return result;
