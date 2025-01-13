@@ -16,10 +16,9 @@ public abstract class IndexFactoryFromCql extends FactoryFromCql {
   public ApiIndexDef create(ApiColumnDefContainer allColumns, IndexMetadata indexMetadata)
       throws UnsupportedCqlIndexException {
 
-    // This first check is to see if there is anyway we can support this index, because we are only
+    // This first check is to see if there is anyway we can support this index, becase we are only
     // supporting
-    // SAI indexes, later on we may find something that we could support but don't like a new type
-    // of
+    // SAI indexes, later on we may find something that we could support but dont like a new type of
     // sai
     if (!isSupported(indexMetadata)) {
       return createUnsupported(indexMetadata);
@@ -34,7 +33,7 @@ public abstract class IndexFactoryFromCql extends FactoryFromCql {
       if (apiColumnDef == null) {
         // Cassandra should not let there be an index on a column that is not on the table
         throw new IllegalStateException(
-            "Could not find target column index.name:%s target:%s"
+            "Could not find target column index.name:%s target: "
                 .formatted(indexMetadata.getName(), indexTarget.targetColumn()));
       }
       // will throw if we cannot work it out
