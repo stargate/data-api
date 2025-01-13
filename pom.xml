@@ -413,7 +413,7 @@
         </property>
       </activation>
       <properties>
-        <stargate.int-test.cassandra.image>cr.dtsx.io/datastax/dse-server</stargate.int-test.cassandra.image>
+        <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
         <stargate.int-test.cassandra.image-tag>6.9.5</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
@@ -428,7 +428,7 @@
         </property>
       </activation>
       <properties>
-        <stargate.int-test.cassandra.image>cr.dtsx.io/datastax/hcd</stargate.int-test.cassandra.image>
+        <stargate.int-test.cassandra.image>datastax/hcd</stargate.int-test.cassandra.image>
         <stargate.int-test.cassandra.image-tag>1.0.0</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>hcd-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
