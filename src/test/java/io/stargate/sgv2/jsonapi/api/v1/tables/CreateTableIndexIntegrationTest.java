@@ -507,8 +507,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                         }
                         """)
           .hasSingleApiError(
-              ErrorCodeV1.INVALID_REQUEST_BAD_SYNTAX,
-              "Request invalid, JSON syntax incorrect: underlying problem");
+              ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
+              "Request invalid, mismatching JSON structure: underlying problem");
     }
   }
 

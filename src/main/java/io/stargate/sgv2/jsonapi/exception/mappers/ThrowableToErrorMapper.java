@@ -267,7 +267,7 @@ public final class ThrowableToErrorMapper {
     // NOTE: must be after the UnrecognizedPropertyException check
     // 09-Jan-2025, tatu: [data-api#1812] Not ideal but slightly better than before
     if (e instanceof JsonMappingException jme) {
-      return ErrorCodeV1.INVALID_REQUEST_BAD_SYNTAX
+      return ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH
           .toApiException(
               Response.Status.BAD_REQUEST,
               "underlying problem: (%s) %s",
