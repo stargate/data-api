@@ -1209,6 +1209,29 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasJSONField("data.document", expJSON);
     }
 
+    // [databind#1817]
+    @Test
+    void insertNullVectorValueUsingList() {
+      // To read vector back as null can either omit or add null; issue reported with
+      // former so use that (handling should be same either way)
+      String docJSON =
+              """
+                          {
+                            "id": "vectorNULL"
+                          }
+                          """;
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+              .templated()
+              .insertOne(docJSON)
+              .wasSuccessful()
+              .hasInsertedIds(List.of("vectorNULL"));
+
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+              .postFindOne("{ \"filter\": { \"id\": \"vectorNULL\" } }")
+              .wasSuccessful()
+              .hasJSONField("data.document", docJSON);
+    }
+
     @Test
     void insertValidVectorKey() {
       String docJSON =
