@@ -6,8 +6,10 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import jakarta.ws.rs.core.Response;
 import java.util.Map;
 import org.junit.jupiter.api.*;
 
@@ -482,6 +484,31 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               SchemaException.class,
               "The known index types are: [collection, regular, text-analysed, vector].",
               "The command used the unknown index type: unknown.");
+    }
+
+    // [data-api#1812]: invalid JSON structure
+    @Test
+    public void invalidJSONStructure() {
+      assertTableCommand(keyspaceName, testTableName)
+          // Invalid JSON structure: "name" should be String, not Object;
+          // reported as HTTP 400
+          .expectHttpStatus(Response.Status.BAD_REQUEST)
+          .postCreateIndex(
+              """
+                        {
+                            "name": {
+                              "name": 1
+                            },
+                            "definition": {
+                              "column": {
+                                "background": true
+                              },
+                            }
+                        }
+                        """)
+          .hasSingleApiError(
+              ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
+              "Request invalid, mismatching JSON structure: underlying problem");
     }
   }
 
