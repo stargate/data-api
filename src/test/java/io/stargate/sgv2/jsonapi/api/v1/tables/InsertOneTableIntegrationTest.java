@@ -1215,21 +1215,21 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       // To read vector back as null can either omit or add null; issue reported with
       // former so use that (handling should be same either way)
       String docJSON =
-              """
+          """
                           {
                             "id": "vectorNULL"
                           }
                           """;
       assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
-              .templated()
-              .insertOne(docJSON)
-              .wasSuccessful()
-              .hasInsertedIds(List.of("vectorNULL"));
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful()
+          .hasInsertedIds(List.of("vectorNULL"));
 
       assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
-              .postFindOne("{ \"filter\": { \"id\": \"vectorNULL\" } }")
-              .wasSuccessful()
-              .hasJSONField("data.document", docJSON);
+          .postFindOne("{ \"filter\": { \"id\": \"vectorNULL\" } }")
+          .wasSuccessful()
+          .hasJSONField("data.document", docJSON);
     }
 
     @Test
