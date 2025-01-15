@@ -4,6 +4,7 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
@@ -121,21 +122,23 @@ public class WriteableTableRow implements PrettyPrintable {
     private JsonNamedValue columnJsonNamedValue;
     final ApiColumnDef columnDef;
     final ApiVectorType vectorType;
+    final VectorizeDefinition vectorizeDefinition;
 
     public VectorizeTask(JsonNamedValue columnJsonNamedValue, ApiColumnDef columnDef) {
       this.columnJsonNamedValue = columnJsonNamedValue;
       // Parent can be null if a subclass wants to handle updating the target.
       this.columnDef = columnDef;
-      // sanity checks
 
+      // sanity checks
       if (columnDef.type().typeName() != ApiTypeName.VECTOR) {
         throw new IllegalArgumentException(
             "Column must be of type VECTOR, columnDef: " + columnDef);
       }
       this.vectorType = (ApiVectorType) columnDef.type();
-      Objects.requireNonNull(
-          vectorType.getVectorizeDefinition(),
-          "vectorType.getVectorizeDefinition() must not be null");
+      this.vectorizeDefinition =
+          Objects.requireNonNull(
+              vectorType.getVectorizeDefinition(),
+              "vectorType.getVectorizeDefinition() must not be null");
     }
 
     /**
