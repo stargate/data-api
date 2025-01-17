@@ -41,7 +41,7 @@ public abstract class IndexFactoryFromCql extends FactoryFromCql {
 
       return switch (apiIndexType) {
         case REGULAR ->
-            ApiRegularIndex.FROM_CQL_FACTORY.create(apiColumnDef, indexTarget, indexMetadata);
+            ApiGeneralIndex.FROM_CQL_FACTORY.create(apiColumnDef, indexTarget, indexMetadata);
           // for now we do not support collection indexes, will do for GA - aaron nov 11
         case COLLECTION -> createUnsupported(indexMetadata);
         case VECTOR ->

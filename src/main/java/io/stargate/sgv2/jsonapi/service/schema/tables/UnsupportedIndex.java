@@ -70,4 +70,9 @@ public class UnsupportedIndex implements ApiIndexDef {
       }
     };
   }
+
+  @Override
+  public ApiIndexFunction indexFunction() {
+    return null;
+  }
 }

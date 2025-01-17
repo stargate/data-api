@@ -1,13 +1,17 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateIndex;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexOnTable;
 import com.datastax.oss.driver.internal.querybuilder.schema.DefaultCreateIndex;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedCreateIndex;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexFunction;
 import io.stargate.sgv2.jsonapi.service.schema.tables.CQLSAIIndex;
 import java.util.Objects;
 
@@ -50,7 +54,11 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
         createIndexStart.onTable(
             schemaObject.tableMetadata().getKeyspace(), schemaObject.tableMetadata().getName());
 
-    var createIndex = createIndexOnTable.andColumn(indexDef.targetColumn());
+    var createIndex =
+        indexDef.indexFunction() == null
+            ? createIndexOnTable.andColumn(indexDef.targetColumn())
+            : createIndexWithIndexFunction(
+                indexDef.indexFunction(), createIndexOnTable, indexDef.targetColumn());
 
     // options are things like vector function, or text case sensitivity
     var indexOptions = indexDef.indexOptions();
@@ -61,5 +69,20 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
     // Hack code to fix the issue with respect to quoted columns, see class
     var extendedCreateIndex = new ExtendedCreateIndex((DefaultCreateIndex) createIndex);
     return extendedCreateIndex.build();
+  }
+
+  /**
+   * Index Function keys/values/entries/full on map/set/list collection columns needs special
+   * handling to create the driver CreateIndex.
+   */
+  private CreateIndex createIndexWithIndexFunction(
+      ApiIndexFunction apiIndexFunction,
+      CreateIndexOnTable createIndexOnTable,
+      CqlIdentifier indexColumn) {
+    return switch (apiIndexFunction) {
+      case KEYS -> createIndexOnTable.andColumnKeys(indexColumn);
+      case VALUES -> createIndexOnTable.andColumnValues(indexColumn);
+      case ENTRIES -> createIndexOnTable.andColumnEntries(indexColumn);
+    };
   }
 }

@@ -33,7 +33,8 @@ public class ApiVectorType extends CollectionApiDataType {
         ApiTypeName.VECTOR,
         ApiDataTypeDefs.FLOAT,
         new ExtendedVectorType(ApiDataTypeDefs.FLOAT.cqlType(), dimension),
-        API_SUPPORT);
+        API_SUPPORT,
+        false);
     this.dimension = dimension;
     this.vectorizeDefinition = vectorizeDefinition;
   }

@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.util.Map;
 
 /**
- * The API definition of an Index, is an interface so the unsupported indexs can be represented as
+ * The API definition of an index, is an interface so the unsupported indexes can be represented as
  * well.
  */
 public interface ApiIndexDef extends PrettyPrintable {
@@ -21,6 +21,11 @@ public interface ApiIndexDef extends PrettyPrintable {
   ApiIndexType indexType();
 
   IndexDesc<?> indexDesc();
+
+  // For map/set/list collection columns, index creation needs to specify the function.
+  // And indexFunctions are not appended as options.
+  // For ApiIndexType that is not COLLECTION, indexFunction should be null.
+  ApiIndexFunction indexFunction();
 
   Map<String, String> indexOptions();
 
@@ -35,6 +40,7 @@ public interface ApiIndexDef extends PrettyPrintable {
         .append("indexName", cqlIdentifierToMessageString(indexName()))
         .append("targetColumn", cqlIdentifierToMessageString(targetColumn()))
         .append("indexType", indexType())
+        .append("indexFunction", indexFunction())
         .append("indexOptions", indexOptions())
         .append("isUnsupported", isUnsupported());
   }

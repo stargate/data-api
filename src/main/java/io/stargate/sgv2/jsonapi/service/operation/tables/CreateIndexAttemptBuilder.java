@@ -4,7 +4,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiRegularIndex;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiGeneralIndex;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorIndex;
 import java.util.Objects;
 
@@ -45,12 +45,12 @@ public class CreateIndexAttemptBuilder {
     return cqlOptions;
   }
 
-  public CreateIndexAttempt build(ApiRegularIndex apiRegularIndex) {
-    Objects.requireNonNull(apiRegularIndex, "apiRegularIndex cannot be null");
+  public CreateIndexAttempt build(ApiGeneralIndex apiGeneralIndex) {
+    Objects.requireNonNull(apiGeneralIndex, "apiGeneralIndex cannot be null");
     checkBuildPreconditions();
 
     return new CreateIndexAttempt(
-        position++, schemaObject, schemaRetryPolicy, apiRegularIndex, buildCqlOptions());
+        position++, schemaObject, schemaRetryPolicy, apiGeneralIndex, buildCqlOptions());
   }
 
   public CreateIndexAttempt build(ApiVectorIndex apiVectorIndex) {

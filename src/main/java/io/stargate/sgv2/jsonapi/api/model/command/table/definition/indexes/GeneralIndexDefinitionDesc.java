@@ -10,21 +10,35 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @JsonPropertyOrder({"column", "options"})
-public record RegularIndexDefinitionDesc(
+public record GeneralIndexDefinitionDesc(
     @NotNull
         @Size(min = 1, max = 48)
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the column for which index to be created.")
         String column,
+    @Nullable
+        @Schema(
+            description = "mapIndex for indicating where to build index on mapColumn",
+            type = SchemaType.STRING,
+            implementation = String.class)
+        @Pattern(
+            regexp = "(keys|values|entries)",
+            message = "support index functions are keys/values/entries")
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        String indexFunction,
     @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
         @Schema(description = "Different indexing options.", type = SchemaType.OBJECT)
-        RegularIndexDescOptions options)
-    implements IndexDefinitionDesc<RegularIndexDefinitionDesc.RegularIndexDescOptions> {
+        GeneralIndexDescOptions options)
+    implements IndexDefinitionDesc<GeneralIndexDefinitionDesc.GeneralIndexDescOptions> {
 
-  // This is index definition options for text column types.
-  @JsonPropertyOrder({"ascii", "caseSensitive", "normalize"})
-  public record RegularIndexDescOptions(
+  /**
+   * Only text and ascii datatypes can be analyzed. <br>
+   * Only text and ascii in the collection datatype can be analyzed. It works for values(list),
+   * values(set), keys(map), values(map). Note, not for entries(map). <br>
+   */
+  @JsonPropertyOrder({"ascii", "caseSensitive", "mapIndex", "normalize"})
+  public record GeneralIndexDescOptions(
       @Nullable
           @Schema(
               description =

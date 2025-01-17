@@ -24,7 +24,12 @@ public class ApiSetType extends CollectionApiDataType {
 
   private ApiSetType(
       PrimitiveApiDataTypeDef valueType, ApiSupportDef apiSupport, boolean isFrozen) {
-    super(ApiTypeName.SET, valueType, DataTypes.setOf(valueType.cqlType(), isFrozen), apiSupport);
+    super(
+        ApiTypeName.SET,
+        valueType,
+        DataTypes.setOf(valueType.cqlType(), isFrozen),
+        apiSupport,
+        isFrozen);
   }
 
   @Override

@@ -24,7 +24,12 @@ public class ApiListType extends CollectionApiDataType {
 
   private ApiListType(
       PrimitiveApiDataTypeDef valueType, ApiSupportDef apiSupport, boolean isFrozen) {
-    super(ApiTypeName.LIST, valueType, DataTypes.listOf(valueType.cqlType(), isFrozen), apiSupport);
+    super(
+        ApiTypeName.LIST,
+        valueType,
+        DataTypes.listOf(valueType.cqlType(), isFrozen),
+        apiSupport,
+        isFrozen);
   }
 
   @Override

@@ -7,14 +7,14 @@ public enum ApiIndexFunction {
   KEYS("keys"),
   VALUES("values"),
   ENTRIES("entries");
+  // Since Data API does not support frozen map/set/list table creation, FULL index will also not be
+  // supported.)
+  //  FULL("full");
 
-  private final String cqlFunction;
+  public final String cqlFunction;
 
   private static final Map<String, ApiIndexFunction> FUNCTION_MAP =
-      Map.of(
-          KEYS.cqlFunction, KEYS,
-          VALUES.cqlFunction, VALUES,
-          ENTRIES.cqlFunction, ENTRIES);
+      Map.of(KEYS.cqlFunction, KEYS, VALUES.cqlFunction, VALUES, ENTRIES.cqlFunction, ENTRIES);
 
   ApiIndexFunction(String cqlFunction) {
     this.cqlFunction = cqlFunction;

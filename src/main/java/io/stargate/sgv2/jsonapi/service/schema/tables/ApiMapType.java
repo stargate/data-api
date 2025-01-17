@@ -36,7 +36,8 @@ public class ApiMapType extends CollectionApiDataType {
         ApiTypeName.MAP,
         valueType,
         DataTypes.mapOf(keyType.cqlType(), valueType.cqlType(), isFrozen),
-        apiSupport);
+        apiSupport,
+        isFrozen);
 
     this.keyType = keyType;
     // sanity checking

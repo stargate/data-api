@@ -22,18 +22,21 @@ public abstract class CollectionApiDataType implements ApiDataType {
   protected final PrimitiveApiDataTypeDef valueType;
   protected final DataType cqlType;
   protected final ApiSupportDef apiSupport;
+  protected final boolean isFrozen;
 
   protected CollectionApiDataType(
       ApiTypeName typeName,
       PrimitiveApiDataTypeDef valueType,
       DataType cqlType,
-      ApiSupportDef apiSupport) {
+      ApiSupportDef apiSupport,
+      boolean isFrozen) {
     // no null checks here, so subclasses can pass null and then override to create on demand if
     // they want to.
     this.typeName = typeName;
     this.valueType = valueType;
     this.cqlType = cqlType;
     this.apiSupport = apiSupport;
+    this.isFrozen = isFrozen;
   }
 
   @Override
@@ -63,5 +66,9 @@ public abstract class CollectionApiDataType implements ApiDataType {
 
   public PrimitiveApiDataTypeDef getValueType() {
     return valueType;
+  }
+
+  public boolean isFrozen() {
+    return isFrozen;
   }
 }
