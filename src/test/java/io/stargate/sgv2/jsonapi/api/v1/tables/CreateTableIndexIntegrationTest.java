@@ -10,8 +10,13 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -188,14 +193,14 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                   {
                                     "name": "list_type_idx",
                                     "definition": {
-                                      "column": "list_type"
+                                      "column": "list_type",
+                                      "indexFunction": "values"
                                     }
                                   }
                                   """)
-          .hasSingleApiError(
-              SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES,
-              SchemaException.class,
-              "The command attempted to index the unsupported columns: list_type(UNSUPPORTED CQL type: list<text>).");
+          .wasSuccessful();
+
+      verifyCreatedIndex("list_type_idx");
     }
 
     @Test
@@ -206,14 +211,14 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                   {
                                     "name": "set_type_idx",
                                     "definition": {
-                                      "column": "set_type"
+                                      "column": "set_type",
+                                      "indexFunction": "values"
                                     }
                                   }
                                   """)
-          .hasSingleApiError(
-              SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES,
-              SchemaException.class,
-              "The command attempted to index the unsupported columns: set_type(UNSUPPORTED CQL type: set<text>).");
+          .wasSuccessful();
+
+      verifyCreatedIndex("set_type_idx");
     }
 
     @Test
@@ -222,16 +227,44 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .postCreateIndex(
               """
                                   {
-                                    "name": "map_type_idx",
+                                    "name": "map_type_idx_on_keys",
                                     "definition": {
-                                      "column": "map_type"
+                                      "column": "map_type",
+                                      "indexFunction": "keys"
                                     }
                                   }
                                   """)
-          .hasSingleApiError(
-              SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES,
-              SchemaException.class,
-              "The command attempted to index the unsupported columns: map_type(UNSUPPORTED CQL type: map<text, text>).");
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                                          {
+                                            "name": "map_type_idx_on_values",
+                                            "definition": {
+                                              "column": "map_type",
+                                              "indexFunction": "values"
+                                            }
+                                          }
+                                          """)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                                          {
+                                            "name": "map_type_idx_on_entries",
+                                            "definition": {
+                                              "column": "map_type",
+                                              "indexFunction": "entries"
+                                            }
+                                          }
+                                          """)
+          .wasSuccessful();
+
+      verifyCreatedIndex("map_type_idx_on_keys");
+      verifyCreatedIndex("map_type_idx_on_values");
+      verifyCreatedIndex("map_type_idx_on_entries");
     }
 
     @Test
@@ -509,6 +542,107 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
               "Request invalid, mismatching JSON structure: underlying problem");
+    }
+
+    private static Stream<Arguments> unmatchedIndexFunctionWithDataType() {
+      var commands = new ArrayList<Arguments>();
+      commands.add(Arguments.of("list_type", "keys"));
+      commands.add(Arguments.of("list_type", "values"));
+      commands.add(Arguments.of("set_type", "keys"));
+      commands.add(Arguments.of("set_type", "keys"));
+      return commands.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("unmatchedIndexFunctionWithDataType")
+    public void createKeyEntriesIndexOnListSet(String column, String indexFunction) {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+                  """
+                                  {
+                                    "name": "unmatchedIndexFunction",
+                                    "definition": {
+                                      "column": "%s",
+                                      "indexFunction": "%s"
+                                    }
+                                  }
+                                  """
+                  .formatted(column, indexFunction))
+          .hasSingleApiError(
+              SchemaException.Code.CANNOT_APPLY_INDEX_FUNCTION_KEYS_ENTRIES_TO_NON_MAP_COLUMN,
+              SchemaException.class,
+              "Index function `keys`, `entries` can not apply to columns other than map.");
+    }
+
+    private static Stream<Arguments> collectionColumns() {
+      var commands = new ArrayList<Arguments>();
+      commands.add(Arguments.of("list_type"));
+      commands.add(Arguments.of("set_type"));
+      commands.add(Arguments.of("map_type"));
+      return commands.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("collectionColumns")
+    public void createIndexWithoutIndexFunction(String column) {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+                  """
+                                  {
+                                    "name": "missIndexFunction",
+                                    "definition": {
+                                      "column": "%s"
+                                    }
+                                  }
+                                  """
+                  .formatted(column))
+          .hasSingleApiError(
+              SchemaException.Code.MISSING_INDEX_FUNCTION_FOR_COLLECTION_COLUMN,
+              SchemaException.class,
+              "The index function is required for map,set,list columns when creating the index.");
+    }
+
+    @Test
+    public void cannotAnalyzeOnMapColumn() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                                  {
+                                    "name": "canNotAnalyzeOnMapColumn",
+                                    "definition": {
+                                      "column": "map_type",
+                                      "indexFunction": "values",
+                                      "options": {
+                                          "caseSensitive": true,
+                                          "normalize": true,
+                                          "ascii": true
+                                      }
+                                    }
+                                  }
+                                  """)
+          .hasSingleApiError(
+              SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS,
+              SchemaException.class,
+              "Index function `entries` can not apply to map column when analyze options are specified.");
+    }
+
+    @ParameterizedTest
+    @MethodSource("collectionColumns")
+    public void unsupportedIndexFunction(String column) {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+                  """
+                                  {
+                                    "name": "unsupportedIndexFunction",
+                                    "definition": {
+                                      "column": "%s",
+                                      "indexFunction": "full"
+                                  }
+                                  """
+                  .formatted(column))
+          .hasSingleApiError(
+              ErrorCodeV1.COMMAND_FIELD_INVALID,
+              "support index functions are keys/values/entries.");
     }
   }
 

@@ -37,7 +37,7 @@ public record GeneralIndexDefinitionDesc(
    * Only text and ascii in the collection datatype can be analyzed. It works for values(list),
    * values(set), keys(map), values(map). Note, not for entries(map). <br>
    */
-  @JsonPropertyOrder({"ascii", "caseSensitive", "mapIndex", "normalize"})
+  @JsonPropertyOrder({"ascii", "caseSensitive", "normalize"})
   public record GeneralIndexDescOptions(
       @Nullable
           @Schema(

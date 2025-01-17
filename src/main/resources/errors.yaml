@@ -695,7 +695,7 @@ request-errors:
     body: |-
       The index function is required for map,set,list columns when creating the index.
       
-      Valid index function are keys,values,entries,full.
+      Valid index function are keys,values,entries.
       
       Resend the command with the index function.
 
@@ -941,17 +941,6 @@ request-errors:
       The request wants to apply index function `${indexFunction}` to `${targetColumn}`.
       
       Resend the command using the non-frozen column.
-
-  - scope: SCHEMA
-    code: UNSUPPORTED_INDEX_FUNCTION_FULL
-    title: Index function full is not supported
-    body: |-
-      The command attempted to create an index on a column with index function `full`.
-      
-      Index function 'full' is not supported when creating an index, supported index functions are 'keys', 'values', 'entries'.
-      
-      Resend the command using supported index function.
-
 
   - scope: SCHEMA
     code: UNSUPPORTED_INDEX_TYPE
