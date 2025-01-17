@@ -5,7 +5,6 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJso
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.GeneralIndexDefinitionDesc;
@@ -20,12 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * ApiGeneralIndex serves two types in general:<br>
- * Primitive datatype columns. <br>
- * Only text and ascii can be analyzed, will be appended as indexOptions.<br>
- * Map/Set/List collection datatype columns. <br>
- */
+/** ApiGeneralIndex serves for both primitives and map/set/list. */
 public class ApiGeneralIndex extends ApiSupportedIndex {
 
   public static final IndexFactoryFromIndexDesc<ApiGeneralIndex, GeneralIndexDefinitionDesc>
