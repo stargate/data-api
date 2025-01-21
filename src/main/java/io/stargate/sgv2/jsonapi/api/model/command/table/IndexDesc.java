@@ -12,15 +12,19 @@ import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
  * <p>Does not include the command options, because we don't want them in the list indexes command.
  * Needs @JsonProperty annotation because it is not using bean accessor methods.
  */
-@JsonPropertyOrder({TableDescConstants.IndexDesc.NAME, TableDescConstants.IndexDesc.DEFINITION})
+@JsonPropertyOrder({
+  TableDescConstants.IndexDesc.NAME,
+  TableDescConstants.IndexDesc.DEFINITION,
+  TableDescConstants.IndexDesc.INDEX_TYPE
+})
 public interface IndexDesc<DefinitionT extends IndexDefinitionDesc<?>> {
 
-  @JsonProperty
+  @JsonProperty(TableDescConstants.IndexDesc.NAME)
   String name();
 
-  @JsonProperty
+  @JsonProperty(TableDescConstants.IndexDesc.INDEX_TYPE)
   String indexType();
 
-  @JsonProperty
+  @JsonProperty(TableDescConstants.IndexDesc.DEFINITION)
   DefinitionT definition();
 }

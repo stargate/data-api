@@ -66,7 +66,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
 
       @Override
       public String indexType() {
-        return ApiIndexType.REGULAR.indexTypeName();
+        return indexType.apiName();
       }
 
       @Override
@@ -177,6 +177,14 @@ public class ApiRegularIndex extends ApiSupportedIndex {
     protected ApiIndexDef create(
         ApiColumnDef apiColumnDef, CQLSAIIndex.IndexTarget indexTarget, IndexMetadata indexMetadata)
         throws UnsupportedCqlIndexException {
+
+      // for now we do not support collection indexes, will do for GA - aaron nov 11
+      // and when we do the collection indexes will be in the createIndex command so will be regular
+      // indexes.
+      if (apiColumnDef.type().isContainer()) {
+        throw new UnsupportedCqlIndexException(
+            "Collection indexes not fully supported.", indexMetadata);
+      }
 
       // this is a sanity check, the base will have worked this, but we should check it here
       var apiIndexType = ApiIndexType.fromCql(apiColumnDef, indexTarget, indexMetadata);

@@ -22,7 +22,11 @@ public record CreateIndexCommand(
         String name,
     @NotNull @Schema(description = "Definition of the index to create.", type = SchemaType.OBJECT)
         RegularIndexDefinitionDesc definition,
-    @Nullable @Schema(description = "Type of the index to create.", type = SchemaType.STRING)
+    @Nullable
+        @Schema(
+            description = "Type of the index to create, the only supported value is 'regular'.",
+            type = SchemaType.STRING,
+            defaultValue = "regular")
         String indexType,
     @Nullable @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
         CreateIndexCommandOptions options)

@@ -25,7 +25,10 @@ public record CreateVectorIndexCommand(
         VectorIndexDefinitionDesc definition,
     @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
-        @Schema(description = "Type of the index to create.", type = SchemaType.STRING)
+        @Schema(
+            description = "Type of the index to create, the only supported value is 'vector'.",
+            type = SchemaType.STRING,
+            defaultValue = "vector")
         String indexType,
     @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable

@@ -39,13 +39,9 @@ abstract class ApiSupportedIndex implements ApiIndexDef {
 
   @Override
   public ApiIndexType indexType() {
-    return ApiIndexType.REGULAR;
+    return indexType;
   }
-
-  @Override
-  public boolean isUnsupported() {
-    return false;
-  }
+  ;
 
   @Override
   public Map<String, String> indexOptions() {

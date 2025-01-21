@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
+
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
@@ -36,13 +38,13 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     ApiIndexType indexType =
         command.indexType() == null
             ? ApiIndexType.VECTOR
-            : ApiIndexType.fromTypeName(command.indexType());
+            : ApiIndexType.fromApiName(command.indexType());
 
     if (indexType == null) {
       throw SchemaException.Code.UNKNOWN_INDEX_TYPE.get(
           Map.of(
               "knownTypes",
-              ApiIndexType.allTypeNames().toString(),
+              errFmtJoin(ApiIndexType.values(), ApiIndexType::apiName),
               "unknownType",
               command.indexType()));
     }
@@ -51,7 +53,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
       throw SchemaException.Code.UNSUPPORTED_INDEX_TYPE.get(
           Map.of(
               "supportedTypes",
-              ApiIndexType.VECTOR.indexTypeName(),
+              ApiIndexType.VECTOR.apiName(),
               "unsupportedType",
               command.indexType()));
     }

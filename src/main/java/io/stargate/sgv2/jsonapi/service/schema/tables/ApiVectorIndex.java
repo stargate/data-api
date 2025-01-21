@@ -47,11 +47,6 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   }
 
   @Override
-  public ApiIndexType indexType() {
-    return ApiIndexType.VECTOR;
-  }
-
-  @Override
   public IndexDesc<VectorIndexDefinitionDesc> indexDesc() {
 
     var definitionOptions =
@@ -69,7 +64,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
       @Override
       public String indexType() {
-        return ApiIndexType.VECTOR.indexTypeName();
+        return indexType.apiName();
       }
 
       @Override

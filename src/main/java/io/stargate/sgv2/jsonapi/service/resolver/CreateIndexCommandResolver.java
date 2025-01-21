@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
+
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
@@ -40,24 +42,20 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
     ApiIndexType indexType =
         command.indexType() == null
             ? ApiIndexType.REGULAR
-            : ApiIndexType.fromTypeName(command.indexType());
+            : ApiIndexType.fromApiName(command.indexType());
 
     if (indexType == null) {
       throw SchemaException.Code.UNKNOWN_INDEX_TYPE.get(
           Map.of(
-              "knownTypes",
-              ApiIndexType.allTypeNames().toString(),
-              "unknownType",
-              command.indexType()));
+              "knownTypes", errFmtJoin(ApiIndexType.values(), ApiIndexType::apiName),
+              "unknownType", command.indexType()));
     }
 
     if (indexType != ApiIndexType.REGULAR) {
       throw SchemaException.Code.UNSUPPORTED_INDEX_TYPE.get(
           Map.of(
-              "supportedTypes",
-              ApiIndexType.REGULAR.indexTypeName(),
-              "unsupportedType",
-              command.indexType()));
+              "supportedTypes", ApiIndexType.REGULAR.apiName(),
+              "unsupportedType", command.indexType()));
     }
 
     var attemptBuilder = new CreateIndexAttemptBuilder(ctx.schemaObject());
