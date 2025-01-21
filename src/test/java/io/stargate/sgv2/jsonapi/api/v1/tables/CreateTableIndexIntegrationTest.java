@@ -468,7 +468,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                       "definition": {
                                         "column": "invalid_text",
                                         "options": {
-                                          "caseSensitive": true
+                                          "normalize": true
                                         }
                                       }
                               }
@@ -547,9 +547,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     private static Stream<Arguments> unmatchedIndexFunctionWithDataType() {
       var commands = new ArrayList<Arguments>();
       commands.add(Arguments.of("list_type", "keys"));
-      commands.add(Arguments.of("list_type", "values"));
+      commands.add(Arguments.of("list_type", "entries"));
       commands.add(Arguments.of("set_type", "keys"));
-      commands.add(Arguments.of("set_type", "keys"));
+      commands.add(Arguments.of("set_type", "entries"));
       return commands.stream();
     }
 
@@ -611,7 +611,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                     "name": "canNotAnalyzeOnMapColumn",
                                     "definition": {
                                       "column": "map_type",
-                                      "indexFunction": "values",
+                                      "indexFunction": "entries",
                                       "options": {
                                           "caseSensitive": true,
                                           "normalize": true,
@@ -637,6 +637,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                     "definition": {
                                       "column": "%s",
                                       "indexFunction": "full"
+                                    }
                                   }
                                   """
                   .formatted(column))
