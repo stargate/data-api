@@ -87,7 +87,7 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
   }
 
   @BeforeAll
-  public final void createTable() {
+  public final void createTables() {
     assertNamespaceCommand(keyspaceName)
         .postCreateTable(TABLE_DEFINITION_TEMPLATE.formatted(TABLE_WITH_COMPLEX_PRIMARY_KEY))
         .wasSuccessful();
