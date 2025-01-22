@@ -85,6 +85,7 @@ public class CqlRetryPolicy extends DefaultRetryPolicy {
       int received,
       int retryCount) {
     final RetryDecision retryDecision;
+    // TODO(Hazel): only retry two write type or all?
     if (retryCount < MAX_RETRIES && (writeType == WriteType.CAS || writeType == WriteType.SIMPLE)) {
       retryDecision = RetryDecision.RETRY_SAME;
     } else {
@@ -111,6 +112,8 @@ public class CqlRetryPolicy extends DefaultRetryPolicy {
       int required,
       int alive,
       int retryCount) {
+    // TODO(Hazel): no error passed in this method, cannot tailor the retry decision for
+    // UnavailableException, override the default retry 1 to retry 3?
     var retryVerdict = super.onUnavailableVerdict(request, cl, required, alive, retryCount);
     var retryDecision = retryVerdict.getRetryDecision();
 
@@ -140,16 +143,14 @@ public class CqlRetryPolicy extends DefaultRetryPolicy {
 
     var retryDecision =
         switch (error) {
+            // TODO(Hazel): what decision? RETRY_SAME or RETRY_NEXT?
           case CASWriteUnknownException e ->
               (retryCount < MAX_RETRIES) ? RetryDecision.RETRY_SAME : RetryDecision.RETHROW;
 
           case TruncateException e ->
               (retryCount < MAX_RETRIES) ? RetryDecision.RETRY_SAME : RetryDecision.RETHROW;
 
-          default -> {
-            var retryVerdict = super.onErrorResponseVerdict(request, error, retryCount);
-            yield retryVerdict.getRetryDecision();
-          }
+          default -> super.onErrorResponseVerdict(request, error, retryCount).getRetryDecision();
         };
 
     if (LOG.isInfoEnabled()) {
