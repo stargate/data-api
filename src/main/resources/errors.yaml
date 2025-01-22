@@ -690,16 +690,6 @@ request-errors:
         Resend the command using a dimension for the vector columns.
 
   - scope: SCHEMA
-    code: MISSING_INDEX_FUNCTION_FOR_COLLECTION_COLUMN
-    title: index function is required for map,set,list column when creating the index
-    body: |-
-      The index function is required for map,set,list columns when creating the index.
-      
-      Valid index function are keys,values,entries.
-      
-      Resend the command with the index function.
-
-  - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_COLUMNS
     title: Columns with the same name are defined in the table schema
     body: |-

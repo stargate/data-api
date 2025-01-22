@@ -1,13 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiGeneralIndex;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiRegularIndex;
 import java.util.HashMap;
 
 /**
  * Map of index definitions where the key is the column name and the value is the index definition.
  */
-public class IndexConfig extends HashMap<CqlIdentifier, ApiGeneralIndex> {
+public class IndexConfig extends HashMap<CqlIdentifier, ApiRegularIndex> {
 
   //  // TODO : AARON REMOVE
   //  private IndexConfig(Map<CqlIdentifier, ApiRegularIndex> indexDefinitions) {

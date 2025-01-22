@@ -19,10 +19,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/** ApiGeneralIndex serves for both primitives and map/set/list. */
-public class ApiGeneralIndex extends ApiSupportedIndex {
+/** ApiRegularIndex serves for both primitives and map/set/list. */
+public class ApiRegularIndex extends ApiSupportedIndex {
 
-  public static final IndexFactoryFromIndexDesc<ApiGeneralIndex, GeneralIndexDefinitionDesc>
+  public static final IndexFactoryFromIndexDesc<ApiRegularIndex, GeneralIndexDefinitionDesc>
       FROM_DESC_FACTORY = new UserDescFactory();
 
   public static final IndexFactoryFromCql FROM_CQL_FACTORY = new CqlTypeFactory();
@@ -39,7 +39,7 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
         Properties.ofStringable("normalize", TableDescDefaults.GeneralIndexDescDefaults.NORMALIZE);
   }
 
-  private ApiGeneralIndex(
+  private ApiRegularIndex(
       CqlIdentifier indexName,
       ApiIndexType indexType,
       CqlIdentifier targetColumn,
@@ -60,14 +60,14 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
   }
 
   /**
-   * Factor to create a new {@link ApiGeneralIndex} using {@link GeneralIndexDefinitionDesc} from
+   * Factor to create a new {@link ApiRegularIndex} using {@link GeneralIndexDefinitionDesc} from
    * the user request.
    */
   private static class UserDescFactory
-      extends IndexFactoryFromIndexDesc<ApiGeneralIndex, GeneralIndexDefinitionDesc> {
+      extends IndexFactoryFromIndexDesc<ApiRegularIndex, GeneralIndexDefinitionDesc> {
 
     @Override
-    public ApiGeneralIndex create(
+    public ApiRegularIndex create(
         TableSchemaObject tableSchemaObject,
         String indexName,
         GeneralIndexDefinitionDesc indexDesc) {
@@ -83,13 +83,13 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
 
       var apiColumnDef = checkIndexColumnExists(tableSchemaObject, targetIdentifier);
 
-      // create an ApiGeneralIndex for the target primitive datatype
+      // create an ApiRegularIndex for the target primitive datatype
       if (apiColumnDef.type().isPrimitive()) {
         return createApiIndexForPrimitive(
             tableSchemaObject, apiColumnDef, indexIdentifier, targetIdentifier, indexDesc);
       }
 
-      // create an ApiGeneralIndex for the target map/set/list datatype
+      // create an ApiRegularIndex for the target map/set/list datatype
       if (apiColumnDef.type().isContainer()
           && apiColumnDef.type().typeName() != ApiTypeName.VECTOR) {
         try {
@@ -114,7 +114,7 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
     }
 
     /** The helper method to create ApiIndex for primitive dataTypes. */
-    private ApiGeneralIndex createApiIndexForPrimitive(
+    private ApiRegularIndex createApiIndexForPrimitive(
         TableSchemaObject tableSchemaObject,
         ApiColumnDef apiColumnDef,
         CqlIdentifier indexIdentifier,
@@ -127,7 +127,7 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
 
       populateIndexOptionsMap(indexOptions, optionsDesc);
 
-      return new ApiGeneralIndex(
+      return new ApiRegularIndex(
           indexIdentifier, ApiIndexType.REGULAR, columnIdentifier, indexOptions);
     }
 
@@ -142,7 +142,7 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
      * 4. Index functions have defaults for map/set/list. entries(map), values(set), values(list)
      * </pre>
      */
-    private ApiGeneralIndex createApiIndexForCollection(
+    private ApiRegularIndex createApiIndexForCollection(
         TableSchemaObject tableSchemaObject,
         ApiColumnDef apiColumnDef,
         CqlIdentifier indexIdentifier,
@@ -182,7 +182,7 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
               : ApiIndexFunction.VALUES.cqlFunction;
       indexOptions.put("indexFunction", indexFunction);
 
-      return new ApiGeneralIndex(
+      return new ApiRegularIndex(
           indexIdentifier, ApiIndexType.COLLECTION, columnIdentifier, indexOptions);
     }
 
@@ -264,7 +264,7 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
   }
 
   /**
-   * Factory to create a new {@link ApiGeneralIndex} using {@link IndexMetadata} from the driver.
+   * Factory to create a new {@link ApiRegularIndex} using {@link IndexMetadata} from the driver.
    */
   private static class CqlTypeFactory extends IndexFactoryFromCql {
 
@@ -277,7 +277,7 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
       var apiIndexType = ApiIndexType.fromCql(apiColumnDef, indexTarget, indexMetadata);
       if (apiIndexType != ApiIndexType.REGULAR && apiIndexType != ApiIndexType.COLLECTION) {
         throw new IllegalStateException(
-            "ApiGeneralIndex factory only supports %s,%s indexes, apiIndexType: %s"
+            "ApiRegularIndex factory only supports %s,%s indexes, apiIndexType: %s"
                 .formatted(ApiIndexType.REGULAR, ApiIndexType.COLLECTION, apiIndexType));
       }
 
@@ -288,7 +288,7 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
                 + indexTarget.indexFunction());
       }
       // TODO, index target problem
-      return new ApiGeneralIndex(
+      return new ApiRegularIndex(
           indexMetadata.getName(),
           apiIndexType,
           indexTarget.targetColumn(),
