@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   static final String TABLE_WITH_COMPLEX_PRIMARY_KEY = "table_" + System.currentTimeMillis();
+  static final String TABLE_WITH_BLOB_IN_PK = "table_blob_pk_" + System.currentTimeMillis();
 
   static final String TABLE_DEFINITION_TEMPLATE =
       """
@@ -52,6 +53,31 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
                             }
                           """;
 
+  static final String TABLE_WITH_BLOB_IN_PK_TEMPLATE =
+      """
+      {
+          "name": "%s",
+          "definition": {
+              "columns": {
+                  "p_ascii": "ascii",
+                  "p_bigint": "bigint",
+                  "p_blob": "blob",
+                  "p_boolean": "boolean"
+              },
+              "primaryKey": {
+                  "partitionBy": [
+                      "p_ascii",
+                      "p_blob"
+                  ],
+                  "partitionSort": {
+                      "p_bigint": 1,
+                      "p_boolean": -1
+                  }
+              }
+          }
+      }
+      """;
+
   private static CommandName toCommandName(WhereCQLClauseAnalyzer.StatementType statementType) {
     return switch (statementType) {
       case DELETE_ONE -> CommandName.DELETE_ONE;
@@ -61,8 +87,7 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
   }
 
   @BeforeAll
-  public final void createTable() {
-
+  public final void createTables() {
     assertNamespaceCommand(keyspaceName)
         .postCreateTable(TABLE_DEFINITION_TEMPLATE.formatted(TABLE_WITH_COMPLEX_PRIMARY_KEY))
         .wasSuccessful();
@@ -73,6 +98,11 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
         .createIndex(
             "IX_%s_%s".formatted(TABLE_WITH_COMPLEX_PRIMARY_KEY, "indexed_column"),
             "indexed_column")
+        .wasSuccessful();
+
+    // Create table for Blob-in-PK test(s)
+    assertNamespaceCommand(keyspaceName)
+        .postCreateTable(TABLE_WITH_BLOB_IN_PK_TEMPLATE.formatted(TABLE_WITH_BLOB_IN_PK))
         .wasSuccessful();
   }
 
@@ -142,6 +172,49 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
         .wasSuccessful()
         .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
+  }
+
+  // [data-api#1578]: BINARY in PK fails due to missing filter support
+  @Test
+  public void deleteOneWithBlobInPK() {
+    final String base64Blob = "q83vASNFZ4k=";
+    String docJSON =
+            """
+                {
+                    "p_ascii": "abc",
+                    "p_bigint": 10000,
+                    "p_blob": {
+                        "$binary": "%s"
+                    },
+                    "p_boolean": false
+                }
+        """
+            .formatted(base64Blob);
+    assertTableCommand(keyspaceName, TABLE_WITH_BLOB_IN_PK)
+        .templated()
+        .insertOne(docJSON)
+        .wasSuccessful();
+
+    // Verify document exists
+    assertTableCommand(keyspaceName, TABLE_WITH_BLOB_IN_PK)
+        // Document consist of just PK columns so:
+        .postFindOne("{\"filter\": %s}".formatted(docJSON))
+        .wasSuccessful()
+        .hasJSONField("data.document", docJSON);
+
+    // Then delete
+    assertTableCommand(keyspaceName, TABLE_WITH_BLOB_IN_PK)
+        .templated()
+        .deleteOne(docJSON)
+        .wasSuccessful()
+        .hasNoErrors();
+
+    // And verify it's gone
+    assertTableCommand(keyspaceName, TABLE_WITH_BLOB_IN_PK)
+        .postFind("{\"filter\": %s}".formatted(docJSON))
+        .wasSuccessful()
+        .hasNoWarnings()
+        .hasEmptyDataDocuments();
   }
 
   // ==================================================================================================================
