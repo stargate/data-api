@@ -29,14 +29,14 @@ public class ApiRegularIndex extends ApiSupportedIndex {
 
   private interface Options {
     BooleanProperty.Stringable ASCII =
-        Properties.ofStringable("ascii", TableDescDefaults.GeneralIndexDescDefaults.ASCII);
+        Properties.ofStringable("ascii", TableDescDefaults.RegularIndexDescDefaults.ASCII);
 
     BooleanProperty.Stringable CASE_SENSITIVE =
         Properties.ofStringable(
-            "case_sensitive", TableDescDefaults.GeneralIndexDescDefaults.CASE_SENSITIVE);
+            "case_sensitive", TableDescDefaults.RegularIndexDescDefaults.CASE_SENSITIVE);
 
     BooleanProperty.Stringable NORMALIZE =
-        Properties.ofStringable("normalize", TableDescDefaults.GeneralIndexDescDefaults.NORMALIZE);
+        Properties.ofStringable("normalize", TableDescDefaults.RegularIndexDescDefaults.NORMALIZE);
   }
 
   private ApiRegularIndex(

@@ -6,7 +6,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.IndexCreationCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
 import jakarta.annotation.Nullable;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -21,9 +20,7 @@ public record CreateIndexCommand(
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the column to create the index on")
         String name,
-    @Valid
-        @NotNull
-        @Schema(description = "Definition of the index to create.", type = SchemaType.OBJECT)
+    @NotNull @Schema(description = "Definition of the index to create.", type = SchemaType.OBJECT)
         RegularIndexDefinitionDesc definition,
     @Nullable @Schema(description = "Type of the index to create.", type = SchemaType.STRING)
         String indexType,

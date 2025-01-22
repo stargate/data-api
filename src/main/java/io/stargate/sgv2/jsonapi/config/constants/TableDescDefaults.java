@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.util.defaults.Defaults;
 public interface TableDescDefaults {
 
   /** Defaults to apply to the value from {@link RegularIndexDefinitionDesc} */
-  interface GeneralIndexDescDefaults {
+  interface RegularIndexDescDefaults {
     DefaultBoolean ASCII = Defaults.of(false);
     DefaultBoolean CASE_SENSITIVE = Defaults.of(true);
     DefaultBoolean NORMALIZE = Defaults.of(false);
