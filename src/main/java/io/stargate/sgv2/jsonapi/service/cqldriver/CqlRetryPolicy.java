@@ -4,7 +4,9 @@ import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.retry.RetryDecision;
 import com.datastax.oss.driver.api.core.retry.RetryVerdict;
+import com.datastax.oss.driver.api.core.servererrors.CASWriteUnknownException;
 import com.datastax.oss.driver.api.core.servererrors.CoordinatorException;
+import com.datastax.oss.driver.api.core.servererrors.TruncateException;
 import com.datastax.oss.driver.api.core.servererrors.WriteType;
 import com.datastax.oss.driver.api.core.session.Request;
 import com.datastax.oss.driver.internal.core.retry.DefaultRetryPolicy;
@@ -135,13 +137,25 @@ public class CqlRetryPolicy extends DefaultRetryPolicy {
   @Override
   public RetryVerdict onErrorResponseVerdict(
       @NonNull Request request, @NonNull CoordinatorException error, int retryCount) {
-    var retryVerdict = super.onErrorResponseVerdict(request, error, retryCount);
-    var retryDecision = retryVerdict.getRetryDecision();
+
+    var retryDecision =
+        switch (error) {
+          case CASWriteUnknownException e ->
+              (retryCount < MAX_RETRIES) ? RetryDecision.RETRY_SAME : RetryDecision.RETHROW;
+
+          case TruncateException e ->
+              (retryCount < MAX_RETRIES) ? RetryDecision.RETRY_SAME : RetryDecision.RETHROW;
+
+          default -> {
+            var retryVerdict = super.onErrorResponseVerdict(request, error, retryCount);
+            yield retryVerdict.getRetryDecision();
+          }
+        };
 
     if (LOG.isInfoEnabled()) {
       LOG.info(RETRYING_ON_ERROR, logPrefix, retryCount, error, retryDecision);
     }
 
-    return retryVerdict;
+    return () -> retryDecision;
   }
 }
