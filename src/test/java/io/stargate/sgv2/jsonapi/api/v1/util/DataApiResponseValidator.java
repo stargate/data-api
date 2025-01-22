@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import java.util.List;
 import java.util.Map;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -29,7 +30,7 @@ public class DataApiResponseValidator {
 
     this.responseIsError =
         switch (commandName) {
-          case DROP_TABLE, DROP_INDEX, CREATE_INDEX, CREATE_TABLE, ALTER_TABLE ->
+          case DROP_TABLE, DROP_INDEX, CREATE_INDEX, CREATE_TABLE, ALTER_TABLE, FIND_ONE, FIND ->
               responseIsErrorWithOptionalStatus();
           default -> responseIsError();
         };
@@ -50,6 +51,7 @@ public class DataApiResponseValidator {
                   LIST_INDEXES ->
               responseIsDDLSuccess();
           case CREATE_COLLECTION -> responseIsDDLSuccess();
+          case COUNT_DOCUMENTS -> responseIsCountSuccess();
           default ->
               throw new IllegalArgumentException(
                   "DataApiResponseValidator: Unexpected command name: " + commandName);
@@ -138,7 +140,7 @@ public class DataApiResponseValidator {
     return hasSingleApiError(errorCode, containsString(messageSnippet));
   }
 
-  // aaron 19-oct-2024 added wheile redoing a lot of errors, we still need to cleanup the error code
+  // aaron 19-oct-2024 added while redoing a lot of errors, we still need to cleanup the error code
   // world
   public DataApiResponseValidator hasSingleApiError(String errorCode, String messageSnippet) {
     return body("$", responseIsError)
@@ -249,7 +251,29 @@ public class DataApiResponseValidator {
     return validator;
   }
 
-  public DataApiResponseValidator mayHasSingleWarning(WarningException.Code warningExceptionCode) {
+  public DataApiResponseValidator hasWarning(
+      int position, WarningException.Code code, String... messageSnippet) {
+    var validator =
+        body(
+                "status.warnings[%s]".formatted(position),
+                hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+            .body(
+                "status.warnings[%s]".formatted(position),
+                hasEntry(
+                    ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+            .body(
+                "status.warnings[%s]".formatted(position),
+                hasEntry(ErrorObjectV2Constants.Fields.CODE, code.name()));
+
+    for (String snippet : messageSnippet) {
+      validator =
+          validator.body(
+              "status.warnings[%s].message".formatted(position), containsString(snippet));
+    }
+    return validator;
+  }
+
+  public DataApiResponseValidator mayHaveSingleWarning(WarningException.Code warningExceptionCode) {
     if (warningExceptionCode == null) {
       return hasNoWarnings();
     }
@@ -272,6 +296,11 @@ public class DataApiResponseValidator {
   // // // Insert Command Validation // // //
   public DataApiResponseValidator hasInsertedIdCount(int count) {
     return body("status.insertedIds", hasSize(count));
+  }
+
+  public DataApiResponseValidator hasInsertedIds(List<?>... ids) {
+    body("status.insertedIds", hasSize(ids.length));
+    return body("status.insertedIds", is(List.of(ids)));
   }
 
   // // // Read Command Validation // // //
@@ -302,7 +331,7 @@ public class DataApiResponseValidator {
 
   // // // Projection Schema // // //
   public DataApiResponseValidator hasProjectionSchema() {
-    return hasField("status." + CommandStatus.PROJECTION_SCHEMA);
+    return hasField("status." + CommandStatus.PROJECTION_SCHEMA.apiName());
   }
 
   public DataApiResponseValidator hasProjectionSchemaWith(ApiColumnDef columnDef) {
@@ -379,6 +408,10 @@ public class DataApiResponseValidator {
   public DataApiResponseValidator hasIndexes(String... indexes) {
     return body("status.indexes", hasSize(indexes.length))
         .body("status.indexes", containsInAnyOrder(indexes));
+  }
+
+  public DataApiResponseValidator hasIndex(String index) {
+    return body("status.indexes", hasItem(index));
   }
 
   public DataApiResponseValidator doesNotHaveIndexes(String... indexes) {

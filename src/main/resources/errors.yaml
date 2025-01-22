@@ -186,7 +186,7 @@ request-errors:
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The command included the following unknown columns: ${unknownColumns}.
       
-      {SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
+      ${SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
 
   - scope: DOCUMENT
     code: UNSUPPORTED_COLUMN_TYPES
@@ -228,15 +228,6 @@ request-errors:
 # Family: REQUEST         Scope: FILTER
 # ================================================================================================================
 
-  # aaron 13 nov - I think this is not used, leaving until we can remove it safely
-  - scope: FILTER
-    code: INVALID_FILTER
-    title: Invalid filter
-    body: |-
-      The filter clause is invalid. ${filter}
-      
-      ${SNIPPET.CONTACT_SUPPORT}
-
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the DOCUMENT scope
   - scope: FILTER
     code: UNKNOWN_TABLE_COLUMNS
@@ -248,6 +239,17 @@ request-errors:
       The filter included the following unknown columns: ${unknownColumns}.
       
       ${SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
+
+  - scope: FILTER
+    code: INVALID_FILTER_COLUMN_VALUES
+    title: Column value in filter is not valid
+    body: |-
+      Only values that are supported by the column data type can be included when filtering.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command included the column ${invalidColumn} that has ${columnType} type defined.
+      
+      Resend the command using only supported column values.
 
   - scope: FILTER
     code: UNSUPPORTED_COLUMN_TYPES
@@ -301,14 +303,14 @@ request-errors:
       Resend the command using a filter.
 
   - scope: FILTER
-    code: UNSUPPORTED_IN_FILTER_FOR_UPDATE_ONE_DELETE_ONE
-    title: updateOne and deleteOne commands do not support `$in` or `$nin` filter operation
+    code: UNSUPPORTED_FILTER_FOR_UPDATE_ONE_DELETE_ONE
+    title: updateOne and deleteOne commands only support filtering using $eq
     body: |-
-      The Filtering using the `$in` or `$nin` operations can select more than one row, and so cannot be used with the `updateOne` and `deleteOne` commands as they can only modify one row.
-            
-      The command used an invalid filter on the columns: ${inFilterColumns}.
-  
-      Resend the command without using the `$in` or `$nin` filter.
+      The Filtering using the non `$eq` filter operations can select more than one row, and so cannot be used with the `updateOne` and `deleteOne` commands as they can only modify one row.
+      
+      The command used an invalid filter on the columns: ${unsupportedFilterColumns}.
+      
+      Resend the command only using `$eq` filters.
 
   - scope: FILTER
     code: UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE
@@ -362,6 +364,17 @@ request-errors:
       The update included the following unknown columns: ${unknownColumns}.
       
       ${SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
+
+  - scope: UPDATE
+    code: INVALID_UPDATE_COLUMN_VALUES
+    title: Column value in update clause is not valid
+    body: |-
+      Only values that are supported by the column data type can be included when updating.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command included the column ${invalidColumn} that has ${columnType} type defined.
+      
+      Resend the command using only supported column values.
 
   - scope: UPDATE
     code: UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS
@@ -434,6 +447,8 @@ request-errors:
       The table ${keyspace}.${table} has the primary key: ${primaryKey}.
       And has indexes on the columns: ${indexedColumns}.
       The request filtered on the un-indexed columns: ${unindexedFilters}.
+      
+      Note: There may be a small delay in newly created indexes propagating through the system, this warning may be ignored if the column(s) were recently indexed.
       
       ${SNIPPET.INEFFICIENT_FILTER}
 
@@ -545,9 +560,23 @@ request-errors:
 
   - scope: WARNING
     code: IN_MEMORY_SORTING_DUE_SKIP_OPTIONS
-    title: Sorting uses skip option, performing as inmemory sory
+    title: Sorting uses skip option, performing as in memory sort
     body: |-
-      Sorting uses skip option, performing as inmemory sory
+      Sorting uses skip option, performing as in memory sort
+
+  - scope: WARNING
+    code: IN_MEMORY_SORTING_DUE_TO_PARTITION_KEY_NOT_RESTRICTED
+    title: Sorting with partition key not restricted correctly in filter clause
+    body: |-
+      The command wants to perform sort, however the filter clause does not have partition keys correctly restricted.
+      
+      When sorting by the partition sorting columns, partition keys needs to restricted by $eq in filter clause.
+      
+      The table ${keyspace}.${table} has the partition keys: ${partitionKeys}.
+      The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
+      The sort clause used the columns (in order) : ${sortColumns}.
+      
+      ${SNIPPET.INEFFICIENT_SORT}
 
   - scope: WARNING
     code: IN_MEMORY_SORTING_DUE_TO_MISSING_PARTITION_SORTING
@@ -574,6 +603,32 @@ request-errors:
       The sort clause used the columns (in order) : ${sortColumns}.
       
       ${SNIPPET.INEFFICIENT_SORT}
+
+  # ================================================================================================================
+  # Family: REQUEST         Scope: PROJECTION
+  # ================================================================================================================
+
+  - scope: PROJECTION
+    code: UNSUPPORTED_COLUMN_TYPES
+    title: Column types in projection are not supported
+    body: |-
+      Only supported column types can be included when reading from a table.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command included the following columns cannot be read: ${unsupportedColumns}.
+      
+      Resend the command using only supported column types.
+
+  - scope: PROJECTION
+    code: UNKNOWN_TABLE_COLUMNS
+    title: Columns in the projection are not defined in the table schema
+    body: |-
+      Only columns defined in the table schema can be included in the projection.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The projection included the following unknown columns: ${unknownColumns}.
+      
+      ${SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
 
   # ================================================================================================================
   # Family: REQUEST         Scope: SCHEMA
@@ -623,6 +678,16 @@ request-errors:
       The command included the empty operation: ${missingTableOperation}
       
       Resend the command including changes to the table.
+
+  - scope: SCHEMA
+    code: MISSING_DIMENSION_IN_VECTOR_COLUMN
+    title: Dimension is required for vector column if embedding service is not specified
+    body: |-
+        The dimension is required for vector columns if the embedding service is not specified.
+        
+        The command attempted to create the vector column without a dimension.
+        
+        Resend the command using a dimension for the vector columns.
 
   - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_COLUMNS
@@ -807,6 +872,17 @@ request-errors:
       Resend the command using only columns defined in the table schema.
 
   - scope: SCHEMA
+    code: UNKNOWN_INDEX_TYPE
+    title: Index type is unknown
+    body: |-
+      The command attempted to create an index using an unknown type.
+      
+      The known index types are: ${knownTypes}.
+      The command used the unknown index type: ${unknownType}.
+      
+      Resend the command using a known index type.
+
+  - scope: SCHEMA
     code: UNSUPPORTED_INDEXING_FOR_DATA_TYPES
     title: Indexing not supported by data types
     body: |-
@@ -821,6 +897,21 @@ request-errors:
       The command attempted to index the unsupported columns: ${unsupportedColumns}.
       
       Resend the command using columns of the supported data types.
+
+  - scope: SCHEMA
+    code: UNSUPPORTED_INDEX_TYPE
+    title: Index type is not supported
+    body: |-
+      The command attempted to create an index using an unsupported type.
+      
+      The supported index types are: ${supportedTypes}.
+      The command used the unsupported index type: ${unsupportedType}.
+            
+      `regular` index type should be used in `createIndex` command and `vector` index type should be used in `createVectorIndex` command. 
+      
+      Support for `collection` and `text-analysed` index types may be expanded in future releases.
+      
+      Resend the command using a supported index type.    
 
   - scope: SCHEMA
     code: UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES
@@ -1035,6 +1126,17 @@ request-errors:
       Resend the command using only vector columns.
 
   - scope: SORT
+    code: CANNOT_VECTOR_SORT_WITH_LIMIT_EXCEEDS_MAX
+    title: Limit exceeds the maximum allowed for vector sort
+    body: |-
+        The command attempted to vector sort columns with a limit that exceeds the maximum allowed.
+        
+        Vector sorting is limited to a maximum of ${maxLimit} rows.
+        The command attempted to sort the vector column: ${sortColumn} with a limit of ${limit}.
+        
+        Resend the command using a limit of ${maxLimit} or less.
+
+  - scope: SORT
     code: CANNOT_VECTOR_SORT_WITH_SKIP_OPTION
     title: Skip option cannot be used with  vector sort
     body: |-
@@ -1148,7 +1250,6 @@ server-errors:
   # UNSCOPED server errors
   - scope:
     code: UNEXPECTED_SERVER_ERROR
-    http-status-override: 500
     title: Unexpected server error
     body: |-
       An unexpected server error occurred while processing the request. 

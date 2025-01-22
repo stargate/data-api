@@ -272,4 +272,12 @@ public class TableTemplates extends TemplateRunner {
             .formatted(explain);
     return sender.postListIndexes(json);
   }
+
+  // ==================================================================================================================
+  // DQL - COUNT
+  // ==================================================================================================================
+
+  public DataApiResponseValidator count() {
+    return sender.postCount();
+  }
 }

@@ -8,7 +8,7 @@
     <stargate.version>2.1.0-BETA-19</stargate.version>
     <!-- 16-Aug-2024, tatu: Quarkus depends on 2.17 already, but keep explicit -->
     <!-- 23-Oct-2024, tatu: For latest FP optimizations let's get 2.18 -->
-    <jackson.version>2.18.0</jackson.version>
+    <jackson.version>2.18.2</jackson.version>
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
@@ -414,7 +414,7 @@
       </activation>
       <properties>
         <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
-        <stargate.int-test.cassandra.image-tag>6.9.3</stargate.int-test.cassandra.image-tag>
+        <stargate.int-test.cassandra.image-tag>6.9.6</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
@@ -428,8 +428,9 @@
         </property>
       </activation>
       <properties>
-        <stargate.int-test.cassandra.image>datastax/hcd</stargate.int-test.cassandra.image>
-        <stargate.int-test.cassandra.image-tag>1.0.0</stargate.int-test.cassandra.image-tag>
+        <!-- Note, Cassandra HCD image is not in public repository anymore, Data API need to pull from certain ECR repo -->
+        <stargate.int-test.cassandra.image>559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/prod/hcd</stargate.int-test.cassandra.image>
+        <stargate.int-test.cassandra.image-tag>1.1.0</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>hcd-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.hcd>true</stargate.int-test.cluster.hcd>

@@ -43,11 +43,10 @@ public class TableInsertAttempt extends InsertAttempt<TableSchemaObject> {
     if (row == null) {
       return Optional.empty();
     }
-
     var apiColumns = schemaObject.apiTableDef().primaryKeys();
-    if (!apiColumns.filterByUnsupported().isEmpty()) {
-      throw new IllegalStateException(
-          "Unsupported columns primary key: %s" + apiColumns.filterByUnsupported());
+    var unsupported = apiColumns.filterBySupport(x -> !x.insert());
+    if (!unsupported.isEmpty()) {
+      throw new IllegalStateException("Unsupported columns primary key: %s" + unsupported);
     }
 
     return Optional.of(apiColumns.toColumnsDesc());

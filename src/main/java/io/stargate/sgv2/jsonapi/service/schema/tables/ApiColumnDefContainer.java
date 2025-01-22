@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
+import static io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName.VECTOR;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
@@ -12,7 +14,9 @@ import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,28 +100,50 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     return keySet().stream().toList();
   }
 
-  public List<ApiColumnDef> filterByTypeToList(ApiTypeName type) {
+  private Stream<ApiColumnDef> streamBySupport(Predicate<ApiSupportDef> matcher) {
+    // TODO: this is not properly filtering by supported but is used in a way that expects this
+    // behaviour, should be fixed
+    return values().stream().filter(columnDef -> matcher.test(columnDef.type().apiSupport()));
+  }
+
+  public List<ApiColumnDef> filterBySupportToList(Predicate<ApiSupportDef> matcher) {
+    return streamBySupport(matcher).toList();
+  }
+
+  public ApiColumnDefContainer filterBySupport(Predicate<ApiSupportDef> matcher) {
+    return new ApiColumnDefContainer(filterBySupportToList(matcher));
+  }
+
+  public List<ApiColumnDef> filterByApiTypeNameToList(ApiTypeName type) {
     return values().stream().filter(columnDef -> columnDef.type().typeName() == type).toList();
   }
 
-  public ApiColumnDefContainer filterBy(ApiTypeName type) {
-    return new ApiColumnDefContainer(filterByTypeToList(type));
+  public ApiColumnDefContainer filterByApiTypeName(ApiTypeName type) {
+    return new ApiColumnDefContainer(filterByApiTypeNameToList(type));
   }
 
+  /**
+   * Filterings the columns without checking the support
+   *
+   * @param identifiers
+   * @return
+   */
   public ApiColumnDefContainer filterBy(Collection<CqlIdentifier> identifiers) {
     return new ApiColumnDefContainer(
         values().stream().filter(columnDef -> identifiers.contains(columnDef.name())).toList());
   }
 
   public ApiColumnDefContainer filterByUnsupported() {
-    return new ApiColumnDefContainer(
-        entrySet().stream()
-            .filter(entry -> entry.getValue().type().isUnsupported())
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    return new ApiColumnDefContainer(streamBySupport(ApiSupportDef.MATCH_ANY_UNSUPPORTED).toList());
   }
 
   public Map<CqlIdentifier, VectorizeDefinition> getVectorizeDefs() {
-    return filterByTypeToList(ApiTypeName.VECTOR).stream()
+    // TODO: This is a hack, we need to refactor these methods in ApiColumnDefContainer.
+    // Currently, this matcher is just for match vector columns, and then to avoid hit the
+    // typeName() placeholder exception in UnsupportedApiDataType
+    var matcher =
+        ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true);
+    return filterBySupport(matcher).filterByApiTypeNameToList(VECTOR).stream()
         .filter(
             columnDef ->
                 columnDef.type() instanceof ApiVectorType vt && vt.getVectorizeDefinition() != null)
@@ -129,7 +155,7 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
 
   public ColumnsDescContainer toColumnsDesc() {
     ColumnsDescContainer columnsDesc = new ColumnsDescContainer(size());
-    forEach((name, columnDef) -> columnsDesc.put(name, columnDef.type().columnDesc()));
+    forEach((name, columnDef) -> columnsDesc.put(name, columnDef.columnDesc()));
     return columnsDesc;
   }
 

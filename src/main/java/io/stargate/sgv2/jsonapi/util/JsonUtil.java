@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
+import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
@@ -17,8 +18,8 @@ import java.util.OptionalInt;
 import org.bson.types.ObjectId;
 
 public class JsonUtil {
-  @Deprecated // use JsonExtensionType.EJSON_DATE.encodedName() instead
-  public static final String EJSON_VALUE_KEY_DATE = JsonExtensionType.EJSON_DATE.encodedName();
+  @Deprecated // Call JsonExtensionType.EJSON_DATE.encodedName() directly instead
+  private static final String EJSON_VALUE_KEY_DATE = JsonExtensionType.EJSON_DATE.encodedName();
 
   /**
    * Method that compares to JSON values for equality using Mongo semantics which are otherwise same
@@ -224,6 +225,15 @@ public class JsonUtil {
         try {
           return java.util.UUID.fromString(value.asText());
         } catch (IllegalArgumentException e) {
+        }
+        break;
+      case BINARY:
+        // For some formats we may get actual Binary; for JSON it's Text (JSON String):
+        if (value.isBinary() || value.isTextual()) {
+          try {
+            return value.binaryValue();
+          } catch (IOException e) {
+          }
         }
         break;
     }

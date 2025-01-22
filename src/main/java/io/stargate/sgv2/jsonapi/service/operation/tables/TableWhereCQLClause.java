@@ -95,4 +95,29 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
     }
     return tOngoingWhereClause;
   }
+
+  @Override
+  public boolean selectsSinglePartition(TableSchemaObject tableSchemaObject) {
+
+    var apiTableDef =
+        Objects.requireNonNull(tableSchemaObject, "tableSchemaObject must not be null")
+            .apiTableDef();
+
+    final boolean[] isMatched = {false};
+    for (var apiColumnDef : apiTableDef.partitionKeys().values()) {
+      isMatched[0] = false;
+      dbLogicalExpression.visitAllFilters(
+          TableFilter.class,
+          tableFilter ->
+              isMatched[0] =
+                  isMatched[0]
+                      || tableFilter.isFor(apiColumnDef.name())
+                          && tableFilter.filterIsExactMatch());
+      // we only need to find one partition column that does not have an exact match filter on it
+      if (!isMatched[0]) {
+        return false;
+      }
+    }
+    return true;
+  }
 }

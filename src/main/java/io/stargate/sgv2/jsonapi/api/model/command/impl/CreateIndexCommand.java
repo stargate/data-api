@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
@@ -15,22 +13,18 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that creates an index for a column in a table.")
-@JsonTypeName("createIndex")
-@JsonPropertyOrder({"name", "definition", "options"})
+@JsonTypeName(CommandName.Names.CREATE_INDEX)
 public record CreateIndexCommand(
     @NotNull
         @Size(min = 1, max = 48)
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the column to create the index on")
         String name,
-    @NotNull
-        @Schema(
-            description = "Definition for created index for a column.",
-            type = SchemaType.OBJECT)
+    @NotNull @Schema(description = "Definition of the index to create.", type = SchemaType.OBJECT)
         RegularIndexDefinitionDesc definition,
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-        @Nullable
-        @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
+    @Nullable @Schema(description = "Type of the index to create.", type = SchemaType.STRING)
+        String indexType,
+    @Nullable @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
         CreateIndexCommandOptions options)
     implements CollectionCommand, IndexCreationCommand {
 

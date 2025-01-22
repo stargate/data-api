@@ -2,13 +2,14 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
-import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import jakarta.ws.rs.core.Response;
 import java.util.Map;
 import org.junit.jupiter.api.*;
 
@@ -17,6 +18,14 @@ import org.junit.jupiter.api.*;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   String testTableName = "tableForCreateIndexTest";
+
+  private void verifyCreatedIndex(String indexName) {
+    assertTableCommand(keyspaceName, testTableName)
+        .templated()
+        .listIndexes(false)
+        .wasSuccessful()
+        .hasIndex(indexName);
+  }
 
   @BeforeAll
   public final void createSimpleTable() {
@@ -33,6 +42,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 Map.entry("vehicle_id_2", Map.of("type", "text")),
                 Map.entry("vehicle_id_3", Map.of("type", "text")),
                 Map.entry("vehicle_id_4", Map.of("type", "text")),
+                Map.entry("vehicle_id_5", Map.of("type", "text")),
                 Map.entry("invalid_text", Map.of("type", "int")),
                 Map.entry("physicalAddress", Map.of("type", "text")),
                 Map.entry("list_type", Map.of("type", "list", "valueType", "text")),
@@ -43,7 +53,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1536)),
                 Map.entry("vector_type_3", Map.of("type", "vector", "dimension", 1024)),
                 Map.entry("vector_type_4", Map.of("type", "vector", "dimension", 1024)),
-                Map.entry("vector_type_5", Map.of("type", "vector", "dimension", 1024))),
+                Map.entry("vector_type_5", Map.of("type", "vector", "dimension", 1024)),
+                Map.entry("vector_type_6", Map.of("type", "vector", "dimension", 1024)),
+                Map.entry("vector_type_7", Map.of("type", "vector", "dimension", 1024))),
             "id")
         .wasSuccessful();
   }
@@ -65,6 +77,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                   }
                   """)
           .wasSuccessful();
+
+      verifyCreatedIndex("age_idx");
     }
 
     @Test
@@ -80,6 +94,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                           }
                           """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_idx");
     }
 
     @Test
@@ -98,6 +114,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
             }
             """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_1_idx");
     }
 
     @Test
@@ -116,6 +134,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                   }
                                   """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_2_idx");
     }
 
     @Test
@@ -134,6 +154,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                   }
                                   """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_3_idx");
     }
 
     @Test
@@ -152,8 +174,10 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                           }
                         }
                       }
-                              """)
+                      """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_4_idx");
     }
 
     @Test
@@ -171,7 +195,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES,
               SchemaException.class,
-              "The command attempted to index the unsupported columns: list_type(list).");
+              "The command attempted to index the unsupported columns: list_type(UNSUPPORTED CQL type: list<text>).");
     }
 
     @Test
@@ -189,7 +213,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES,
               SchemaException.class,
-              "The command attempted to index the unsupported columns: set_type(set).");
+              "The command attempted to index the unsupported columns: set_type(UNSUPPORTED CQL type: set<text>).");
     }
 
     @Test
@@ -207,7 +231,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES,
               SchemaException.class,
-              "The command attempted to index the unsupported columns: map_type(map).");
+              "The command attempted to index the unsupported columns: map_type(UNSUPPORTED CQL type: map<text, text>).");
     }
 
     @Test
@@ -223,6 +247,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                           }
                                           """)
           .wasSuccessful();
+
+      verifyCreatedIndex("physicalAddress_idx");
     }
 
     @Test
@@ -253,6 +279,26 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                 }
                                 """)
           .wasSuccessful();
+
+      verifyCreatedIndex("comment_idx");
+    }
+
+    @Test
+    public void createIndexWithCorrectIndexType() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                                {
+                                  "name": "vehicle_id_5_idx",
+                                  "definition": {
+                                    "column": "vehicle_id_5"
+                                  },
+                                  "indexType": "regular"
+                                }
+                                """)
+          .wasSuccessful();
+
+      verifyCreatedIndex("vehicle_id_5_idx");
     }
   }
 
@@ -272,6 +318,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                           }
                                           """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vector_type_1_idx");
     }
 
     @Test
@@ -290,6 +338,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                           }
                                           """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vector_type_2_idx");
     }
 
     @Test
@@ -308,6 +358,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                       }
                       """)
           .wasSuccessful();
+
+      verifyCreatedIndex("vector_type_3_idx");
     }
 
     @Test
@@ -326,8 +378,27 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                 }
                               }
                               """)
-          .hasNoErrors()
-          .body("status.ok", is(1));
+          .wasSuccessful();
+
+      verifyCreatedIndex("vector_type_4_idx");
+    }
+
+    @Test
+    public void createVectorIndexWithCorrectIndexType() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateVectorIndex(
+              """
+                                {
+                                  "name": "vector_type_6_idx",
+                                  "definition": {
+                                    "column": "vector_type_6"
+                                  },
+                                  "indexType": "vector"
+                                }
+                                """)
+          .wasSuccessful();
+
+      verifyCreatedIndex("vector_type_6_idx");
     }
   }
 
@@ -374,6 +445,71 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               SchemaException.class,
               "The command attempted to index the unsupported columns: invalid_text(int).");
     }
+
+    @Test
+    public void createIndexWithUnsupportedIndexType() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                              {
+                                "name": "vehicle_id_7_idx",
+                                "definition": {
+                                  "column": "vehicle_id_7"
+                                },
+                                "indexType": "vector"
+                              }
+                              """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_INDEX_TYPE,
+              SchemaException.class,
+              "The supported index types are: regular.",
+              "The command used the unsupported index type: vector.");
+    }
+
+    @Test
+    public void createIndexWithUnknownIndexType() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                                      {
+                                        "name": "vehicle_id_7_idx",
+                                        "definition": {
+                                          "column": "vehicle_id_7"
+                                        },
+                                        "indexType": "unknown"
+                                      }
+                                      """)
+          .hasSingleApiError(
+              SchemaException.Code.UNKNOWN_INDEX_TYPE,
+              SchemaException.class,
+              "The known index types are: [collection, regular, text-analysed, vector].",
+              "The command used the unknown index type: unknown.");
+    }
+
+    // [data-api#1812]: invalid JSON structure
+    @Test
+    public void invalidJSONStructure() {
+      assertTableCommand(keyspaceName, testTableName)
+          // Invalid JSON structure: "name" should be String, not Object;
+          // reported as HTTP 400
+          .expectHttpStatus(Response.Status.BAD_REQUEST)
+          .postCreateIndex(
+              """
+                        {
+                            "name": {
+                              "name": 1
+                            },
+                            "definition": {
+                              "column": {
+                                "background": true
+                              },
+                            }
+                        }
+                        """)
+          .hasSingleApiError(
+              ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
+              "Request invalid, mismatching JSON structure: underlying problem");
+    }
   }
 
   @Nested
@@ -417,6 +553,46 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               SchemaException.Code.UNKNOWN_VECTOR_SOURCE_MODEL,
               SchemaException.class,
               "The command attempted to use the source model: invalid_source_model.");
+    }
+
+    @Test
+    public void createVectorIndexWithUnsupportedIndexType() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateVectorIndex(
+              """
+                              {
+                                "name": "vector_type_7_idx",
+                                "definition": {
+                                  "column": "vector_type_7"
+                                },
+                                "indexType": "regular"
+                              }
+                              """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_INDEX_TYPE,
+              SchemaException.class,
+              "The supported index types are: vector.",
+              "The command used the unsupported index type: regular.");
+    }
+
+    @Test
+    public void createVectorIndexWithUnknownIndexType() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateVectorIndex(
+              """
+                                {
+                                    "name": "vector_type_7_idx",
+                                    "definition": {
+                                    "column": "vector_type_7"
+                                    },
+                                    "indexType": "unknown"
+                                }
+                                """)
+          .hasSingleApiError(
+              SchemaException.Code.UNKNOWN_INDEX_TYPE,
+              SchemaException.class,
+              "The known index types are: [collection, regular, text-analysed, vector].",
+              "The command used the unknown index type: unknown.");
     }
   }
 }

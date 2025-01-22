@@ -322,10 +322,10 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                           """,
                   "invalidPartitionSortOrderingValueTable",
                   true,
-                  ErrorCodeV1.INVALID_REQUEST_NOT_JSON.name(),
+                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
                   " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
 
-      // invalidPartitionSortOrderingValueTable
+      // invalidPartitionSortOrderingValueTypeTable
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
@@ -351,7 +351,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                           """,
                   "invalidPartitionSortOrderingValueTypeTable",
                   true,
-                  ErrorCodeV1.INVALID_REQUEST_NOT_JSON.name(),
+                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
                   " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
 
       // invalidColumnTypeTable
@@ -383,7 +383,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   true,
                   SchemaException.Code.UNKNOWN_PRIMITIVE_DATA_TYPE.name(),
                   "The command used the unsupported data type: invalid_type.")));
-      // Column type not provided
+      // Column type not provided: nullColumnTypeTable
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
@@ -410,7 +410,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                           """,
                   "nullColumnTypeTable",
                   true,
-                  ErrorCodeV1.INVALID_REQUEST_NOT_JSON.name(),
+                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
                   "The Long Form type definition must be a JSON Object with at least a `type` field that is a String (value is null)")));
 
       // Map type tests
@@ -817,6 +817,112 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   true,
                   ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
                   "The provided options are invalid: The provided dimension value '1536' doesn't match the model's supported dimension value '1024'")));
+
+      // unspecified dimension with specified vectorize
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                        {
+                            "name": "validUnspecifiedDimension",
+                            "definition": {
+                                "columns": {
+                                    "t": "text",
+                                    "v": {
+                                        "type": "vector",
+                                        "service": {
+                                            "provider": "openai",
+                                            "modelName": "text-embedding-3-small"
+                                        }
+                                    }
+                                },
+                                "primaryKey": "t"
+                            }
+                        }
+                   """,
+                  "validUnspecifiedDimension",
+                  false,
+                  null,
+                  null)));
+
+      // empty dimension string with specified vectorize
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                        {
+                            "name": "validEmptyDimension",
+                            "definition": {
+                                "columns": {
+                                    "t": "text",
+                                    "v": {
+                                        "type": "vector",
+                                        "dimension": "",
+                                        "service": {
+                                            "provider": "openai",
+                                            "modelName": "text-embedding-3-small"
+                                        }
+                                    }
+                                },
+                                "primaryKey": "t"
+                            }
+                        }
+                   """,
+                  "validEmptyDimension",
+                  false,
+                  null,
+                  null)));
+
+      // blank dimension string with specified vectorize
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                            {
+                                "name": "validBlankDimension",
+                                "definition": {
+                                    "columns": {
+                                        "t": "text",
+                                        "v": {
+                                            "type": "vector",
+                                            "dimension": " ",
+                                            "service": {
+                                                "provider": "openai",
+                                                "modelName": "text-embedding-3-small"
+                                            }
+                                        }
+                                    },
+                                    "primaryKey": "t"
+                                }
+                            }
+                     """,
+                  "validBlankDimension",
+                  false,
+                  null,
+                  null)));
+
+      // unspecified dimension with unspecified vectorize
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                            {
+                                "name": "invalidUnspecifiedDimensionUnspecifiedVectorize",
+                                "definition": {
+                                    "columns": {
+                                        "t": "text",
+                                        "v": {
+                                            "type": "vector"
+                                        }
+                                    },
+                                    "primaryKey": "t"
+                                }
+                            }
+                     """,
+                  "invalidUnspecifiedDimensionUnspecifiedVectorize",
+                  true,
+                  SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN.name(),
+                  "The dimension is required for vector columns if the embedding service is not specified.")));
       return testCases.stream();
     }
   }

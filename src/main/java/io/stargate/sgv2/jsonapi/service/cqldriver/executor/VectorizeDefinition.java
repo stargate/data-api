@@ -37,21 +37,22 @@ public record VectorizeDefinition(
    * Integer)} throws.
    */
   public static VectorizeDefinition from(
-      VectorColumnDesc vectorColumnDesc, VectorizeConfigValidator validateVectorize) {
+      VectorColumnDesc vectorColumnDesc,
+      int dimension,
+      VectorizeConfigValidator validateVectorize) {
 
-    return from(
-        vectorColumnDesc.getVectorizeConfig(), vectorColumnDesc.getDimensions(), validateVectorize);
+    return from(vectorColumnDesc.getVectorizeConfig(), dimension, validateVectorize);
   }
 
   public static VectorizeDefinition from(
-      VectorizeConfig vectorizeDesc, int dimensions, VectorizeConfigValidator validateVectorize) {
+      VectorizeConfig vectorizeDesc, int dimension, VectorizeConfigValidator validateVectorize) {
 
     // aaron - I think this is correct, it's a vector column but the vectorize config is null
     if (vectorizeDesc == null) {
       return null;
     }
 
-    validateVectorize.validateService(vectorizeDesc, dimensions);
+    validateVectorize.validateService(vectorizeDesc, dimension);
 
     return new VectorizeDefinition(
         vectorizeDesc.provider(),

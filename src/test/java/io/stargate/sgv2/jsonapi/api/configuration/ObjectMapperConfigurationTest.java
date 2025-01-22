@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchException;
 
+import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.fasterxml.jackson.databind.*;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -55,7 +56,7 @@ class ObjectMapperConfigurationTest {
   @Inject DocumentLimitsConfig documentLimitsConfig;
 
   @Nested
-  class unmatchedOperationCommandHandlerTest {
+  class UnmatchedOperationCommandHandlerTest {
     @Test
     public void notExistedCommandMatchKeyspaceCommand() throws Exception {
       String json =
@@ -136,9 +137,19 @@ class ObjectMapperConfigurationTest {
     }
   }
 
+  // Tests for CQL value serialization handling
+  @Nested
+  class ValueHandlingCqlSerialization {
+    // [data-api#1698] Default CqlVector serialization not what we need for InsertedIds
+    @Test
+    public void okCqlVectorSerialization() throws Exception {
+      CqlVector<Float> input = CqlVector.newInstance(1.0f, 0.5f, -0.25f, 0.0f);
+      assertThat(objectMapper.writeValueAsString(input)).isEqualTo("[1.0,0.5,-0.25,0.0]");
+    }
+  }
+
   @Nested
   class FindOne {
-
     @Test
     public void happyPath() throws Exception {
       String json =
@@ -1051,6 +1062,13 @@ class ObjectMapperConfigurationTest {
                                                    "provider": "nvidia",
                                                    "modelName": "NV-Embed-QA"
                                                  }
+                                               },
+                                               "vector_1": {
+                                                 "type": "vector",
+                                                 "service": {
+                                                   "provider": "nvidia",
+                                                   "modelName": "NV-Embed-QA"
+                                                 }
                                                }
                                             }
                                         }
@@ -1072,7 +1090,7 @@ class ObjectMapperConfigurationTest {
                         addColumns -> {
                           Map<String, ColumnDesc> columns = addColumns.columns();
                           assertThat(columns).isNotNull();
-                          assertThat(columns).hasSize(3);
+                          assertThat(columns).hasSize(4);
                           assertThat(columns).containsEntry("new_col_1", PrimitiveColumnDesc.TEXT);
                           assertThat(columns)
                               .containsEntry(
@@ -1084,6 +1102,12 @@ class ObjectMapperConfigurationTest {
                                   "content",
                                   new VectorColumnDesc(
                                       1024,
+                                      new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
+                          assertThat(columns)
+                              .containsEntry(
+                                  "vector_1",
+                                  new VectorColumnDesc(
+                                      null,
                                       new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
                         });
               });
