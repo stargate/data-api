@@ -7,7 +7,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJso
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.GeneralIndexDefinitionDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.VectorIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -174,7 +174,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
   }
 
   /**
-   * Factory to create a new {@link ApiVectorIndex} using {@link GeneralIndexDefinitionDesc} from
+   * Factory to create a new {@link ApiVectorIndex} using {@link RegularIndexDefinitionDesc} from
    * the user request.
    */
   private static class UserDescFactory

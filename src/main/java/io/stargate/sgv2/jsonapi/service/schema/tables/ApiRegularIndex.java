@@ -7,7 +7,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.GeneralIndexDefinitionDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownCqlIndexFunctionException;
@@ -22,7 +22,7 @@ import java.util.Objects;
 /** ApiRegularIndex serves for both primitives and map/set/list. */
 public class ApiRegularIndex extends ApiSupportedIndex {
 
-  public static final IndexFactoryFromIndexDesc<ApiRegularIndex, GeneralIndexDefinitionDesc>
+  public static final IndexFactoryFromIndexDesc<ApiRegularIndex, RegularIndexDefinitionDesc>
       FROM_DESC_FACTORY = new UserDescFactory();
 
   public static final IndexFactoryFromCql FROM_CQL_FACTORY = new CqlTypeFactory();
@@ -60,17 +60,17 @@ public class ApiRegularIndex extends ApiSupportedIndex {
   }
 
   /**
-   * Factor to create a new {@link ApiRegularIndex} using {@link GeneralIndexDefinitionDesc} from
+   * Factor to create a new {@link ApiRegularIndex} using {@link RegularIndexDefinitionDesc} from
    * the user request.
    */
   private static class UserDescFactory
-      extends IndexFactoryFromIndexDesc<ApiRegularIndex, GeneralIndexDefinitionDesc> {
+      extends IndexFactoryFromIndexDesc<ApiRegularIndex, RegularIndexDefinitionDesc> {
 
     @Override
     public ApiRegularIndex create(
         TableSchemaObject tableSchemaObject,
         String indexName,
-        GeneralIndexDefinitionDesc indexDesc) {
+        RegularIndexDefinitionDesc indexDesc) {
 
       Objects.requireNonNull(tableSchemaObject, "tableSchemaObject must not be null");
       Objects.requireNonNull(indexDesc, "indexDesc must not be null");
@@ -119,7 +119,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
         ApiColumnDef apiColumnDef,
         CqlIdentifier indexIdentifier,
         CqlIdentifier columnIdentifier,
-        GeneralIndexDefinitionDesc indexDesc) {
+        RegularIndexDefinitionDesc indexDesc) {
       Map<String, String> indexOptions = new HashMap<>();
       var optionsDesc = indexDesc.options();
 
@@ -147,7 +147,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
         ApiColumnDef apiColumnDef,
         CqlIdentifier indexIdentifier,
         CqlIdentifier columnIdentifier,
-        GeneralIndexDefinitionDesc indexDesc)
+        RegularIndexDefinitionDesc indexDesc)
         throws UnknownCqlIndexFunctionException {
       Map<String, String> indexOptions = new HashMap<>();
       var optionsDesc = indexDesc.options();
@@ -192,7 +192,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
      */
     private void populateIndexOptionsMap(
         Map<String, String> indexOptions,
-        GeneralIndexDefinitionDesc.GeneralIndexDescOptions optionsDesc) {
+        RegularIndexDefinitionDesc.RegularIndexDescOptions optionsDesc) {
       Options.ASCII.putOrDefaultStringable(
           indexOptions, optionsDesc == null ? null : optionsDesc.ascii());
       Options.CASE_SENSITIVE.putOrDefaultStringable(
@@ -210,11 +210,11 @@ public class ApiRegularIndex extends ApiSupportedIndex {
     private void validateAnalyzableDatatypes(
         TableSchemaObject tableSchemaObject,
         ApiColumnDef apiColumnDef,
-        GeneralIndexDefinitionDesc.GeneralIndexDescOptions optionsDesc,
-        GeneralIndexDefinitionDesc indexDesc) {
+        RegularIndexDefinitionDesc.RegularIndexDescOptions optionsDesc,
+        RegularIndexDefinitionDesc indexDesc) {
 
       if (optionsDesc == null) {
-        // no need to analyze if user does not specify any GeneralIndexDescOptions
+        // no need to analyze if user does not specify any RegularIndexDescOptions
         return;
       }
 
@@ -297,20 +297,20 @@ public class ApiRegularIndex extends ApiSupportedIndex {
   }
 
   @Override
-  public IndexDesc<GeneralIndexDefinitionDesc> indexDesc() {
+  public IndexDesc<RegularIndexDefinitionDesc> indexDesc() {
 
     // Only the text indexes has the properties, we rely on the factories to create the options
     // map with the correct values, so we use getIfPresent to skip the defaults which and read null
     // if it is not in the map
     var definitionOptions =
-        new GeneralIndexDefinitionDesc.GeneralIndexDescOptions(
+        new RegularIndexDefinitionDesc.RegularIndexDescOptions(
             Options.ASCII.getIfPresentStringable(indexOptions),
             Options.CASE_SENSITIVE.getIfPresentStringable(indexOptions),
             Options.NORMALIZE.getIfPresentStringable(indexOptions));
 
     var definition =
-        new GeneralIndexDefinitionDesc(cqlIdentifierToJsonKey(targetColumn), definitionOptions);
-    return new IndexDesc<GeneralIndexDefinitionDesc>() {
+        new RegularIndexDefinitionDesc(cqlIdentifierToJsonKey(targetColumn), definitionOptions);
+    return new IndexDesc<RegularIndexDefinitionDesc>() {
       @Override
       public String name() {
         return cqlIdentifierToJsonKey(indexName);
@@ -322,7 +322,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
       }
 
       @Override
-      public GeneralIndexDefinitionDesc definition() {
+      public RegularIndexDefinitionDesc definition() {
         return definition;
       }
     };

@@ -10,7 +10,7 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @JsonPropertyOrder({"column", "options"})
-public record GeneralIndexDefinitionDesc(
+public record RegularIndexDefinitionDesc(
     @NotNull
         @Size(min = 1, max = 48)
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
@@ -19,8 +19,8 @@ public record GeneralIndexDefinitionDesc(
     @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
         @Schema(description = "Different indexing options.", type = SchemaType.OBJECT)
-        GeneralIndexDescOptions options)
-    implements IndexDefinitionDesc<GeneralIndexDefinitionDesc.GeneralIndexDescOptions> {
+        RegularIndexDescOptions options)
+    implements IndexDefinitionDesc<RegularIndexDefinitionDesc.RegularIndexDescOptions> {
 
   /**
    * Only text and ascii datatypes can be analyzed. <br>
@@ -28,7 +28,7 @@ public record GeneralIndexDefinitionDesc(
    * values(set), keys(map), values(map). Note, not for entries(map). <br>
    */
   @JsonPropertyOrder({"ascii", "caseSensitive", "normalize"})
-  public record GeneralIndexDescOptions(
+  public record RegularIndexDescOptions(
       @Nullable
           @Schema(
               description =
