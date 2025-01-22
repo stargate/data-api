@@ -7,10 +7,10 @@ import java.util.Map;
  * ApiIndexFunction that can apply to collection columns map/set/list. <br>
  *
  * <pre>
- * Data API createIndex table command has defaults indexFunction for map/set/list
- * entries(map), values(set), values(list).
+ * Data API createIndex table command has defaults indexFunction for map/set/list,
+ * defaults are entries(map), values(set), values(list).
  * IndexFunction keys and values for map column are not supported.
- * Also, Data API does not support frozen map/set/list table creation, FULL index will not be supported.
+ * Data API does not support frozen map/set/list, so FULL index creation on frozen column will also not be supported.
  * </pre>
  */
 public enum ApiIndexFunction {
