@@ -16,16 +16,6 @@ public record GeneralIndexDefinitionDesc(
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the column for which index to be created.")
         String column,
-    @Nullable
-        @Schema(
-            description = "mapIndex for indicating where to build index on mapColumn",
-            type = SchemaType.STRING,
-            implementation = String.class)
-        @Pattern(
-            regexp = "(keys|values|entries)",
-            message = "support index functions are keys/values/entries")
-        @JsonInclude(JsonInclude.Include.NON_NULL)
-        String indexFunction,
     @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
         @Schema(description = "Different indexing options.", type = SchemaType.OBJECT)

@@ -40,7 +40,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
       Map<String, String> options,
       SimilarityFunction similarityFunction,
       EmbeddingSourceModel sourceModel) {
-    super(ApiIndexType.VECTOR, indexName, targetColumn, null, options);
+    super(ApiIndexType.VECTOR, indexName, targetColumn, options);
 
     this.similarityFunction = similarityFunction;
     this.sourceModel = sourceModel;

@@ -711,24 +711,12 @@ request-errors:
       Resend the command using only new columns.
 
   - scope: SCHEMA
-    code: CANNOT_APPLY_INDEX_FUNCTION_KEYS_ENTRIES_TO_NON_MAP_COLUMN
-    title: Index function keys,entries can not apply to columns other than map
-    body: |-
-      Index function `keys`, `entries` can not apply to columns other than map.
-      
-      The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      The request wants to apply index function `${indexFunction}` to `${targetColumn}`.
-      
-      Resend the command using the correct index function.
-
-  - scope: SCHEMA
     code: CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS
     title: Can not create index on map column with index function entries and specify analyze options
     body: |-
       Index function `entries` can not apply to map column when analyze options are specified.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      The request wants to apply index function `${indexFunction}` to `${targetColumn}`.
       
       Resend the command without options.
 
@@ -937,8 +925,7 @@ request-errors:
       The command attempted to create an index on a column that is frozen.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      '${targetColumn}` is frozen on then table.
-      The request wants to apply index function `${indexFunction}` to `${targetColumn}`.
+      '${targetColumn}` is frozen on the table.
       
       Resend the command using the non-frozen column.
 

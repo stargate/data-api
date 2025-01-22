@@ -43,9 +43,8 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
       CqlIdentifier indexName,
       ApiIndexType indexType,
       CqlIdentifier targetColumn,
-      ApiIndexFunction indexFunction,
       Map<String, String> indexOptions) {
-    super(indexType, indexName, targetColumn, indexFunction, indexOptions);
+    super(indexType, indexName, targetColumn, indexOptions);
   }
 
   public boolean isAscii() {
@@ -91,7 +90,8 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
       }
 
       // create an ApiGeneralIndex for the target map/set/list datatype
-      if (apiColumnDef.type().isContainer()) {
+      if (apiColumnDef.type().isContainer()
+          && apiColumnDef.type().typeName() != ApiTypeName.VECTOR) {
         try {
           return createApiIndexForCollection(
               tableSchemaObject, apiColumnDef, indexIdentifier, targetIdentifier, indexDesc);
@@ -128,7 +128,7 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
       populateIndexOptionsMap(indexOptions, optionsDesc);
 
       return new ApiGeneralIndex(
-          indexIdentifier, ApiIndexType.REGULAR, columnIdentifier, null, indexOptions);
+          indexIdentifier, ApiIndexType.REGULAR, columnIdentifier, indexOptions);
     }
 
     /**
@@ -136,11 +136,10 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
      *
      * <pre>
      * Rules to validate the indexFunction
-     * 1. indexFunction in indexDesc should not be null, user must provide
-     * 2. Since Data API does not support frozen map/set/list table creation, FULL index will also not be supported.
-     * 3. Currently does not support create index for frozen map/set/list columns
-     * 4. Only text and ascii datatypes can be analyzed, including text and ascii on map/set/list.
-     * 5. KEYS and ENTRIES index functions can only be used for map, not for set/list
+     * 1. Since Data API does not support frozen map/set/list table creation, FULL index will also not be supported.
+     * 2. Currently does not support create index for frozen map/set/list columns
+     * 3. Only text and ascii datatypes can be analyzed, including text and ascii on map/set/list.
+     * 4. Index functions have defaults for map/set/list. entries(map), values(set), values(list)
      * </pre>
      */
     private ApiGeneralIndex createApiIndexForCollection(
@@ -154,14 +153,10 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
       var optionsDesc = indexDesc.options();
 
       // Rule 1
-      if (indexDesc.indexFunction() == null) {
-        throw SchemaException.Code.MISSING_INDEX_FUNCTION_FOR_COLLECTION_COLUMN.get();
-      }
+      // Index for collection columns have defaults, values(list), values(set), entries(map).
+      // FULL index won't be applicable, since all index functions are default to column dateType
 
       // Rule 2
-      // This rule has been enforced to keys/values/entries in GeneralIndexDefinitionDesc
-
-      // Rule 3
       if (apiColumnDef.type() instanceof CollectionApiDataType collectionApiDataType
           && collectionApiDataType.isFrozen) {
         // above check is not necessary, just to keep a safe cast
@@ -172,38 +167,23 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
                   map.put(
                       "allColumns",
                       errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
-                  map.put("indexFunction", indexDesc.indexFunction());
                   map.put("targetColumn", errFmt(columnIdentifier));
                 }));
       }
 
-      // Rule 4
+      // Rule 3
       validateAnalyzableDatatypes(tableSchemaObject, apiColumnDef, optionsDesc, indexDesc);
       populateIndexOptionsMap(indexOptions, optionsDesc);
 
-      // Rule 5
-      if (indexDesc.indexFunction().equals(ApiIndexFunction.KEYS.cqlFunction)
-          || indexDesc.indexFunction().equals(ApiIndexFunction.ENTRIES.cqlFunction)) {
-        if (apiColumnDef.type().typeName() != ApiTypeName.MAP) {
-          throw SchemaException.Code.CANNOT_APPLY_INDEX_FUNCTION_KEYS_ENTRIES_TO_NON_MAP_COLUMN.get(
-              errVars(
-                  tableSchemaObject,
-                  map -> {
-                    map.put(
-                        "allColumns",
-                        errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
-                    map.put("indexFunction", indexDesc.indexFunction());
-                    map.put("targetColumn", errFmt(columnIdentifier));
-                  }));
-        }
-      }
+      // Rule 4
+      String indexFunction =
+          apiColumnDef.type().typeName() == ApiTypeName.MAP
+              ? ApiIndexFunction.ENTRIES.cqlFunction
+              : ApiIndexFunction.VALUES.cqlFunction;
+      indexOptions.put("indexFunction", indexFunction);
 
       return new ApiGeneralIndex(
-          indexIdentifier,
-          ApiIndexType.COLLECTION,
-          columnIdentifier,
-          ApiIndexFunction.fromCql(indexDesc.indexFunction()),
-          indexOptions);
+          indexIdentifier, ApiIndexType.COLLECTION, columnIdentifier, indexOptions);
     }
 
     /**
@@ -242,23 +222,16 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
       ApiTypeName analyzedColumnType = apiColumnDef.type().typeName();
 
       // Map collection type
-      if (apiColumnDef.type() instanceof ApiMapType mapType) {
-        if (indexDesc.indexFunction().equals(ApiIndexFunction.KEYS.cqlFunction)) {
-          analyzedColumnType = mapType.getKeyType().typeName();
-        } else if (indexDesc.indexFunction().equals(ApiIndexFunction.VALUES.cqlFunction)) {
-          analyzedColumnType = mapType.getValueType().typeName();
-        } else {
-          throw SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS.get(
-              errVars(
-                  tableSchemaObject,
-                  map -> {
-                    map.put(
-                        "allColumns",
-                        errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
-                    map.put("indexFunction", indexDesc.indexFunction());
-                    map.put("targetColumn", errFmt(apiColumnDef.name()));
-                  }));
-        }
+      if (apiColumnDef.type() instanceof ApiMapType) {
+        throw SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS.get(
+            errVars(
+                tableSchemaObject,
+                map -> {
+                  map.put(
+                      "allColumns",
+                      errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
+                  map.put("targetColumn", errFmt(apiColumnDef.name()));
+                }));
       }
 
       // Set/List collection type
@@ -319,7 +292,6 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
           indexMetadata.getName(),
           apiIndexType,
           indexTarget.targetColumn(),
-          indexTarget.indexFunction(),
           indexMetadata.getOptions());
     }
   }
@@ -337,10 +309,7 @@ public class ApiGeneralIndex extends ApiSupportedIndex {
             Options.NORMALIZE.getIfPresentStringable(indexOptions));
 
     var definition =
-        new GeneralIndexDefinitionDesc(
-            cqlIdentifierToJsonKey(targetColumn),
-            indexFunction != null ? indexFunction.name() : null,
-            definitionOptions);
+        new GeneralIndexDefinitionDesc(cqlIdentifierToJsonKey(targetColumn), definitionOptions);
     return new IndexDesc<GeneralIndexDefinitionDesc>() {
       @Override
       public String name() {
