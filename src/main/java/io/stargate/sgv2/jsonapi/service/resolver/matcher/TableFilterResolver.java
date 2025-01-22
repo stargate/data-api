@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonO
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.*;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.BinaryTableFilter;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.BinaryTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.math.BigDecimal;
