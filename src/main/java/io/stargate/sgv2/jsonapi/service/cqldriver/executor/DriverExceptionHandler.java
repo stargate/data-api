@@ -2,13 +2,10 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.*;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.*;
 import com.datastax.oss.driver.api.core.type.codec.CodecNotFoundException;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.ExceptionHandler;
-
-import java.util.function.BiFunction;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
@@ -31,26 +28,9 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 public interface DriverExceptionHandler
     extends ExceptionHandler<DriverException> {
 
-  /**
-   * Factory function for creating a new instance of a DriverExceptionHandler.
-   * <p>
-   * Implementations of the interface should provide a factory function that can be called to create a new instance
-   * of the handler. This is used so the handler can have statement / request specific information.
-   */
-  interface Factory extends BiFunction<SchemaObject, SimpleStatement, DriverExceptionHandler>{}
-
   @Override
   default Class<DriverException> getExceptionClass() {
     return DriverException.class;
-  }
-
-  /**
-   * Any driver exception that is not handled (handler returns same exception instance) wil be mapped to the
-   * {@link DatabaseException.Code#UNEXPECTED_DRIVER_ERROR}
-   */
-  @Override
-  default RuntimeException handleUnhandled(DriverException exception) {
-    return DatabaseException.Code.UNEXPECTED_DRIVER_ERROR.get(errVars(exception));
   }
 
   @Override

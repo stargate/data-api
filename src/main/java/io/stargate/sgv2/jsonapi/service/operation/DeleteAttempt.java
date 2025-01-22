@@ -33,11 +33,11 @@ public class DeleteAttempt<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
+  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
     // bind and execute
     var statement = buildDeleteStatement();
     logStatement(LOGGER, "executeStatement()", statement);
-    return queryExecutor.executeWrite(statement);
+    return new StatementContext(statement, ()-> queryExecutor.executeWrite(statement));
   }
 
   /**

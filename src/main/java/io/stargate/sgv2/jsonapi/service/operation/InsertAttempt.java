@@ -39,12 +39,12 @@ public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
+  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
     // bind and execute
     var statement = buildInsertStatement();
 
     logStatement(LOGGER, "executeStatement()", statement);
-    return queryExecutor.executeWrite(statement);
+    return new StatementContext(statement, () -> queryExecutor.executeWrite(statement));
   }
 
   protected SimpleStatement buildInsertStatement() {

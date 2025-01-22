@@ -8,8 +8,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
 import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.time.Duration;
@@ -81,6 +83,9 @@ public abstract class OperationAttempt<
   private final List<WarningException.Code> suppressedWarnings = new ArrayList<>();
   private Throwable failure;
 
+  // Tracks the current statement that is being executed needed so we can use the statement in error handling
+  private StatementContext currentExecutor;
+
   // Keep this private, so sub-classes set through setter incase we need to syncronize later
   private OperationStatus status = OperationStatus.UNINITIALIZED;
 
@@ -127,7 +132,7 @@ public abstract class OperationAttempt<
    *     object's state will be updated as the operation runs.
    */
   public Uni<SubT> execute(
-      CommandQueryExecutor queryExecutor, DriverExceptionHandler.Factory exceptionHandlerFactory) {
+      CommandQueryExecutor queryExecutor, DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
@@ -179,24 +184,28 @@ public abstract class OperationAttempt<
       return Uni.createFrom().item(null);
     }
 
-    // same as above for this checkProgress , we should only be IN_PROGRESS is anything else
-    // checkProgress will
-    // set a failure and return false.
-    return checkStatus("executeIfInProgress", OperationStatus.IN_PROGRESS)
-        ? executeStatement(queryExecutor)
-        : Uni.createFrom().item(null);
+    // same as above for this checkProgress , we should only be IN_PROGRESS if anything else
+    // checkStatus will set a failure and return false.
+    if (! checkStatus("executeIfInProgress", OperationStatus.IN_PROGRESS)) {
+      return Uni.createFrom().item(null);
+    }
+    currentExecutor = buildStatementContext(queryExecutor);
+    if (currentExecutor == null){
+      throw new IllegalStateException("executeIfInProgress() - buildStatementExecutor() returned null, " + positionAndAttemptId());
+    }
+    return currentExecutor.results.get();
   }
 
   /**
    * Sublasses must implement this method to build the query and execute it, they should not do
    * anything with Uni for retry etc, that is handled in the base class {@link
-   * #execute(CommandQueryExecutor, DriverExceptionHandler.Factory)}.
+   * #execute(CommandQueryExecutor, DefaultDriverExceptionHandler.Factory)}.
    *
    * @param queryExecutor the {@link CommandQueryExecutor} , subclasses should call the appropriate
    *     execute method
    * @return A {@link Uni} of the {@link AsyncResultSet} for processing the query.
    */
-  protected abstract Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor);
+  protected abstract StatementContext buildStatementContext(CommandQueryExecutor queryExecutor);
 
   /**
    * Decides if the operation should be retried, using the {@link #retryPolicy} and the {@link
@@ -248,7 +257,7 @@ public abstract class OperationAttempt<
    * @return this object, cast to {@link SubT} for chaining methods.
    */
   protected SubT onCompletion(
-      DriverExceptionHandler.Factory exceptionHandlerFactory,
+      DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory,
       AsyncResultSet resultSet,
       Throwable throwable) {
 
@@ -260,6 +269,14 @@ public abstract class OperationAttempt<
           positionAndAttemptId());
     }
 
+    // sanity check - executeIfInProgress() checks that we have a StatementContext before starting
+    if (currentExecutor == null) {
+      throw new IllegalStateException(
+          String.format(
+              "onCompletion() - currentExecutor is null, %s",
+              positionAndAttemptId()));
+    }
+
     // sanity check, if we do not have a result set then we should have an exception
     if (resultSet == null && throwable == null) {
       throw new IllegalStateException(
@@ -269,8 +286,8 @@ public abstract class OperationAttempt<
     }
 
     var handledException =
-        throwable instanceof RuntimeException
-            ? exceptionHandlerFactory.maybeHandle(schemaObject, (RuntimeException) throwable)
+        throwable instanceof RuntimeException re
+            ? exceptionHandlerFactory.apply(schemaObject, currentExecutor.statement()).maybeHandle(re)
             : throwable;
 
     if ((handledException == null && throwable != null) && LOGGER.isWarnEnabled()) {
@@ -548,53 +565,8 @@ public abstract class OperationAttempt<
   protected void logStatement(Logger logger, String prefix, SimpleStatement statement) {
     //  vectors are very big, so we do not log them at debug they will blow up the logs
     if (logger.isDebugEnabled()) {
-      var vectorTrimmedValues =
-          statement.getPositionalValues().stream()
-              .map(
-                  value -> {
-                    if (value instanceof CqlVector<?> vector) {
-                      int vectorSize = vector.size();
-                      List<Object> trimmedList = new ArrayList<>();
-
-                      // Add elements up to a maximum of 5 or the actual vector size, whichever is
-                      // smaller
-                      for (int i = 0; i < Math.min(5, vectorSize); i++) {
-                        trimmedList.add(vector.get(i));
-                      }
-                      if (trimmedList.size() < vectorSize) {
-                        trimmedList.add(
-                            "<vector<%s> trimmed, log at trace to get full value>"
-                                .formatted(vector.size()));
-                      }
-                      return trimmedList;
-                    }
-                    return value;
-                  })
-              .toList();
-
-      // ANN OF [-0.042139724, 0.020535178, 0.06071997, 0.06071997, 0.06071997 ... ]
-      var cql = statement.getQuery();
-      int start = cql.indexOf("ANN OF [");
-      if (start > -1) {
-        int end = cql.indexOf("]", start);
-
-        var floatPos = start;
-        for (int i = 0; i < 5; i++) {
-          var nextPos = cql.indexOf(",", floatPos + 1, end);
-          if (nextPos > -1) {
-            floatPos = nextPos;
-          } else {
-            floatPos = end; // before ']', this is to include the last float we want to log
-            break;
-          }
-        }
-        cql =
-            cql.substring(0, floatPos)
-                + ", <vector<unknown> trimmed, log at trace to get full value>"
-                + cql.substring(end);
-      }
       logger.debug(
-          "{} - {}, cql={}, values={}", prefix, positionAndAttemptId(), cql, vectorTrimmedValues);
+          "{} - {}, cql={}, values={}", prefix, positionAndAttemptId(), CqlPrintUtil.trimmedCql(statement), CqlPrintUtil.trimmedPositionalValues(statement));
     }
 
     if (logger.isTraceEnabled()) {
@@ -635,6 +607,7 @@ public abstract class OperationAttempt<
         .append("failure", failure);
   }
 
+  protected record StatementContext(SimpleStatement statement, Supplier<Uni<AsyncResultSet>> results){}
 
   /**
    * A policy for retrying an attempt, if the attempt does not want to retry then it should use
@@ -682,7 +655,7 @@ public abstract class OperationAttempt<
      * Called by the OperationAttempt to decide if the attempt should be retried.
      *
      * @param throwable The exception raised from called {@link
-     *     #executeStatement(CommandQueryExecutor)} <b>before</b> it has been passed through a
+     *     #buildStatementContext(CommandQueryExecutor)} <b>before</b> it has been passed through a
      *     {@link DriverExceptionHandler}.
      * @return <code>True</code> if the attempt should be retried, the policy does not need to keep
      *     track of the retry counts, it only needs to decide if the attempt should be retried.

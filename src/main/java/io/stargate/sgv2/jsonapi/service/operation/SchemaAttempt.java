@@ -24,11 +24,11 @@ public abstract class SchemaAttempt<SchemaT extends SchemaObject>
   }
 
   @Override
-  protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
+  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
     var statement = buildStatement();
 
     logStatement(LOGGER, "executeStatement()", statement);
-    return queryExecutor.executeCreateSchema(statement);
+    return new StatementContext(statement, () -> queryExecutor.executeCreateSchema(statement));
   }
 
   protected abstract SimpleStatement buildStatement();

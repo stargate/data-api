@@ -1,10 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutorAssertions;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DriverExceptionHandlerAssertions;
 
 public class OperationAttemptFixture<
@@ -12,20 +9,26 @@ public class OperationAttemptFixture<
 
   private final OperationAttemptAssertions<OperationAttemptFixture<SubT, SchemaT>, SubT, SchemaT>
       attempt;
+
   private final CommandQueryExecutorAssertions<OperationAttemptFixture<SubT, SchemaT>>
       queryExecutor;
+
   private final DriverExceptionHandlerAssertions<OperationAttemptFixture<SubT, SchemaT>, SchemaT>
       exceptionHandler;
+
   private final AsyncResultSet resultSet;
 
   public OperationAttemptFixture(
       OperationAttempt<SubT, SchemaT> attempt,
       CommandQueryExecutor queryExecutor,
-      DriverExceptionHandler exceptionHandler,
+      DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory,
       AsyncResultSet resultSet) {
-    this.attempt = new OperationAttemptAssertions<>(this, attempt, queryExecutor, exceptionHandler);
+
+    this.exceptionHandler = new DriverExceptionHandlerAssertions<>(this, exceptionHandlerFactory);
+    // the assertions for the exceptionHandlerFactory wrap the original factory so we know when it is
+    // called and can run assertions on the handler
+    this.attempt = new OperationAttemptAssertions<>(this, attempt, queryExecutor, this.exceptionHandler.getHandlerFactory());
     this.queryExecutor = new CommandQueryExecutorAssertions<>(this, queryExecutor);
-    this.exceptionHandler = new DriverExceptionHandlerAssertions<>(this, exceptionHandler);
     this.resultSet = resultSet;
   }
 

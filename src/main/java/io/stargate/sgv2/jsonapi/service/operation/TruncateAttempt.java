@@ -21,11 +21,11 @@ public class TruncateAttempt<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
+  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
     // bind and execute
     var statement = buildTruncateStatement();
     logStatement(LOGGER, "executeStatement()", statement);
-    return queryExecutor.executeTruncate(statement);
+    return new StatementContext(statement, () -> queryExecutor.executeTruncate(statement));
   }
 
   protected SimpleStatement buildTruncateStatement() {

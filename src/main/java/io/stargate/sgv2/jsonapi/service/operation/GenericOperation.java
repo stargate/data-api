@@ -4,10 +4,8 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
+
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -28,7 +26,7 @@ public class GenericOperation<
 
   private static final Logger LOGGER = LoggerFactory.getLogger(GenericOperation.class);
 
-  private final DriverExceptionHandler.Factory exceptionHandlerFactory;
+  private final DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory;
   private final OperationAttemptContainer<SchemaT, AttemptT> attempts;
   private final OperationAttemptPageBuilder<SchemaT, AttemptT> pageBuilder;
 
@@ -45,7 +43,7 @@ public class GenericOperation<
   public GenericOperation(
       OperationAttemptContainer<SchemaT, AttemptT> attempts,
       OperationAttemptPageBuilder<SchemaT, AttemptT> pageBuilder,
-      DriverExceptionHandler.Factory exceptionHandlerFactory) {
+      DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
 
     this.attempts = Objects.requireNonNull(attempts, "attempts cannot be null");
     this.pageBuilder = Objects.requireNonNull(pageBuilder, "pageBuilder cannot be null");

@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestDataSuplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import java.time.Duration;
@@ -37,7 +38,7 @@ public class OperationAttemptTestData extends TestDataSuplier {
   private OperationAttemptFixture<TestOperationAttempt, TableSchemaObject> newFixture(
       AsyncResultSet resultSet,
       OperationAttempt.RetryPolicy retryPolicy,
-      TableDriverExceptionHandler exceptionHandler) {
+      DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory) {
 
     if (resultSet == null) {
       resultSet = testData.resultSet().emptyResultSet();
@@ -45,8 +46,8 @@ public class OperationAttemptTestData extends TestDataSuplier {
     if (retryPolicy == null) {
       retryPolicy = OperationAttempt.RetryPolicy.NO_RETRY;
     }
-    if (exceptionHandler == null) {
-      exceptionHandler = mock(TableDriverExceptionHandler.class);
+    if (exceptionHandlerFactory == null) {
+      exceptionHandlerFactory = TableDriverExceptionHandler::new;
     }
 
     var commandExecutor = mock(CommandQueryExecutor.class);
@@ -57,6 +58,6 @@ public class OperationAttemptTestData extends TestDataSuplier {
             new TestOperationAttempt(
                 0, testData.schemaObject().emptyTableSchemaObject(), retryPolicy, resultSet));
 
-    return new OperationAttemptFixture<>(attempt, commandExecutor, exceptionHandler, resultSet);
+    return new OperationAttemptFixture<>(attempt, commandExecutor, exceptionHandlerFactory, resultSet);
   }
 }

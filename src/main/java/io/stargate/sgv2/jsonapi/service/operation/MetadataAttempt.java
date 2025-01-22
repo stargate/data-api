@@ -49,17 +49,17 @@ public abstract class MetadataAttempt<SchemaT extends SchemaObject>
   protected abstract Object getSchema();
 
   @Override
-  protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
+  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
 
     this.keyspaceMetadata = queryExecutor.getKeyspaceMetadata(schemaObject.name().keyspace());
 
     // TODO: BETTER ERROR
-    if (keyspaceMetadata.isEmpty()) {
-      return Uni.createFrom()
+    return new StatementContext(null, () -> keyspaceMetadata.isEmpty() ?
+      Uni.createFrom()
           .failure(
               SchemaException.Code.INVALID_KEYSPACE.get(
-                  Map.of("keyspace", schemaObject.name().keyspace())));
-    }
-    return Uni.createFrom().item(new EmptyAsyncResultSet());
+                  Map.of("keyspace", schemaObject.name().keyspace())))
+      :
+        Uni.createFrom().item(new EmptyAsyncResultSet()));
   }
 }

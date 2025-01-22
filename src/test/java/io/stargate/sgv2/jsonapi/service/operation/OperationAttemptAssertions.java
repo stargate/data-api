@@ -10,7 +10,7 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.time.Duration;
 import java.util.Objects;
@@ -26,24 +26,24 @@ public class OperationAttemptAssertions<
   private final FixtureT fixture;
   public final OperationAttempt<SubT, SchemaT> target;
   private final CommandQueryExecutor queryExecutor;
-  private final DriverExceptionHandler exceptionHandler;
+  private final DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory;
 
   public OperationAttemptAssertions(
       FixtureT fixture,
       OperationAttempt<SubT, SchemaT> target,
       CommandQueryExecutor queryExecutor,
-      DriverExceptionHandler exceptionHandler) {
+      DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
     this.fixture = fixture;
     this.target = target;
     this.queryExecutor = queryExecutor;
-    this.exceptionHandler = exceptionHandler;
+    this.exceptionHandlerFactory = exceptionHandlerFactory;
   }
 
   public FixtureT assertCompleted() {
 
     LOGGER.warn("assertCompleted() starting \nattempt={}", target.toString(true));
     target
-        .execute(queryExecutor, exceptionHandler)
+        .execute(queryExecutor, exceptionHandlerFactory)
         .subscribe()
         .withSubscriber(UniAssertSubscriber.create())
         .awaitItem(Duration.ofSeconds(1)) // wait up to 1 second, so retries can be handled
@@ -62,8 +62,8 @@ public class OperationAttemptAssertions<
     return fixture;
   }
 
-  public FixtureT doThrowOnExecuteStatement(Throwable expectedException) {
-    doThrow(expectedException).when(target).executeStatement(any());
+  public FixtureT doThrowOnBuildStatementContext(Throwable expectedException) {
+    doThrow(expectedException).when(target).buildStatementContext(any());
     return fixture;
   }
 
@@ -79,7 +79,7 @@ public class OperationAttemptAssertions<
                   .callRealMethod(); // Or return null/appropriate value if using a mock
             })
         .when(target)
-        .executeStatement(any());
+        .buildStatementContext(any());
     return fixture;
   }
 
@@ -118,7 +118,7 @@ public class OperationAttemptAssertions<
             target,
             times(times)
                 .description("execute() called %s times when: %s".formatted(times, message)))
-        .executeStatement(any());
+        .buildStatementContext(any());
     return fixture;
   }
 

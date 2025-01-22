@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteType;
 import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +21,7 @@ public class DriverExceptionHandlerTest {
 
     // Not using mocks because want all the defaults in the interface to kick in
     var handler = new DriverExceptionHandler() {};
-    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, originalEx));
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
 
     assertThat(actualEx)
         .as("When not a DriverException, should return the same exception")
@@ -38,14 +39,13 @@ public class DriverExceptionHandlerTest {
     final Object[] calledWith = new Object[1];
     var handler =
         new DriverExceptionHandler() {
-          public RuntimeException handle(
-              TableSchemaObject schemaObject, WriteTimeoutException exception) {
+          public RuntimeException handle(WriteTimeoutException exception) {
             calledWith[0] = exception;
             return expectedEx;
           }
         };
 
-    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, originalEx));
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
 
     assertThat(actualEx)
         .as("When a WriteFailureException, should return the exception from the handler")
@@ -65,12 +65,12 @@ public class DriverExceptionHandlerTest {
     // Not using mocks because want all the defaults in the interface to kick in
     var handler = new DriverExceptionHandler() {};
 
-    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, originalEx));
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
 
     assertThat(actualEx)
         .as(
             "When a DriverException and no handler should return ServerException code=%s",
-            ServerException.Code.UNEXPECTED_SERVER_ERROR.name())
+            DatabaseException.Code.UNEXPECTED_DRIVER_ERROR.name())
         .isNotNull()
         .isInstanceOf(ServerException.class)
         .hasMessageContaining(WriteTimeoutException.class.getSimpleName())
@@ -79,7 +79,7 @@ public class DriverExceptionHandlerTest {
             e -> {
               var apiError = (APIException) e;
               assertThat(apiError.code)
-                  .isEqualTo(ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
+                  .isEqualTo(DatabaseException.Code.UNEXPECTED_DRIVER_ERROR.name());
             });
   }
 }

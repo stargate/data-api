@@ -28,7 +28,7 @@ public class ExceptionHandlerTest {
             return UnsupportedOperationException.class;
           }
         };
-    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, null));
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null));
 
     assertThat(actualEx).as("When handling null, returns null").isNull();
   }
@@ -48,7 +48,7 @@ public class ExceptionHandlerTest {
             return UnsupportedOperationException.class;
           }
         };
-    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, originalEx));
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle( originalEx));
 
     assertThat(actualEx)
         .as("When handling non BaseT exception, returns the exception object passed")
@@ -77,24 +77,22 @@ public class ExceptionHandlerTest {
           }
 
           @Override
-          public RuntimeException handle(
-              TableSchemaObject schemaObject, IllegalStateException exception) {
+          public RuntimeException handle(IllegalStateException exception) {
             if (exception instanceof WritePendingException writePendingException) {
-              return handle(schemaObject, writePendingException);
+              return handle(writePendingException);
             }
             calledWith[0] = exception;
             return expectedParentEx;
           }
 
-          public RuntimeException handle(
-              TableSchemaObject schemaObject, WritePendingException exception) {
+          public RuntimeException handle(WritePendingException exception) {
             calledWith[1] = exception;
             return expectedChildEx;
           }
         };
 
     // First test, with the parent exception
-    var actualParentTest = assertDoesNotThrow(() -> handler.maybeHandle(null, originalParentEx));
+    var actualParentTest = assertDoesNotThrow(() -> handler.maybeHandle(originalParentEx));
 
     assertThat(actualParentTest)
         .as(
@@ -115,8 +113,8 @@ public class ExceptionHandlerTest {
     calledWith[0] = null;
     calledWith[1] = null;
 
-    // Second test, with the parent exception
-    var actualChildTest = assertDoesNotThrow(() -> handler.maybeHandle(null, originalChildEx));
+    // Second test, with the child exception
+    var actualChildTest = assertDoesNotThrow(() -> handler.maybeHandle(originalChildEx));
 
     assertThat(actualChildTest)
         .as(
@@ -153,7 +151,7 @@ public class ExceptionHandlerTest {
           }
         };
 
-    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, originalEx));
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
 
     assertThat(actualEx)
         .as(
