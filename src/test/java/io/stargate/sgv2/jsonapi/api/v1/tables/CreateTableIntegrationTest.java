@@ -322,10 +322,10 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                           """,
                   "invalidPartitionSortOrderingValueTable",
                   true,
-                  ErrorCodeV1.INVALID_REQUEST_NOT_JSON.name(),
+                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
                   " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
 
-      // invalidPartitionSortOrderingValueTable
+      // invalidPartitionSortOrderingValueTypeTable
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
@@ -351,7 +351,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                           """,
                   "invalidPartitionSortOrderingValueTypeTable",
                   true,
-                  ErrorCodeV1.INVALID_REQUEST_NOT_JSON.name(),
+                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
                   " may have a partitionSort field that is a JSON Object, each field is the name of a column, with a value of 1 for ASC, or -1 for DESC")));
 
       // invalidColumnTypeTable
@@ -383,7 +383,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   true,
                   SchemaException.Code.UNKNOWN_PRIMITIVE_DATA_TYPE.name(),
                   "The command used the unsupported data type: invalid_type.")));
-      // Column type not provided
+      // Column type not provided: nullColumnTypeTable
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
@@ -410,7 +410,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                           """,
                   "nullColumnTypeTable",
                   true,
-                  ErrorCodeV1.INVALID_REQUEST_NOT_JSON.name(),
+                  ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
                   "The Long Form type definition must be a JSON Object with at least a `type` field that is a String (value is null)")));
 
       // Map type tests

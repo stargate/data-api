@@ -58,7 +58,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
    * multiple places, once we have refactored the collection operations we should centralize these
    * operator definitions
    *
-   * <p>TODO, other operators that apply to scaler / native tyes
+   * <p>TODO, other operators that apply to scalar / native types
    */
   public enum Operator {
     EQ(BuiltConditionPredicate.EQ, new FilterBehaviour.Behaviour(true, false)),

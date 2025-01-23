@@ -265,9 +265,14 @@ public final class ThrowableToErrorMapper {
     // aaron 28-oct-2024, HACK just need something to handle our deserialization errors
     // should not be using V1 errors but would be too much to fix this now
     // NOTE: must be after the UnrecognizedPropertyException check
+    // 09-Jan-2025, tatu: [data-api#1812] Not ideal but slightly better than before
     if (e instanceof JsonMappingException jme) {
-      return ErrorCodeV1.INVALID_REQUEST_NOT_JSON
-          .toApiException(Response.Status.BAD_REQUEST, "%s", e.getMessage())
+      return ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH
+          .toApiException(
+              Response.Status.BAD_REQUEST,
+              "underlying problem: (%s) %s",
+              e.getClass().getName(),
+              e.getMessage())
           .getCommandResultError();
     }
 
