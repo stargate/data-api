@@ -15,6 +15,22 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Custom retry policy tailored for DataAPI, providing distinct retry logic for specific scenarios
+ * compared to {@link DefaultRetryPolicy}.
+ *
+ * <p>Key differences from the default implementation:
+ *
+ * <ul>
+ *   <li>Overrides {@code onWriteTimeoutVerdict} and {@code onErrorResponseVerdict} to customize
+ *       retry behavior for write timeouts and error responses.
+ *   <li>Other methods retain the default logic but include additional log messages.
+ *   <li>Logs provide enhanced details, including errors and retry decisions, for improved debugging
+ *       and monitoring.
+ *   <li>Logs are recorded at the INFO level instead of TRACE level, aligning with DataAPI logging
+ *       standards.
+ * </ul>
+ */
 public class CqlRetryPolicy extends DefaultRetryPolicy {
   private static final Logger LOG = LoggerFactory.getLogger(CqlRetryPolicy.class);
   private static final int MAX_RETRIES = Integer.getInteger("stargate.cql_proxy.max_retries", 3);
@@ -143,12 +159,13 @@ public class CqlRetryPolicy extends DefaultRetryPolicy {
 
     var retryDecision =
         switch (error) {
-            // TODO(Hazel): what decision? RETRY_SAME or RETRY_NEXT?
+            // TODO(Hazel): what decision? RETRY_SAME or RETRY_NEXT? default doesn't care the
+            // retryCount
           case CASWriteUnknownException e ->
-              (retryCount < MAX_RETRIES) ? RetryDecision.RETRY_SAME : RetryDecision.RETHROW;
+              (retryCount < MAX_RETRIES) ? RetryDecision.RETRY_NEXT : RetryDecision.RETHROW;
 
           case TruncateException e ->
-              (retryCount < MAX_RETRIES) ? RetryDecision.RETRY_SAME : RetryDecision.RETHROW;
+              (retryCount < MAX_RETRIES) ? RetryDecision.RETRY_NEXT : RetryDecision.RETHROW;
 
           default -> super.onErrorResponseVerdict(request, error, retryCount).getRetryDecision();
         };
