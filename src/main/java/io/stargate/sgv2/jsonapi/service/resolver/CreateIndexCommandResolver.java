@@ -39,7 +39,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, CreateIndexCommand command) {
 
-    ApiIndexType indexType =
+    var indexType =
         command.indexType() == null
             ? ApiIndexType.REGULAR
             : ApiIndexType.fromApiName(command.indexType());

@@ -41,7 +41,6 @@ abstract class ApiSupportedIndex implements ApiIndexDef {
   public ApiIndexType indexType() {
     return indexType;
   }
-  ;
 
   @Override
   public Map<String, String> indexOptions() {

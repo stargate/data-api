@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.IndexCreationCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.VectorIndexDefinitionDesc;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -26,9 +27,12 @@ public record CreateVectorIndexCommand(
     @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
         @Schema(
-            description = "Type of the index to create, the only supported value is 'vector'.",
+            description =
+                "Optional type of the index to create. The only supported value is '"
+                    + ApiIndexType.Constants.VECTOR
+                    + "'.",
             type = SchemaType.STRING,
-            defaultValue = "vector")
+            defaultValue = ApiIndexType.Constants.VECTOR)
         String indexType,
     @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable

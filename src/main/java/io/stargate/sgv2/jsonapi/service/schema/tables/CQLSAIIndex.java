@@ -152,5 +152,5 @@ public abstract class CQLSAIIndex {
   }
 
   /** For internal to this package use only */
-  protected record IndexTarget(CqlIdentifier targetColumn, ApiIndexFunction indexFunction) {}
+  record IndexTarget(CqlIdentifier targetColumn, ApiIndexFunction indexFunction) {}
 }

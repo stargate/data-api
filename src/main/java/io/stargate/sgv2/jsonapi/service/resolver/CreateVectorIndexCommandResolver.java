@@ -35,7 +35,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, CreateVectorIndexCommand command) {
 
-    ApiIndexType indexType =
+    var indexType =
         command.indexType() == null
             ? ApiIndexType.VECTOR
             : ApiIndexType.fromApiName(command.indexType());

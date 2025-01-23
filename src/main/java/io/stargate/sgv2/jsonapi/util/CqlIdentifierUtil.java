@@ -28,7 +28,7 @@ public abstract class CqlIdentifierUtil {
     return identifier.asCql(true);
   }
 
-  /** Remove the quotes from the identifier */
+  /** Returns the API representation of a CQL identifier. */
   public static String cqlIdentifierToJsonKey(CqlIdentifier identifier) {
     return identifier.asInternal();
   }
