@@ -289,6 +289,20 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
           .insertOne(DOC_B_JSON)
           .wasSuccessful();
 
+      // First find one of documents by column other than _id
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .postFindOne(
+              """
+                                      {
+                                            "filter": {
+                                                "value": { "$in": [12] }
+                                            }
+                                      }
+                                      """)
+          .wasSuccessful()
+          .hasJSONField("data.document", DOC_A_JSON);
+
+      // Then try to find one of documents by _id
       assertTableCommand(keyspaceName, TABLE_NAME)
           .postFindOne(
               """
