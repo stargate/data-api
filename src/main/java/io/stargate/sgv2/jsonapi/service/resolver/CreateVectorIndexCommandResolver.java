@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.util.NamingValidationUtil.*;
+
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
@@ -32,6 +34,17 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
   @Override
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, CreateVectorIndexCommand command) {
+
+    if (!isValidName(command.name())) {
+      throw SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
+          Map.of(
+              "schemeType",
+              INDEX_SCHEMA_NAME,
+              "nameLength",
+              String.valueOf(NAME_LENGTH),
+              "unsupportedSchemeName",
+              command.name()));
+    }
 
     ApiIndexType indexType =
         command.indexType() == null

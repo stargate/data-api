@@ -18,13 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that creates a collection.")
 @JsonTypeName(CommandName.Names.CREATE_COLLECTION)
 public record CreateCollectionCommand(
-    @NotNull
-        // TODO: according to issue #1814, it's ok to create a table with a name that starts with a
-        // number like "2abc" using CQL, should we update this constraint?
-        @Size(min = 1, max = 48)
-        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-        @Schema(description = "Name of the collection")
-        String name,
+    @NotNull @Schema(description = "Name of the collection") String name,
     @Valid
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable
