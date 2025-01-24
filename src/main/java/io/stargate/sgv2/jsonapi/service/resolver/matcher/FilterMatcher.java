@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
@@ -32,8 +33,8 @@ public class FilterMatcher<T extends Command & Filterable> {
     this.strategy = strategy;
   }
 
-  public Optional<CaptureGroups<T>> apply(T command) {
-    FilterClause filter = command.filterClause();
+  public Optional<CaptureGroups<T>> apply(CommandContext<?> ctx, T command) {
+    FilterClause filter = command.filterClause().toFilterClause(ctx);
     // construct a default CaptureGroups, with default AND relation, empty captureGroupsList,
     // empty captureGroupMap
     CaptureGroups<T> captureGroups =

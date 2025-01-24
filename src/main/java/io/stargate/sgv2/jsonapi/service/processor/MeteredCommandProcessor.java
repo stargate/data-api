@@ -244,7 +244,7 @@ public class MeteredCommandProcessor {
         commandContext.schemaObject().vectorConfig().vectorEnabled()
             ? Tag.of(jsonApiMetricsConfig.vectorEnabled(), "true")
             : Tag.of(jsonApiMetricsConfig.vectorEnabled(), "false");
-    JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(command);
+    JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(commandContext, command);
     Tag sortTypeTag = Tag.of(jsonApiMetricsConfig.sortType(), sortType.name());
     Tags tags =
         Tags.of(
@@ -258,10 +258,15 @@ public class MeteredCommandProcessor {
     return tags;
   }
 
-  private JsonApiMetricsConfig.SortType getVectorTypeTag(Command command) {
+  private JsonApiMetricsConfig.SortType getVectorTypeTag(
+      CommandContext<?> commandContext, Command command) {
     int filterCount = 0;
     if (command instanceof Filterable fc && fc.filterClause() != null) {
-      filterCount = fc.filterClause().logicalExpression().getTotalComparisonExpressionCount();
+      filterCount =
+          fc.filterClause()
+              .toFilterClause(commandContext)
+              .logicalExpression()
+              .getTotalComparisonExpressionCount();
     }
     if (command instanceof Sortable sc
         && sc.sortClause() != null

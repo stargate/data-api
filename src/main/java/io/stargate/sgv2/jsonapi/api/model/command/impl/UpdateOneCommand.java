@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import jakarta.validation.Valid;
@@ -16,7 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         "Command that finds a single JSON document from a collection and updates the value provided in the update clause.")
 @JsonTypeName(CommandName.Names.UPDATE_ONE)
 public record UpdateOneCommand(
-    @Valid @JsonProperty("filter") FilterClause filterClause,
+    @Valid @JsonProperty("filter") FilterSpec filterClause,
     @NotNull @Valid @JsonProperty("update") UpdateClause updateClause,
     @Valid @JsonProperty("sort") SortClause sortClause,
     @Nullable Options options)

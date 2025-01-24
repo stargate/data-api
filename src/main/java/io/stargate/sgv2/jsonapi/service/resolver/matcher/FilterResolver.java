@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -64,21 +65,22 @@ public abstract class FilterResolver<
       CommandContext<SchemaT> commandContext, CmdT command) {
     Preconditions.checkNotNull(commandContext, "commandContext is required");
     Preconditions.checkNotNull(command, "command is required");
-    SchemaValidatable.maybeValidate(commandContext, command.filterClause());
+    final FilterClause filterClause = command.filterClause().toFilterClause(commandContext);
+    SchemaValidatable.maybeValidate(commandContext, filterClause);
 
-    InvertibleCommandClause.maybeInvert(commandContext, command.filterClause());
+    InvertibleCommandClause.maybeInvert(commandContext, filterClause);
 
     final DBLogicalExpression dbLogicalExpression = matchRules.apply(commandContext, command);
     // TODO, why validate here?
-    if (command.filterClause() != null
-        && command.filterClause().logicalExpression().getTotalComparisonExpressionCount()
+    if (filterClause != null
+        && filterClause.logicalExpression().getTotalComparisonExpressionCount()
             > operationsConfig.maxFilterObjectProperties()) {
       throw new JsonApiException(
           ErrorCodeV1.FILTER_FIELDS_LIMIT_VIOLATION,
           String.format(
               "%s: filter has %d fields, exceeds maximum allowed %s",
               ErrorCodeV1.FILTER_FIELDS_LIMIT_VIOLATION.getMessage(),
-              command.filterClause().logicalExpression().getTotalComparisonExpressionCount(),
+              filterClause.logicalExpression().getTotalComparisonExpressionCount(),
               operationsConfig.maxFilterObjectProperties()));
     }
     return WithWarnings.of(dbLogicalExpression);

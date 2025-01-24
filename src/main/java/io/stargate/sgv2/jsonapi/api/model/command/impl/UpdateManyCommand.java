@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -20,7 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         "Command that finds documents from a collection and updates it with the values provided in the update clause.")
 @JsonTypeName(CommandName.Names.UPDATE_MANY)
 public record UpdateManyCommand(
-    @Valid @JsonProperty("filter") FilterClause filterClause,
+    @Valid @JsonProperty("filter") FilterSpec filterClause,
     @NotNull @Valid @JsonProperty("update") UpdateClause updateClause,
     @Nullable Options options)
     implements ReadCommand, Filterable, Updatable {

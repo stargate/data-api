@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -23,7 +24,7 @@ public record DeleteOneCommand(
             implementation = FilterClause.class)
         @Valid
         @JsonProperty("filter")
-        FilterClause filterClause,
+        FilterSpec filterClause,
     @Valid @JsonProperty("sort") SortClause sortClause)
     implements ModifyCommand, NoOptionsCommand, Filterable, Sortable {
 

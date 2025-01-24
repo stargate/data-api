@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
@@ -41,8 +40,7 @@ public class FindOneAndDeleteCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndDeleteCommand.class,
               findOneAndDeleteCommand -> {
-                FilterClause filterClause = findOneAndDeleteCommand.filterClause();
-                assertThat(filterClause).isNotNull();
+                assertThat(findOneAndDeleteCommand.filterClause()).isNotNull();
               });
     }
 
@@ -64,8 +62,7 @@ public class FindOneAndDeleteCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndDeleteCommand.class,
               findOneAndDeleteCommand -> {
-                FilterClause filterClause = findOneAndDeleteCommand.filterClause();
-                assertThat(filterClause).isNotNull();
+                assertThat(findOneAndDeleteCommand.filterClause()).isNotNull();
                 final SortClause sortClause = findOneAndDeleteCommand.sortClause();
                 assertThat(sortClause).isNotNull();
                 assertThat(sortClause)
@@ -95,8 +92,7 @@ public class FindOneAndDeleteCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndDeleteCommand.class,
               findOneAndDeleteCommand -> {
-                FilterClause filterClause = findOneAndDeleteCommand.filterClause();
-                assertThat(filterClause).isNotNull();
+                assertThat(findOneAndDeleteCommand.filterClause()).isNotNull();
                 final SortClause sortClause = findOneAndDeleteCommand.sortClause();
                 assertThat(sortClause).isNotNull();
                 assertThat(sortClause)

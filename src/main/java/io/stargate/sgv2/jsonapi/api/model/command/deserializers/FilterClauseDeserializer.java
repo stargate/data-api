@@ -44,8 +44,10 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   @Override
   public FilterClause deserialize(
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
+    return deserialize(deserializationContext.readTree(jsonParser));
+  }
 
-    JsonNode filterNode = deserializationContext.readTree(jsonParser);
+  public FilterClause deserialize(JsonNode filterNode) {
     if (!filterNode.isObject()) {
       throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException();
     }

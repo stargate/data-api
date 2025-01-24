@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -47,8 +46,7 @@ class UpdateOneCommandTest {
           .isInstanceOfSatisfying(
               UpdateOneCommand.class,
               updateOneCommand -> {
-                FilterClause filterClause = updateOneCommand.filterClause();
-                assertThat(filterClause).isNotNull();
+                assertThat(updateOneCommand.filterClause()).isNotNull();
                 final UpdateClause updateClause = updateOneCommand.updateClause();
                 assertThat(updateClause).isNotNull();
                 assertThat(updateClause.buildOperations()).hasSize(1);

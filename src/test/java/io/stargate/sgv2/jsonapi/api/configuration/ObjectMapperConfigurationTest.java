@@ -7,11 +7,13 @@ import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.fasterxml.jackson.databind.*;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperation;
@@ -178,7 +180,8 @@ class ObjectMapperConfigurationTest {
                         SortExpression.sort("user.name", true),
                         SortExpression.sort("user.age", false));
 
-                FilterClause filterClause = findOne.filterClause();
+                FilterClause filterClause =
+                    findOne.filterClause().toFilterClause(TestConstants.COLLECTION_CONTEXT);
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);
@@ -364,7 +367,8 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               DeleteOneCommand.class,
               cmd -> {
-                FilterClause filterClause = cmd.filterClause();
+                FilterClause filterClause =
+                    cmd.filterClause().toFilterClause(TestConstants.COLLECTION_CONTEXT);
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);
@@ -928,8 +932,8 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               FindOneAndUpdateCommand.class,
               findOneAndUpdateCommand -> {
-                FilterClause filterClause = findOneAndUpdateCommand.filterClause();
-                assertThat(filterClause).isNotNull();
+                FilterSpec filterSpec = findOneAndUpdateCommand.filterClause();
+                assertThat(filterSpec).isNotNull();
                 final UpdateClause updateClause = findOneAndUpdateCommand.updateClause();
                 assertThat(updateClause).isNotNull();
                 assertThat(updateClause.buildOperations()).hasSize(1);
@@ -957,8 +961,8 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               FindOneAndUpdateCommand.class,
               findOneAndUpdateCommand -> {
-                FilterClause filterClause = findOneAndUpdateCommand.filterClause();
-                assertThat(filterClause).isNotNull();
+                FilterSpec filterSpec = findOneAndUpdateCommand.filterClause();
+                assertThat(filterSpec).isNotNull();
                 final UpdateClause updateClause = findOneAndUpdateCommand.updateClause();
                 assertThat(updateClause).isNotNull();
                 assertThat(updateClause.buildOperations()).hasSize(1);
@@ -1032,8 +1036,8 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               CountDocumentsCommand.class,
               countCommand -> {
-                FilterClause filterClause = countCommand.filterClause();
-                assertThat(filterClause).isNotNull();
+                FilterSpec filterSpec = countCommand.filterClause();
+                assertThat(filterSpec).isNotNull();
               });
     }
   }
