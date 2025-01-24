@@ -32,7 +32,9 @@ public class WriteableTableRowBuilderTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(WriteableTableRowBuilderTest.class);
 
   private static void logFixture(String testName, JsonContainerFixture fixture) {
-    LOGGER.info(
+    // 24-Jan-2025, tatu: This produces thousands of lines noise in logs, so let's
+    //    change to TRACE level (from INFO)
+    LOGGER.trace(
         "{}: \nfixture={} \ncontainer={} \ntable={}",
         testName,
         fixture.toString(true),
