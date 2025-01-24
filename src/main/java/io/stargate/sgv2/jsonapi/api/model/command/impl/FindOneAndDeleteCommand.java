@@ -14,7 +14,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         "Command that finds a single JSON document from a collection and deletes it. The deleted document is returned")
 @JsonTypeName(CommandName.Names.FIND_ONE_AND_DELETE)
 public record FindOneAndDeleteCommand(
-    @Valid @JsonProperty("filter") FilterSpec filterClause,
+    @Valid @JsonProperty("filter") FilterSpec filterSpec,
     @Valid @JsonProperty("sort") SortClause sortClause,
     @JsonProperty("projection") JsonNode projectionDefinition)
     implements ModifyCommand, Filterable, Projectable, Sortable {

@@ -20,7 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         "Command that finds documents from a collection and updates it with the values provided in the update clause.")
 @JsonTypeName(CommandName.Names.UPDATE_MANY)
 public record UpdateManyCommand(
-    @Valid @JsonProperty("filter") FilterSpec filterClause,
+    @Valid @JsonProperty("filter") FilterSpec filterSpec,
     @NotNull @Valid @JsonProperty("update") UpdateClause updateClause,
     @Nullable Options options)
     implements ReadCommand, Filterable, Updatable {

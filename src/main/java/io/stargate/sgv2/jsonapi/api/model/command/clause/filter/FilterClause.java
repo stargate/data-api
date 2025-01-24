@@ -1,9 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.InvertibleCommandClause;
-import io.stargate.sgv2.jsonapi.api.model.command.deserializers.FilterClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -17,7 +15,6 @@ import java.util.Map;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@JsonDeserialize(using = FilterClauseDeserializer.class)
 @Schema(
     type = SchemaType.OBJECT,
     implementation = Object.class,

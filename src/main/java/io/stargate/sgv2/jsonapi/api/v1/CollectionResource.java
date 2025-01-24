@@ -23,6 +23,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
@@ -78,6 +79,8 @@ public class CollectionResource {
   @Inject private DataApiRequestInfo dataApiRequestInfo;
 
   @Inject FeaturesConfig apiFeatureConfig;
+
+  @Inject OperationsConfig operationsConfig;
 
   @Inject private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
 
@@ -259,7 +262,8 @@ public class CollectionResource {
                         embeddingProvider,
                         command.getClass().getSimpleName(),
                         jsonProcessingMetricsReporter,
-                        apiFeatures);
+                        apiFeatures,
+                        operationsConfig);
 
                 return meteredCommandProcessor.processCommand(
                     dataApiRequestInfo, commandContext, command);

@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListTablesCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
@@ -55,13 +56,20 @@ public class KeyspaceResource {
   public static final String BASE_PATH = "/v1/{keyspace}";
   private final MeteredCommandProcessor meteredCommandProcessor;
 
+  private final FeaturesConfig apiFeatureConfig;
+
+  private final OperationsConfig operationsConfig;
+
   @Inject private DataApiRequestInfo dataApiRequestInfo;
 
-  @Inject FeaturesConfig apiFeatureConfig;
-
   @Inject
-  public KeyspaceResource(MeteredCommandProcessor meteredCommandProcessor) {
+  public KeyspaceResource(
+      MeteredCommandProcessor meteredCommandProcessor,
+      FeaturesConfig apiFeatureConfig,
+      OperationsConfig operationsConfig) {
     this.meteredCommandProcessor = meteredCommandProcessor;
+    this.apiFeatureConfig = apiFeatureConfig;
+    this.operationsConfig = operationsConfig;
   }
 
   @Operation(
@@ -133,7 +141,8 @@ public class KeyspaceResource {
             null,
             command.getClass().getSimpleName(),
             null,
-            apiFeatures);
+            apiFeatures,
+            operationsConfig);
 
     // Need context first to check if feature is enabled
     if (command instanceof TableOnlyCommand && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {

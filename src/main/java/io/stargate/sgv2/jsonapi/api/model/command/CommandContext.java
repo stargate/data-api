@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -23,7 +24,8 @@ public record CommandContext<T extends SchemaObject>(
     EmbeddingProvider embeddingProvider,
     String commandName,
     JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-    ApiFeatures apiFeatures) {
+    ApiFeatures apiFeatures,
+    OperationsConfig operationsConfig) {
 
   // TODO: this is what the original EMPTY had, no idea why the name of the command is missing
   // this is used by the GeneralResource
@@ -48,7 +50,8 @@ public record CommandContext<T extends SchemaObject>(
       EmbeddingProvider embeddingProvider,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures) {
+      ApiFeatures apiFeatures,
+      OperationsConfig operationsConfig) {
 
     // TODO: upgrade to use the modern switch statements
     // TODO: how to remove the unchecked cast ? Had to use unchecked cast to get back to the
@@ -56,22 +59,42 @@ public record CommandContext<T extends SchemaObject>(
     if (schemaObject instanceof CollectionSchemaObject cso) {
       return (CommandContext<T>)
           forSchemaObject(
-              cso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
+              cso,
+              embeddingProvider,
+              commandName,
+              jsonProcessingMetricsReporter,
+              apiFeatures,
+              operationsConfig);
     }
     if (schemaObject instanceof TableSchemaObject tso) {
       return (CommandContext<T>)
           forSchemaObject(
-              tso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
+              tso,
+              embeddingProvider,
+              commandName,
+              jsonProcessingMetricsReporter,
+              apiFeatures,
+              operationsConfig);
     }
     if (schemaObject instanceof KeyspaceSchemaObject kso) {
       return (CommandContext<T>)
           forSchemaObject(
-              kso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
+              kso,
+              embeddingProvider,
+              commandName,
+              jsonProcessingMetricsReporter,
+              apiFeatures,
+              operationsConfig);
     }
     if (schemaObject instanceof DatabaseSchemaObject dso) {
       return (CommandContext<T>)
           forSchemaObject(
-              dso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
+              dso,
+              embeddingProvider,
+              commandName,
+              jsonProcessingMetricsReporter,
+              apiFeatures,
+              operationsConfig);
     }
     throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "Unknown schema object type: %s", schemaObject.getClass().getName());
@@ -92,9 +115,15 @@ public record CommandContext<T extends SchemaObject>(
       EmbeddingProvider embeddingProvider,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures) {
+      ApiFeatures apiFeatures,
+      OperationsConfig operationsConfig) {
     return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
+        schemaObject,
+        embeddingProvider,
+        commandName,
+        jsonProcessingMetricsReporter,
+        apiFeatures,
+        operationsConfig);
   }
 
   /**
@@ -112,9 +141,15 @@ public record CommandContext<T extends SchemaObject>(
       EmbeddingProvider embeddingProvider,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures) {
+      ApiFeatures apiFeatures,
+      OperationsConfig operationsConfig) {
     return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
+        schemaObject,
+        embeddingProvider,
+        commandName,
+        jsonProcessingMetricsReporter,
+        apiFeatures,
+        operationsConfig);
   }
 
   /**
@@ -132,9 +167,15 @@ public record CommandContext<T extends SchemaObject>(
       EmbeddingProvider embeddingProvider,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures) {
+      ApiFeatures apiFeatures,
+      OperationsConfig operationsConfig) {
     return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
+        schemaObject,
+        embeddingProvider,
+        commandName,
+        jsonProcessingMetricsReporter,
+        apiFeatures,
+        operationsConfig);
   }
 
   /**
@@ -152,9 +193,15 @@ public record CommandContext<T extends SchemaObject>(
       EmbeddingProvider embeddingProvider,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures) {
+      ApiFeatures apiFeatures,
+      OperationsConfig operationsConfig) {
     return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
+        schemaObject,
+        embeddingProvider,
+        commandName,
+        jsonProcessingMetricsReporter,
+        apiFeatures,
+        operationsConfig);
   }
 
   @SuppressWarnings("unchecked")
@@ -223,5 +270,13 @@ public record CommandContext<T extends SchemaObject>(
       return new SmallRyeConfigBuilder().build();
     }
     return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+  }
+
+  public OperationsConfig operationsConfig() {
+    if (operationsConfig != null) {
+      return operationsConfig;
+    }
+    // During tests:
+    return getConfig(OperationsConfig.class);
   }
 }

@@ -39,7 +39,7 @@ public class FindOneAndDeleteCommandResolverTest {
   @Nested
   class Resolve {
 
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
+    CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
 
     @Test
     public void idFilterCondition() throws Exception {

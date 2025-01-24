@@ -180,8 +180,7 @@ class ObjectMapperConfigurationTest {
                         SortExpression.sort("user.name", true),
                         SortExpression.sort("user.age", false));
 
-                FilterClause filterClause =
-                    findOne.filterClause().toFilterClause(TestConstants.COLLECTION_CONTEXT);
+                FilterClause filterClause = findOne.filterClause(TestConstants.collectionContext());
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);
@@ -235,7 +234,7 @@ class ObjectMapperConfigurationTest {
       assertThat(result)
           .isInstanceOfSatisfying(
               FindOneCommand.class,
-              findOne -> Assertions.assertThat(findOne.filterClause()).isNull());
+              findOne -> Assertions.assertThat(findOne.filterSpec()).isNull());
     }
 
     // Only "empty" Options allowed, nothing else
@@ -367,8 +366,7 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               DeleteOneCommand.class,
               cmd -> {
-                FilterClause filterClause =
-                    cmd.filterClause().toFilterClause(TestConstants.COLLECTION_CONTEXT);
+                FilterClause filterClause = cmd.filterClause(TestConstants.collectionContext());
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);
@@ -932,7 +930,7 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               FindOneAndUpdateCommand.class,
               findOneAndUpdateCommand -> {
-                FilterSpec filterSpec = findOneAndUpdateCommand.filterClause();
+                FilterSpec filterSpec = findOneAndUpdateCommand.filterSpec();
                 assertThat(filterSpec).isNotNull();
                 final UpdateClause updateClause = findOneAndUpdateCommand.updateClause();
                 assertThat(updateClause).isNotNull();
@@ -961,7 +959,7 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               FindOneAndUpdateCommand.class,
               findOneAndUpdateCommand -> {
-                FilterSpec filterSpec = findOneAndUpdateCommand.filterClause();
+                FilterSpec filterSpec = findOneAndUpdateCommand.filterSpec();
                 assertThat(filterSpec).isNotNull();
                 final UpdateClause updateClause = findOneAndUpdateCommand.updateClause();
                 assertThat(updateClause).isNotNull();
@@ -1036,7 +1034,7 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               CountDocumentsCommand.class,
               countCommand -> {
-                FilterSpec filterSpec = countCommand.filterClause();
+                FilterSpec filterSpec = countCommand.filterSpec();
                 assertThat(filterSpec).isNotNull();
               });
     }

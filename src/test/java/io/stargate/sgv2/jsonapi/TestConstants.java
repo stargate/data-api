@@ -1,9 +1,11 @@
 package io.stargate.sgv2.jsonapi;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -58,19 +60,69 @@ public final class TestConstants {
 
   public static final ApiFeatures DEFAULT_API_FEATURES_FOR_TESTS = ApiFeatures.empty();
 
-  public static final CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT =
-      new CommandContext<>(
-          COLLECTION_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null, DEFAULT_API_FEATURES_FOR_TESTS);
+  public static CommandContext<CollectionSchemaObject> collectionContext() {
+    return collectionContext(COLLECTION_SCHEMA_OBJECT);
+  }
 
-  public static final CommandContext<CollectionSchemaObject> VECTOR_COLLECTION_CONTEXT =
-      new CommandContext<>(
-          VECTOR_COLLECTION_SCHEMA_OBJECT, null, null, null, DEFAULT_API_FEATURES_FOR_TESTS);
+  public static CommandContext<CollectionSchemaObject> collectionContext(
+      JsonProcessingMetricsReporter metricsReporter) {
+    return collectionContext(TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, metricsReporter);
+  }
 
-  public static final CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT =
-      new CommandContext<>(
-          KEYSPACE_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null, DEFAULT_API_FEATURES_FOR_TESTS);
+  public static CommandContext<CollectionSchemaObject> collectionContext(
+      String commandName, JsonProcessingMetricsReporter metricsReporter) {
+    return collectionContext(commandName, COLLECTION_SCHEMA_OBJECT, metricsReporter);
+  }
 
-  public static final CommandContext<DatabaseSchemaObject> DATABASE_CONTEXT =
+  public static CommandContext<CollectionSchemaObject> collectionContext(
+      CollectionSchemaObject schema) {
+    return collectionContext(TEST_COMMAND_NAME, schema, null);
+  }
+
+  public static CommandContext<CollectionSchemaObject> collectionContext(
+      String commandName,
+      CollectionSchemaObject schema,
+      JsonProcessingMetricsReporter metricsReporter) {
+    return collectionContext(commandName, schema, metricsReporter, null);
+  }
+
+  public static CommandContext<CollectionSchemaObject> collectionContext(
+      String commandName,
+      CollectionSchemaObject schema,
+      JsonProcessingMetricsReporter metricsReporter,
+      EmbeddingProvider embeddingProvider) {
+    return new CommandContext<>(
+        schema,
+        embeddingProvider,
+        commandName,
+        metricsReporter,
+        DEFAULT_API_FEATURES_FOR_TESTS,
+        null);
+  }
+
+  private static final CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT =
       new CommandContext<>(
-          DATABASE_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null, DEFAULT_API_FEATURES_FOR_TESTS);
+          KEYSPACE_SCHEMA_OBJECT,
+          null,
+          TEST_COMMAND_NAME,
+          null,
+          DEFAULT_API_FEATURES_FOR_TESTS,
+          null);
+
+  public static CommandContext<KeyspaceSchemaObject> keyspaceContext() {
+    return KEYSPACE_CONTEXT;
+  }
+
+  private static final CommandContext<DatabaseSchemaObject> DATABASE_CONTEXT =
+      new CommandContext<>(
+          DATABASE_SCHEMA_OBJECT,
+          null,
+          TEST_COMMAND_NAME,
+          null,
+          DEFAULT_API_FEATURES_FOR_TESTS,
+          null);
+
+  public static CommandContext<DatabaseSchemaObject> databaseContext() {
+    return DATABASE_CONTEXT;
+  }
 }

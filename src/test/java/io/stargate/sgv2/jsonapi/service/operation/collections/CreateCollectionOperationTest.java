@@ -28,6 +28,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
@@ -53,12 +54,7 @@ import org.junit.jupiter.api.Test;
 public class CreateCollectionOperationTest extends OperationTestBase {
 
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT =
-      new CommandContext<>(
-          COLLECTION_SCHEMA_OBJECT,
-          null,
-          "CreateCollectionCommand",
-          null,
-          DEFAULT_API_FEATURES_FOR_TESTS);
+      TestConstants.collectionContext("CreateCollectionCommand", COLLECTION_SCHEMA_OBJECT, null);
 
   @Inject DatabaseLimitsConfig databaseLimitsConfig;
 

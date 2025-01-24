@@ -11,7 +11,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 /**
  * Representation of the deleteMany API {@link Command}.
  *
- * @param filterClause {@link FilterClause} used to identify documents.
+ * @param filterSpec {@link FilterClause} used to identify documents.
  */
 @Schema(
     description =
@@ -23,7 +23,7 @@ public record DeleteManyCommand(
             implementation = FilterClause.class)
         @Valid
         @JsonProperty("filter")
-        FilterSpec filterClause)
+        FilterSpec filterSpec)
     implements ModifyCommand, NoOptionsCommand, Filterable {
 
   /** {@inheritDoc} */
@@ -33,6 +33,6 @@ public record DeleteManyCommand(
   }
 
   public FilterClause filterClause(CommandContext<?> context) {
-    return (filterClause == null) ? null : filterClause.toFilterClause(context);
+    return (filterSpec == null) ? null : filterSpec.toFilterClause(context);
   }
 }

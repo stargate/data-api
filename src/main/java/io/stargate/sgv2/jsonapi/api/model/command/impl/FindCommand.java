@@ -20,7 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonTypeName(CommandName.Names.FIND)
 @CheckFindOption
 public record FindCommand(
-    @Valid @JsonProperty("filter") FilterSpec filterClause,
+    @Valid @JsonProperty("filter") FilterSpec filterSpec,
     @JsonProperty("projection") JsonNode projectionDefinition,
     @Valid @JsonProperty("sort") SortClause sortClause,
     @Valid @Nullable Options options)

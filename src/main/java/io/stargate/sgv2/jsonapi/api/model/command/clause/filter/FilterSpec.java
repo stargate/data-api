@@ -39,7 +39,7 @@ public class FilterSpec {
     Objects.requireNonNull(ctx, "CommandContext cannot be null");
     if (null == filterClause) {
       // !!! TODO: Pass CommandContext
-      filterClause = deserializer.deserialize(filterJson);
+      filterClause = deserializer.buildFilterClause(ctx, filterJson);
     }
     return filterClause;
   }

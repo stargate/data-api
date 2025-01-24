@@ -261,12 +261,9 @@ public class MeteredCommandProcessor {
   private JsonApiMetricsConfig.SortType getVectorTypeTag(
       CommandContext<?> commandContext, Command command) {
     int filterCount = 0;
-    if (command instanceof Filterable fc && fc.filterClause() != null) {
+    if (command instanceof Filterable fc && fc.filterSpec() != null) {
       filterCount =
-          fc.filterClause()
-              .toFilterClause(commandContext)
-              .logicalExpression()
-              .getTotalComparisonExpressionCount();
+          fc.filterClause(commandContext).logicalExpression().getTotalComparisonExpressionCount();
     }
     if (command instanceof Sortable sc
         && sc.sortClause() != null

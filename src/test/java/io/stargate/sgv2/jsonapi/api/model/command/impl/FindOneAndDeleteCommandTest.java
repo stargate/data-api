@@ -40,7 +40,7 @@ public class FindOneAndDeleteCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndDeleteCommand.class,
               findOneAndDeleteCommand -> {
-                assertThat(findOneAndDeleteCommand.filterClause()).isNotNull();
+                assertThat(findOneAndDeleteCommand.filterSpec()).isNotNull();
               });
     }
 
@@ -62,7 +62,7 @@ public class FindOneAndDeleteCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndDeleteCommand.class,
               findOneAndDeleteCommand -> {
-                assertThat(findOneAndDeleteCommand.filterClause()).isNotNull();
+                assertThat(findOneAndDeleteCommand.filterSpec()).isNotNull();
                 final SortClause sortClause = findOneAndDeleteCommand.sortClause();
                 assertThat(sortClause).isNotNull();
                 assertThat(sortClause)
@@ -92,7 +92,7 @@ public class FindOneAndDeleteCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndDeleteCommand.class,
               findOneAndDeleteCommand -> {
-                assertThat(findOneAndDeleteCommand.filterClause()).isNotNull();
+                assertThat(findOneAndDeleteCommand.filterSpec()).isNotNull();
                 final SortClause sortClause = findOneAndDeleteCommand.sortClause();
                 assertThat(sortClause).isNotNull();
                 assertThat(sortClause)

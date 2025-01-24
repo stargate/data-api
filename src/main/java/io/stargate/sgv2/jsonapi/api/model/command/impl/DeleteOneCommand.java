@@ -13,7 +13,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 /**
  * Representation of the deleteOne API {@link Command}.
  *
- * @param filterClause {@link FilterClause} used to identify a document.
+ * @param filterSpec {@link FilterClause} used to identify a document.
  */
 @Schema(description = "Command that finds a single document and deletes it from a collection")
 @JsonTypeName(CommandName.Names.DELETE_ONE)
@@ -24,7 +24,7 @@ public record DeleteOneCommand(
             implementation = FilterClause.class)
         @Valid
         @JsonProperty("filter")
-        FilterSpec filterClause,
+        FilterSpec filterSpec,
     @Valid @JsonProperty("sort") SortClause sortClause)
     implements ModifyCommand, NoOptionsCommand, Filterable, Sortable {
 

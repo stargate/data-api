@@ -34,7 +34,7 @@ public class FilterMatcher<T extends Command & Filterable> {
   }
 
   public Optional<CaptureGroups<T>> apply(CommandContext<?> ctx, T command) {
-    FilterClause filter = command.filterClause().toFilterClause(ctx);
+    FilterClause filter = command.filterClause(ctx);
     // construct a default CaptureGroups, with default AND relation, empty captureGroupsList,
     // empty captureGroupMap
     CaptureGroups<T> captureGroups =

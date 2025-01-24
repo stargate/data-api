@@ -2,14 +2,12 @@ package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DOC_ID;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.smallrye.config.SmallRyeConfig;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -17,10 +15,8 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;
-import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
  * {@link StdDeserializer} for the {@link FilterClause}.
@@ -28,33 +24,27 @@ import org.eclipse.microprofile.config.ConfigProvider;
  * <p>TIDY: this class has a lot of string constants for filter operations that we have defined as
  * constants elsewhere
  */
-public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
-  private final OperationsConfig operationsConfig;
+public class FilterClauseDeserializer {
+  public FilterClauseDeserializer() {}
 
-  public FilterClauseDeserializer() {
-    super(FilterClause.class);
-    SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-    operationsConfig = config.getConfigMapping(OperationsConfig.class);
+  public FilterClause buildFilterClause(CommandContext<?> ctx, JsonNode filterNode) {
+    return buildFilterClause(ctx.operationsConfig(), filterNode);
   }
 
-  /**
-   * {@inheritDoc} Filter clause can follow short-cut {"field" : "value"} instead of {"field" :
-   * {"$eq" : "value"}}
-   */
-  @Override
-  public FilterClause deserialize(
-      JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
-    return deserialize(deserializationContext.readTree(jsonParser));
-  }
-
-  public FilterClause deserialize(JsonNode filterNode) {
+  // Package private for testing
+  FilterClause buildFilterClause(OperationsConfig operationsConfig, JsonNode filterNode) {
     if (!filterNode.isObject()) {
+      // JSON `null`s are ok though
+      if (filterNode.isNull()) {
+        return null;
+      }
       throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException();
     }
+
     // implicit and
     LogicalExpression implicitAnd = LogicalExpression.and();
     populateExpression(implicitAnd, filterNode);
-    validate(implicitAnd);
+    validate(operationsConfig, implicitAnd);
 
     return new FilterClause(implicitAnd);
   }
@@ -134,12 +124,12 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     }
   }
 
-  private void validate(LogicalExpression logicalExpression) {
+  private void validate(OperationsConfig operationsConfig, LogicalExpression logicalExpression) {
     if (logicalExpression.getTotalIdComparisonExpressionCount() > 1) {
       throw ErrorCodeV1.FILTER_MULTIPLE_ID_FILTER.toApiException();
     }
     for (LogicalExpression subLogicalExpression : logicalExpression.logicalExpressions) {
-      validate(subLogicalExpression);
+      validate(operationsConfig, subLogicalExpression);
     }
     for (ComparisonExpression subComparisonExpression : logicalExpression.comparisonExpressions) {
       subComparisonExpression
@@ -147,6 +137,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
           .forEach(
               operation ->
                   validate(
+                      operationsConfig,
                       subComparisonExpression.getPath(),
                       operation,
                       logicalExpression.getLogicalRelation()));
@@ -154,6 +145,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   }
 
   private void validate(
+      OperationsConfig operationsConfig,
       String path,
       FilterOperation<?> filterOperation,
       LogicalExpression.LogicalOperator fromLogicalRelation) {

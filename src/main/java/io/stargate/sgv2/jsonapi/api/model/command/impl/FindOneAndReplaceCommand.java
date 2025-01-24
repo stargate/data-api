@@ -18,7 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         "Command that finds a single JSON document from a collection and replaces it with the replacement document.")
 @JsonTypeName(CommandName.Names.FIND_ONE_AND_REPLACE)
 public record FindOneAndReplaceCommand(
-    @Valid @JsonProperty("filter") FilterSpec filterClause,
+    @Valid @JsonProperty("filter") FilterSpec filterSpec,
     @Valid @JsonProperty("sort") SortClause sortClause,
     @JsonProperty("projection") JsonNode projectionDefinition,
     @NotNull @Valid @JsonProperty("replacement") ObjectNode replacementDocument,

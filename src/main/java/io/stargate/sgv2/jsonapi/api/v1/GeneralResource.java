@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateKeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
@@ -36,14 +37,15 @@ import org.jboss.resteasy.reactive.RestResponse;
 @SecurityRequirement(name = OpenApiConstants.SecuritySchemes.TOKEN)
 @Tag(ref = "General")
 public class GeneralResource {
+  public static final String BASE_PATH = "/v1";
+
+  private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
 
   @Inject FeaturesConfig apiFeatureConfig;
 
-  public static final String BASE_PATH = "/v1";
-
-  private final MeteredCommandProcessor meteredCommandProcessor;
+  @Inject OperationsConfig operationsConfig;
 
   @Inject
   public GeneralResource(MeteredCommandProcessor meteredCommandProcessor) {
@@ -88,7 +90,8 @@ public class GeneralResource {
             null,
             command.getClass().getSimpleName(),
             null,
-            apiFeatures);
+            apiFeatures,
+            operationsConfig);
 
     return meteredCommandProcessor
         .processCommand(dataApiRequestInfo, commandContext, command)

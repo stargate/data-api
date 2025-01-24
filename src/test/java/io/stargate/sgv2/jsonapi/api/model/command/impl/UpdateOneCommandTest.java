@@ -46,7 +46,7 @@ class UpdateOneCommandTest {
           .isInstanceOfSatisfying(
               UpdateOneCommand.class,
               updateOneCommand -> {
-                assertThat(updateOneCommand.filterClause()).isNotNull();
+                assertThat(updateOneCommand.filterSpec()).isNotNull();
                 final UpdateClause updateClause = updateOneCommand.updateClause();
                 assertThat(updateClause).isNotNull();
                 assertThat(updateClause.buildOperations()).hasSize(1);

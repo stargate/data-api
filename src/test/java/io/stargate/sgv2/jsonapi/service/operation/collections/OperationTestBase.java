@@ -15,6 +15,7 @@ import com.datastax.oss.protocol.internal.ProtocolConstants;
 import com.datastax.oss.protocol.internal.response.result.ColumnSpec;
 import com.datastax.oss.protocol.internal.response.result.RawType;
 import io.quarkus.test.InjectMock;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
@@ -48,25 +49,12 @@ public class OperationTestBase {
           IdConfig.defaultIdConfig(),
           VectorConfig.NOT_ENABLED_CONFIG,
           null);
-  protected final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =
-      KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
-
-  protected final String COMMAND_NAME = "testCommand";
 
   protected final CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT =
-      new CommandContext<>(
-          COLLECTION_SCHEMA_OBJECT,
-          null,
-          COMMAND_NAME,
-          jsonProcessingMetricsReporter,
-          DEFAULT_API_FEATURES_FOR_TESTS);
+      TestConstants.collectionContext(jsonProcessingMetricsReporter);
+
   protected final CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT =
-      new CommandContext<>(
-          KEYSPACE_SCHEMA_OBJECT,
-          null,
-          COMMAND_NAME,
-          jsonProcessingMetricsReporter,
-          DEFAULT_API_FEATURES_FOR_TESTS);
+      TestConstants.keyspaceContext();
 
   @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
 
@@ -75,12 +63,7 @@ public class OperationTestBase {
 
   protected CommandContext<CollectionSchemaObject> createCommandContextWithCommandName(
       String commandName) {
-    return new CommandContext<>(
-        COLLECTION_SCHEMA_OBJECT,
-        null,
-        commandName,
-        jsonProcessingMetricsReporter,
-        DEFAULT_API_FEATURES_FOR_TESTS);
+    return TestConstants.collectionContext(commandName, jsonProcessingMetricsReporter);
   }
 
   protected ColumnDefinitions buildColumnDefs(TestColumn... columns) {

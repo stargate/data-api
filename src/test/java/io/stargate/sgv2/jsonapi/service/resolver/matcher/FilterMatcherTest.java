@@ -37,7 +37,7 @@ public class FilterMatcherTest {
       FilterMatcher<FindOneCommand> matcher =
           new FilterMatcher<>(FilterMatcher.MatchStrategy.EMPTY);
       final Optional<CaptureGroups<FindOneCommand>> response =
-          matcher.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
+          matcher.apply(TestConstants.collectionContext(), findOneCommand);
       assertThat(response.isPresent()).isTrue();
     }
 
@@ -57,7 +57,7 @@ public class FilterMatcherTest {
       FilterMatcher<FindOneCommand> matcher =
           new FilterMatcher<>(FilterMatcher.MatchStrategy.EMPTY);
       final Optional<CaptureGroups<FindOneCommand>> response =
-          matcher.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
+          matcher.apply(TestConstants.collectionContext(), findOneCommand);
       assertThat(response.isPresent()).isFalse();
     }
 
@@ -81,7 +81,7 @@ public class FilterMatcherTest {
             .capture("TEST")
             .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
         final Optional<CaptureGroups<FindOneCommand>> response =
-            matcher.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
+            matcher.apply(TestConstants.collectionContext(), findOneCommand);
         assertThat(response.isPresent()).isFalse();
       }
     }
@@ -108,7 +108,7 @@ public class FilterMatcherTest {
           .capture("CAPTURE 2")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NUMBER);
       final Optional<CaptureGroups<FindOneCommand>> response =
-          matcher.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
+          matcher.apply(TestConstants.collectionContext(), findOneCommand);
       assertThat(response.isPresent()).isTrue();
     }
 
@@ -134,7 +134,7 @@ public class FilterMatcherTest {
           .capture("CAPTURE 2")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NUMBER);
       final Optional<CaptureGroups<FindOneCommand>> response =
-          matcher.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
+          matcher.apply(TestConstants.collectionContext(), findOneCommand);
       assertThat(response.isPresent()).isFalse();
     }
   }
@@ -159,7 +159,7 @@ public class FilterMatcherTest {
           .capture("TEST")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
       final Optional<CaptureGroups<FindOneCommand>> response =
-          matcher.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
+          matcher.apply(TestConstants.collectionContext(), findOneCommand);
       assertThat(response.isPresent()).isFalse();
     }
 
@@ -185,7 +185,7 @@ public class FilterMatcherTest {
           .capture("CAPTURE 2")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NUMBER);
       final Optional<CaptureGroups<FindOneCommand>> response =
-          matcher.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
+          matcher.apply(TestConstants.collectionContext(), findOneCommand);
       assertThat(response.isPresent()).isTrue();
     }
 
@@ -211,7 +211,7 @@ public class FilterMatcherTest {
           .capture("CAPTURE 2")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NUMBER);
       final Optional<CaptureGroups<FindOneCommand>> response =
-          matcher.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
+          matcher.apply(TestConstants.collectionContext(), findOneCommand);
       assertThat(response.isPresent()).isTrue();
     }
   }
