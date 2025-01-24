@@ -14,7 +14,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that creates an API Table.")
 @JsonTypeName(CommandName.Names.CREATE_TABLE)
 public record CreateTableCommand(
-    @NotNull @Schema(description = "Name of the table") String name,
+    @Schema(description = "Name of the table") String name,
     @Valid @NotNull @Schema(description = "Table definition") TableDefinitionDesc definition,
     @Valid
         @JsonInclude(JsonInclude.Include.NON_NULL)

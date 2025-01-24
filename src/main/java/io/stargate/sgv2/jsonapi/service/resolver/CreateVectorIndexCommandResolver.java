@@ -43,7 +43,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
               "nameLength",
               String.valueOf(NAME_LENGTH),
               "unsupportedSchemeName",
-              command.name()));
+              command.name() == null ? NULL_SCHEMA_NAME : command.name()));
     }
 
     ApiIndexType indexType =

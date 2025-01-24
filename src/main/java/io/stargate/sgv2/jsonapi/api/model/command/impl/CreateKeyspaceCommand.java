@@ -15,7 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that creates a keyspace.")
 @JsonTypeName(CommandName.Names.CREATE_KEYSPACE)
 public record CreateKeyspaceCommand(
-    @NotNull @Schema(description = "Name of the keyspace") String name,
+    @Schema(description = "Name of the keyspace") String name,
     @Nullable @Valid CreateKeyspaceCommand.Options options)
     implements GeneralCommand {
 

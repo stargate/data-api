@@ -19,8 +19,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     deprecated = true)
 @JsonTypeName(CommandName.Names.CREATE_NAMESPACE)
 public record CreateNamespaceCommand(
-    @NotNull
-        @Schema(
+    @Schema(
             description =
                 "Name of the namespace. This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead.",
             deprecated = true)

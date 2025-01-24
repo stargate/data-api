@@ -9,6 +9,8 @@ public interface NamingValidationUtil {
   String TABLE_SCHEMA_NAME = "table";
   String INDEX_SCHEMA_NAME = "index";
 
+  String NULL_SCHEMA_NAME = "null";
+
   int NAME_LENGTH = 48;
   Pattern PATTERN_WORD_CHARS = Pattern.compile("\\w+");
 

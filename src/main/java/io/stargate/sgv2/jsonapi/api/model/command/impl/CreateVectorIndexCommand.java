@@ -14,7 +14,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that creates an index for a column in a table.")
 @JsonTypeName(CommandName.Names.CREATE_VECTOR_INDEX)
 public record CreateVectorIndexCommand(
-    @NotNull @Schema(description = "Name of the column to create the index on") String name,
+    @Schema(description = "Name of the column to create the index on") String name,
     @NotNull @Schema(description = "Definition of the index to create.", type = SchemaType.OBJECT)
         VectorIndexDefinitionDesc definition,
     @JsonInclude(JsonInclude.Include.NON_NULL)
