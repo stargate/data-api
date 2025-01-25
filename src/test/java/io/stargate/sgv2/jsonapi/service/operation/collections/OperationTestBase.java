@@ -66,7 +66,8 @@ public class OperationTestBase {
 
   protected CommandContext<CollectionSchemaObject> createCommandContextWithCommandName(
       String commandName) {
-    return TestConstants.collectionContext(commandName, jsonProcessingMetricsReporter);
+    return TestConstants.collectionContext(
+        commandName, COLLECTION_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
   }
 
   protected ColumnDefinitions buildColumnDefs(TestColumn... columns) {
