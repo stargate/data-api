@@ -20,7 +20,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -40,7 +39,6 @@ public class OperationTestBase {
   protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final SchemaObjectName SCHEMA_OBJECT_NAME =
       new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
-  protected final ApiFeatures DEFAULT_API_FEATURES_FOR_TESTS = ApiFeatures.empty();
 
   protected final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT =
       new CollectionSchemaObject(
@@ -51,7 +49,8 @@ public class OperationTestBase {
           null);
 
   protected final CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT =
-      TestConstants.collectionContext(jsonProcessingMetricsReporter);
+      TestConstants.collectionContext(
+          TestConstants.TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
 
   protected final CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT =
       TestConstants.keyspaceContext();

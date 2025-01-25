@@ -31,8 +31,4 @@ public record DeleteManyCommand(
   public CommandName commandName() {
     return CommandName.DELETE_MANY;
   }
-
-  public FilterClause filterClause(CommandContext<?> context) {
-    return (filterSpec == null) ? null : filterSpec.toFilterClause(context);
-  }
 }
