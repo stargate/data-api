@@ -1,10 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import static io.stargate.sgv2.jsonapi.util.NamingValidationUtil.*;
-
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateKeyspaceCommand;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.keyspaces.CreateKeyspaceOperation;
@@ -29,16 +26,7 @@ public class CreateKeyspaceCommandResolver
   public Operation resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, CreateKeyspaceCommand command) {
 
-    if (!isValidName(command.name())) {
-      throw SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
-          Map.of(
-              "schemeType",
-              KEYSPACE_SCHEMA_NAME,
-              "nameLength",
-              String.valueOf(NAME_LENGTH),
-              "unsupportedSchemeName",
-              command.name() == null ? NULL_SCHEMA_NAME : command.name()));
-    }
+    validateName(command.name());
 
     String strategy =
         (command.options() != null && command.options().replication() != null)
