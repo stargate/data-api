@@ -48,12 +48,16 @@ public class OperationTestBase {
           VectorConfig.NOT_ENABLED_CONFIG,
           null);
 
+  protected final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =
+      KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
+
   protected final CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT =
       TestConstants.collectionContext(
           TestConstants.TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
 
   protected final CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT =
-      TestConstants.keyspaceContext();
+      TestConstants.keyspaceContext(
+          TestConstants.TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
 
   @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
 

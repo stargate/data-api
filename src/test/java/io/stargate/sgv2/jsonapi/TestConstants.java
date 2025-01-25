@@ -100,17 +100,16 @@ public final class TestConstants {
         null);
   }
 
-  private static final CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT =
-      new CommandContext<>(
-          KEYSPACE_SCHEMA_OBJECT,
-          null,
-          TEST_COMMAND_NAME,
-          null,
-          DEFAULT_API_FEATURES_FOR_TESTS,
-          null);
-
   public static CommandContext<KeyspaceSchemaObject> keyspaceContext() {
-    return KEYSPACE_CONTEXT;
+    return keyspaceContext(TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, null);
+  }
+
+  public static CommandContext<KeyspaceSchemaObject> keyspaceContext(
+      String commandName,
+      KeyspaceSchemaObject schema,
+      JsonProcessingMetricsReporter metricsReporter) {
+    return new CommandContext<>(
+        schema, null, commandName, metricsReporter, DEFAULT_API_FEATURES_FOR_TESTS, null);
   }
 
   private static final CommandContext<DatabaseSchemaObject> DATABASE_CONTEXT =
