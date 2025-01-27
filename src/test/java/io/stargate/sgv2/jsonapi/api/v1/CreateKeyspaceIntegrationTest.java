@@ -1,8 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
-import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
@@ -12,6 +11,7 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.exception.ErrorFamily;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
@@ -159,12 +159,12 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name()))
+          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               is(
-                  "Request invalid: field 'command.name' value `null` not valid. Problem: must not be null."));
+                  "The command attempted to create a keyspace with a name that is not supported.\n\nThe supported keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.\nThe command used the unsupported keyspace name: null.\n\nResend the command using a supported keyspace name."));
     }
   }
 
@@ -324,13 +324,13 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("$", responseIsError())
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("$", responseIsErrorWithStatus())
+          .body("errors[0].errorCode", is(SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name()))
+          .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
               is(
-                  "Request invalid: field 'command.name' value `null` not valid. Problem: must not be null."));
+                  "The command attempted to create a keyspace with a name that is not supported.\n\nThe supported keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.\nThe command used the unsupported keyspace name: null.\n\nResend the command using a supported keyspace name."));
       // Since command failed in Deserialization, so command result won't have deprecated command
       // warning.
     }
