@@ -175,6 +175,34 @@ class CreateKeyspaceCommandResolverTest {
                 assertThat(op.replicationMap()).isEqualTo("{'class': 'NetworkTopologyStrategy'}");
               });
     }
+
+    @Test
+    public void createKeyspaceWithSupportedName() throws Exception {
+      String[] supportedName = {"a", "A", "0", "_", "a0", "0a_A", "_0a"};
+      for (String name : supportedName) {
+        String json =
+                """
+                {
+                  "createNamespace": {
+                      "name" : "%s"
+                  }
+                }
+                """
+                .formatted(name);
+
+        CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
+        Operation result = resolver.resolveCommand(commandContext, command);
+
+        assertThat(result)
+            .isInstanceOfSatisfying(
+                CreateKeyspaceOperation.class,
+                op -> {
+                  assertThat(op.name()).isEqualTo(name);
+                  assertThat(op.replicationMap())
+                      .isEqualTo("{'class': 'SimpleStrategy', 'replication_factor': 1}");
+                });
+      }
+    }
   }
 
   @Nested
