@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -22,7 +21,6 @@ import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.Map;
 
 @ApplicationScoped
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
@@ -63,16 +61,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateCollectionCommand command) {
 
-    if (!isValidName(command.name())) {
-      throw SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
-          Map.of(
-              "schemeType",
-              COLLECTION_SCHEMA_NAME,
-              "nameLength",
-              String.valueOf(NAME_LENGTH),
-              "unsupportedSchemeName",
-              command.name() == null ? NULL_SCHEMA_NAME : command.name()));
-    }
+    validateName(command.name(), COLLECTION_SCHEMA_NAME);
 
     if (command.options() == null) {
       return CreateCollectionOperation.withoutVectorSearch(
