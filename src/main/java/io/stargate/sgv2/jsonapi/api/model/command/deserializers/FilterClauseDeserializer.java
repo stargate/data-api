@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DOC_ID;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -19,7 +18,10 @@ import java.math.BigDecimal;
 import java.util.*;
 
 /**
- * {@link StdDeserializer} for the {@link FilterClause}.
+ * Object for converting {@link JsonNode} (from {@link FilterSpec}) into {@link FilterClause}.
+ * Process will validate structure of the JSON, and also validate values of the filter operations.
+ *
+ * <p>NOTE: is NOT a Jackson {@code JsonDeserializer}, not invoked through Jackson (or Quarkus).
  *
  * <p>TIDY: this class has a lot of string constants for filter operations that we have defined as
  * constants elsewhere
