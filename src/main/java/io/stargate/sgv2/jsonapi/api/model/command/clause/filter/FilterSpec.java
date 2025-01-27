@@ -5,11 +5,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.FilterClauseDeserializer;
 import java.util.Objects;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
- * Intermediate lightly-processed container for JSON that specifies a {@link FilterClause}, as well
- * as lazily-resolving provider of fully resolved {@link FilterClause}.
+ * Intermediate lightly-processed container for JSON that specifies a {@link FilterClause}, and
+ * allows for lazy deserialization into a {@link FilterClause}.
  */
+@Schema(
+    type = SchemaType.OBJECT,
+    implementation = FilterClause.class,
+    example =
+        """
+                     {"name": "Aaron", "country": "US"}
+                      """)
 public class FilterSpec {
   private static final FilterClauseDeserializer deserializer = new FilterClauseDeserializer();
 
@@ -30,10 +39,11 @@ public class FilterSpec {
   /**
    * Accessor for getting fully processed {@link FilterClause}. This method will lazily process the
    * JSON specification to produce the {@link FilterClause}, and then hold on to it (to allow
-   * efficient re-use).
+   * efficient re-use) so that future calls to this method will return the same instance without
+   * re-processing.
    *
    * @param ctx Command context to use for deserialization
-   * @return Fully processed {@link FilterClause}
+   * @return Valid deserialized {@link FilterClause}
    */
   public FilterClause toFilterClause(CommandContext<?> ctx) {
     Objects.requireNonNull(ctx, "CommandContext cannot be null");
