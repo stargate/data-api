@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.util.NamingValidationUtil.KEYSPACE_SCHEMA_NAME;
+
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
@@ -26,7 +28,7 @@ public class CreateNamespaceCommandResolver
   public Operation resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, CreateNamespaceCommand command) {
 
-    validateName(command.name());
+    validateName(command.name(), KEYSPACE_SCHEMA_NAME);
 
     String strategy =
         (command.options() != null && command.options().replication() != null)

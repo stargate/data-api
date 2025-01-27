@@ -1,10 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static io.stargate.sgv2.jsonapi.util.NamingValidationUtil.*;
-import static io.stargate.sgv2.jsonapi.util.NamingValidationUtil.NULL_SCHEMA_NAME;
 
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import java.util.Map;
 
 public abstract class CreateNamespaceKeyspaceCommandResolver<C extends Command>
@@ -13,19 +11,6 @@ public abstract class CreateNamespaceKeyspaceCommandResolver<C extends Command>
   // default if omitted
   private static final String DEFAULT_REPLICATION_MAP =
       "{'class': 'SimpleStrategy', 'replication_factor': 1}";
-
-  void validateName(String name) {
-    if (!isValidName(name)) {
-      throw SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
-          Map.of(
-              "schemeType",
-              KEYSPACE_SCHEMA_NAME,
-              "nameLength",
-              String.valueOf(NAME_LENGTH),
-              "unsupportedSchemeName",
-              name == null ? NULL_SCHEMA_NAME : name));
-    }
-  }
 
   // resolve the replication map
   String getReplicationMap(String strategy, Map<String, Integer> strategyOptions) {

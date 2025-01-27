@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+import static io.stargate.sgv2.jsonapi.util.NamingValidationUtil.*;
+import static io.stargate.sgv2.jsonapi.util.NamingValidationUtil.NULL_SCHEMA_NAME;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
@@ -14,11 +16,13 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -211,6 +215,25 @@ public interface CommandResolver<C extends Command> {
     }
     for (DBLogicalExpression subDBLogicalExpression : dbLogicalExpression.subExpressions()) {
       getIndexUsageTags(subDBLogicalExpression, indexUsage);
+    }
+  }
+
+  /**
+   * Validate the name of a schema object (e.g., keyspace, table, collection, or index).
+   *
+   * @param name The name to validate.
+   * @throws SchemaException if the name is invalid.
+   */
+  default void validateName(String name, String schemaType) {
+    if (!isValidName(name)) {
+      throw SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
+          Map.of(
+              "schemeType",
+              schemaType,
+              "nameLength",
+              String.valueOf(NAME_LENGTH),
+              "unsupportedSchemeName",
+              name == null ? NULL_SCHEMA_NAME : name));
     }
   }
 }
