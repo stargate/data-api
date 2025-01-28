@@ -2,8 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
-import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.getBooleanIfPresent;
-import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.putOrDefault;
+import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.*;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
@@ -14,6 +13,7 @@ import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.util.ApiPropertyUtils;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -44,7 +44,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
     // Only the text indexes has the properties, we rely on the factories to create the options
     // map in indexOptions with the correct values, so just use get() and return a null if not
     // found.
-    // Then rely on the RegularIndexDescOptions to exxclude nulls in its serialisation
+    // Then rely on the RegularIndexDescOptions to exclude nulls in its serialisation
     var definitionOptions =
         new RegularIndexDefinitionDesc.RegularIndexDescOptions(
             getBooleanIfPresent(indexOptions, CQLOptions.ASCII),
@@ -96,7 +96,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
       var apiColumnDef = checkIndexColumnExists(tableSchemaObject, targetIdentifier);
 
       // we could check if there is an existing index but that is a race condition, we will need to
-      // catch it if it fails - the resolver needs to setup a custom error mapper
+      // catch it if it fails - the resolver needs to set up a custom error mapper
       // regular indexes can only be on primitive. Adding indexes on maps, sets, lists will come
       // later.
       if (!apiColumnDef.type().isPrimitive()) {
@@ -139,21 +139,26 @@ public class ApiRegularIndex extends ApiSupportedIndex {
         // nothing to update in the cqlOptions for these indexes
       } else {
         // text and ascii fields can have the text analysis options specified
-        putOrDefault(
-            indexOptions,
-            CQLOptions.ASCII,
-            optionsDesc.ascii(),
-            TableDescDefaults.RegularIndexDescDefaults.ASCII);
-        putOrDefault(
-            indexOptions,
-            CQLOptions.CASE_SENSITIVE,
-            optionsDesc.caseSensitive(),
-            TableDescDefaults.RegularIndexDescDefaults.CASE_SENSITIVE);
-        putOrDefault(
-            indexOptions,
-            CQLOptions.NORMALIZE,
-            optionsDesc.normalize(),
-            TableDescDefaults.RegularIndexDescDefaults.NORMALIZE);
+        var ascii =
+            ApiPropertyUtils.getOrDefault(
+                optionsDesc,
+                RegularIndexDefinitionDesc.RegularIndexDescOptions::ascii,
+                TableDescDefaults.RegularIndexDescDefaults.ASCII);
+        put(indexOptions, CQLOptions.ASCII, ascii);
+
+        var case_sensitive =
+            ApiPropertyUtils.getOrDefault(
+                optionsDesc,
+                RegularIndexDefinitionDesc.RegularIndexDescOptions::caseSensitive,
+                TableDescDefaults.RegularIndexDescDefaults.CASE_SENSITIVE);
+        put(indexOptions, CQLOptions.CASE_SENSITIVE, case_sensitive);
+
+        var normalize =
+            ApiPropertyUtils.getOrDefault(
+                optionsDesc,
+                RegularIndexDefinitionDesc.RegularIndexDescOptions::normalize,
+                TableDescDefaults.RegularIndexDescDefaults.NORMALIZE);
+        put(indexOptions, CQLOptions.NORMALIZE, normalize);
       }
 
       return new ApiRegularIndex(indexIdentifier, targetIdentifier, indexOptions);

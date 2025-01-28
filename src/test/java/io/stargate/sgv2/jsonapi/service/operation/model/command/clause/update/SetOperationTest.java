@@ -334,7 +334,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
       """));
       // No actual change
       assertThat(oper.updateDocument(doc).modified()).isFalse();
-      // Compare Strings to verify ordering is identical -- ObjectNode.equals() is
+      // Compare Constants to verify ordering is identical -- ObjectNode.equals() is
       // order-INsensitive:
       assertThat(doc.toPrettyString()).isEqualTo(expected.toPrettyString());
     }
@@ -364,7 +364,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
 
       // Actual change due to reordering of fields
       assertThat(oper.updateDocument(doc).modified()).isTrue();
-      // Compare Strings to verify ordering is identical -- ObjectNode.equals() is
+      // Compare Constants to verify ordering is identical -- ObjectNode.equals() is
       // order-INsensitive:
       assertThat(doc.toPrettyString()).isEqualTo(expected.toPrettyString());
     }
