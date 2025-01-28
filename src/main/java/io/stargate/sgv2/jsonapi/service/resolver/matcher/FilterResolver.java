@@ -65,7 +65,7 @@ public abstract class FilterResolver<
       CommandContext<SchemaT> commandContext, CmdT command) {
     Preconditions.checkNotNull(commandContext, "commandContext is required");
     Preconditions.checkNotNull(command, "command is required");
-    final FilterClause filterClause = command.filterClause(commandContext);
+    final FilterClause filterClause = commandContext.resolveFilterClause(command.filterSpec());
     SchemaValidatable.maybeValidate(commandContext, filterClause);
 
     InvertibleCommandClause.maybeInvert(commandContext, filterClause);

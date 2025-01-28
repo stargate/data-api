@@ -180,7 +180,8 @@ class ObjectMapperConfigurationTest {
                         SortExpression.sort("user.name", true),
                         SortExpression.sort("user.age", false));
 
-                FilterClause filterClause = findOne.filterClause(TestConstants.collectionContext());
+                FilterClause filterClause =
+                    TestConstants.collectionContext().resolveFilterClause(findOne.filterSpec());
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);
@@ -366,7 +367,8 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               DeleteOneCommand.class,
               cmd -> {
-                FilterClause filterClause = cmd.filterClause(TestConstants.collectionContext());
+                FilterClause filterClause =
+                    TestConstants.collectionContext().resolveFilterClause(cmd.filterSpec());
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);

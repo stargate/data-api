@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -261,9 +262,11 @@ public class MeteredCommandProcessor {
   private JsonApiMetricsConfig.SortType getVectorTypeTag(
       CommandContext<?> commandContext, Command command) {
     int filterCount = 0;
-    if (command instanceof Filterable fc && fc.filterSpec() != null) {
-      filterCount =
-          fc.filterClause(commandContext).logicalExpression().getTotalComparisonExpressionCount();
+    if (command instanceof Filterable filterable) {
+      FilterClause fc = commandContext.resolveFilterClause(filterable.filterSpec());
+      if (fc != null) {
+        filterCount = fc.logicalExpression().getTotalComparisonExpressionCount();
+      }
     }
     if (command instanceof Sortable sc
         && sc.sortClause() != null
