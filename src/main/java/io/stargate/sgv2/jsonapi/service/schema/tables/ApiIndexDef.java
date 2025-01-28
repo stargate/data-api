@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * The internal API definition of an Index.
  *
- * <p>Is an interface so the unsupported indexss can be represented as easily.
+ * <p>Is an interface so the unsupported indexes can be represented as easily.
  */
 public interface ApiIndexDef extends PrettyPrintable {
 
