@@ -27,8 +27,6 @@ import java.util.*;
  * constants elsewhere
  */
 public class FilterClauseDeserializer {
-  public FilterClauseDeserializer() {}
-
   public FilterClause buildFilterClause(CommandContext<?> ctx, JsonNode filterNode) {
     return buildFilterClause(ctx.operationsConfig(), filterNode);
   }
