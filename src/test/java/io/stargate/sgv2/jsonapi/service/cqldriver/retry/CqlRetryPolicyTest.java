@@ -16,7 +16,7 @@ import org.junit.Test;
 public class CqlRetryPolicyTest extends RetryPolicyTestBase {
 
   public CqlRetryPolicyTest() {
-    super(new CqlRetryPolicy(null, null));
+    super(new CqlRetryPolicy());
   }
 
   @Test

@@ -1,16 +1,14 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
-import com.datastax.oss.driver.api.core.context.DriverContext;
+import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
+import com.datastax.oss.driver.api.core.connection.HeartbeatException;
 import com.datastax.oss.driver.api.core.retry.RetryDecision;
+import com.datastax.oss.driver.api.core.retry.RetryPolicy;
 import com.datastax.oss.driver.api.core.retry.RetryVerdict;
-import com.datastax.oss.driver.api.core.servererrors.CASWriteUnknownException;
-import com.datastax.oss.driver.api.core.servererrors.CoordinatorException;
-import com.datastax.oss.driver.api.core.servererrors.TruncateException;
-import com.datastax.oss.driver.api.core.servererrors.WriteType;
+import com.datastax.oss.driver.api.core.servererrors.*;
 import com.datastax.oss.driver.api.core.session.Request;
 import com.datastax.oss.driver.internal.core.retry.DefaultRetryPolicy;
-import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,39 +29,9 @@ import org.slf4j.LoggerFactory;
  *       standards.
  * </ul>
  */
-public class CqlRetryPolicy extends DefaultRetryPolicy {
+public class CqlRetryPolicy implements RetryPolicy {
   private static final Logger LOG = LoggerFactory.getLogger(CqlRetryPolicy.class);
   private static final int MAX_RETRIES = Integer.getInteger("stargate.cql_proxy.max_retries", 3);
-
-  @VisibleForTesting
-  public static final String RETRYING_ON_READ_TIMEOUT =
-      "[{}] Retrying on read timeout on same host (consistency: {}, required responses: {}, "
-          + "received responses: {}, data retrieved: {}, retries: {}, retry decision: {})";
-
-  @VisibleForTesting
-  public static final String RETRYING_ON_WRITE_TIMEOUT =
-      "[{}] Retrying on write timeout on same host (consistency: {}, write type: {}, "
-          + "required acknowledgments: {}, received acknowledgments: {}, retries: {}, retry decision: {})";
-
-  @VisibleForTesting
-  public static final String RETRYING_ON_UNAVAILABLE =
-      "[{}] Retrying on unavailable exception on next host (consistency: {}, "
-          + "required replica: {}, alive replica: {}, retries: {}, retry decision: {})";
-
-  @VisibleForTesting
-  public static final String RETRYING_ON_ABORTED =
-      "[{}] Retrying on aborted request on next host (retries: {}, error: {}, retry decision: {})";
-
-  @VisibleForTesting
-  public static final String RETRYING_ON_ERROR =
-      "[{}] Retrying on node error on next host (retries: {}, error: {}, retry decision: {})";
-
-  private final String logPrefix;
-
-  public CqlRetryPolicy(DriverContext context, String profileName) {
-    super(context, profileName);
-    this.logPrefix = (context != null ? context.getSessionName() : null) + "|" + profileName;
-  }
 
   @Override
   public RetryVerdict onReadTimeoutVerdict(
@@ -73,23 +41,24 @@ public class CqlRetryPolicy extends DefaultRetryPolicy {
       int received,
       boolean dataPresent,
       int retryCount) {
-    var retryVerdict =
-        super.onReadTimeoutVerdict(request, cl, blockFor, received, dataPresent, retryCount);
-    var retryDecision = retryVerdict.getRetryDecision();
+
+    RetryDecision retryDecision =
+        (retryCount < MAX_RETRIES && received >= blockFor && !dataPresent)
+            ? RetryDecision.RETRY_SAME
+            : RetryDecision.RETHROW;
 
     if (LOG.isInfoEnabled()) {
       LOG.info(
-          RETRYING_ON_READ_TIMEOUT,
-          logPrefix,
+          "Retrying on read timeout on same host (consistency: {}, required responses: {}, received responses: {}, data retrieved: {}, retries: {}, retry decision: {})",
           cl,
           blockFor,
           received,
-          false,
+          dataPresent,
           retryCount,
           retryDecision);
     }
 
-    return retryVerdict;
+    return () -> retryDecision;
   }
 
   @Override
@@ -100,17 +69,17 @@ public class CqlRetryPolicy extends DefaultRetryPolicy {
       int blockFor,
       int received,
       int retryCount) {
-    final RetryDecision retryDecision;
-    // TODO(Hazel): only retry two write type or all?
-    if (retryCount < MAX_RETRIES && (writeType == WriteType.CAS || writeType == WriteType.SIMPLE)) {
-      retryDecision = RetryDecision.RETRY_SAME;
-    } else {
-      retryDecision = RetryDecision.RETHROW;
-    }
+
+    // Collections use lightweight transactions, the write type is either CAS or SIMPLE. Tables use
+    // SIMPLE for writes.
+    final RetryDecision retryDecision =
+        (retryCount < MAX_RETRIES && (writeType == WriteType.CAS || writeType == WriteType.SIMPLE))
+            ? RetryDecision.RETRY_SAME
+            : RetryDecision.RETHROW;
+
     if (LOG.isInfoEnabled()) {
       LOG.info(
-          RETRYING_ON_WRITE_TIMEOUT,
-          logPrefix,
+          "Retrying on write timeout on same host (consistency: {}, write type: {}, required acknowledgments: {}, received acknowledgments: {}, retries: {}, retry decision: {})",
           cl,
           writeType,
           blockFor,
@@ -118,6 +87,7 @@ public class CqlRetryPolicy extends DefaultRetryPolicy {
           retryCount,
           retryDecision);
     }
+
     return () -> retryDecision;
   }
 
@@ -128,29 +98,41 @@ public class CqlRetryPolicy extends DefaultRetryPolicy {
       int required,
       int alive,
       int retryCount) {
-    // TODO(Hazel): no error passed in this method, cannot tailor the retry decision for
-    // UnavailableException, override the default retry 1 to retry 3?
-    var retryVerdict = super.onUnavailableVerdict(request, cl, required, alive, retryCount);
-    var retryDecision = retryVerdict.getRetryDecision();
+
+    RetryDecision retryDecision =
+        (retryCount < MAX_RETRIES) ? RetryDecision.RETRY_NEXT : RetryDecision.RETHROW;
 
     if (LOG.isInfoEnabled()) {
-      LOG.info(RETRYING_ON_UNAVAILABLE, logPrefix, cl, required, alive, retryCount, retryDecision);
+      LOG.info(
+          "Retrying on unavailable exception on next host (consistency: {}, required replica: {}, alive replica: {}, retries: {}, retry decision: {})",
+          cl,
+          required,
+          alive,
+          retryCount,
+          retryDecision);
     }
 
-    return retryVerdict;
+    return () -> retryDecision;
   }
 
   @Override
   public RetryVerdict onRequestAbortedVerdict(
       @NonNull Request request, @NonNull Throwable error, int retryCount) {
-    var retryVerdict = super.onRequestAbortedVerdict(request, error, retryCount);
-    var retryDecision = retryVerdict.getRetryDecision();
+
+    RetryDecision retryDecision =
+        (error instanceof ClosedConnectionException || error instanceof HeartbeatException)
+            ? RetryDecision.RETRY_NEXT
+            : RetryDecision.RETHROW;
 
     if (LOG.isInfoEnabled()) {
-      LOG.info(RETRYING_ON_ABORTED, logPrefix, retryCount, error, retryDecision);
+      LOG.info(
+          "Retrying on aborted request on next host (retries: {}, error: {}, retry decision: {})",
+          retryCount,
+          error,
+          retryDecision);
     }
 
-    return retryVerdict;
+    return () -> retryDecision;
   }
 
   @Override
@@ -159,21 +141,77 @@ public class CqlRetryPolicy extends DefaultRetryPolicy {
 
     var retryDecision =
         switch (error) {
-            // TODO(Hazel): what decision? RETRY_SAME or RETRY_NEXT? default doesn't care the
-            // retryCount
-          case CASWriteUnknownException e ->
-              (retryCount < MAX_RETRIES) ? RetryDecision.RETRY_NEXT : RetryDecision.RETHROW;
-
-          case TruncateException e ->
-              (retryCount < MAX_RETRIES) ? RetryDecision.RETRY_NEXT : RetryDecision.RETHROW;
-
-          default -> super.onErrorResponseVerdict(request, error, retryCount).getRetryDecision();
+          case CASWriteUnknownException e -> handleErrorResponseRetry(retryCount);
+          case TruncateException e -> handleErrorResponseRetry(retryCount);
+          case ReadFailureException e -> handleErrorResponseRetry(retryCount);
+          case WriteFailureException e -> handleErrorResponseRetry(retryCount);
+          default -> RetryDecision.RETHROW;
         };
 
     if (LOG.isInfoEnabled()) {
-      LOG.info(RETRYING_ON_ERROR, logPrefix, retryCount, error, retryDecision);
+      LOG.info(
+          "Retrying on node error on next host (retries: {}, error: {}, retry decision: {})",
+          retryCount,
+          error,
+          retryDecision);
     }
 
     return () -> retryDecision;
+  }
+
+  @Override
+  @Deprecated
+  public RetryDecision onReadTimeout(
+      @NonNull Request request,
+      @NonNull ConsistencyLevel cl,
+      int blockFor,
+      int received,
+      boolean dataPresent,
+      int retryCount) {
+    throw new UnsupportedOperationException("onReadTimeout");
+  }
+
+  @Override
+  @Deprecated
+  public RetryDecision onWriteTimeout(
+      @NonNull Request request,
+      @NonNull ConsistencyLevel cl,
+      @NonNull WriteType writeType,
+      int blockFor,
+      int received,
+      int retryCount) {
+    throw new UnsupportedOperationException("onWriteTimeout");
+  }
+
+  @Override
+  @Deprecated
+  public RetryDecision onUnavailable(
+      @NonNull Request request,
+      @NonNull ConsistencyLevel cl,
+      int required,
+      int alive,
+      int retryCount) {
+    throw new UnsupportedOperationException("onUnavailable");
+  }
+
+  @Override
+  @Deprecated
+  public RetryDecision onRequestAborted(
+      @NonNull Request request, @NonNull Throwable error, int retryCount) {
+    throw new UnsupportedOperationException("onRequestAborted");
+  }
+
+  @Override
+  @Deprecated
+  public RetryDecision onErrorResponse(
+      @NonNull Request request, @NonNull CoordinatorException error, int retryCount) {
+    throw new UnsupportedOperationException("onErrorResponse");
+  }
+
+  @Override
+  public void close() {}
+
+  private RetryDecision handleErrorResponseRetry(int retryCount) {
+    return (retryCount < MAX_RETRIES) ? RetryDecision.RETRY_NEXT : RetryDecision.RETHROW;
   }
 }
