@@ -15,24 +15,24 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Custom retry policy tailored for DataAPI, providing distinct retry logic for specific scenarios
- * compared to {@link DefaultRetryPolicy}.
- *
- * <p>Key differences from the default implementation:
- *
- * <ul>
- *   <li>Overrides {@code onWriteTimeoutVerdict} and {@code onErrorResponseVerdict} to customize
- *       retry behavior for write timeouts and error responses.
- *   <li>Other methods retain the default logic but include additional log messages.
- *   <li>Logs provide enhanced details, including errors and retry decisions, for improved debugging
- *       and monitoring.
- *   <li>Logs are recorded at the INFO level instead of TRACE level, aligning with DataAPI logging
- *       standards.
- * </ul>
+ * compared to {@link DefaultRetryPolicy}. Logs are recorded at the INFO level instead of TRACE
+ * level, aligning with DataAPI logging standards.
  */
-public class CqlRetryPolicy implements RetryPolicy {
-  private static final Logger LOG = LoggerFactory.getLogger(CqlRetryPolicy.class);
+public class BaseCqlRetryPolicy implements RetryPolicy {
+  private static final Logger LOG = LoggerFactory.getLogger(BaseCqlRetryPolicy.class);
   private static final int MAX_RETRIES = Integer.getInteger("stargate.cql_proxy.max_retries", 3);
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>This implementation triggers a maximum of {@code MAX_RETRIES} retry (to the same node), and
+   * only if enough replicas had responded to the read request but data was not retrieved amongst
+   * those. That usually means that enough replicas are alive to satisfy the consistency, but the
+   * coordinator picked a dead one for data retrieval, not having detected that replica as dead yet.
+   * The reasoning is that by the time we get the timeout, the dead replica will likely have been
+   * detected as dead and the retry has a high chance of success. Otherwise, the exception is
+   * rethrown.
+   */
   @Override
   public RetryVerdict onReadTimeoutVerdict(
       @NonNull Request request,
@@ -61,6 +61,14 @@ public class CqlRetryPolicy implements RetryPolicy {
     return () -> retryDecision;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>This implementation triggers a maximum of {@code MAX_RETRIES} retries (to the same node),
+   * and only for {@code WriteType.CAS} and {@code WriteType.SIMPLE} write. The reasoning is that
+   * collections use lightweight transactions, the write type is either CAS or SIMPLE and tables use
+   * SIMPLE for writes.
+   */
   @Override
   public RetryVerdict onWriteTimeoutVerdict(
       @NonNull Request request,
@@ -70,8 +78,6 @@ public class CqlRetryPolicy implements RetryPolicy {
       int received,
       int retryCount) {
 
-    // Collections use lightweight transactions, the write type is either CAS or SIMPLE. Tables use
-    // SIMPLE for writes.
     final RetryDecision retryDecision =
         (retryCount < MAX_RETRIES && (writeType == WriteType.CAS || writeType == WriteType.SIMPLE))
             ? RetryDecision.RETRY_SAME
@@ -91,6 +97,18 @@ public class CqlRetryPolicy implements RetryPolicy {
     return () -> retryDecision;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>This implementation triggers a maximum of {@code MAX_RETRIES} retry, to the next node in the
+   * query plan. The rationale is that the first coordinator might have been network-isolated from
+   * all other nodes (thinking they're down), but still able to communicate with the client; in that
+   * case, retrying on the same host has almost no chance of success, but moving to the next host
+   * might solve the issue.
+   *
+   * <p>Note: In Astra, CQL router will be used and retry on the next node will fail. So, the
+   * decision will be to retry on the same node.
+   */
   @Override
   public RetryVerdict onUnavailableVerdict(
       @NonNull Request request,
@@ -100,7 +118,7 @@ public class CqlRetryPolicy implements RetryPolicy {
       int retryCount) {
 
     RetryDecision retryDecision =
-        (retryCount < MAX_RETRIES) ? RetryDecision.RETRY_NEXT : RetryDecision.RETHROW;
+        (retryCount < MAX_RETRIES) ? retryDecisionForUnavailable() : RetryDecision.RETHROW;
 
     if (LOG.isInfoEnabled()) {
       LOG.info(
@@ -115,13 +133,24 @@ public class CqlRetryPolicy implements RetryPolicy {
     return () -> retryDecision;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>This implementation retries on the next node if the connection was closed, and rethrows
+   * (assuming a driver bug) in all other cases.
+   *
+   * <p>Note: In Astra, CQL router will be used and retry on the next node will fail. So, the
+   * decision will be to retry on the same node.
+   */
   @Override
   public RetryVerdict onRequestAbortedVerdict(
       @NonNull Request request, @NonNull Throwable error, int retryCount) {
 
     RetryDecision retryDecision =
-        (error instanceof ClosedConnectionException || error instanceof HeartbeatException)
-            ? RetryDecision.RETRY_NEXT
+        (retryCount < MAX_RETRIES
+                && (error instanceof ClosedConnectionException
+                    || error instanceof HeartbeatException))
+            ? retryDecisionForRequestAborted()
             : RetryDecision.RETHROW;
 
     if (LOG.isInfoEnabled()) {
@@ -135,17 +164,27 @@ public class CqlRetryPolicy implements RetryPolicy {
     return () -> retryDecision;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>This implementation rethrows read and write failures, and retries other errors on the next
+   * node.
+   *
+   * <p>Note: In Astra, CQL router will be used and retry on the next node will fail. So, the
+   * decision will be to retry on the same node.
+   */
   @Override
   public RetryVerdict onErrorResponseVerdict(
       @NonNull Request request, @NonNull CoordinatorException error, int retryCount) {
 
+    // Issue1830: CASWriteUnknownException and TruncateException have been included in the default
+    // case.
     var retryDecision =
         switch (error) {
-          case CASWriteUnknownException e -> handleErrorResponseRetry(retryCount);
-          case TruncateException e -> handleErrorResponseRetry(retryCount);
-          case ReadFailureException e -> handleErrorResponseRetry(retryCount);
-          case WriteFailureException e -> handleErrorResponseRetry(retryCount);
-          default -> RetryDecision.RETHROW;
+          case ReadFailureException e -> RetryDecision.RETHROW;
+          case WriteFailureException e -> RetryDecision.RETHROW;
+          default ->
+              (retryCount < MAX_RETRIES) ? retryDecisionForErrorResponse() : RetryDecision.RETHROW;
         };
 
     if (LOG.isInfoEnabled()) {
@@ -157,6 +196,21 @@ public class CqlRetryPolicy implements RetryPolicy {
     }
 
     return () -> retryDecision;
+  }
+
+  @Override
+  public void close() {}
+
+  protected RetryDecision retryDecisionForUnavailable() {
+    return RetryDecision.RETRY_NEXT;
+  }
+
+  protected RetryDecision retryDecisionForRequestAborted() {
+    return RetryDecision.RETRY_NEXT;
+  }
+
+  protected RetryDecision retryDecisionForErrorResponse() {
+    return RetryDecision.RETRY_NEXT;
   }
 
   @Override
@@ -206,12 +260,5 @@ public class CqlRetryPolicy implements RetryPolicy {
   public RetryDecision onErrorResponse(
       @NonNull Request request, @NonNull CoordinatorException error, int retryCount) {
     throw new UnsupportedOperationException("onErrorResponse");
-  }
-
-  @Override
-  public void close() {}
-
-  private RetryDecision handleErrorResponseRetry(int retryCount) {
-    return (retryCount < MAX_RETRIES) ? RetryDecision.RETRY_NEXT : RetryDecision.RETHROW;
   }
 }
