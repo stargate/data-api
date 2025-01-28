@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.InvertibleCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
@@ -46,8 +48,7 @@ public class InvertibleFilterResolverTest {
                    }
           """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final FilterClause filterClause =
-          commandContext.resolveFilterClause(findCommand.filterSpec());
+      final FilterClause filterClause = filterClause(commandContext, findCommand);
       final LogicalExpression logicalExpression = filterClause.logicalExpression();
       InvertibleCommandClause.maybeInvert(commandContext, filterClause);
       final ComparisonExpression expectedResult1 =
@@ -91,8 +92,7 @@ public class InvertibleFilterResolverTest {
                            }
                   """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final FilterClause filterClause =
-          commandContext.resolveFilterClause(findCommand.filterSpec());
+      final FilterClause filterClause = filterClause(commandContext, findCommand);
       final LogicalExpression logicalExpression = filterClause.logicalExpression();
       InvertibleCommandClause.maybeInvert(commandContext, filterClause);
       final ComparisonExpression eq =
@@ -292,8 +292,7 @@ public class InvertibleFilterResolverTest {
                            }
                   """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final FilterClause filterClause =
-          commandContext.resolveFilterClause(findCommand.filterSpec());
+      final FilterClause filterClause = filterClause(commandContext, findCommand);
       final LogicalExpression logicalExpression = filterClause.logicalExpression();
       InvertibleCommandClause.maybeInvert(commandContext, filterClause);
 
@@ -345,8 +344,7 @@ public class InvertibleFilterResolverTest {
                                }
                   """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final FilterClause filterClause =
-          commandContext.resolveFilterClause(findCommand.filterSpec());
+      final FilterClause filterClause = filterClause(commandContext, findCommand);
       final LogicalExpression logicalExpression = filterClause.logicalExpression();
       InvertibleCommandClause.maybeInvert(commandContext, filterClause);
 
@@ -452,8 +450,7 @@ public class InvertibleFilterResolverTest {
                            }
                   """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final FilterClause filterClause =
-          commandContext.resolveFilterClause(findCommand.filterSpec());
+      final FilterClause filterClause = filterClause(commandContext, findCommand);
       final LogicalExpression logicalExpression = filterClause.logicalExpression();
       InvertibleCommandClause.maybeInvert(commandContext, filterClause);
 
@@ -493,8 +490,7 @@ public class InvertibleFilterResolverTest {
                                }
                       """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final FilterClause filterClause =
-          commandContext.resolveFilterClause(findCommand.filterSpec());
+      final FilterClause filterClause = filterClause(commandContext, findCommand);
       final LogicalExpression logicalExpression = filterClause.logicalExpression();
       InvertibleCommandClause.maybeInvert(commandContext, filterClause);
 
@@ -558,8 +554,7 @@ public class InvertibleFilterResolverTest {
                                }
                       """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final FilterClause filterClause =
-          commandContext.resolveFilterClause(findCommand.filterSpec());
+      final FilterClause filterClause = filterClause(commandContext, findCommand);
       final LogicalExpression logicalExpression = filterClause.logicalExpression();
       InvertibleCommandClause.maybeInvert(commandContext, filterClause);
 
@@ -631,8 +626,7 @@ public class InvertibleFilterResolverTest {
                          }
                       """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final FilterClause filterClause =
-          commandContext.resolveFilterClause(findCommand.filterSpec());
+      final FilterClause filterClause = filterClause(commandContext, findCommand);
       final LogicalExpression logicalExpression = filterClause.logicalExpression();
       InvertibleCommandClause.maybeInvert(commandContext, filterClause);
 
@@ -731,8 +725,7 @@ public class InvertibleFilterResolverTest {
                        }
                       """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final FilterClause filterClause =
-          commandContext.resolveFilterClause(findCommand.filterSpec());
+      final FilterClause filterClause = filterClause(commandContext, findCommand);
       final LogicalExpression logicalExpression = filterClause.logicalExpression();
       InvertibleCommandClause.maybeInvert(commandContext, filterClause);
 
@@ -793,8 +786,7 @@ public class InvertibleFilterResolverTest {
                           }
                       """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final FilterClause filterClause =
-          commandContext.resolveFilterClause(findCommand.filterSpec());
+      final FilterClause filterClause = filterClause(commandContext, findCommand);
       final LogicalExpression logicalExpression = filterClause.logicalExpression();
       InvertibleCommandClause.maybeInvert(commandContext, filterClause);
 
@@ -851,4 +843,9 @@ public class InvertibleFilterResolverTest {
 
   @Nested
   public class TableTest {}
+
+  private <CMD extends Command & Filterable> FilterClause filterClause(
+      CommandContext<?> ctx, CMD cmd) {
+    return cmd.filterClause(ctx);
+  }
 }

@@ -10,6 +10,8 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
@@ -181,7 +183,7 @@ class ObjectMapperConfigurationTest {
                         SortExpression.sort("user.age", false));
 
                 FilterClause filterClause =
-                    TestConstants.collectionContext().resolveFilterClause(findOne.filterSpec());
+                    filterClause(TestConstants.collectionContext(), findOne);
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);
@@ -367,8 +369,7 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               DeleteOneCommand.class,
               cmd -> {
-                FilterClause filterClause =
-                    TestConstants.collectionContext().resolveFilterClause(cmd.filterSpec());
+                FilterClause filterClause = filterClause(TestConstants.collectionContext(), cmd);
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);
@@ -1234,5 +1235,10 @@ class ObjectMapperConfigurationTest {
                         });
               });
     }
+  }
+
+  private <CMD extends Command & Filterable> FilterClause filterClause(
+      CommandContext<?> ctx, CMD cmd) {
+    return cmd.filterClause(ctx);
   }
 }

@@ -1,10 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Preconditions;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.FilterClauseDeserializer;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -283,10 +283,7 @@ public record CommandContext<T extends SchemaObject>(
     return getConfig(OperationsConfig.class);
   }
 
-  public FilterClause resolveFilterClause(FilterSpec filter) {
-    if (filter == null) {
-      return null;
-    }
-    return FilterClauseDeserializer.INSTANCE.buildFilterClause(this, filter.json());
+  public FilterClause resolveFilterClause(JsonNode json) {
+    return FilterClauseDeserializer.INSTANCE.buildFilterClause(this, json);
   }
 }

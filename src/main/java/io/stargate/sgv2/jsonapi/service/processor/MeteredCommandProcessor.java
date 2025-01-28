@@ -263,7 +263,7 @@ public class MeteredCommandProcessor {
       CommandContext<?> commandContext, Command command) {
     int filterCount = 0;
     if (command instanceof Filterable filterable) {
-      FilterClause fc = commandContext.resolveFilterClause(filterable.filterSpec());
+      FilterClause fc = filterable.filterClause(commandContext);
       if (fc != null) {
         filterCount = fc.logicalExpression().getTotalComparisonExpressionCount();
       }
