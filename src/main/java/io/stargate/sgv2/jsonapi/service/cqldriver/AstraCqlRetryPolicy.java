@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
+import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.retry.RetryDecision;
 
 /**
@@ -7,6 +8,10 @@ import com.datastax.oss.driver.api.core.retry.RetryDecision;
  * to retry on the same node.
  */
 public class AstraCqlRetryPolicy extends BaseCqlRetryPolicy {
+
+  public AstraCqlRetryPolicy(DriverContext context, String profileName) {
+    super(context, profileName);
+  }
 
   @Override
   protected RetryDecision retryDecisionForUnavailable() {

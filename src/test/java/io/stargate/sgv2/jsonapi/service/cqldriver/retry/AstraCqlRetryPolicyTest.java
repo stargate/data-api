@@ -15,7 +15,7 @@ import org.junit.Test;
 public class AstraCqlRetryPolicyTest extends RetryPolicyTestBase {
 
   public AstraCqlRetryPolicyTest() {
-    super(new AstraCqlRetryPolicy());
+    super(new AstraCqlRetryPolicy(null, null));
   }
 
   @Test

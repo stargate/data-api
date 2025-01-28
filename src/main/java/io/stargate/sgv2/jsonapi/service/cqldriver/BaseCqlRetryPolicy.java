@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver;
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import com.datastax.oss.driver.api.core.connection.HeartbeatException;
+import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.retry.RetryDecision;
 import com.datastax.oss.driver.api.core.retry.RetryPolicy;
 import com.datastax.oss.driver.api.core.retry.RetryVerdict;
@@ -21,6 +22,8 @@ import org.slf4j.LoggerFactory;
 public class BaseCqlRetryPolicy implements RetryPolicy {
   private static final Logger LOG = LoggerFactory.getLogger(BaseCqlRetryPolicy.class);
   private static final int MAX_RETRIES = Integer.getInteger("stargate.cql_proxy.max_retries", 3);
+
+  public BaseCqlRetryPolicy(DriverContext context, String profileName) {}
 
   /**
    * {@inheritDoc}
