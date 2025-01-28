@@ -30,6 +30,9 @@ public class FilterClauseDeserializer {
   public static final FilterClauseDeserializer INSTANCE = new FilterClauseDeserializer();
 
   public FilterClause buildFilterClause(CommandContext<?> ctx, JsonNode filterNode) {
+    if (filterNode == null) {
+      return null;
+    }
     return buildFilterClause(ctx.operationsConfig(), filterNode);
   }
 
