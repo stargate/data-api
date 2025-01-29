@@ -4,7 +4,6 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
-import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.util.*;
@@ -125,11 +124,7 @@ public class ApiIndexDefContainer implements Iterable<ApiIndexDef>, PrettyPrinta
 
       var container = new ApiIndexDefContainer(indexes.size());
       for (var indexMetadata : indexes) {
-        try {
-          container.put(IndexFactoryFromCql.DEFAULT.create(allColumns, indexMetadata));
-        } catch (UnsupportedCqlIndexException e) {
-          container.put(IndexFactoryFromCql.DEFAULT.createUnsupported(indexMetadata));
-        }
+        container.put(IndexFactoryFromCql.create(allColumns, indexMetadata));
       }
       return container.toUnmodifiable();
     }
