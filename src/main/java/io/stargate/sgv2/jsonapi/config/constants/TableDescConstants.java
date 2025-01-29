@@ -42,7 +42,7 @@ public interface TableDescConstants {
 
   interface RegularIndexDefinitionDescOptions {
     String ASCII = "ascii";
-    String CASE_SENSITIVE = "case_sensitive";
+    String CASE_SENSITIVE = "caseSensitive";
     String NORMALIZE = "normalize";
   }
 

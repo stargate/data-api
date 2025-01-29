@@ -58,6 +58,6 @@ public record VectorIndexDefinitionDesc(
                   "Optional name of the model used to generate the embeddings, indexes can be optimized if the model name is known. Supported values are: "
                       + EmbeddingSourceModel.ApiConstants.ALL)
           @JsonInclude(JsonInclude.Include.NON_NULL)
-          @JsonProperty(VectorConstants.VectorColumn.METRIC)
+          @JsonProperty(VectorConstants.VectorColumn.SOURCE_MODEL)
           String sourceModel) {}
 }
