@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Preconditions;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
+import io.stargate.sgv2.jsonapi.api.model.command.builders.FilterClauseBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
-import io.stargate.sgv2.jsonapi.api.model.command.deserializers.FilterClauseDeserializer;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
@@ -284,6 +284,6 @@ public record CommandContext<T extends SchemaObject>(
   }
 
   public FilterClause resolveFilterClause(JsonNode json) {
-    return FilterClauseDeserializer.INSTANCE.buildFilterClause(this, json);
+    return new FilterClauseBuilder(schemaObject, operationsConfig()).buildFilterClause(json);
   }
 }

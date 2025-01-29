@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
+package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DOC_ID;
 
@@ -6,11 +6,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -21,23 +21,22 @@ import java.util.*;
  * Object for converting {@link JsonNode} (from {@link FilterSpec}) into {@link FilterClause}.
  * Process will validate structure of the JSON, and also validate values of the filter operations.
  *
- * <p>NOTE: is NOT a Jackson {@code JsonDeserializer}, not invoked through Jackson (or Quarkus).
- *
  * <p>TIDY: this class has a lot of string constants for filter operations that we have defined as
  * constants elsewhere
  */
-public class FilterClauseDeserializer {
-  public static final FilterClauseDeserializer INSTANCE = new FilterClauseDeserializer();
+public class FilterClauseBuilder {
+  private final SchemaObject schema;
+  private final OperationsConfig operationsConfig;
 
-  public FilterClause buildFilterClause(CommandContext<?> ctx, JsonNode filterNode) {
+  public FilterClauseBuilder(SchemaObject schema, OperationsConfig operationsConfig) {
+    this.schema = schema;
+    this.operationsConfig = operationsConfig;
+  }
+
+  public FilterClause buildFilterClause(JsonNode filterNode) {
     if (filterNode == null) {
       return null;
     }
-    return buildFilterClause(ctx.operationsConfig(), filterNode);
-  }
-
-  // Package private for testing
-  FilterClause buildFilterClause(OperationsConfig operationsConfig, JsonNode filterNode) {
     if (!filterNode.isObject()) {
       // JSON `null`s are ok though
       if (filterNode.isNull()) {
@@ -49,7 +48,7 @@ public class FilterClauseDeserializer {
     // implicit and
     LogicalExpression implicitAnd = LogicalExpression.and();
     populateExpression(implicitAnd, filterNode);
-    validate(operationsConfig, implicitAnd);
+    validate(implicitAnd);
 
     return new FilterClause(implicitAnd);
   }
@@ -129,12 +128,12 @@ public class FilterClauseDeserializer {
     }
   }
 
-  private void validate(OperationsConfig operationsConfig, LogicalExpression logicalExpression) {
+  private void validate(LogicalExpression logicalExpression) {
     if (logicalExpression.getTotalIdComparisonExpressionCount() > 1) {
       throw ErrorCodeV1.FILTER_MULTIPLE_ID_FILTER.toApiException();
     }
     for (LogicalExpression subLogicalExpression : logicalExpression.logicalExpressions) {
-      validate(operationsConfig, subLogicalExpression);
+      validate(subLogicalExpression);
     }
     for (ComparisonExpression subComparisonExpression : logicalExpression.comparisonExpressions) {
       subComparisonExpression
@@ -142,7 +141,6 @@ public class FilterClauseDeserializer {
           .forEach(
               operation ->
                   validate(
-                      operationsConfig,
                       subComparisonExpression.getPath(),
                       operation,
                       logicalExpression.getLogicalRelation()));
@@ -150,7 +148,6 @@ public class FilterClauseDeserializer {
   }
 
   private void validate(
-      OperationsConfig operationsConfig,
       String path,
       FilterOperation<?> filterOperation,
       LogicalExpression.LogicalOperator fromLogicalRelation) {

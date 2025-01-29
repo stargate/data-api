@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
+package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -26,12 +27,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-public class FilterClauseDeserializerTest {
+public class FilterClauseBuilderTest {
 
   @Inject ObjectMapper objectMapper;
   @Inject OperationsConfig operationsConfig;
-
-  private final FilterClauseDeserializer filterClauseDeserializer = new FilterClauseDeserializer();
 
   @Nested
   class Deserialize {
@@ -1442,7 +1441,7 @@ public class FilterClauseDeserializerTest {
   }
 
   FilterClause readFilterClause(String json) throws IOException {
-    return filterClauseDeserializer.buildFilterClause(
-        operationsConfig, objectMapper.readTree(json));
+    return new FilterClauseBuilder(TestConstants.COLLECTION_SCHEMA_OBJECT, operationsConfig)
+        .buildFilterClause(objectMapper.readTree(json));
   }
 }

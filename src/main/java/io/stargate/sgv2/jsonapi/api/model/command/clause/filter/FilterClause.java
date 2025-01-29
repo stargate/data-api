@@ -22,8 +22,17 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         """
              {"name": "Aaron", "country": "US"}
               """)
-public record FilterClause(LogicalExpression logicalExpression)
-    implements SchemaValidatable, InvertibleCommandClause {
+public class FilterClause implements SchemaValidatable, InvertibleCommandClause {
+
+  protected final LogicalExpression logicalExpression;
+
+  public FilterClause(LogicalExpression logicalExpression) {
+    this.logicalExpression = logicalExpression;
+  }
+
+  public LogicalExpression logicalExpression() {
+    return logicalExpression;
+  }
 
   @Override
   public void validate(TableSchemaObject table) {
@@ -130,11 +139,11 @@ public record FilterClause(LogicalExpression logicalExpression)
   }
 
   public void invertForTableCommand(CommandContext<TableSchemaObject> commandContext) {
-    invertLogicalExpression(this.logicalExpression(), null);
+    invertLogicalExpression(logicalExpression, null);
   }
 
   public void invertForCollectionCommand(CommandContext<CollectionSchemaObject> commandContext) {
-    invertLogicalExpression(this.logicalExpression(), null);
+    invertLogicalExpression(logicalExpression, null);
   }
 
   /**
