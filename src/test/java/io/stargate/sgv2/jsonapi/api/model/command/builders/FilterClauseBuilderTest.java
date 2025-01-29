@@ -1441,7 +1441,7 @@ public class FilterClauseBuilderTest {
   }
 
   FilterClause readFilterClause(String json) throws IOException {
-    return new FilterClauseBuilder(TestConstants.COLLECTION_SCHEMA_OBJECT, operationsConfig)
-        .buildFilterClause(objectMapper.readTree(json));
+    return new FilterClauseBuilder(TestConstants.COLLECTION_SCHEMA_OBJECT)
+        .buildFilterClause(operationsConfig, objectMapper.readTree(json));
   }
 }

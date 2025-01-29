@@ -26,14 +26,12 @@ import java.util.*;
  */
 public class FilterClauseBuilder {
   private final SchemaObject schema;
-  private final OperationsConfig operationsConfig;
 
-  public FilterClauseBuilder(SchemaObject schema, OperationsConfig operationsConfig) {
+  public FilterClauseBuilder(SchemaObject schema) {
     this.schema = schema;
-    this.operationsConfig = operationsConfig;
   }
 
-  public FilterClause buildFilterClause(JsonNode filterNode) {
+  public FilterClause buildFilterClause(OperationsConfig operationsConfig, JsonNode filterNode) {
     if (filterNode == null) {
       return null;
     }
@@ -48,7 +46,7 @@ public class FilterClauseBuilder {
     // implicit and
     LogicalExpression implicitAnd = LogicalExpression.and();
     populateExpression(implicitAnd, filterNode);
-    validate(implicitAnd);
+    validate(operationsConfig, implicitAnd);
 
     return new FilterClause(implicitAnd);
   }
@@ -128,12 +126,12 @@ public class FilterClauseBuilder {
     }
   }
 
-  private void validate(LogicalExpression logicalExpression) {
+  private void validate(OperationsConfig operationsConfig, LogicalExpression logicalExpression) {
     if (logicalExpression.getTotalIdComparisonExpressionCount() > 1) {
       throw ErrorCodeV1.FILTER_MULTIPLE_ID_FILTER.toApiException();
     }
     for (LogicalExpression subLogicalExpression : logicalExpression.logicalExpressions) {
-      validate(subLogicalExpression);
+      validate(operationsConfig, subLogicalExpression);
     }
     for (ComparisonExpression subComparisonExpression : logicalExpression.comparisonExpressions) {
       subComparisonExpression
@@ -141,6 +139,7 @@ public class FilterClauseBuilder {
           .forEach(
               operation ->
                   validate(
+                      operationsConfig,
                       subComparisonExpression.getPath(),
                       operation,
                       logicalExpression.getLogicalRelation()));
@@ -148,6 +147,7 @@ public class FilterClauseBuilder {
   }
 
   private void validate(
+      OperationsConfig operationsConfig,
       String path,
       FilterOperation<?> filterOperation,
       LogicalExpression.LogicalOperator fromLogicalRelation) {

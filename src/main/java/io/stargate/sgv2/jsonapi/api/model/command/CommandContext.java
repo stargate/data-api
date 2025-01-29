@@ -284,6 +284,6 @@ public record CommandContext<T extends SchemaObject>(
   }
 
   public FilterClause resolveFilterClause(JsonNode json) {
-    return new FilterClauseBuilder(schemaObject, operationsConfig()).buildFilterClause(json);
+    return new FilterClauseBuilder(schemaObject).buildFilterClause(operationsConfig(), json);
   }
 }
