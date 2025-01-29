@@ -16,7 +16,7 @@ public class PrimaryKeyDescDeserializer extends StdDeserializer<PrimaryKeyDesc> 
       "The Long Form %s definition".formatted(TableDescConstants.TableDefinitionDesc.PRIMARY_KEY);
   private static final String ERR_PARTITION_BY_ARRAY =
       ERR_PREFIX
-          + " must have a %s field that is a JSON Array of Strings"
+          + " must have a %s field that is a JSON Array of Constants"
               .formatted(TableDescConstants.PrimaryKey.PARTITION_BY);
   private static final String ERR_PARTITION_SORT_OBJECT =
       ERR_PREFIX

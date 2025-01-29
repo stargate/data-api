@@ -265,8 +265,8 @@ public class JsonUtil {
    * length, and if so, return actual length (in bytes); otherwise return {@code
    * OptionalInt.empty()}. This is faster than encoding String as byte[] and checking length as it
    * not only avoids unnecessary allocation of potentially long String, but also avoids exact
-   * calculation for shorter Strings where we can determine that size cannot exceed the limit (since
-   * we know that UTF-8 encoded length is at most 3x of char length).
+   * calculation for shorter Constants where we can determine that size cannot exceed the limit
+   * (since we know that UTF-8 encoded length is at most 3x of char length).
    *
    * @param value String to check
    * @param maxLengthInBytes Maximum length in bytes allowed (inclusive)

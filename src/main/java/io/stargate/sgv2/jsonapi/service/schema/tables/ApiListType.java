@@ -32,7 +32,7 @@ public class ApiListType extends CollectionApiDataType {
     return new ListColumnDesc(valueType.columnDesc(), ApiSupportDesc.from(this));
   }
 
-  private static ApiListType from(ApiDataType valueType, boolean isFrozen) {
+  static ApiListType from(ApiDataType valueType, boolean isFrozen) {
     Objects.requireNonNull(valueType, "valueType must not be null");
 
     if (isValueTypeSupported(valueType)) {
