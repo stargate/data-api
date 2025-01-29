@@ -7,10 +7,14 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.impl.CollectionFilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.impl.TableFilterClause;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -48,7 +52,16 @@ public class FilterClauseBuilder {
     populateExpression(implicitAnd, filterNode);
     validate(operationsConfig, implicitAnd);
 
-    return new FilterClause(implicitAnd);
+    FilterClause filterClause =
+        switch (schema) {
+          case CollectionSchemaObject collection -> new CollectionFilterClause(implicitAnd);
+          case TableSchemaObject table -> new TableFilterClause(implicitAnd);
+          default ->
+              throw new UnsupportedOperationException(
+                  String.format(
+                      "Unsupported schema object class for `FilterClause`: %s", schema.getClass()));
+        };
+    return filterClause;
   }
 
   private void populateExpression(LogicalExpression logicalExpression, JsonNode node) {

@@ -22,7 +22,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         """
              {"name": "Aaron", "country": "US"}
               """)
-public class FilterClause implements SchemaValidatable, InvertibleCommandClause {
+public abstract class FilterClause implements SchemaValidatable, InvertibleCommandClause {
 
   protected final LogicalExpression logicalExpression;
 
