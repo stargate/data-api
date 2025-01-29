@@ -383,7 +383,7 @@ public class FilterClauseBuilder {
                   "$date value has to be sent as epoch time");
             } else if (etype != null) {
               // This will convert to Java value if valid value; we'll just convert back to String
-              // since all non-Date JSON extension values are indexed as Strings
+              // since all non-Date JSON extension values are indexed as Constants
               Object evalue = JsonUtil.extractExtendedValue(etype, node);
               return evalue.toString();
             } else {

@@ -1768,8 +1768,8 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
 
-      // assert state after update: only "end" changed (booleans after Strings), not
-      // "start" (numbers before Strings)
+      // assert state after update: only "end" changed (booleans after Constants), not
+      // "start" (numbers before Constants)
       String expectedDoc =
           """
           {
@@ -1920,8 +1920,8 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
 
-      // assert state after update: only "end" changed (booleans after Strings), not
-      // "start" (numbers before Strings)
+      // assert state after update: only "end" changed (booleans after Constants), not
+      // "start" (numbers before Constants)
       String expectedDoc =
           """
           {

@@ -904,12 +904,10 @@ request-errors:
     body: |-
       The command attempted to create an index using an unsupported type.
       
+      The `indexType` field in the various `createIndex` commands is optional can be safely omitted. It is included in the output of `listIndexes` command to make it clear what type the indexes are, to make it clear which type of `createIndex` command can be used to re-create the index.
+      
       The supported index types are: ${supportedTypes}.
       The command used the unsupported index type: ${unsupportedType}.
-            
-      `regular` index type should be used in `createIndex` command and `vector` index type should be used in `createVectorIndex` command. 
-      
-      Support for `collection` and `text-analysed` index types may be expanded in future releases.
       
       Resend the command using a supported index type.    
 
