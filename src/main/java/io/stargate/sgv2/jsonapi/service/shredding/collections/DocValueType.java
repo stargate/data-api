@@ -4,7 +4,7 @@ package io.stargate.sgv2.jsonapi.service.shredding.collections;
  * Enumeration for supported Document value types: corresponds to accepted JSON types.
  *
  * <p>Prefix is used for non-digested "full" values to avoid value collisions (mostly between
- * Strings and Numbers): so number value {@code 25.0} would be encoded as {@code N25.0} whereas
+ * Constants and Numbers): so number value {@code 25.0} would be encoded as {@code N25.0} whereas
  * String {@code "25.0"} as {@code S25.0}.
  *
  * <p>
