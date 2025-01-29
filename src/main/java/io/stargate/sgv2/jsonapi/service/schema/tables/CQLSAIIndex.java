@@ -1,25 +1,24 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
+import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.getOrDefault;
+import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.getStringIfPresent;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexKind;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.internal.core.adminrequest.AdminRow;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownCqlIndexFunctionException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
-
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.getOrDefault;
-import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.getStringIfPresent;
 
 /** Shared methods / constants for CQL SAI indexes. */
 public abstract class CQLSAIIndex {
 
   /**
-   * The common options from the {@link IndexMetadata#getOptions()} for SAI indexes. ApiIndex subclasses
-   * can define their own options.
+   * The common options from the {@link IndexMetadata#getOptions()} for SAI indexes. ApiIndex
+   * subclasses can define their own options.
    */
   interface Options {
     // The class_name property from the index options, is required, we cannot guess it :)

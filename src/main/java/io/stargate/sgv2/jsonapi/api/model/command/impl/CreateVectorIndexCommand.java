@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.IndexCreationCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.VectorIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
+import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
@@ -58,7 +59,8 @@ public record CreateVectorIndexCommand(
       @Nullable
           @Schema(
               description = "True to ignore if index with the same name already exists.",
-              defaultValue = "false",
+              defaultValue =
+                  TableDescDefaults.CreateVectorIndexOptionsDefaults.Constants.IF_NOT_EXISTS,
               type = SchemaType.BOOLEAN,
               implementation = Boolean.class)
           Boolean ifNotExists) {}
