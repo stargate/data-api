@@ -7,8 +7,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.impl.CollectionFilterClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.impl.TableFilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.impl.CollectionFilterClauseBuilder;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.impl.TableFilterClauseBuilder;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -28,14 +28,26 @@ import java.util.*;
  * <p>TIDY: this class has a lot of string constants for filter operations that we have defined as
  * constants elsewhere
  */
-public class FilterClauseBuilder {
-  private final SchemaObject schema;
+public abstract class FilterClauseBuilder<T extends SchemaObject> {
+  private final T schema;
 
-  public FilterClauseBuilder(SchemaObject schema) {
+  protected FilterClauseBuilder(T schema) {
     this.schema = schema;
   }
 
-  public FilterClause buildFilterClause(OperationsConfig operationsConfig, JsonNode filterNode) {
+  public static FilterClauseBuilder builderFor(SchemaObject schema) {
+    return switch (schema) {
+      case CollectionSchemaObject collection -> new CollectionFilterClauseBuilder(collection);
+      case TableSchemaObject table -> new TableFilterClauseBuilder(table);
+      default ->
+          throw new UnsupportedOperationException(
+              String.format(
+                  "Unsupported schema object class for `FilterClauseBuilder`: %s",
+                  schema.getClass()));
+    };
+  }
+
+  public FilterClause build(OperationsConfig operationsConfig, JsonNode filterNode) {
     if (filterNode == null) {
       return null;
     }
@@ -52,17 +64,10 @@ public class FilterClauseBuilder {
     populateExpression(implicitAnd, filterNode);
     validate(operationsConfig, implicitAnd);
 
-    FilterClause filterClause =
-        switch (schema) {
-          case CollectionSchemaObject collection -> new CollectionFilterClause(implicitAnd);
-          case TableSchemaObject table -> new TableFilterClause(implicitAnd);
-          default ->
-              throw new UnsupportedOperationException(
-                  String.format(
-                      "Unsupported schema object class for `FilterClause`: %s", schema.getClass()));
-        };
-    return filterClause;
+    return build(implicitAnd);
   }
+
+  protected abstract FilterClause build(LogicalExpression implicitAnd);
 
   private void populateExpression(LogicalExpression logicalExpression, JsonNode node) {
     if (logicalExpression == null) {
