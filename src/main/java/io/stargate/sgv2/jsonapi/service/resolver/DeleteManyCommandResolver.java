@@ -67,7 +67,7 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
 
     // If there is no filter or filter is empty for table deleteMany, build truncate attempt
     final FilterClause filterClause = command.filterClause(ctx);
-    if (filterClause == null || filterClause.logicalExpression().isEmpty()) {
+    if (filterClause == null || filterClause.isEmpty()) {
       var truncateAttempt = new TruncateAttemptBuilder<>(ctx.schemaObject()).build();
       var attemptContainer = new OperationAttemptContainer<>(truncateAttempt);
       var truncatePageBuilder =
@@ -97,7 +97,7 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
       CommandContext<CollectionSchemaObject> ctx, DeleteManyCommand command) {
     final FilterClause filterClause = command.filterClause(ctx);
     // If there is no filter or filter is empty, use Truncate operation instead of Delete
-    if (filterClause == null || filterClause.logicalExpression().isEmpty()) {
+    if (filterClause == null || filterClause.isEmpty()) {
       return new TruncateCollectionOperation(ctx);
     }
     final FindCollectionOperation findCollectionOperation = getFindOperation(ctx, command);

@@ -37,10 +37,9 @@ public class FilterMatcher<T extends Command & Filterable> {
     final FilterClause filter = command.filterClause(ctx);
     // construct a default CaptureGroups, with default AND relation, empty captureGroupsList,
     // empty captureGroupMap
-    CaptureGroups<T> captureGroups =
-        new CaptureGroups<T>(DBLogicalExpression.DBLogicalOperator.AND);
+    CaptureGroups<T> captureGroups = new CaptureGroups<>(DBLogicalExpression.DBLogicalOperator.AND);
     if (strategy == MatchStrategy.EMPTY) {
-      if (filter == null || filter.logicalExpression().isEmpty()) {
+      if (filter == null || filter.isEmpty()) {
         return Optional.of(captureGroups);
       } else {
         return Optional.empty();
@@ -51,9 +50,7 @@ public class FilterMatcher<T extends Command & Filterable> {
     }
     List<Capture> unmatchedCaptures = new ArrayList<>(captures);
     final MatchStrategyCounter matchStrategyCounter =
-        new MatchStrategyCounter(
-            unmatchedCaptures.size(),
-            filter.logicalExpression().getTotalComparisonExpressionCount());
+        new MatchStrategyCounter(unmatchedCaptures.size(), filter.size());
     // capture recursively, resolve logicalExpression to captureGroups
     captureRecursive(
         captureGroups, filter.logicalExpression(), unmatchedCaptures, matchStrategyCounter);

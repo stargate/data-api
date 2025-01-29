@@ -265,7 +265,7 @@ public class MeteredCommandProcessor {
     if (command instanceof Filterable filterable) {
       FilterClause fc = filterable.filterClause(commandContext);
       if (fc != null) {
-        filterCount = fc.logicalExpression().getTotalComparisonExpressionCount();
+        filterCount = fc.size();
       }
     }
     if (command instanceof Sortable sc
