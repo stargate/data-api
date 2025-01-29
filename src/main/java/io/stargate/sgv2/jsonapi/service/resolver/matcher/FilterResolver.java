@@ -65,9 +65,6 @@ public abstract class FilterResolver<
     Preconditions.checkNotNull(commandContext, "commandContext is required");
     Preconditions.checkNotNull(command, "command is required");
     final FilterClause filterClause = command.filterClause(commandContext);
-    // SchemaValidatable.maybeValidate(commandContext, filterClause);
-
-    InvertibleCommandClause.maybeInvert(commandContext, filterClause);
 
     final DBLogicalExpression dbLogicalExpression = matchRules.apply(commandContext, command);
     // TODO, why validate here?

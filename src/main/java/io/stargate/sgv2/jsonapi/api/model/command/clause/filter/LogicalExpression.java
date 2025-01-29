@@ -121,7 +121,7 @@ public class LogicalExpression {
     return logicalRelation;
   }
 
-  protected void setLogicalRelation(LogicalOperator logicalRelation) {
+  public void setLogicalRelation(LogicalOperator logicalRelation) {
     this.logicalRelation = logicalRelation;
   }
 
