@@ -88,6 +88,43 @@ public class MeteredCommandProcessorTest {
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
                     });
               });
+
+      List<String> commandLatencyMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("command_processor_latency")
+                          && line.contains("CountDocumentsCommand")
+                          && !line.startsWith("command_processor_latency_seconds_bucket")
+                          && !line.contains("quantile"))
+              .toList();
+      assertThat(commandLatencyMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("command=\"CountDocumentsCommand\"");
+                      assertThat(line).contains("tenant=\"test-tenant\"");
+                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                      assertThat(line).doesNotContain("sort_type");
+                      assertThat(line).doesNotContain("error");
+                      assertThat(line).doesNotContain("error_code");
+                      assertThat(line).doesNotContain("error_class");
+                      assertThat(line).doesNotContain("vector_enabled");
+                    });
+              });
+      List<String> commandLatencyHistogram =
+          metrics
+              .lines()
+              .filter(line -> line.startsWith("command_processor_latency_seconds_bucket"))
+              .toList();
+      assertThat(commandLatencyHistogram)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isNotZero();
+              });
     }
 
     @Test
