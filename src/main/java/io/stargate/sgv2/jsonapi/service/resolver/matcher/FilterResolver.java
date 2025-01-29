@@ -4,8 +4,6 @@ import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
@@ -67,18 +65,6 @@ public abstract class FilterResolver<
     final FilterClause filterClause = command.filterClause(commandContext);
 
     final DBLogicalExpression dbLogicalExpression = matchRules.apply(commandContext, command);
-    // TODO, why validate here?
-    if (filterClause != null
-        && filterClause.logicalExpression().getTotalComparisonExpressionCount()
-            > operationsConfig.maxFilterObjectProperties()) {
-      throw new JsonApiException(
-          ErrorCodeV1.FILTER_FIELDS_LIMIT_VIOLATION,
-          String.format(
-              "%s: filter has %d fields, exceeds maximum allowed %s",
-              ErrorCodeV1.FILTER_FIELDS_LIMIT_VIOLATION.getMessage(),
-              filterClause.logicalExpression().getTotalComparisonExpressionCount(),
-              operationsConfig.maxFilterObjectProperties()));
-    }
     return WithWarnings.of(dbLogicalExpression);
   }
 }

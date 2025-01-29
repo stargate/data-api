@@ -6,7 +6,8 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import java.util.Objects;
 
 /**
- * TODO: AARON 9 sept 2024 - this is a failed idea of mine, we should remove as we go
+ * TODO: AARON 9 sept 2024 - this is a failed idea of mine, we should remove as we go UPDATE: Tatu
+ * 29 jan 2025 - removed from FilterClause, used by SortClause still
  *
  * <p>Interface for any class that can be validated against a {@link SchemaObject}.
  *

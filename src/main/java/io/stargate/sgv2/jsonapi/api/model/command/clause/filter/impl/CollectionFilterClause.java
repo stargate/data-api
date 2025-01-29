@@ -48,21 +48,21 @@ public class CollectionFilterClause extends FilterClause {
     // special case path may be set to indexed for `$vector` and `$vectorize` fields even in case of
     // deny all
 
-    // If path is "_id" and it's denied, the operator can only be $eq or $in
-    if (!isPathIndexed && path.equals(DocumentConstants.Fields.DOC_ID)) {
-      FilterOperator filterOperator = comparisonExpression.getFilterOperations().get(0).operator();
-      // if operator is $eq or $in, _id can be used, return
-      if (filterOperator == ValueComparisonOperator.EQ
-          || filterOperator == ValueComparisonOperator.IN) {
-        return;
-      }
-      // otherwise throw JsonApiException
-      throw ErrorCodeV1.ID_NOT_INDEXED.toApiException(
-          "you can only use $eq or $in as the operator");
-    }
-
-    // If path is not indexed, throw error
     if (!isPathIndexed) {
+      // If path is "_id" and it's denied, the operator can only be $eq or $in
+      if (path.equals(DocumentConstants.Fields.DOC_ID)) {
+        FilterOperator filterOperator =
+            comparisonExpression.getFilterOperations().get(0).operator();
+        // if operator is $eq or $in, _id can be used, return
+        if (filterOperator == ValueComparisonOperator.EQ
+            || filterOperator == ValueComparisonOperator.IN) {
+          return;
+        }
+        // otherwise throw _id - specific JsonApiException
+        throw ErrorCodeV1.ID_NOT_INDEXED.toApiException(
+            "you can only use $eq or $in as the operator");
+      }
+      // For any other not-indexed path throw generic error
       throw ErrorCodeV1.UNINDEXED_FILTER_PATH.toApiException(
           "filter path '%s' is not indexed", comparisonExpression.getPath());
     }

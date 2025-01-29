@@ -63,6 +63,14 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
     validateExpression(operationsConfig, implicitAnd);
     invertExpression(implicitAnd);
 
+    // Could push down but for now seems like reasonable place to check
+    final int totalExprCount = implicitAnd.getTotalComparisonExpressionCount();
+    if (totalExprCount > operationsConfig.maxFilterObjectProperties()) {
+      throw ErrorCodeV1.FILTER_FIELDS_LIMIT_VIOLATION.toApiException(
+          "filter has %d fields, exceeds maximum allowed %s",
+          totalExprCount, operationsConfig.maxFilterObjectProperties());
+    }
+
     return buildAndValidate(implicitAnd);
   }
 
