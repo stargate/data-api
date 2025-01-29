@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
-import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DOC_ID;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
@@ -69,7 +67,20 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
 
   // // // Abstract methods for sub-classes to implement
 
-  protected abstract FilterClause buildAndValidate(LogicalExpression implicitAnd);
+  /**
+   * Method that will construct proper typed {@link FilterClause} and performance schema-dependent
+   * validation before returning it.
+   *
+   * @param expression Root expression (implicit AND) to build the filter clause from
+   * @return Built and validated filter clause
+   */
+  protected abstract FilterClause buildAndValidate(LogicalExpression expression);
+
+  /**
+   * Method for checking if the path refer to the document ID field: concept that only exists for
+   * Collections. Used for doc-id specific construction and validation of constraints.
+   */
+  protected abstract boolean isDocId(String path);
 
   // // // Construction of LogicalExpression from JSON
 
@@ -166,8 +177,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
     while (fields.hasNext()) {
       Map.Entry<String, JsonNode> updateField = fields.next();
       final String updateKey = updateField.getKey();
-      FilterOperator operator =
-          FilterOperator.FilterOperatorUtils.findComparisonOperator(updateKey);
+      FilterOperator operator = FilterOperators.findComparisonOperator(updateKey);
 
       // If assumed filter not found, may be JSON Extension value like "$date" or "$uuid";
       // or may be full Object to match
@@ -183,7 +193,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         // JSON Extension type needs to be explicitly handled:
         Object value;
         if (etype != null) {
-          if (entry.getKey().equals(DOC_ID)) {
+          if (isDocId(entry.getKey())) {
             value = DocumentId.fromJson(entry.getValue());
           } else {
             value = JsonUtil.extractExtendedValue(etype, updateField);
@@ -239,14 +249,15 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
   /**
    * Method to parse each filter clause and return node value.
    *
-   * @param path - If the path is _id, then the value is resolved as DocumentId
+   * @param path - If the path refers to Document Id (see {@link #isDocId}, then the value is
+   *     resolved as DocumentId
    * @param node - JsonNode which has the operand value of a filter clause
    * @return
    */
   private Object jsonNodeValue(String path, JsonNode node) {
     // If the path is _id, then the value is resolved as DocumentId and Array type handled for `$in`
     // operator in filter
-    if (path.equals(DOC_ID)) {
+    if (isDocId(path)) {
       if (node.getNodeType() == JsonNodeType.ARRAY) {
         ArrayNode arrayNode = (ArrayNode) node;
         List<Object> arrayVals = new ArrayList<>(arrayNode.size());
@@ -254,9 +265,8 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
           arrayVals.add(jsonNodeValue(path, element));
         }
         return arrayVals;
-      } else {
-        return DocumentId.fromJson(node);
       }
+      return DocumentId.fromJson(node);
     }
     return jsonNodeValue(node);
   }
@@ -264,9 +274,6 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
   /**
    * Method to parse each filter clause and return node value. Called recursively in case of array
    * and object json types.
-   *
-   * @param node
-   * @return
    */
   private Object jsonNodeValue(JsonNode node) {
     switch (node.getNodeType()) {
@@ -354,11 +361,10 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       String path,
       FilterOperation<?> filterOperation,
       LogicalExpression.LogicalOperator fromLogicalRelation) {
-    if (fromLogicalRelation.equals(LogicalExpression.LogicalOperator.OR)
-        && path.equals(DocumentConstants.Fields.DOC_ID)) {
+    if (isDocId(path) && fromLogicalRelation.equals(LogicalExpression.LogicalOperator.OR)) {
       throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
           "Cannot filter on '%s' field within '%s', ID field can not be used with $or operator",
-          DocumentConstants.Fields.DOC_ID, LogicalExpression.LogicalOperator.OR.getOperator());
+          path, LogicalExpression.LogicalOperator.OR.getOperator());
     }
 
     if (filterOperation.operator() instanceof ValueComparisonOperator valueComparisonOperator) {

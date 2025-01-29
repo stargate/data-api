@@ -10,6 +10,12 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
     super(schema);
   }
 
+  // Tables do not have fixed "_id" as THE document id
+  @Override
+  protected boolean isDocId(String path) {
+    return false;
+  }
+
   @Override
   protected FilterClause buildAndValidate(LogicalExpression implicitAnd) {
     return new TableFilterClause(implicitAnd).validate(schema);
