@@ -31,6 +31,17 @@ public abstract class CqlOptionUtils {
   }
 
   /**
+   * Gets the named key from the map and converts it to a String if present.
+   *
+   * @param map The map to get the value from
+   * @param key The key to get the value for
+   * @return The String value or null if not present
+   */
+  public static String getStringIfPresent(Map<String, String> map, String key) {
+    return getIfPresent(map, key, Function.identity());
+  }
+
+  /**
    * Gets the named key from the map and converts it to a boolean if present.
    *
    * @param map The map to get the value from
@@ -49,13 +60,26 @@ public abstract class CqlOptionUtils {
    * @param map The map to get the value from
    * @param key The key to get the value for
    * @param defaultValue The default value to return if the key is not present
-   * @return The valuw of the key or the default value if the key is not present, will throw an
+   * @return The value of the key or the default value if the key is not present, will throw an
    *     exception if the value is present and {@link Boolean#parseBoolean(String)} throws an
    *     exception.
    */
   public static boolean getOrDefault(Map<String, String> map, String key, boolean defaultValue) {
     // assume if you have a default you want value type
     return map.containsKey(key) ? Boolean.parseBoolean(map.get(key)) : defaultValue;
+  }
+
+  /**
+   * Gets the named key from the map, otherwise returns the default value.
+   *
+   * @param map The map to get the value from
+   * @param key The key to get the value for
+   * @param defaultValue The default value to return if the key is not present
+   * @return The valuw of the key or the default value if the key is not present, may be null
+   */
+  public static String getOrDefault(Map<String, String> map, String key, String defaultValue) {
+    // assume if you have a default you want value type
+    return map.getOrDefault(key, defaultValue);
   }
 
   /**

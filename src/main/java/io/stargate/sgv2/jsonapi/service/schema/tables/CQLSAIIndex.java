@@ -6,27 +6,28 @@ import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.internal.core.adminrequest.AdminRow;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownCqlIndexFunctionException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
-import io.stargate.sgv2.jsonapi.util.defaults.Properties;
-import io.stargate.sgv2.jsonapi.util.defaults.StringProperty;
+
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.getOrDefault;
+import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.getStringIfPresent;
 
 /** Shared methods / constants for CQL SAI indexes. */
 public abstract class CQLSAIIndex {
 
   /**
-   * The common options from the {@link IndexMetadata#getOptions()} for SAI indexes. ApiIndex sub
-   * classes can define their own options.
+   * The common options from the {@link IndexMetadata#getOptions()} for SAI indexes. ApiIndex subclasses
+   * can define their own options.
    */
   interface Options {
     // The class_name property from the index options, is required, we cannot guess it :)
-    StringProperty CLASS_NAME = Properties.ofRequired("class_name");
+    String CLASS_NAME = "class_name";
 
     // The target property from the index options, is the name of the column the index is on
-    // potentially prefixed with
-    // the function to apply to the column. Required.
-    StringProperty TARGET = Properties.ofRequired("target");
+    // potentially prefixed with the function to apply to the column. Required.
+    String TARGET = "target";
   }
 
   // the class name for SAI indexes, use the {@link #indexClassIsSai(String)} to check if an index
@@ -49,7 +50,7 @@ public abstract class CQLSAIIndex {
   static boolean isSAIIndex(IndexMetadata indexMetadata) {
     Objects.requireNonNull(indexMetadata, "indexMetadata must not be null");
     return indexMetadata.getKind() == IndexKind.CUSTOM
-        && indexClassIsSai(Options.CLASS_NAME.getWithDefault(indexMetadata.getOptions()));
+        && indexClassIsSai(getStringIfPresent(indexMetadata.getOptions(), Options.CLASS_NAME));
   }
 
   /**
@@ -67,7 +68,7 @@ public abstract class CQLSAIIndex {
     return switch (className) {
       case SAI_CLASS_NAME -> true;
       case String s when s.endsWith(SAI_CLASS_NAME_ENDS_WITH) -> true;
-      default -> false;
+      case null, default -> false;
     };
   }
 
@@ -128,7 +129,7 @@ public abstract class CQLSAIIndex {
       throws UnknownCqlIndexFunctionException, UnsupportedCqlIndexException {
     Objects.requireNonNull(indexMetadata, "indexMetadata must not be null");
 
-    var target = CQLSAIIndex.Options.TARGET.getWithDefault(indexMetadata.getOptions());
+    var target = getOrDefault(indexMetadata.getOptions(), Options.TARGET, "");
     Matcher matcher = INDEX_TARGET_PATTERN.matcher(target);
     if (!matcher.matches()) {
       throw new UnsupportedCqlIndexException(
