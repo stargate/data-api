@@ -29,7 +29,7 @@ import java.util.*;
  * constants elsewhere
  */
 public abstract class FilterClauseBuilder<T extends SchemaObject> {
-  private final T schema;
+  protected final T schema;
 
   protected FilterClauseBuilder(T schema) {
     this.schema = schema;
@@ -62,12 +62,12 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
     // implicit and
     LogicalExpression implicitAnd = LogicalExpression.and();
     populateExpression(implicitAnd, filterNode);
-    validate(operationsConfig, implicitAnd);
+    validateExpression(operationsConfig, implicitAnd);
 
-    return build(implicitAnd);
+    return buildAndValidate(implicitAnd);
   }
 
-  protected abstract FilterClause build(LogicalExpression implicitAnd);
+  protected abstract FilterClause buildAndValidate(LogicalExpression implicitAnd);
 
   private void populateExpression(LogicalExpression logicalExpression, JsonNode node) {
     if (logicalExpression == null) {
@@ -144,19 +144,20 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
     }
   }
 
-  private void validate(OperationsConfig operationsConfig, LogicalExpression logicalExpression) {
+  private void validateExpression(
+      OperationsConfig operationsConfig, LogicalExpression logicalExpression) {
     if (logicalExpression.getTotalIdComparisonExpressionCount() > 1) {
       throw ErrorCodeV1.FILTER_MULTIPLE_ID_FILTER.toApiException();
     }
     for (LogicalExpression subLogicalExpression : logicalExpression.logicalExpressions) {
-      validate(operationsConfig, subLogicalExpression);
+      validateExpression(operationsConfig, subLogicalExpression);
     }
     for (ComparisonExpression subComparisonExpression : logicalExpression.comparisonExpressions) {
       subComparisonExpression
           .getFilterOperations()
           .forEach(
               operation ->
-                  validate(
+                  validateExpression(
                       operationsConfig,
                       subComparisonExpression.getPath(),
                       operation,
@@ -164,7 +165,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
     }
   }
 
-  private void validate(
+  private void validateExpression(
       OperationsConfig operationsConfig,
       String path,
       FilterOperation<?> filterOperation,

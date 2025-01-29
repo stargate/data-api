@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
-import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.ClauseResolver;
 import java.util.Objects;
 
@@ -66,7 +65,7 @@ public abstract class FilterResolver<
     Preconditions.checkNotNull(commandContext, "commandContext is required");
     Preconditions.checkNotNull(command, "command is required");
     final FilterClause filterClause = command.filterClause(commandContext);
-    SchemaValidatable.maybeValidate(commandContext, filterClause);
+    // SchemaValidatable.maybeValidate(commandContext, filterClause);
 
     InvertibleCommandClause.maybeInvert(commandContext, filterClause);
 

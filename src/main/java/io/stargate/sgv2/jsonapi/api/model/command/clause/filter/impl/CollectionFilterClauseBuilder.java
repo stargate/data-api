@@ -11,7 +11,7 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
   }
 
   @Override
-  protected FilterClause build(LogicalExpression implicitAnd) {
-    return new CollectionFilterClause(implicitAnd);
+  protected FilterClause buildAndValidate(LogicalExpression implicitAnd) {
+    return new CollectionFilterClause(implicitAnd).validate(schema);
   }
 }

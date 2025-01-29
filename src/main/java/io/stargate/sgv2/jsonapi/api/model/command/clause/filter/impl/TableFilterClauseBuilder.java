@@ -11,7 +11,7 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
   }
 
   @Override
-  protected FilterClause build(LogicalExpression implicitAnd) {
-    return new TableFilterClause(implicitAnd);
+  protected FilterClause buildAndValidate(LogicalExpression implicitAnd) {
+    return new TableFilterClause(implicitAnd).validate(schema);
   }
 }
