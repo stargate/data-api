@@ -528,7 +528,7 @@ node_health_options:
   refresh_rate_ms: 60000
   # The amount of continuous uptime required for the node to reach the maximum uptime score. If you
   # are concerned with consistency during repair after a period of downtime, you may want to
-  # temporarily increase this time to the assertions time it will take to complete repair.
+  # temporarily increase this time to the expected time it will take to complete repair.
   #
   # Default - 10800 seconds (3 hours)
   uptime_ramp_up_period_seconds: 10800
