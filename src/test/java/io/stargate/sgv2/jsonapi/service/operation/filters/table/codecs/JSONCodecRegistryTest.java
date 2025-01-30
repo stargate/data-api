@@ -176,7 +176,7 @@ public class JSONCodecRegistryTest {
 
     assertThat(actualCqlValue)
         .as(
-            "Comparing assertions and actual CQL value for fromValue.class=%s and fromValue.toString()=%s",
+            "Comparing expected and actual CQL value for fromValue.class=%s and fromValue.toString()=%s",
             fromValue.getClass().getName(), fromValue.toString())
         .isInstanceOfAny(expectedCqlValueType)
         .isEqualTo(expectedCqlValue);
@@ -571,7 +571,7 @@ public class JSONCodecRegistryTest {
 
     assertThat(actualJSONValue)
         .as(
-            "Comparing assertions and actual JsonNode value for fromValue.class=%s and fromValue.toString()=%s",
+            "Comparing expected and actual JsonNode value for fromValue.class=%s and fromValue.toString()=%s",
             fromValue.getClass().getName(), fromValue.toString())
         .isInstanceOfAny(expectedJsonValue.getClass())
         .matches(
@@ -1089,9 +1089,7 @@ public class JSONCodecRegistryTest {
     DataType cqlTypeToTest = DataTypes.vectorOf(DataTypes.FLOAT, 1);
     List<JsonLiteral<?>> valueToTest = List.of(stringLiteral("abc"));
     assertToCQLFail(
-        cqlTypeToTest,
-        valueToTest,
-        "assertions JSON Number value as Vector element at position #0");
+        cqlTypeToTest, valueToTest, "expected JSON Number value as Vector element at position #0");
   }
 
   @Test
@@ -1099,7 +1097,7 @@ public class JSONCodecRegistryTest {
     DataType cqlTypeToTest = DataTypes.vectorOf(DataTypes.FLOAT, 1);
     List<JsonLiteral<?>> valueToTest = List.of(numberLiteral(1.0), numberLiteral(-0.5));
     assertToCQLFail(
-        cqlTypeToTest, valueToTest, "assertions vector of length 1, got one with 2 elements");
+        cqlTypeToTest, valueToTest, "expected vector of length 1, got one with 2 elements");
   }
 
   @Test
@@ -1118,7 +1116,7 @@ public class JSONCodecRegistryTest {
     byte[] rawBase64 = CqlVectorUtil.floatsToBytes(new float[] {-0.5f, 0.25f});
     EJSONWrapper valueToTest = binaryWrapper(rawBase64);
     assertToCQLFail(
-        cqlTypeToTest, valueToTest, "assertions vector of length 3, got one with 2 elements");
+        cqlTypeToTest, valueToTest, "expected vector of length 3, got one with 2 elements");
   }
 
   private void assertToCQLFail(DataType cqlType, Object valueToTest, String... expectedMessages) {

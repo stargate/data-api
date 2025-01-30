@@ -33,7 +33,7 @@ public class DriverExceptionHandlerTest {
 
     var originalEx =
         new WriteTimeoutException(null, ConsistencyLevel.QUORUM, 1, 2, WriteType.SIMPLE);
-    var expectedEx = new RuntimeException("assertions");
+    var expectedEx = new RuntimeException("expected");
 
     // Not using mocks because want all the defaults in the interface to kick in
     final Object[] calledWith = new Object[1];

@@ -87,7 +87,7 @@ public class PushOperationTest extends UpdateOperationTestBase {
     // Test to ensure $push operations are done in alphabetic order by field
     @Test
     public void testPushToNonExistingOrdered() {
-      // Put targets in "wrong" order (different from assertions execution order)
+      // Put targets in "wrong" order (different from expected execution order)
       UpdateOperation oper =
           UpdateOperator.PUSH.resolveOperation(
               objectFromJson("{ \"subdoc.newArray\" : \"value\", \"array\": 3 }"));

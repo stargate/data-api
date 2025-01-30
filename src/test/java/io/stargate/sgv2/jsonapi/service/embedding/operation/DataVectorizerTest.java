@@ -222,12 +222,12 @@ public class DataVectorizerTest {
               "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider returned an unexpected response: Embedding provider 'custom' didn't return the assertions number of embeddings. Expect: '2'. Actual: '3'");
+              "The Embedding Provider returned an unexpected response: Embedding provider 'custom' didn't return the expected number of embeddings. Expect: '2'. Actual: '3'");
     }
 
     @Test
     public void testWithUnmatchedVectorSize() {
-      // new collection settings with different assertions vector size
+      // new collection settings with different expected vector size
       CollectionSchemaObject collectionSettings =
           new CollectionSchemaObject(
               "namespace",
@@ -264,7 +264,7 @@ public class DataVectorizerTest {
               "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider returned an unexpected response: Embedding provider 'custom' did not return assertions embedding length. Expect: '4'. Actual: '3'");
+              "The Embedding Provider returned an unexpected response: Embedding provider 'custom' did not return expected embedding length. Expect: '4'. Actual: '3'");
     }
   }
 

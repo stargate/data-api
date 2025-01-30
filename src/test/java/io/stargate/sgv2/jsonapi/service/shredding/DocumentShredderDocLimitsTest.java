@@ -385,7 +385,7 @@ public class DocumentShredderDocLimitsTest {
           .hasMessageStartingWith("Number value length (101) exceeds the maximum allowed (100");
     }
 
-    // Different test in that it should NOT fail but work as assertions (in
+    // Different test in that it should NOT fail but work as expected (in
     // addition to being lower level test wrt ObjectMapper
     @Test
     public void handleBigEngineeringNotation() throws Exception {

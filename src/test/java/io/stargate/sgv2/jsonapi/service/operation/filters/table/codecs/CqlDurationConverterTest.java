@@ -28,7 +28,7 @@ public class CqlDurationConverterTest {
   }
 
   private static Stream<Arguments> validCqlDurationToISO8601Duration() {
-    // Arguments: (input-to-cql-duration, assertions-output)
+    // Arguments: (input-to-cql-duration, expected-output)
     return Stream.of(
         // Identity
         Arguments.of("P1Y2M3DT4H5M6S", "P1Y2M3DT4H5M6S"),

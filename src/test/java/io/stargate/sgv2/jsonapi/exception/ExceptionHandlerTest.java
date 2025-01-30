@@ -64,8 +64,8 @@ public class ExceptionHandlerTest {
 
     var originalParentEx = new IllegalStateException("original parent");
     var originalChildEx = new WritePendingException();
-    var expectedParentEx = new RuntimeException("assertions parent");
-    var expectedChildEx = new RuntimeException("assertions child");
+    var expectedParentEx = new RuntimeException("expected parent");
+    var expectedChildEx = new RuntimeException("expected child");
 
     final Object[] calledWith = new Object[2];
     var handler =
