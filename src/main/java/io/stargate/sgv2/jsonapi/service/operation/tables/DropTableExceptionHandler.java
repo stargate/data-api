@@ -14,10 +14,9 @@ public class DropTableExceptionHandler extends KeyspaceDriverExceptionHandler {
 
   private final CqlIdentifier tableName;
 
-  /**
-   * Compatible with {@link FactoryWithIdentifier}
-   */
-  public DropTableExceptionHandler(KeyspaceSchemaObject schemaObject, SimpleStatement simpleStatement, CqlIdentifier tableName) {
+  /** Compatible with {@link FactoryWithIdentifier} */
+  public DropTableExceptionHandler(
+      KeyspaceSchemaObject schemaObject, SimpleStatement simpleStatement, CqlIdentifier tableName) {
     super(schemaObject, simpleStatement);
     this.tableName = Objects.requireNonNull(tableName, "tableName must not be null");
   }
@@ -25,7 +24,8 @@ public class DropTableExceptionHandler extends KeyspaceDriverExceptionHandler {
   @Override
   public RuntimeException handle(InvalidQueryException exception) {
 
-    // Need to wait for keyspace to have keyspace metadata to get the list of tables :(
+    // Need to wait for keyspace to have keyspace metadata to get the list of tables to be included
+    // in the message
     if (exception.getMessage().contains("doesn't exist")) {
       return SchemaException.Code.CANNOT_DROP_UNKNOWN_TABLE.get(
           Map.of("unknownTable", errFmt(tableName)));

@@ -21,6 +21,6 @@ public class TestOperationAttempt
 
   @Override
   protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
-    return new StatementContext(null,  () -> Uni.createFrom().item(this.resultSet));
+    return new StatementContext(null, () -> Uni.createFrom().item(this.resultSet));
   }
 }

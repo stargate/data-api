@@ -34,7 +34,7 @@ public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBas
   }
 
   /**
-   * Fluent method for setting the assertions HTTP status code of the response; default is 200.
+   * Fluent method for setting the expected HTTP status code of the response; default is 200.
    *
    * @param expectedHttpStatus Status to expect
    * @return Type-safe "this" sender for call chaining

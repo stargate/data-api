@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandle
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 
 /**
- *
  * @param <FixtureT>
  * @param <SchemaT>
  */
@@ -19,7 +18,7 @@ public class DriverExceptionHandlerAssertions<FixtureT, SchemaT extends SchemaOb
   private final DefaultDriverExceptionHandler.Factory<SchemaT> handlerFactory;
 
   // We set this in getHandlerFactory() where it wraps the original factory
-  private DriverExceptionHandler target ;
+  private DriverExceptionHandler target;
 
   public DriverExceptionHandlerAssertions(
       FixtureT fixture, DefaultDriverExceptionHandler.Factory<SchemaT> handlerFactory) {
@@ -30,7 +29,7 @@ public class DriverExceptionHandlerAssertions<FixtureT, SchemaT extends SchemaOb
   public DefaultDriverExceptionHandler.Factory<SchemaT> getHandlerFactory() {
     return (SchemaT schemaObject, SimpleStatement statement) -> {
       // do not think we should be calling this multiple times
-      if (target != null){
+      if (target != null) {
         throw new IllegalStateException("ErrorHandler Factory already called");
       }
 

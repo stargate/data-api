@@ -7,7 +7,6 @@ import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteType;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import java.nio.channels.WritePendingException;
 import org.junit.jupiter.api.Test;
 
@@ -48,7 +47,7 @@ public class ExceptionHandlerTest {
             return UnsupportedOperationException.class;
           }
         };
-    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle( originalEx));
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
 
     assertThat(actualEx)
         .as("When handling non BaseT exception, returns the exception object passed")

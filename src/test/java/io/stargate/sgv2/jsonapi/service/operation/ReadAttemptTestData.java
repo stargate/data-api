@@ -58,7 +58,8 @@ public class ReadAttemptTestData extends OperationAttemptTestData {
                     TableSchemaObject.from(testData.tableMetadata().keyValue(), objectMapper)),
                 resultSet));
 
-    return new OperationAttemptFixture<>(attempt, queryExecutor, exceptionHandlerFactory, resultSet);
+    return new OperationAttemptFixture<>(
+        attempt, queryExecutor, exceptionHandlerFactory, resultSet);
   }
 
   private FindCommand mockFindCommand() {

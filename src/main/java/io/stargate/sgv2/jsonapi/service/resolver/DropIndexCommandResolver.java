@@ -59,7 +59,11 @@ public class DropIndexCommandResolver implements CommandResolver<DropIndexComman
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new GenericOperation<>(attempts, pageBuilder, DefaultDriverExceptionHandler.Factory.withIdentifier(DropIndexExceptionHandler::new, indexName));
+    return new GenericOperation<>(
+        attempts,
+        pageBuilder,
+        DefaultDriverExceptionHandler.Factory.withIdentifier(
+            DropIndexExceptionHandler::new, indexName));
   }
 
   private void checkIndexExists(KeyspaceSchemaObject schemaObject, CqlIdentifier indexName) {}

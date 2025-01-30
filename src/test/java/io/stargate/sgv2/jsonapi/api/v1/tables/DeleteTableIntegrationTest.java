@@ -628,7 +628,7 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
       FilterException.Code expectedCodeFromDelete,
       int shouldDeleteAmount) {
 
-    // If there is an exception assertions, won't execute DeleteCommand, thus no need to check.
+    // If there is an exception expected, won't execute DeleteCommand, thus no need to check.
     if (expectedCodeFromDelete != null || shouldDeleteAmount == 0) {
       return;
     }

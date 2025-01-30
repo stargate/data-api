@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.data.CqlVector;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
@@ -28,15 +27,15 @@ import org.slf4j.LoggerFactory;
  * query and handling any errors and retries. Used together with the {@link
  * OperationAttemptContainer}, {@link OperationAttemptPageBuilder} and {@link GenericOperation}
  *
- * <p>Sub classes are responsbile for sorting out what query to run, and how to handle the results.
+ * <p>Subclasses are responsible for sorting out what query to run, and how to handle the results.
  * This superclass knows how to run a generic query with config such as retries.
  *
  * <p>The class has a basic state model for tracking the status of the operation. <b>NOTE</b>
  * subclasses much set the state of {@link OperationStatus#READY} using {@link
  * #setStatus(OperationStatus)}, other transitions are handled by the superclass.All handling of the
  * state must be done through the methods, do not access the state directly. <b>NOTE:</b> This class
- * is not thread safe, it is used in the Smallry processing and is not expected to be used in a
- * multi-threaded environment.
+ * is not thread safe, it is used in the Smallrye processing and is not expected to be used in a
+ * multithreaded environment.
  *
  * @param <SubT> Subtype of the OperationAttempt, used for chaining methods.
  * @param <SchemaT> The type of the schema object that the operation is working with.
@@ -83,10 +82,11 @@ public abstract class OperationAttempt<
   private final List<WarningException.Code> suppressedWarnings = new ArrayList<>();
   private Throwable failure;
 
-  // Tracks the current statement that is being executed needed so we can use the statement in error handling
-  private StatementContext currentExecutor;
+  // Tracks the current statement that is being executed needed so we can use the statement in error
+  // handling
+  private StatementContext currentStatement;
 
-  // Keep this private, so sub-classes set through setter incase we need to syncronize later
+  // Keep this private, so subclasses set through setter incase we need to synchronize later
   private OperationStatus status = OperationStatus.UNINITIALIZED;
 
   // Number of times the operation has been retried, we started with 0 and only increase when we
@@ -125,14 +125,15 @@ public abstract class OperationAttempt<
    *
    * @param queryExecutor The {@link CommandQueryExecutor} to use for executing the query, this
    *     handles interacting with the driver.
-   * @param exceptionHandlerFactory The handler to use for exceptions thrown by the driver, exceptions
-   *     thrown by the driver are passed through here before being added to the {@link
+   * @param exceptionHandlerFactory The handler to use for exceptions thrown by the driver,
+   *     exceptions thrown by the driver are passed through here before being added to the {@link
    *     OperationAttempt}.
    * @return A {@link Uni} of this object, cast to the {@link SubT} for chaining methods. This
    *     object's state will be updated as the operation runs.
    */
   public Uni<SubT> execute(
-      CommandQueryExecutor queryExecutor, DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
+      CommandQueryExecutor queryExecutor,
+      DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
@@ -155,7 +156,8 @@ public abstract class OperationAttempt<
         .withBackOff(retryPolicy.delay(), retryPolicy.delay())
         .atMost(retryPolicy.maxRetries())
         .onItemOrFailure()
-        .transform((resultSet, throwable) -> onCompletion(exceptionHandlerFactory, resultSet, throwable))
+        .transform(
+            (resultSet, throwable) -> onCompletion(exceptionHandlerFactory, resultSet, throwable))
         .invoke(
             () -> {
               if (LOGGER.isDebugEnabled()) {
@@ -186,24 +188,28 @@ public abstract class OperationAttempt<
 
     // same as above for this checkProgress , we should only be IN_PROGRESS if anything else
     // checkStatus will set a failure and return false.
-    if (! checkStatus("executeIfInProgress", OperationStatus.IN_PROGRESS)) {
+    if (!checkStatus("executeIfInProgress", OperationStatus.IN_PROGRESS)) {
       return Uni.createFrom().item(null);
     }
-    currentExecutor = buildStatementContext(queryExecutor);
-    if (currentExecutor == null){
-      throw new IllegalStateException("executeIfInProgress() - buildStatementExecutor() returned null, " + positionAndAttemptId());
+    currentStatement = buildStatementContext(queryExecutor);
+    if (currentStatement == null) {
+      throw new IllegalStateException(
+          "executeIfInProgress() - buildStatementExecutor() returned null, "
+              + positionAndAttemptId());
     }
-    return currentExecutor.results.get();
+    return currentStatement.results.get();
   }
 
   /**
-   * Sublasses must implement this method to build the query and execute it, they should not do
-   * anything with Uni for retry etc, that is handled in the base class {@link
-   * #execute(CommandQueryExecutor, DefaultDriverExceptionHandler.Factory)}.
+   * Subclasses must implement this method to build the query and provide a supplier to get the
+   * results. They should not do anything with Uni for retry etc., that is handled in the base class
+   * {@link #execute(CommandQueryExecutor, DefaultDriverExceptionHandler.Factory)}.
    *
-   * @param queryExecutor the {@link CommandQueryExecutor} , subclasses should call the appropriate
-   *     execute method
-   * @return A {@link Uni} of the {@link AsyncResultSet} for processing the query.
+   * @param queryExecutor The {@link CommandQueryExecutor} for subclasses to access the database
+   *     with.
+   * @return A {@link StatementContext} that has the statement (if any) and supplier to get the
+   *     <code>Uni<AsyncResultSet></code> when it is called. It is important that the DB call not
+   *     happen until the supplier is called, otherwise this will block.
    */
   protected abstract StatementContext buildStatementContext(CommandQueryExecutor queryExecutor);
 
@@ -247,8 +253,8 @@ public abstract class OperationAttempt<
    * If you want to do something like capture the result set on success (non error) then override
    * {@link #onSuccess(AsyncResultSet)}.
    *
-   * @param exceptionHandlerFactory The handler to use for exceptions thrown by the driver, exceptions
-   *     thrown by the driver are passed through here before being added to the {@link
+   * @param exceptionHandlerFactory The handler to use for exceptions thrown by the driver,
+   *     exceptions thrown by the driver are passed through here before being added to the {@link
    *     OperationAttempt}.
    * @param resultSet The result set from the driver, this is the result of the query. May be null
    *     on error
@@ -270,11 +276,9 @@ public abstract class OperationAttempt<
     }
 
     // sanity check - executeIfInProgress() checks that we have a StatementContext before starting
-    if (currentExecutor == null) {
+    if (currentStatement == null) {
       throw new IllegalStateException(
-          String.format(
-              "onCompletion() - currentExecutor is null, %s",
-              positionAndAttemptId()));
+          String.format("onCompletion() - currentExecutor is null, %s", positionAndAttemptId()));
     }
 
     // sanity check, if we do not have a result set then we should have an exception
@@ -287,7 +291,9 @@ public abstract class OperationAttempt<
 
     var handledException =
         throwable instanceof RuntimeException re
-            ? exceptionHandlerFactory.apply(schemaObject, currentExecutor.statement()).maybeHandle(re)
+            ? exceptionHandlerFactory
+                .apply(schemaObject, currentStatement.statement())
+                .maybeHandle(re)
             : throwable;
 
     if ((handledException == null && throwable != null) && LOGGER.isWarnEnabled()) {
@@ -442,7 +448,7 @@ public abstract class OperationAttempt<
    *
    * <p>This is only updated after any retries have completed, the throwable is passed through the
    * {@link DriverExceptionHandler} provided in the {@link #execute(CommandQueryExecutor,
-   * DriverExceptionHandler)} method.
+   * DefaultDriverExceptionHandler.Factory)} method.
    */
   public Optional<Throwable> failure() {
     return Optional.ofNullable(failure);
@@ -453,8 +459,8 @@ public abstract class OperationAttempt<
    * the attempt status to {@link OperationStatus#ERROR} if no non-null failure is added.
    *
    * <p>If this method is called multiple times then only the first error is kept. The {@link
-   * #execute(CommandQueryExecutor, DriverExceptionHandler)} only calls this after all retries have
-   * been attempted.
+   * #execute(CommandQueryExecutor, DefaultDriverExceptionHandler.Factory)} only calls this after
+   * all retries have been attempted.
    *
    * <p>OK to add a failure to the attempt before calling execute, we do this for shredding errors,
    * because the attempt will not execute if there was an error.
@@ -503,7 +509,7 @@ public abstract class OperationAttempt<
   }
 
   /**
-   * Adds supression warning override code to the attempt, so they are not included in the response.
+   * Adds supressed warning override code to the attempt, so they are not included in the response.
    *
    * <p>See {@link OperationAttemptPage} for how warnings are included in the response.
    *
@@ -566,7 +572,11 @@ public abstract class OperationAttempt<
     //  vectors are very big, so we do not log them at debug they will blow up the logs
     if (logger.isDebugEnabled()) {
       logger.debug(
-          "{} - {}, cql={}, values={}", prefix, positionAndAttemptId(), CqlPrintUtil.trimmedCql(statement), CqlPrintUtil.trimmedPositionalValues(statement));
+          "{} - {}, cql={}, values={}",
+          prefix,
+          positionAndAttemptId(),
+          CqlPrintUtil.trimmedCql(statement),
+          CqlPrintUtil.trimmedPositionalValues(statement));
     }
 
     if (logger.isTraceEnabled()) {
@@ -607,7 +617,23 @@ public abstract class OperationAttempt<
         .append("failure", failure);
   }
 
-  protected record StatementContext(SimpleStatement statement, Supplier<Uni<AsyncResultSet>> results){}
+  /**
+   * A statement that a task is going to run, and a supplier that will run it when called.
+   *
+   * <p>This is really just a Pair so we can give the Statement used to the {@link
+   * DefaultDriverExceptionHandler} via the {@link DefaultDriverExceptionHandler.Factory} and the
+   * statement context into the exception handling.
+   *
+   * @param statement Statement used with the attempt, may be null.
+   * @param results A supplier that fetches the results when queried, the supplier must wait until
+   *     called to avoid blocking. Must not be null.
+   */
+  protected record StatementContext(
+      SimpleStatement statement, Supplier<Uni<AsyncResultSet>> results) {
+    protected StatementContext {
+      Objects.requireNonNull(results, "results must not be null");
+    }
+  }
 
   /**
    * A policy for retrying an attempt, if the attempt does not want to retry then it should use

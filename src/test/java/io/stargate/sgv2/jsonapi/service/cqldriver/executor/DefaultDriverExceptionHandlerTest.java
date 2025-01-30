@@ -22,12 +22,10 @@ import io.stargate.sgv2.jsonapi.exception.ErrorTemplate;
 import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
 import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
-
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.stream.Stream;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,8 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Tests for {@link DefaultDriverExceptionHandler} see also
- * {@link DriverExceptionHandlerTest} for tests on the interface itself
+ * Tests for {@link DefaultDriverExceptionHandler} see also {@link DriverExceptionHandlerTest} for
+ * tests on the interface itself
  */
 public class DefaultDriverExceptionHandlerTest {
 
@@ -54,9 +52,7 @@ public class DefaultDriverExceptionHandlerTest {
     var originalEx = arguments.originalEx;
     var assertions = arguments.assertions;
 
-    var handledEx =
-        assertDoesNotThrow(
-            () -> TEST_DATA.DRIVER_HANDLER.maybeHandle(originalEx));
+    var handledEx = assertDoesNotThrow(() -> TEST_DATA.DRIVER_HANDLER.maybeHandle(originalEx));
 
     var prettyString = new TestResult(originalEx, handledEx).toString(true);
     LOGGER.info("Handled Exception: \n{}", prettyString);
@@ -102,7 +98,7 @@ public class DefaultDriverExceptionHandlerTest {
     }
 
     public static Assertions of(DatabaseException.Code code, String assertMessage) {
-      return new Assertions(code, true,  false, false, assertMessage);
+      return new Assertions(code, true, false, false, assertMessage);
     }
 
     public static Assertions isUnexpectedDriverException() {
@@ -110,7 +106,21 @@ public class DefaultDriverExceptionHandlerTest {
           DatabaseException.Code.UNEXPECTED_DRIVER_ERROR, true, true, false, null);
     }
 
-    public void runAssertions(DefaultDriverExceptionHandlerTestData testData, DriverException originalException, APIException handledException) {
+    /**
+     * Assert the API exception has the message from the exception, not the original exception. Used
+     * when we expect to unpack a cause
+     *
+     * @return
+     */
+    public static Assertions isUnexpectedDriverException(RuntimeException cause) {
+      return new Assertions(
+          DatabaseException.Code.UNEXPECTED_DRIVER_ERROR, true, false, false, cause.getMessage());
+    }
+
+    public void runAssertions(
+        DefaultDriverExceptionHandlerTestData testData,
+        DriverException originalException,
+        APIException handledException) {
       assertThat(handledException.code)
           .as("Handled error has the assertions code")
           .isEqualTo(expectedCode.name());
@@ -133,11 +143,13 @@ public class DefaultDriverExceptionHandlerTest {
             .hasMessageContaining(ErrorTemplate.replaceIfNull(originalException.getMessage()));
       }
 
-      if (assertCql){
+      if (assertCql) {
         assertThat(handledException)
             .as("Handled error message contains cql statement")
             .hasMessageContaining(CqlPrintUtil.trimmedCql(testData.STATEMENT))
-            .hasMessageContaining(errFmtJoin(CqlPrintUtil.trimmedPositionalValues(testData.STATEMENT), Object::toString));
+            .hasMessageContaining(
+                errFmtJoin(
+                    CqlPrintUtil.trimmedPositionalValues(testData.STATEMENT), Object::toString));
       }
 
       if (!Strings.isNullOrEmpty(assertMessage)) {
@@ -172,46 +184,54 @@ public class DefaultDriverExceptionHandlerTest {
 
   private static Stream<TestArguments> tableDriverErrorHandledData() {
 
-
     return Stream.of(
         new TestArguments(
-            new ClosedConnectionException("closed"),
-            Assertions.of(DatabaseException.Code.CLOSED_CONNECTION)),
+            new ClosedConnectionException("closed"), Assertions.isUnexpectedDriverException()),
         new TestArguments(
             new CodecNotFoundException(DataTypes.TEXT, GenericType.STRING),
             Assertions.isUnexpectedDriverException()),
         new TestArguments(
             new DriverExecutionException(new ClosedConnectionException("closed")),
-            Assertions.isUnexpectedDriverException()),
+            Assertions.isUnexpectedDriverException(new ClosedConnectionException("closed"))),
         new TestArguments(
             new DriverExecutionException(null), Assertions.isUnexpectedDriverException()),
         new TestArguments(
             new DriverTimeoutException("timeout"), Assertions.isUnexpectedDriverException()),
         new TestArguments(
             new InvalidKeyspaceException("invalid keyspace: monkeys"),
-            new Assertions(DatabaseException.Code.UNKNOWN_KEYSPACE, false, false, false, TEST_DATA.KEYSPACE_NAME.asCql(true))),
+            new Assertions(
+                DatabaseException.Code.UNKNOWN_KEYSPACE,
+                false,
+                false,
+                false,
+                TEST_DATA.KEYSPACE_NAME.asCql(true))),
         new TestArguments(
             new NodeUnavailableException(mockNode("node: monkeys")),
             Assertions.isUnexpectedDriverException()),
         new TestArguments(
-            new RequestThrottlingException("throttled"),
-            Assertions.isUnexpectedDriverException()),
+            new RequestThrottlingException("throttled"), Assertions.isUnexpectedDriverException()),
         new TestArguments(
             new UnsupportedProtocolVersionException(null, "unsupported protocol", List.of()),
             Assertions.isUnexpectedDriverException()),
         new TestArguments(
-            allFailedTwoNodesAllAuth(),
-            Assertions.of(DatabaseException.Code.UNAUTHORIZED_ACCESS)),
+            allFailedTwoNodesAllAuth(), Assertions.of(DatabaseException.Code.UNAUTHORIZED_ACCESS)),
         new TestArguments(
             allFailedOneRuntime(),
             Assertions.of(DatabaseException.Code.UNEXPECTED_DRIVER_ERROR, "unexpected runtime")),
         new TestArguments(
+            allFailedUnexpectedDriverError(),
+            Assertions.of(DatabaseException.Code.UNEXPECTED_DRIVER_ERROR, "closed")),
+        new TestArguments(
             new NoNodeAvailableException(),
             Assertions.of(DatabaseException.Code.FAILED_TO_CONNECT_TO_DATABASE)),
-        // AlreadyExistsException should be handled by a specific subclass that knows the type of command
+        // AlreadyExistsException should be handled by a specific subclass that knows the type of
+        // command
         // see CreateTableExceptionHandler
         new TestArguments(
-            new AlreadyExistsException(mockNode("node: monkeys"), TEST_DATA.KEYSPACE_NAME.asCql(true), TEST_DATA.TABLE_NAME.asCql(true)),
+            new AlreadyExistsException(
+                mockNode("node: monkeys"),
+                TEST_DATA.KEYSPACE_NAME.asCql(true),
+                TEST_DATA.TABLE_NAME.asCql(true)),
             Assertions.isUnexpectedDriverException()),
         // InvalidConfigurationInQueryException will happen if we send wrong DDL command
         // not expected
@@ -219,36 +239,89 @@ public class DefaultDriverExceptionHandlerTest {
             new InvalidConfigurationInQueryException(mockNode("node: monkeys"), "bad DDL config"),
             Assertions.isUnexpectedDriverException()),
         new TestArguments(
-          new InvalidQueryException(mockNode("node1"), "Invalid CQL"),
-            new Assertions(DatabaseException.Code.INVALID_DATABASE_QUERY, true, false, true, "Invalid CQL")),
+            new InvalidQueryException(mockNode("node1"), "Invalid CQL"),
+            new Assertions(
+                DatabaseException.Code.INVALID_DATABASE_QUERY, true, false, true, "Invalid CQL")),
         new TestArguments(
             new SyntaxError(mockNode("node1"), "Syntax Error CQL"),
-            new Assertions(DatabaseException.Code.UNSUPPORTED_DATABASE_QUERY, true, false, true, "Syntax Error CQL")),
+            new Assertions(
+                DatabaseException.Code.UNSUPPORTED_DATABASE_QUERY,
+                true,
+                false,
+                true,
+                "Syntax Error CQL")),
         new TestArguments(
             new CASWriteUnknownException(mockNode("node1"), ConsistencyLevel.QUORUM, 1, 2),
-            new Assertions(DatabaseException.Code.FAILED_COMPARE_AND_SET, true, false, true, "CAS operation result is unknown - proposal was not accepted by a quorum.")),
+            new Assertions(
+                DatabaseException.Code.FAILED_COMPARE_AND_SET,
+                true,
+                false,
+                true,
+                "CAS operation result is unknown - proposal was not accepted by a quorum.")),
         new TestArguments(
-            new TruncateException(mockNode("node1"), "Error during truncate: Truncate Error"), // See TruncateException in C* code
-            new Assertions(DatabaseException.Code.FAILED_TRUNCATION, true, false, true, "Error during truncate: Truncate Error")),
+            new TruncateException(
+                mockNode("node1"),
+                "Error during truncate: Truncate Error"), // See TruncateException in C* code
+            new Assertions(
+                DatabaseException.Code.FAILED_TRUNCATION,
+                true,
+                false,
+                true,
+                "Error during truncate: Truncate Error")),
         new TestArguments(
             new UnavailableException(mockNode("node1"), ConsistencyLevel.QUORUM, 2, 1),
-            new Assertions(DatabaseException.Code.UNAVAILABLE_DATABASE, true, false, false, "Not enough replicas available for query at consistency QUORUM (2 required but only 1 alive)")),
+            new Assertions(
+                DatabaseException.Code.UNAVAILABLE_DATABASE,
+                true,
+                false,
+                false,
+                "Not enough replicas available for query at consistency QUORUM (2 required but only 1 alive)")),
         new TestArguments(
-            new ReadFailureException(mockNode("node1"),ConsistencyLevel.QUORUM, 1,2,2, true, Map.of(InetAddress.getLoopbackAddress(), RequestFailureReason.READ_TOO_MANY_TOMBSTONES.code, getInetAddress(new byte[] { (byte) 192, (byte) 168, 0, 1 }), RequestFailureReason.INDEX_NOT_AVAILABLE.code)),
-            new Assertions(DatabaseException.Code.FAILED_READ_REQUEST, true, false, false, "Cassandra failure during read query at consistency QUORUM (2 responses were required but only 1 replica responded, 2 failed")),
+            new ReadFailureException(
+                mockNode("node1"),
+                ConsistencyLevel.QUORUM,
+                1,
+                2,
+                2,
+                true,
+                Map.of(
+                    InetAddress.getLoopbackAddress(),
+                    RequestFailureReason.READ_TOO_MANY_TOMBSTONES.code,
+                    getInetAddress(new byte[] {(byte) 192, (byte) 168, 0, 1}),
+                    RequestFailureReason.INDEX_NOT_AVAILABLE.code)),
+            new Assertions(
+                DatabaseException.Code.FAILED_READ_REQUEST,
+                true,
+                false,
+                false,
+                "Cassandra failure during read query at consistency QUORUM (2 responses were required but only 1 replica responded, 2 failed")),
         new TestArguments(
-            new WriteFailureException(mockNode("node1"),ConsistencyLevel.QUORUM, 1, 2, WriteType.SIMPLE, 2, Map.of(InetAddress.getLoopbackAddress(), RequestFailureReason.INCOMPATIBLE_SCHEMA.code, getInetAddress(new byte[] { (byte) 192, (byte) 168, 0, 1 }), RequestFailureReason.UNKNOWN_COLUMN.code)),
-            new Assertions(DatabaseException.Code.FAILED_WRITE_REQUEST, true, false, false, "Cassandra failure during write query at consistency QUORUM (2 responses were required but only 1 replica responded, 2 failed")),
-        new TestArguments( // the AllNodesFailed test only checks the code is TIMEOUT this checks the details of the error
-            new WriteTimeoutException(mockNode("node1"),ConsistencyLevel.QUORUM, 1, 2, WriteType.SIMPLE),
+            new WriteFailureException(
+                mockNode("node1"),
+                ConsistencyLevel.QUORUM,
+                1,
+                2,
+                WriteType.SIMPLE,
+                2,
+                Map.of(
+                    InetAddress.getLoopbackAddress(),
+                    RequestFailureReason.INCOMPATIBLE_SCHEMA.code,
+                    getInetAddress(new byte[] {(byte) 192, (byte) 168, 0, 1}),
+                    RequestFailureReason.UNKNOWN_COLUMN.code)),
+            new Assertions(
+                DatabaseException.Code.FAILED_WRITE_REQUEST,
+                true,
+                false,
+                false,
+                "Cassandra failure during write query at consistency QUORUM (2 responses were required but only 1 replica responded, 2 failed")),
+        new TestArguments( // the AllNodesFailed test only checks the code is TIMEOUT this checks
+            // the details of the error
+            new WriteTimeoutException(
+                mockNode("node1"), ConsistencyLevel.QUORUM, 1, 2, WriteType.SIMPLE),
             new Assertions(DatabaseException.Code.TIMEOUT_WRITING_DATA, true, false, true, null)),
         new TestArguments(
-            new ReadTimeoutException(mockNode("node1"), ConsistencyLevel.QUORUM, 1,2,false),
-            new Assertions(DatabaseException.Code.TIMEOUT_READING_DATA, true, false, true, null ))
-
-
-
-        );
+            new ReadTimeoutException(mockNode("node1"), ConsistencyLevel.QUORUM, 1, 2, false),
+            new Assertions(DatabaseException.Code.TIMEOUT_READING_DATA, true, false, true, null)));
   }
 
   private static InetAddress getInetAddress(byte[] address) {
@@ -258,6 +331,7 @@ public class DefaultDriverExceptionHandlerTest {
       throw new RuntimeException(e);
     }
   }
+
   private static AllNodesFailedException allFailedTwoNodesOneWriteTimeout() {
 
     var node1 = mockNode("node1");
@@ -266,10 +340,10 @@ public class DefaultDriverExceptionHandlerTest {
     var node2 = mockNode("node2");
     var node2Ex = new OverloadedException(node2);
 
-    return AllNodesFailedException.fromErrors(List.of(
-        new AbstractMap.SimpleEntry<>(node1, node1Ex),
-        new AbstractMap.SimpleEntry<>(node2, node2Ex)
-    ));
+    return AllNodesFailedException.fromErrors(
+        List.of(
+            new AbstractMap.SimpleEntry<>(node1, node1Ex),
+            new AbstractMap.SimpleEntry<>(node2, node2Ex)));
   }
 
   private static AllNodesFailedException allFailedTwoNodesAllAuth() {
@@ -280,10 +354,10 @@ public class DefaultDriverExceptionHandlerTest {
     var node2 = mockNode("node2");
     var node2Ex = new UnauthorizedException(node2, "auth node 2");
 
-    return AllNodesFailedException.fromErrors(List.of(
-        new AbstractMap.SimpleEntry<>(node1, node1Ex),
-        new AbstractMap.SimpleEntry<>(node2, node2Ex)
-    ));
+    return AllNodesFailedException.fromErrors(
+        List.of(
+            new AbstractMap.SimpleEntry<>(node1, node1Ex),
+            new AbstractMap.SimpleEntry<>(node2, node2Ex)));
   }
 
   private static AllNodesFailedException allFailedOneRuntime() {
@@ -295,18 +369,32 @@ public class DefaultDriverExceptionHandlerTest {
     var node2 = mockNode("node2");
     var node2Ex = new ClosedConnectionException("closed");
 
-    return AllNodesFailedException.fromErrors(List.of(
-        new AbstractMap.SimpleEntry<>(node1, node1Ex),
-        new AbstractMap.SimpleEntry<>(node2, node2Ex)
-    ));
+    return AllNodesFailedException.fromErrors(
+        List.of(
+            new AbstractMap.SimpleEntry<>(node1, node1Ex),
+            new AbstractMap.SimpleEntry<>(node2, node2Ex)));
+  }
+
+  private static AllNodesFailedException allFailedUnexpectedDriverError() {
+    // using an error here that we expect to map to the UNEXPECTED_DRIVER_ERROR
+    var node1 = mockNode("node1");
+    var node1Ex = new ClosedConnectionException("closed");
+
+    var node2 = mockNode("node2");
+    var node2Ex = new ClosedConnectionException("closed");
+
+    return AllNodesFailedException.fromErrors(
+        List.of(
+            new AbstractMap.SimpleEntry<>(node1, node1Ex),
+            new AbstractMap.SimpleEntry<>(node2, node2Ex)));
   }
 
   /**
    * Returns a fake {@link Node} that returns the message for toString
-   * <p>
-   * The errors only use toString (that we have seen so far)
+   *
+   * <p>The errors only use toString (that we have seen so far)
    */
-  private static Node mockNode(String message){
+  private static Node mockNode(String message) {
     return new Node() {
       @Override
       public String toString() {

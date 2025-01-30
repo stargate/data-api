@@ -2,41 +2,40 @@ package io.stargate.sgv2.jsonapi.util;
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.data.CqlVector;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Utility functions for getting strings and values to print from {@link com.datastax.oss.driver.api.core.cql.SimpleStatement}
+ * Utility functions for getting strings and values to print from {@link
+ * com.datastax.oss.driver.api.core.cql.SimpleStatement}
  *
- * <p>
- * Trims the long values we get with vectors etc.
+ * <p>Trims the long values we get with vectors etc.
  */
 public abstract class CqlPrintUtil {
 
-  public static List<Object> trimmedPositionalValues(SimpleStatement statement){
+  public static List<Object> trimmedPositionalValues(SimpleStatement statement) {
     return statement.getPositionalValues().stream()
-            .map(
-                value -> {
-                  if (value instanceof CqlVector<?> vector) {
-                    int vectorSize = vector.size();
-                    List<Object> trimmedList = new ArrayList<>();
+        .map(
+            value -> {
+              if (value instanceof CqlVector<?> vector) {
+                int vectorSize = vector.size();
+                List<Object> trimmedList = new ArrayList<>();
 
-                    // Add elements up to a maximum of 5 or the actual vector size, whichever is
-                    // smaller
-                    for (int i = 0; i < Math.min(5, vectorSize); i++) {
-                      trimmedList.add(vector.get(i));
-                    }
-                    if (trimmedList.size() < vectorSize) {
-                      trimmedList.add(
-                          "<vector<%s> trimmed, log at trace to get full value>"
-                              .formatted(vector.size()));
-                    }
-                    return trimmedList;
-                  }
-                  return value;
-                })
-            .toList();
+                // Add elements up to a maximum of 5 or the actual vector size, whichever is
+                // smaller
+                for (int i = 0; i < Math.min(5, vectorSize); i++) {
+                  trimmedList.add(vector.get(i));
+                }
+                if (trimmedList.size() < vectorSize) {
+                  trimmedList.add(
+                      "<vector<%s> trimmed, log at trace to get full value>"
+                          .formatted(vector.size()));
+                }
+                return trimmedList;
+              }
+              return value;
+            })
+        .toList();
   }
 
   public static String trimmedCql(SimpleStatement statement) {
@@ -56,10 +55,7 @@ public abstract class CqlPrintUtil {
           break;
         }
       }
-      cql =
-          cql.substring(0, floatPos)
-              + ", <vector<unknown> trimmed>"
-              + cql.substring(end);
+      cql = cql.substring(0, floatPos) + ", <vector<unknown> trimmed>" + cql.substring(end);
     }
     return cql;
   }

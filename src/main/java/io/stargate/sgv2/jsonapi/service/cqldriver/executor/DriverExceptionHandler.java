@@ -4,10 +4,7 @@ import com.datastax.oss.driver.api.core.*;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import com.datastax.oss.driver.api.core.servererrors.*;
 import com.datastax.oss.driver.api.core.type.codec.CodecNotFoundException;
-import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.ExceptionHandler;
-
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 /**
  * Interface for handling exceptions from the Java driver.
@@ -23,10 +20,8 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
  *
  * <p><b>NOTE:</b> Subclass {@link DefaultDriverExceptionHandler} rather than implement this
  * interface directly.
- *
  */
-public interface DriverExceptionHandler
-    extends ExceptionHandler<DriverException> {
+public interface DriverExceptionHandler extends ExceptionHandler<DriverException> {
 
   @Override
   default Class<DriverException> getExceptionClass() {
@@ -86,8 +81,7 @@ public interface DriverExceptionHandler
     return exception;
   }
 
-  default RuntimeException handle(
-      UnsupportedProtocolVersionException exception) {
+  default RuntimeException handle(UnsupportedProtocolVersionException exception) {
     return exception;
   }
 
@@ -126,8 +120,7 @@ public interface DriverExceptionHandler
     return exception;
   }
 
-  default RuntimeException handle(
-      InvalidConfigurationInQueryException exception) {
+  default RuntimeException handle(InvalidConfigurationInQueryException exception) {
     return exception;
   }
 

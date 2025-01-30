@@ -25,9 +25,11 @@ import java.util.function.Function;
  * easier to use.
  *
  * <p>Probably want to use the {@link #errVars(SchemaObject, Consumer)} normally, and then call the
- * others from the see consumer.
+ * others from the consumer.
  */
 public abstract class ErrorFormatters {
+
+  private ErrorFormatters() {}
 
   public static final String DELIMITER = ", ";
 
@@ -86,9 +88,6 @@ public abstract class ErrorFormatters {
   /**
    * NOTE: no formatter for a ApiTypeName because unsupported types, so we want to call apiName on
    * the ApDataType
-   *
-   * @param apiDataType
-   * @return
    */
   public static String errFmt(ApiDataType apiDataType) {
     return apiDataType.apiSupport().isUnsupportedAny()
@@ -97,7 +96,6 @@ public abstract class ErrorFormatters {
   }
 
   public static String errFmt(DataType dataType) {
-    // TODO:  should this return the API Table name for the type?
     return dataType.asCql(true, true);
   }
 
@@ -124,8 +122,8 @@ public abstract class ErrorFormatters {
   }
 
   /**
-   * Adds variables to a map for the <code>schemaObject</code> and then calls the consumer to add
-   * more.
+   * Adds variables to a map for the <code>schemaObject</code> and <code>Throwable</code> then calls
+   * the consumer to add more.
    *
    * <p>This makes it easy to get basic schema variables into the map and then add more as needed.
    * Remember, we can have more variables in the maps for the template that the template uses, but
@@ -134,8 +132,8 @@ public abstract class ErrorFormatters {
    * <pre>
    *     public RuntimeException handle(TableSchemaObject schemaObject, WriteTimeoutException exception) {
    *     return DatabaseException.Code.TABLE_WRITE_TIMEOUT.get(
-   *         errFmt(
-   *             schemaObject,
+   *         errVars(
+   *             schemaObject, exception,
    *             m -> {
    *               m.put("blockFor", String.valueOf(exception.getBlockFor()));
    *               m.put("received", String.valueOf(exception.getReceived()));

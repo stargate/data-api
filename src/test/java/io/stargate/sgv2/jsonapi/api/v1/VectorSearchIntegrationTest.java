@@ -455,7 +455,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
       // Convert the byte array to a float array
       float[] decodedVector = decodeBase64BinaryVectorToFloatArray(base64VectorFromResponse);
 
-      // Verify that the decoded float array is equal to the assertions vector
+      // Verify that the decoded float array is equal to the expected vector
       Assertions.assertArrayEquals(expectedVector, decodedVector, 0.0001f);
     }
 
@@ -520,7 +520,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
       // Convert the byte array to a float array
       float[] decodedVector = decodeBase64BinaryVectorToFloatArray(base64VectorFromResponse);
 
-      // Verify that the decoded float array is equal to the assertions vector
+      // Verify that the decoded float array is equal to the expected vector
       Assertions.assertArrayEquals(expectedVector, decodedVector, 0.0001f);
     }
 
@@ -1556,7 +1556,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("data.document.$vector", is(notNullValue()))
           .body("data.document.$vector", hasSize(BIG_VECTOR_SIZE));
 
-      // and verify it was set to value with assertions size
+      // and verify it was set to value with expected size
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -1782,7 +1782,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("data.document.$vector", is(notNullValue()))
           .body("data.document.$vector", hasSize(BIG_VECTOR_SIZE));
 
-      // and verify it was set to value with assertions size
+      // and verify it was set to value with expected size
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)

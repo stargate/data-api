@@ -60,7 +60,10 @@ public class DropTableCommandResolver implements CommandResolver<DropTableComman
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new GenericOperation<>(attempts, pageBuilder,
-        DefaultDriverExceptionHandler.Factory.withIdentifier(DropTableExceptionHandler::new, tableName));
+    return new GenericOperation<>(
+        attempts,
+        pageBuilder,
+        DefaultDriverExceptionHandler.Factory.withIdentifier(
+            DropTableExceptionHandler::new, tableName));
   }
 }

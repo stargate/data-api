@@ -10,17 +10,14 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Exception handler for the {@link CreateIndexAttempt}
- */
+/** Exception handler for the {@link CreateIndexAttempt} */
 public class CreateIndexExceptionHandler extends TableDriverExceptionHandler {
 
   private final CqlIdentifier indexName;
 
-  /**
-   * Compatible with {@link FactoryWithIdentifier}
-   */
-  public CreateIndexExceptionHandler(TableSchemaObject schemaObject, SimpleStatement statement,  CqlIdentifier indexName) {
+  /** Compatible with {@link FactoryWithIdentifier} */
+  public CreateIndexExceptionHandler(
+      TableSchemaObject schemaObject, SimpleStatement statement, CqlIdentifier indexName) {
     super(schemaObject, statement);
     this.indexName = Objects.requireNonNull(indexName, "indexName must not be null");
   }
@@ -28,7 +25,8 @@ public class CreateIndexExceptionHandler extends TableDriverExceptionHandler {
   @Override
   public RuntimeException handle(InvalidQueryException exception) {
 
-    // AlreadyExistsException is only used for tables and keyspaces :(
+    // AlreadyExistsException is only used for tables and keyspaces, so have to still do a string
+    // test :(
 
     // Need to wait for the keyspace to have the keyspace metadata to get the list of indexes :(
     if (exception.getMessage().contains("already exists")) {

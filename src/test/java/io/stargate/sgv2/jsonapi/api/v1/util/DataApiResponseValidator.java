@@ -82,7 +82,7 @@ public class DataApiResponseValidator {
   }
 
   /**
-   * Checks the structure of the response was as assertions whe the command is successful.
+   * Checks the structure of the response was as expected whe the command is successful.
    *
    * <p><b>NOTE:</b> This does not check the data in the response, i.e. does not check the doc ID in
    * an insert result, you need to do that.
@@ -330,7 +330,7 @@ public class DataApiResponseValidator {
   }
 
   public DataApiResponseValidator hasProjectionSchemaWith(String columnName, ApiDataType type) {
-    // assertions format
+    // expected format
     /**
      * "projectionSchema": { "country": { "type": "text" }, "name": { "type": "text" }, "human": {
      * "type": "boolean" }, "email": { "type": "text" }, "age": { "type": "tinyint" } }
@@ -387,7 +387,7 @@ public class DataApiResponseValidator {
   }
 
   public DataApiResponseValidator includeSortVector(boolean include) {
-    // assertions format
+    // expected format
     // "status": { "sortVector": [ 0.1, 0.2, 0.3 ]}
     if (include) {
       return body("status.sortVector", is(notNullValue()));

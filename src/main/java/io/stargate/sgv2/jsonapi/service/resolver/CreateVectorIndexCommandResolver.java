@@ -87,7 +87,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     return new GenericOperation<>(
         new OperationAttemptContainer<>(attempt),
         pageBuilder,
-        DefaultDriverExceptionHandler.Factory.withIdentifier(CreateIndexExceptionHandler::new, apiIndex.indexName())
-    );
+        DefaultDriverExceptionHandler.Factory.withIdentifier(
+            CreateIndexExceptionHandler::new, apiIndex.indexName()));
   }
 }

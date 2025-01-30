@@ -20,8 +20,8 @@ public class DefaultDriverExceptionHandlerTestData {
   public final CqlIdentifier TABLE_NAME =
       CqlIdentifier.fromInternal("table-" + System.currentTimeMillis());
 
-  public final SimpleStatement STATEMENT = SimpleStatement.newInstance("SELECT * FROM " + TABLE_NAME.asCql(true) + " WHERE x=?;", 1 );
-
+  public final SimpleStatement STATEMENT =
+      SimpleStatement.newInstance("SELECT * FROM " + TABLE_NAME.asCql(true) + " WHERE x=?;", 1);
 
   public DefaultDriverExceptionHandlerTestData() {
 

@@ -1363,7 +1363,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0));
 
-      // And verify that the document was inserted as assertions:
+      // And verify that the document was inserted as expected:
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)

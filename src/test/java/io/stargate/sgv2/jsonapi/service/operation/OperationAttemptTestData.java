@@ -58,6 +58,7 @@ public class OperationAttemptTestData extends TestDataSuplier {
             new TestOperationAttempt(
                 0, testData.schemaObject().emptyTableSchemaObject(), retryPolicy, resultSet));
 
-    return new OperationAttemptFixture<>(attempt, commandExecutor, exceptionHandlerFactory, resultSet);
+    return new OperationAttemptFixture<>(
+        attempt, commandExecutor, exceptionHandlerFactory, resultSet);
   }
 }

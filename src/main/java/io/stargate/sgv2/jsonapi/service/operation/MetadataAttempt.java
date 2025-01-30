@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,12 +53,14 @@ public abstract class MetadataAttempt<SchemaT extends SchemaObject>
     this.keyspaceMetadata = queryExecutor.getKeyspaceMetadata(schemaObject.name().keyspace());
 
     // TODO: BETTER ERROR
-    return new StatementContext(null, () -> keyspaceMetadata.isEmpty() ?
-      Uni.createFrom()
-          .failure(
-              SchemaException.Code.INVALID_KEYSPACE.get(
-                  Map.of("keyspace", schemaObject.name().keyspace())))
-      :
-        Uni.createFrom().item(new EmptyAsyncResultSet()));
+    return new StatementContext(
+        null,
+        () ->
+            keyspaceMetadata.isEmpty()
+                ? Uni.createFrom()
+                    .failure(
+                        SchemaException.Code.INVALID_KEYSPACE.get(
+                            Map.of("keyspace", schemaObject.name().keyspace())))
+                : Uni.createFrom().item(new EmptyAsyncResultSet()));
   }
 }

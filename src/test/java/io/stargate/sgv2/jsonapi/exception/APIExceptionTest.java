@@ -63,7 +63,7 @@ public class APIExceptionTest extends ConfiguredErrorTest {
             "value", TEST_DATA.VAR_VALUE);
 
     assertThat(exception.toString())
-        .as("APIException.toString() has assertions properties")
+        .as("APIException.toString() has expected properties")
         .contains(exception.getClass().getSimpleName())
         .contains(exception.family.name())
         .contains(exception.scope)

@@ -1,11 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.delete.Delete;
 import com.datastax.oss.driver.api.querybuilder.delete.DeleteSelection;
-import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
@@ -37,7 +35,7 @@ public class DeleteAttempt<SchemaT extends TableBasedSchemaObject>
     // bind and execute
     var statement = buildDeleteStatement();
     logStatement(LOGGER, "executeStatement()", statement);
-    return new StatementContext(statement, ()-> queryExecutor.executeWrite(statement));
+    return new StatementContext(statement, () -> queryExecutor.executeWrite(statement));
   }
 
   /**

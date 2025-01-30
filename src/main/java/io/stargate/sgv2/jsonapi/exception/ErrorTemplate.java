@@ -60,6 +60,13 @@ public record ErrorTemplate<T extends APIException>(
 
   public static final String NULL_REPLACEMENT = "(null)";
 
+  /**
+   * The Apache text substitution will throw an error if the substitution value is null, call this
+   * method to ensure the text value is not a null.
+   *
+   * @param value String value that may be a null.
+   * @return The value or {@link #NULL_REPLACEMENT} if the value is null.
+   */
   public static String replaceIfNull(String value) {
     return value == null ? NULL_REPLACEMENT : value;
   }
@@ -98,7 +105,7 @@ public record ErrorTemplate<T extends APIException>(
     allValues.putAll(ErrorConfig.getInstance().getSnippetVars());
 
     // the substitution will throw an exception if a variable is null
-    // easy way to handle this is to pre-process the map rather than custom substitutor
+    // easy way to handle this is to pre-process the map rather than custom substituter
     allValues.replaceAll((k, v) -> replaceIfNull(v));
 
     // set so IllegalArgumentException thrown if template var missing a value

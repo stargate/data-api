@@ -5,7 +5,6 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
-
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -36,9 +35,9 @@ public class GenericOperation<
    * @param attempts The attempts to run, grouped into a container that has config about how to run
    *     them as a group.
    * @param pageBuilder The builder to use for creating the {@link CommandResult} from the attempts.
-   * @param exceptionHandlerFactory The handler to use for exceptions thrown by the driver,
-   *     exceptions thrown by the driver are passed through here before being added to the {@link
-   *     OperationAttempt}.
+   * @param exceptionHandlerFactory Factory to create the handler to use for exceptions thrown by
+   *     the driver, exceptions thrown by the driver are passed through here before being added to
+   *     the {@link OperationAttempt}.
    */
   public GenericOperation(
       OperationAttemptContainer<SchemaT, AttemptT> attempts,

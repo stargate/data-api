@@ -25,9 +25,12 @@ public class OperationAttemptFixture<
       AsyncResultSet resultSet) {
 
     this.exceptionHandler = new DriverExceptionHandlerAssertions<>(this, exceptionHandlerFactory);
-    // the assertions for the exceptionHandlerFactory wrap the original factory so we know when it is
+    // the assertions for the exceptionHandlerFactory wrap the original factory so we know when it
+    // is
     // called and can run assertions on the handler
-    this.attempt = new OperationAttemptAssertions<>(this, attempt, queryExecutor, this.exceptionHandler.getHandlerFactory());
+    this.attempt =
+        new OperationAttemptAssertions<>(
+            this, attempt, queryExecutor, this.exceptionHandler.getHandlerFactory());
     this.queryExecutor = new CommandQueryExecutorAssertions<>(this, queryExecutor);
     this.resultSet = resultSet;
   }
