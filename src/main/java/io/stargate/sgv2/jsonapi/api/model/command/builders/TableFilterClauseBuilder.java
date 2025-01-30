@@ -1,6 +1,5 @@
-package io.stargate.sgv2.jsonapi.api.model.command.clause.filter.impl;
+package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
-import io.stargate.sgv2.jsonapi.api.model.command.builders.FilterClauseBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -17,7 +16,7 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
   }
 
   @Override
-  protected FilterClause buildAndValidate(LogicalExpression implicitAnd) {
-    return new TableFilterClause(implicitAnd).validate(schema);
+  protected FilterClause validateAndBuild(LogicalExpression implicitAnd) {
+    return new FilterClause(implicitAnd);
   }
 }

@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.model.command.clause.filter.impl;
+package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
@@ -14,19 +14,30 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import java.util.List;
 import java.util.Map;
 
-public class CollectionFilterClause extends FilterClause {
-  public CollectionFilterClause(LogicalExpression logicalExpression) {
-    super(logicalExpression);
+public class CollectionFilterClauseBuilder extends FilterClauseBuilder<CollectionSchemaObject> {
+  public CollectionFilterClauseBuilder(CollectionSchemaObject schema) {
+    super(schema);
   }
 
-  public CollectionFilterClause validate(CollectionSchemaObject collection) {
-    IndexingProjector indexingProjector = collection.indexingProjector();
+  // Collections have fixed "_id" as THE document id
+  @Override
+  protected boolean isDocId(String path) {
+    return DocumentConstants.Fields.DOC_ID.equals(path);
+  }
+
+  @Override
+  protected FilterClause validateAndBuild(LogicalExpression rootExpr) {
+    return new FilterClause(validateWithSchema(rootExpr));
+  }
+
+  private LogicalExpression validateWithSchema(LogicalExpression rootExpr) {
+    IndexingProjector indexingProjector = schema.indexingProjector();
 
     // If nothing specified, everything indexed
     if (!indexingProjector.isIdentityProjection()) {
-      validateCollectionLogicalExpression(logicalExpression, indexingProjector);
+      validateCollectionLogicalExpression(rootExpr, indexingProjector);
     }
-    return this;
+    return rootExpr;
   }
 
   private void validateCollectionLogicalExpression(

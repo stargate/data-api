@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.impl.CollectionFilterClauseBuilder;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.impl.TableFilterClauseBuilder;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -71,7 +69,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
           totalExprCount, operationsConfig.maxFilterObjectProperties());
     }
 
-    return buildAndValidate(implicitAnd);
+    return validateAndBuild(implicitAnd);
   }
 
   // // // Abstract methods for sub-classes to implement
@@ -83,7 +81,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
    * @param expression Root expression (implicit AND) to build the filter clause from
    * @return Built and validated filter clause
    */
-  protected abstract FilterClause buildAndValidate(LogicalExpression expression);
+  protected abstract FilterClause validateAndBuild(LogicalExpression expression);
 
   /**
    * Method for checking if the path refer to the document ID field: concept that only exists for

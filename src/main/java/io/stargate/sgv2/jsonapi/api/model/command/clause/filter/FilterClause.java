@@ -11,7 +11,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         """
              {"name": "Aaron", "country": "US"}
               """)
-public abstract class FilterClause {
+public class FilterClause {
   protected final LogicalExpression logicalExpression;
 
   public FilterClause(LogicalExpression logicalExpression) {
