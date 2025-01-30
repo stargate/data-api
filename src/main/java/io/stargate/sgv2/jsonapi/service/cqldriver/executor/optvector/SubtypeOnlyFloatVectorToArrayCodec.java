@@ -75,7 +75,8 @@ public class SubtypeOnlyFloatVectorToArrayCodec implements TypeCodec<float[]> {
 
   @Override
   public ByteBuffer encode(float[] array, ProtocolVersion protocolVersion) {
-    if (array == null) {
+    // May pass either null or empty array for missing/null/empty vector
+    if (array == null || array.length == 0) {
       return null;
     }
     int length = array.length;
@@ -90,9 +91,9 @@ public class SubtypeOnlyFloatVectorToArrayCodec implements TypeCodec<float[]> {
 
   @Override
   public float[] decode(ByteBuffer bytes, ProtocolVersion protocolVersion) {
+    // When we have missing or `null` valued vector we get here so:
     if (bytes == null || bytes.remaining() == 0) {
-      throw new IllegalArgumentException(
-          "Input ByteBuffer must not be null and must have non-zero remaining bytes");
+      return null;
     }
     // TODO: Do we want to treat this as an error?  We could also just ignore any extraneous bytes
     // if they appear.
