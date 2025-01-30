@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.JsonDefinition;
+import io.stargate.sgv2.jsonapi.api.model.command.builders.FilterClauseBuilder;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -16,14 +17,14 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     implementation = FilterClause.class,
     example =
         """
-                     {"name": "Aaron", "country": "US"}
-                      """)
+       {"name": "Aaron", "country": {"$eq": "NZ"}, "age": {"$gt": 40}}
+        """)
 public class FilterSpec extends JsonDefinition {
   /**
    * Lazily deserialized {@link FilterClause} from the JSON value. We need this due to existing
    * reliance on specific stateful instances of {@link FilterClause}.
    */
-  private transient FilterClause filterClause;
+  private FilterClause filterClause;
 
   /**
    * To deserialize the whole JSON value, need to ensure DELEGATING mode (instead of PROPERTIES).
@@ -42,7 +43,8 @@ public class FilterSpec extends JsonDefinition {
    */
   public FilterClause toFilterClause(CommandContext<?> ctx) {
     if (filterClause == null) {
-      filterClause = ctx.resolveFilterClause(json());
+      filterClause =
+          FilterClauseBuilder.builderFor(ctx.schemaObject()).build(ctx.operationsConfig(), json());
     }
     return filterClause;
   }

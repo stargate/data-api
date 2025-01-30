@@ -18,6 +18,10 @@ public class FilterClause {
     this.logicalExpression = Objects.requireNonNull(logicalExpression);
   }
 
+  public static FilterClause empty() {
+    return new FilterClause(LogicalExpression.empty());
+  }
+
   /**
    * Same as:
    *

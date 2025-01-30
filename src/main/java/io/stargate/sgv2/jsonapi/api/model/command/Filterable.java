@@ -12,6 +12,6 @@ public interface Filterable {
 
   default FilterClause filterClause(CommandContext<?> ctx) {
     FilterSpec spec = filterSpec();
-    return (spec == null) ? null : spec.toFilterClause(ctx);
+    return (spec == null) ? FilterClause.empty() : spec.toFilterClause(ctx);
   }
 }

@@ -44,14 +44,10 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
   }
 
   public FilterClause build(OperationsConfig operationsConfig, JsonNode filterNode) {
-    if (filterNode == null) {
-      return null;
+    if (filterNode == null || filterNode.isNull()) {
+      return FilterClause.empty();
     }
     if (!filterNode.isObject()) {
-      // JSON `null`s are ok though
-      if (filterNode.isNull()) {
-        return null;
-      }
       throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException();
     }
 
