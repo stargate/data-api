@@ -10,10 +10,10 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import java.util.Objects;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
@@ -56,148 +56,8 @@ public record CommandContext<T extends SchemaObject>(
       ApiFeatures apiFeatures,
       OperationsConfig operationsConfig) {
 
-    // TODO: upgrade to use the modern switch statements
-    // TODO: how to remove the unchecked cast ? Had to use unchecked cast to get back to the
-    // CommandContext<T>
-    if (schemaObject instanceof CollectionSchemaObject cso) {
-      return (CommandContext<T>)
-          forSchemaObject(
-              cso,
-              embeddingProvider,
-              commandName,
-              jsonProcessingMetricsReporter,
-              apiFeatures,
-              operationsConfig);
-    }
-    if (schemaObject instanceof TableSchemaObject tso) {
-      return (CommandContext<T>)
-          forSchemaObject(
-              tso,
-              embeddingProvider,
-              commandName,
-              jsonProcessingMetricsReporter,
-              apiFeatures,
-              operationsConfig);
-    }
-    if (schemaObject instanceof KeyspaceSchemaObject kso) {
-      return (CommandContext<T>)
-          forSchemaObject(
-              kso,
-              embeddingProvider,
-              commandName,
-              jsonProcessingMetricsReporter,
-              apiFeatures,
-              operationsConfig);
-    }
-    if (schemaObject instanceof DatabaseSchemaObject dso) {
-      return (CommandContext<T>)
-          forSchemaObject(
-              dso,
-              embeddingProvider,
-              commandName,
-              jsonProcessingMetricsReporter,
-              apiFeatures,
-              operationsConfig);
-    }
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "Unknown schema object type: %s", schemaObject.getClass().getName());
-  }
+    Objects.requireNonNull(schemaObject);
 
-  /**
-   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
-   * are working with
-   *
-   * @param schemaObject
-   * @param embeddingProvider
-   * @param commandName
-   * @param jsonProcessingMetricsReporter
-   * @return
-   */
-  public static CommandContext<CollectionSchemaObject> forSchemaObject(
-      CollectionSchemaObject schemaObject,
-      EmbeddingProvider embeddingProvider,
-      String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures,
-      OperationsConfig operationsConfig) {
-    return new CommandContext<>(
-        schemaObject,
-        embeddingProvider,
-        commandName,
-        jsonProcessingMetricsReporter,
-        apiFeatures,
-        operationsConfig);
-  }
-
-  /**
-   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
-   * are working with
-   *
-   * @param schemaObject
-   * @param embeddingProvider
-   * @param commandName
-   * @param jsonProcessingMetricsReporter
-   * @return
-   */
-  public static CommandContext<TableSchemaObject> forSchemaObject(
-      TableSchemaObject schemaObject,
-      EmbeddingProvider embeddingProvider,
-      String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures,
-      OperationsConfig operationsConfig) {
-    return new CommandContext<>(
-        schemaObject,
-        embeddingProvider,
-        commandName,
-        jsonProcessingMetricsReporter,
-        apiFeatures,
-        operationsConfig);
-  }
-
-  /**
-   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
-   * are working with
-   *
-   * @param schemaObject
-   * @param embeddingProvider
-   * @param commandName
-   * @param jsonProcessingMetricsReporter
-   * @return
-   */
-  public static CommandContext<KeyspaceSchemaObject> forSchemaObject(
-      KeyspaceSchemaObject schemaObject,
-      EmbeddingProvider embeddingProvider,
-      String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures,
-      OperationsConfig operationsConfig) {
-    return new CommandContext<>(
-        schemaObject,
-        embeddingProvider,
-        commandName,
-        jsonProcessingMetricsReporter,
-        apiFeatures,
-        operationsConfig);
-  }
-
-  /**
-   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
-   * are working with
-   *
-   * @param schemaObject
-   * @param embeddingProvider
-   * @param commandName
-   * @param jsonProcessingMetricsReporter
-   * @return
-   */
-  public static CommandContext<DatabaseSchemaObject> forSchemaObject(
-      DatabaseSchemaObject schemaObject,
-      EmbeddingProvider embeddingProvider,
-      String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures,
-      OperationsConfig operationsConfig) {
     return new CommandContext<>(
         schemaObject,
         embeddingProvider,
