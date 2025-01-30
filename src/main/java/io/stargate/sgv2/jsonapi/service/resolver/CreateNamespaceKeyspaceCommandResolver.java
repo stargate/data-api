@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import static io.stargate.sgv2.jsonapi.util.NamingValidationUtil.*;
-
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import java.util.Map;
 
