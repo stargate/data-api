@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.InvalidKeyspaceException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteType;
 import io.stargate.sgv2.jsonapi.exception.APIException;
@@ -60,26 +61,28 @@ public class DriverExceptionHandlerTest {
   public void defaultDriverErrorHandled() {
 
     var originalEx =
-        new WriteTimeoutException(null, ConsistencyLevel.QUORUM, 1, 2, WriteType.SIMPLE);
+        new InvalidKeyspaceException("unknown keyspace");
 
     // Not using mocks because want all the defaults in the interface to kick in
     var handler = new DriverExceptionHandler() {};
 
     var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(originalEx));
 
+    // This is a server error because the interface does not have the schema object as state
+    // so it cannot give a driver error that has table name etc.
     assertThat(actualEx)
         .as(
             "When a DriverException and no handler should return ServerException code=%s",
-            DatabaseException.Code.UNEXPECTED_DRIVER_ERROR.name())
+            ServerException.Code.UNEXPECTED_SERVER_ERROR.name())
         .isNotNull()
         .isInstanceOf(ServerException.class)
-        .hasMessageContaining(WriteTimeoutException.class.getSimpleName())
+        .hasMessageContaining(InvalidKeyspaceException.class.getSimpleName())
         .hasMessageContaining(originalEx.getMessage())
         .satisfies(
             e -> {
               var apiError = (APIException) e;
               assertThat(apiError.code)
-                  .isEqualTo(DatabaseException.Code.UNEXPECTED_DRIVER_ERROR.name());
+                  .isEqualTo(ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
             });
   }
 }
