@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 import static io.stargate.sgv2.jsonapi.util.ApiPropertyUtils.getOrDefault;
-
 import static io.stargate.sgv2.jsonapi.util.NamingValidationUtil.*;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -21,12 +20,10 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexAttemptBuild
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiRegularIndex;
+import io.stargate.sgv2.jsonapi.util.naming.NamingRules;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.util.Map;
-
-import static io.stargate.sgv2.jsonapi.util.NamingValidationUtil.*;
-import static io.stargate.sgv2.jsonapi.util.NamingValidationUtil.NULL_SCHEMA_NAME;
 
 /** Resolver for the {@link CreateIndexCommand}. */
 @ApplicationScoped
@@ -41,16 +38,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, CreateIndexCommand command) {
 
-      if (!isValidName(command.name())) {
-          throw SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
-                  Map.of(
-                          "schemeType",
-                          INDEX_SCHEMA_NAME,
-                          "nameLength",
-                          String.valueOf(NAME_LENGTH),
-                          "unsupportedSchemeName",
-                          command.name() == null ? NULL_SCHEMA_NAME : command.name()));
-      }
+    validateSchemaName(command.name(), NamingRules.INDEX);
 
     var indexType =
         command.indexType() == null

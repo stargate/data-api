@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import static io.stargate.sgv2.jsonapi.util.NamingValidationUtil.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -19,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.util.naming.NamingRules;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -61,7 +60,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateCollectionCommand command) {
 
-    validateName(command.name(), COLLECTION_SCHEMA_NAME);
+    validateSchemaName(command.name(), NamingRules.COLLECTION);
 
     if (command.options() == null) {
       return CreateCollectionOperation.withoutVectorSearch(
