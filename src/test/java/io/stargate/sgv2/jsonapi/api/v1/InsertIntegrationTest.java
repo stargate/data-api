@@ -1041,7 +1041,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       ObjectNode doc = MAPPER.createObjectNode();
       final String docId = "docWithLongString";
       doc.put(DocumentConstants.Fields.DOC_ID, docId);
-      // 1M / 8k means at most 125 max length Strings; add 63 (with _id 64)
+      // 1M / 8k means at most 125 max length Constants; add 63 (with _id 64)
       for (int i = 0; i < 63; ++i) {
         doc.put("text" + i, createBigString(strLen));
       }
@@ -2123,7 +2123,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     // Since we add one property before loop, reduce max by 1.
     // Target is around 1 meg; can have at most 2000 properties, and for
     // big doc we don't want to exceed 1000 bytes per property.
-    // So let's make properties arrays of 4 Strings to get there.
+    // So let's make properties arrays of 4 Constants to get there.
     final int ROOT_PROPS = 99;
     final int LEAF_PROPS = 20; // so it's slightly under 2000 total properties, max
     final String TEXT_1K = "abcd123 ".repeat(120); // 960 chars
