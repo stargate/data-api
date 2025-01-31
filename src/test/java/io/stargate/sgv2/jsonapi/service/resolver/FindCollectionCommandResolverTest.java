@@ -26,7 +26,7 @@ public class FindCollectionCommandResolverTest {
   @Nested
   class FindCollectionCommandResolveCommand {
 
-    CommandContext<KeyspaceSchemaObject> commandContext = TestConstants.KEYSPACE_CONTEXT;
+    CommandContext<KeyspaceSchemaObject> commandContext = TestConstants.keyspaceContext();
 
     @Test
     public void findCollection() throws Exception {

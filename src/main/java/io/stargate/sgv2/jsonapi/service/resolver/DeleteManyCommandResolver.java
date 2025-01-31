@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
@@ -65,7 +66,8 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
       CommandContext<TableSchemaObject> ctx, DeleteManyCommand command) {
 
     // If there is no filter or filter is empty for table deleteMany, build truncate attempt
-    if (command.filterClause() == null || command.filterClause().logicalExpression().isEmpty()) {
+    final FilterClause filterClause = command.filterClause(ctx);
+    if (filterClause == null || filterClause.isEmpty()) {
       var truncateAttempt = new TruncateAttemptBuilder<>(ctx.schemaObject()).build();
       var attemptContainer = new OperationAttemptContainer<>(truncateAttempt);
       var truncatePageBuilder =
@@ -93,8 +95,9 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
   @Override
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, DeleteManyCommand command) {
+    final FilterClause filterClause = command.filterClause(ctx);
     // If there is no filter or filter is empty, use Truncate operation instead of Delete
-    if (command.filterClause() == null || command.filterClause().logicalExpression().isEmpty()) {
+    if (filterClause == null || filterClause.isEmpty()) {
       return new TruncateCollectionOperation(ctx);
     }
     final FindCollectionOperation findCollectionOperation = getFindOperation(ctx, command);
