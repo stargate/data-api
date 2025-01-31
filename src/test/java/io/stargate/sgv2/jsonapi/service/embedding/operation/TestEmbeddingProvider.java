@@ -18,7 +18,8 @@ import java.util.List;
 public class TestEmbeddingProvider extends EmbeddingProvider {
 
   public static CommandContext<CollectionSchemaObject> commandContextWithVectorize =
-      new CommandContext<>(
+      TestConstants.collectionContext(
+          "testCommand",
           new CollectionSchemaObject(
               TestConstants.SCHEMA_OBJECT_NAME,
               null,
@@ -32,10 +33,8 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
                           EmbeddingSourceModel.OTHER,
                           new VectorizeDefinition("custom", "custom", null, null)))),
               null),
-          new TestEmbeddingProvider(),
-          "testCommand",
           null,
-          TestConstants.DEFAULT_API_FEATURES_FOR_TESTS);
+          new TestEmbeddingProvider());
 
   @Override
   public Uni<Response> vectorize(

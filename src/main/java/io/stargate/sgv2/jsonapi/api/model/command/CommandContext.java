@@ -4,12 +4,13 @@ import com.google.common.base.Preconditions;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import java.util.Objects;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
@@ -23,7 +24,8 @@ public record CommandContext<T extends SchemaObject>(
     EmbeddingProvider embeddingProvider,
     String commandName,
     JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-    ApiFeatures apiFeatures) {
+    ApiFeatures apiFeatures,
+    OperationsConfig operationsConfig) {
 
   // TODO: this is what the original EMPTY had, no idea why the name of the command is missing
   // this is used by the GeneralResource
@@ -48,113 +50,18 @@ public record CommandContext<T extends SchemaObject>(
       EmbeddingProvider embeddingProvider,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures) {
+      ApiFeatures apiFeatures,
+      OperationsConfig operationsConfig) {
 
-    // TODO: upgrade to use the modern switch statements
-    // TODO: how to remove the unchecked cast ? Had to use unchecked cast to get back to the
-    // CommandContext<T>
-    if (schemaObject instanceof CollectionSchemaObject cso) {
-      return (CommandContext<T>)
-          forSchemaObject(
-              cso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
-    }
-    if (schemaObject instanceof TableSchemaObject tso) {
-      return (CommandContext<T>)
-          forSchemaObject(
-              tso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
-    }
-    if (schemaObject instanceof KeyspaceSchemaObject kso) {
-      return (CommandContext<T>)
-          forSchemaObject(
-              kso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
-    }
-    if (schemaObject instanceof DatabaseSchemaObject dso) {
-      return (CommandContext<T>)
-          forSchemaObject(
-              dso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
-    }
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "Unknown schema object type: %s", schemaObject.getClass().getName());
-  }
+    Objects.requireNonNull(schemaObject);
 
-  /**
-   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
-   * are working with
-   *
-   * @param schemaObject
-   * @param embeddingProvider
-   * @param commandName
-   * @param jsonProcessingMetricsReporter
-   * @return
-   */
-  public static CommandContext<CollectionSchemaObject> forSchemaObject(
-      CollectionSchemaObject schemaObject,
-      EmbeddingProvider embeddingProvider,
-      String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures) {
     return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
-  }
-
-  /**
-   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
-   * are working with
-   *
-   * @param schemaObject
-   * @param embeddingProvider
-   * @param commandName
-   * @param jsonProcessingMetricsReporter
-   * @return
-   */
-  public static CommandContext<TableSchemaObject> forSchemaObject(
-      TableSchemaObject schemaObject,
-      EmbeddingProvider embeddingProvider,
-      String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures) {
-    return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
-  }
-
-  /**
-   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
-   * are working with
-   *
-   * @param schemaObject
-   * @param embeddingProvider
-   * @param commandName
-   * @param jsonProcessingMetricsReporter
-   * @return
-   */
-  public static CommandContext<KeyspaceSchemaObject> forSchemaObject(
-      KeyspaceSchemaObject schemaObject,
-      EmbeddingProvider embeddingProvider,
-      String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures) {
-    return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
-  }
-
-  /**
-   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
-   * are working with
-   *
-   * @param schemaObject
-   * @param embeddingProvider
-   * @param commandName
-   * @param jsonProcessingMetricsReporter
-   * @return
-   */
-  public static CommandContext<DatabaseSchemaObject> forSchemaObject(
-      DatabaseSchemaObject schemaObject,
-      EmbeddingProvider embeddingProvider,
-      String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures) {
-    return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
+        schemaObject,
+        embeddingProvider,
+        commandName,
+        jsonProcessingMetricsReporter,
+        apiFeatures,
+        operationsConfig);
   }
 
   @SuppressWarnings("unchecked")
@@ -223,5 +130,13 @@ public record CommandContext<T extends SchemaObject>(
       return new SmallRyeConfigBuilder().build();
     }
     return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+  }
+
+  public OperationsConfig operationsConfig() {
+    if (operationsConfig != null) {
+      return operationsConfig;
+    }
+    // During tests:
+    return getConfig(OperationsConfig.class);
   }
 }
