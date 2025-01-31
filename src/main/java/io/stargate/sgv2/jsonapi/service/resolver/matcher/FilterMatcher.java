@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
@@ -32,14 +33,13 @@ public class FilterMatcher<T extends Command & Filterable> {
     this.strategy = strategy;
   }
 
-  public Optional<CaptureGroups<T>> apply(T command) {
-    FilterClause filter = command.filterClause();
+  public Optional<CaptureGroups<T>> apply(CommandContext<?> ctx, T command) {
+    final FilterClause filter = command.filterClause(ctx);
     // construct a default CaptureGroups, with default AND relation, empty captureGroupsList,
     // empty captureGroupMap
-    CaptureGroups<T> captureGroups =
-        new CaptureGroups<T>(DBLogicalExpression.DBLogicalOperator.AND);
+    CaptureGroups<T> captureGroups = new CaptureGroups<>(DBLogicalExpression.DBLogicalOperator.AND);
     if (strategy == MatchStrategy.EMPTY) {
-      if (filter == null || filter.logicalExpression().isEmpty()) {
+      if (filter == null || filter.isEmpty()) {
         return Optional.of(captureGroups);
       } else {
         return Optional.empty();
@@ -50,9 +50,7 @@ public class FilterMatcher<T extends Command & Filterable> {
     }
     List<Capture> unmatchedCaptures = new ArrayList<>(captures);
     final MatchStrategyCounter matchStrategyCounter =
-        new MatchStrategyCounter(
-            unmatchedCaptures.size(),
-            filter.logicalExpression().getTotalComparisonExpressionCount());
+        new MatchStrategyCounter(unmatchedCaptures.size(), filter.size());
     // capture recursively, resolve logicalExpression to captureGroups
     captureRecursive(
         captureGroups, filter.logicalExpression(), unmatchedCaptures, matchStrategyCounter);

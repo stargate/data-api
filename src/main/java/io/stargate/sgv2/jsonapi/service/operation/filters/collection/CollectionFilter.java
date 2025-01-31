@@ -123,7 +123,7 @@ public abstract class CollectionFilter extends DBFilterBase {
 
   protected static JsonNode toJsonNode(JsonNodeFactory nodeFactory, Map<String, Object> mapValues) {
     final ObjectNode objectNode = nodeFactory.objectNode();
-    mapValues.forEach((k, v) -> objectNode.put(k, toJsonNode(nodeFactory, v)));
+    mapValues.forEach((k, v) -> objectNode.set(k, toJsonNode(nodeFactory, v)));
     return objectNode;
   }
 }

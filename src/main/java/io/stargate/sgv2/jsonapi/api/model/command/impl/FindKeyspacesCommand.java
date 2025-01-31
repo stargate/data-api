@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that lists all available keyspaces")
-@JsonTypeName("findKeyspaces")
+@JsonTypeName(CommandName.Names.FIND_KEYSPACES)
 public record FindKeyspacesCommand() implements GeneralCommand, NoOptionsCommand {
 
   /** {@inheritDoc} */

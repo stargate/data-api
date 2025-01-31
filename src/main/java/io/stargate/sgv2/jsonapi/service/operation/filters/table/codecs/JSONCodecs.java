@@ -60,6 +60,14 @@ public abstract class JSONCodecs {
           JSONCodec.ToCQL.unsafeIdentity(),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
+  // we can only read counters from CQL, do not support writing them
+  public static final JSONCodec<Long, Long> COUNTER_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.COUNTER,
+          JSONCodec.ToCQL.unsafeIdentity(),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
   public static final JSONCodec<BigDecimal, BigDecimal> DECIMAL_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
@@ -106,7 +114,7 @@ public abstract class JSONCodecs {
           JSONCodec.ToCQL.safeNumber(Long::doubleValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  // Codec needed to support "not-a-number" values: encoded as Strings in JSON
+  // Codec needed to support "not-a-number" values: encoded as Constants in JSON
   public static final JSONCodec<String, Double> DOUBLE_FROM_STRING =
       new JSONCodec<>(
           GenericType.STRING,
@@ -138,7 +146,7 @@ public abstract class JSONCodecs {
           JSONCodec.ToCQL.safeNumber(Long::floatValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  // Codec needed to support "not-a-number" values: encoded as Strings in JSON
+  // Codec needed to support "not-a-number" values: encoded as Constants in JSON
   public static final JSONCodec<String, Float> FLOAT_FROM_STRING =
       new JSONCodec<>(
           GenericType.STRING,

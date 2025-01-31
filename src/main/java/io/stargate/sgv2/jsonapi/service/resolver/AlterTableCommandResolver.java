@@ -91,6 +91,18 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       TableSchemaObject tableSchemaObject,
       AlterTableOperationImpl.AddColumns addColumnsOperation) {
 
+    // 1. "add":{}
+    // 2. "add":{"columns":null}
+    // 3  "add":{"columns":{}}
+    if (addColumnsOperation.columns() == null || addColumnsOperation.columns().isEmpty()) {
+      throw SchemaException.Code.MISSING_ALTER_TABLE_OPERATIONS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("missingTableOperation", "add");
+              }));
+    }
+
     var apiTableDef = tableSchemaObject.apiTableDef();
     // we can have multiple attempts to run if we need to also update the custom properties on the
     // table
@@ -107,7 +119,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
             .collect(Collectors.toList());
 
     if (!duplicateColumns.isEmpty()) {
-      throw SchemaException.Code.COLUMN_ALREADY_EXISTS.get(
+      throw SchemaException.Code.CANNOT_ADD_EXISTING_COLUMNS.get(
           errVars(
               tableSchemaObject,
               map -> {
@@ -144,6 +156,18 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       AlterTableAttemptBuilder builder,
       TableSchemaObject tableSchemaObject,
       AlterTableOperationImpl.DropColumns dropColumnsOperation) {
+
+    // 1. "drop":{}
+    // 2. "drop":{"columns":null}
+    // 3  "drop":{"columns":[]}
+    if (dropColumnsOperation.columns() == null || dropColumnsOperation.columns().isEmpty()) {
+      throw SchemaException.Code.MISSING_ALTER_TABLE_OPERATIONS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("missingTableOperation", "drop");
+              }));
+    }
 
     var apiTableDef = tableSchemaObject.apiTableDef();
     // have to run multiple attempts if a vectorized column is dropped
@@ -240,6 +264,18 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       TableSchemaObject tableSchemaObject,
       AlterTableOperationImpl.AddVectorize addVectorizeOperation) {
 
+    // 1. "addVectorize":{}
+    // 2. "addVectorize":{"columns":null}
+    // 3  "addVectorize":{"columns":{}}
+    if (addVectorizeOperation.columns() == null || addVectorizeOperation.columns().isEmpty()) {
+      throw SchemaException.Code.MISSING_ALTER_TABLE_OPERATIONS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("missingTableOperation", "addVectorize");
+              }));
+    }
+
     var apiTableDef = tableSchemaObject.apiTableDef();
 
     // First need to get the definition of the column, because we need to get the dimensions of the
@@ -265,7 +301,13 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
               }));
     }
 
-    var vectorColumns = apiTableDef.allColumns().filterBy(ApiTypeName.VECTOR);
+    // TODO: This is a hack, we need to refactor these methods in ApiColumnDefContainer.
+    // Currently, this matcher is just for match vector columns, and then to avoid hit the
+    // typeName() placeholder exception in UnsupportedApiDataType
+    var matcher =
+        ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true);
+    var vectorColumns =
+        apiTableDef.allColumns().filterBySupport(matcher).filterByApiTypeName(ApiTypeName.VECTOR);
     var nonVectorColumns =
         addedVectorizeDesc.keySet().stream()
             .filter(identifier -> !vectorColumns.containsKey(identifier))
@@ -309,6 +351,18 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       TableSchemaObject tableSchemaObject,
       AlterTableOperationImpl.DropVectorize dropVectorizeOperation) {
 
+    // 1. "dropVectorize":{}
+    // 2. "dropVectorize":{"columns":null}
+    // 3  "dropVectorize":{"columns":[]}
+    if (dropVectorizeOperation.columns() == null || dropVectorizeOperation.columns().isEmpty()) {
+      throw SchemaException.Code.MISSING_ALTER_TABLE_OPERATIONS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("missingTableOperation", "dropVectorize");
+              }));
+    }
+
     var apiTableDef = tableSchemaObject.apiTableDef();
     var existingVectorizeDefs = apiTableDef.allColumns().getVectorizeDefs();
 
@@ -317,7 +371,14 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
             .map(CqlIdentifierUtil::cqlIdentifierFromUserInput)
             .toList();
 
-    var vectorColumns = apiTableDef.allColumns().filterBy(ApiTypeName.VECTOR);
+    // TODO. This is a hack, we need to refactor these methods in ApiColumnDefContainer.
+    // Currently, this matcher is just for match vector columns, and then to avoid hit the
+    // typeName() placeholder exception in UnsupportedApiDataType
+    var matcher =
+        ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true);
+    var vectorColumns =
+        apiTableDef.allColumns().filterBySupport(matcher).filterByApiTypeName(ApiTypeName.VECTOR);
+
     var unknownColumns =
         droppedColumns.stream()
             .filter(c -> !apiTableDef.allColumns().containsKey(c))

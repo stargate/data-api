@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +30,10 @@ import java.util.function.Function;
 public abstract class ErrorFormatters {
 
   public static final String DELIMITER = ", ";
+
+  public static <T> String errFmtJoin(T[] list, Function<T, String> formatter) {
+    return errFmtJoin(Arrays.stream(list).map(formatter).toList());
+  }
 
   public static <T> String errFmtJoin(Collection<T> list, Function<T, String> formatter) {
     return errFmtJoin(list.stream().map(formatter).toList());
@@ -86,7 +91,9 @@ public abstract class ErrorFormatters {
    * @return
    */
   public static String errFmt(ApiDataType apiDataType) {
-    return apiDataType.apiName();
+    return apiDataType.apiSupport().isUnsupportedAny()
+        ? "UNSUPPORTED CQL type: " + apiDataType.cqlType().asCql(true, true)
+        : apiDataType.apiName();
   }
 
   public static String errFmt(DataType dataType) {

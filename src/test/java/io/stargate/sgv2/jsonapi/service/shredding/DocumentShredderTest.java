@@ -331,10 +331,23 @@ public class DocumentShredderTest {
           catchThrowable(() -> documentShredder.shred(objectMapper.readTree("{ \"_id\" : [ ] }")));
 
       assertThat(t)
-          .isNotNull()
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE)
           .hasMessage(
-              "Bad type for '_id' property: Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got ARRAY")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE);
+              "Bad type for '_id' property: Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got ARRAY: []");
+    }
+
+    @Test
+    public void docBadDocIdTypeObjectNotEJSON() {
+      Throwable t =
+          catchThrowable(
+              () ->
+                  documentShredder.shred(
+                      objectMapper.readTree("{ \"_id\" : { \"foo\": \"bar\" } }")));
+
+      assertThat(t)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE)
+          .hasMessage(
+              "Bad type for '_id' property: Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got OBJECT: {\"foo\":\"bar\"}");
     }
 
     @Test

@@ -1,26 +1,39 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.DataType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 
 /** Interface defining the api data type for collection types */
 public abstract class CollectionApiDataType implements ApiDataType {
-  private final ApiTypeName typeName;
-  private final PrimitiveApiDataTypeDef valueType;
-  private final DataType cqlType;
-  private final ColumnDesc columnDesc;
+
+  // Default collection support, they cannot be used in filtering
+  private static final ApiSupportDef DEFAULT_API_SUPPORT =
+      new ApiSupportDef.Support(true, true, true, false);
+
+  // Default collection support when the type is frozen, they cannot be used for create but we can
+  // insert them
+  private static final ApiSupportDef DEFAULT_API_SUPPORT_FROZEN =
+      new ApiSupportDef.Support(false, true, true, false);
+
+  protected static ApiSupportDef defaultApiSupport(boolean isFrozen) {
+    return isFrozen ? DEFAULT_API_SUPPORT_FROZEN : DEFAULT_API_SUPPORT;
+  }
+
+  protected final ApiTypeName typeName;
+  protected final PrimitiveApiDataTypeDef valueType;
+  protected final DataType cqlType;
+  protected final ApiSupportDef apiSupport;
 
   protected CollectionApiDataType(
       ApiTypeName typeName,
       PrimitiveApiDataTypeDef valueType,
       DataType cqlType,
-      ColumnDesc columnDesc) {
+      ApiSupportDef apiSupport) {
     // no null checks here, so subclasses can pass null and then override to create on demand if
     // they want to.
     this.typeName = typeName;
     this.valueType = valueType;
     this.cqlType = cqlType;
-    this.columnDesc = columnDesc;
+    this.apiSupport = apiSupport;
   }
 
   @Override
@@ -39,18 +52,13 @@ public abstract class CollectionApiDataType implements ApiDataType {
   }
 
   @Override
-  public boolean isUnsupported() {
-    return false;
+  public ApiSupportDef apiSupport() {
+    return apiSupport;
   }
 
   @Override
   public DataType cqlType() {
     return cqlType;
-  }
-
-  @Override
-  public ColumnDesc columnDesc() {
-    return columnDesc;
   }
 
   public PrimitiveApiDataTypeDef getValueType() {

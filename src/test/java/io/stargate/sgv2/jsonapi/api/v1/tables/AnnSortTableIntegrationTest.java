@@ -80,7 +80,7 @@ public class AnnSortTableIntegrationTest extends AbstractTableIntegrationTestBas
         .templated()
         .find(commandName, null, null, sort)
         .hasSingleApiError(
-            SortException.Code.MORE_THAN_ONE_VECTOR_SORT,
+            SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORS,
             SortException.class,
             "The command attempted to sort on the columns: %s, %s."
                 .formatted(
@@ -143,7 +143,7 @@ public class AnnSortTableIntegrationTest extends AbstractTableIntegrationTestBas
         .templated()
         .find(commandName, null, null, sort)
         .hasSingleApiError(
-            SortException.Code.CANNOT_MIX_VECTOR_AND_NON_VECTOR_SORT,
+            SortException.Code.CANNOT_SORT_VECTOR_AND_NON_VECTOR_COLUMNS,
             SortException.class,
             "The command attempted to sort the vector columns: %s.\nThe command attempted to sort the non-vector columns: %s."
                 .formatted(
@@ -207,5 +207,28 @@ public class AnnSortTableIntegrationTest extends AbstractTableIntegrationTestBas
     } else {
       validator.hasSingleDocument(VectorDimension5TableScenario.KNOWN_VECTOR_ROW_JSON);
     }
+  }
+
+  @Test
+  public void findSortVectorExceedLimit() {
+
+    var sort =
+        ImmutableMap.of(
+            SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL),
+            SCENARIO.columnValue(VectorDimension5TableScenario.INDEXED_VECTOR_COL));
+
+    var limit = 1001;
+    Map<String, Object> options = ImmutableMap.of("limit", limit);
+
+    assertTableCommand(keyspaceName, TABLE_NAME)
+        .templated()
+        .find(null, null, sort, options)
+        .hasSingleApiError(
+            SortException.Code.CANNOT_VECTOR_SORT_WITH_LIMIT_EXCEEDS_MAX,
+            SortException.class,
+            "Vector sorting is limited to a maximum of 1000 rows.",
+            "The command attempted to sort the vector column: %s with a limit of %s."
+                .formatted(
+                    SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL), limit));
   }
 }

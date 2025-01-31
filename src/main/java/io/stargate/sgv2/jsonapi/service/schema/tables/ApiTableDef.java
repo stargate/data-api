@@ -64,7 +64,7 @@ public class ApiTableDef {
 
     this.unsupportedColumns =
         allColumns.values().stream()
-            .filter(columnDef -> columnDef.type().isUnsupported())
+            .filter(columnDef -> columnDef.type().apiSupport().isUnsupportedAny())
             .collect(
                 ApiColumnDefContainer::new,
                 ApiColumnDefContainer::put,
@@ -93,7 +93,7 @@ public class ApiTableDef {
     var columnsDesc = new ColumnsDescContainer();
     allColumns
         .values()
-        .forEach(columnDef -> columnsDesc.put(columnDef.name(), columnDef.type().columnDesc()));
+        .forEach(columnDef -> columnsDesc.put(columnDef.name(), columnDef.columnDesc()));
 
     return io.stargate.sgv2.jsonapi.api.model.command.table.TableDesc.from(
         name, new TableDefinitionDesc(columnsDesc, primaryKey));
@@ -227,7 +227,7 @@ public class ApiTableDef {
       // TODO: not sure about the validation happening here, was part of the code I moved
       // should be in the builder for the attempt
       if (partitionIdentifiers.isEmpty()) {
-        throw SchemaException.Code.ZERO_PARTITION_COLUMNS.get(
+        throw SchemaException.Code.MISSING_PARTITION_COLUMNS.get(
             Map.of("tableColumns", errFmtCqlIdentifier(allColumnDefs.keySet())));
       }
 

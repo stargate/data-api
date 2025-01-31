@@ -34,7 +34,8 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                     "caseSensitive": false,
                     "normalize": true
                   }
-                }
+                },
+                "indexType": "regular"
               }
               """;
 
@@ -59,7 +60,8 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                         "caseSensitive": true,
                         "normalize": false
                       }
-                    }
+                    },
+                    "indexType": "regular"
                   }
                   """;
 
@@ -73,7 +75,8 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                      "metric": "cosine",
                      "sourceModel": "openai-v3-small"
                    }
-                 }
+                 },
+                 "indexType": "vector"
                }
               """;
 

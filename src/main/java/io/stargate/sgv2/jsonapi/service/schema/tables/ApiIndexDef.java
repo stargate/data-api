@@ -9,21 +9,40 @@ import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.util.Map;
 
 /**
- * The API definition of an Index, is an interface so the unsupported indexs can be represented as
- * well.
+ * The internal API definition of an Index.
+ *
+ * <p>Is an interface so the unsupported indexes can be represented as easily.
  */
 public interface ApiIndexDef extends PrettyPrintable {
 
+  /** The name of the index in the database. */
   CqlIdentifier indexName();
 
+  /**
+   * The target column the index is on.
+   *
+   * <p>Code should not assume a column can only have one index.
+   */
   CqlIdentifier targetColumn();
 
+  /** The type of index from the API perspective. */
   ApiIndexType indexType();
 
+  /** How to describe this index in the public HTTP API. */
   IndexDesc<?> indexDesc();
 
+  /**
+   * Raw CQL indexing options from {@link
+   * com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata#getOptions()}.
+   */
   Map<String, String> indexOptions();
 
+  /**
+   * If the index is unsupported by the API, unsupported indexes need to be listed from <code>
+   * listIndexes</code> but cannot be created.
+   *
+   * @return
+   */
   default boolean isUnsupported() {
     return false;
   }

@@ -19,6 +19,16 @@ public enum SimilarityFunction {
   EUCLIDEAN("euclidean", "EUCLIDEAN", "similarity_euclidean"),
   DOT_PRODUCT("dot_product", "DOT_PRODUCT", "similarity_dot_product");
 
+  /** For use with API swagger docs */
+  public interface ApiConstants {
+    String COSINE = "cosine";
+    String EUCLIDEAN = "euclidean";
+    String DOT_PRODUCT = "dot_product";
+
+    String ALL = COSINE + ", " + EUCLIDEAN + ", " + DOT_PRODUCT;
+    String ALL_REG_EXP = "(" + COSINE + "|" + EUCLIDEAN + "|" + DOT_PRODUCT + ")";
+  }
+
   public static final SimilarityFunction DEFAULT = COSINE;
 
   private String cqlProjectionFunction;
