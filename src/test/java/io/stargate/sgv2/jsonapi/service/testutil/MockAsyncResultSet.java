@@ -94,6 +94,10 @@ public class MockAsyncResultSet implements AsyncResultSet {
 
   @Override
   public boolean wasApplied() {
-    return rows.get(0).getBoolean("[applied]");
+    Row row = rows.get(0);
+    if (row == null) {
+      throw new IllegalArgumentException("No rows in result set: cannot call 'wasApplied()'");
+    }
+    return row.getBoolean("[applied]");
   }
 }

@@ -46,7 +46,7 @@ public class FindOneAndReplaceCommandResolverTest {
   @Nested
   class Resolve {
 
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
+    CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
 
     @Test
     public void invalidVectorizeUsage() throws Exception {
