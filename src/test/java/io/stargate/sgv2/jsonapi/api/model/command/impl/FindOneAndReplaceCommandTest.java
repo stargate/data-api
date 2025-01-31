@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
@@ -44,8 +43,7 @@ public class FindOneAndReplaceCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndReplaceCommand.class,
               findOneAndReplaceCommand -> {
-                FilterClause filterClause = findOneAndReplaceCommand.filterClause();
-                assertThat(filterClause).isNotNull();
+                assertThat(findOneAndReplaceCommand.filterSpec()).isNotNull();
                 final JsonNode replacementDocument = findOneAndReplaceCommand.replacementDocument();
                 assertThat(replacementDocument).isNotNull();
                 final FindOneAndReplaceCommand.Options options = findOneAndReplaceCommand.options();
@@ -73,8 +71,7 @@ public class FindOneAndReplaceCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndReplaceCommand.class,
               findOneAndReplaceCommand -> {
-                FilterClause filterClause = findOneAndReplaceCommand.filterClause();
-                assertThat(filterClause).isNotNull();
+                assertThat(findOneAndReplaceCommand.filterSpec()).isNotNull();
                 final JsonNode replacementDocument = findOneAndReplaceCommand.replacementDocument();
                 assertThat(replacementDocument).isNotNull();
                 final FindOneAndReplaceCommand.Options options = findOneAndReplaceCommand.options();

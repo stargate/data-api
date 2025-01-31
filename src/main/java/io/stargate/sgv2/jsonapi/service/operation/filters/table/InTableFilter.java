@@ -4,6 +4,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnMetadata;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.relation.ColumnRelationBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
@@ -24,7 +25,7 @@ import java.util.List;
 /** API filter $in and $nin against table column. */
 public class InTableFilter extends TableFilter {
 
-  // TODO: this is prob subvlass NativeTypeTableFilter because it is not against a collection
+  // TODO: this is prob sub-class NativeTypeTableFilter because it is not against a collection
   private final List<Object> arrayValue;
 
   public final Operator operator;
@@ -101,7 +102,12 @@ public class InTableFilter extends TableFilter {
                   map.put("invalidColumn", path);
                   map.put(
                       "columnType",
-                      tableSchemaObject.tableMetadata().getColumn(path).get().getType().toString());
+                      tableSchemaObject
+                          .tableMetadata()
+                          .getColumn(CqlIdentifier.fromInternal(path))
+                          .get()
+                          .getType()
+                          .toString());
                 }));
       }
     }

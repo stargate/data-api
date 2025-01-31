@@ -7,6 +7,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.junit.mockito.InjectMock;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
@@ -20,7 +21,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
@@ -82,7 +82,8 @@ public class CommandResolverWithVectorizerTest {
     protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
     protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
     private final CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT =
-        new CommandContext<>(
+        TestConstants.collectionContext(
+            "testCommand",
             new CollectionSchemaObject(
                 new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME),
                 null,
@@ -96,10 +97,7 @@ public class CommandResolverWithVectorizerTest {
                             EmbeddingSourceModel.OTHER,
                             null))),
                 null),
-            null,
-            null,
-            null,
-            ApiFeatures.empty());
+            null);
 
     @Test
     public void find() throws Exception {
