@@ -19,6 +19,7 @@ import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** An index of type {@link ApiIndexType#VECTOR} on vector column */
 public class ApiVectorIndex extends ApiSupportedIndex {
   private static final Logger LOGGER = LoggerFactory.getLogger(ApiVectorIndex.class);
 
@@ -26,11 +27,11 @@ public class ApiVectorIndex extends ApiSupportedIndex {
       FROM_DESC_FACTORY = new UserDescFactory();
   public static final IndexFactoryFromCql FROM_CQL_FACTORY = new CqlTypeFactory();
 
-  // because we actually use the similarityFunction when doing reads better to avoid checking the
-  // options where it is
-  // only a string. And for that, and the model, they have different names for different usages, so
-  // to reduce
-  // confusion we hold them here, and rely on the factory to sort it out.
+  // We actually use the similarityFunction when doing reads, so avoid checking the options map
+  // where it is
+  // a string. Same for the model. The factories will have validated these values and ensure they
+  // are in
+  // sync with what is in the options map.
   private final SimilarityFunction similarityFunction;
   private final EmbeddingSourceModel sourceModel;
 
@@ -52,7 +53,6 @@ public class ApiVectorIndex extends ApiSupportedIndex {
     var definitionOptions =
         new VectorIndexDefinitionDesc.VectorIndexDescOptions(
             similarityFunction.apiName(), sourceModel.apiName());
-
     var definition =
         new VectorIndexDefinitionDesc(cqlIdentifierToJsonKey(targetColumn), definitionOptions);
 
@@ -63,14 +63,15 @@ public class ApiVectorIndex extends ApiSupportedIndex {
       }
 
       @Override
+      public String indexType() {
+        return indexType.apiName();
+      }
+
+      @Override
       public VectorIndexDefinitionDesc definition() {
         return definition;
       }
     };
-  }
-
-  public SimilarityFunction similarityFunction() {
-    return similarityFunction;
   }
 
   /**
@@ -78,7 +79,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
    * to a {@link SimilarityFunction} enum value.
    *
    * @param functionName The raw name from the user input or CQL index, can be null or empty
-   * @param indexMetadata if the functionname came from driver {@link IndexMetadata} provide this,
+   * @param indexMetadata if the function name came from driver {@link IndexMetadata} provide this,
    *     otherwise null
    * @return Optional of the similarity function, empty if the user did not provide a name
    */
@@ -90,9 +91,8 @@ public class ApiVectorIndex extends ApiSupportedIndex {
       return Optional.empty();
     }
 
-    // calling from without the default means we will get an empty optional if the name is unknown
-    // we already checked above to for null, which would also result in an empty.
-    // so any empty means the name is provied and unknown
+    // The two methods on SimilarityFunction will return an empty Optional if the name is not known.
+    // we checked null and blank above, so this means the name was provided but not recognised
     var userMetric =
         (indexMetadata == null)
             ? SimilarityFunction.fromApiName(functionName)
@@ -118,19 +118,26 @@ public class ApiVectorIndex extends ApiSupportedIndex {
             .formatted(functionName, indexMetadata.getName(), indexMetadata.getOptions()));
   }
 
+  /**
+   * Logic to map from the name of the source model, from either the user or the CQL index metadata,
+   *
+   * @param modelName the raw name provided by the user in the request, or from the CQL metadata
+   * @param indexMetadata If the name came from the driver {@link IndexMetadata} provide this,
+   *     otherwise null
+   * @return The source model to use, never null. If the name was not recognised it will throw an
+   *     exception, type depends on if the request came from the user or the driver.
+   */
   private static EmbeddingSourceModel sourceModelFromName(
       String modelName, IndexMetadata indexMetadata) {
 
-    LOGGER.warn(
-        "sourceModelFromName() - modelName: {}, indexMetadata: {}", modelName, indexMetadata);
     // if the provided name is null or blank we will get the default
-    var maybeSourceModel =
+    var sourceModel =
         (indexMetadata == null)
             ? EmbeddingSourceModel.fromApiNameOrDefault(modelName)
             : EmbeddingSourceModel.fromCqlNameOrDefault(modelName);
 
-    if (maybeSourceModel.isPresent()) {
-      return maybeSourceModel.get();
+    if (sourceModel.isPresent()) {
+      return sourceModel.get();
     }
 
     // the only way to not have a source model is a name was provided that is not known
@@ -151,10 +158,12 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
   /**
    * The metric we will use will be the one from the user, or the one from the model if user did not
-   * specify metric we always have a model.
+   * specify metric, we always have a model either specified by the user or the default.
+   *
+   * <p>
    *
    * @param sourceModel The source model we are using.
-   * @param userMetric Optional metric from the user.
+   * @param userMetric Optional metric from the user
    * @return The metric to use.
    */
   private static SimilarityFunction decideSimilarityFunction(
@@ -180,7 +189,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
       Objects.requireNonNull(tableSchemaObject, "tableSchemaObject must not be null");
       Objects.requireNonNull(indexDesc, "indexDesc must not be null");
 
-      // for now we are relying on the validation of the request deserializer that these values are
+      // for now, we are relying on the validation of the request deserializer that these values are
       // specified userNameToIdentifier will throw an exception if the values are not specified
       var indexIdentifier = userNameToIdentifier(indexName, "indexName");
       var targetIdentifier = userNameToIdentifier(indexDesc.column(), "targetColumn");
@@ -188,7 +197,7 @@ public class ApiVectorIndex extends ApiSupportedIndex {
       var apiColumnDef = checkIndexColumnExists(tableSchemaObject, targetIdentifier);
 
       // we could check if there is an existing index but that is a race condition, we will need to
-      // catch it if it fails
+      // catch it if it fails - the resolver needs to setup a custom error mapper
 
       // Vector indexes can only be on vector columns
       if (apiColumnDef.type().typeName() != ApiTypeName.VECTOR) {
@@ -217,20 +226,20 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
       // The user can provide a similarity function, if they do not we use the one for the model.
       var userMetricName = (indexDesc.options() == null) ? null : indexDesc.options().metric();
-      var maybeUserMetric = similarityFunctionFromName(userMetricName, null);
+      var userMetric = similarityFunctionFromName(userMetricName, null);
       // we only have one if the user specified one and it was valid, store in the options if this
-      // is the case
-      maybeUserMetric.ifPresent(
+      // is the case - similarityFunctionFromName will throw if the name was invalid.
+      userMetric.ifPresent(
           metric ->
               indexOptions.put(
                   VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION, metric.cqlIndexingFunction()));
-      var metricToUse = decideSimilarityFunction(sourceModelToUse, maybeUserMetric);
+      var metricToUse = decideSimilarityFunction(sourceModelToUse, userMetric);
 
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug(
-            "create() - userMetricName: {}, maybeUserMetric: {}, metricToUse: {}",
+            "create() - userMetricName: {}, userMetric: {}, metricToUse: {}",
             userMetricName,
-            maybeUserMetric,
+            userMetric,
             metricToUse);
       }
 
@@ -274,13 +283,13 @@ public class ApiVectorIndex extends ApiSupportedIndex {
 
       var indexMetricName =
           indexMetadata.getOptions().get(VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION);
-      var maybeIndexMetric = similarityFunctionFromName(indexMetricName, indexMetadata);
-      var indexMetricToUse = decideSimilarityFunction(indexModelToUse, maybeIndexMetric);
+      var indexMetric = similarityFunctionFromName(indexMetricName, indexMetadata);
+      var indexMetricToUse = decideSimilarityFunction(indexModelToUse, indexMetric);
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug(
-            "create() - indexMetricName: {}, maybeIndexMetric: {}, indexMetricToUse: {}",
+            "create() - indexMetricName: {}, indexMetric: {}, indexMetricToUse: {}",
             indexMetricName,
-            maybeIndexMetric,
+            indexMetric,
             indexMetricToUse);
       }
 

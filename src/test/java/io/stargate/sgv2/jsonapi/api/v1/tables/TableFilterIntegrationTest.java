@@ -237,6 +237,42 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           Arguments.of("duration", null, WarningException.Code.MISSING_INDEX, SAMPLE_ID));
     }
 
+    @Test
+    public void invalidFilterValueEq() {
+      var filter =
+              """
+                {
+                      "filter": {
+                          "age": {"$eq" : %s}
+                       }
+                }
+                """
+              .formatted("\"invalidType\"");
+      // Target column has index.
+      assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
+          .postFindOne(filter)
+          .mayHaveSingleApiError(
+              FilterException.Code.INVALID_FILTER_COLUMN_VALUES, FilterException.class);
+    }
+
+    @Test
+    public void invalidFilterValueIn() {
+      var filter =
+              """
+                {
+                      "filter": {
+                          "age": {"$in" : [ 123 , %s] }
+                       }
+                }
+                """
+              .formatted("\"invalidType\"");
+      // Target column has index.
+      assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
+          .postFindOne(filter)
+          .mayHaveSingleApiError(
+              FilterException.Code.INVALID_FILTER_COLUMN_VALUES, FilterException.class);
+    }
+
     @ParameterizedTest
     @MethodSource("EQ_ON_SCALAR_COLUMN")
     public void eq(
@@ -254,7 +290,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
           .postFindOne(filter)
           .mayHaveSingleApiError(expectedFilterException, FilterException.class)
-          .mayHasSingleWarning(expectedWarningException)
+          .mayHaveSingleWarning(expectedWarningException)
           .mayFoundSingleDocumentIdByFindOne(expectedFilterException, expectedDocId);
     }
 
@@ -301,7 +337,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
           .postFindOne(filter)
           .mayHaveSingleApiError(expectedFilterException, FilterException.class)
-          .mayHasSingleWarning(expectedWarningException)
+          .mayHaveSingleWarning(expectedWarningException)
           .mayFoundSingleDocumentIdByFindOne(expectedFilterException, expectedDocId);
     }
 
@@ -344,7 +380,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
           .postFindOne(filter)
           .mayHaveSingleApiError(expectedFilterException, FilterException.class)
-          .mayHasSingleWarning(expectedWarningException)
+          .mayHaveSingleWarning(expectedWarningException)
           .mayFoundSingleDocumentIdByFindOne(expectedFilterException, expectedDocId);
     }
 
@@ -391,7 +427,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
           .postFindOne(filter)
           .mayHaveSingleApiError(expectedFilterException, FilterException.class)
-          .mayHasSingleWarning(expectedWarningException)
+          .mayHaveSingleWarning(expectedWarningException)
           .mayFoundSingleDocumentIdByFindOne(expectedFilterException, expectedDocId);
     }
 
@@ -512,7 +548,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
         assertTableCommand(keyspaceName, TABLE_WITH_COLUMN_TYPES_INDEXED)
             .postFindOne(filter)
             .mayHaveSingleApiError(expectedFilterException, FilterException.class)
-            .mayHasSingleWarning(expectedWarningException)
+            .mayHaveSingleWarning(expectedWarningException)
             .mayFoundSingleDocumentIdByFindOne(expectedFilterException, expectedDocId);
       }
     }

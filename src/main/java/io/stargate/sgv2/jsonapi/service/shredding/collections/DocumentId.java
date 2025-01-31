@@ -82,8 +82,8 @@ public interface DocumentId extends DocRowIdentifer {
             "unrecognized JSON extension type '%s'", node.fieldNames().next());
     }
     throw ErrorCodeV1.SHRED_BAD_DOCID_TYPE.toApiException(
-        "Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got %s",
-        node.getNodeType());
+        "Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got %s: %s",
+        node.getNodeType(), node.toString());
   }
 
   static DocumentId fromDatabase(int typeId, String documentIdAsText) {

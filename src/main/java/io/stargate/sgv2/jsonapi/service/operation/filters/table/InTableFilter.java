@@ -4,6 +4,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnMetadata;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.relation.ColumnRelationBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
@@ -24,7 +25,7 @@ import java.util.List;
 /** API filter $in and $nin against table column. */
 public class InTableFilter extends TableFilter {
 
-  // TODO: this is prob subvlass NativeTypeTableFilter because it is not against a collection
+  // TODO: this is prob sub-class NativeTypeTableFilter because it is not against a collection
   private final List<Object> arrayValue;
 
   public final Operator operator;
@@ -45,7 +46,7 @@ public class InTableFilter extends TableFilter {
   }
 
   public InTableFilter(Operator operator, String path, List<Object> arrayValue) {
-    super(path);
+    super(path, null);
     this.arrayValue = arrayValue;
     this.operator = operator;
   }
@@ -55,6 +56,7 @@ public class InTableFilter extends TableFilter {
       TableSchemaObject tableSchemaObject,
       StmtT ongoingWhereClause,
       List<Object> positionalValues) {
+
     List<Term> bindMarkers = new ArrayList<>();
 
     // TODO this codec part we won't do in the operation level? refer to insertOne
@@ -89,7 +91,24 @@ public class InTableFilter extends TableFilter {
                   map.put("unsupportedColumns", path);
                 }));
       } catch (ToCQLCodecException e) {
-        throw new RuntimeException(e);
+        throw FilterException.Code.INVALID_FILTER_COLUMN_VALUES.get(
+            errVars(
+                tableSchemaObject,
+                map -> {
+                  map.put(
+                      "allColumns",
+                      errFmtColumnMetadata(
+                          tableSchemaObject.tableMetadata().getColumns().values()));
+                  map.put("invalidColumn", path);
+                  map.put(
+                      "columnType",
+                      tableSchemaObject
+                          .tableMetadata()
+                          .getColumn(CqlIdentifier.fromInternal(path))
+                          .get()
+                          .getType()
+                          .toString());
+                }));
       }
     }
 
@@ -115,5 +134,16 @@ public class InTableFilter extends TableFilter {
       case IN -> columnRelationBuilder.in(bindMarkers);
       case NIN -> columnRelationBuilder.notIn(bindMarkers);
     };
+  }
+
+  @Override
+  public boolean filterIsExactMatch() {
+    // an IN is exact only if there is a single value we are testing.
+    return operator == Operator.IN && arrayValue.size() == 1;
+  }
+
+  @Override
+  public boolean filterIsSlice() {
+    return false;
   }
 }

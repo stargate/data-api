@@ -43,9 +43,15 @@ public class ApiColumnDef {
 
   private final CqlIdentifier name;
   private final ApiDataType type;
+  private final boolean isStatic;
 
   public ApiColumnDef(CqlIdentifier name, ApiDataType type) {
+    this(name, false, type);
+  }
+
+  public ApiColumnDef(CqlIdentifier name, boolean isStatic, ApiDataType type) {
     this.name = Objects.requireNonNull(name, "name is must not be null");
+    this.isStatic = isStatic;
     this.type = Objects.requireNonNull(type, "type is must not be null");
   }
 
@@ -71,8 +77,24 @@ public class ApiColumnDef {
     return type;
   }
 
+  /**
+   * Gets the user API description of the type for this column.
+   *
+   * <p><b>NOTE:</b> Unlike calling {@link ApiDataType#columnDesc()} directly calling on the column
+   * will know if the column is static, and is the preferred way when getting the desc to return to
+   * the user.
+   *
+   * @return the user API description of the type for this column, including if the column is
+   *     static.
+   */
+  public ColumnDesc columnDesc() {
+    var typeDesc = type.columnDesc();
+    return isStatic ? new ColumnDesc.StaticColumnDesc(typeDesc) : typeDesc;
+  }
+
   private static class ColumnDescFactory extends FactoryFromDesc
       implements ColumnFactoryFromColumnDesc {
+
     @Override
     public ApiColumnDef create(
         String fieldName, ColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
@@ -121,6 +143,8 @@ public class ApiColumnDef {
         .append("ApiColumnDef{")
         .append("name=")
         .append(name.asCql(true))
+        .append(", isStatic=")
+        .append(isStatic)
         .append(", type.apiName=")
         .append(type.apiName())
         .append("}")
@@ -141,8 +165,10 @@ public class ApiColumnDef {
     public ApiColumnDef create(ColumnMetadata columnMetadata, VectorConfig vectorConfig)
         throws UnsupportedCqlColumn {
       Objects.requireNonNull(columnMetadata, "columnMetadata is must not be null");
+
       return create(
           columnMetadata.getName(),
+          columnMetadata.isStatic(),
           columnMetadata.getType(),
           vectorConfig.getVectorizeDefinition(columnMetadata.getName()).orElse(null));
     }
@@ -156,13 +182,15 @@ public class ApiColumnDef {
     }
 
     private static ApiColumnDef create(
-        CqlIdentifier column, DataType dataType, VectorizeDefinition vectorizeDef)
+        CqlIdentifier column, boolean isStatic, DataType dataType, VectorizeDefinition vectorizeDef)
         throws UnsupportedCqlColumn {
+
       Objects.requireNonNull(column, "column is must not be null");
       Objects.requireNonNull(dataType, "dataType is must not be null");
 
       try {
-        return new ApiColumnDef(column, TypeFactoryFromCql.DEFAULT.create(dataType, vectorizeDef));
+        return new ApiColumnDef(
+            column, isStatic, TypeFactoryFromCql.DEFAULT.create(dataType, vectorizeDef));
       } catch (UnsupportedCqlType e) {
         throw new UnsupportedCqlColumn(column, dataType, e);
       }

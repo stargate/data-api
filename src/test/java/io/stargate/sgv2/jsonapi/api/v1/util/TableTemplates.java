@@ -248,6 +248,19 @@ public class TableTemplates extends TemplateRunner {
     return sender.postAlterTable(json);
   }
 
+  public DataApiResponseValidator alterTable(String alterOperation, String columns) {
+    var json =
+            """
+            {
+              "operation" : {
+                "%s": %s
+              }
+            }
+          """
+            .formatted(alterOperation, columns);
+    return sender.postAlterTable(json);
+  }
+
   public DataApiResponseValidator listIndexes(boolean explain) {
     String json =
             """
@@ -259,5 +272,13 @@ public class TableTemplates extends TemplateRunner {
         """
             .formatted(explain);
     return sender.postListIndexes(json);
+  }
+
+  // ==================================================================================================================
+  // DQL - COUNT
+  // ==================================================================================================================
+
+  public DataApiResponseValidator count() {
+    return sender.postCount();
   }
 }
