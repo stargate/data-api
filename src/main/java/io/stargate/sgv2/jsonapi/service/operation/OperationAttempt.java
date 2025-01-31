@@ -275,12 +275,6 @@ public abstract class OperationAttempt<
           positionAndAttemptId());
     }
 
-    // sanity check - executeIfInProgress() checks that we have a StatementContext before starting
-    if (currentStatement == null) {
-      throw new IllegalStateException(
-          String.format("onCompletion() - currentExecutor is null, %s", positionAndAttemptId()));
-    }
-
     // sanity check, if we do not have a result set then we should have an exception
     if (resultSet == null && throwable == null) {
       throw new IllegalStateException(
@@ -289,10 +283,12 @@ public abstract class OperationAttempt<
               positionAndAttemptId()));
     }
 
+    // The currentStatement may be null if we were in an error state before we started,
+    // e.g. there was a binding or column name error on a multi row insert
     var handledException =
         throwable instanceof RuntimeException re
             ? exceptionHandlerFactory
-                .apply(schemaObject, currentStatement.statement())
+                .apply(schemaObject, currentStatement == null ? null : currentStatement.statement())
                 .maybeHandle(re)
             : throwable;
 

@@ -8,7 +8,6 @@ import com.datastax.oss.driver.api.core.InvalidKeyspaceException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteType;
 import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import org.junit.jupiter.api.Test;
 
@@ -60,8 +59,7 @@ public class DriverExceptionHandlerTest {
   @Test
   public void defaultDriverErrorHandled() {
 
-    var originalEx =
-        new InvalidKeyspaceException("unknown keyspace");
+    var originalEx = new InvalidKeyspaceException("unknown keyspace");
 
     // Not using mocks because want all the defaults in the interface to kick in
     var handler = new DriverExceptionHandler() {};

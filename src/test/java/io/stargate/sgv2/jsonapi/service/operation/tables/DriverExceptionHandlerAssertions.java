@@ -7,6 +7,8 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @param <FixtureT>
@@ -19,6 +21,8 @@ public class DriverExceptionHandlerAssertions<FixtureT, SchemaT extends SchemaOb
 
   // We set this in getHandlerFactory() where it wraps the original factory
   private DriverExceptionHandler target;
+
+  private List<HandlePair> handlePairs = new ArrayList<>();
 
   public DriverExceptionHandlerAssertions(
       FixtureT fixture, DefaultDriverExceptionHandler.Factory<SchemaT> handlerFactory) {
@@ -34,6 +38,7 @@ public class DriverExceptionHandlerAssertions<FixtureT, SchemaT extends SchemaOb
       }
 
       target = spy(handlerFactory.apply(schemaObject, statement));
+      handlePairs.forEach(pair -> pair.apply(target));
       return target;
     };
   }
@@ -41,16 +46,16 @@ public class DriverExceptionHandlerAssertions<FixtureT, SchemaT extends SchemaOb
   /** Map the assertions exception to a returned exception */
   public FixtureT doMaybeHandleException(RuntimeException expected, RuntimeException returned) {
 
-    when(target.maybeHandle(eq(expected))).thenReturn(returned);
-
+    // do not have the target handler yet, need to wait until the factory is called
+    handlePairs.add(new HandlePair(expected, returned));
     return fixture;
   }
 
   /** Always return the same exception */
   public FixtureT doMaybeHandleException(RuntimeException returned) {
 
-    when(target.maybeHandle(any())).thenReturn(returned);
-
+    // do not have the target handler yet, need to wait until the factory is called
+    handlePairs.add(new HandlePair(null, returned));
     return fixture;
   }
 
@@ -58,5 +63,15 @@ public class DriverExceptionHandlerAssertions<FixtureT, SchemaT extends SchemaOb
     verify(target, times(1).description("maybeHandle() called %s times when: %s".formatted(1, msg)))
         .maybeHandle(eq(exception));
     return fixture;
+  }
+
+  private record HandlePair(RuntimeException expected, RuntimeException returned) {
+    void apply(DriverExceptionHandler target) {
+      if (expected == null) {
+        when(target.maybeHandle(any())).thenReturn(returned);
+      } else {
+        when(target.maybeHandle(eq(expected))).thenReturn(returned);
+      }
+    }
   }
 }
