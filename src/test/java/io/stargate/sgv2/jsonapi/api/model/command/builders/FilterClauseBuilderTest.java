@@ -107,7 +107,7 @@ public class FilterClauseBuilderTest {
 
       FilterClause filterClause = readFilterClause(json);
 
-      assertThat(filterClause).isNull();
+      assertThat(filterClause.isEmpty()).isTrue();
     }
 
     @Test

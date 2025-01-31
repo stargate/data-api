@@ -68,7 +68,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 @Tag(ref = "Documents")
 public class CollectionResource {
 
-  public static final String BASE_PATH = "/v1/{keyspace}/{collection}";
+  public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}/{collection}";
 
   private final MeteredCommandProcessor meteredCommandProcessor;
 
@@ -78,9 +78,9 @@ public class CollectionResource {
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
 
-  @Inject FeaturesConfig apiFeatureConfig;
+  @Inject private FeaturesConfig apiFeatureConfig;
 
-  @Inject OperationsConfig operationsConfig;
+  @Inject private OperationsConfig operationsConfig;
 
   @Inject private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
 

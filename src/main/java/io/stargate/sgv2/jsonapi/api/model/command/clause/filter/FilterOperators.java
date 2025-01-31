@@ -4,25 +4,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 /** Helper class for {@link FilterOperator} lookups. */
-public class FilterOperators {
-  private static Map<String, FilterOperator> operatorMap = new HashMap<>();
+public abstract class FilterOperators {
+  private static final Map<String, FilterOperator> operatorMap;
+
+  private FilterOperators() {}
 
   static {
-    for (FilterOperator filterOperator : ValueComparisonOperator.values()) {
-      addComparisonOperator(filterOperator);
+    final Map<String, FilterOperator> ops = new HashMap<>();
+    for (FilterOperator op : ValueComparisonOperator.values()) {
+      ops.put(op.getOperator(), op);
     }
-    for (FilterOperator filterOperator : ElementComparisonOperator.values()) {
-      addComparisonOperator(filterOperator);
+    for (FilterOperator op : ElementComparisonOperator.values()) {
+      ops.put(op.getOperator(), op);
     }
-    for (FilterOperator filterOperator : ArrayComparisonOperator.values()) {
-      addComparisonOperator(filterOperator);
+    for (FilterOperator op : ArrayComparisonOperator.values()) {
+      // This should not be supported from outside
+      if (op != ArrayComparisonOperator.NOTANY) {
+        ops.put(op.getOperator(), op);
+      }
     }
-    // This should not be supported from outside
-    operatorMap.remove(ArrayComparisonOperator.NOTANY.getOperator());
-  }
-
-  private static void addComparisonOperator(FilterOperator filterOperator) {
-    operatorMap.put(filterOperator.getOperator(), filterOperator);
+    operatorMap = ops;
   }
 
   public static FilterOperator findComparisonOperator(String operator) {

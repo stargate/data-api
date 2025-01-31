@@ -28,10 +28,10 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
   protected final T schema;
 
   protected FilterClauseBuilder(T schema) {
-    this.schema = schema;
+    this.schema = Objects.requireNonNull(schema);
   }
 
-  public static FilterClauseBuilder builderFor(SchemaObject schema) {
+  public static FilterClauseBuilder<?> builderFor(SchemaObject schema) {
     return switch (schema) {
       case CollectionSchemaObject collection -> new CollectionFilterClauseBuilder(collection);
       case TableSchemaObject table -> new TableFilterClauseBuilder(table);

@@ -10,7 +10,6 @@ import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -263,10 +262,7 @@ public class MeteredCommandProcessor {
       CommandContext<?> commandContext, Command command) {
     int filterCount = 0;
     if (command instanceof Filterable filterable) {
-      FilterClause fc = filterable.filterClause(commandContext);
-      if (fc != null) {
-        filterCount = fc.size();
-      }
+      filterCount = filterable.filterClause(commandContext).size();
     }
     if (command instanceof Sortable sc
         && sc.sortClause() != null

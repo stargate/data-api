@@ -43,9 +43,9 @@ public class GeneralResource {
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
 
-  @Inject FeaturesConfig apiFeatureConfig;
+  @Inject private FeaturesConfig apiFeatureConfig;
 
-  @Inject OperationsConfig operationsConfig;
+  @Inject private OperationsConfig operationsConfig;
 
   @Inject
   public GeneralResource(MeteredCommandProcessor meteredCommandProcessor) {

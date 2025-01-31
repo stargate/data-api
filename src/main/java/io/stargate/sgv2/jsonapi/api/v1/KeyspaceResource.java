@@ -53,7 +53,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 @Tag(ref = "Keyspaces")
 public class KeyspaceResource {
 
-  public static final String BASE_PATH = "/v1/{keyspace}";
+  public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}";
   private final MeteredCommandProcessor meteredCommandProcessor;
 
   private final FeaturesConfig apiFeatureConfig;
