@@ -29,7 +29,7 @@ class CreateCollectionCommandResolverTest {
   @Nested
   class ResolveCommand {
 
-    CommandContext<KeyspaceSchemaObject> commandContext = TestConstants.KEYSPACE_CONTEXT;
+    CommandContext<KeyspaceSchemaObject> commandContext = TestConstants.keyspaceContext();
 
     @Test
     public void happyPath() throws Exception {

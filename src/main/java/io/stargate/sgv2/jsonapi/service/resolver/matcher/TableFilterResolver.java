@@ -2,11 +2,13 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.*;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.BinaryTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.math.BigDecimal;
@@ -26,6 +28,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
   private static final Object DYNAMIC_TEXT_GROUP = new Object();
   private static final Object DYNAMIC_NUMBER_GROUP = new Object();
   private static final Object DYNAMIC_BOOL_GROUP = new Object();
+  private static final Object DYNAMIC_EJSON_GROUP = new Object();
   private static final Object DYNAMIC_GROUP_IN = new Object();
 
   public TableFilterResolver(OperationsConfig operationsConfig) {
@@ -74,6 +77,12 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                 ValueComparisonOperator.LT,
                 ValueComparisonOperator.LTE),
             JsonType.BOOLEAN)
+        // For now only EJSON support is for binary data
+        .capture(DYNAMIC_EJSON_GROUP)
+        .compareValues(
+            "*",
+            EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE),
+            JsonType.EJSON_WRAPPER)
         // Although Tables does not have special handling for _id, our FilterClauseDeserializer
         // does, so we need to capture it here.
         .capture(DYNAMIC_DOCID_GROUP)
@@ -152,6 +161,24 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                                   NativeTypeTableFilter.Operator.from(
                                       (ValueComparisonOperator) expression.operator()),
                                   (Boolean) expression.value()));
+                        });
+                  });
+
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_EJSON_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> dynamicNumberGroup = (CaptureGroup<Object>) captureGroup;
+                    dynamicNumberGroup.consumeAllCaptures(
+                        expression -> {
+                          byte[] bytes = (byte[]) expression.value();
+                          EJSONWrapper boundValue = EJSONWrapper.binaryWrapper(bytes);
+                          dbLogicalExpression.addFilter(
+                              new BinaryTableFilter(
+                                  expression.path(),
+                                  NativeTypeTableFilter.Operator.from(
+                                      (ValueComparisonOperator) expression.operator()),
+                                  boundValue));
                         });
                   });
 

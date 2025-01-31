@@ -619,6 +619,17 @@ request-errors:
       
       Resend the command using only supported column types.
 
+  - scope: PROJECTION
+    code: UNKNOWN_TABLE_COLUMNS
+    title: Columns in the projection are not defined in the table schema
+    body: |-
+      Only columns defined in the table schema can be included in the projection.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The projection included the following unknown columns: ${unknownColumns}.
+      
+      ${SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
+
   # ================================================================================================================
   # Family: REQUEST         Scope: SCHEMA
   # ================================================================================================================
@@ -861,6 +872,17 @@ request-errors:
       Resend the command using only columns defined in the table schema.
 
   - scope: SCHEMA
+    code: UNKNOWN_INDEX_TYPE
+    title: Index type is unknown
+    body: |-
+      The command attempted to create an index using an unknown type.
+      
+      The known index types are: ${knownTypes}.
+      The command used the unknown index type: ${unknownType}.
+      
+      Resend the command using a known index type.
+
+  - scope: SCHEMA
     code: UNSUPPORTED_INDEXING_FOR_DATA_TYPES
     title: Indexing not supported by data types
     body: |-
@@ -875,6 +897,19 @@ request-errors:
       The command attempted to index the unsupported columns: ${unsupportedColumns}.
       
       Resend the command using columns of the supported data types.
+
+  - scope: SCHEMA
+    code: UNSUPPORTED_INDEX_TYPE
+    title: Index type is not supported
+    body: |-
+      The command attempted to create an index using an unsupported type.
+      
+      The `indexType` field in the various `createIndex` commands is optional can be safely omitted. It is included in the output of `listIndexes` command to make it clear what type the indexes are, to make it clear which type of `createIndex` command can be used to re-create the index.
+      
+      The supported index types are: ${supportedTypes}.
+      The command used the unsupported index type: ${unsupportedType}.
+      
+      Resend the command using a supported index type.    
 
   - scope: SCHEMA
     code: UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES
@@ -1087,6 +1122,17 @@ request-errors:
       The command attempted to sort the non vector columns: ${sortColumns}.  
       
       Resend the command using only vector columns.
+
+  - scope: SORT
+    code: CANNOT_VECTOR_SORT_WITH_LIMIT_EXCEEDS_MAX
+    title: Limit exceeds the maximum allowed for vector sort
+    body: |-
+        The command attempted to vector sort columns with a limit that exceeds the maximum allowed.
+        
+        Vector sorting is limited to a maximum of ${maxLimit} rows.
+        The command attempted to sort the vector column: ${sortColumn} with a limit of ${limit}.
+        
+        Resend the command using a limit of ${maxLimit} or less.
 
   - scope: SORT
     code: CANNOT_VECTOR_SORT_WITH_SKIP_OPTION

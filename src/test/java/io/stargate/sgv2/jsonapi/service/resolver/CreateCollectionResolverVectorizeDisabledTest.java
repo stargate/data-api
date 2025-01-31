@@ -51,7 +51,7 @@ public class CreateCollectionResolverVectorizeDisabledTest {
           catchException(
               () ->
                   createCollectionCommandResolver.resolveCommand(
-                      TestConstants.KEYSPACE_CONTEXT, command));
+                      TestConstants.keyspaceContext(), command));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
           .hasMessageStartingWith(ErrorCodeV1.VECTORIZE_FEATURE_NOT_AVAILABLE.getMessage());
@@ -74,7 +74,7 @@ public class CreateCollectionResolverVectorizeDisabledTest {
           catchException(
               () ->
                   findEmbeddingProvidersCommandResolver.resolveCommand(
-                      TestConstants.DATABASE_CONTEXT, command));
+                      TestConstants.databaseContext(), command));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
           .hasMessageStartingWith(ErrorCodeV1.VECTORIZE_FEATURE_NOT_AVAILABLE.getMessage());

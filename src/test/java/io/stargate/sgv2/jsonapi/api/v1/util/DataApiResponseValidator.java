@@ -138,7 +138,7 @@ public class DataApiResponseValidator {
     return hasSingleApiError(errorCode, containsString(messageSnippet));
   }
 
-  // aaron 19-oct-2024 added wheile redoing a lot of errors, we still need to cleanup the error code
+  // aaron 19-oct-2024 added while redoing a lot of errors, we still need to cleanup the error code
   // world
   public DataApiResponseValidator hasSingleApiError(String errorCode, String messageSnippet) {
     return body("$", responseIsError)
@@ -399,6 +399,10 @@ public class DataApiResponseValidator {
   public DataApiResponseValidator hasIndexes(String... indexes) {
     return body("status.indexes", hasSize(indexes.length))
         .body("status.indexes", containsInAnyOrder(indexes));
+  }
+
+  public DataApiResponseValidator hasIndex(String index) {
+    return body("status.indexes", hasItem(index));
   }
 
   public DataApiResponseValidator doesNotHaveIndexes(String... indexes) {

@@ -1042,7 +1042,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               DocumentException.class,
               "Only values that are supported by",
               "Error trying to convert to targetCQLType `DOUBLE`",
-              // Double is special since there are NaNs represented by Strings
+              // Double is special since there are NaNs represented by Constants
               "Unsupported String value: only");
     }
   }
@@ -1207,6 +1207,37 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .postFindOne("{ \"filter\": { \"id\": \"vectorValidBase64\" } }")
           .wasSuccessful()
           .hasJSONField("data.document", expJSON);
+    }
+
+    // [databind#1817]
+    @Test
+    void insertValidNullVectorValue() {
+      // To read vector back as null can either omit or add null; issue reported with
+      // former so test that first
+      String docJSON1 = "{\"id\": \"vectorNULL\"}";
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .templated()
+          .insertOne(docJSON1)
+          .wasSuccessful()
+          .hasInsertedIds(List.of("vectorNULL"));
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .postFindOne("{ \"filter\": { \"id\": \"vectorNULL\" } }")
+          .wasSuccessful()
+          .hasJSONField("data.document", docJSON1);
+
+      // But then let's try with explicit null as well
+      String docJSON2 = "{\"id\": \"vectorNULL2\", \"vector\": null}";
+      // Returned version has no `vector` field, even when passing explicit null
+      String expJSON2 = "{\"id\": \"vectorNULL2\"}";
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .templated()
+          .insertOne(docJSON2)
+          .wasSuccessful()
+          .hasInsertedIds(List.of("vectorNULL2"));
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .postFindOne("{ \"filter\": { \"id\": \"vectorNULL2\" } }")
+          .wasSuccessful()
+          .hasJSONField("data.document", expJSON2);
     }
 
     @Test

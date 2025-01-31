@@ -6,7 +6,8 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import java.util.Objects;
 
 /**
- * TODO: AARON 9 sept 2024 - this is a failed idea of mine, we should remove as we go
+ * TODO: AARON 9 sept 2024 - this is a failed idea of mine, we should remove as we go UPDATE: Tatu
+ * 29 jan 2025 - removed from FilterClause, used by SortClause still
  *
  * <p>Interface for any class that can be validated against a {@link SchemaObject}.
  *
@@ -42,12 +43,10 @@ public interface SchemaValidatable {
    * <p>NOTE: Code that wants to validate an object should call this static method with the context
    * rather than the instance methods directly.
    *
-   * @param <T> Type of the {@link SchemaObject}
    * @param schemaObject The schema object to validate against
    * @param validatable An object that implements {@link SchemaValidatable}, may be null
    */
-  static <T extends SchemaObject> void maybeValidate(
-      T schemaObject, SchemaValidatable validatable) {
+  static void maybeValidate(SchemaObject schemaObject, SchemaValidatable validatable) {
 
     if (validatable == null) {
       return;
@@ -66,8 +65,7 @@ public interface SchemaValidatable {
   }
 
   /** See {@link #maybeValidate(SchemaObject, SchemaValidatable)} */
-  static <T extends SchemaObject> void maybeValidate(
-      CommandContext<T> commandContext, SchemaValidatable validatable) {
+  static void maybeValidate(CommandContext<?> commandContext, SchemaValidatable validatable) {
 
     Objects.requireNonNull(commandContext, "commandContext must not be null");
     maybeValidate(commandContext.schemaObject(), validatable);
@@ -80,7 +78,7 @@ public interface SchemaValidatable {
    * <p>Only implement this method if the objects supports Collections, the default implementation
    * is to fail.
    *
-   * @param commandContext {@link CommandContext<CollectionSchemaObject>} to validate against
+   * @param collection {@link CollectionSchemaObject} to validate against
    */
   default void validate(CollectionSchemaObject collection) {
     throw new UnsupportedOperationException(unsupportedMessage(collection));
@@ -93,7 +91,7 @@ public interface SchemaValidatable {
    * <p>Only implement this method if the object supports Tables, the default implementation is to
    * fail.
    *
-   * @param table {@link CommandContext<TableSchemaObject>} to validate against
+   * @param table {@link TableSchemaObject} to validate against
    */
   default void validate(TableSchemaObject table) {
     throw new UnsupportedOperationException(unsupportedMessage(table));
@@ -106,7 +104,7 @@ public interface SchemaValidatable {
    * <p>Only implement this method if the object supports Keyspace, the default implementation is to
    * fail.
    *
-   * @param commandContext {@link CommandContext<KeyspaceSchemaObject>} to validate against
+   * @param keyspace {@link KeyspaceSchemaObject} to validate against
    */
   default void validate(KeyspaceSchemaObject keyspace) {
     throw new UnsupportedOperationException(unsupportedMessage(keyspace));
@@ -119,10 +117,10 @@ public interface SchemaValidatable {
    * <p>Only implement this method if the object supports Databases, the default implementation is
    * to fail.
    *
-   * @param commandContext {@link CommandContext<DatabaseSchemaObject>} to validate against
+   * @param database {@link DatabaseSchemaObject} to validate against
    */
-  default void validate(DatabaseSchemaObject databaase) {
-    throw new UnsupportedOperationException(unsupportedMessage(databaase));
+  default void validate(DatabaseSchemaObject database) {
+    throw new UnsupportedOperationException(unsupportedMessage(database));
   }
 
   /** Helper to return the string used in the exception message when schema type not supported. */

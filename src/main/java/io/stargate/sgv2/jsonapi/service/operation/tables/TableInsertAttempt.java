@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.InsertAttempt;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
@@ -45,7 +44,7 @@ public class TableInsertAttempt extends InsertAttempt<TableSchemaObject> {
       return Optional.empty();
     }
     var apiColumns = schemaObject.apiTableDef().primaryKeys();
-    var unsupported = apiColumns.filterBySupport(ApiSupportDef::isUnsupportedInsert);
+    var unsupported = apiColumns.filterBySupport(x -> !x.insert());
     if (!unsupported.isEmpty()) {
       throw new IllegalStateException("Unsupported columns primary key: %s" + unsupported);
     }
