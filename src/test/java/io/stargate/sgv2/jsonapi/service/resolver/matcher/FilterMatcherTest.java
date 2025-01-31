@@ -160,7 +160,8 @@ public class FilterMatcherTest {
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
       final Optional<CaptureGroups<FindOneCommand>> response =
           matcher.apply(TestConstants.collectionContext(), findOneCommand);
-      assertThat(response.isPresent()).isFalse();
+      // Missing filter now same as empty, so:
+      assertThat(response.isPresent()).isTrue();
     }
 
     @Test
