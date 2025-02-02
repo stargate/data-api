@@ -13,6 +13,8 @@ import java.util.List;
  */
 public abstract class CqlPrintUtil {
 
+  public static final int MAX_VECTOR_SIZE = 5;
+
   public static List<Object> trimmedPositionalValues(SimpleStatement statement) {
     return statement.getPositionalValues().stream()
         .map(
@@ -21,9 +23,9 @@ public abstract class CqlPrintUtil {
                 int vectorSize = vector.size();
                 List<Object> trimmedList = new ArrayList<>();
 
-                // Add elements up to a maximum of 5 or the actual vector size, whichever is
+                // Add elements up to a maximum of MAX_VECTOR_SIZE or the actual vector size, whichever is
                 // smaller
-                for (int i = 0; i < Math.min(5, vectorSize); i++) {
+                for (int i = 0; i < Math.min(MAX_VECTOR_SIZE, vectorSize); i++) {
                   trimmedList.add(vector.get(i));
                 }
                 if (trimmedList.size() < vectorSize) {
@@ -46,7 +48,7 @@ public abstract class CqlPrintUtil {
       int end = cql.indexOf("]", start);
 
       var floatPos = start;
-      for (int i = 0; i < 5; i++) {
+      for (int i = 0; i < MAX_VECTOR_SIZE; i++) {
         var nextPos = cql.indexOf(",", floatPos + 1, end);
         if (nextPos > -1) {
           floatPos = nextPos;
