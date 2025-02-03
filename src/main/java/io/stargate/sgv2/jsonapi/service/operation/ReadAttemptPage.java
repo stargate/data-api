@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -14,19 +15,19 @@ import java.util.*;
  * GenericOperation}.
  */
 public class ReadAttemptPage<SchemaT extends TableSchemaObject>
-    extends OperationAttemptPage<SchemaT, ReadAttempt<SchemaT>> {
+    extends DBTaskPage<ReadAttempt<SchemaT>, SchemaT> {
 
   private final CqlPagingState pagingState;
   private final boolean includeSortVector;
   private final float[] sortVector;
 
   private ReadAttemptPage(
-      OperationAttemptContainer<SchemaT, ReadAttempt<SchemaT>> attempts,
+      TaskGroup<ReadAttempt<SchemaT>, SchemaT> tasks,
       CommandResultBuilder resultBuilder,
       CqlPagingState pagingState,
       boolean includeSortVector,
       float[] sortVector) {
-    super(attempts, resultBuilder);
+    super(tasks, resultBuilder);
     this.pagingState = pagingState;
     this.includeSortVector = includeSortVector;
     this.sortVector = sortVector;
@@ -48,15 +49,15 @@ public class ReadAttemptPage<SchemaT extends TableSchemaObject>
     maybeAddSortedRowCount();
     maybeAddSchema(CommandStatus.PROJECTION_SCHEMA);
 
-    attempts.completedAttempts().stream()
-        .flatMap(attempt -> attempt.documents().stream())
+    tasks.completedTasks().stream()
+        .flatMap(task -> task.documents().stream())
         .forEach(resultBuilder::addDocument);
   }
 
   protected void maybeAddSortedRowCount() {
 
     var rowCounts =
-        attempts.completedAttempts().stream()
+        tasks.completedTasks().stream()
             .map(ReadAttempt::sortedRowCount)
             .filter(Optional::isPresent)
             .map(Optional::get)
@@ -81,7 +82,7 @@ public class ReadAttemptPage<SchemaT extends TableSchemaObject>
   }
 
   public static class Builder<SchemaT extends TableSchemaObject>
-      extends OperationAttemptPageBuilder<SchemaT, ReadAttempt<SchemaT>> {
+      extends TaskAccumulator<ReadAttempt<SchemaT>, SchemaT> {
 
     private boolean singleResponse = false;
     private boolean includeSortVector;
@@ -121,8 +122,8 @@ public class ReadAttemptPage<SchemaT extends TableSchemaObject>
     public ReadAttemptPage<SchemaT> getOperationPage() {
 
       var nonEmptyPageStateAttempts =
-          attempts.completedAttempts().stream()
-              .filter(attempts -> !attempts.resultPagingState().isEmpty())
+          tasks.completedTasks().stream()
+              .filter(task -> !task.resultPagingState().isEmpty())
               .toList();
 
       var pagingState =
@@ -143,7 +144,7 @@ public class ReadAttemptPage<SchemaT extends TableSchemaObject>
               : CommandResult.multiDocumentBuilder(useErrorObjectV2, debugMode);
 
       return new ReadAttemptPage<>(
-          attempts, resultBuilder, pagingState, includeSortVector, sortVector);
+          tasks, resultBuilder, pagingState, includeSortVector, sortVector);
     }
   }
 }

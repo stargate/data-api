@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.OperationProjection;
 import io.stargate.sgv2.jsonapi.service.operation.ReadAttempt;
@@ -27,6 +28,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
   private int readPosition = -1;
 
   private final TableSchemaObject tableSchemaObject;
+  DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory;
   private final WhereCQLClauseAnalyzer whereCQLClauseAnalyzer;
 
   private WithWarnings<SelectCQLClause> selectWithWarnings;
@@ -43,6 +45,12 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
     this.tableSchemaObject = tableSchemaObject;
     this.whereCQLClauseAnalyzer =
         new WhereCQLClauseAnalyzer(tableSchemaObject, WhereCQLClauseAnalyzer.StatementType.SELECT);
+  }
+
+  public TableReadAttemptBuilder addExceptionHandlerFactory(
+      DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory) {
+    this.exceptionHandlerFactory = exceptionHandlerFactory;
+    return this;
   }
 
   public TableReadAttemptBuilder addSelect(WithWarnings<SelectCQLClause> selectWithWarnings) {
@@ -77,6 +85,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
 
   @Override
   public ReadAttempt<TableSchemaObject> build(WhereCQLClause<Select> whereCQLClause) {
+    Objects.requireNonNull(exceptionHandlerFactory, "exceptionHandlerFactory is required");
     Objects.requireNonNull(selectWithWarnings, "selectWithWarnings is required");
     Objects.requireNonNull(orderByWithWarnings, "orderByWithWarnings is required");
     Objects.requireNonNull(rowSorterWithWarnings, "rowSorterWithWarnings is required");
@@ -104,6 +113,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
         new ReadAttempt<>(
             readPosition,
             tableSchemaObject,
+            exceptionHandlerFactory,
             selectWithWarnings.target(),
             whereCQLClause,
             orderByWithWarnings.target(),

@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptio
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
 import java.util.*;
-import java.util.function.Supplier;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,8 +26,8 @@ import org.slf4j.LoggerFactory;
  * This superclass knows how to run a generic query with config such as retries.
  *
  * <p>The class has a basic state model for tracking the status of the operation. <b>NOTE</b>
- * subclasses much set the state of {@link OperationStatus#READY} using {@link
- * #setStatus(OperationStatus)}, other transitions are handled by the superclass.All handling of the
+ * subclasses much set the state of {@link TaskStatus#READY} using {@link
+ * #setStatus(TaskStatus)}, other transitions are handled by the superclass.All handling of the
  * state must be done through the methods, do not access the state directly. <b>NOTE:</b> This class
  * is not thread safe, it is used in the Smallrye processing and is not expected to be used in a
  * multithreaded environment.
@@ -36,9 +36,12 @@ import org.slf4j.LoggerFactory;
  * @param <SchemaT> The type of the schema object that the operation is working with.
  */
 public abstract class DBTask<SchemaT extends SchemaObject>
-    extends Task<DBTask<SchemaT>, SchemaT, AsyncResultSet> {
+    extends BaseTask<SchemaT, DBTask.AsyncResultSetSupplier,  AsyncResultSet>
+    {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DBTask.class);
+
+  protected final DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory;
 
   /**
    * Create a new {@link DBTask} with the provided position, schema object and retry policy.
@@ -50,28 +53,43 @@ public abstract class DBTask<SchemaT extends SchemaObject>
    * @param retryPolicy The {@link RetryPolicy} to use when running the operation, if there is no
    *     retry policy then use {@link RetryPolicy#NO_RETRY}
    */
-  protected DBTask(int position, SchemaT schemaObject, RetryPolicy retryPolicy) {
+  protected DBTask(int position, SchemaT schemaObject,
+                   RetryPolicy retryPolicy,
+                   DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
     super(position, schemaObject, retryPolicy);
+
+    this.exceptionHandlerFactory = Objects.requireNonNull(exceptionHandlerFactory, "exceptionHandlerFactory cannot be null");
   }
 
   @Override
-  protected ResultSupplier<AsyncResultSet> buildResultSupplier(
-      CommandContext<SchemaT> commandContext) {
+  protected RuntimeException maybeHandleException(AsyncResultSetSupplier resultSupplier, RuntimeException runtimeException) {
+    return exceptionHandlerFactory.apply(schemaObject, resultSupplier.statement).maybeHandle(runtimeException);
+  }
+
+
+  @Override
+  protected AsyncResultSetSupplier buildResultSupplier(CommandContext<SchemaT> commandContext) {
 
     var commandQueryExecutor = new CommandQueryExecutor(commandContext.cqlSessionCache(),
-                    new CommandQueryExecutor.DBRequestContext(
-                        commandContext.requestContext().getTenantId(), commandContext.requestContext().getCassandraToken()),
-                    CommandQueryExecutor.QueryTarget.TABLE);
+        new CommandQueryExecutor.DBRequestContext(
+            commandContext.requestContext().getTenantId(), commandContext.requestContext().getCassandraToken()),
+        CommandQueryExecutor.QueryTarget.TABLE);
     return buildResultSupplier(commandQueryExecutor);
   }
 
-  protected static class AsyncResultSetSupplier extends ResultSupplier<AsyncResultSet> {
+  public static class AsyncResultSetSupplier implements BaseTask.UniSupplier<AsyncResultSet> {
     protected final SimpleStatement statement;
+    protected final BaseTask.UniSupplier<AsyncResultSet> supplier;
 
     protected AsyncResultSetSupplier(
-        SimpleStatement statement, Supplier<Uni<AsyncResultSet>> supplier) {
-      super(supplier);
+        SimpleStatement statement, BaseTask.UniSupplier<AsyncResultSet> supplier) {
       this.statement = statement;
+      this.supplier = supplier;
+    }
+
+    @Override
+    public Uni<AsyncResultSet> get() {
+      return supplier.get();
     }
   }
 

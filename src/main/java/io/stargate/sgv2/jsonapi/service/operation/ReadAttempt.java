@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescCo
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
 import java.time.Duration;
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * documents on demand.
  */
 public class ReadAttempt<SchemaT extends TableSchemaObject>
-    extends OperationAttempt<ReadAttempt<SchemaT>, SchemaT> {
+    extends DBTask<SchemaT> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ReadAttempt.class);
 
@@ -49,6 +50,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
   public ReadAttempt(
       int position,
       SchemaT schemaObject,
+      DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory,
       SelectCQLClause selectCQLClause,
       WhereCQLClause<Select> whereCQLClause,
       OrderByCqlClause orderByCqlClause,
@@ -56,7 +58,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
       CqlPagingState pagingState,
       RowSorter rowSorter,
       OperationProjection projection) {
-    super(position, schemaObject, new ReadAttemptRetryPolicy<SchemaT>());
+    super(position, schemaObject, new ReadAttemptRetryPolicy<SchemaT>(), exceptionHandlerFactory);
 
     // nullable because the subclass may want to implement methods to build the statement itself
     this.selectCQLClause = selectCQLClause;
@@ -68,7 +70,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     this.rowSorter = Objects.requireNonNull(rowSorter, "rowSorter must not be null");
     downcastRetryPolicy();
     Objects.requireNonNull(readAttemptRetryPolicy, "readAttemptRetryPolicy must not be null");
-    setStatus(OperationStatus.READY);
+    setStatus(TaskStatus.READY);
   }
 
   @SuppressWarnings("unchecked")
@@ -108,21 +110,21 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
   }
 
   @Override
-  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
+  protected AsyncResultSetSupplier buildResultSupplier(CommandQueryExecutor queryExecutor) {
 
     var statement = buildReadStatement();
     readAttemptRetryPolicy.setRetryContext(
         new ReadAttemptRetryPolicy.RetryContext<>(statement, this));
 
-    logStatement(LOGGER, "executeStatement()", statement);
-    return new StatementContext(statement, () -> rowSorter.executeRead(queryExecutor, statement));
+    logStatement(LOGGER, "buildResultSupplier()", statement);
+    return new AsyncResultSetSupplier(statement, () -> rowSorter.executeRead(queryExecutor, statement));
   }
 
   @Override
-  protected ReadAttempt<SchemaT> onSuccess(AsyncResultSet resultSet) {
-    readResult = new ReadResult(rowSorter, resultSet);
-    // call to make sure status is set
-    return super.onSuccess(resultSet);
+  protected DBTask<SchemaT> onSuccess(AsyncResultSet result) {
+      readResult = new ReadResult(rowSorter, result);
+      // call to make sure status is set
+      return super.onSuccess(result);
   }
 
   protected SimpleStatement buildReadStatement() {
@@ -172,7 +174,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
   public Optional<ColumnsDescContainer> schemaDescription() {
 
     // need to check because otherwise we do not have the read result
-    if (!checkStatus("schemaDescription()", OperationStatus.COMPLETED)) {
+    if (!checkStatus("schemaDescription()", TaskStatus.COMPLETED)) {
       return Optional.empty();
     }
     return Optional.of(projection.getSchemaDescription());

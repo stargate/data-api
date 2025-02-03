@@ -19,7 +19,7 @@ import java.util.function.Consumer;
  *
  * @param <T> Type of the target object the warnings are about.
  */
-public class WithWarnings<T> implements Consumer<OperationAttempt<?, ?>> {
+public class WithWarnings<T> implements Consumer<WithWarnings.WarningsSink> {
 
   private final T target;
   private final List<WarningException> warnings;
@@ -103,15 +103,26 @@ public class WithWarnings<T> implements Consumer<OperationAttempt<?, ?>> {
     return new WithWarnings<>(target, warnings, null);
   }
 
+
   /**
    * Adds all the warnings to the {@link OperationAttempt}
    *
-   * @param operationAttempt the {@link OperationAttempt} to add the warnings to
+   * @param sink the {@link WarningsSink} to add the warnings to
    */
   @Override
-  public void accept(OperationAttempt<?, ?> operationAttempt) {
-    Objects.requireNonNull(operationAttempt, "operationAttempt must not be null");
-    warnings.forEach(operationAttempt::addWarning);
-    suppressedWarnings.forEach(operationAttempt::addSuppressedWarning);
+  public void accept(WarningsSink sink) {
+    Objects.requireNonNull(sink, "sink must not be null");
+    warnings.forEach(sink::addWarning);
+    suppressedWarnings.forEach(sink::addSuppressedWarning);
+  }
+
+  /**
+   * Interface for a class that wants to consume warnings.
+   */
+  public interface WarningsSink {
+    void addWarning(WarningException warning);
+    void addSuppressedWarning(WarningException.Code suppressedWarning);
+
+    List<WarningException> warnings();
   }
 }
