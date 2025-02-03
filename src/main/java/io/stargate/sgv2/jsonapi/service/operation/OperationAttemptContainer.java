@@ -101,7 +101,7 @@ public class OperationAttemptContainer<
   /**
    * Since container is arrayList that preserves order, if any attempt prior to or including the
    * targetAttempt has an error status, then targetAttempt should failFast. Container should fail
-   * fast and stop processing any further attempts.
+   * fast and stop processing any further following attempts.
    *
    * <p>
    *
