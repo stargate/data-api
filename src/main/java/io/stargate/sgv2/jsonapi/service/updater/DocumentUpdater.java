@@ -6,7 +6,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.*;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
@@ -167,8 +167,7 @@ public record DocumentUpdater(
     public Uni<DocumentUpdaterResponse> updateEmbeddingVector(
         DocumentUpdaterResponse responseBeforeVectorize,
         DataVectorizerService dataVectorizerService,
-        DataApiRequestInfo dataApiRequestInfo,
-        CommandContext commandContext) {
+        CommandContext<?> commandContext) {
 
       List<EmbeddingUpdateOperation> embeddingUpdateOperations =
           responseBeforeVectorize.embeddingUpdateOperations();
@@ -177,7 +176,7 @@ public record DocumentUpdater(
       }
       // lazy construct the dataVectorizer, only when embeddingUpdateOperation is not null
       final DataVectorizer dataVectorizer =
-          dataVectorizerService.constructDataVectorizer(dataApiRequestInfo, commandContext);
+          dataVectorizerService.constructDataVectorizer(commandContext);
       // currently, there is only one $vectorize for document
       return Multi.createFrom()
           .iterable(embeddingUpdateOperations)

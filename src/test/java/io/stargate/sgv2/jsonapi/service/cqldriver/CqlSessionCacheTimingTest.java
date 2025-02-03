@@ -15,7 +15,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import jakarta.inject.Inject;
@@ -74,7 +74,7 @@ public class CqlSessionCacheTimingTest {
     int sessionsToCreate = operationsConfig.databaseConfig().sessionCacheMaxSize();
     for (int i = 0; i < sessionsToCreate; i++) {
       String tenantId = "tenant_timing_test_" + i;
-      DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
+      RequestContext dataApiRequestInfo = mock(RequestContext.class);
       when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
       when(dataApiRequestInfo.getCassandraToken())
           .thenReturn(operationsConfig.databaseConfig().fixedToken());

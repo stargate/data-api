@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1.metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.vertx.core.http.HttpServerRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -23,7 +23,7 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
   private final MetricsConfig.TenantRequestCounterConfig config;
 
   /** The request info bean. */
-  private final DataApiRequestInfo requestInfo;
+  private final RequestContext requestInfo;
 
   /** The tag for error being true, created only once. */
   private final Tag errorTrue;
@@ -37,7 +37,7 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
   /** Default constructor. */
   @Inject
   public TenantRequestMetricsTagProvider(
-      DataApiRequestInfo requestInfo, MetricsConfig metricsConfig) {
+      RequestContext requestInfo, MetricsConfig metricsConfig) {
     this.requestInfo = requestInfo;
     this.config = metricsConfig.tenantRequestCounter();
     errorTrue = Tag.of(config.errorTag(), "true");

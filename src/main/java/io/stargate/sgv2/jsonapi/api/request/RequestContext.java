@@ -12,9 +12,12 @@ import java.util.Optional;
 /**
  * This class is used to get the request info like tenantId, cassandraToken and embeddingApiKey.
  * This is a replacement to StargateRequestInfo so bridge connection is removed.
+ * <p>
+ *  <b>Note:</b> aaron feb 3 2025 - leaving with injection for now for the building, it may make sense but moving
+ *  it to be part of the CommandContext rather than handed around everywhere.
  */
 @RequestScoped
-public class DataApiRequestInfo {
+public class RequestContext {
   private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
   private final EmbeddingCredentials embeddingCredentials;
@@ -26,7 +29,7 @@ public class DataApiRequestInfo {
    *
    * @param tenantId Tenant Id
    */
-  public DataApiRequestInfo(Optional<String> tenantId) {
+  public RequestContext(Optional<String> tenantId) {
     this.tenantId = tenantId;
     this.cassandraToken = Optional.empty();
     this.embeddingCredentials = null;
@@ -34,7 +37,7 @@ public class DataApiRequestInfo {
   }
 
   @Inject
-  public DataApiRequestInfo(
+  public RequestContext(
       RoutingContext routingContext,
       SecurityContext securityContext,
       Instance<DataApiTenantResolver> tenantResolver,

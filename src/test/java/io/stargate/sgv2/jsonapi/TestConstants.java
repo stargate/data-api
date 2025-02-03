@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
@@ -11,6 +12,8 @@ import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import java.util.List;
+import java.util.Optional;
+
 import org.apache.commons.lang3.RandomStringUtils;
 
 /**
@@ -96,7 +99,7 @@ public final class TestConstants {
         embeddingProvider,
         commandName,
         metricsReporter,
-        DEFAULT_API_FEATURES_FOR_TESTS,
+        new RequestContext(Optional.of("testTenant")),
         null);
   }
 
@@ -109,7 +112,7 @@ public final class TestConstants {
       KeyspaceSchemaObject schema,
       JsonProcessingMetricsReporter metricsReporter) {
     return new CommandContext<>(
-        schema, null, commandName, metricsReporter, DEFAULT_API_FEATURES_FOR_TESTS, null);
+        schema, null, commandName, metricsReporter, null, null);
   }
 
   private static final CommandContext<DatabaseSchemaObject> DATABASE_CONTEXT =
@@ -118,7 +121,7 @@ public final class TestConstants {
           null,
           TEST_COMMAND_NAME,
           null,
-          DEFAULT_API_FEATURES_FOR_TESTS,
+          null,
           null);
 
   public static CommandContext<DatabaseSchemaObject> databaseContext() {

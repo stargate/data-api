@@ -12,7 +12,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
@@ -576,7 +576,6 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   firstResponse,
                   dataVectorizerService,
-                  new DataApiRequestInfo(Optional.of("testTenant")),
                   TestEmbeddingProvider.commandContextWithVectorize)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -787,7 +786,6 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   firstResponse,
                   dataVectorizerService,
-                  new DataApiRequestInfo(Optional.of("testTenant")),
                   TestEmbeddingProvider.commandContextWithVectorize)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -957,7 +955,6 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   updatedDocument,
                   dataVectorizerService,
-                  new DataApiRequestInfo(Optional.of("testTenant")),
                   TestEmbeddingProvider.commandContextWithVectorize)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -1206,7 +1203,6 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   updatedDocument,
                   dataVectorizerService,
-                  new DataApiRequestInfo(Optional.of("testTenant")),
                   TestEmbeddingProvider.commandContextWithVectorize)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())

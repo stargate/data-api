@@ -61,7 +61,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
     //    var commandQueryExecutor =
     //        new CommandQueryExecutor(
     //            queryExecutor.getCqlSessionCache(),
-    //            new CommandQueryExecutor.RequestContext(
+    //            new CommandQueryExecutor.DBRequestContext(
     //                dataApiRequestInfo.getTenantId(), dataApiRequestInfo.getCassandraToken()),
     //            CommandQueryExecutor.QueryTarget.TABLE);
 

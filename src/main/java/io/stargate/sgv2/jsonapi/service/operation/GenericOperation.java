@@ -2,8 +2,9 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -21,7 +22,7 @@ import org.slf4j.LoggerFactory;
  */
 public class GenericOperation<
         SchemaT extends SchemaObject, AttemptT extends OperationAttempt<AttemptT, SchemaT>>
-    implements Operation {
+    implements Operation<SchemaT> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(GenericOperation.class);
 
@@ -50,6 +51,12 @@ public class GenericOperation<
         Objects.requireNonNull(exceptionHandlerFactory, "exceptionHandlerFactory cannot be null");
   }
 
+  @Override
+  public Uni<Supplier<CommandResult>> execute(RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
+    throw new UnsupportedOperationException("execute(RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) should not be called");
+  }
+
+
   /**
    * Execute the attempts passed to the operation using the provided {@link QueryExecutor}.
    *
@@ -66,12 +73,11 @@ public class GenericOperation<
    *     attempts.
    */
   @Override
-  public Uni<Supplier<CommandResult>> execute(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+  public Uni<Supplier<CommandResult>> execute(CommandContext<SchemaT> commandContext) {
 
     LOGGER.debug("execute() - starting to process attempts={}", attempts);
 
-    return startMulti(dataApiRequestInfo, queryExecutor)
+    return startMulti(commandContext)
         .collect()
         .in(() -> pageBuilder, OperationAttemptAccumulator::accumulate)
         .onItem()
@@ -88,15 +94,14 @@ public class GenericOperation<
    *
    * @return a {@link Multi} that emits {@link AttemptT} according to the attempts configuration.
    */
-  protected Multi<AttemptT> startMulti(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+  protected Multi<AttemptT> startMulti(CommandContext<SchemaT> commandContext) {
 
-    // TODO - for now we create the CommandQueryExecutor here , later change the Operation interface
+    // TODO - AARON - this will change to use Task and pass command context
     var commandQueryExecutor =
         new CommandQueryExecutor(
-            queryExecutor.getCqlSessionCache(),
-            new CommandQueryExecutor.RequestContext(
-                dataApiRequestInfo.getTenantId(), dataApiRequestInfo.getCassandraToken()),
+            commandContext.cqlSessionCache(),
+            new CommandQueryExecutor.DBRequestContext(
+                commandContext.requestContext().getTenantId(), commandContext.requestContext().getCassandraToken()),
             CommandQueryExecutor.QueryTarget.TABLE);
 
     // Common start pattern for all operations

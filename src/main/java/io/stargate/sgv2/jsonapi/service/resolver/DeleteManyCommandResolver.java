@@ -5,7 +5,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -37,7 +37,6 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
   private final ObjectMapper objectMapper;
 
   private final MeterRegistry meterRegistry;
-  private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final FilterResolver<DeleteManyCommand, CollectionSchemaObject> collectionFilterResolver;
@@ -48,13 +47,11 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
       OperationsConfig operationsConfig,
       ObjectMapper objectMapper,
       MeterRegistry meterRegistry,
-      DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
 
     this.operationsConfig = operationsConfig;
     this.objectMapper = objectMapper;
     this.meterRegistry = meterRegistry;
-    this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
@@ -114,18 +111,18 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
   }
 
   private FindCollectionOperation getFindOperation(
-      CommandContext<CollectionSchemaObject> ctx, DeleteManyCommand command) {
-    var dbLogicalExpression = collectionFilterResolver.resolve(ctx, command).target();
+      CommandContext<CollectionSchemaObject> commandContext, DeleteManyCommand command) {
+    var dbLogicalExpression = collectionFilterResolver.resolve(commandContext, command).target();
     // Read One extra document than delete limit so return moreData flag
     addToMetrics(
         meterRegistry,
-        dataApiRequestInfo,
+        commandContext.requestContext(),
         jsonApiMetricsConfig,
         command,
         dbLogicalExpression,
-        ctx.schemaObject().newIndexUsage());
+        commandContext.schemaObject().newIndexUsage());
     return FindCollectionOperation.unsorted(
-        ctx,
+        commandContext,
         dbLogicalExpression,
         DocumentProjector.includeAllProjector(),
         null,

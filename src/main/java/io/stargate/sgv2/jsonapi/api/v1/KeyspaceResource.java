@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.DropIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListTablesCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
@@ -56,11 +57,13 @@ public class KeyspaceResource {
   public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}";
   private final MeteredCommandProcessor meteredCommandProcessor;
 
+  @Inject private CQLSessionCache cqlSessionCache;
+
   private final FeaturesConfig apiFeatureConfig;
 
   private final OperationsConfig operationsConfig;
 
-  @Inject private DataApiRequestInfo dataApiRequestInfo;
+  @Inject private RequestContext requestContext;
 
   @Inject
   public KeyspaceResource(
@@ -129,7 +132,7 @@ public class KeyspaceResource {
           String keyspace) {
 
     final ApiFeatures apiFeatures =
-        ApiFeatures.fromConfigAndRequest(apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
+        ApiFeatures.fromConfigAndRequest(apiFeatureConfig, requestContext.getHttpHeaders());
 
     // create context
     // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
@@ -141,8 +144,7 @@ public class KeyspaceResource {
             null,
             command.getClass().getSimpleName(),
             null,
-            apiFeatures,
-            operationsConfig);
+            requestContext, cqlSessionCache);
 
     // Need context first to check if feature is enabled
     if (command instanceof TableOnlyCommand && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
@@ -155,7 +157,7 @@ public class KeyspaceResource {
 
     // call processor
     return meteredCommandProcessor
-        .processCommand(dataApiRequestInfo, commandContext, command)
+        .processCommand(commandContext, command)
         // map to 2xx unless overridden by error
         .map(commandResult -> commandResult.toRestResponse());
   }

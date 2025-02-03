@@ -20,7 +20,7 @@ package io.stargate.sgv2.jsonapi.api.v1.metrics;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -48,7 +48,7 @@ public class TenantRequestMetricsFilter {
   private final MetricsConfig.TenantRequestCounterConfig config;
 
   /** The request info bean. */
-  private final DataApiRequestInfo requestInfo;
+  private final RequestContext requestInfo;
 
   /** The tag for error being true, created only once. */
   private final Tag errorTrue;
@@ -62,7 +62,7 @@ public class TenantRequestMetricsFilter {
   /** Default constructor. */
   @Inject
   public TenantRequestMetricsFilter(
-      MeterRegistry meterRegistry, DataApiRequestInfo requestInfo, MetricsConfig metricsConfig) {
+      MeterRegistry meterRegistry, RequestContext requestInfo, MetricsConfig metricsConfig) {
     this.meterRegistry = meterRegistry;
     this.requestInfo = requestInfo;
     this.config = metricsConfig.tenantRequestCounter();

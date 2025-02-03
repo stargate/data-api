@@ -21,7 +21,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListIndexesCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
@@ -31,6 +31,7 @@ import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
@@ -72,11 +73,13 @@ public class CollectionResource {
 
   private final MeteredCommandProcessor meteredCommandProcessor;
 
+  @Inject private CQLSessionCache cqlSessionCache;
+
   @Inject private SchemaCache schemaCache;
 
   @Inject private EmbeddingProviderFactory embeddingProviderFactory;
 
-  @Inject private DataApiRequestInfo dataApiRequestInfo;
+  @Inject private RequestContext requestContext;
 
   @Inject private FeaturesConfig apiFeatureConfig;
 
@@ -193,8 +196,8 @@ public class CollectionResource {
           String collection) {
     return schemaCache
         .getSchemaObject(
-            dataApiRequestInfo,
-            dataApiRequestInfo.getTenantId(),
+            requestContext,
+            requestContext.getTenantId(),
             keyspace,
             collection,
             CommandType.DDL.equals(command.commandName().getCommandType()))
@@ -218,7 +221,7 @@ public class CollectionResource {
                 // TODO No need for the else clause here, simplify
                 var apiFeatures =
                     ApiFeatures.fromConfigAndRequest(
-                        apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
+                        apiFeatureConfig, requestContext.getHttpHeaders());
                 if ((schemaObject.type() == SchemaObject.SchemaObjectType.TABLE)
                     && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
                   return Uni.createFrom()
@@ -247,8 +250,8 @@ public class CollectionResource {
                     (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)
                         ? null
                         : embeddingProviderFactory.getConfiguration(
-                            dataApiRequestInfo.getTenantId(),
-                            dataApiRequestInfo.getCassandraToken(),
+                            requestContext.getTenantId(),
+                            requestContext.getCassandraToken(),
                             vectorColDef.vectorizeDefinition().provider(),
                             vectorColDef.vectorizeDefinition().modelName(),
                             vectorColDef.vectorSize(),
@@ -262,11 +265,9 @@ public class CollectionResource {
                         embeddingProvider,
                         command.getClass().getSimpleName(),
                         jsonProcessingMetricsReporter,
-                        apiFeatures,
-                        operationsConfig);
+                        requestContext, cqlSessionCache);
 
-                return meteredCommandProcessor.processCommand(
-                    dataApiRequestInfo, commandContext, command);
+                return meteredCommandProcessor.processCommand(commandContext, command);
               }
             })
         .map(commandResult -> commandResult.toRestResponse());

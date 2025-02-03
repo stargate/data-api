@@ -3,14 +3,19 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 import com.google.common.base.Preconditions;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
@@ -24,14 +29,10 @@ public record CommandContext<T extends SchemaObject>(
     EmbeddingProvider embeddingProvider,
     String commandName,
     JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-    ApiFeatures apiFeatures,
-    OperationsConfig operationsConfig) {
+    RequestContext requestContext,
+    CQLSessionCache cqlSessionCache) {
 
-  // TODO: this is what the original EMPTY had, no idea why the name of the command is missing
-  // this is used by the GeneralResource
-  //  private static final CommandContext EMPTY =
-  //      new CommandContext(null, null, CollectionSettings.empty(), null, "testCommand", null);
-
+  private static final ConcurrentMap<Class<?>, Object> configCache = new ConcurrentHashMap<>();
   /**
    * Factory method to create a new instance of {@link CommandContext} based on the schema object we
    * are working with.
@@ -50,8 +51,8 @@ public record CommandContext<T extends SchemaObject>(
       EmbeddingProvider embeddingProvider,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures,
-      OperationsConfig operationsConfig) {
+      RequestContext requestContext,
+      CQLSessionCache cqlSessionCache) {
 
     Objects.requireNonNull(schemaObject);
 
@@ -60,8 +61,8 @@ public record CommandContext<T extends SchemaObject>(
         embeddingProvider,
         commandName,
         jsonProcessingMetricsReporter,
-        apiFeatures,
-        operationsConfig);
+        requestContext,
+        cqlSessionCache);
   }
 
   @SuppressWarnings("unchecked")
@@ -109,7 +110,11 @@ public record CommandContext<T extends SchemaObject>(
    * @param <ConfigType> The configuration interface to populate
    */
   public <ConfigType> ConfigType getConfig(Class<ConfigType> configType) {
-    return getConfig().getConfigMapping(configType);
+    return (ConfigType)configCache.computeIfAbsent(
+        configType,
+        k -> {
+          return getConfig().getConfigMapping(configType);
+        });
   }
 
   /**
@@ -133,10 +138,6 @@ public record CommandContext<T extends SchemaObject>(
   }
 
   public OperationsConfig operationsConfig() {
-    if (operationsConfig != null) {
-      return operationsConfig;
-    }
-    // During tests:
     return getConfig(OperationsConfig.class);
   }
 }

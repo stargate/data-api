@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.APIException;
@@ -37,18 +37,14 @@ public class CommandProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(CommandProcessor.class);
 
-  private final QueryExecutor queryExecutor;
-
   private final DataVectorizerService dataVectorizerService;
 
   private final CommandResolverService commandResolverService;
 
   @Inject
   public CommandProcessor(
-      QueryExecutor queryExecutor,
       CommandResolverService commandResolverService,
       DataVectorizerService dataVectorizerService) {
-    this.queryExecutor = queryExecutor;
     this.commandResolverService = commandResolverService;
     this.dataVectorizerService = dataVectorizerService;
   }
@@ -62,15 +58,14 @@ public class CommandProcessor {
    * @param <T> Type of the command.
    * @param <U> Type of the schema object command operates on.
    */
-  public <T extends Command, U extends SchemaObject> Uni<CommandResult> processCommand(
-      DataApiRequestInfo dataApiRequestInfo, CommandContext<U> commandContext, T command) {
+  public <T extends Command, U extends SchemaObject> Uni<CommandResult> processCommand(CommandContext<U> commandContext, T command) {
 
     var debugMode = commandContext.getConfig(DebugModeConfig.class).enabled();
     var errorObjectV2 = commandContext.getConfig(OperationsConfig.class).extendError();
 
     // vectorize the data
     return dataVectorizerService
-        .vectorize(dataApiRequestInfo, commandContext, command)
+        .vectorize(commandContext, command)
         .onItem()
         .transformToUni(
             vectorizedCommand -> {
@@ -82,14 +77,14 @@ public class CommandProcessor {
                   .flatMap(
                       resolver -> {
                         // if we have resolver, resolve operation
-                        Operation operation =
+                        Operation<U> operation =
                             resolver.resolveCommand(commandContext, vectorizedCommand);
                         return Uni.createFrom().item(operation);
                       });
             })
 
         //  execute the operation
-        .flatMap(operation -> operation.execute(dataApiRequestInfo, queryExecutor))
+        .flatMap(operation -> operation.execute(commandContext))
 
         // handle failures here
         .onFailure()

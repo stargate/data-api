@@ -19,6 +19,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * Configured to execute queries for a specific command that relies on drive profiles MORE TODO
  * WORDS
  *
+ * <b>NOTE:</b> this is a WIP replacing the earlier QueryExecutor that was built with injection
+ *
  * <p>The following settings should be set via the driver profile:
  *
  * <ul>
@@ -57,14 +59,14 @@ public class CommandQueryExecutor {
   }
 
   private final CQLSessionCache cqlSessionCache;
-  private final RequestContext requestContext;
+  private final DBRequestContext DBRequestContext;
   private final QueryTarget queryTarget;
 
   public CommandQueryExecutor(
-      CQLSessionCache cqlSessionCache, RequestContext requestContext, QueryTarget queryTarget) {
+      CQLSessionCache cqlSessionCache, DBRequestContext DBRequestContext, QueryTarget queryTarget) {
     this.cqlSessionCache =
         Objects.requireNonNull(cqlSessionCache, "cqlSessionCache must not be null");
-    this.requestContext = Objects.requireNonNull(requestContext, "requestContext must not be null");
+    this.DBRequestContext = Objects.requireNonNull(DBRequestContext, "DBRequestContext must not be null");
     this.queryTarget = queryTarget;
   }
 
@@ -154,7 +156,7 @@ public class CommandQueryExecutor {
 
   private CqlSession session() {
     return cqlSessionCache.getSession(
-        requestContext.tenantId().orElse(""), requestContext.authToken().orElse(""));
+        DBRequestContext.tenantId().orElse(""), DBRequestContext.authToken().orElse(""));
   }
 
   private String getExecutionProfile(QueryType queryType) {
@@ -170,5 +172,6 @@ public class CommandQueryExecutor {
     return Uni.createFrom().completionStage(session().executeAsync(statement));
   }
 
-  public record RequestContext(Optional<String> tenantId, Optional<String> authToken) {}
+  // Aaron - Feb 3 - temp rename while factoring full RequestContext
+  public record DBRequestContext(Optional<String> tenantId, Optional<String> authToken) {}
 }

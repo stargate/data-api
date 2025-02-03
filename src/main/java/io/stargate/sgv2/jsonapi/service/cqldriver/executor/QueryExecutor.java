@@ -10,7 +10,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.core.servererrors.TruncateException;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -24,7 +24,6 @@ import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ApplicationScoped
 public class QueryExecutor {
   private static final Logger logger = LoggerFactory.getLogger(QueryExecutor.class);
   private final OperationsConfig operationsConfig;
@@ -32,7 +31,6 @@ public class QueryExecutor {
   /** CQLSession cache. */
   private final CQLSessionCache cqlSessionCache;
 
-  @Inject
   public QueryExecutor(CQLSessionCache cqlSessionCache, OperationsConfig operationsConfig) {
     this.cqlSessionCache = cqlSessionCache;
     this.operationsConfig = operationsConfig;
@@ -49,7 +47,7 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeRead(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       SimpleStatement simpleStatement,
       Optional<String> pagingState,
       int pageSize) {
@@ -74,7 +72,7 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public CompletionStage<AsyncResultSet> executeCount(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement simpleStatement) {
+      RequestContext dataApiRequestInfo, SimpleStatement simpleStatement) {
     simpleStatement =
         simpleStatement
             .setExecutionProfileName("count")
@@ -90,7 +88,7 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public CompletionStage<AsyncResultSet> executeEstimatedCount(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement simpleStatement) {
+      RequestContext dataApiRequestInfo, SimpleStatement simpleStatement) {
     simpleStatement =
         simpleStatement.setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
 
@@ -108,7 +106,7 @@ public class QueryExecutor {
    * @return
    */
   public Uni<AsyncResultSet> executeVectorSearch(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       SimpleStatement simpleStatement,
       Optional<String> pagingState,
       int pageSize) {
@@ -133,7 +131,7 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeWrite(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement statement) {
+      RequestContext dataApiRequestInfo, SimpleStatement statement) {
     return Uni.createFrom()
         .completionStage(
             cqlSessionCache
@@ -155,7 +153,7 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeCreateSchemaChange(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement) {
+      RequestContext dataApiRequestInfo, SimpleStatement boundStatement) {
     return executeSchemaChange(dataApiRequestInfo, boundStatement, "create");
   }
 
@@ -167,7 +165,7 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeDropSchemaChange(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement) {
+      RequestContext dataApiRequestInfo, SimpleStatement boundStatement) {
     return executeSchemaChange(dataApiRequestInfo, boundStatement, "drop");
   }
 
@@ -179,12 +177,12 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeTruncateSchemaChange(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement) {
+      RequestContext dataApiRequestInfo, SimpleStatement boundStatement) {
     return executeSchemaChange(dataApiRequestInfo, boundStatement, "truncate");
   }
 
   private Uni<AsyncResultSet> executeSchemaChange(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement, String profile) {
+      RequestContext dataApiRequestInfo, SimpleStatement boundStatement, String profile) {
     return Uni.createFrom()
         .completionStage(
             cqlSessionCache
@@ -247,7 +245,7 @@ public class QueryExecutor {
    * @return
    */
   protected Uni<Optional<TableMetadata>> getSchema(
-      DataApiRequestInfo dataApiRequestInfo, String namespace, String collectionName) {
+      RequestContext dataApiRequestInfo, String namespace, String collectionName) {
     try {
       var session = cqlSessionCache.getSession(dataApiRequestInfo);
       return Uni.createFrom()
@@ -278,7 +276,7 @@ public class QueryExecutor {
    * @return TableMetadata
    */
   protected Uni<TableMetadata> getCollectionSchema(
-      DataApiRequestInfo dataApiRequestInfo, String namespace, String collectionName) {
+      RequestContext dataApiRequestInfo, String namespace, String collectionName) {
     Optional<KeyspaceMetadata> keyspaceMetadata;
     if ((keyspaceMetadata =
             cqlSessionCache.getSession(dataApiRequestInfo).getMetadata().getKeyspace(namespace))

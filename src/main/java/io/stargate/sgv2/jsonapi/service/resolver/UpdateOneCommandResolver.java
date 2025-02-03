@@ -7,7 +7,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -41,7 +41,6 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
   private final ObjectMapper objectMapper;
   private final DataVectorizerService dataVectorizerService;
   private final MeterRegistry meterRegistry;
-  private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final FilterResolver<UpdateOneCommand, CollectionSchemaObject> collectionFilterResolver;
@@ -56,7 +55,6 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
       DocumentShredder documentShredder,
       DataVectorizerService dataVectorizerService,
       MeterRegistry meterRegistry,
-      DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
     super();
     this.objectMapper = objectMapper;
@@ -64,7 +62,6 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
     this.operationsConfig = operationsConfig;
     this.dataVectorizerService = dataVectorizerService;
     this.meterRegistry = meterRegistry;
-    this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
@@ -133,29 +130,29 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
   }
 
   private FindCollectionOperation getFindOperation(
-      CommandContext<CollectionSchemaObject> ctx, UpdateOneCommand command) {
+      CommandContext<CollectionSchemaObject> commandContext, UpdateOneCommand command) {
 
-    var dbLogicalExpression = collectionFilterResolver.resolve(ctx, command).target();
+    var dbLogicalExpression = collectionFilterResolver.resolve(commandContext, command).target();
 
     final SortClause sortClause = command.sortClause();
     if (sortClause != null) {
-      sortClause.validate(ctx.schemaObject());
+      sortClause.validate(commandContext.schemaObject());
     }
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 
-    var indexUsage = ctx.schemaObject().newCollectionIndexUsage();
+    var indexUsage = commandContext.schemaObject().newCollectionIndexUsage();
     indexUsage.vectorIndexTag = vector != null;
     addToMetrics(
         meterRegistry,
-        dataApiRequestInfo,
+        commandContext.requestContext(),
         jsonApiMetricsConfig,
         command,
         dbLogicalExpression,
         indexUsage);
     if (vector != null) {
       return FindCollectionOperation.vsearchSingle(
-          ctx,
+          commandContext,
           dbLogicalExpression,
           DocumentProjector.includeAllProjector(),
           CollectionReadType.DOCUMENT,
@@ -168,7 +165,7 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
     // If orderBy present
     if (orderBy != null) {
       return FindCollectionOperation.sortedSingle(
-          ctx,
+          commandContext,
           dbLogicalExpression,
           DocumentProjector.includeAllProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
@@ -183,7 +180,7 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
           false);
     } else {
       return FindCollectionOperation.unsortedSingle(
-          ctx,
+          commandContext,
           dbLogicalExpression,
           DocumentProjector.includeAllProjector(),
           CollectionReadType.DOCUMENT,

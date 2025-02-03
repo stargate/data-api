@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
@@ -31,7 +31,6 @@ public class UpdateManyCommandResolver implements CommandResolver<UpdateManyComm
   private final ObjectMapper objectMapper;
   private final DataVectorizerService dataVectorizerService;
   private final MeterRegistry meterRegistry;
-  private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final CollectionFilterResolver<UpdateManyCommand> collectionFilterResolver;
@@ -43,14 +42,12 @@ public class UpdateManyCommandResolver implements CommandResolver<UpdateManyComm
       OperationsConfig operationsConfig,
       DataVectorizerService dataVectorizerService,
       MeterRegistry meterRegistry,
-      DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
     this.objectMapper = objectMapper;
     this.documentShredder = documentShredder;
     this.operationsConfig = operationsConfig;
     this.dataVectorizerService = dataVectorizerService;
     this.meterRegistry = meterRegistry;
-    this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
@@ -88,19 +85,19 @@ public class UpdateManyCommandResolver implements CommandResolver<UpdateManyComm
   }
 
   private FindCollectionOperation getFindOperation(
-      CommandContext<CollectionSchemaObject> ctx, UpdateManyCommand command) {
-    var dbLogicalExpression = collectionFilterResolver.resolve(ctx, command).target();
+      CommandContext<CollectionSchemaObject> commandContext, UpdateManyCommand command) {
+    var dbLogicalExpression = collectionFilterResolver.resolve(commandContext, command).target();
 
     // TODO this did not track the vector usage, correct ?
     addToMetrics(
         meterRegistry,
-        dataApiRequestInfo,
+        commandContext.requestContext(),
         jsonApiMetricsConfig,
         command,
         dbLogicalExpression,
-        ctx.schemaObject().newIndexUsage());
+        commandContext.schemaObject().newIndexUsage());
     return FindCollectionOperation.unsorted(
-        ctx,
+        commandContext,
         dbLogicalExpression,
         DocumentProjector.includeAllProjector(),
         null != command.options() ? command.options().pageState() : null,

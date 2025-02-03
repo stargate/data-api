@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -40,7 +40,7 @@ public class NamespaceCache {
   }
 
   protected Uni<SchemaObject> getSchemaObject(
-      DataApiRequestInfo dataApiRequestInfo, String collectionName, boolean forceRefresh) {
+      RequestContext dataApiRequestInfo, String collectionName, boolean forceRefresh) {
 
     // TODO: why is this not using the loader pattern ?
     SchemaObject schemaObject = null;
@@ -85,7 +85,7 @@ public class NamespaceCache {
   }
 
   private Uni<SchemaObject> loadSchemaObject(
-      DataApiRequestInfo dataApiRequestInfo, String collectionName) {
+      RequestContext dataApiRequestInfo, String collectionName) {
 
     return queryExecutor
         .getSchema(dataApiRequestInfo, namespace, collectionName)

@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -15,7 +15,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -31,7 +30,6 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
-  private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver;
@@ -42,14 +40,12 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
       OperationsConfig operationsConfig,
       ObjectMapper objectMapper,
       MeterRegistry meterRegistry,
-      DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
 
     this.readCommandResolver = new ReadCommandResolver<>(objectMapper, operationsConfig);
     this.objectMapper = objectMapper;
     this.operationsConfig = operationsConfig;
     this.meterRegistry = meterRegistry;
-    this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
@@ -148,9 +144,9 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
 
   @Override
   public Operation resolveCollectionCommand(
-      CommandContext<CollectionSchemaObject> ctx, FindCommand command) {
+      CommandContext<CollectionSchemaObject> commandContext, FindCommand command) {
 
-    var resolvedDbLogicalExpression = collectionFilterResolver.resolve(ctx, command).target();
+    var resolvedDbLogicalExpression = collectionFilterResolver.resolve(commandContext, command).target();
     // limit and page state defaults
     int limit = Integer.MAX_VALUE;
     int skip = 0;
@@ -183,17 +179,17 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
         throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
             "pageState is not supported with non-empty sort clause");
       }
-      sortClause.validate(ctx.schemaObject());
+      sortClause.validate(commandContext.schemaObject());
     }
 
     // if vector search
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
-    var indexUsage = ctx.schemaObject().newCollectionIndexUsage();
+    var indexUsage = commandContext.schemaObject().newCollectionIndexUsage();
     indexUsage.vectorIndexTag = vector != null;
 
     addToMetrics(
         meterRegistry,
-        dataApiRequestInfo,
+        commandContext.requestContext(),
         jsonApiMetricsConfig,
         command,
         resolvedDbLogicalExpression,
@@ -204,7 +200,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           Math.min(
               limit, operationsConfig.maxVectorSearchLimit()); // Max vector search support is 1000
       return FindCollectionOperation.vsearch(
-          ctx,
+          commandContext,
           resolvedDbLogicalExpression,
           command.buildProjector(includeSimilarity),
           pageState,
@@ -220,7 +216,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     // if orderBy present
     if (orderBy != null) {
       return FindCollectionOperation.sorted(
-          ctx,
+          commandContext,
           resolvedDbLogicalExpression,
           command.buildProjector(),
           pageState,
@@ -237,7 +233,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           includeSortVector);
     } else {
       return FindCollectionOperation.unsorted(
-          ctx,
+          commandContext,
           resolvedDbLogicalExpression,
           command.buildProjector(),
           pageState,

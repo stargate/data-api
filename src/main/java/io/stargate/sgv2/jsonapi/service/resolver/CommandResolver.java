@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandTarget;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
@@ -175,7 +175,7 @@ public interface CommandResolver<C extends Command> {
    * and we know the filters we want to run.
    *
    * @param meterRegistry
-   * @param dataApiRequestInfo
+   * @param requestContext
    * @param jsonApiMetricsConfig
    * @param command
    * @param dbLogicalExpression
@@ -186,7 +186,7 @@ public interface CommandResolver<C extends Command> {
    */
   default void addToMetrics(
       MeterRegistry meterRegistry,
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext requestContext,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       Command command,
       DBLogicalExpression dbLogicalExpression,
@@ -196,7 +196,7 @@ public interface CommandResolver<C extends Command> {
     // that
     // it's only here because of the use of records and interfaces, move to a base class
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
-    Tag tenantTag = Tag.of(TENANT_TAG, dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
+    Tag tenantTag = Tag.of(TENANT_TAG, requestContext.getTenantId().orElse(UNKNOWN_VALUE));
     Tags tags = Tags.of(commandTag, tenantTag);
 
     getIndexUsageTags(dbLogicalExpression, baseIndexUsage);

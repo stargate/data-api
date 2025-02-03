@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.config.feature;
 
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import java.util.Collections;
 import java.util.Map;
 
@@ -13,10 +13,10 @@ import java.util.Map;
  */
 public class ApiFeatures {
   private final Map<ApiFeature, Boolean> fromConfig;
-  private final DataApiRequestInfo.HttpHeaderAccess httpHeaders;
+  private final RequestContext.HttpHeaderAccess httpHeaders;
 
   private ApiFeatures(
-      Map<ApiFeature, Boolean> fromConfig, DataApiRequestInfo.HttpHeaderAccess httpHeaders) {
+      Map<ApiFeature, Boolean> fromConfig, RequestContext.HttpHeaderAccess httpHeaders) {
     this.fromConfig = fromConfig;
     this.httpHeaders = httpHeaders;
   }
@@ -26,7 +26,7 @@ public class ApiFeatures {
   }
 
   public static ApiFeatures fromConfigAndRequest(
-      FeaturesConfig config, DataApiRequestInfo.HttpHeaderAccess httpHeaders) {
+      FeaturesConfig config, RequestContext.HttpHeaderAccess httpHeaders) {
     Map<ApiFeature, Boolean> fromConfig = config.flags();
     if (fromConfig == null) {
       fromConfig = Collections.emptyMap();
