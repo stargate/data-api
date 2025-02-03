@@ -57,15 +57,11 @@ public abstract class DBTask<SchemaT extends SchemaObject>
   @Override
   protected ResultSupplier<AsyncResultSet> buildResultSupplier(
       CommandContext<SchemaT> commandContext) {
-    // TODO - for now we create the CommandQueryExecutor here , later change the Operation interface
-    //    var commandQueryExecutor =
-    //        new CommandQueryExecutor(
-    //            queryExecutor.getCqlSessionCache(),
-    //            new CommandQueryExecutor.DBRequestContext(
-    //                dataApiRequestInfo.getTenantId(), dataApiRequestInfo.getCassandraToken()),
-    //            CommandQueryExecutor.QueryTarget.TABLE);
 
-    CommandQueryExecutor commandQueryExecutor = null;
+    var commandQueryExecutor = new CommandQueryExecutor(commandContext.cqlSessionCache(),
+                    new CommandQueryExecutor.DBRequestContext(
+                        commandContext.requestContext().getTenantId(), commandContext.requestContext().getCassandraToken()),
+                    CommandQueryExecutor.QueryTarget.TABLE);
     return buildResultSupplier(commandQueryExecutor);
   }
 

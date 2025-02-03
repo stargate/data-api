@@ -51,10 +51,6 @@ public class GenericOperation<
         Objects.requireNonNull(exceptionHandlerFactory, "exceptionHandlerFactory cannot be null");
   }
 
-  @Override
-  public Uni<Supplier<CommandResult>> execute(RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
-    throw new UnsupportedOperationException("execute(RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) should not be called");
-  }
 
 
   /**
