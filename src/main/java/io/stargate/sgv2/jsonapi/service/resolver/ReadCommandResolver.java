@@ -123,6 +123,6 @@ class ReadCommandResolver<
         .debugMode(commandContext.getConfig(DebugModeConfig.class).enabled())
         .useErrorObjectV2(commandContext.getConfig(OperationsConfig.class).extendError());
 
-    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
+    return new GenericOperation<>(attempts, pageBuilder, TableDriverExceptionHandler::new);
   }
 }

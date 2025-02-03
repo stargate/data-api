@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropIndexCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -58,7 +59,11 @@ public class DropIndexCommandResolver implements CommandResolver<DropIndexComman
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new GenericOperation<>(attempts, pageBuilder, new DropIndexExceptionHandler(indexName));
+    return new GenericOperation<>(
+        attempts,
+        pageBuilder,
+        DefaultDriverExceptionHandler.Factory.withIdentifier(
+            DropIndexExceptionHandler::new, indexName));
   }
 
   private void checkIndexExists(KeyspaceSchemaObject schemaObject, CqlIdentifier indexName) {}

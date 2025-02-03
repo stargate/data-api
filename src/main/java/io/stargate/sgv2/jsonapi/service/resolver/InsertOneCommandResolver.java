@@ -65,6 +65,6 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
+    return new GenericOperation<>(attempts, pageBuilder, TableDriverExceptionHandler::new);
   }
 }
