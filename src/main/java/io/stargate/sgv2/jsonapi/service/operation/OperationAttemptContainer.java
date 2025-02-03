@@ -99,12 +99,27 @@ public class OperationAttemptContainer<
   }
 
   /**
-   * Since container is arrayList that preserves order, if any attempt before(include) targetAttempt
-   * has error status, then targetAttempt should failFast. Container should fail fast and stop
-   * processing any further attempts.
+   * Since container is arrayList that preserves order, if any attempt prior to or including the
+   * targetAttempt has an error status, then targetAttempt should failFast. Container should fail
+   * fast and stop processing any further attempts.
    *
-   * @return <code>true</code> if the container is configured for sequential processing and there is
-   *     at least one error before(include) the targetAttempt
+   * <p>
+   *
+   * <pre>
+   * E.G.
+   * If there are 5 attempts in the batch, they are 'a','b','c','d','e'. Attempt 'c' is in error status.
+   * shouldFailFast(a) -> false
+   * shouldFailFast(b) -> false
+   * shouldFailFast(c) -> true
+   * shouldFailFast(d) -> true
+   * shouldFailFast(e) -> true
+   * As a result, attempts 'a' and 'b' will be executed, other three will fail fast.
+   * </pre>
+   *
+   * @param targetAttempt the target attempt that we want to examine if a fail-fast is needed in the
+   *     batch
+   * @return <code>true</code> if the container is configured for sequential processing and at least
+   *     one attempt prior to or including targetAttempt is in error status.
    */
   public boolean shouldFailFast(AttemptT targetAttempt) {
     if (!sequentialProcessing) {
