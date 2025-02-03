@@ -1,12 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.core.servererrors.QueryExecutionException;
 import com.datastax.oss.driver.api.core.servererrors.TruncateException;
-import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.time.Duration;
@@ -24,11 +22,11 @@ public abstract class SchemaAttempt<SchemaT extends SchemaObject>
   }
 
   @Override
-  protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
+  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
     var statement = buildStatement();
 
     logStatement(LOGGER, "executeStatement()", statement);
-    return queryExecutor.executeCreateSchema(statement);
+    return new StatementContext(statement, () -> queryExecutor.executeCreateSchema(statement));
   }
 
   protected abstract SimpleStatement buildStatement();

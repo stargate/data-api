@@ -1,9 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
-import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import org.slf4j.Logger;
@@ -21,11 +19,11 @@ public class TruncateAttempt<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
+  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
     // bind and execute
     var statement = buildTruncateStatement();
     logStatement(LOGGER, "executeStatement()", statement);
-    return queryExecutor.executeTruncate(statement);
+    return new StatementContext(statement, () -> queryExecutor.executeTruncate(statement));
   }
 
   protected SimpleStatement buildTruncateStatement() {
