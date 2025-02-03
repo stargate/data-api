@@ -14,7 +14,6 @@ import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
-import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -122,7 +121,9 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     final DBLogicalExpression dbLogicalExpression =
         collectionFilterResolver.resolve(ctx, command).target();
     final SortClause sortClause = command.sortClause();
-    SchemaValidatable.maybeValidate(ctx, sortClause);
+    if (sortClause != null) {
+      sortClause.validate(ctx.schemaObject());
+    }
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 

@@ -28,9 +28,10 @@ public interface TableDescConstants {
   }
 
   interface IndexDesc {
-    String NAME = "name";
-    String INDEX_TYPE = "indexType";
     String DEFINITION = "definition";
+    String INDEX_TYPE = "indexType";
+    String NAME = "name";
+    String OPTIONS = "options";
   }
 
   interface IndexDefinitionDesc {
@@ -41,7 +42,7 @@ public interface TableDescConstants {
 
   interface RegularIndexDefinitionDescOptions {
     String ASCII = "ascii";
-    String CASE_SENSITIVE = "case_sensitive";
+    String CASE_SENSITIVE = "caseSensitive";
     String NORMALIZE = "normalize";
   }
 

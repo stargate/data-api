@@ -30,7 +30,7 @@ public class DocValueHasher {
   final IdentityHashMap<JsonNode, DocValueHash> structuredHashes = new IdentityHashMap<>();
 
   /**
-   * Simple reuse cache for non-trivial atomic values: Strings and Numbers (nulls and booleans can
+   * Simple reuse cache for non-trivial atomic values: Constants and Numbers (nulls and booleans can
    * be pre-computed)
    */
   final AtomicValues atomics = new AtomicValues();

@@ -144,7 +144,7 @@ public class DataVectorizer {
                     for (float listValue : vector) {
                       arrayNode.add(nodeFactory.numberNode(listValue));
                     }
-                    ((ObjectNode) document).put(VECTOR_EMBEDDING_FIELD, arrayNode);
+                    ((ObjectNode) document).set(VECTOR_EMBEDDING_FIELD, arrayNode);
                   }
                   return true;
                 });
@@ -384,7 +384,7 @@ public class DataVectorizer {
         arrayNode.add(JsonNodeFactory.instance.numberNode(v));
       }
 
-      parentObject.put(columnDef.jsonKey(), arrayNode);
+      parentObject.set(columnDef.jsonKey(), arrayNode);
     }
   }
 

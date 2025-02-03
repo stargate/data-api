@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
+import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.*;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
@@ -12,13 +13,12 @@ import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.util.defaults.BooleanProperty;
-import io.stargate.sgv2.jsonapi.util.defaults.Properties;
+import io.stargate.sgv2.jsonapi.util.ApiPropertyUtils;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/** An index on a numeric or text column that is not using text analysis . */
+/** An index of type {@link ApiIndexType#REGULAR} on a scalar or collection column */
 public class ApiRegularIndex extends ApiSupportedIndex {
 
   public static final IndexFactoryFromIndexDesc<ApiRegularIndex, RegularIndexDefinitionDesc>
@@ -26,16 +26,11 @@ public class ApiRegularIndex extends ApiSupportedIndex {
 
   public static final IndexFactoryFromCql FROM_CQL_FACTORY = new CqlTypeFactory();
 
-  private interface Options {
-    BooleanProperty.Stringable ASCII =
-        Properties.ofStringable("ascii", TableDescDefaults.RegularIndexDescDefaults.ASCII);
-
-    BooleanProperty.Stringable CASE_SENSITIVE =
-        Properties.ofStringable(
-            "case_sensitive", TableDescDefaults.RegularIndexDescDefaults.CASE_SENSITIVE);
-
-    BooleanProperty.Stringable NORMALIZE =
-        Properties.ofStringable("normalize", TableDescDefaults.RegularIndexDescDefaults.NORMALIZE);
+  /** Names of the CQL index options */
+  public interface CQLOptions {
+    String ASCII = "ascii";
+    String CASE_SENSITIVE = "case_sensitive";
+    String NORMALIZE = "normalize";
   }
 
   private ApiRegularIndex(
@@ -47,18 +42,19 @@ public class ApiRegularIndex extends ApiSupportedIndex {
   public IndexDesc<RegularIndexDefinitionDesc> indexDesc() {
 
     // Only the text indexes has the properties, we rely on the factories to create the options
-    // map with the correct values, so we use getIfPresent to skip the defaults which and read null
-    // if it
-    // is not in the map
+    // map in indexOptions with the correct values, so just use get() and return a null if not
+    // found.
+    // Then rely on the RegularIndexDescOptions to exclude nulls in its serialisation
     var definitionOptions =
         new RegularIndexDefinitionDesc.RegularIndexDescOptions(
-            Options.ASCII.getIfPresentStringable(indexOptions),
-            Options.CASE_SENSITIVE.getIfPresentStringable(indexOptions),
-            Options.NORMALIZE.getIfPresentStringable(indexOptions));
+            getBooleanIfPresent(indexOptions, CQLOptions.ASCII),
+            getBooleanIfPresent(indexOptions, CQLOptions.CASE_SENSITIVE),
+            getBooleanIfPresent(indexOptions, CQLOptions.NORMALIZE));
 
     var definition =
         new RegularIndexDefinitionDesc(cqlIdentifierToJsonKey(targetColumn), definitionOptions);
-    return new IndexDesc<RegularIndexDefinitionDesc>() {
+
+    return new IndexDesc<>() {
       @Override
       public String name() {
         return cqlIdentifierToJsonKey(indexName);
@@ -66,7 +62,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
 
       @Override
       public String indexType() {
-        return ApiIndexType.REGULAR.indexTypeName();
+        return indexType.apiName();
       }
 
       @Override
@@ -76,20 +72,8 @@ public class ApiRegularIndex extends ApiSupportedIndex {
     };
   }
 
-  public boolean isAscii() {
-    return Options.ASCII.getWithDefaultStringable(indexOptions);
-  }
-
-  public boolean isCaseSensitive() {
-    return Options.CASE_SENSITIVE.getWithDefaultStringable(indexOptions);
-  }
-
-  public boolean isNormalize() {
-    return Options.NORMALIZE.getWithDefaultStringable(indexOptions);
-  }
-
   /**
-   * Factor to create a new {@link ApiRegularIndex} using {@link RegularIndexDefinitionDesc} from
+   * Factory to create a new {@link ApiRegularIndex} using {@link RegularIndexDefinitionDesc} from
    * the user request.
    */
   private static class UserDescFactory
@@ -104,16 +88,15 @@ public class ApiRegularIndex extends ApiSupportedIndex {
       Objects.requireNonNull(tableSchemaObject, "tableSchemaObject must not be null");
       Objects.requireNonNull(indexDesc, "indexDesc must not be null");
 
-      // for now we are relying on the validation of the request deserializer that these values are
-      // specified
-      // userNameToIdentifier will throw an exception if the values are not specified
+      // for now, we are relying on the validation of the request deserializer that these values are
+      // specified userNameToIdentifier will throw an exception if the values are not specified
       var indexIdentifier = userNameToIdentifier(indexName, "indexName");
       var targetIdentifier = userNameToIdentifier(indexDesc.column(), "targetColumn");
 
       var apiColumnDef = checkIndexColumnExists(tableSchemaObject, targetIdentifier);
 
       // we could check if there is an existing index but that is a race condition, we will need to
-      // catch it if it fails
+      // catch it if it fails - the resolver needs to set up a custom error mapper
       // regular indexes can only be on primitive. Adding indexes on maps, sets, lists will come
       // later.
       if (!apiColumnDef.type().isPrimitive()) {
@@ -137,9 +120,9 @@ public class ApiRegularIndex extends ApiSupportedIndex {
         // Only text and ascii fields can have the text analysis options specified
         if (optionsDesc != null) {
           var anyPresent =
-              Options.ASCII.isPresent(optionsDesc.ascii())
-                  || Options.CASE_SENSITIVE.isPresent(optionsDesc.caseSensitive())
-                  || Options.NORMALIZE.isPresent(optionsDesc.normalize());
+              optionsDesc.ascii() != null
+                  || optionsDesc.caseSensitive() != null
+                  || optionsDesc.normalize() != null;
 
           if (anyPresent) {
             throw SchemaException.Code.UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES.get(
@@ -156,12 +139,26 @@ public class ApiRegularIndex extends ApiSupportedIndex {
         // nothing to update in the cqlOptions for these indexes
       } else {
         // text and ascii fields can have the text analysis options specified
-        Options.ASCII.putOrDefaultStringable(
-            indexOptions, optionsDesc == null ? null : optionsDesc.ascii());
-        Options.CASE_SENSITIVE.putOrDefaultStringable(
-            indexOptions, optionsDesc == null ? null : optionsDesc.caseSensitive());
-        Options.NORMALIZE.putOrDefaultStringable(
-            indexOptions, optionsDesc == null ? null : optionsDesc.normalize());
+        var ascii =
+            ApiPropertyUtils.getOrDefault(
+                optionsDesc,
+                RegularIndexDefinitionDesc.RegularIndexDescOptions::ascii,
+                TableDescDefaults.RegularIndexDescDefaults.ASCII);
+        put(indexOptions, CQLOptions.ASCII, ascii);
+
+        var case_sensitive =
+            ApiPropertyUtils.getOrDefault(
+                optionsDesc,
+                RegularIndexDefinitionDesc.RegularIndexDescOptions::caseSensitive,
+                TableDescDefaults.RegularIndexDescDefaults.CASE_SENSITIVE);
+        put(indexOptions, CQLOptions.CASE_SENSITIVE, case_sensitive);
+
+        var normalize =
+            ApiPropertyUtils.getOrDefault(
+                optionsDesc,
+                RegularIndexDefinitionDesc.RegularIndexDescOptions::normalize,
+                TableDescDefaults.RegularIndexDescDefaults.NORMALIZE);
+        put(indexOptions, CQLOptions.NORMALIZE, normalize);
       }
 
       return new ApiRegularIndex(indexIdentifier, targetIdentifier, indexOptions);
@@ -177,6 +174,14 @@ public class ApiRegularIndex extends ApiSupportedIndex {
     protected ApiIndexDef create(
         ApiColumnDef apiColumnDef, CQLSAIIndex.IndexTarget indexTarget, IndexMetadata indexMetadata)
         throws UnsupportedCqlIndexException {
+
+      // for now, we do not support collection indexes, will do for GA - aaron nov 11
+      // and when we do the collection indexes will be in the createIndex command so will be regular
+      // indexes.
+      if (apiColumnDef.type().isContainer()) {
+        throw new UnsupportedCqlIndexException(
+            "Collection indexes not fully supported.", indexMetadata);
+      }
 
       // this is a sanity check, the base will have worked this, but we should check it here
       var apiIndexType = ApiIndexType.fromCql(apiColumnDef, indexTarget, indexMetadata);

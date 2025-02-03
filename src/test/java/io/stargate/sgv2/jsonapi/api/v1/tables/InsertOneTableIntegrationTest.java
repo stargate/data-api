@@ -1042,7 +1042,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               DocumentException.class,
               "Only values that are supported by",
               "Error trying to convert to targetCQLType `DOUBLE`",
-              // Double is special since there are NaNs represented by Strings
+              // Double is special since there are NaNs represented by Constants
               "Unsupported String value: only");
     }
   }
