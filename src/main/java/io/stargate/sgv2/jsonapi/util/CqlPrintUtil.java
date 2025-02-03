@@ -23,7 +23,8 @@ public abstract class CqlPrintUtil {
                 int vectorSize = vector.size();
                 List<Object> trimmedList = new ArrayList<>();
 
-                // Add elements up to a maximum of MAX_VECTOR_SIZE or the actual vector size, whichever is
+                // Add elements up to a maximum of MAX_VECTOR_SIZE or the actual vector size,
+                // whichever is
                 // smaller
                 for (int i = 0; i < Math.min(MAX_VECTOR_SIZE, vectorSize); i++) {
                   trimmedList.add(vector.get(i));
