@@ -202,8 +202,9 @@ public abstract class OperationAttempt<
 
   /**
    * Subclasses must implement this method to build the query and provide a supplier that executes
-   * query and returns results. They should not do anything with Uni for retry etc., that is handled in the base class
-   * {@link #execute(CommandQueryExecutor, DefaultDriverExceptionHandler.Factory)}.
+   * query and returns results. They should not do anything with Uni for retry etc., that is handled
+   * in the base class {@link #execute(CommandQueryExecutor,
+   * DefaultDriverExceptionHandler.Factory)}.
    *
    * @param queryExecutor The {@link CommandQueryExecutor} for subclasses to access the database
    *     with.

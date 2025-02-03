@@ -198,8 +198,8 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
    * this is the InvalidRequestException in the Cassandra code base, there are 300+ usages in it.
    * generally means while the syntax is correct, what you are asking it to do is not possible e.g.
    * add to a list, but the column is not a list. the Data API should prevent this from happening,
-   * but if it does, it is a bug (for the API to let it through). The user may be able to work around
-   * by trying a different request, but we are not able to give them specific help.
+   * but if it does, it is a bug (for the API to let it through). The user may be able to work
+   * around by trying a different request, but we are not able to give them specific help.
    */
   @Override
   public RuntimeException handle(InvalidQueryException exception) {
