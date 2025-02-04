@@ -406,7 +406,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   @Order(3)
   class CreateIndexFailure {
     @Test
-    public void createIndexWithEmptydName() {
+    public void createIndexWithEmptyName() {
 
       assertTableCommand(keyspaceName, testTableName)
           .postCreateIndex(
@@ -599,7 +599,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   @Order(4)
   class CreateVectorIndexFailure {
     @Test
-    public void createIndexWithEmptydName() {
+    public void createIndexWithEmptyName() {
       assertTableCommand(keyspaceName, testTableName)
           .postCreateIndex(
               """

@@ -835,7 +835,7 @@ request-errors:
       The supported ${schemaType} names must not be empty, more than ${maxNameLength} characters long, or contain non-alphanumeric-underscore characters.
       The command used the unsupported ${schemaType} name: ${unsupportedSchemaName}.
       
-      Resend the command using a supported ${schemaType} name.
+      Resend the command using a supported '${schemaType}' name.
 
 
   - scope: SCHEMA

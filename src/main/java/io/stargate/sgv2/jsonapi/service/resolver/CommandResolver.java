@@ -233,7 +233,7 @@ public interface CommandResolver<C extends Command> {
               "maxNameLength",
               String.valueOf(SchemaObjectNamingRule.MAX_NAME_LENGTH),
               "unsupportedSchemaName",
-              name == null ? "null" : name));
+              name == null ? "<null>" : name));
     }
   }
 }
