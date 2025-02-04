@@ -10,10 +10,10 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObjec
  * {@link GenericOperation}.
  */
 public class DeleteAttemptPage<SchemaT extends TableBasedSchemaObject>
-    extends OperationAttemptPage<SchemaT, DeleteAttempt<SchemaT>> {
+    extends OperationAttemptPage<SchemaT, DeleteDBTask<SchemaT>> {
 
   private DeleteAttemptPage(
-      OperationAttemptContainer<SchemaT, DeleteAttempt<SchemaT>> attempts,
+      OperationAttemptContainer<SchemaT, DeleteDBTask<SchemaT>> attempts,
       CommandResultBuilder resultBuilder) {
     super(attempts, resultBuilder);
   }
@@ -39,7 +39,7 @@ public class DeleteAttemptPage<SchemaT extends TableBasedSchemaObject>
   }
 
   public static class Builder<SchemaT extends TableBasedSchemaObject>
-      extends OperationAttemptPageBuilder<SchemaT, DeleteAttempt<SchemaT>> {
+      extends OperationAttemptPageBuilder<SchemaT, DeleteDBTask<SchemaT>> {
 
     Builder() {}
 

@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import com.datastax.oss.driver.api.querybuilder.delete.Delete;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.DeleteAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.DeleteDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +38,7 @@ public class DeleteAttemptBuilder<SchemaT extends TableSchemaObject> {
                 : WhereCQLClauseAnalyzer.StatementType.DELETE_MANY);
   }
 
-  public DeleteAttempt<SchemaT> build(WhereCQLClause<Delete> whereCQLClause) {
+  public DeleteDBTask<SchemaT> build(WhereCQLClause<Delete> whereCQLClause) {
 
     attemptPosition += 1;
 
@@ -52,7 +52,7 @@ public class DeleteAttemptBuilder<SchemaT extends TableSchemaObject> {
       exception = filterException;
     }
 
-    var attempt = new DeleteAttempt<>(attemptPosition, tableBasedSchema, whereCQLClause);
+    var attempt = new DeleteDBTask<>(attemptPosition, tableBasedSchema, whereCQLClause);
 
     // ok to pass null exception, will be ignored
     attempt.maybeAddFailure(exception);
