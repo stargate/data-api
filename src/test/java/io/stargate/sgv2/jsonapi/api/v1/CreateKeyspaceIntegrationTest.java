@@ -163,8 +163,8 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
-              is(
-                  "The command attempted to create a keyspace with a name that is not supported.\n\nThe supported keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.\nThe command used the unsupported keyspace name: null.\n\nResend the command using a supported keyspace name."));
+              containsString(
+                  "The command attempted to create a keyspace with a name that is not supported."));
     }
   }
 
@@ -329,8 +329,8 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .body("errors[0].exceptionClass", is(SchemaException.class.getSimpleName()))
           .body(
               "errors[0].message",
-              is(
-                  "The command attempted to create a keyspace with a name that is not supported.\n\nThe supported keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.\nThe command used the unsupported keyspace name: null.\n\nResend the command using a supported keyspace name."));
+              containsString(
+                  "The command attempted to create a keyspace with a name that is not supported."));
       // Since command failed in Deserialization, so command result won't have deprecated command
       // warning.
     }

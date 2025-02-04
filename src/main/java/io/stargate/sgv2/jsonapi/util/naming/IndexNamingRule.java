@@ -1,8 +1,7 @@
 package io.stargate.sgv2.jsonapi.util.naming;
 
 public class IndexNamingRule extends SchemaObjectNamingRule {
-  @Override
-  public String name() {
-    return "index";
+  public IndexNamingRule(String name) {
+    super(name);
   }
 }

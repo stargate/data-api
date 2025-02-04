@@ -228,11 +228,11 @@ public interface CommandResolver<C extends Command> {
     if (!namingRule.apply(name)) {
       throw SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
           Map.of(
-              "schemeType",
+              "schemaType",
               namingRule.name(),
-              "nameLength",
-              String.valueOf(SchemaObjectNamingRule.NAME_LENGTH),
-              "unsupportedSchemeName",
+              "maxNameLength",
+              String.valueOf(SchemaObjectNamingRule.MAX_NAME_LENGTH),
+              "unsupportedSchemaName",
               name == null ? "null" : name));
     }
   }
