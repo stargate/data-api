@@ -170,9 +170,7 @@ public record ReadAndUpdateCollectionOperation(
 
               return documentUpdaterResponse
                   .updateEmbeddingVector(
-                      documentUpdaterResponse,
-                      dataVectorizerService,
-                      commandContext)
+                      documentUpdaterResponse, dataVectorizerService, commandContext)
                   .onItem()
                   .transformToUni(
                       vectorizedDocumentUpdaterResponse -> {
@@ -356,9 +354,7 @@ public record ReadAndUpdateCollectionOperation(
    * @return
    */
   private Uni<ReadDocument> readDocumentAgain(
-      RequestContext dataApiRequestInfo,
-      QueryExecutor queryExecutor,
-      ReadDocument prevReadDoc) {
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor, ReadDocument prevReadDoc) {
     return findCollectionOperation()
         .getDocuments(
             dataApiRequestInfo,

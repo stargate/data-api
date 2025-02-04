@@ -15,7 +15,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
-import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -56,10 +55,10 @@ public class DataVectorizerService {
    * @param command
    * @return
    */
-  public <T extends SchemaObject> Uni<Command> vectorize(CommandContext<T> commandContext, Command command) {
+  public <T extends SchemaObject> Uni<Command> vectorize(
+      CommandContext<T> commandContext, Command command) {
 
-    final DataVectorizer dataVectorizer =
-        constructDataVectorizer(commandContext);
+    final DataVectorizer dataVectorizer = constructDataVectorizer(commandContext);
 
     // TODO, This is the hack to make table vectorize failure goes into command process flow
     try {
@@ -77,7 +76,8 @@ public class DataVectorizerService {
         .transform(flag -> command);
   }
 
-  public <T extends SchemaObject> DataVectorizer constructDataVectorizer(CommandContext<T> commandContext) {
+  public <T extends SchemaObject> DataVectorizer constructDataVectorizer(
+      CommandContext<T> commandContext) {
     EmbeddingProvider embeddingProvider =
         Optional.ofNullable(commandContext.embeddingProvider())
             .map(

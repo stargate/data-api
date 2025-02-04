@@ -12,10 +12,10 @@ import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** Unit tests for {@link ReadAttempt}. */
+/** Unit tests for {@link ReadDBTask}. */
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-public class ReadAttemptTest {
+public class ReadDBTaskTest {
 
   private static final TestData TEST_DATA = new TestData();
 

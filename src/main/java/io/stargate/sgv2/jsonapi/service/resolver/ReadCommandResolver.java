@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
@@ -11,10 +10,11 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.RowSorter;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableProjection;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableReadAttemptBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableReadDBTaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.TableCqlSortClauseResolver;
@@ -55,13 +55,13 @@ class ReadCommandResolver<
    *     specific options before passing, such as single document mode
    * @return Configured read operation
    */
-  protected TaskOperation<ReadAttempt<TableSchemaObject>, TableSchemaObject> buildReadOperation(
+  protected TaskOperation<ReadDBTask<TableSchemaObject>, TableSchemaObject> buildReadOperation(
       CommandContext<TableSchemaObject> commandContext,
       CmdT command,
       CqlPagingState cqlPageState,
-      ReadAttemptPage.Builder<TableSchemaObject> pageBuilder) {
+      ReadDBTaskPage.Builder<TableSchemaObject> pageBuilder) {
 
-    var attemptBuilder = new TableReadAttemptBuilder(commandContext.schemaObject());
+    var attemptBuilder = new TableReadDBTaskBuilder(commandContext.schemaObject());
 
     if (cqlPageState != null) {
       attemptBuilder.addPagingState(cqlPageState);

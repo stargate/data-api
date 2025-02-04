@@ -5,14 +5,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
-import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -43,8 +41,7 @@ public class CommandProcessor {
 
   @Inject
   public CommandProcessor(
-      CommandResolverService commandResolverService,
-      DataVectorizerService dataVectorizerService) {
+      CommandResolverService commandResolverService, DataVectorizerService dataVectorizerService) {
     this.commandResolverService = commandResolverService;
     this.dataVectorizerService = dataVectorizerService;
   }
@@ -58,7 +55,8 @@ public class CommandProcessor {
    * @param <T> Type of the command.
    * @param <U> Type of the schema object command operates on.
    */
-  public <T extends Command, U extends SchemaObject> Uni<CommandResult> processCommand(CommandContext<U> commandContext, T command) {
+  public <T extends Command, U extends SchemaObject> Uni<CommandResult> processCommand(
+      CommandContext<U> commandContext, T command) {
 
     var debugMode = commandContext.getConfig(DebugModeConfig.class).enabled();
     var errorObjectV2 = commandContext.getConfig(OperationsConfig.class).extendError();

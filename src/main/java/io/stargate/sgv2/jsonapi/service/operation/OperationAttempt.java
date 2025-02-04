@@ -528,7 +528,7 @@ public abstract class OperationAttempt<
    *
    * @return An unmodifiable list of warnings, never <code>null</code>
    */
-  public List<WarningException> warnings() {
+  public List<WarningException> allWarnings() {
     return List.copyOf(warnings);
   }
 

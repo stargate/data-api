@@ -22,8 +22,7 @@ public class ValidateCredentials {
 
   private ManagedChannel channel = null;
 
-  @Inject
-  RequestContext dataApiRequestInfo;
+  @Inject RequestContext dataApiRequestInfo;
 
   public boolean validate(String provider, String value) {
     if (channel == null) {

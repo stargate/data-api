@@ -228,9 +228,7 @@ public record DeleteCollectionOperation(
   }
 
   private Uni<ReadDocument> readDocumentAgain(
-      RequestContext dataApiRequestInfo,
-      QueryExecutor queryExecutor,
-      ReadDocument prevReadDoc) {
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor, ReadDocument prevReadDoc) {
     // Read again if retry flag is `true`
     return findCollectionOperation()
         .getDocuments(

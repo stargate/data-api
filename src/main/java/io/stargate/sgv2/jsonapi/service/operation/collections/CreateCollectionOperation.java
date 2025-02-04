@@ -177,9 +177,7 @@ public record CreateCollectionOperation(
    * @return Uni<Supplier<CommandResult>>
    */
   private Uni<Supplier<CommandResult>> executeCollectionCreation(
-      RequestContext dataApiRequestInfo,
-      QueryExecutor queryExecutor,
-      boolean collectionExisted) {
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor, boolean collectionExisted) {
     final Uni<AsyncResultSet> execute =
         queryExecutor.executeCreateSchemaChange(
             dataApiRequestInfo,

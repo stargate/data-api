@@ -4,7 +4,6 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -51,8 +50,6 @@ public class GenericOperation<
         Objects.requireNonNull(exceptionHandlerFactory, "exceptionHandlerFactory cannot be null");
   }
 
-
-
   /**
    * Execute the attempts passed to the operation using the provided {@link QueryExecutor}.
    *
@@ -97,7 +94,8 @@ public class GenericOperation<
         new CommandQueryExecutor(
             commandContext.cqlSessionCache(),
             new CommandQueryExecutor.DBRequestContext(
-                commandContext.requestContext().getTenantId(), commandContext.requestContext().getCassandraToken()),
+                commandContext.requestContext().getTenantId(),
+                commandContext.requestContext().getCassandraToken()),
             CommandQueryExecutor.QueryTarget.TABLE);
 
     // Common start pattern for all operations

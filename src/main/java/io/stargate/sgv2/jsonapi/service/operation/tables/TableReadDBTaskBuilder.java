@@ -7,92 +7,86 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.OperationProjection;
-import io.stargate.sgv2.jsonapi.service.operation.ReadAttempt;
-import io.stargate.sgv2.jsonapi.service.operation.ReadAttemptBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.ReadDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
 import java.util.Objects;
+
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Builds an attempt to read a row from an API Table, create a single instance and then call {@link
+ * Builds a {@link ReadDBTask} to read from a {@link TableSchemaObject}.
+ *
+ * <p>create a single instance and then call {@link
  * #build(WhereCQLClause)} for each different where clause the command creates.
  *
- * <p>Note: we don't need a subclass for ReadAttempt, everything is on the superclass
  */
-public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<TableSchemaObject>> {
+public class TableReadDBTaskBuilder extends TaskBuilder<ReadDBTask<TableSchemaObject>, TableSchemaObject> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TableReadAttemptBuilder.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TableReadDBTaskBuilder.class);
 
-  // first value is zero, but we increment before we use it
-  private int readPosition = -1;
-
-  private final TableSchemaObject tableSchemaObject;
-  DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory;
   private final WhereCQLClauseAnalyzer whereCQLClauseAnalyzer;
 
+  private DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory;
   private WithWarnings<SelectCQLClause> selectWithWarnings;
   private WithWarnings<OrderByCqlClause> orderByWithWarnings;
   private WithWarnings<RowSorter> rowSorterWithWarnings;
   private CqlPagingState pagingState = CqlPagingState.EMPTY;
   private final CQLOptions.BuildableCQLOptions<Select> cqlOptions =
       new CQLOptions.BuildableCQLOptions<>();
-
   private OperationProjection projection;
 
-  public TableReadAttemptBuilder(TableSchemaObject tableSchemaObject) {
-
-    this.tableSchemaObject = tableSchemaObject;
+  public TableReadDBTaskBuilder(TableSchemaObject tableSchemaObject) {
+    super(tableSchemaObject);
     this.whereCQLClauseAnalyzer =
         new WhereCQLClauseAnalyzer(tableSchemaObject, WhereCQLClauseAnalyzer.StatementType.SELECT);
   }
 
-  public TableReadAttemptBuilder addExceptionHandlerFactory(
+  public TableReadDBTaskBuilder addExceptionHandlerFactory(
       DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory) {
     this.exceptionHandlerFactory = exceptionHandlerFactory;
     return this;
   }
 
-  public TableReadAttemptBuilder addSelect(WithWarnings<SelectCQLClause> selectWithWarnings) {
+  public TableReadDBTaskBuilder addSelect(WithWarnings<SelectCQLClause> selectWithWarnings) {
     this.selectWithWarnings = selectWithWarnings;
     return this;
   }
 
-  public TableReadAttemptBuilder addOrderBy(WithWarnings<OrderByCqlClause> orderByWithWarnings) {
+  public TableReadDBTaskBuilder addOrderBy(WithWarnings<OrderByCqlClause> orderByWithWarnings) {
     this.orderByWithWarnings = orderByWithWarnings;
     return this;
   }
 
-  public TableReadAttemptBuilder addSorter(WithWarnings<RowSorter> rowSorterWithWarnings) {
+  public TableReadDBTaskBuilder addSorter(WithWarnings<RowSorter> rowSorterWithWarnings) {
     this.rowSorterWithWarnings = rowSorterWithWarnings;
     return this;
   }
 
-  public TableReadAttemptBuilder addBuilderOption(CQLOption<Select> option) {
+  public TableReadDBTaskBuilder addBuilderOption(CQLOption<Select> option) {
     cqlOptions.addBuilderOption(option);
     return this;
   }
 
-  public TableReadAttemptBuilder addPagingState(CqlPagingState pagingState) {
+  public TableReadDBTaskBuilder addPagingState(CqlPagingState pagingState) {
     this.pagingState = pagingState;
     return this;
   }
 
-  public TableReadAttemptBuilder addProjection(OperationProjection projection) {
+  public TableReadDBTaskBuilder addProjection(OperationProjection projection) {
     this.projection = projection;
     return this;
   }
 
-  @Override
-  public ReadAttempt<TableSchemaObject> build(WhereCQLClause<Select> whereCQLClause) {
+  public ReadDBTask<TableSchemaObject> build(WhereCQLClause<Select> whereCQLClause) {
+
     Objects.requireNonNull(exceptionHandlerFactory, "exceptionHandlerFactory is required");
     Objects.requireNonNull(selectWithWarnings, "selectWithWarnings is required");
     Objects.requireNonNull(orderByWithWarnings, "orderByWithWarnings is required");
     Objects.requireNonNull(rowSorterWithWarnings, "rowSorterWithWarnings is required");
     Objects.requireNonNull(pagingState, "pagingState is required");
     Objects.requireNonNull(projection, "documentSourceSupplier is required");
-
-    readPosition += 1;
 
     WhereCQLClauseAnalyzer.WhereClauseWithWarnings whereWithWarnings = null;
     Exception exception = null;
@@ -104,15 +98,15 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
 
     var atttemptCqlOptions = cqlOptions;
     if (whereWithWarnings != null && whereWithWarnings.requiresAllowFiltering()) {
-      // Create a copy of cqlOptions, so we do not impact other attempts
+      // Create a copy of cqlOptions, so we do not impact other tasks
       atttemptCqlOptions = new CQLOptions.BuildableCQLOptions<>(atttemptCqlOptions);
       atttemptCqlOptions.addBuilderOption(CQLOption.ForSelect.allowFiltering());
     }
 
-    var tableReadAttempt =
-        new ReadAttempt<>(
-            readPosition,
-            tableSchemaObject,
+    var task =
+        new ReadDBTask<>(
+            nextPosition(),
+            schemaObject,
             exceptionHandlerFactory,
             selectWithWarnings.target(),
             whereCQLClause,
@@ -123,29 +117,31 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
             projection);
 
     // ok to pass null exception, will be ignored
-    tableReadAttempt.maybeAddFailure(exception);
+    task.maybeAddFailure(exception);
 
-    // chain up the clauses that may have warnings for the attempt.
-    var attemptConsumers =
+    // chain up the clauses that may have warnings for the task.
+    var warnings =
         selectWithWarnings.andThen(orderByWithWarnings).andThen(rowSorterWithWarnings);
 
     if (whereWithWarnings != null) {
-      attemptConsumers = attemptConsumers.andThen(whereWithWarnings);
+      // we have warnings about the where clause, this maybe null if there was an error trying to build the filter
+      warnings = warnings.andThen(whereWithWarnings);
 
       if (LOGGER.isDebugEnabled() && whereWithWarnings.requiresAllowFiltering()) {
         LOGGER.debug(
             "build() - enabled ALLOW FILTERING for attempt {}",
-            tableReadAttempt.positionAndAttemptId());
+            task.positionAndTaskId());
       }
     }
 
-    attemptConsumers.accept(tableReadAttempt);
-    if (LOGGER.isDebugEnabled() && !tableReadAttempt.warnings().isEmpty()) {
+    // add all the warnings to the task
+    warnings.accept(task);
+    if (LOGGER.isDebugEnabled() && !task.allWarnings().isEmpty()) {
       LOGGER.debug(
-          "build() - adding warnings for attempt {}, warnings={}",
-          tableReadAttempt.positionAndAttemptId(),
-          tableReadAttempt.warnings());
+          "build() - adding warnings for task {}, warnings={}",
+          task.positionAndTaskId(),
+          task.allWarnings());
     }
-    return tableReadAttempt;
+    return task;
   }
 }

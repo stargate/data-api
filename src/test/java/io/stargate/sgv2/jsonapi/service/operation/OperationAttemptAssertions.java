@@ -176,7 +176,7 @@ public class OperationAttemptAssertions<
 
   public FixtureT verifyOneWarning(WarningException.Code code, String message) {
 
-    assertThat(target.warnings())
+    assertThat(target.allWarnings())
         .as("Warning exists with code=%s when %s:".formatted(code, message))
         .hasSize(1)
         .anyMatch(
@@ -186,7 +186,7 @@ public class OperationAttemptAssertions<
 
   public FixtureT verifyWarningContains(String contains, String message) {
 
-    assertThat(target.warnings())
+    assertThat(target.allWarnings())
         .as("Warning message contains assertions when: %s".formatted(message))
         .hasSize(1)
         .first()

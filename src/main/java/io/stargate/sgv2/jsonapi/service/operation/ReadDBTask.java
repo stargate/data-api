@@ -13,11 +13,11 @@ import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.Task;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,13 +27,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An attempt to read from a table, runs the query, holds the result set, and then builds the
+ * A task to read from a CQL table, runs the query, holds the result set, and then builds the
  * documents on demand.
  */
-public class ReadAttempt<SchemaT extends TableSchemaObject>
-    extends DBTask<SchemaT> {
+public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<SchemaT> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ReadAttempt.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ReadDBTask.class);
 
   private final SelectCQLClause selectCQLClause;
   private final WhereCQLClause<Select> whereCQLClause;
@@ -47,7 +46,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
   private ReadAttemptRetryPolicy<SchemaT> readAttemptRetryPolicy;
   private ReadResult readResult;
 
-  public ReadAttempt(
+  public ReadDBTask(
       int position,
       SchemaT schemaObject,
       DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory,
@@ -68,6 +67,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     this.pagingState = pagingState;
     this.projection = Objects.requireNonNull(projection, "projection must not be null");
     this.rowSorter = Objects.requireNonNull(rowSorter, "rowSorter must not be null");
+
     downcastRetryPolicy();
     Objects.requireNonNull(readAttemptRetryPolicy, "readAttemptRetryPolicy must not be null");
     setStatus(TaskStatus.READY);
@@ -78,16 +78,60 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     readAttemptRetryPolicy = (ReadAttemptRetryPolicy<SchemaT>) retryPolicy;
   }
 
+  // =================================================================================================
+  // BaseTask overrides
+  // =================================================================================================
+
+  /** {@inheritDoc} */
+  @Override
+  protected AsyncResultSetSupplier buildResultSupplier(CommandQueryExecutor queryExecutor) {
+
+    var statement = buildReadStatement();
+
+    // TODO: aaron feb 4, we no longer need this special try policy if the BaseTask passed the ResultSupplier to
+    // the retry policy
+    readAttemptRetryPolicy.setRetryContext(
+        new ReadAttemptRetryPolicy.RetryContext<>(statement, this));
+
+    logStatement(LOGGER, "buildResultSupplier()", statement);
+    return new AsyncResultSetSupplier(
+        statement, () -> rowSorter.executeRead(queryExecutor, statement));
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  protected <SubT extends Task<SchemaT>> SubT onSuccess(AsyncResultSet result) {
+    readResult = new ReadResult(rowSorter, result);
+
+    // call to make sure status is set
+    return super.onSuccess(result);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Optional<ColumnsDescContainer> schemaDescription() {
+
+    // need to check because otherwise we do not have the read result
+    if (!checkStatus("schemaDescription()", TaskStatus.COMPLETED)) {
+      return Optional.empty();
+    }
+    return Optional.of(projection.getSchemaDescription());
+  }
+
+  // =================================================================================================
+  // Implementation and internals
+  // =================================================================================================
+
   /**
    * Get the documents from the result set, the documents are not created until this method is
    * called.
    *
-   * @return List of JsonNode documents, never null.
+   * @return List of JsonNode documents, never null. The documents are created using the {@link OperationProjection}.
    */
   public List<JsonNode> documents() {
 
     // we must be terminal, but that does not mean we have a result set
-    checkTerminal("documents()");
+    assertTerminalStatus("documents()");
 
     List<JsonNode> documents = new ArrayList<>();
     if (readResult != null) {
@@ -104,27 +148,20 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
    *     never run the statement)
    */
   public CqlPagingState resultPagingState() {
+
     // we must be terminal, but that does not mean we have a result set
-    checkTerminal("resultPagingState()");
+    assertTerminalStatus("resultPagingState()");
     return readResult == null ? CqlPagingState.EMPTY : readResult.pagingState;
   }
 
-  @Override
-  protected AsyncResultSetSupplier buildResultSupplier(CommandQueryExecutor queryExecutor) {
-
-    var statement = buildReadStatement();
-    readAttemptRetryPolicy.setRetryContext(
-        new ReadAttemptRetryPolicy.RetryContext<>(statement, this));
-
-    logStatement(LOGGER, "buildResultSupplier()", statement);
-    return new AsyncResultSetSupplier(statement, () -> rowSorter.executeRead(queryExecutor, statement));
-  }
-
-  @Override
-  protected DBTask<SchemaT> onSuccess(AsyncResultSet result) {
-      readResult = new ReadResult(rowSorter, result);
-      // call to make sure status is set
-      return super.onSuccess(result);
+  /**
+   * Gets the total number of rows that were sorted, that is all the rows that were read from the
+   * database.
+   *
+   * @return
+   */
+  public Optional<Integer> sortedRowCount() {
+    return rowSorter.sortedRowCount();
   }
 
   protected SimpleStatement buildReadStatement() {
@@ -170,26 +207,6 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     return cqlOptions.applyStatementOptions(statement);
   }
 
-  @Override
-  public Optional<ColumnsDescContainer> schemaDescription() {
-
-    // need to check because otherwise we do not have the read result
-    if (!checkStatus("schemaDescription()", TaskStatus.COMPLETED)) {
-      return Optional.empty();
-    }
-    return Optional.of(projection.getSchemaDescription());
-  }
-
-  /**
-   * Gets the total number of rows that were sorted, that is all the rows that were read from the
-   * database.
-   *
-   * @return
-   */
-  public Optional<Integer> sortedRowCount() {
-    return rowSorter.sortedRowCount();
-  }
-
   // This is a simple container for the result set so we can set one variable in the onSuccess
   // method
   static class ReadResult {
@@ -218,7 +235,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
    *
    * @param <T>
    */
-  static class ReadAttemptRetryPolicy<T extends TableSchemaObject> extends RetryPolicy {
+  static class ReadAttemptRetryPolicy<T extends TableBasedSchemaObject> extends TaskRetryPolicy {
 
     private RetryContext<T> retryContext = null;
 
@@ -249,7 +266,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
         if (LOGGER.isWarnEnabled()) {
           LOGGER.warn(
               "Retrying read attempt with added ALLOW FILTERING for {}, original query cql={} , values={}",
-              currentRetryContext.attempt.positionAndAttemptId(),
+              currentRetryContext.attempt.positionAndTaskId(),
               currentRetryContext.lastStatement.getQuery(),
               currentRetryContext.lastStatement.getPositionalValues());
         }
@@ -271,7 +288,7 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
       return false;
     }
 
-    record RetryContext<T extends TableSchemaObject>(
-        SimpleStatement lastStatement, ReadAttempt<T> attempt) {}
+    record RetryContext<T extends TableBasedSchemaObject>(
+        SimpleStatement lastStatement, ReadDBTask<T> attempt) {}
   }
 }

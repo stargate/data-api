@@ -12,9 +12,9 @@ import java.util.Optional;
 /**
  * This class is used to get the request info like tenantId, cassandraToken and embeddingApiKey.
  * This is a replacement to StargateRequestInfo so bridge connection is removed.
- * <p>
- *  <b>Note:</b> aaron feb 3 2025 - leaving with injection for now for the building, it may make sense but moving
- *  it to be part of the CommandContext rather than handed around everywhere.
+ *
+ * <p><b>Note:</b> aaron feb 3 2025 - leaving with injection for now for the building, it may make
+ * sense but moving it to be part of the CommandContext rather than handed around everywhere.
  */
 @RequestScoped
 public class RequestContext {

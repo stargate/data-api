@@ -93,7 +93,8 @@ public class GeneralResource {
             null,
             command.getClass().getSimpleName(),
             null,
-            requestContext, cqlSessionCache);
+            requestContext,
+            cqlSessionCache);
 
     return meteredCommandProcessor
         .processCommand(commandContext, command)

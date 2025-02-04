@@ -5,7 +5,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
@@ -57,14 +56,14 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, FindOneCommand command) {
 
-    var pageBuilder = ReadAttemptPage.builder().singleResponse(true).mayReturnVector(command);
+    var pageBuilder = ReadDBTaskPage.builder().singleResponse(true).mayReturnVector(command);
 
     // the skip is 0 and the limit is 1 always for findOne
     return readCommandResolver.buildReadOperation(ctx, command, CqlPagingState.EMPTY, pageBuilder);
 
     // TODO: AARON MAHESH - this is what was here before, leaving until we confirm all good
 
-    //    var attemptBuilder = new TableReadAttemptBuilder(ctx.schemaObject());
+    //    var attemptBuilder = new TableReadDBTaskBuilder(ctx.schemaObject());
     //
     //    // the skip is 0 and the limit is 1 always for findOne. just making that explicit
     //    var commandSkip = 0;
@@ -101,7 +100,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     //    var attempts = new OperationAttemptContainer<>(attemptBuilder.build(where));
     //
     //    var pageBuilder =
-    //        ReadAttemptPage.<TableSchemaObject>builder()
+    //        ReadDBTaskPage.<TableSchemaObject>builder()
     //            .singleResponse(true)
     //            .includeSortVector(false)
     //            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())

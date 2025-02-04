@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * Configured to execute queries for a specific command that relies on drive profiles MORE TODO
  * WORDS
  *
- * <b>NOTE:</b> this is a WIP replacing the earlier QueryExecutor that was built with injection
+ * <p><b>NOTE:</b> this is a WIP replacing the earlier QueryExecutor that was built with injection
  *
  * <p>The following settings should be set via the driver profile:
  *
@@ -66,7 +66,8 @@ public class CommandQueryExecutor {
       CQLSessionCache cqlSessionCache, DBRequestContext DBRequestContext, QueryTarget queryTarget) {
     this.cqlSessionCache =
         Objects.requireNonNull(cqlSessionCache, "cqlSessionCache must not be null");
-    this.DBRequestContext = Objects.requireNonNull(DBRequestContext, "DBRequestContext must not be null");
+    this.DBRequestContext =
+        Objects.requireNonNull(DBRequestContext, "DBRequestContext must not be null");
     this.queryTarget = queryTarget;
   }
 

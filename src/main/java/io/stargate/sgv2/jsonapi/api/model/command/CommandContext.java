@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -15,7 +14,6 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
@@ -33,6 +31,7 @@ public record CommandContext<T extends SchemaObject>(
     CQLSessionCache cqlSessionCache) {
 
   private static final ConcurrentMap<Class<?>, Object> configCache = new ConcurrentHashMap<>();
+
   /**
    * Factory method to create a new instance of {@link CommandContext} based on the schema object we
    * are working with.
@@ -110,11 +109,12 @@ public record CommandContext<T extends SchemaObject>(
    * @param <ConfigType> The configuration interface to populate
    */
   public <ConfigType> ConfigType getConfig(Class<ConfigType> configType) {
-    return (ConfigType)configCache.computeIfAbsent(
-        configType,
-        k -> {
-          return getConfig().getConfigMapping(configType);
-        });
+    return (ConfigType)
+        configCache.computeIfAbsent(
+            configType,
+            k -> {
+              return getConfig().getConfigMapping(configType);
+            });
   }
 
   /**

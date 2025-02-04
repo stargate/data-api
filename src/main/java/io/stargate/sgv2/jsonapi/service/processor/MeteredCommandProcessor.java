@@ -28,9 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-/**
- *
- */
+/** */
 @ApplicationScoped
 public class MeteredCommandProcessor {
 
@@ -186,14 +184,16 @@ public class MeteredCommandProcessor {
    * @param isFailure - Is from the failure flow
    * @return true if command level logging is allowed, false otherwise
    */
-  private boolean isCommandLevelLoggingEnabled(CommandContext<?> commandContext, CommandResult commandResult, boolean isFailure) {
+  private boolean isCommandLevelLoggingEnabled(
+      CommandContext<?> commandContext, CommandResult commandResult, boolean isFailure) {
     if (!commandLevelLoggingConfig.enabled()) {
       return false;
     }
     Set<String> allowedTenants =
         commandLevelLoggingConfig.enabledTenants().orElse(Collections.singleton(ALL_TENANTS));
     if (!allowedTenants.contains(ALL_TENANTS)
-        && !allowedTenants.contains(commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE))) {
+        && !allowedTenants.contains(
+            commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE))) {
       return false;
     }
     if (!isFailure

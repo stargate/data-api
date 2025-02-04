@@ -36,8 +36,7 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
 
   /** Default constructor. */
   @Inject
-  public TenantRequestMetricsTagProvider(
-      RequestContext requestInfo, MetricsConfig metricsConfig) {
+  public TenantRequestMetricsTagProvider(RequestContext requestInfo, MetricsConfig metricsConfig) {
     this.requestInfo = requestInfo;
     this.config = metricsConfig.tenantRequestCounter();
     errorTrue = Tag.of(config.errorTag(), "true");

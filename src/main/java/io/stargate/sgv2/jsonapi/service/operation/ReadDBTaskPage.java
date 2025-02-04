@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -8,21 +7,26 @@ import io.stargate.sgv2.jsonapi.api.model.command.VectorSortable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTaskPage;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
+
 import java.util.*;
 
 /**
- * A page of results from a read command, use {@link #builder()} to get a builder to pass to {@link
- * GenericOperation}.
+ * A page of results from a {@link ReadDBTask }, use {@link #builder()} to get a builder to pass to {@link
+ * TaskOperation}.
  */
-public class ReadAttemptPage<SchemaT extends TableSchemaObject>
-    extends DBTaskPage<ReadAttempt<SchemaT>, SchemaT> {
+public class ReadDBTaskPage<SchemaT extends TableSchemaObject>
+    extends DBTaskPage<ReadDBTask<SchemaT>, SchemaT> {
 
   private final CqlPagingState pagingState;
   private final boolean includeSortVector;
   private final float[] sortVector;
 
-  private ReadAttemptPage(
-      TaskGroup<ReadAttempt<SchemaT>, SchemaT> tasks,
+  private ReadDBTaskPage(
+      TaskGroup<ReadDBTask<SchemaT>, SchemaT> tasks,
       CommandResultBuilder resultBuilder,
       CqlPagingState pagingState,
       boolean includeSortVector,
@@ -58,7 +62,7 @@ public class ReadAttemptPage<SchemaT extends TableSchemaObject>
 
     var rowCounts =
         tasks.completedTasks().stream()
-            .map(ReadAttempt::sortedRowCount)
+            .map(ReadDBTask::sortedRowCount)
             .filter(Optional::isPresent)
             .map(Optional::get)
             .toList();
@@ -73,7 +77,7 @@ public class ReadAttemptPage<SchemaT extends TableSchemaObject>
     // is not a problem.
     if (rowCounts.size() > 1) {
       throw new IllegalStateException(
-          "ReadAttemptPage.maybeAddSortedRowCount() - Multiple sorted row counts, counts="
+          "ReadDBTaskPage.maybeAddSortedRowCount() - Multiple sorted row counts, counts="
               + rowCounts);
     }
 
@@ -81,14 +85,18 @@ public class ReadAttemptPage<SchemaT extends TableSchemaObject>
     resultBuilder.addStatus(CommandStatus.SORTED_ROW_COUNT, sortedRowCount);
   }
 
+  /**
+   * Builder for {@link ReadDBTaskPage} - it takes state into the processing of a task group so it can be
+   * used after processing.
+   */
   public static class Builder<SchemaT extends TableSchemaObject>
-      extends TaskAccumulator<ReadAttempt<SchemaT>, SchemaT> {
+      extends TaskAccumulator<ReadDBTask<SchemaT>, SchemaT> {
 
     private boolean singleResponse = false;
     private boolean includeSortVector;
     private float[] sortVector;
 
-    Builder() {}
+    protected Builder() {}
 
     public Builder<SchemaT> singleResponse(boolean singleResponse) {
       this.singleResponse = singleResponse;
@@ -119,7 +127,7 @@ public class ReadAttemptPage<SchemaT extends TableSchemaObject>
     }
 
     @Override
-    public ReadAttemptPage<SchemaT> getOperationPage() {
+    public ReadDBTaskPage<SchemaT> getResults() {
 
       var nonEmptyPageStateAttempts =
           tasks.completedTasks().stream()
@@ -132,7 +140,7 @@ public class ReadAttemptPage<SchemaT extends TableSchemaObject>
             case 1 -> nonEmptyPageStateAttempts.getFirst().resultPagingState();
             default ->
                 throw new IllegalStateException(
-                    "ReadAttemptPage.Builder.build() - Multiple ReadAttempts with non-empty paging state, attempts="
+                    "ReadDBTaskPage.Builder.build() - Multiple ReadAttempts with non-empty paging state, attempts="
                         + String.join(
                             ", ",
                             nonEmptyPageStateAttempts.stream().map(Object::toString).toList()));
@@ -143,7 +151,7 @@ public class ReadAttemptPage<SchemaT extends TableSchemaObject>
               ? CommandResult.singleDocumentBuilder(useErrorObjectV2, debugMode)
               : CommandResult.multiDocumentBuilder(useErrorObjectV2, debugMode);
 
-      return new ReadAttemptPage<>(
+      return new ReadDBTaskPage<>(
           tasks, resultBuilder, pagingState, includeSortVector, sortVector);
     }
   }

@@ -44,7 +44,7 @@ public class ReadAttemptTestData extends OperationAttemptTestData {
     // spy() the attempt and handler so we get default behaviour and can track calls to the methods
     var attempt =
         spy(
-            new TestReadAttempt(
+            new TestReadDBTask(
                 0,
                 testData.schemaObject().emptyTableSchemaObject(),
                 testData.selectCQLClause().selectAllFromTable(),

@@ -265,7 +265,8 @@ public class CollectionResource {
                         embeddingProvider,
                         command.getClass().getSimpleName(),
                         jsonProcessingMetricsReporter,
-                        requestContext, cqlSessionCache);
+                        requestContext,
+                        cqlSessionCache);
 
                 return meteredCommandProcessor.processCommand(commandContext, command);
               }

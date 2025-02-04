@@ -144,7 +144,8 @@ public class KeyspaceResource {
             null,
             command.getClass().getSimpleName(),
             null,
-            requestContext, cqlSessionCache);
+            requestContext,
+            cqlSessionCache);
 
     // Need context first to check if feature is enabled
     if (command instanceof TableOnlyCommand && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {

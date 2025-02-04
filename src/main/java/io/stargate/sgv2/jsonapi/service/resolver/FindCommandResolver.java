@@ -6,7 +6,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -67,7 +66,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
             : CqlPagingState.from(command.options().pageState());
 
     var pageBuilder =
-        ReadAttemptPage.<TableSchemaObject>builder().singleResponse(false).mayReturnVector(command);
+        ReadDBTaskPage.<TableSchemaObject>builder().singleResponse(false).mayReturnVector(command);
 
     return readCommandResolver.buildReadOperation(ctx, command, cqlPageState, pageBuilder);
 
@@ -115,7 +114,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     //                : null);
     //
     //    var builder =
-    //        new TableReadAttemptBuilder(
+    //        new TableReadDBTaskBuilder(
     //                ctx.schemaObject(),
     //                projection,
     //                projection,
@@ -132,7 +131,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     //    var attempts = new OperationAttemptContainer<>(builder.build(where));
     //
     //    var pageBuilder =
-    //        ReadAttemptPage.<TableSchemaObject>builder()
+    //        ReadDBTaskPage.<TableSchemaObject>builder()
     //            .singleResponse(false)
     //            .includeSortVector(command.options() != null &&
     // command.options().includeSortVector())
@@ -146,7 +145,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> commandContext, FindCommand command) {
 
-    var resolvedDbLogicalExpression = collectionFilterResolver.resolve(commandContext, command).target();
+    var resolvedDbLogicalExpression =
+        collectionFilterResolver.resolve(commandContext, command).target();
     // limit and page state defaults
     int limit = Integer.MAX_VALUE;
     int skip = 0;

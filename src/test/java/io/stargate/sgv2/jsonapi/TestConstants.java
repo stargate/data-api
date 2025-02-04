@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import java.util.List;
 import java.util.Optional;
-
 import org.apache.commons.lang3.RandomStringUtils;
 
 /**
@@ -111,18 +110,11 @@ public final class TestConstants {
       String commandName,
       KeyspaceSchemaObject schema,
       JsonProcessingMetricsReporter metricsReporter) {
-    return new CommandContext<>(
-        schema, null, commandName, metricsReporter, null, null);
+    return new CommandContext<>(schema, null, commandName, metricsReporter, null, null);
   }
 
   private static final CommandContext<DatabaseSchemaObject> DATABASE_CONTEXT =
-      new CommandContext<>(
-          DATABASE_SCHEMA_OBJECT,
-          null,
-          TEST_COMMAND_NAME,
-          null,
-          null,
-          null);
+      new CommandContext<>(DATABASE_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null, null, null);
 
   public static CommandContext<DatabaseSchemaObject> databaseContext() {
     return DATABASE_CONTEXT;
