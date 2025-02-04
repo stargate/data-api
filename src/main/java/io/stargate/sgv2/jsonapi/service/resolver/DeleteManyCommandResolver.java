@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.TruncateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.tables.DeleteAttemptBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableDeleteDBTaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -74,13 +74,13 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
           attemptContainer, truncatePageBuilder, TableDriverExceptionHandler::new);
     }
 
-    var deleteAttemptBuilder = new DeleteAttemptBuilder<>(ctx.schemaObject(), false);
+    var deleteAttemptBuilder = new TableDeleteDBTaskBuilder<>(ctx.schemaObject(), false);
     // need to update so we use WithWarnings correctly
     var where =
         TableWhereCQLClause.forDelete(
             ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
     var deletePageBuilder =
-        DeleteAttemptPage.<TableSchemaObject>builder()
+        DeleteDBTaskPage.<TableSchemaObject>builder()
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 

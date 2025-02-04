@@ -69,7 +69,7 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
           errVars(ctx.schemaObject(), map -> {}));
     }
 
-    var builder = new DeleteAttemptBuilder<>(ctx.schemaObject(), true);
+    var builder = new TableDeleteDBTaskBuilder<>(ctx.schemaObject(), true);
 
     // need to update so we use WithWarnings correctly
     var where =
@@ -79,7 +79,7 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
     var attempts = new OperationAttemptContainer<>(builder.build(where));
 
     var pageBuilder =
-        DeleteAttemptPage.<TableSchemaObject>builder()
+        DeleteDBTaskPage.<TableSchemaObject>builder()
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
