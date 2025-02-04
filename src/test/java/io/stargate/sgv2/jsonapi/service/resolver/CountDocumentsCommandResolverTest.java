@@ -34,7 +34,7 @@ class CountDocumentsCommandResolverTest {
   @Nested
   class ResolveCommand {
 
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
+    CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
 
     @Test
     public void noFilter() throws Exception {

@@ -2,11 +2,9 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.update;
 
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.update.Update;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
-import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
@@ -41,11 +39,11 @@ public class UpdateAttempt<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
+  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
     // bind and execute
     var statement = buildUpdateStatement();
     logStatement(LOGGER, "executeStatement()", statement);
-    return queryExecutor.executeWrite(statement);
+    return new StatementContext(statement, () -> queryExecutor.executeWrite(statement));
   }
 
   /**

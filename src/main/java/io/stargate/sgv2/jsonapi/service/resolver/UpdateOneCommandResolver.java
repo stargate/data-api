@@ -19,7 +19,6 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
-import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
@@ -104,7 +103,7 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
+    return new GenericOperation<>(attempts, pageBuilder, TableDriverExceptionHandler::new);
   }
 
   @Override
@@ -139,7 +138,9 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
     var dbLogicalExpression = collectionFilterResolver.resolve(ctx, command).target();
 
     final SortClause sortClause = command.sortClause();
-    SchemaValidatable.maybeValidate(ctx, sortClause);
+    if (sortClause != null) {
+      sortClause.validate(ctx.schemaObject());
+    }
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 

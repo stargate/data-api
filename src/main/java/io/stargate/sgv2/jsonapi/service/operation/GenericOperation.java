@@ -4,10 +4,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -28,7 +25,7 @@ public class GenericOperation<
 
   private static final Logger LOGGER = LoggerFactory.getLogger(GenericOperation.class);
 
-  private final DriverExceptionHandler<SchemaT> driverExceptionHandler;
+  private final DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory;
   private final OperationAttemptContainer<SchemaT, AttemptT> attempts;
   private final OperationAttemptPageBuilder<SchemaT, AttemptT> pageBuilder;
 
@@ -38,19 +35,19 @@ public class GenericOperation<
    * @param attempts The attempts to run, grouped into a container that has config about how to run
    *     them as a group.
    * @param pageBuilder The builder to use for creating the {@link CommandResult} from the attempts.
-   * @param driverExceptionHandler The handler to use for exceptions thrown by the driver,
-   *     exceptions thrown by the driver are passed through here before being added to the {@link
-   *     OperationAttempt}.
+   * @param exceptionHandlerFactory Factory to create the handler to use for exceptions thrown by
+   *     the driver, exceptions thrown by the driver are passed through here before being added to
+   *     the {@link OperationAttempt}.
    */
   public GenericOperation(
       OperationAttemptContainer<SchemaT, AttemptT> attempts,
       OperationAttemptPageBuilder<SchemaT, AttemptT> pageBuilder,
-      DriverExceptionHandler<SchemaT> driverExceptionHandler) {
+      DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
 
     this.attempts = Objects.requireNonNull(attempts, "attempts cannot be null");
     this.pageBuilder = Objects.requireNonNull(pageBuilder, "pageBuilder cannot be null");
-    this.driverExceptionHandler =
-        Objects.requireNonNull(driverExceptionHandler, "driverExceptionHandler cannot be null");
+    this.exceptionHandlerFactory =
+        Objects.requireNonNull(exceptionHandlerFactory, "exceptionHandlerFactory cannot be null");
   }
 
   /**
@@ -124,12 +121,12 @@ public class GenericOperation<
               // and do not call exectute() on it.
               return Uni.createFrom().item(attempt.setSkippedIfReady());
             }
-            return attempt.execute(commandQueryExecutor, driverExceptionHandler);
+            return attempt.execute(commandQueryExecutor, exceptionHandlerFactory);
           });
     }
 
     // Parallel processing using transformToUniAndMerge() - no extra testing.
     return attemptMulti.transformToUniAndMerge(
-        readAttempt -> readAttempt.execute(commandQueryExecutor, driverExceptionHandler));
+        readAttempt -> readAttempt.execute(commandQueryExecutor, exceptionHandlerFactory));
   }
 }

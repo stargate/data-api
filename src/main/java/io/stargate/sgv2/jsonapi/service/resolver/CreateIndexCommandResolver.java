@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -86,6 +87,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
     return new GenericOperation<>(
         new OperationAttemptContainer<>(attempt),
         pageBuilder,
-        new CreateIndexExceptionHandler(apiIndex.indexName()));
+        DefaultDriverExceptionHandler.Factory.withIdentifier(
+            CreateIndexExceptionHandler::new, apiIndex.indexName()));
   }
 }

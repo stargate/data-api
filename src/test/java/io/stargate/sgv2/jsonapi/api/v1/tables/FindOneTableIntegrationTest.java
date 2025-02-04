@@ -261,8 +261,63 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
           .hasJSONField("data.document", removeNullValues(DOC_B_JSON));
     }
 
+    // for [data-api#1532]
     @Test
     @Order(4)
+    void documentIdWith$in() {
+      final String TABLE_NAME = "findOneIdAndDollarInTable";
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .createTable(
+              TABLE_NAME,
+              Map.of(
+                  "_id", "text",
+                  "value", "int"),
+              "_id")
+          .wasSuccessful();
+
+      // First, insert 2 documents:
+      String DOC_A_JSON = "{ \"_id\": \"a\", \"value\": 12 }";
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .insertOne(DOC_A_JSON)
+          .wasSuccessful();
+
+      String DOC_B_JSON = "{ \"_id\": \"b\", \"value\": 23 }";
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .insertOne(DOC_B_JSON)
+          .wasSuccessful();
+
+      // First find one of documents by column other than _id
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .postFindOne(
+              """
+                                      {
+                                            "filter": {
+                                                "value": { "$in": [12] }
+                                            }
+                                      }
+                                      """)
+          .wasSuccessful()
+          .hasJSONField("data.document", DOC_A_JSON);
+
+      // Then try to find one of documents by _id
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .postFindOne(
+              """
+                              {
+                                    "filter": {
+                                        "_id": { "$in": ["b", "c"] }
+                                    }
+                              }
+                              """)
+          .wasSuccessful()
+          .hasJSONField("data.document", DOC_B_JSON);
+    }
+
+    @Test
+    @Order(5)
     public final void sparseDataForCollectionDataType() {
       String tableName = "mapListSet";
       String tableJson =

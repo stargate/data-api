@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.SortClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import jakarta.validation.Valid;
@@ -27,7 +26,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         """
               {"user.age" : -1, "user.name" : 1}
               """)
-public record SortClause(@Valid List<SortExpression> sortExpressions) implements SchemaValidatable {
+public record SortClause(@Valid List<SortExpression> sortExpressions) {
 
   public boolean isEmpty() {
     return sortExpressions == null || sortExpressions.isEmpty();
@@ -86,7 +85,6 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) implements
             .equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
   }
 
-  @Override
   public void validate(CollectionSchemaObject collection) {
     IndexingProjector indexingProjector = collection.indexingProjector();
     // If nothing specified, everything indexed

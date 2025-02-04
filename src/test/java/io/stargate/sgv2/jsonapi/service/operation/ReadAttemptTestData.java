@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
@@ -25,14 +26,15 @@ public class ReadAttemptTestData extends OperationAttemptTestData {
   }
 
   private OperationAttemptFixture<?, TableSchemaObject> newReadAttemptFixture(
-      AsyncResultSet resultSet, TableDriverExceptionHandler exceptionHandler) {
+      AsyncResultSet resultSet,
+      DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory) {
 
     if (resultSet == null) {
       resultSet = testData.resultSet().emptyResultSet();
     }
 
-    if (exceptionHandler == null) {
-      exceptionHandler = spy(new TableDriverExceptionHandler());
+    if (exceptionHandlerFactory == null) {
+      exceptionHandlerFactory = TableDriverExceptionHandler::new;
     }
 
     var queryExecutor = mock(CommandQueryExecutor.class);
@@ -56,7 +58,8 @@ public class ReadAttemptTestData extends OperationAttemptTestData {
                     TableSchemaObject.from(testData.tableMetadata().keyValue(), objectMapper)),
                 resultSet));
 
-    return new OperationAttemptFixture<>(attempt, queryExecutor, exceptionHandler, resultSet);
+    return new OperationAttemptFixture<>(
+        attempt, queryExecutor, exceptionHandlerFactory, resultSet);
   }
 
   private FindCommand mockFindCommand() {
