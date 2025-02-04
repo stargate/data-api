@@ -71,7 +71,10 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
     return new GenericOperation<>(
-        attempts, pageBuilder, new CreateTableExceptionHandler(tableName));
+        attempts,
+        pageBuilder,
+        DefaultDriverExceptionHandler.Factory.withIdentifier(
+            CreateTableExceptionHandler::new, tableName));
   }
 
   @Override

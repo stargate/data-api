@@ -35,12 +35,12 @@ public class ListIndexesCommandResolver implements CommandResolver<ListIndexesCo
     var attempts = new OperationAttemptContainer<>(List.of(attempt));
 
     var pageBuilder =
-        MetadataAttemptPage.builder()
+        MetadataAttemptPage.<TableSchemaObject>builder()
             .showSchema(explain)
             .usingCommandStatus(CommandStatus.EXISTING_INDEXES)
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new GenericOperation(attempts, pageBuilder, new TableDriverExceptionHandler());
+    return new GenericOperation<>(attempts, pageBuilder, TableDriverExceptionHandler::new);
   }
 }

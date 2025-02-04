@@ -73,7 +73,7 @@ public class OperationAttemptTest {
         .attempt()
         .setStatus(OperationAttempt.OperationStatus.READY)
         .attempt()
-        .doThrowOnExecuteStatement(expectedException)
+        .doThrowOnBuildStatementContext(expectedException)
         .exceptionHandler()
         .doMaybeHandleException(expectedException) // no mapping, always return the same
         .attempt()
@@ -160,7 +160,7 @@ public class OperationAttemptTest {
         .attempt()
         .setStatus(OperationAttempt.OperationStatus.READY)
         .attempt()
-        .doThrowOnExecuteStatement(exception)
+        .doThrowOnBuildStatementContext(exception)
         .exceptionHandler()
         .doMaybeHandleException(exception) // no mapping, always return the same
         .attempt()
@@ -192,7 +192,7 @@ public class OperationAttemptTest {
         .attempt()
         .setStatus(OperationAttempt.OperationStatus.READY)
         .attempt()
-        .doThrowOnExecuteStatement(originalException)
+        .doThrowOnBuildStatementContext(originalException)
         .exceptionHandler()
         .doMaybeHandleException(originalException, handledException)
         .attempt()

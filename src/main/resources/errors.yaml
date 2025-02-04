@@ -52,13 +52,13 @@
 # ================================================================================================================
 
 snippets:
-  - name: CONTACT_SUPPORT
-    body: |-
-      Please contact support if the issue persists.
-
   - name: RETRY
     body: |-
       It is safe to retry this request.
+
+  - name: RETRY_UNKNOWN
+    body: |-
+      Review the Error Message before retrying this request.
 
   - name: INEFFICIENT_FILTER
     body: |-
@@ -117,13 +117,6 @@ snippets:
 
 request-errors:
   # UNSCOPED request errors
-  - scope:
-    code: DOCUMENT_UNPARSEABLE
-    title: Unable to parse the document
-    body: |-
-      big long message with ${vars} in it.
-      
-      ${SNIPPET.CONTACT_SUPPORT}
 
   - scope:
     code: UNSUPPORTED_TABLE_COMMAND
@@ -1266,28 +1259,227 @@ server-errors:
       
       Error Class: ${errorClass}
       Error Message: ${errorMessage}
+      
+      ${SNIPPET.RETRY_UNKNOWN}
 
   # DATABASE scope server errors
   - scope: DATABASE
-    code: CLOSED_CONNECTION
-    title: Database connection was closed while processing the request
+    code: UNEXPECTED_DRIVER_ERROR
+    title: Unexpected driver error
     body: |-
-      The Data API connection to the database was closed by the database while processing the request.
+      An unexpected server error occurred while using the driver with the database. 
       
-      Writing to the ${schemaType} ${keyspace}.${table} failed to complete successfully. If this request modified data the changes may have been written to by some replicas, but not all. Future read requests may return eventually consistent results.
+      The command against the ${schemaType} ${keyspace}.${table} may be in an inconsistent state due to the error encountered. It may have either: 
+      * Failed to start communicating with the database.
+      * Encountered an error when being processed by the database.
+      * Completed successfully, but returned an unexpected response.
       
-      The detailed response from the database was: ${errorMessage}    
+      Consult the the detailed error message below for more information:
+      
+      Error Class: ${errorClass}
+      Error Message: ${errorMessage}
+      
+      ${SNIPPET.RETRY_UNKNOWN}
+
+  - scope: DATABASE
+    # NOTE: this is here as a server error because the API should have caught missing keyspace before sending to the database
+    code: UNKNOWN_KEYSPACE
+    title: Unknown keyspace
+    body: |-
+      The command referenced a keyspace that does not exist in the database. 
+      
+      The Data API believed the keyspace existed, but the database returned an error that the keyspace does not exist. This may be a temporary issue.
+      
+      The command used the keyspace: ${keyspace}.
       
       ${SNIPPET.RETRY}
+
   - scope: DATABASE
-    code: TABLE_WRITE_TIMEOUT
-    title: Timeout writing to table
+    code: FAILED_TO_CONNECT_TO_DATABASE
+    title: Data API Failed to connect to the database
     body: |-
-      The Data API timed out while writing to the table.
+      The Data API was unable to connect to any nodes in the database to process the command. 
       
-      Writing to the table ${keyspace}.${table} failed to complete successfully within the timeout period. The data may have written to the table by some replicas, but not all. Future read requests may return eventually consistent results.
+      This may be due to a temporary capacity issue with the database, or a wider outage.
       
-      The request was was waiting for ${blockFor} replicas to acknowledge the write, but only ${received} replicas responded within the timeout period.
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    code: UNAUTHORIZED_ACCESS
+    title: Unauthorized access to the database
+    body: |-
+      The command is not authorized to perform the action on the database. 
+      
+      The authentication details provided with the command do not allow it to perform the action is was attempting, such as reading or writing data. 
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      
+      Resend the command using the correct authentication details.
+
+  - scope: DATABASE
+    code: INVALID_DATABASE_QUERY
+    title: Invalid database query
+    body: |-
+      The Data API command generated a database query that while syntactically correct, was rejected as invalid by the database.  
+      
+      The Data API should have generated a valid query, or returned an error before sending the query to the database. 
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      The command generated the CQL query: ${cql}.
+      The command generated the CQL values: ${values}.
+      The database error: ${errorMessage}.
+      
+      Retrying the command will likely result in the same error.
+
+  - scope: DATABASE
+    code: UNSUPPORTED_DATABASE_QUERY
+    title: Unsupported database query
+    body: |-
+      The Data API command generated a database query that was syntactically incorrect, and was rejected by the database.  
+      
+      The Data API should should only generate correct database syntax. 
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      The command generated the CQL query: ${cql}.
+      The command generated the CQL values: ${values}.
+      The database error: ${errorMessage}.
+      
+      Retrying the command will likely result in the same error.
+
+  - scope: DATABASE
+    code: FAILED_COMPARE_AND_SET
+    title: Failed database Compare and Set operation
+    body: |-
+      The Data API command generated a database query that used the Compare and Set feature, and the database was unable to determine if the operation was successful.    
+      
+      This should be a rare error, and may be due to a temporary capacity issue with the database. The API uses idempotent operations when modifying Documents in Collections which removes the possibility of data corruption.
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      The command generated the CQL query: ${cql}.
+      The command generated the CQL values: ${values}.
+      The database error: ${errorMessage}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    code: FAILED_TRUNCATION
+    title: Failed database Truncate operation
+    body: |-
+      The Data API command generated a database query to truncate the table, and the database was either unable to start or complete the operation.     
+      
+      Truncating a Collection or Table requires that all worker nodes in the Keyspace are available, and complete the operation in the required time. Completing the operation includes flushing memory to disk, and snapshotting on disk files. 
+      
+      This is operation has the lowest level of availability as all nodes must be involved. And so it may fail while other read and write operations success, as they do not require all nodes to be available. 
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      The command generated the CQL query: ${cql}.
+      The command generated the CQL values: ${values}.
+      The database error: ${errorMessage}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    code: UNAVAILABLE_DATABASE
+    title: The database is unavailable
+    body: |-
+      The Data API submitted a query to the database, but the database refused to start processing as not enough nodes available.      
+      
+      Queries typically require 2 out of 3 replicas to be available before they can start, though the exact numbers can vary. And the random distribution of data allows for some queries to have enough replicas, while other do not (known as partial availability).   
+      
+      This may be due to a temporary capacity issue with the database, or a wider outage. 
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      The number of nodes required was: ${requiredNodes}.
+      The number of nodes available was: ${aliveNodes}.
+      The database error: ${errorMessage}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    code: FAILED_READ_REQUEST
+    title: Failed database request
+    body: |-
+      The Data API command generated a database query that was syntactically correct and the database started processing, however too many nodes failed to complete the operation.     
+      
+      This error indicates an issue processing the request, not that the request timed out before completing. 
+            
+      This may be due to a temporary capacity issue with the database, or a wider outage. 
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      The command generated the CQL query: ${cql}.
+      The command generated the CQL values: ${values}.
+      The number of nodes blocked for was: ${blockForNodes}.
+      The number of nodes received was: ${receivedNodes}.
+      The number of nodes that failed was: ${failedNodes}.
+      The data was returned to the coordinator node was: ${dataPresent}
+      The unique set of node failures reasons was: ${failureReasons}.
+      The database error: ${errorMessage}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    code: FAILED_WRITE_REQUEST
+    title: Failed database request
+    body: |-
+      The Data API command generated a database query that was syntactically correct and the database started processing, however too many nodes failed to complete the operation.     
+      
+      This error indicates an issue processing the request, not that the request timed out before completing. 
+      
+      When working with Collections the data will be consistent, even when failing to write data. When working with Tables the data may be in an Eventually Consistent state, as the operation may have completed on some replicas, but not all.
+      
+      This may be due to a temporary capacity issue with the database, or a wider outage. 
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      The command generated the CQL query: ${cql}.
+      The command generated the CQL values: ${values}.
+      The number of nodes blocked for was: ${blockForNodes}.
+      The number of nodes received was: ${receivedNodes}.
+      The number of nodes that failed was: ${failedNodes}.
+      The write type was: ${writeType}.
+      The unique set of node failures reasons was: ${failureReasons}.
+      The database error: ${errorMessage}.
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    code: TIMEOUT_READING_DATA
+    title: Timeout reading data from the database
+    body: |-
+      The Data API generated a database query that timed out before completing the operation.
+      
+      The query was most likely correct, but not enough nodes confirmed the operation had completed before the timeout.
+            
+      This may be due to a temporary capacity issue with the database, or a wider outage.
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      The command generated the CQL query: ${cql}.
+      The command generated the CQL values: ${values}.
+      The number of nodes blocked for was: ${blockForNodes}.
+      The number of nodes received was: ${receivedNodes}.
+      The data was returned to the coordinator node was: ${dataPresent}
+      
+      ${SNIPPET.RETRY}
+
+  - scope: DATABASE
+    code: TIMEOUT_WRITING_DATA
+    title: Timeout writing data to the database
+    body: |-
+      The Data API generated a database query that timed out before completing the operation.
+      
+      The query was most likely correct, but not enough nodes confirmed the operation had completed before the timeout.
+      
+      For Collections that data will be consistent. When working with Tables the data may be in an Eventually Consistent state, as the operation may have completed on some replicas but not all, which can result in inconsistent reads.
+      
+      This may be due to a temporary capacity issue with the database, or a wider outage.
+      
+      The command used the keyspace and table or collection: ${keyspace}.${table}.
+      The command generated the CQL query: ${cql}.
+      The command generated the CQL values: ${values}.
+      The number of nodes blocked for was: ${blockForNodes}.
+      The number of nodes received was: ${receivedNodes}.
+      The write type was: ${writeType}.
       
       ${SNIPPET.RETRY}
 

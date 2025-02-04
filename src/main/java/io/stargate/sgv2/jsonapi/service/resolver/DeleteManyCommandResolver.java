@@ -75,7 +75,7 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
               .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
               .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
       return new GenericOperation<>(
-          attemptContainer, truncatePageBuilder, new TableDriverExceptionHandler());
+          attemptContainer, truncatePageBuilder, TableDriverExceptionHandler::new);
     }
 
     var deleteAttemptBuilder = new DeleteAttemptBuilder<>(ctx.schemaObject(), false);
@@ -89,7 +89,7 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
     var attempts = new OperationAttemptContainer<>(deleteAttemptBuilder.build(where));
-    return new GenericOperation<>(attempts, deletePageBuilder, new TableDriverExceptionHandler());
+    return new GenericOperation<>(attempts, deletePageBuilder, TableDriverExceptionHandler::new);
   }
 
   @Override
