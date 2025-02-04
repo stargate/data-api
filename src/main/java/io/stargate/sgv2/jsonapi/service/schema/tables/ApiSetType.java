@@ -37,7 +37,7 @@ public class ApiSetType extends CollectionApiDataType {
     return new SetColumnDesc(valueType.columnDesc(), ApiSupportDesc.from(this));
   }
 
-  private static ApiSetType from(ApiDataType valueType, boolean isFrozen) {
+  static ApiSetType from(ApiDataType valueType, boolean isFrozen) {
     Objects.requireNonNull(valueType, "valueType must not be null");
 
     if (isValueTypeSupported(valueType)) {

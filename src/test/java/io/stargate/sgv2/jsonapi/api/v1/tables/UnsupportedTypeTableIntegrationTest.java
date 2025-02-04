@@ -197,8 +197,8 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
           .templated()
           .updateOne(filterOnRow, updateSet)
           .hasSingleApiError(
-              ServerException.Code.UNEXPECTED_SERVER_ERROR,
-              ServerException.class,
+              DatabaseException.Code.INVALID_DATABASE_QUERY,
+              DatabaseException.class,
               "Cannot set the value of counter column counter");
     }
 

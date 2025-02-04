@@ -1,10 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
+import static io.stargate.sgv2.jsonapi.util.ApiPropertyUtils.getOrDefault;
+
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -15,8 +20,6 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexAttemptBuild
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiRegularIndex;
-import io.stargate.sgv2.jsonapi.util.defaults.DefaultBoolean;
-import io.stargate.sgv2.jsonapi.util.defaults.Defaults;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.util.Map;
@@ -24,9 +27,6 @@ import java.util.Map;
 /** Resolver for the {@link CreateIndexCommand}. */
 @ApplicationScoped
 public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCommand> {
-
-  // Command option
-  public static final DefaultBoolean IF_NOT_EXISTS_DEFAULT = Defaults.of(false);
 
   @Override
   public Class<CreateIndexCommand> getCommandClass() {
@@ -37,37 +37,35 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, CreateIndexCommand command) {
 
-    ApiIndexType indexType =
+    var indexType =
         command.indexType() == null
             ? ApiIndexType.REGULAR
-            : ApiIndexType.fromTypeName(command.indexType());
+            : ApiIndexType.fromApiName(command.indexType());
 
     if (indexType == null) {
       throw SchemaException.Code.UNKNOWN_INDEX_TYPE.get(
           Map.of(
-              "knownTypes",
-              ApiIndexType.allTypeNames().toString(),
-              "unknownType",
-              command.indexType()));
+              "knownTypes", errFmtJoin(ApiIndexType.values(), ApiIndexType::apiName),
+              "unknownType", command.indexType()));
     }
 
     if (indexType != ApiIndexType.REGULAR) {
       throw SchemaException.Code.UNSUPPORTED_INDEX_TYPE.get(
           Map.of(
-              "supportedTypes",
-              ApiIndexType.REGULAR.indexTypeName(),
-              "unsupportedType",
-              command.indexType()));
+              "supportedTypes", ApiIndexType.REGULAR.apiName(),
+              "unsupportedType", command.indexType()));
     }
 
     var attemptBuilder = new CreateIndexAttemptBuilder(ctx.schemaObject());
 
     attemptBuilder =
         attemptBuilder.withIfNotExists(
-            IF_NOT_EXISTS_DEFAULT.apply(
-                command.options(), CreateIndexCommand.CreateIndexCommandOptions::ifNotExists));
+            getOrDefault(
+                command.options(),
+                CreateIndexCommand.CreateIndexCommandOptions::ifNotExists,
+                TableDescDefaults.CreateIndexOptionsDefaults.IF_NOT_EXISTS));
 
-    // TODO: we need a centralised way of creating retry attempt.
+    // TODO: we need a centralised way of creating retry policy.
     attemptBuilder =
         attemptBuilder.withSchemaRetryPolicy(
             new SchemaAttempt.SchemaRetryPolicy(
@@ -89,6 +87,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
     return new GenericOperation<>(
         new OperationAttemptContainer<>(attempt),
         pageBuilder,
-        new CreateIndexExceptionHandler(apiIndex.indexName()));
+        DefaultDriverExceptionHandler.Factory.withIdentifier(
+            CreateIndexExceptionHandler::new, apiIndex.indexName()));
   }
 }

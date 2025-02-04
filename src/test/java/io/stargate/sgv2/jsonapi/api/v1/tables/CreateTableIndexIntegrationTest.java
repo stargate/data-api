@@ -479,7 +479,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNKNOWN_INDEX_TYPE,
               SchemaException.class,
-              "The known index types are: [collection, regular, text-analysed, vector].",
+              "The known index types are: regular, text, vector.",
               "The command used the unknown index type: unknown.");
     }
 
@@ -611,7 +611,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNKNOWN_INDEX_TYPE,
               SchemaException.class,
-              "The known index types are: [collection, regular, text-analysed, vector].",
+              "The known index types are: regular, text, vector.",
               "The command used the unknown index type: unknown.");
     }
   }

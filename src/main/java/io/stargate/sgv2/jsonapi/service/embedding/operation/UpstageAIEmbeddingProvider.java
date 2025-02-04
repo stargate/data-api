@@ -105,7 +105,7 @@ public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
     }
   }
 
-  // NOTE: "input" is a single String, not array of Strings!
+  // NOTE: "input" is a single String, not array of Constants!
   record EmbeddingRequest(String input, String model) {}
 
   @JsonIgnoreProperties({"object"})

@@ -20,33 +20,31 @@ import io.stargate.sgv2.jsonapi.exception.ExceptionHandler;
  *
  * <p><b>NOTE:</b> Subclass {@link DefaultDriverExceptionHandler} rather than implement this
  * interface directly.
- *
- * @param <SchemaT> The type of the {@link SchemaObject} that the CQL command was operating against.
  */
-public interface DriverExceptionHandler<SchemaT extends SchemaObject>
-    extends ExceptionHandler<SchemaT, DriverException> {
+public interface DriverExceptionHandler extends ExceptionHandler<DriverException> {
 
   @Override
   default Class<DriverException> getExceptionClass() {
     return DriverException.class;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, DriverException exception) {
+  @Override
+  default RuntimeException handle(DriverException exception) {
     return switch (exception) {
         // checking the subclasses that have children first, the handlers for these should
         // cast for their children
-      case AllNodesFailedException e -> handle(schemaObject, e);
-      case QueryValidationException e -> handle(schemaObject, e);
-      case QueryExecutionException e -> handle(schemaObject, e);
+      case AllNodesFailedException e -> handle(e);
+      case QueryValidationException e -> handle(e);
+      case QueryExecutionException e -> handle(e);
         // all these are direct subclasses of DriverException with no children
-      case ClosedConnectionException e -> handle(schemaObject, e);
-      case CodecNotFoundException e -> handle(schemaObject, e);
-      case DriverExecutionException e -> handle(schemaObject, e);
-      case DriverTimeoutException e -> handle(schemaObject, e);
-      case InvalidKeyspaceException e -> handle(schemaObject, e);
-      case NodeUnavailableException e -> handle(schemaObject, e);
-      case RequestThrottlingException e -> handle(schemaObject, e);
-      case UnsupportedProtocolVersionException e -> handle(schemaObject, e);
+      case ClosedConnectionException e -> handle(e);
+      case CodecNotFoundException e -> handle(e);
+      case DriverExecutionException e -> handle(e);
+      case DriverTimeoutException e -> handle(e);
+      case InvalidKeyspaceException e -> handle(e);
+      case NodeUnavailableException e -> handle(e);
+      case RequestThrottlingException e -> handle(e);
+      case UnsupportedProtocolVersionException e -> handle(e);
       default -> exception;
     };
   }
@@ -55,36 +53,35 @@ public interface DriverExceptionHandler<SchemaT extends SchemaObject>
   // Direct subclasses of DriverException with no child
   // ========================================================================
 
-  default RuntimeException handle(SchemaT schemaObject, ClosedConnectionException exception) {
+  default RuntimeException handle(ClosedConnectionException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, CodecNotFoundException exception) {
+  default RuntimeException handle(CodecNotFoundException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, DriverExecutionException exception) {
+  default RuntimeException handle(DriverExecutionException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, DriverTimeoutException exception) {
+  default RuntimeException handle(DriverTimeoutException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, InvalidKeyspaceException exception) {
+  default RuntimeException handle(InvalidKeyspaceException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, NodeUnavailableException exception) {
+  default RuntimeException handle(NodeUnavailableException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, RequestThrottlingException exception) {
+  default RuntimeException handle(RequestThrottlingException exception) {
     return exception;
   }
 
-  default RuntimeException handle(
-      SchemaT schemaObject, UnsupportedProtocolVersionException exception) {
+  default RuntimeException handle(UnsupportedProtocolVersionException exception) {
     return exception;
   }
 
@@ -92,14 +89,14 @@ public interface DriverExceptionHandler<SchemaT extends SchemaObject>
   // AllNodesFailedException and subclasses
   // ========================================================================
 
-  default RuntimeException handle(SchemaT schemaObject, AllNodesFailedException exception) {
+  default RuntimeException handle(AllNodesFailedException exception) {
     return switch (exception) {
-      case NoNodeAvailableException e -> handle(schemaObject, e);
+      case NoNodeAvailableException e -> handle(e);
       default -> exception;
     };
   }
 
-  default RuntimeException handle(SchemaT schemaObject, NoNodeAvailableException exception) {
+  default RuntimeException handle(NoNodeAvailableException exception) {
     return exception;
   }
 
@@ -108,35 +105,34 @@ public interface DriverExceptionHandler<SchemaT extends SchemaObject>
   // - this is a subclass CoordinatorException but that is abstract
   // ========================================================================
 
-  default RuntimeException handle(SchemaT schemaObject, QueryValidationException exception) {
+  default RuntimeException handle(QueryValidationException exception) {
     return switch (exception) {
-      case AlreadyExistsException e -> handle(schemaObject, e);
-      case InvalidConfigurationInQueryException e -> handle(schemaObject, e);
-      case InvalidQueryException e -> handle(schemaObject, e);
-      case SyntaxError e -> handle(schemaObject, e);
-      case UnauthorizedException e -> handle(schemaObject, e);
+      case AlreadyExistsException e -> handle(e);
+      case InvalidConfigurationInQueryException e -> handle(e);
+      case InvalidQueryException e -> handle(e);
+      case SyntaxError e -> handle(e);
+      case UnauthorizedException e -> handle(e);
       default -> exception;
     };
   }
 
-  default RuntimeException handle(SchemaT schemaObject, AlreadyExistsException exception) {
+  default RuntimeException handle(AlreadyExistsException exception) {
     return exception;
   }
 
-  default RuntimeException handle(
-      SchemaT schemaObject, InvalidConfigurationInQueryException exception) {
+  default RuntimeException handle(InvalidConfigurationInQueryException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, InvalidQueryException exception) {
+  default RuntimeException handle(InvalidQueryException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, SyntaxError exception) {
+  default RuntimeException handle(SyntaxError exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, UnauthorizedException exception) {
+  default RuntimeException handle(UnauthorizedException exception) {
     return exception;
   }
 
@@ -148,45 +144,45 @@ public interface DriverExceptionHandler<SchemaT extends SchemaObject>
   // QueryConsistencyException and its childs (cannot pattern match on parent and child)
   // ========================================================================
 
-  default RuntimeException handle(SchemaT schemaObject, QueryExecutionException exception) {
+  default RuntimeException handle(QueryExecutionException exception) {
     return switch (exception) {
-      case BootstrappingException e -> handle(schemaObject, e);
-      case CASWriteUnknownException e -> handle(schemaObject, e);
-      case CDCWriteFailureException e -> handle(schemaObject, e);
-      case FunctionFailureException e -> handle(schemaObject, e);
-      case OverloadedException e -> handle(schemaObject, e);
-      case QueryConsistencyException e -> handle(schemaObject, e);
-      case TruncateException e -> handle(schemaObject, e);
-      case UnavailableException e -> handle(schemaObject, e);
+      case BootstrappingException e -> handle(e);
+      case CASWriteUnknownException e -> handle(e);
+      case CDCWriteFailureException e -> handle(e);
+      case FunctionFailureException e -> handle(e);
+      case OverloadedException e -> handle(e);
+      case QueryConsistencyException e -> handle(e);
+      case TruncateException e -> handle(e);
+      case UnavailableException e -> handle(e);
       default -> exception;
     };
   }
 
-  default RuntimeException handle(SchemaT schemaObject, BootstrappingException exception) {
+  default RuntimeException handle(BootstrappingException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, CASWriteUnknownException exception) {
+  default RuntimeException handle(CASWriteUnknownException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, CDCWriteFailureException exception) {
+  default RuntimeException handle(CDCWriteFailureException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, FunctionFailureException exception) {
+  default RuntimeException handle(FunctionFailureException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, OverloadedException exception) {
+  default RuntimeException handle(OverloadedException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, TruncateException exception) {
+  default RuntimeException handle(TruncateException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, UnavailableException exception) {
+  default RuntimeException handle(UnavailableException exception) {
     return exception;
   }
 
@@ -195,29 +191,29 @@ public interface DriverExceptionHandler<SchemaT extends SchemaObject>
   // see commend for the QueryExecutionException section
   // ========================================================================
 
-  default RuntimeException handle(SchemaT schemaObject, QueryConsistencyException exception) {
+  default RuntimeException handle(QueryConsistencyException exception) {
     return switch (exception) {
-      case ReadFailureException e -> handle(schemaObject, e);
-      case ReadTimeoutException e -> handle(schemaObject, e);
-      case WriteFailureException e -> handle(schemaObject, e);
-      case WriteTimeoutException e -> handle(schemaObject, e);
+      case ReadFailureException e -> handle(e);
+      case ReadTimeoutException e -> handle(e);
+      case WriteFailureException e -> handle(e);
+      case WriteTimeoutException e -> handle(e);
       default -> exception;
     };
   }
 
-  default RuntimeException handle(SchemaT schemaObject, ReadFailureException exception) {
+  default RuntimeException handle(ReadFailureException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, ReadTimeoutException exception) {
+  default RuntimeException handle(ReadTimeoutException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, WriteFailureException exception) {
+  default RuntimeException handle(WriteFailureException exception) {
     return exception;
   }
 
-  default RuntimeException handle(SchemaT schemaObject, WriteTimeoutException exception) {
+  default RuntimeException handle(WriteTimeoutException exception) {
     return exception;
   }
 }

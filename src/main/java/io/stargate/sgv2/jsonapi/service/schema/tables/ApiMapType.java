@@ -55,7 +55,7 @@ public class ApiMapType extends CollectionApiDataType {
         keyType.columnDesc(), valueType.columnDesc(), ApiSupportDesc.from(this));
   }
 
-  public static ApiMapType from(ApiDataType keyType, ApiDataType valueType, boolean isFrozen) {
+  static ApiMapType from(ApiDataType keyType, ApiDataType valueType, boolean isFrozen) {
     Objects.requireNonNull(keyType, "keyType must not be null");
     Objects.requireNonNull(valueType, "valueType must not be null");
 

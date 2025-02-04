@@ -1,10 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import java.util.HashMap;
-import java.util.Map;
-
-/** This interface will be implemented by Operator enum. */
+/**
+ * This interface will be implemented by various comparison operator enums (like {@link
+ * ArrayComparisonOperator}).
+ */
 public interface FilterOperator {
   String getOperator();
 
@@ -14,39 +13,4 @@ public interface FilterOperator {
    * @return
    */
   FilterOperator invert();
-
-  class FilterOperatorUtils {
-    private static Map<String, FilterOperator> operatorMap = new HashMap<>();
-
-    static {
-      for (FilterOperator filterOperator : ValueComparisonOperator.values()) {
-        addComparisonOperator(filterOperator);
-      }
-      for (FilterOperator filterOperator : ElementComparisonOperator.values()) {
-        addComparisonOperator(filterOperator);
-      }
-      for (FilterOperator filterOperator : ArrayComparisonOperator.values()) {
-        addComparisonOperator(filterOperator);
-      }
-      // This should not be supported from outside
-      operatorMap.remove(ArrayComparisonOperator.NOTANY.getOperator());
-    }
-
-    private static void addComparisonOperator(FilterOperator filterOperator) {
-      operatorMap.put(filterOperator.getOperator(), filterOperator);
-    }
-
-    public static FilterOperator findComparisonOperator(String operator) {
-      return operatorMap.get(operator);
-    }
-
-    @Deprecated // since 1.0.3 use "findComparisonOperator()" instead
-    public static FilterOperator getComparisonOperator(String operator) {
-      final FilterOperator filterOperator = findComparisonOperator(operator);
-      if (filterOperator == null) {
-        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(operator);
-      }
-      return filterOperator;
-    }
-  }
 }

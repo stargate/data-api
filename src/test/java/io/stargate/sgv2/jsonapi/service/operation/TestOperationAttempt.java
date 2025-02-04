@@ -20,7 +20,7 @@ public class TestOperationAttempt
   }
 
   @Override
-  protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
-    return Uni.createFrom().item(this.resultSet);
+  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
+    return new StatementContext(null, () -> Uni.createFrom().item(this.resultSet));
   }
 }

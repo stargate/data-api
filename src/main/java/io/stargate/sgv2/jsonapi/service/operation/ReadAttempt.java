@@ -11,7 +11,6 @@ import com.datastax.oss.driver.api.querybuilder.BuildableQuery;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
@@ -109,14 +108,14 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
   }
 
   @Override
-  protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
+  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
 
     var statement = buildReadStatement();
     readAttemptRetryPolicy.setRetryContext(
         new ReadAttemptRetryPolicy.RetryContext<>(statement, this));
 
     logStatement(LOGGER, "executeStatement()", statement);
-    return rowSorter.executeRead(queryExecutor, statement);
+    return new StatementContext(statement, () -> rowSorter.executeRead(queryExecutor, statement));
   }
 
   @Override
