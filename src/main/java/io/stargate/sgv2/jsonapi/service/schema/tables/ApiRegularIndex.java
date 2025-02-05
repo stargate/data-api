@@ -163,7 +163,6 @@ public class ApiRegularIndex extends ApiSupportedIndex {
       var optionsDesc = indexDesc.options();
 
       resolveAnalyzerProperty(tableSchemaObject, apiColumnDef, optionsDesc, null, indexOptions);
-
       // indexFunction is null for primitive dataTypes
       return new ApiRegularIndex(indexIdentifier, targetIdentifier, indexOptions, null);
     }
@@ -253,11 +252,6 @@ public class ApiRegularIndex extends ApiSupportedIndex {
         ApiIndexFunction indexFunction,
         Map<String, String> indexOptions) {
 
-      if (optionsDesc == null) {
-        // no need to proceed if user does not specify any RegularIndexDescOptions
-        return;
-      }
-
       // Primitive type
       ApiTypeName targetColumnType = apiColumnDef.type().typeName();
 
@@ -291,7 +285,9 @@ public class ApiRegularIndex extends ApiSupportedIndex {
         targetColumnType = apiListType.valueType.typeName();
       }
 
-      if (targetColumnType != ApiTypeName.TEXT && targetColumnType != ApiTypeName.ASCII) {
+      if (optionsDesc != null
+          && targetColumnType != ApiTypeName.TEXT
+          && targetColumnType != ApiTypeName.ASCII) {
         // Only text and ascii fields can have the text analysis options specified
         var anyPresent =
             optionsDesc.ascii() != null
@@ -318,7 +314,6 @@ public class ApiRegularIndex extends ApiSupportedIndex {
               RegularIndexDefinitionDesc.RegularIndexDescOptions::ascii,
               TableDescDefaults.RegularIndexDescDefaults.ASCII);
       put(indexOptions, CQLOptions.ASCII, ascii);
-
       var case_sensitive =
           ApiPropertyUtils.getOrDefault(
               optionsDesc,
