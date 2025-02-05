@@ -231,7 +231,7 @@ public interface CommandResolver<C extends Command> {
               "schemaType",
               namingRule.name(),
               "maxNameLength",
-              String.valueOf(SchemaObjectNamingRule.MAX_NAME_LENGTH),
+              String.valueOf(namingRule.getMaxLength()),
               "unsupportedSchemaName",
               name == null ? "<null>" : name));
     }

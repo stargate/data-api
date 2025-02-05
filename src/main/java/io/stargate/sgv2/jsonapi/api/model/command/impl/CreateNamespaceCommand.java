@@ -21,7 +21,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public record CreateNamespaceCommand(
     @Schema(
             description =
-                "Name of the namespace. This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead.",
+                "Required name of the new Namespace. This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead.",
             deprecated = true)
         String name,
     @Nullable @Valid CreateNamespaceCommand.Options options)

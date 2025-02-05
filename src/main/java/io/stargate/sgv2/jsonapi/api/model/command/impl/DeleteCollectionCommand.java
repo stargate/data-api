@@ -15,7 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that deletes a collection if one exists.")
 @JsonTypeName(CommandName.Names.DELETE_COLLECTION)
 public record DeleteCollectionCommand(
-    @NotEmpty @Schema(description = "Name of the collection") String name)
+    @NotEmpty @Schema(description = "Required name of the Collection to remove") String name)
     implements CollectionOnlyCommand, NoOptionsCommand {
 
   /** {@inheritDoc} */

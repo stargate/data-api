@@ -8,6 +8,11 @@ public interface NamingRule {
   String name();
 
   /**
+   * @return the maximum allowed length for the name.
+   */
+  int getMaxLength();
+
+  /**
    * @return true if the input satisfies this naming rule, false otherwise
    */
   boolean apply(String input);

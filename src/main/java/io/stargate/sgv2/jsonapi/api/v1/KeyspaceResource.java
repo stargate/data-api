@@ -24,6 +24,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -119,7 +120,7 @@ public class KeyspaceResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
-      @NotNull @Valid KeyspaceCommand command, @PathParam("keyspace") @NotNull String keyspace) {
+      @NotNull @Valid KeyspaceCommand command, @PathParam("keyspace") @NotEmpty String keyspace) {
 
     final ApiFeatures apiFeatures =
         ApiFeatures.fromConfigAndRequest(apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());

@@ -10,7 +10,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that deletes a Keyspace.")
 @JsonTypeName(CommandName.Names.DROP_KEYSPACE)
 public record DropKeyspaceCommand(
-    @NotEmpty @Schema(description = "Name of the Keyspace") String name)
+    @NotEmpty @Schema(description = "Required name of the Keyspace to remove") String name)
     implements GeneralCommand, NoOptionsCommand {
 
   /** {@inheritDoc} */
