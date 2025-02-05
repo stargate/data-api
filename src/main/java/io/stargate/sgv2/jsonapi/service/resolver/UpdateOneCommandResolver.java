@@ -83,7 +83,7 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
           errVars(ctx.schemaObject(), map -> {}));
     }
 
-    var builder = new UpdateAttemptBuilder<>(ctx.schemaObject(), true);
+    var builder = new UpdateDBTaskBuilder<>(ctx.schemaObject(), true);
 
     // need to update so we use WithWarnings correctly
     var where =

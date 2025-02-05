@@ -6,45 +6,63 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.update.Update;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** An attempt to update a row from a table */
-public class UpdateAttempt<SchemaT extends TableBasedSchemaObject>
-    extends OperationAttempt<UpdateAttempt<SchemaT>, SchemaT> {
+public class UpdateDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<SchemaT> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(UpdateAttempt.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(UpdateDBTask.class);
 
   private final UpdateValuesCQLClause updateCQLClause;
   private final WhereCQLClause<Update> whereCQLClause;
 
-  public UpdateAttempt(
+  public UpdateDBTask(
       int position,
       SchemaT schemaObject,
+      DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory,
       UpdateValuesCQLClause updateCQLClause,
       WhereCQLClause<Update> whereCQLClause) {
-    super(position, schemaObject, RetryPolicy.NO_RETRY);
+    super(position, schemaObject, TaskRetryPolicy.NO_RETRY, exceptionHandlerFactory);
 
     // nullable, because the subclass may want to implement method itself.
     // and if there is an error shredding we will not have the insert clause
     this.whereCQLClause = whereCQLClause;
     this.updateCQLClause = updateCQLClause;
-    setStatus(OperationStatus.READY);
+    setStatus(TaskStatus.READY);
   }
 
+  // =================================================================================================
+  // BaseTask overrides
+  // =================================================================================================
+
+  /** {@inheritDoc} */
   @Override
-  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
-    // bind and execute
+  protected AsyncResultSetSupplier buildResultSupplier(CommandQueryExecutor queryExecutor) {
+
     var statement = buildUpdateStatement();
-    logStatement(LOGGER, "executeStatement()", statement);
-    return new StatementContext(statement, () -> queryExecutor.executeWrite(statement));
+
+
+    logStatement(LOGGER, "buildResultSupplier()", statement);
+    return new AsyncResultSetSupplier(
+        statement, () -> queryExecutor.executeWrite(statement));
   }
+
+
+  // =================================================================================================
+  // Implementation and internals
+  // =================================================================================================
+
 
   /**
    * The framework for WhereCQLClause expects something extending OngoingWhereClause, and there is
