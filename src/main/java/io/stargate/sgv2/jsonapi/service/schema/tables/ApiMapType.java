@@ -14,7 +14,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ApiMapType extends CollectionApiDataType {
+public class ApiMapType extends CollectionApiDataType<MapType> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ApiMapType.class);
 
   public static final TypeFactoryFromColumnDesc<ApiMapType, MapColumnDesc>
@@ -36,8 +36,7 @@ public class ApiMapType extends CollectionApiDataType {
         ApiTypeName.MAP,
         valueType,
         DataTypes.mapOf(keyType.cqlType(), valueType.cqlType(), isFrozen),
-        apiSupport,
-        isFrozen);
+        apiSupport);
 
     this.keyType = keyType;
     // sanity checking
@@ -74,8 +73,7 @@ public class ApiMapType extends CollectionApiDataType {
   public static boolean isKeyTypeSupported(ApiDataType keyType) {
     Objects.requireNonNull(keyType, "keyType must not be null");
 
-    // keys must be text or ascii, because keys in JSON are string
-    return keyType == ApiDataTypeDefs.ASCII || keyType == ApiDataTypeDefs.TEXT;
+    return keyType.isPrimitive();
   }
 
   public static boolean isValueTypeSupported(ApiDataType valueType) {
@@ -98,6 +96,7 @@ public class ApiMapType extends CollectionApiDataType {
 
       ApiDataType keyType;
       ApiDataType valueType;
+
       try {
         keyType = TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.keyType(), validateVectorize);
         valueType =
@@ -156,12 +155,13 @@ public class ApiMapType extends CollectionApiDataType {
     public boolean isSupported(MapType cqlType) {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
       // we accept frozen and then change the support
-      // keys must be text or ascii, because keys in JSON are string
-      if (!(cqlType.getKeyType() == DataTypes.TEXT || cqlType.getKeyType() == DataTypes.ASCII)) {
-        return false;
-      }
       // must be a primitive type value
       return cqlType.getValueType() instanceof PrimitiveType;
     }
+  }
+
+  @Override
+  public boolean isFrozen() {
+    return cqlType.isFrozen();
   }
 }

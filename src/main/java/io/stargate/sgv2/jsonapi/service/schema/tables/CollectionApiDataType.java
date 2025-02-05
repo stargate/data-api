@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import com.datastax.oss.driver.api.core.type.DataType;
 
 /** Interface defining the api data type for collection types */
-public abstract class CollectionApiDataType implements ApiDataType {
+public abstract class CollectionApiDataType<T extends DataType> implements ApiDataType {
 
   // Default collection support, they cannot be used in filtering
   private static final ApiSupportDef DEFAULT_API_SUPPORT =
@@ -20,23 +20,20 @@ public abstract class CollectionApiDataType implements ApiDataType {
 
   protected final ApiTypeName typeName;
   protected final PrimitiveApiDataTypeDef valueType;
-  protected final DataType cqlType;
+  protected final T cqlType;
   protected final ApiSupportDef apiSupport;
-  protected final boolean isFrozen;
 
   protected CollectionApiDataType(
       ApiTypeName typeName,
       PrimitiveApiDataTypeDef valueType,
-      DataType cqlType,
-      ApiSupportDef apiSupport,
-      boolean isFrozen) {
+      T cqlType,
+      ApiSupportDef apiSupport) {
     // no null checks here, so subclasses can pass null and then override to create on demand if
     // they want to.
     this.typeName = typeName;
     this.valueType = valueType;
     this.cqlType = cqlType;
     this.apiSupport = apiSupport;
-    this.isFrozen = isFrozen;
   }
 
   @Override
@@ -68,7 +65,5 @@ public abstract class CollectionApiDataType implements ApiDataType {
     return valueType;
   }
 
-  public boolean isFrozen() {
-    return isFrozen;
-  }
+  public abstract boolean isFrozen();
 }

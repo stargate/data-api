@@ -29,7 +29,7 @@ public record VectorIndexDefinitionDesc(
         @Schema(description = "Indexing options.", type = SchemaType.OBJECT)
         @JsonProperty(TableDescConstants.IndexDefinitionDesc.OPTIONS)
         VectorIndexDescOptions options)
-    implements IndexDefinitionDesc<VectorIndexDefinitionDesc.VectorIndexDescOptions> {
+    implements IndexDefinitionDesc<String, VectorIndexDefinitionDesc.VectorIndexDescOptions> {
 
   /** Options for the vector index */
   @JsonPropertyOrder({

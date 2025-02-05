@@ -6,11 +6,13 @@ import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.*;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.checked.UnknownCqlIndexFunctionException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.ApiPropertyUtils;
@@ -34,8 +36,11 @@ public class ApiRegularIndex extends ApiSupportedIndex {
   }
 
   private ApiRegularIndex(
-      CqlIdentifier indexName, CqlIdentifier targetColumn, Map<String, String> indexOptions) {
-    super(ApiIndexType.REGULAR, indexName, targetColumn, indexOptions);
+      CqlIdentifier indexName,
+      CqlIdentifier targetColumn,
+      Map<String, String> indexOptions,
+      ApiIndexFunction indexFunction) {
+    super(ApiIndexType.REGULAR, indexName, targetColumn, indexOptions, indexFunction);
   }
 
   @Override
@@ -52,7 +57,10 @@ public class ApiRegularIndex extends ApiSupportedIndex {
             getBooleanIfPresent(indexOptions, CQLOptions.NORMALIZE));
 
     var definition =
-        new RegularIndexDefinitionDesc(cqlIdentifierToJsonKey(targetColumn), definitionOptions);
+        new RegularIndexDefinitionDesc(
+            new RegularIndexDefinitionDesc.RegularIndexColumn(
+                cqlIdentifierToJsonKey(targetColumn), indexFunction),
+            definitionOptions);
 
     return new IndexDesc<>() {
       @Override
@@ -79,6 +87,19 @@ public class ApiRegularIndex extends ApiSupportedIndex {
   private static class UserDescFactory
       extends IndexFactoryFromIndexDesc<ApiRegularIndex, RegularIndexDefinitionDesc> {
 
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    /**
+     * /** ApiRegularIndex could be used for indexes on primitive or collection(map/set/list)
+     * datatypes.
+     *
+     * @param tableSchemaObject The schema object of the table where the index will be created. Must
+     *     not be null.
+     * @param indexName The name of the index to be created. Must not be null.
+     * @param indexDesc The description of the index to be created, including column and options.
+     *     Must not be null.
+     * @return A new instance of {@link ApiRegularIndex}.
+     */
     @Override
     public ApiRegularIndex create(
         TableSchemaObject tableSchemaObject,
@@ -91,77 +112,226 @@ public class ApiRegularIndex extends ApiSupportedIndex {
       // for now, we are relying on the validation of the request deserializer that these values are
       // specified userNameToIdentifier will throw an exception if the values are not specified
       var indexIdentifier = userNameToIdentifier(indexName, "indexName");
-      var targetIdentifier = userNameToIdentifier(indexDesc.column(), "targetColumn");
+      var targetIdentifier = userNameToIdentifier(indexDesc.column().columnName(), "targetColumn");
+      var indexFunctionUserInput = indexDesc.column().indexFunction();
 
       var apiColumnDef = checkIndexColumnExists(tableSchemaObject, targetIdentifier);
 
+      // create ApiRegularIndex for the target primitive column
+      if (apiColumnDef.type().isPrimitive()) {
+        return createApiIndexForPrimitive(
+            tableSchemaObject, apiColumnDef, indexIdentifier, targetIdentifier, indexDesc);
+      }
+
+      // create ApiRegularIndex for the target map/set/list column
+      if (apiColumnDef.type().isContainer()
+          && apiColumnDef.type().typeName() != ApiTypeName.VECTOR) {
+        try {
+          return createApiIndexForCollection(
+              tableSchemaObject,
+              apiColumnDef,
+              indexIdentifier,
+              targetIdentifier,
+              indexFunctionUserInput,
+              indexDesc);
+        } catch (UnknownCqlIndexFunctionException e) {
+          // This won't happen, since the index function has already been validated.
+        }
+      }
+
       // we could check if there is an existing index but that is a race condition, we will need to
-      // catch it if it fails - the resolver needs to set up a custom error mapper
-      // regular indexes can only be on primitive. Adding indexes on maps, sets, lists will come
-      // later.
-      if (!apiColumnDef.type().isPrimitive()) {
-        throw SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES.get(
+      // catch it if it fails
+      throw SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put(
+                    "allColumns", errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
+                map.put("supportedTypes", errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()));
+                map.put("unsupportedColumns", errFmt(apiColumnDef));
+              }));
+    }
+
+    /** The helper method to create ApiIndex for primitive dataTypes. */
+    private ApiRegularIndex createApiIndexForPrimitive(
+        TableSchemaObject tableSchemaObject,
+        ApiColumnDef apiColumnDef,
+        CqlIdentifier indexIdentifier,
+        CqlIdentifier targetIdentifier,
+        RegularIndexDefinitionDesc indexDesc) {
+      Map<String, String> indexOptions = new HashMap<>();
+      var optionsDesc = indexDesc.options();
+
+      resolveAnalyzerProperty(tableSchemaObject, apiColumnDef, optionsDesc, null, indexOptions);
+
+      // indexFunction is null for primitive dataTypes
+      return new ApiRegularIndex(indexIdentifier, targetIdentifier, indexOptions, null);
+    }
+
+    /**
+     * The helper method to create ApiIndex for map/set/list collection dataTypes. <br>
+     * Index Function for set and list will be default to values(set/list). <br>
+     * Index Function for map will be default to entries(map). <br>
+     * User can specify the index function for map column by following:
+     *
+     * <pre>
+     * Index on map keys: {"column": {"mapColumn" : "$keys"}}
+     * Index on map values: {"column": {"mapColumn" : "$values"}}
+     * Index on map entries: {"column": {"mapColumn" : "$entries"}}
+     * Index on map entries(default): {"column": "mapColumn"}
+     *
+     * </pre>
+     *
+     * Rules for collection indexes:
+     *
+     * <pre>
+     * 1. NOT support create index for frozen map/set/list columns
+     * 2. Only text and ascii datatypes can be analyzed, including text and ascii on map/set/list.
+     * </pre>
+     */
+    private ApiRegularIndex createApiIndexForCollection(
+        TableSchemaObject tableSchemaObject,
+        ApiColumnDef apiColumnDef,
+        CqlIdentifier indexIdentifier,
+        CqlIdentifier targetIdentifier,
+        ApiIndexFunction indexFunctionUserInput,
+        RegularIndexDefinitionDesc indexDesc)
+        throws UnknownCqlIndexFunctionException {
+      Map<String, String> indexOptions = new HashMap<>();
+      var optionsDesc = indexDesc.options();
+
+      // do NOT support create index for frozen map/set/list columns
+      if (apiColumnDef.type() instanceof CollectionApiDataType<?> collectionApiDataType
+          && collectionApiDataType.isFrozen()) {
+        throw SchemaException.Code.UNSUPPORTED_INDEXING_FOR_FROZEN_COLUMN.get(
             errVars(
                 tableSchemaObject,
                 map -> {
                   map.put(
                       "allColumns",
                       errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
-                  map.put("supportedTypes", errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()));
-                  map.put("unsupportedColumns", errFmt(apiColumnDef));
+                  map.put("targetColumn", errFmt(targetIdentifier));
                 }));
       }
 
-      Map<String, String> indexOptions = new HashMap<>();
-      var optionsDesc = indexDesc.options();
-
-      if (apiColumnDef.type().typeName() != ApiTypeName.TEXT
-          && apiColumnDef.type().typeName() != ApiTypeName.ASCII) {
-        // Only text and ascii fields can have the text analysis options specified
-        if (optionsDesc != null) {
-          var anyPresent =
-              optionsDesc.ascii() != null
-                  || optionsDesc.caseSensitive() != null
-                  || optionsDesc.normalize() != null;
-
-          if (anyPresent) {
-            throw SchemaException.Code.UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES.get(
-                errVars(
-                    tableSchemaObject,
-                    map -> {
-                      map.put(
-                          "allColumns",
-                          errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
-                      map.put("unsupportedColumns", errFmt(apiColumnDef));
-                    }));
-          }
-        }
-        // nothing to update in the cqlOptions for these indexes
+      // validate user specified index function
+      // TODO, discuss should we have these defaults or error out?
+      ApiIndexFunction indexFunction = null;
+      if (apiColumnDef.type() instanceof ApiMapType) {
+        indexFunction =
+            indexFunctionUserInput == null ? ApiIndexFunction.ENTRIES : indexFunctionUserInput;
       } else {
-        // text and ascii fields can have the text analysis options specified
-        var ascii =
-            ApiPropertyUtils.getOrDefault(
-                optionsDesc,
-                RegularIndexDefinitionDesc.RegularIndexDescOptions::ascii,
-                TableDescDefaults.RegularIndexDescDefaults.ASCII);
-        put(indexOptions, CQLOptions.ASCII, ascii);
-
-        var case_sensitive =
-            ApiPropertyUtils.getOrDefault(
-                optionsDesc,
-                RegularIndexDefinitionDesc.RegularIndexDescOptions::caseSensitive,
-                TableDescDefaults.RegularIndexDescDefaults.CASE_SENSITIVE);
-        put(indexOptions, CQLOptions.CASE_SENSITIVE, case_sensitive);
-
-        var normalize =
-            ApiPropertyUtils.getOrDefault(
-                optionsDesc,
-                RegularIndexDefinitionDesc.RegularIndexDescOptions::normalize,
-                TableDescDefaults.RegularIndexDescDefaults.NORMALIZE);
-        put(indexOptions, CQLOptions.NORMALIZE, normalize);
+        // Default index function for set and list is values
+        indexFunction = ApiIndexFunction.VALUES;
       }
 
-      return new ApiRegularIndex(indexIdentifier, targetIdentifier, indexOptions);
+      resolveAnalyzerProperty(
+          tableSchemaObject, apiColumnDef, optionsDesc, indexFunction, indexOptions);
+
+      return new ApiRegularIndex(indexIdentifier, targetIdentifier, indexOptions, indexFunction);
+    }
+
+    /**
+     * Method to validate user specified analyzer property in the index options, if the property is
+     * valid, populate the indexOptions map. <br>
+     * Rules for analyzer options:
+     *
+     * <pre>
+     * Text and ascii primitive datatypes can have the analyzer options specified.
+     * List/Set that has text and ascii primitive value can have the analyzer options specified.
+     * Map index on keys, and keys are text and ascii primitive datatypes can have the analyzer options specified.
+     * Map index on values, and values are text and ascii primitive datatypes can have the analyzer options specified.
+     * Map index on entries is not supported for analyzer options.
+     * </pre>
+     *
+     * The method will error out as UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES if rules are violated.
+     */
+    private void resolveAnalyzerProperty(
+        TableSchemaObject tableSchemaObject,
+        ApiColumnDef apiColumnDef,
+        RegularIndexDefinitionDesc.RegularIndexDescOptions optionsDesc,
+        ApiIndexFunction indexFunction,
+        Map<String, String> indexOptions) {
+
+      if (optionsDesc == null) {
+        // no need to proceed if user does not specify any RegularIndexDescOptions
+        return;
+      }
+
+      // Primitive type
+      ApiTypeName targetColumnType = apiColumnDef.type().typeName();
+
+      // Map collection type
+      if (apiColumnDef.type() instanceof ApiMapType apiMapType) {
+        if (indexFunction == ApiIndexFunction.KEYS) {
+          targetColumnType = apiMapType.getKeyType().typeName();
+
+        } else if (indexFunction == ApiIndexFunction.VALUES) {
+          targetColumnType = apiMapType.getValueType().typeName();
+        } else if (indexFunction == ApiIndexFunction.ENTRIES) {
+          // Map index on entries is not supported for analyzer options.
+          throw SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS.get(
+              errVars(
+                  tableSchemaObject,
+                  map -> {
+                    map.put(
+                        "allColumns",
+                        errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
+                    map.put("targetColumn", errFmt(apiColumnDef.name()));
+                  }));
+        }
+      }
+
+      // Set collection type
+      if (apiColumnDef.type() instanceof ApiSetType apiSetType) {
+        targetColumnType = apiSetType.valueType.typeName();
+      }
+      // List collection type
+      if (apiColumnDef.type() instanceof ApiListType apiListType) {
+        targetColumnType = apiListType.valueType.typeName();
+      }
+
+      if (targetColumnType != ApiTypeName.TEXT && targetColumnType != ApiTypeName.ASCII) {
+        // Only text and ascii fields can have the text analysis options specified
+        var anyPresent =
+            optionsDesc.ascii() != null
+                || optionsDesc.caseSensitive() != null
+                || optionsDesc.normalize() != null;
+
+        if (anyPresent) {
+          throw SchemaException.Code.UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES.get(
+              errVars(
+                  tableSchemaObject,
+                  map -> {
+                    map.put(
+                        "allColumns",
+                        errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
+                    map.put("unsupportedColumns", errFmt(apiColumnDef));
+                  }));
+        }
+      }
+
+      // After the validation, populate the indexOptions map
+      var ascii =
+          ApiPropertyUtils.getOrDefault(
+              optionsDesc,
+              RegularIndexDefinitionDesc.RegularIndexDescOptions::ascii,
+              TableDescDefaults.RegularIndexDescDefaults.ASCII);
+      put(indexOptions, CQLOptions.ASCII, ascii);
+
+      var case_sensitive =
+          ApiPropertyUtils.getOrDefault(
+              optionsDesc,
+              RegularIndexDefinitionDesc.RegularIndexDescOptions::caseSensitive,
+              TableDescDefaults.RegularIndexDescDefaults.CASE_SENSITIVE);
+      put(indexOptions, CQLOptions.CASE_SENSITIVE, case_sensitive);
+
+      var normalize =
+          ApiPropertyUtils.getOrDefault(
+              optionsDesc,
+              RegularIndexDefinitionDesc.RegularIndexDescOptions::normalize,
+              TableDescDefaults.RegularIndexDescDefaults.NORMALIZE);
+      put(indexOptions, CQLOptions.NORMALIZE, normalize);
     }
   }
 
@@ -175,14 +345,6 @@ public class ApiRegularIndex extends ApiSupportedIndex {
         ApiColumnDef apiColumnDef, CQLSAIIndex.IndexTarget indexTarget, IndexMetadata indexMetadata)
         throws UnsupportedCqlIndexException {
 
-      // for now, we do not support collection indexes, will do for GA - aaron nov 11
-      // and when we do the collection indexes will be in the createIndex command so will be regular
-      // indexes.
-      if (apiColumnDef.type().isContainer()) {
-        throw new UnsupportedCqlIndexException(
-            "Collection indexes not fully supported.", indexMetadata);
-      }
-
       // this is a sanity check, the base will have worked this, but we should check it here
       var apiIndexType = ApiIndexType.fromCql(apiColumnDef, indexTarget, indexMetadata);
       if (apiIndexType != ApiIndexType.REGULAR) {
@@ -191,15 +353,9 @@ public class ApiRegularIndex extends ApiSupportedIndex {
                 .formatted(ApiIndexType.REGULAR, apiIndexType));
       }
 
-      // also, we should not have an index function
-      if (indexTarget.indexFunction() != null) {
-        throw new IllegalStateException(
-            "ApiRegularIndex factory does not support index functions, indexTarget.indexFunction: "
-                + indexTarget.indexFunction());
-      }
-
+      // TODO, index target bug
       return new ApiRegularIndex(
-          indexMetadata.getName(), indexTarget.targetColumn(), indexMetadata.getOptions());
+          indexMetadata.getName(), indexTarget.targetColumn(), indexMetadata.getOptions(), null);
     }
   }
 }

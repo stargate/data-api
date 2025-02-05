@@ -28,6 +28,9 @@ public interface ApiIndexDef extends PrettyPrintable {
   /** The type of index from the API perspective. */
   ApiIndexType indexType();
 
+  /** The index function from the API perspective. */
+  ApiIndexFunction indexFunction();
+
   /** How to describe this index in the public HTTP API. */
   IndexDesc<?> indexDesc();
 

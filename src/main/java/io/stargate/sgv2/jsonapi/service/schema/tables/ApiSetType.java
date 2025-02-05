@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import java.util.Objects;
 
-public class ApiSetType extends CollectionApiDataType {
+public class ApiSetType extends CollectionApiDataType<SetType> {
 
   public static final TypeFactoryFromColumnDesc<ApiSetType, SetColumnDesc>
       FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
@@ -24,12 +24,7 @@ public class ApiSetType extends CollectionApiDataType {
 
   private ApiSetType(
       PrimitiveApiDataTypeDef valueType, ApiSupportDef apiSupport, boolean isFrozen) {
-    super(
-        ApiTypeName.SET,
-        valueType,
-        DataTypes.setOf(valueType.cqlType(), isFrozen),
-        apiSupport,
-        isFrozen);
+    super(ApiTypeName.SET, valueType, DataTypes.setOf(valueType.cqlType(), isFrozen), apiSupport);
   }
 
   @Override
@@ -119,5 +114,10 @@ public class ApiSetType extends CollectionApiDataType {
       // must be a primitive type value
       return cqlType.getElementType() instanceof PrimitiveType;
     }
+  }
+
+  @Override
+  public boolean isFrozen() {
+    return cqlType.isFrozen();
   }
 }

@@ -50,4 +50,11 @@ public interface TableDescConstants {
     String SOURCE_MODEL = "source_model";
     String SIMILARITY_FUNCTION = "similarity_function";
   }
+
+  // These strings will be used in createIndex, filtering for collection datatypes
+  interface CollectionTypeComponent {
+    String keys = "$keys";
+    String values = "$values";
+    String entries = "$entries";
+  }
 }

@@ -50,6 +50,7 @@ public class SchemaException extends RequestException {
 
     // older below - seperated because they need to be confirmed
     INVALID_CONFIGURATION,
+    INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN,
     INVALID_KEYSPACE,
     INVALID_VECTORIZE_CONFIGURATION;
 

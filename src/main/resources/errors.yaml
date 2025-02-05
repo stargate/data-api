@@ -891,7 +891,7 @@ request-errors:
     body: |-
       The command attempted to create an index on a column that uses a data type not supported for indexing.
       
-      Regular indexes can only be created on primitive data types such as `text` and `int`, vector columns can be indexed using the createVectorIndex command.
+      Regular indexes can only be created on primitive data types such as `text` and `int`, collection data types such as 'map', 'set' and 'list', vector columns can be indexed using the createVectorIndex command.
       
       ${SNIPPET.CURRENTLY_UNSUPPORTED}
       
@@ -931,7 +931,11 @@ request-errors:
     body: |-
       The command attempted to create an index that specified text analysis on a column that uses a data type not supported for text analysis.
       
-      Text analysis options `ascii`, `caseSensitive`, and `normalize` can only be used on columns of type `text` or `ascii`. 
+      Text analysis options `ascii`, `caseSensitive`, and `normalize` can be used on:
+      1. primitive columns of type `text` or `ascii`
+      2. list, set columns with value type `text` or `ascii`
+      3. map columns with key type `text` or `ascii` when indexing on keys
+      4. map columns with value type `text` or `ascii` when indexing on values
   
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The command attempted to index the unsupported columns: ${unsupportedColumns}.
@@ -1073,6 +1077,24 @@ request-errors:
     title: Unable to parse configuration, schema invalid.
     body: |-
       Unable to parse configuration, schema invalid.
+
+  - scope: SCHEMA
+    code: INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN
+    title: Unable to create index, format for index creation column is invalid.
+    body: |-
+      Command has an invalid format for index creation column.
+      
+      The column string can have different formats:
+      - Primitive column: {"column": "primitiveColumn"}
+      - List column: {"column": "listColumn"}
+      - Set column: {"column": "setColumn"}
+      - Map column:
+        - Default to index on map entries: {"column": "mapColumn"}
+        - Index on map keys: {"column": {"mapColumn" : "$keys"}}
+        - Index on map values: {"column": {"mapColumn" : "$values"}}
+        - Index on map entries: {"column": {"mapColumn" : "$entries"}}
+      
+      Resend the command using a valid format for index creation column.
 
   - scope: SCHEMA
     code: INVALID_VECTORIZE_CONFIGURATION
