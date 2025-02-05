@@ -9,13 +9,15 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
+
 /** Builds a {@link DeleteDBTask} to delete from a {@link TableSchemaObject} */
 public class TableDeleteDBTaskBuilder
     extends TaskBuilder<DeleteDBTask<TableSchemaObject>, TableSchemaObject> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TableDeleteDBTaskBuilder.class);
 
-  private boolean deleteOne = false;
+  private Boolean deleteOne = null;
 
   /**
    * @param tableSchemaObject The table to delete from.
@@ -27,16 +29,18 @@ public class TableDeleteDBTaskBuilder
   /**
    * @param deleteOne Set TRUE is this is a deleteOne command, if true the builder will make sure
    *     the where clause has the full PK specified, otherwise it can be partial. This is particular
-   *     to tables. Defaults to false.
+   *     to tables. Defaults to null so must be set.
    * @return this builder
    */
   public TableDeleteDBTaskBuilder withDeleteOne(boolean deleteOne) {
-    this.deleteOne = true;
+    this.deleteOne = deleteOne;
     return this;
   }
 
   public DeleteDBTask<TableSchemaObject> build(WhereCQLClause<Delete> whereCQLClause) {
 
+    Objects.requireNonNull(deleteOne, "deleteOne must be set");
+    
     var whereCQLClauseAnalyzer =
         new WhereCQLClauseAnalyzer(
             schemaObject,

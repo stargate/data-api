@@ -69,7 +69,7 @@ public abstract class TaskBuilder<TaskT extends Task<SchemaT>, SchemaT extends S
       TaskT create(
           int position,
           SchemaT schemaObject,
-          DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory);
+          DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory);
     }
   }
 }

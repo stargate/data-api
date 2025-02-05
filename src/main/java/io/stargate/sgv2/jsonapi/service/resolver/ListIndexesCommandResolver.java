@@ -33,7 +33,7 @@ public class ListIndexesCommandResolver implements CommandResolver<ListIndexesCo
     var tasks = new TaskGroup<ListIndexesDBTask, TableSchemaObject>(taskBuilder.build());
 
     var accumulator =
-        MetadataAttemptPage.<TableSchemaObject>accumulator(commandContext)
+        MetadataDBTaskPage.<TableSchemaObject>accumulator(commandContext)
             .showSchema(explain)
             .usingCommandStatus(CommandStatus.EXISTING_INDEXES);
 

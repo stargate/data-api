@@ -14,13 +14,13 @@ import java.util.function.Supplier;
  * A page of results for metadata based command, use {@link #builder()} to get a builder to pass to
  * {@link GenericOperation}.
  */
-public class MetadataAttemptPage<SchemaT extends SchemaObject>
+public class MetadataDBTaskPage<SchemaT extends SchemaObject>
     extends DBTaskPage<MetadataDBTask<SchemaT>, SchemaT> {
 
   private final boolean showSchema;
   private final CommandStatus statusKey;
 
-  private MetadataAttemptPage(
+  private MetadataDBTaskPage(
       TaskGroup<MetadataDBTask<SchemaT>, SchemaT> tasks,
       CommandResultBuilder resultBuilder,
       boolean showSchema,
@@ -34,7 +34,7 @@ public class MetadataAttemptPage<SchemaT extends SchemaObject>
   public static <SchemaT extends SchemaObject> Accumulator<SchemaT> accumulator(
       CommandContext<SchemaT> commandContext) {
     return TaskAccumulator.configureForContext(
-        new MetadataAttemptPage.Accumulator<>(), commandContext);
+        new MetadataDBTaskPage.Accumulator<>(), commandContext);
   }
 
   @Override
@@ -77,7 +77,7 @@ public class MetadataAttemptPage<SchemaT extends SchemaObject>
     @Override
     public Supplier<CommandResult> getResults() {
 
-      return new MetadataAttemptPage<>(
+      return new MetadataDBTaskPage<>(
           tasks,
           CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode),
           showSchema,

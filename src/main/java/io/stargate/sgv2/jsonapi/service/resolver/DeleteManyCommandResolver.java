@@ -67,14 +67,11 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
     final FilterClause filterClause = command.filterClause(commandContext);
 
     if (filterClause == null || filterClause.isEmpty()) {
-      var truncateAttempt = new TruncateAttemptBuilder<>(commandContext.schemaObject()).build();
-      var attemptContainer = new OperationAttemptContainer<>(truncateAttempt);
-      var truncatePageBuilder =
-          TruncateAttemptPage.<TableSchemaObject>builder()
-              .debugMode(commandContext.getConfig(DebugModeConfig.class).enabled())
-              .useErrorObjectV2(commandContext.getConfig(OperationsConfig.class).extendError());
-      return new GenericOperation<>(
-          attemptContainer, truncatePageBuilder, TableDriverExceptionHandler::new);
+      var taskBuilder = TruncateDBTask.builder(commandContext.schemaObject());
+      taskBuilder.withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+
+      var taskGroup = new TaskGroup<>(taskBuilder.build());
+      return new TaskOperation<>(taskGroup, TruncateDBTaskPage.accumulator(commandContext));
     }
 
     TableDeleteDBTaskBuilder taskBuilder =

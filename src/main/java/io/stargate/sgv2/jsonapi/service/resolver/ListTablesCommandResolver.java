@@ -43,7 +43,7 @@ public class ListTablesCommandResolver implements CommandResolver<ListTablesComm
     var taskGroup = new TaskGroup<>(taskBuilder.build());
 
     var accumulator =
-        MetadataAttemptPage.accumulator(commandContext)
+        MetadataDBTaskPage.accumulator(commandContext)
             .showSchema(explain)
             .usingCommandStatus(CommandStatus.EXISTING_TABLES);
 
