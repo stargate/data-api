@@ -3,12 +3,16 @@ package io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -39,6 +43,7 @@ public record RegularIndexDefinitionDesc(
                 "Name of the column to index. (Optional: can also specify the index function for map column. E.G. {\"column\": {\"mapColumn\" : \"$keys\"}}",
             required = true)
         @JsonDeserialize(using = RegularIndexColumnDeserializer.class)
+        @JsonSerialize(using = RegularIndexColumnSerializer.class)
         @JsonProperty(TableDescConstants.IndexDefinitionDesc.COLUMN)
         RegularIndexColumn column,
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -61,15 +66,11 @@ public record RegularIndexDefinitionDesc(
           ApiIndexFunction indexFunction) {}
 
   /**
-   * Deserializes the RegularIndexColumn from json node of column.
-   *
-   * <p>Primitive column: {"column": "age"}, indexFunction is null
-   *
-   * <p>- List column: {"column": "listColumn"}
-   *
-   * <p>- Set column: {"column": "setColumn"}
-   *
-   * <p>- Map column:
+   * Deserializes the RegularIndexColumn from json node of column. <br>
+   * Primitive column: {"column": "age"}, indexFunction is null <br>
+   * List column: {"column": "listColumn"} <br>
+   * Set column: {"column": "setColumn"} <br>
+   * Map column:
    *
    * <pre>
    *   - Default to index on map entries: {"column": "mapColumn"}
@@ -88,8 +89,7 @@ public record RegularIndexDefinitionDesc(
 
     @Override
     public RegularIndexColumn deserialize(
-        JsonParser jsonParser, DeserializationContext deserializationContext)
-        throws IOException, JacksonException {
+        JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
       JsonNode columnNode = deserializationContext.readTree(jsonParser);
 
       if (columnNode.isTextual()) {
@@ -105,6 +105,39 @@ public record RegularIndexDefinitionDesc(
             entry.getKey(), ApiIndexFunction.fromDollarCommand(entry.getValue().textValue()));
       } else {
         throw SchemaException.Code.INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN.get();
+      }
+    }
+  }
+
+  /**
+   * Custom serializer to encode the RegularIndexColumn to the JSON payload. This is required
+   * because there may be additional properties to be serialized. <br>
+   * E.G. Serialize result
+   *
+   * <pre>
+   * list column that is index on values: {"column": "listColumn", "indexOn": "values"}
+   * set column that is index on values: {"column": "setColumn", "indexOn": "values"}
+   * map column that is index on keys: {"column": "mapColumn", "indexOn": "keys"}
+   * map column that is index on values: {"column": "mapColumn", "indexOn": "values"}
+   * map column that is index on entries: {"column": "mapColumn", "indexOn": "entries"}
+   * primitive column with index: {"column": "age"}
+   * </pre>
+   */
+  private static class RegularIndexColumnSerializer extends JsonSerializer<RegularIndexColumn> {
+
+    @Override
+    public void serialize(
+        RegularIndexColumn regularIndexColumn,
+        JsonGenerator jsonGenerator,
+        SerializerProvider serializerProvider)
+        throws IOException {
+      if (regularIndexColumn.indexFunction != null) {
+        jsonGenerator.writeStartObject();
+        jsonGenerator.writeStringField(
+            regularIndexColumn.columnName, regularIndexColumn.indexFunction.toDollarCommand());
+        jsonGenerator.writeEndObject();
+      } else {
+        jsonGenerator.writeString(regularIndexColumn.columnName);
       }
     }
   }

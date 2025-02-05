@@ -32,6 +32,7 @@ public interface TableDescConstants {
     String INDEX_TYPE = "indexType";
     String NAME = "name";
     String OPTIONS = "options";
+    String INDEX_ON = "indexOn";
   }
 
   interface IndexDefinitionDesc {

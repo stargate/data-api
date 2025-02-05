@@ -353,9 +353,11 @@ public class ApiRegularIndex extends ApiSupportedIndex {
                 .formatted(ApiIndexType.REGULAR, apiIndexType));
       }
 
-      // TODO, index target bug
       return new ApiRegularIndex(
-          indexMetadata.getName(), indexTarget.targetColumn(), indexMetadata.getOptions(), null);
+          indexMetadata.getName(),
+          indexTarget.targetColumn(),
+          indexMetadata.getOptions(),
+          indexTarget.indexFunction());
     }
   }
 }

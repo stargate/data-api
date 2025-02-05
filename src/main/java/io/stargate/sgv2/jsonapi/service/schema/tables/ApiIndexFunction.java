@@ -48,4 +48,12 @@ public enum ApiIndexFunction {
       default -> throw SchemaException.Code.INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN.get();
     };
   }
+
+  public String toDollarCommand() {
+    return switch (this) {
+      case KEYS -> TableDescConstants.CollectionTypeComponent.keys;
+      case VALUES -> TableDescConstants.CollectionTypeComponent.values;
+      case ENTRIES -> TableDescConstants.CollectionTypeComponent.entries;
+    };
+  }
 }
