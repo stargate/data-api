@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -62,7 +61,8 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
   }
 
   @Override
-  public Operation<TableSchemaObject> resolveTableCommand(CommandContext<TableSchemaObject> commandContext, DeleteOneCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, DeleteOneCommand command) {
 
     // Sort clause is not supported for table deleteOne command.
     if (command.sortClause() != null && !command.sortClause().isEmpty()) {
@@ -70,14 +70,16 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
           errVars(commandContext.schemaObject(), map -> {}));
     }
 
-    TableDeleteDBTaskBuilder taskBuilder = new TableDeleteDBTaskBuilder(commandContext.schemaObject())
-        .withDeleteOne(true)
-        .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+    TableDeleteDBTaskBuilder taskBuilder =
+        new TableDeleteDBTaskBuilder(commandContext.schemaObject())
+            .withDeleteOne(true)
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
     // need to update so we use WithWarnings correctly
     var where =
         TableWhereCQLClause.forDelete(
-            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command).target());
+            commandContext.schemaObject(),
+            tableFilterResolver.resolve(commandContext, command).target());
 
     var tasks = new TaskGroup<>(taskBuilder.build(where));
     return new TaskOperation<>(tasks, DeleteDBTaskPage.accumulator(commandContext));

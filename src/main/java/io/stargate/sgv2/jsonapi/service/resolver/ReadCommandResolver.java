@@ -51,8 +51,8 @@ class ReadCommandResolver<
    * @param commandContext
    * @param command
    * @param cqlPageState The CQL paging state, if any, must be non null
-   * @param pageAccumulator The page builder to use, the caller should configure this with any command
-   *     specific options before passing, such as single document mode
+   * @param pageAccumulator The page builder to use, the caller should configure this with any
+   *     command specific options before passing, such as single document mode
    * @return Configured read operation
    */
   protected TaskOperation<ReadDBTask<TableSchemaObject>, TableSchemaObject> buildReadOperation(

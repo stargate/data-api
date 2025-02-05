@@ -12,18 +12,18 @@ import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Task to insert a single row in CQL.
- * <p>
- * IMPORTANT: this is for tables only for now, see {@link InsertAttempt} we need to keep it around as well.
+ *
+ * <p>IMPORTANT: this is for tables only for now, see {@link InsertAttempt} we need to keep it
+ * around as well.
  */
 public abstract class InsertDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<SchemaT> {
 
@@ -54,14 +54,12 @@ public abstract class InsertDBTask<SchemaT extends TableBasedSchemaObject> exten
     var statement = buildInsertStatement();
 
     logStatement(LOGGER, "buildResultSupplier()", statement);
-    return new AsyncResultSetSupplier(
-        statement, () -> queryExecutor.executeWrite(statement));
+    return new AsyncResultSetSupplier(statement, () -> queryExecutor.executeWrite(statement));
   }
 
   // =================================================================================================
   // Implementation and internals
   // =================================================================================================
-
 
   protected SimpleStatement buildInsertStatement() {
 

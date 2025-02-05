@@ -6,27 +6,34 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.Drop;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
 
 /*
  An attempt to drop table in a keyspace.
 */
-public class DropTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
+public class DropTableDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
+
   private final CqlIdentifier name;
   private final CQLOptions<Drop> cqlOptions;
 
-  public DropTableAttempt(
+  public DropTableDBTask(
       int position,
       KeyspaceSchemaObject schemaObject,
+      SchemaDBTask.SchemaRetryPolicy schemaRetryPolicy,
+      DefaultDriverExceptionHandler.Factory<KeyspaceSchemaObject> exceptionHandlerFactory,
       CqlIdentifier name,
-      CQLOptions<Drop> cqlOptions,
-      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
-    super(position, schemaObject, schemaRetryPolicy);
+      CQLOptions<Drop> cqlOptions) {
+    super(position, schemaObject, schemaRetryPolicy, exceptionHandlerFactory);
     this.name = name;
     this.cqlOptions = cqlOptions;
-    setStatus(OperationStatus.READY);
+    setStatus(TaskStatus.READY);
+  }
+
+  public static DropTableDBTaskBuilder builder(KeyspaceSchemaObject schemaObject) {
+    return new DropTableDBTaskBuilder(schemaObject);
   }
 
   @Override

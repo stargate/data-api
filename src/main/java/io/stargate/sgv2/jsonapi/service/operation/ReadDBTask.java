@@ -88,7 +88,8 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
 
     var statement = buildReadStatement();
 
-    // TODO: aaron feb 4, we no longer need this special try policy if the BaseTask passed the ResultSupplier to
+    // TODO: aaron feb 4, we no longer need this special try policy if the BaseTask passed the
+    // ResultSupplier to
     // the retry policy
     readAttemptRetryPolicy.setRetryContext(
         new ReadAttemptRetryPolicy.RetryContext<>(statement, this));
@@ -126,7 +127,8 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
    * Get the documents from the result set, the documents are not created until this method is
    * called.
    *
-   * @return List of JsonNode documents, never null. The documents are created using the {@link OperationProjection}.
+   * @return List of JsonNode documents, never null. The documents are created using the {@link
+   *     OperationProjection}.
    */
   public List<JsonNode> documents() {
 

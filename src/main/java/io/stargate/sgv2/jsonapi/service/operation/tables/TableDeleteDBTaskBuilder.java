@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.datastax.oss.driver.api.querybuilder.delete.Delete;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.DeleteDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
@@ -10,10 +9,9 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Builds a {@link DeleteDBTask} to delete from a {@link TableSchemaObject}
- */
-public class TableDeleteDBTaskBuilder extends TaskBuilder<DeleteDBTask<TableSchemaObject>, TableSchemaObject> {
+/** Builds a {@link DeleteDBTask} to delete from a {@link TableSchemaObject} */
+public class TableDeleteDBTaskBuilder
+    extends TaskBuilder<DeleteDBTask<TableSchemaObject>, TableSchemaObject> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TableDeleteDBTaskBuilder.class);
 
@@ -28,9 +26,8 @@ public class TableDeleteDBTaskBuilder extends TaskBuilder<DeleteDBTask<TableSche
 
   /**
    * @param deleteOne Set TRUE is this is a deleteOne command, if true the builder will make sure
-   *              the where clause has the full PK specified, otherwise it can be partial. This is particular to tables.
-   *                  Defaults to false.
-   *
+   *     the where clause has the full PK specified, otherwise it can be partial. This is particular
+   *     to tables. Defaults to false.
    * @return this builder
    */
   public TableDeleteDBTaskBuilder withDeleteOne(boolean deleteOne) {
@@ -40,7 +37,8 @@ public class TableDeleteDBTaskBuilder extends TaskBuilder<DeleteDBTask<TableSche
 
   public DeleteDBTask<TableSchemaObject> build(WhereCQLClause<Delete> whereCQLClause) {
 
-    var whereCQLClauseAnalyzer = new WhereCQLClauseAnalyzer(
+    var whereCQLClauseAnalyzer =
+        new WhereCQLClauseAnalyzer(
             schemaObject,
             deleteOne
                 ? WhereCQLClauseAnalyzer.StatementType.DELETE_ONE
@@ -54,7 +52,9 @@ public class TableDeleteDBTaskBuilder extends TaskBuilder<DeleteDBTask<TableSche
       exception = filterException;
     }
 
-    var task = new DeleteDBTask<>(nextPosition(), schemaObject, getExceptionHandlerFactory(), whereCQLClause);
+    var task =
+        new DeleteDBTask<>(
+            nextPosition(), schemaObject, getExceptionHandlerFactory(), whereCQLClause);
 
     // ok to pass null exception, will be ignored
     task.maybeAddFailure(exception);
@@ -64,7 +64,8 @@ public class TableDeleteDBTaskBuilder extends TaskBuilder<DeleteDBTask<TableSche
     // sanity check
     if (whereClauseWithWarnings != null && !whereClauseWithWarnings.isEmpty()) {
       throw new IllegalStateException(
-          "Where clause analysis for delete was not empty, whereClauseWithWarnings: %s".formatted(whereClauseWithWarnings));
+          "Where clause analysis for delete was not empty, whereClauseWithWarnings: %s"
+              .formatted(whereClauseWithWarnings));
     }
 
     return task;

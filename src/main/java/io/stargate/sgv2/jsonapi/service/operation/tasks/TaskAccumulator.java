@@ -5,7 +5,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -13,10 +12,9 @@ import java.util.function.Supplier;
  * Provides a base implementation for accumulating {@link Task}s that have completed processing by a
  * {@link TaskOperation}.
  *
- * <p>
- *  This base class provides the basic accumulate / getResults pattern. Subclasses can also be used to
- *  "smuggle" state such as options for the response docs into the building of the results via a subclass. the
- *  subclasses are used often called a PageBuilder see {@link DBTaskPage}
+ * <p>This base class provides the basic accumulate / getResults pattern. Subclasses can also be
+ * used to "smuggle" state such as options for the response docs into the building of the results
+ * via a subclass. the subclasses are used often called a PageBuilder see {@link DBTaskPage}
  */
 public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject> {
 
@@ -28,12 +26,16 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
 
   protected TaskAccumulator() {}
 
-
-  public static <AccumT extends TaskAccumulator<TaskT, SchemaT>, TaskT extends Task<SchemaT>, SchemaT extends SchemaObject> AccumT configureForContext(AccumT accumulator, CommandContext<SchemaT> commandContext) {
+  public static <
+          AccumT extends TaskAccumulator<TaskT, SchemaT>,
+          TaskT extends Task<SchemaT>,
+          SchemaT extends SchemaObject>
+      AccumT configureForContext(AccumT accumulator, CommandContext<SchemaT> commandContext) {
     Objects.requireNonNull(accumulator, "accumulator cannot be null");
     Objects.requireNonNull(commandContext, "commandContext cannot be null");
 
-    accumulator.debugMode(commandContext.getConfig(DebugModeConfig.class).enabled())
+    accumulator
+        .debugMode(commandContext.getConfig(DebugModeConfig.class).enabled())
         .useErrorObjectV2(commandContext.getConfig(OperationsConfig.class).extendError());
     return accumulator;
   }
@@ -50,8 +52,8 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
   /**
    * Called to turn the accumulated attempts into a {@link CommandResult}.
    *
-   * @return A supplier that will provide the {@link CommandResult} when called, such as a subclass of
-   *     {@link DBTaskPage}
+   * @return A supplier that will provide the {@link CommandResult} when called, such as a subclass
+   *     of {@link DBTaskPage}
    */
   public abstract Supplier<CommandResult> getResults();
 

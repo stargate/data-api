@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptPage;
 import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
 import java.util.*;
 import org.slf4j.Logger;
@@ -92,7 +91,8 @@ public abstract class DBTask<SchemaT extends SchemaObject>
   @Override
   protected AsyncResultSetSupplier buildResultSupplier(CommandContext<SchemaT> commandContext) {
 
-    // TODO: HACK: aaron feb 4th '25, quick code to get the command query executor we use with tasks , improve later
+    // TODO: HACK: aaron feb 4th '25, quick code to get the command query executor we use with tasks
+    // , improve later
     var commandQueryExecutor =
         new CommandQueryExecutor(
             commandContext.cqlSessionCache(),
@@ -106,7 +106,8 @@ public abstract class DBTask<SchemaT extends SchemaObject>
 
   /** {@inheritDoc} */
   @Override
-  protected RuntimeException maybeHandleException(AsyncResultSetSupplier resultSupplier, RuntimeException runtimeException) {
+  protected RuntimeException maybeHandleException(
+      AsyncResultSetSupplier resultSupplier, RuntimeException runtimeException) {
     return exceptionHandlerFactory
         .apply(schemaObject, resultSupplier.statement)
         .maybeHandle(runtimeException);
@@ -122,9 +123,9 @@ public abstract class DBTask<SchemaT extends SchemaObject>
    *
    * @param queryExecutor The {@link CommandQueryExecutor} for subclasses to access the database
    *     with.
-   * @return A {@link AsyncResultSetSupplier} that has the statement (if any) and supplier to get the
-   *     <code>Uni<AsyncResultSet></code> when it is called. It is important that the DB call not
-   *     happen until the supplier is called, otherwise this will block.
+   * @return A {@link AsyncResultSetSupplier} that has the statement (if any) and supplier to get
+   *     the <code>Uni<AsyncResultSet></code> when it is called. It is important that the DB call
+   *     not happen until the supplier is called, otherwise this will block.
    */
   protected abstract AsyncResultSetSupplier buildResultSupplier(CommandQueryExecutor queryExecutor);
 

@@ -7,39 +7,40 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableExtensions;
-import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
-import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 
-public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
+public class CreateTableDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
 
   private final ApiTableDef tableDef;
   private final Map<String, String> customProperties;
   private final boolean ifNotExists;
 
   // TODO: THIS MUST BE GIVEN STATEMENT BUILDERS LIKE THE OTHER ATTEMPTS NOT PASSED IN API OBJECTS
-  protected CreateTableAttempt(
+  protected CreateTableDBTask(
       int position,
       KeyspaceSchemaObject schemaObject,
-      int retryDelayMillis,
-      int maxRetries,
+      SchemaDBTask.SchemaRetryPolicy schemaRetryPolicy,
+      DefaultDriverExceptionHandler.Factory<KeyspaceSchemaObject> exceptionHandlerFactory,
       ApiTableDef tableDef,
       boolean ifNotExists,
       Map<String, String> customProperties) {
-    super(
-        position,
-        schemaObject,
-        new SchemaRetryPolicy(maxRetries, Duration.ofMillis(retryDelayMillis)));
+    super(position, schemaObject, schemaRetryPolicy, exceptionHandlerFactory);
 
     this.tableDef = Objects.requireNonNull(tableDef, "tableDef must not be null");
     this.ifNotExists = ifNotExists;
     this.customProperties = customProperties;
 
-    setStatus(OperationStatus.READY);
+    setStatus(TaskStatus.READY);
+  }
+
+  public static CreateTableDBTaskBuilder builder(KeyspaceSchemaObject schemaObject) {
+    return new CreateTableDBTaskBuilder(schemaObject);
   }
 
   protected SimpleStatement buildStatement() {

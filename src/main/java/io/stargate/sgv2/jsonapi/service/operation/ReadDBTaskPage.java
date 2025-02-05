@@ -9,12 +9,11 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
-
 import java.util.*;
 
 /**
- * A page of results from a {@link ReadDBTask }, use {@link #builder()} to get a builder to pass to {@link
- * TaskOperation}.
+ * A page of results from a {@link ReadDBTask }, use {@link #builder()} to get a builder to pass to
+ * {@link TaskOperation}.
  */
 public class ReadDBTaskPage<SchemaT extends TableBasedSchemaObject>
     extends DBTaskPage<ReadDBTask<SchemaT>, SchemaT> {
@@ -35,7 +34,8 @@ public class ReadDBTaskPage<SchemaT extends TableBasedSchemaObject>
     this.sortVector = sortVector;
   }
 
-  public static <SchemaT extends TableSchemaObject> Accumulator<SchemaT> accumulator(CommandContext<SchemaT> commandContext) {
+  public static <SchemaT extends TableSchemaObject> Accumulator<SchemaT> accumulator(
+      CommandContext<SchemaT> commandContext) {
     return TaskAccumulator.configureForContext(new Accumulator<>(), commandContext);
   }
 
@@ -84,8 +84,8 @@ public class ReadDBTaskPage<SchemaT extends TableBasedSchemaObject>
   }
 
   /**
-   * Builder for {@link ReadDBTaskPage} - it takes state into the processing of a task group so it can be
-   * used after processing.
+   * Builder for {@link ReadDBTaskPage} - it takes state into the processing of a task group so it
+   * can be used after processing.
    */
   public static class Accumulator<SchemaT extends TableBasedSchemaObject>
       extends TaskAccumulator<ReadDBTask<SchemaT>, SchemaT> {
@@ -149,8 +149,7 @@ public class ReadDBTaskPage<SchemaT extends TableBasedSchemaObject>
               ? CommandResult.singleDocumentBuilder(useErrorObjectV2, debugMode)
               : CommandResult.multiDocumentBuilder(useErrorObjectV2, debugMode);
 
-      return new ReadDBTaskPage<>(
-          tasks, resultBuilder, pagingState, includeSortVector, sortVector);
+      return new ReadDBTaskPage<>(tasks, resultBuilder, pagingState, includeSortVector, sortVector);
     }
   }
 }

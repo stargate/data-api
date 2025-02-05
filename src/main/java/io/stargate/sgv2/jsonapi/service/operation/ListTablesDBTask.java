@@ -7,23 +7,23 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
-
 import java.util.List;
 
 /** Attempt to list tables in a keyspace. */
 public class ListTablesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
 
-  public ListTablesDBTask(int position,
-                          KeyspaceSchemaObject schemaObject,
-                           DefaultDriverExceptionHandler.Factory<KeyspaceSchemaObject> exceptionHandlerFactory) {
+  public ListTablesDBTask(
+      int position,
+      KeyspaceSchemaObject schemaObject,
+      DefaultDriverExceptionHandler.Factory<KeyspaceSchemaObject> exceptionHandlerFactory) {
     super(position, schemaObject, TaskRetryPolicy.NO_RETRY, exceptionHandlerFactory);
     setStatus(TaskStatus.READY);
   }
 
-  public static TaskBuilder.BasicTaskBuilder<ListTablesDBTask, KeyspaceSchemaObject> builder(KeyspaceSchemaObject schemaObject){
+  public static TaskBuilder.BasicTaskBuilder<ListTablesDBTask, KeyspaceSchemaObject> builder(
+      KeyspaceSchemaObject schemaObject) {
     return new TaskBuilder.BasicTaskBuilder<>(schemaObject, ListTablesDBTask::new);
   }
-
 
   /**
    * Get table names from the keyspace metadata.

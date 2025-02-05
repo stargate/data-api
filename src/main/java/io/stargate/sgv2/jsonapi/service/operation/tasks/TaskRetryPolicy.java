@@ -58,8 +58,8 @@ public class TaskRetryPolicy implements PrettyPrintable {
    *
    * @param throwable The exception raised when the task tried to fetch the results. This will be
    *     after any driver level re-trying and before mapping to a user exception.
-   * @return <code>True</code> if the attempt should be retried, defaults is false because this is at the whole
-   * task level not the specific db statement
+   * @return <code>True</code> if the attempt should be retried, defaults is false because this is
+   *     at the whole task level not the specific db statement
    */
   public boolean shouldRetry(Throwable throwable) {
     return false;

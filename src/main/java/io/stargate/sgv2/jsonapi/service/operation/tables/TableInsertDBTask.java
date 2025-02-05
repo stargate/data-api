@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.InsertAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.InsertDBTask;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
@@ -11,8 +10,8 @@ import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.Optional;
 
 /**
- * An attempt to insert a row into an API Table, overrides the {@link InsertDBTask} to provide the row id
- * and schema.
+ * An attempt to insert a row into an API Table, overrides the {@link InsertDBTask} to provide the
+ * row id and schema.
  */
 public class TableInsertDBTask extends InsertDBTask<TableSchemaObject> {
 

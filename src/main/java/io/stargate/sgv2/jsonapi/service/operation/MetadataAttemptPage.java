@@ -5,12 +5,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
-
 import java.util.function.Supplier;
 
 /**
@@ -34,8 +31,10 @@ public class MetadataAttemptPage<SchemaT extends SchemaObject>
     this.statusKey = statusKey;
   }
 
-  public static <SchemaT extends SchemaObject> Accumulator<SchemaT> accumulator(CommandContext<SchemaT> commandContext) {
-    return TaskAccumulator.configureForContext(new MetadataAttemptPage.Accumulator<>(), commandContext);
+  public static <SchemaT extends SchemaObject> Accumulator<SchemaT> accumulator(
+      CommandContext<SchemaT> commandContext) {
+    return TaskAccumulator.configureForContext(
+        new MetadataAttemptPage.Accumulator<>(), commandContext);
   }
 
   @Override

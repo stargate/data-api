@@ -3,15 +3,11 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
-import java.util.function.BiFunction;
-
-/**
- * Extensible base for builders to create {@link Task} objects.
- */
+/** Extensible base for builders to create {@link Task} objects. */
 public abstract class TaskBuilder<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject> {
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskBuilder.class);
 
@@ -23,8 +19,7 @@ public abstract class TaskBuilder<TaskT extends Task<SchemaT>, SchemaT extends S
 
   protected final SchemaT schemaObject;
 
-  /**
-   */
+  /** */
   protected TaskBuilder(SchemaT schemaObject) {
     this.schemaObject = Objects.requireNonNull(schemaObject, "schemaObject must not be null");
   }
@@ -41,21 +36,25 @@ public abstract class TaskBuilder<TaskT extends Task<SchemaT>, SchemaT extends S
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends TaskBuilder<TaskT, SchemaT>> T withExceptionHandlerFactory(DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
+  public <T extends TaskBuilder<TaskT, SchemaT>> T withExceptionHandlerFactory(
+      DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
     this.exceptionHandlerFactory = exceptionHandlerFactory;
     return (T) this;
   }
 
   /**
    * Task builder when the task only has positionID and schemaObject.
+   *
    * @param <TaskT>
    * @param <SchemaT>
    */
-  public static class BasicTaskBuilder <TaskT extends Task<SchemaT>, SchemaT extends SchemaObject> extends TaskBuilder<TaskT, SchemaT> {
+  public static class BasicTaskBuilder<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject>
+      extends TaskBuilder<TaskT, SchemaT> {
 
     protected final BasicTaskConstructor<TaskT, SchemaT> taskFactory;
 
-    public BasicTaskBuilder(SchemaT schemaObject, BasicTaskConstructor<TaskT, SchemaT> taskFactory) {
+    public BasicTaskBuilder(
+        SchemaT schemaObject, BasicTaskConstructor<TaskT, SchemaT> taskFactory) {
       super(schemaObject);
       this.taskFactory = Objects.requireNonNull(taskFactory, "taskFactory must not be null");
     }
@@ -65,8 +64,12 @@ public abstract class TaskBuilder<TaskT extends Task<SchemaT>, SchemaT extends S
     }
 
     @FunctionalInterface
-    public interface BasicTaskConstructor<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject> {
-      TaskT create(int position, SchemaT schemaObject, DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory);
+    public interface BasicTaskConstructor<
+        TaskT extends Task<SchemaT>, SchemaT extends SchemaObject> {
+      TaskT create(
+          int position,
+          SchemaT schemaObject,
+          DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory);
     }
   }
 }

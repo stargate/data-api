@@ -9,11 +9,9 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.EmptyAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,11 +34,11 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
 
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-
-  protected MetadataDBTask(int position,
-                           SchemaT schemaObject,
-                           TaskRetryPolicy retryPolicy,
-                           DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
+  protected MetadataDBTask(
+      int position,
+      SchemaT schemaObject,
+      TaskRetryPolicy retryPolicy,
+      DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
     super(position, schemaObject, retryPolicy, exceptionHandlerFactory);
   }
 
@@ -59,9 +57,9 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
         () ->
             keyspaceMetadata.isEmpty()
                 ? Uni.createFrom()
-                .failure(
-                    SchemaException.Code.INVALID_KEYSPACE.get(
-                        Map.of("keyspace", schemaObject.name().keyspace())))
+                    .failure(
+                        SchemaException.Code.INVALID_KEYSPACE.get(
+                            Map.of("keyspace", schemaObject.name().keyspace())))
                 : Uni.createFrom().item(new EmptyAsyncResultSet()));
   }
 }

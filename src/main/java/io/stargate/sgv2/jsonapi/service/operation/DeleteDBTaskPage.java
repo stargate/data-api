@@ -17,12 +17,12 @@ public class DeleteDBTaskPage<SchemaT extends TableBasedSchemaObject>
     extends DBTaskPage<DeleteDBTask<SchemaT>, SchemaT> {
 
   private DeleteDBTaskPage(
-      TaskGroup<DeleteDBTask<SchemaT>, SchemaT> tasks,
-      CommandResultBuilder resultBuilder) {
+      TaskGroup<DeleteDBTask<SchemaT>, SchemaT> tasks, CommandResultBuilder resultBuilder) {
     super(tasks, resultBuilder);
   }
 
-  public static <SchemaT extends TableBasedSchemaObject> Accumulator<SchemaT> accumulator(CommandContext<SchemaT> commandContext) {
+  public static <SchemaT extends TableBasedSchemaObject> Accumulator<SchemaT> accumulator(
+      CommandContext<SchemaT> commandContext) {
     return TaskAccumulator.configureForContext(new Accumulator<>(), commandContext);
   }
 

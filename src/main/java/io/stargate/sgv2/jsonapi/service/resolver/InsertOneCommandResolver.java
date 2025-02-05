@@ -52,14 +52,20 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, InsertOneCommand command) {
 
-    TableInsertDBTaskBuilder taskBuilder = new TableInsertDBTaskBuilder(commandContext.schemaObject())
-        .withRowShredder(rowShredder)
-        .withWriteableTableRowBuilder(new WriteableTableRowBuilder(commandContext.schemaObject(), JSONCodecRegistries.DEFAULT_REGISTRY))
-        .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+    TableInsertDBTaskBuilder taskBuilder =
+        new TableInsertDBTaskBuilder(commandContext.schemaObject())
+            .withRowShredder(rowShredder)
+            .withWriteableTableRowBuilder(
+                new WriteableTableRowBuilder(
+                    commandContext.schemaObject(), JSONCodecRegistries.DEFAULT_REGISTRY))
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
-    var tasks = new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(taskBuilder.build(command.document()));
-    var accumulator = InsertDBTaskPage.accumulator(commandContext)
-        .returnDocumentResponses(false); // never for insertOne
+    var tasks =
+        new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(
+            taskBuilder.build(command.document()));
+    var accumulator =
+        InsertDBTaskPage.accumulator(commandContext)
+            .returnDocumentResponses(false); // never for insertOne
 
     return new TaskOperation<>(tasks, accumulator);
   }

@@ -6,10 +6,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-
 import java.util.Objects;
 import java.util.function.Supplier;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,24 +31,24 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
    * @param taskGroup The tasks to run, grouped into a container that has config about how to run
    *     them as a group.
    * @param taskAccumulator The accumulator to send completed tasks to which can then provide a
-   *        {@link CommandResult} from the tasks.
+   *     {@link CommandResult} from the tasks.
    */
   public TaskOperation(
-      TaskGroup<TaskT, SchemaT> taskGroup,
-      TaskAccumulator<TaskT, SchemaT> taskAccumulator) {
+      TaskGroup<TaskT, SchemaT> taskGroup, TaskAccumulator<TaskT, SchemaT> taskAccumulator) {
 
     this.taskGroup = Objects.requireNonNull(taskGroup, "taskGroup cannot be null");
-    this.taskAccumulator = Objects.requireNonNull(taskAccumulator, "taskAccumulator cannot be null");
+    this.taskAccumulator =
+        Objects.requireNonNull(taskAccumulator, "taskAccumulator cannot be null");
   }
 
   /**
-   * Execute the tasks in the  supplied context.
+   * Execute the tasks in the supplied context.
    *
-   * <p>This is a generic operation that can be used to execute any type of tasks, the tasks
-   * are executed using the configuration of the supplied {@link TaskGroup} and the
-   * {@link Task} itself. The results are grouped using supplied {@link
-   * TaskAccumulator}, which creates the {@link CommandResult}. Errors when executing
-   * the tasks are caught and attached to the {@link Task} so they can be included in the {@link CommandResult}.
+   * <p>This is a generic operation that can be used to execute any type of tasks, the tasks are
+   * executed using the configuration of the supplied {@link TaskGroup} and the {@link Task} itself.
+   * The results are grouped using supplied {@link TaskAccumulator}, which creates the {@link
+   * CommandResult}. Errors when executing the tasks are caught and attached to the {@link Task} so
+   * they can be included in the {@link CommandResult}.
    *
    * @param commandContext The context to execute the tasks in.
    * @return A supplier of {@link CommandResult} that represents the result of running all the

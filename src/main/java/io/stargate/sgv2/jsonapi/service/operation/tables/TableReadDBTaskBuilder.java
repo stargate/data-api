@@ -9,20 +9,19 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.OperationProjection;
 import io.stargate.sgv2.jsonapi.service.operation.ReadDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
-import java.util.Objects;
-
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Builds a {@link ReadDBTask} to read from a {@link TableSchemaObject}.
  *
- * <p>create a single instance and then call {@link
- * #build(WhereCQLClause)} for each different where clause the command creates.
- *
+ * <p>create a single instance and then call {@link #build(WhereCQLClause)} for each different where
+ * clause the command creates.
  */
-public class TableReadDBTaskBuilder extends TaskBuilder<ReadDBTask<TableSchemaObject>, TableSchemaObject> {
+public class TableReadDBTaskBuilder
+    extends TaskBuilder<ReadDBTask<TableSchemaObject>, TableSchemaObject> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TableReadDBTaskBuilder.class);
 
@@ -120,17 +119,15 @@ public class TableReadDBTaskBuilder extends TaskBuilder<ReadDBTask<TableSchemaOb
     task.maybeAddFailure(exception);
 
     // chain up the clauses that may have warnings for the task.
-    var warnings =
-        selectWithWarnings.andThen(orderByWithWarnings).andThen(rowSorterWithWarnings);
+    var warnings = selectWithWarnings.andThen(orderByWithWarnings).andThen(rowSorterWithWarnings);
 
     if (whereWithWarnings != null) {
-      // we have warnings about the where clause, this maybe null if there was an error trying to build the filter
+      // we have warnings about the where clause, this maybe null if there was an error trying to
+      // build the filter
       warnings = warnings.andThen(whereWithWarnings);
 
       if (LOGGER.isDebugEnabled() && whereWithWarnings.requiresAllowFiltering()) {
-        LOGGER.debug(
-            "build() - enabled ALLOW FILTERING for attempt {}",
-            task.positionAndTaskId());
+        LOGGER.debug("build() - enabled ALLOW FILTERING for attempt {}", task.positionAndTaskId());
       }
     }
 

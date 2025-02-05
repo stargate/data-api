@@ -17,14 +17,16 @@ import org.slf4j.LoggerFactory;
 public class ListIndexesDBTask extends MetadataDBTask<TableSchemaObject> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ListIndexesDBTask.class);
 
-  public ListIndexesDBTask(int position,
-                              TableSchemaObject schemaObject,
-                              DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory) {
+  public ListIndexesDBTask(
+      int position,
+      TableSchemaObject schemaObject,
+      DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory) {
     super(position, schemaObject, TaskRetryPolicy.NO_RETRY, exceptionHandlerFactory);
     setStatus(TaskStatus.READY);
   }
 
-  public static TaskBuilder.BasicTaskBuilder<ListIndexesDBTask, TableSchemaObject> builder(TableSchemaObject schemaObject){
+  public static TaskBuilder.BasicTaskBuilder<ListIndexesDBTask, TableSchemaObject> builder(
+      TableSchemaObject schemaObject) {
     return new TaskBuilder.BasicTaskBuilder<>(schemaObject, ListIndexesDBTask::new);
   }
 

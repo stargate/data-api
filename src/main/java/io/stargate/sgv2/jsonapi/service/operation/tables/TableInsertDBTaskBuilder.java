@@ -17,24 +17,27 @@ import java.util.Objects;
  * data is valid, the first that the document does not exceed the limits, and the second that the
  * data is valid for the table.
  */
-public class TableInsertDBTaskBuilder extends TaskBuilder<InsertDBTask<TableSchemaObject>, TableSchemaObject> {
+public class TableInsertDBTaskBuilder
+    extends TaskBuilder<InsertDBTask<TableSchemaObject>, TableSchemaObject> {
 
   private RowShredder rowShredder = null;
   private WriteableTableRowBuilder writeableTableRowBuilder = null;
 
-  public TableInsertDBTaskBuilder(
-      TableSchemaObject tableSchemaObject) {
+  public TableInsertDBTaskBuilder(TableSchemaObject tableSchemaObject) {
     super(tableSchemaObject);
   }
 
   public TableInsertDBTaskBuilder withRowShredder(RowShredder rowShredder) {
-    this.rowShredder =  Objects.requireNonNull(rowShredder, "rowShredder cannot be null");
+    this.rowShredder = Objects.requireNonNull(rowShredder, "rowShredder cannot be null");
     return this;
   }
 
-  public TableInsertDBTaskBuilder withWriteableTableRowBuilder(WriteableTableRowBuilder writeableTableRowBuilder) {
-    // we could build this in the builder, but keeping it as a prop for now incase it is easier for testing
-    this.writeableTableRowBuilder = Objects.requireNonNull(writeableTableRowBuilder, "writeableTableRowBuilder cannot be null");
+  public TableInsertDBTaskBuilder withWriteableTableRowBuilder(
+      WriteableTableRowBuilder writeableTableRowBuilder) {
+    // we could build this in the builder, but keeping it as a prop for now incase it is easier for
+    // testing
+    this.writeableTableRowBuilder =
+        Objects.requireNonNull(writeableTableRowBuilder, "writeableTableRowBuilder cannot be null");
     return this;
   }
 
@@ -53,7 +56,8 @@ public class TableInsertDBTaskBuilder extends TaskBuilder<InsertDBTask<TableSche
 
     var rowId = writeableRow == null ? null : writeableRow.rowId();
     var task =
-        new TableInsertDBTask(nextPosition(), schemaObject, getExceptionHandlerFactory(), rowId, writeableRow);
+        new TableInsertDBTask(
+            nextPosition(), schemaObject, getExceptionHandlerFactory(), rowId, writeableRow);
     // ok to always add the failure, if it is null it will be ignored
     return task.maybeAddFailure(exception);
   }

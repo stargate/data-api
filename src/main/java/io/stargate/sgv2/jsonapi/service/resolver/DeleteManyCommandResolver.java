@@ -77,15 +77,16 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
           attemptContainer, truncatePageBuilder, TableDriverExceptionHandler::new);
     }
 
-    TableDeleteDBTaskBuilder taskBuilder = new TableDeleteDBTaskBuilder(commandContext.schemaObject())
-        .withDeleteOne(false)
-        .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+    TableDeleteDBTaskBuilder taskBuilder =
+        new TableDeleteDBTaskBuilder(commandContext.schemaObject())
+            .withDeleteOne(false)
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
     // need to update so we use WithWarnings correctly
     var where =
         TableWhereCQLClause.forDelete(
-            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command).target());
-
+            commandContext.schemaObject(),
+            tableFilterResolver.resolve(commandContext, command).target());
 
     var tasks = new TaskGroup<>(taskBuilder.build(where));
     return new TaskOperation<>(tasks, DeleteDBTaskPage.accumulator(commandContext));

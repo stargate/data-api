@@ -1,18 +1,17 @@
 package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.OperationAttempt;
-
 import java.util.*;
 
 /**
  * Ordered container of {@link Task} to be processed as a group.
  *
  * <p>The container can be configured to process the tasks sequentially or in parallel (default),
- * and other config that is needed about how to process the tasks as a group should live here
- * (e.g. if there is a delay between tasks, or if the container should fail fast).
- * <p>
- * TODO: aaron feb 4 - stop inheriting array list, just expose methods needed
+ * and other config that is needed about how to process the tasks as a group should live here (e.g.
+ * if there is a delay between tasks, or if the container should fail fast).
+ *
+ * <p>TODO: aaron feb 4 - stop inheriting array list, just expose methods needed
+ *
  * @param <SchemaT> Schema object type
  */
 public class TaskGroup<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject>
@@ -29,9 +28,9 @@ public class TaskGroup<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject
    * Initialize the container.
    *
    * @param sequentialProcessing If true the tasks will be processed sequentially, rather than in
-   *     parallel, and the container will skip any remaining tasks if one fails. If false the
-   *     tasks will be processed in parallel and all tasks will be processed regardless of the
-   *     status of any other tasks.
+   *     parallel, and the container will skip any remaining tasks if one fails. If false the tasks
+   *     will be processed in parallel and all tasks will be processed regardless of the status of
+   *     any other tasks.
    */
   public TaskGroup(boolean sequentialProcessing) {
     super();
@@ -81,8 +80,8 @@ public class TaskGroup<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject
   }
 
   /**
-   * Checks if, given the config of the container and the current state of the tasks, the
-   * container should fail fast and stop processing any further tasks.
+   * Checks if, given the config of the container and the current state of the tasks, the container
+   * should fail fast and stop processing any further tasks.
    *
    * @return <code>true</code> if the container is configured for sequential processing and there is
    *     at least one error

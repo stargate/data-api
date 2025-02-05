@@ -6,9 +6,11 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.schema.AlterTableAddColumnEnd;
 import com.datastax.oss.driver.api.querybuilder.schema.AlterTableStart;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableExtensions;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
 import java.util.List;
 import java.util.Map;
@@ -17,22 +19,23 @@ import java.util.Map;
  * Represents an attempt to alter a table schema. The attempt can be for adding columns, dropping
  * columns, or updating extensions.
  */
-public class AlterTableAttempt extends SchemaAttempt<TableSchemaObject> {
+public class AlterTableDBTask extends SchemaDBTask<TableSchemaObject> {
 
   private final AlterTableType alterTableType;
   private final ApiColumnDefContainer columnsToAdd;
   private final List<CqlIdentifier> columnsToDrop;
   private final Map<String, String> customProperties;
 
-  protected AlterTableAttempt(
+  protected AlterTableDBTask(
       int position,
       TableSchemaObject schemaObject,
+      DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory,
       AlterTableType alterTableType,
       ApiColumnDefContainer columnsToAdd,
       List<CqlIdentifier> columnsToDrop,
       Map<String, String> customProperties,
-      SchemaRetryPolicy retryPolicy) {
-    super(position, schemaObject, retryPolicy);
+      TaskRetryPolicy retryPolicy) {
+    super(position, schemaObject, retryPolicy, exceptionHandlerFactory);
 
     this.alterTableType = alterTableType;
     this.columnsToAdd = columnsToAdd;
@@ -41,7 +44,11 @@ public class AlterTableAttempt extends SchemaAttempt<TableSchemaObject> {
 
     // because this attempt is kind of overloaded we want to check that the right fields are set
     alterTableType.validate(this);
-    setStatus(OperationStatus.READY);
+    setStatus(TaskStatus.READY);
+  }
+
+  public static AlterTableDBTaskBuilder builder(TableSchemaObject schemaObject) {
+    return new AlterTableDBTaskBuilder(schemaObject);
   }
 
   @Override
@@ -93,7 +100,7 @@ public class AlterTableAttempt extends SchemaAttempt<TableSchemaObject> {
     DROP_COLUMNS,
     UPDATE_EXTENSIONS;
 
-    void validate(AlterTableAttempt attempt) {
+    void validate(AlterTableDBTask attempt) {
       switch (this) {
         case ADD_COLUMNS:
           if (attempt.columnsToAdd == null || attempt.columnsToAdd.isEmpty()) {

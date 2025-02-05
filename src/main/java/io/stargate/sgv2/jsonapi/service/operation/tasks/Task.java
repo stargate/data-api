@@ -10,8 +10,7 @@ import java.util.UUID;
 /**
  * Interface to describe a single task that is part of an Operation.
  *
- * <p>Operations work on a group of tasks in a {@link
- * TaskGroup}.
+ * <p>Operations work on a group of tasks in a {@link TaskGroup}.
  *
  * <p>We have an interface to make it easier for other code to be generic when using a task, but the
  * {@link BaseTask} has the logic we need to retry and manage state etc.

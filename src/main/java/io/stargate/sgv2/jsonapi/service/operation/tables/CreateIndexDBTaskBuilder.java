@@ -1,33 +1,32 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiRegularIndex;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorIndex;
 import java.util.Objects;
 
-/** Builder for a {@link CreateIndexAttempt}. */
-public class CreateIndexAttemptBuilder {
-  private int position = 0;
+/** Builder for a {@link CreateIndexDBTask}. */
+public class CreateIndexDBTaskBuilder extends TaskBuilder<CreateIndexDBTask, TableSchemaObject> {
 
-  private final TableSchemaObject schemaObject;
-  private SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy;
+  private SchemaDBTask.SchemaRetryPolicy schemaRetryPolicy;
   // must be specified, the default should not be defined in here
   private Boolean ifNotExists = null;
 
-  public CreateIndexAttemptBuilder(TableSchemaObject schemaObject) {
-    this.schemaObject = Objects.requireNonNull(schemaObject, "schemaObject object cannot be null");
+  protected CreateIndexDBTaskBuilder(TableSchemaObject schemaObject) {
+    super(schemaObject);
   }
 
-  public CreateIndexAttemptBuilder withIfNotExists(boolean ifNotExists) {
+  public CreateIndexDBTaskBuilder withIfNotExists(boolean ifNotExists) {
     this.ifNotExists = ifNotExists;
     return this;
   }
 
-  public CreateIndexAttemptBuilder withSchemaRetryPolicy(
-      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
+  public CreateIndexDBTaskBuilder withSchemaRetryPolicy(
+      SchemaDBTask.SchemaRetryPolicy schemaRetryPolicy) {
     this.schemaRetryPolicy = schemaRetryPolicy;
     return this;
   }
@@ -45,19 +44,29 @@ public class CreateIndexAttemptBuilder {
     return cqlOptions;
   }
 
-  public CreateIndexAttempt build(ApiRegularIndex apiRegularIndex) {
+  public CreateIndexDBTask build(ApiRegularIndex apiRegularIndex) {
     Objects.requireNonNull(apiRegularIndex, "apiRegularIndex cannot be null");
     checkBuildPreconditions();
 
-    return new CreateIndexAttempt(
-        position++, schemaObject, schemaRetryPolicy, apiRegularIndex, buildCqlOptions());
+    return new CreateIndexDBTask(
+        nextPosition(),
+        schemaObject,
+        schemaRetryPolicy,
+        getExceptionHandlerFactory(),
+        apiRegularIndex,
+        buildCqlOptions());
   }
 
-  public CreateIndexAttempt build(ApiVectorIndex apiVectorIndex) {
+  public CreateIndexDBTask build(ApiVectorIndex apiVectorIndex) {
     Objects.requireNonNull(apiVectorIndex, "apiVectorIndex cannot be null");
     checkBuildPreconditions();
 
-    return new CreateIndexAttempt(
-        position++, schemaObject, schemaRetryPolicy, apiVectorIndex, buildCqlOptions());
+    return new CreateIndexDBTask(
+        nextPosition(),
+        schemaObject,
+        schemaRetryPolicy,
+        getExceptionHandlerFactory(),
+        apiVectorIndex,
+        buildCqlOptions());
   }
 }

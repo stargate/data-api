@@ -16,8 +16,8 @@ import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import java.util.*;
 
 /**
- * A page of results from an insert command, use {@link #accumulator(CommandContext)}  to get a builder to pass to
- * {@link GenericOperation}.
+ * A page of results from an insert command, use {@link #accumulator(CommandContext)} to get a
+ * builder to pass to {@link GenericOperation}.
  *
  * <p><b>NOTE</b> a lot of this duplicates {@link InsertOperationPage}, that class will eventually
  * be replaced by this one.
@@ -36,7 +36,8 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
     this.returnDocumentResponses = returnDocumentResponses;
   }
 
-  public static <SchemaT extends TableBasedSchemaObject> Accumulator<SchemaT> accumulator(CommandContext<SchemaT> commandContext) {
+  public static <SchemaT extends TableBasedSchemaObject> Accumulator<SchemaT> accumulator(
+      CommandContext<SchemaT> commandContext) {
     return TaskAccumulator.configureForContext(new Accumulator<>(), commandContext);
   }
 

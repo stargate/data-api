@@ -1,14 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
@@ -32,9 +28,10 @@ public abstract class DBTaskPage<TaskT extends DBTask<SchemaT>, SchemaT extends 
 
   /**
    * Create a new page of {@link Task} results.
+   *
    * @param tasks The group of tasks that have been run.
-   * @param resultBuilder The builder to use to create the {@link CommandResult}, it will have already being
-   *                      with any specifics for the response structure.
+   * @param resultBuilder The builder to use to create the {@link CommandResult}, it will have
+   *     already being with any specifics for the response structure.
    */
   protected DBTaskPage(TaskGroup<TaskT, SchemaT> tasks, CommandResultBuilder resultBuilder) {
 

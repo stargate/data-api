@@ -12,8 +12,8 @@ import java.util.function.Consumer;
  *
  * <p>This is usually used when analysing part of a query and generating warnings for the user.
  *
- * <p>Is a {@link Consumer} of {@link WithWarnings.WarningsSink} so that it can add the warnings to the
- * task, and so multiple instances can be chained together using {@link
+ * <p>Is a {@link Consumer} of {@link WithWarnings.WarningsSink} so that it can add the warnings to
+ * the task, and so multiple instances can be chained together using {@link
  * Consumer#andThen(Consumer)}
  *
  * @param <T> Type of the target object the warnings are about.

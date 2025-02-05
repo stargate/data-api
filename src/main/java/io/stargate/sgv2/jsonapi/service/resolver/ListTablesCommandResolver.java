@@ -4,19 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListTablesCommand;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.List;
 
 /** Command resolver for the {@link ListTablesCommand}. */
 @ApplicationScoped
@@ -47,9 +42,10 @@ public class ListTablesCommandResolver implements CommandResolver<ListTablesComm
     taskBuilder.withExceptionHandlerFactory(KeyspaceDriverExceptionHandler::new);
     var taskGroup = new TaskGroup<>(taskBuilder.build());
 
-    var accumulator = MetadataAttemptPage.accumulator(commandContext)
-        .showSchema(explain)
-        .usingCommandStatus(CommandStatus.EXISTING_TABLES);
+    var accumulator =
+        MetadataAttemptPage.accumulator(commandContext)
+            .showSchema(explain)
+            .usingCommandStatus(CommandStatus.EXISTING_TABLES);
 
     return new TaskOperation<>(taskGroup, accumulator);
   }

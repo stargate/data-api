@@ -114,7 +114,8 @@ public interface CommandResolver<C extends Command> {
    * @param command
    * @return
    */
-  default Operation<TableSchemaObject> resolveTableCommand(CommandContext<TableSchemaObject> ctx, C command) {
+  default Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
 
     // this is duplicated because do not want to put it on the interface where it is public, nor
@@ -146,7 +147,8 @@ public interface CommandResolver<C extends Command> {
    * @param command
    * @return
    */
-  default Operation<KeyspaceSchemaObject> resolveKeyspaceCommand(CommandContext<KeyspaceSchemaObject> ctx, C command) {
+  default Operation<KeyspaceSchemaObject> resolveKeyspaceCommand(
+      CommandContext<KeyspaceSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
     throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Keyspaces, target was %s",
@@ -160,7 +162,8 @@ public interface CommandResolver<C extends Command> {
    * @param command
    * @return
    */
-  default Operation<DatabaseSchemaObject> resolveDatabaseCommand(CommandContext<DatabaseSchemaObject> ctx, C command) {
+  default Operation<DatabaseSchemaObject> resolveDatabaseCommand(
+      CommandContext<DatabaseSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
     throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Databases, target was %s",
