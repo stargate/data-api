@@ -61,7 +61,7 @@ public interface CommandResolver<C extends Command> {
    * @return Operation, must not be <code>null</code>
    * @param <T> The type of the schema object the command is operating on.
    */
-  default <T extends SchemaObject> Operation resolveCommand(
+  default <T extends SchemaObject> Operation<? extends SchemaObject> resolveCommand(
       CommandContext<T> commandContext, C command) {
     Objects.requireNonNull(commandContext, "commandContext must not be null");
     Objects.requireNonNull(command, "command must not be null");
@@ -81,7 +81,7 @@ public interface CommandResolver<C extends Command> {
    * @param command
    * @return
    */
-  default Operation resolveCollectionCommand(
+  default Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
 
@@ -114,7 +114,7 @@ public interface CommandResolver<C extends Command> {
    * @param command
    * @return
    */
-  default Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, C command) {
+  default Operation<TableSchemaObject> resolveTableCommand(CommandContext<TableSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
 
     // this is duplicated because do not want to put it on the interface where it is public, nor
@@ -146,7 +146,7 @@ public interface CommandResolver<C extends Command> {
    * @param command
    * @return
    */
-  default Operation resolveKeyspaceCommand(CommandContext<KeyspaceSchemaObject> ctx, C command) {
+  default Operation<KeyspaceSchemaObject> resolveKeyspaceCommand(CommandContext<KeyspaceSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
     throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Keyspaces, target was %s",
@@ -160,7 +160,7 @@ public interface CommandResolver<C extends Command> {
    * @param command
    * @return
    */
-  default Operation resolveDatabaseCommand(CommandContext<DatabaseSchemaObject> ctx, C command) {
+  default Operation<DatabaseSchemaObject> resolveDatabaseCommand(CommandContext<DatabaseSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
     throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Databases, target was %s",

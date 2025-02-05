@@ -17,6 +17,8 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.TruncateCollection
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDeleteDBTaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
@@ -58,34 +60,35 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
   }
 
   @Override
-  public Operation resolveTableCommand(
-      CommandContext<TableSchemaObject> ctx, DeleteManyCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, DeleteManyCommand command) {
 
     // If there is no filter or filter is empty for table deleteMany, build truncate attempt
-    final FilterClause filterClause = command.filterClause(ctx);
+    final FilterClause filterClause = command.filterClause(commandContext);
+
     if (filterClause == null || filterClause.isEmpty()) {
-      var truncateAttempt = new TruncateAttemptBuilder<>(ctx.schemaObject()).build();
+      var truncateAttempt = new TruncateAttemptBuilder<>(commandContext.schemaObject()).build();
       var attemptContainer = new OperationAttemptContainer<>(truncateAttempt);
       var truncatePageBuilder =
           TruncateAttemptPage.<TableSchemaObject>builder()
-              .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-              .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+              .debugMode(commandContext.getConfig(DebugModeConfig.class).enabled())
+              .useErrorObjectV2(commandContext.getConfig(OperationsConfig.class).extendError());
       return new GenericOperation<>(
           attemptContainer, truncatePageBuilder, TableDriverExceptionHandler::new);
     }
 
-    var deleteAttemptBuilder = new TableDeleteDBTaskBuilder<>(ctx.schemaObject(), false);
+    TableDeleteDBTaskBuilder taskBuilder = new TableDeleteDBTaskBuilder(commandContext.schemaObject())
+        .withDeleteOne(false)
+        .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+
     // need to update so we use WithWarnings correctly
     var where =
         TableWhereCQLClause.forDelete(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
-    var deletePageBuilder =
-        DeleteDBTaskPage.<TableSchemaObject>builder()
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command).target());
 
-    var attempts = new OperationAttemptContainer<>(deleteAttemptBuilder.build(where));
-    return new GenericOperation<>(attempts, deletePageBuilder, TableDriverExceptionHandler::new);
+
+    var tasks = new TaskGroup<>(taskBuilder.build(where));
+    return new TaskOperation<>(tasks, DeleteDBTaskPage.accumulator(commandContext));
   }
 
   @Override

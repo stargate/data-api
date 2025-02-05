@@ -2,45 +2,49 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTaskPage;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import java.util.*;
 
 /**
- * A page of results from an insert command, use {@link #builder()} to get a builder to pass to
+ * A page of results from an insert command, use {@link #accumulator(CommandContext)}  to get a builder to pass to
  * {@link GenericOperation}.
  *
  * <p><b>NOTE</b> a lot of this duplicates {@link InsertOperationPage}, that class will eventually
  * be replaced by this one.
  */
-public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
-    extends OperationAttemptPage<SchemaT, InsertAttempt<SchemaT>> {
+public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
+    extends DBTaskPage<InsertDBTask<SchemaT>, SchemaT> {
 
   // True if the response should include detailed info for each document
   private final boolean returnDocumentResponses;
 
-  private InsertAttemptPage(
-      OperationAttemptContainer<SchemaT, InsertAttempt<SchemaT>> attempts,
+  private InsertDBTaskPage(
+      TaskGroup<InsertDBTask<SchemaT>, SchemaT> tasks,
       CommandResultBuilder resultBuilder,
       boolean returnDocumentResponses) {
-    super(attempts, resultBuilder);
+    super(tasks, resultBuilder);
     this.returnDocumentResponses = returnDocumentResponses;
   }
 
-  public static <SchemaT extends TableBasedSchemaObject> Builder<SchemaT> builder() {
-    return new Builder<>();
+  public static <SchemaT extends TableBasedSchemaObject> Accumulator<SchemaT> accumulator(CommandContext<SchemaT> commandContext) {
+    return TaskAccumulator.configureForContext(new Accumulator<>(), commandContext);
   }
 
   @Override
   protected void buildCommandResult() {
 
     // Do not call the super buildCommandResult() because there are different ways we add the errors
-    addAttemptWarningsToResult();
+    addTaskWarningsToResult();
 
     if (returnDocumentResponses) {
       buildPerDocumentResult();
@@ -58,12 +62,12 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
    */
   private void buildNonPerDocumentResult() {
 
-    addAttemptErrorsToResult();
+    addTaskErrorsToResult();
 
     // Note: See DocRowIdentifer, it has an attribute that will be called for JSON serialization
     List<DocRowIdentifer> insertedIds =
-        attempts.completedAttempts().stream()
-            .map(InsertAttempt::docRowID)
+        tasks.completedTasks().stream()
+            .map(InsertDBTask::docRowID)
             .map(Optional::orElseThrow)
             .toList();
 
@@ -93,18 +97,18 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
     // kept using the same approach as InsertOperationPage to make comparison easy until we remove
     // the old class
 
-    var results = new InsertionResult[attempts.size()];
+    var results = new InsertionResult[tasks.size()];
 
     // Results array filled in order: first successful insertions
-    for (var attempt : attempts.completedAttempts()) {
-      results[attempt.position()] =
-          new InsertionResult(attempt.docRowID().orElseThrow(), InsertionStatus.OK, null);
+    for (var task : tasks.completedTasks()) {
+      results[task.position()] =
+          new InsertionResult(task.docRowID().orElseThrow(), InsertionStatus.OK, null);
     }
 
     List<CommandResult.Error> seenErrors = new ArrayList<>();
     // Second: failed insertions; output in order of insertion
-    for (var attempt : attempts.errorAttempts()) {
-      var cmdError = resultBuilder.throwableToCommandError(attempt.failure().orElseThrow());
+    for (var task : tasks.errorTasks()) {
+      var cmdError = resultBuilder.throwableToCommandError(task.failure().orElseThrow());
 
       // We want to avoid adding the same error multiple times, so we keep track of the index:
       // either one exists, use it; or if not, add it and use the new index.
@@ -113,16 +117,16 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
         errorIdx = seenErrors.size(); // will be appended at the end
         seenErrors.add(cmdError);
       }
-      results[attempt.position()] =
+      results[task.position()] =
           new InsertionResult(
-              attempt.docRowID().orElse(RowId.EMPTY_ROWID), InsertionStatus.ERROR, errorIdx);
+              task.docRowID().orElse(RowId.EMPTY_ROWID), InsertionStatus.ERROR, errorIdx);
     }
 
     // And third, if any, skipped insertions; those that were not attempted (f.ex due
     // to failure for ordered inserts)
-    for (var attempt : attempts.skippedAttempts()) {
-      results[attempt.position()] =
-          new InsertionResult(attempt.docRowID().orElseThrow(), InsertionStatus.SKIPPED, null);
+    for (var task : tasks.skippedTasks()) {
+      results[task.position()] =
+          new InsertionResult(task.docRowID().orElseThrow(), InsertionStatus.SKIPPED, null);
     }
 
     seenErrors.forEach(resultBuilder::addCommandResultError);
@@ -161,23 +165,23 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
   @JsonInclude(JsonInclude.Include.NON_NULL)
   record InsertionResult(DocRowIdentifer _id, InsertionStatus status, Integer errorsIdx) {}
 
-  public static class Builder<SchemaT extends TableBasedSchemaObject>
-      extends OperationAttemptPageBuilder<SchemaT, InsertAttempt<SchemaT>> {
+  public static class Accumulator<SchemaT extends TableBasedSchemaObject>
+      extends TaskAccumulator<InsertDBTask<SchemaT>, SchemaT> {
 
     private boolean returnDocumentResponses = false;
 
-    Builder() {}
+    Accumulator() {}
 
-    public Builder<SchemaT> returnDocumentResponses(boolean returnDocumentResponses) {
+    public Accumulator<SchemaT> returnDocumentResponses(boolean returnDocumentResponses) {
       this.returnDocumentResponses = returnDocumentResponses;
       return this;
     }
 
     @Override
-    public InsertAttemptPage<SchemaT> getOperationPage() {
+    public InsertDBTaskPage<SchemaT> getResults() {
 
-      return new InsertAttemptPage<>(
-          attempts,
+      return new InsertDBTaskPage<>(
+          tasks,
           CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode),
           returnDocumentResponses);
     }

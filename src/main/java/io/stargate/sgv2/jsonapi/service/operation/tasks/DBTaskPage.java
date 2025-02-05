@@ -1,8 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 

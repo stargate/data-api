@@ -6,44 +6,62 @@ import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
 import com.datastax.oss.driver.api.querybuilder.insert.OngoingValues;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * IMPORTANT: THIS IS ALSO USED BY THE COLLECTIONS (JUST FOR INSERT) SO IT NEEDS TO STAY
- * UNTIL COLLECTIONS CODE IS UPDATED (INSERTS STARTED THE "ATTEMPT" PATTERN)
+ * Task to insert a single row in CQL.
+ * <p>
+ * IMPORTANT: this is for tables only for now, see {@link InsertAttempt} we need to keep it around as well.
  */
-public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
-    extends OperationAttempt<InsertAttempt<SchemaT>, SchemaT> {
+public abstract class InsertDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<SchemaT> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(InsertAttempt.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(InsertDBTask.class);
 
   private final InsertValuesCQLClause insertValuesCQLClause;
 
-  protected InsertAttempt(
-      int position, SchemaT schemaObject, InsertValuesCQLClause insertValuesCQLClause) {
-    super(position, schemaObject, RetryPolicy.NO_RETRY);
+  protected InsertDBTask(
+      int position,
+      SchemaT schemaObject,
+      DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory,
+      InsertValuesCQLClause insertValuesCQLClause) {
+    super(position, schemaObject, TaskRetryPolicy.NO_RETRY, exceptionHandlerFactory);
 
     // nullable, because the subclass may want to implement method itself.
     // and if there is an error shredding we will not have the insert clause
     this.insertValuesCQLClause = insertValuesCQLClause;
   }
 
+  // =================================================================================================
+  // BaseTask overrides
+  // =================================================================================================
+
+  /** {@inheritDoc} */
   @Override
-  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
-    // bind and execute
+  protected AsyncResultSetSupplier buildResultSupplier(CommandQueryExecutor queryExecutor) {
+
     var statement = buildInsertStatement();
 
-    logStatement(LOGGER, "executeStatement()", statement);
-    return new StatementContext(statement, () -> queryExecutor.executeWrite(statement));
+    logStatement(LOGGER, "buildResultSupplier()", statement);
+    return new AsyncResultSetSupplier(
+        statement, () -> queryExecutor.executeWrite(statement));
   }
+
+  // =================================================================================================
+  // Implementation and internals
+  // =================================================================================================
+
 
   protected SimpleStatement buildInsertStatement() {
 

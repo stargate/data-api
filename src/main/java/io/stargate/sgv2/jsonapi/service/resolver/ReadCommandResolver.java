@@ -51,7 +51,7 @@ class ReadCommandResolver<
    * @param commandContext
    * @param command
    * @param cqlPageState The CQL paging state, if any, must be non null
-   * @param pageBuilder The page builder to use, the caller should configure this with any command
+   * @param pageAccumulator The page builder to use, the caller should configure this with any command
    *     specific options before passing, such as single document mode
    * @return Configured read operation
    */
@@ -59,7 +59,7 @@ class ReadCommandResolver<
       CommandContext<TableSchemaObject> commandContext,
       CmdT command,
       CqlPagingState cqlPageState,
-      ReadDBTaskPage.Builder<TableSchemaObject> pageBuilder) {
+      ReadDBTaskPage.Accumulator<TableSchemaObject> pageAccumulator) {
 
     var attemptBuilder = new TableReadDBTaskBuilder(commandContext.schemaObject());
 
@@ -117,10 +117,10 @@ class ReadCommandResolver<
     var taskGroup = new TaskGroup<>(attemptBuilder.build(where));
 
     // the common page builder options
-    pageBuilder
+    pageAccumulator
         .debugMode(commandContext.getConfig(DebugModeConfig.class).enabled())
         .useErrorObjectV2(commandContext.getConfig(OperationsConfig.class).extendError());
 
-    return new TaskOperation<>(taskGroup, pageBuilder);
+    return new TaskOperation<>(taskGroup, pageAccumulator);
   }
 }

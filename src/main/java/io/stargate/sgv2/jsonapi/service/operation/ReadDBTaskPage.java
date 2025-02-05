@@ -1,11 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.api.model.command.VectorSortable;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
@@ -18,7 +16,7 @@ import java.util.*;
  * A page of results from a {@link ReadDBTask }, use {@link #builder()} to get a builder to pass to {@link
  * TaskOperation}.
  */
-public class ReadDBTaskPage<SchemaT extends TableSchemaObject>
+public class ReadDBTaskPage<SchemaT extends TableBasedSchemaObject>
     extends DBTaskPage<ReadDBTask<SchemaT>, SchemaT> {
 
   private final CqlPagingState pagingState;
@@ -37,8 +35,8 @@ public class ReadDBTaskPage<SchemaT extends TableSchemaObject>
     this.sortVector = sortVector;
   }
 
-  public static <SchemaT extends TableSchemaObject> Builder<SchemaT> builder() {
-    return new Builder<>();
+  public static <SchemaT extends TableSchemaObject> Accumulator<SchemaT> accumulator(CommandContext<SchemaT> commandContext) {
+    return TaskAccumulator.configureForContext(new Accumulator<>(), commandContext);
   }
 
   @Override
@@ -89,31 +87,31 @@ public class ReadDBTaskPage<SchemaT extends TableSchemaObject>
    * Builder for {@link ReadDBTaskPage} - it takes state into the processing of a task group so it can be
    * used after processing.
    */
-  public static class Builder<SchemaT extends TableSchemaObject>
+  public static class Accumulator<SchemaT extends TableBasedSchemaObject>
       extends TaskAccumulator<ReadDBTask<SchemaT>, SchemaT> {
 
     private boolean singleResponse = false;
     private boolean includeSortVector;
     private float[] sortVector;
 
-    protected Builder() {}
+    protected Accumulator() {}
 
-    public Builder<SchemaT> singleResponse(boolean singleResponse) {
+    public Accumulator<SchemaT> singleResponse(boolean singleResponse) {
       this.singleResponse = singleResponse;
       return this;
     }
 
-    private Builder<SchemaT> includeSortVector(boolean includeSortVector) {
+    private Accumulator<SchemaT> includeSortVector(boolean includeSortVector) {
       this.includeSortVector = includeSortVector;
       return this;
     }
 
-    private Builder<SchemaT> sortVector(float[] sortVector) {
+    private Accumulator<SchemaT> sortVector(float[] sortVector) {
       this.sortVector = sortVector;
       return this;
     }
 
-    public <CmdT extends VectorSortable> Builder<SchemaT> mayReturnVector(CmdT command) {
+    public <CmdT extends VectorSortable> Accumulator<SchemaT> mayReturnVector(CmdT command) {
       var includeVector = command.includeSortVector().orElse(false);
       if (includeVector) {
         var requestedVector =

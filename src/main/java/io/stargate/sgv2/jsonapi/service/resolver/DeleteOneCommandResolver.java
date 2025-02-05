@@ -17,6 +17,8 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
@@ -60,34 +62,29 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
   }
 
   @Override
-  public Operation resolveTableCommand(
-      CommandContext<TableSchemaObject> ctx, DeleteOneCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(CommandContext<TableSchemaObject> commandContext, DeleteOneCommand command) {
 
     // Sort clause is not supported for table deleteOne command.
     if (command.sortClause() != null && !command.sortClause().isEmpty()) {
       throw SortException.Code.UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND.get(
-          errVars(ctx.schemaObject(), map -> {}));
+          errVars(commandContext.schemaObject(), map -> {}));
     }
 
-    var builder = new TableDeleteDBTaskBuilder<>(ctx.schemaObject(), true);
+    TableDeleteDBTaskBuilder taskBuilder = new TableDeleteDBTaskBuilder(commandContext.schemaObject())
+        .withDeleteOne(true)
+        .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
     // need to update so we use WithWarnings correctly
     var where =
         TableWhereCQLClause.forDelete(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
+            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command).target());
 
-    var attempts = new OperationAttemptContainer<>(builder.build(where));
-
-    var pageBuilder =
-        DeleteDBTaskPage.<TableSchemaObject>builder()
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
-
-    return new GenericOperation<>(attempts, pageBuilder, TableDriverExceptionHandler::new);
+    var tasks = new TaskGroup<>(taskBuilder.build(where));
+    return new TaskOperation<>(tasks, DeleteDBTaskPage.accumulator(commandContext));
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, DeleteOneCommand command) {
 
     FindCollectionOperation findCollectionOperation = getFindOperation(ctx, command);

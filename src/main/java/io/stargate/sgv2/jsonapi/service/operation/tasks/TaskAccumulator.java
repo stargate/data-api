@@ -1,6 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 
 import java.util.Objects;
@@ -24,6 +27,16 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
   protected final TaskGroup<TaskT, SchemaT> tasks = new TaskGroup<>();
 
   protected TaskAccumulator() {}
+
+
+  public static <AccumT extends TaskAccumulator<TaskT, SchemaT>, TaskT extends Task<SchemaT>, SchemaT extends SchemaObject> AccumT configureForContext(AccumT accumulator, CommandContext<SchemaT> commandContext) {
+    Objects.requireNonNull(accumulator, "accumulator cannot be null");
+    Objects.requireNonNull(commandContext, "commandContext cannot be null");
+
+    accumulator.debugMode(commandContext.getConfig(DebugModeConfig.class).enabled())
+        .useErrorObjectV2(commandContext.getConfig(OperationsConfig.class).extendError());
+    return accumulator;
+  }
 
   /**
    * Called for each task that has completed processing.

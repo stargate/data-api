@@ -54,7 +54,7 @@ public class TableDeleteDBTaskBuilder extends TaskBuilder<DeleteDBTask<TableSche
       exception = filterException;
     }
 
-    var task = new DeleteDBTask<>(nextPosition(), schemaObject, DefaultDriverExceptionHandler::new, whereCQLClause);
+    var task = new DeleteDBTask<>(nextPosition(), schemaObject, getExceptionHandlerFactory(), whereCQLClause);
 
     // ok to pass null exception, will be ignored
     task.maybeAddFailure(exception);

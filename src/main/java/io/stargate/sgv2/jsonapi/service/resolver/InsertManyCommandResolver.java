@@ -10,8 +10,10 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionInsertAt
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertAttemptBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.WriteableTableRowBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
@@ -52,28 +54,36 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
   }
 
   @Override
-  public Operation resolveTableCommand(
-      CommandContext<TableSchemaObject> ctx, InsertManyCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, InsertManyCommand command) {
 
     final InsertManyCommand.Options options = command.options();
     final boolean ordered = (null != options) && options.ordered();
     final boolean returnDocumentResponses = (null != options) && options.returnDocumentResponses();
 
-    var builder =
-        new TableInsertAttemptBuilder(
-            rowShredder,
-            new WriteableTableRowBuilder(ctx.schemaObject(), JSONCodecRegistries.DEFAULT_REGISTRY));
+    TableInsertDBTaskBuilder taskBuilder = new TableInsertDBTaskBuilder(commandContext.schemaObject())
+        .withRowShredder(rowShredder)
+        .withWriteableTableRowBuilder(new WriteableTableRowBuilder(commandContext.schemaObject(), JSONCodecRegistries.DEFAULT_REGISTRY))
+        .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
-    OperationAttemptContainer<TableSchemaObject, InsertAttempt<TableSchemaObject>> attempts =
-        new OperationAttemptContainer<>(ordered);
-    attempts.addAll(command.documents().stream().map(builder::build).toList());
+    TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject> taskGroup = new TaskGroup<>(ordered);
+    taskGroup.addAll(command.documents().stream().map(taskBuilder::build).toList());
 
-    var pageBuilder =
-        InsertAttemptPage.<TableSchemaObject>builder()
-            .returnDocumentResponses(returnDocumentResponses)
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+    var accumulator = InsertDBTaskPage.accumulator(commandContext)
+        .returnDocumentResponses(returnDocumentResponses);
 
-    return new GenericOperation<>(attempts, pageBuilder, TableDriverExceptionHandler::new);
+    return new TaskOperation<>(taskGroup, accumulator);
+
+
+    TableInsertDBTaskBuilder builder = new TableInsertDBTaskBuilder(commandContext.schemaObject())
+        .withRowShredder(rowShredder)
+        .withWriteableTableRowBuilder(new WriteableTableRowBuilder(commandContext.schemaObject(), JSONCodecRegistries.DEFAULT_REGISTRY))
+        .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+
+    var tasks = new TaskGroup<>(builder.build(command.document()));
+    InsertDBTaskPage.Accumulator<TableSchemaObject> accumulator = InsertDBTaskPage.accumulator(commandContext)
+        .returnDocumentResponses(false);
+
+    return new TaskOperation<>(tasks, accumulator);
   }
 }
