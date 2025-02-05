@@ -2,7 +2,10 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDefContainer;
 import java.util.List;
@@ -11,12 +14,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Attempt to list indexes for a table. */
-public class ListIndexesAttempt extends MetadataAttempt<TableSchemaObject> {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ListIndexesAttempt.class);
+public class ListIndexesDBTask extends MetadataDBTask<TableSchemaObject> {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ListIndexesDBTask.class);
 
-  protected ListIndexesAttempt(int position, TableSchemaObject schemaObject) {
-    super(position, schemaObject, RetryPolicy.NO_RETRY);
-    setStatus(OperationStatus.READY);
+  public ListIndexesDBTask(int position,
+                              TableSchemaObject schemaObject,
+                              DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory) {
+    super(position, schemaObject, TaskRetryPolicy.NO_RETRY, exceptionHandlerFactory);
+    setStatus(TaskStatus.READY);
+  }
+
+  public static TaskBuilder.BasicTaskBuilder<ListIndexesDBTask, TableSchemaObject> builder(TableSchemaObject schemaObject){
+    return new TaskBuilder.BasicTaskBuilder<>(schemaObject, ListIndexesDBTask::new);
   }
 
   private Optional<ApiIndexDefContainer> indexesForTable() {

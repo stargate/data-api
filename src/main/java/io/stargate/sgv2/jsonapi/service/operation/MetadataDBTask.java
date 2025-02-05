@@ -7,18 +7,26 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.EmptyAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
-import io.stargate.sgv2.jsonapi.service.schema.tables.*;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-/** An attempt to execute commands that need data from metadata */
-public abstract class MetadataAttempt<SchemaT extends SchemaObject>
-    extends OperationAttempt<MetadataAttempt<SchemaT>, SchemaT> {
+/**
+ * A task to read metadata from the database, such as list tables.
+ *
+ * @param <SchemaT>
+ */
+public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTask<SchemaT> {
 
+  // Re-use the matcher for a collection, anything not a collection is a table
   protected static final Predicate<TableMetadata> TABLE_MATCHER =
       new CollectionTableMatcher().negate();
 
@@ -28,19 +36,12 @@ public abstract class MetadataAttempt<SchemaT extends SchemaObject>
 
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  /**
-   * Create a new {@link OperationAttempt} with the provided position, schema object and retry
-   * policy.
-   *
-   * @param position The 0 based position of the attempt in the container of attempts. Attempts are
-   *     ordered by position, for sequential processing and for rebuilding the response in the
-   *     correct order (e.g. for inserting many documents)
-   * @param schemaObject The schema object that the operation is working with.
-   * @param retryPolicy The {@link RetryPolicy} to use when running the operation, if there is no
-   *     retry policy then use {@link RetryPolicy#NO_RETRY}
-   */
-  protected MetadataAttempt(int position, SchemaT schemaObject, RetryPolicy retryPolicy) {
-    super(position, schemaObject, retryPolicy);
+
+  protected MetadataDBTask(int position,
+                           SchemaT schemaObject,
+                           TaskRetryPolicy retryPolicy,
+                           DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
+    super(position, schemaObject, retryPolicy, exceptionHandlerFactory);
   }
 
   protected abstract List<String> getNames();
@@ -48,19 +49,19 @@ public abstract class MetadataAttempt<SchemaT extends SchemaObject>
   protected abstract Object getSchema();
 
   @Override
-  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
+  protected AsyncResultSetSupplier buildResultSupplier(CommandQueryExecutor queryExecutor) {
 
     this.keyspaceMetadata = queryExecutor.getKeyspaceMetadata(schemaObject.name().keyspace());
 
     // TODO: BETTER ERROR
-    return new StatementContext(
+    return new AsyncResultSetSupplier(
         null,
         () ->
             keyspaceMetadata.isEmpty()
                 ? Uni.createFrom()
-                    .failure(
-                        SchemaException.Code.INVALID_KEYSPACE.get(
-                            Map.of("keyspace", schemaObject.name().keyspace())))
+                .failure(
+                    SchemaException.Code.INVALID_KEYSPACE.get(
+                        Map.of("keyspace", schemaObject.name().keyspace())))
                 : Uni.createFrom().item(new EmptyAsyncResultSet()));
   }
 }

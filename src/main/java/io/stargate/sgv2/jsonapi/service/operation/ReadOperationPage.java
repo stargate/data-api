@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
+ * NOTE: AARON FEB 5 2025 - Used by collections leave in place.
+ * 
  * Holds the documents from a read operation to create the {@link CommandResult}
  *
  * @param documentSources The source documents to be included the results, may be empty but never

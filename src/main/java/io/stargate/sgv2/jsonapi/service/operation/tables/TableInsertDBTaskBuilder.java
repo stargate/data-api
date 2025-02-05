@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.InsertAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.InsertDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;

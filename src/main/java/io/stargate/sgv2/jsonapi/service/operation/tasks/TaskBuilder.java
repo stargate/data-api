@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,16 +53,20 @@ public abstract class TaskBuilder<TaskT extends Task<SchemaT>, SchemaT extends S
    */
   public static class BasicTaskBuilder <TaskT extends Task<SchemaT>, SchemaT extends SchemaObject> extends TaskBuilder<TaskT, SchemaT> {
 
-    protected final BiFunction<Integer, SchemaT, TaskT> taskFactory;
+    protected final BasicTaskConstructor<TaskT, SchemaT> taskFactory;
 
-    public BasicTaskBuilder(SchemaT schemaObject, BiFunction<Integer, SchemaT, TaskT> taskFactory) {
+    public BasicTaskBuilder(SchemaT schemaObject, BasicTaskConstructor<TaskT, SchemaT> taskFactory) {
       super(schemaObject);
       this.taskFactory = Objects.requireNonNull(taskFactory, "taskFactory must not be null");
     }
 
     public TaskT build() {
-      return taskFactory.apply(nextPosition(), schemaObject);
+      return taskFactory.create(nextPosition(), schemaObject, getExceptionHandlerFactory());
     }
 
+    @FunctionalInterface
+    public interface BasicTaskConstructor<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject> {
+      TaskT create(int position, SchemaT schemaObject, DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory);
+    }
   }
 }

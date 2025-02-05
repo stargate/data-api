@@ -8,8 +8,12 @@ import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -34,23 +38,19 @@ public class ListTablesCommandResolver implements CommandResolver<ListTablesComm
 
   /** {@inheritDoc} */
   @Override
-  public Operation resolveKeyspaceCommand(
-      CommandContext<KeyspaceSchemaObject> ctx, ListTablesCommand command) {
+  public Operation<KeyspaceSchemaObject> resolveKeyspaceCommand(
+      CommandContext<KeyspaceSchemaObject> commandContext, ListTablesCommand command) {
 
-    boolean explain = command.options() != null ? command.options().explain() : false;
+    boolean explain = command.options() != null && command.options().explain();
 
-    MetadataAttempt<KeyspaceSchemaObject> attempt =
-        new ListTablesAttemptBuilder(ctx.schemaObject()).build();
-    OperationAttemptContainer<KeyspaceSchemaObject, MetadataAttempt<KeyspaceSchemaObject>>
-        attempts = new OperationAttemptContainer<>(List.of(attempt));
+    var taskBuilder = ListTablesDBTask.builder(commandContext.schemaObject());
+    taskBuilder.withExceptionHandlerFactory(KeyspaceDriverExceptionHandler::new);
+    var taskGroup = new TaskGroup<>(taskBuilder.build());
 
-    var pageBuilder =
-        MetadataAttemptPage.<KeyspaceSchemaObject>builder()
-            .showSchema(explain)
-            .usingCommandStatus(CommandStatus.EXISTING_TABLES)
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+    var accumulator = MetadataAttemptPage.accumulator(commandContext)
+        .showSchema(explain)
+        .usingCommandStatus(CommandStatus.EXISTING_TABLES);
 
-    return new GenericOperation<>(attempts, pageBuilder, KeyspaceDriverExceptionHandler::new);
+    return new TaskOperation<>(taskGroup, accumulator);
   }
 }

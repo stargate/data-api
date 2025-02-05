@@ -3,7 +3,9 @@ package io.stargate.sgv2.jsonapi.service.operation;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * NOTE: AARON feb 5 '25 needed by the collections remove when we can
+ * IMPORTANT: THIS IS ALSO USED BY THE COLLECTIONS (JUST FOR INSERT) SO IT NEEDS TO STAY
+ * UNTIL COLLECTIONS CODE IS UPDATED (INSERTS STARTED THE "ATTEMPT" PATTERN)
+ *
  * Functional interface for a provider that can create an {@link InsertAttempt} from a {@link
  * JsonNode}.
  *

@@ -2,17 +2,28 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
+
 import java.util.List;
 
 /** Attempt to list tables in a keyspace. */
-public class ListTablesAttempt extends MetadataAttempt<KeyspaceSchemaObject> {
+public class ListTablesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
 
-  protected ListTablesAttempt(int position, KeyspaceSchemaObject schemaObject) {
-    super(position, schemaObject, RetryPolicy.NO_RETRY);
-    setStatus(OperationStatus.READY);
+  public ListTablesDBTask(int position,
+                          KeyspaceSchemaObject schemaObject,
+                           DefaultDriverExceptionHandler.Factory<KeyspaceSchemaObject> exceptionHandlerFactory) {
+    super(position, schemaObject, TaskRetryPolicy.NO_RETRY, exceptionHandlerFactory);
+    setStatus(TaskStatus.READY);
   }
+
+  public static TaskBuilder.BasicTaskBuilder<ListTablesDBTask, KeyspaceSchemaObject> builder(KeyspaceSchemaObject schemaObject){
+    return new TaskBuilder.BasicTaskBuilder<>(schemaObject, ListTablesDBTask::new);
+  }
+
 
   /**
    * Get table names from the keyspace metadata.
