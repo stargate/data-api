@@ -80,7 +80,7 @@ class DropKeyspaceCommandTest {
       assertThat(result)
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
-          .contains("must not be null");
+          .contains("must not be empty");
     }
 
     @Test

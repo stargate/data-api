@@ -20,7 +20,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.util.naming.SchemaObjectNamingRule;
+import io.stargate.sgv2.jsonapi.service.schema.naming.SchemaObjectNamingRule;
 import java.util.Map;
 import java.util.Objects;
 

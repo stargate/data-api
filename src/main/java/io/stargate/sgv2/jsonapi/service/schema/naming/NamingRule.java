@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.util.naming;
+package io.stargate.sgv2.jsonapi.service.schema.naming;
 
 /** Define a naming rule that can be applied to a string */
 public interface NamingRule {

@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.util.naming;
+package io.stargate.sgv2.jsonapi.service.schema.naming;
 
 import java.util.regex.Pattern;
 

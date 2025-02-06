@@ -1,5 +1,9 @@
-package io.stargate.sgv2.jsonapi.util.naming;
+package io.stargate.sgv2.jsonapi.service.schema.naming;
 
+/**
+ * This class serves as a centralized repository for naming rules that validate the names of
+ * different components, such as keyspaces, collections, tables, and indexes.
+ */
 public final class NamingRules {
   private NamingRules() {}
 
