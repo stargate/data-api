@@ -226,7 +226,7 @@ class CreateKeyspaceCommandResolverTest {
           SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
           "The command attempted to create a keyspace with a name that is not supported.",
           "The supported keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported keyspace name: <null>.");
+          "The command used the unsupported keyspace name: (null).");
     }
 
     @Test
