@@ -33,9 +33,9 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateTableCommand command) {
 
-    validateSchemaName(command.name(), NamingRules.TABLE);
+    var name = validateSchemaName(command.name(), NamingRules.TABLE);
 
-    var tableName = cqlIdentifierFromUserInput(command.name());
+    var tableName = cqlIdentifierFromUserInput(name);
 
     boolean ifNotExists =
         Optional.ofNullable(command.options())
@@ -47,8 +47,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
     // TODO: this code is also is alter table, remove the duplication
 
     var apiTableDef =
-        ApiTableDef.FROM_TABLE_DESC_FACTORY.create(
-            command.name(), command.definition(), validateVectorize);
+        ApiTableDef.FROM_TABLE_DESC_FACTORY.create(name, command.definition(), validateVectorize);
 
     var customProperties =
         TableExtensions.createCustomProperties(

@@ -60,7 +60,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateCollectionCommand command) {
 
-    validateSchemaName(command.name(), NamingRules.COLLECTION);
+    var name = validateSchemaName(command.name(), NamingRules.COLLECTION);
 
     if (command.options() == null) {
       return CreateCollectionOperation.withoutVectorSearch(
@@ -68,8 +68,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           dbLimitsConfig,
           objectMapper,
           cqlSessionCache,
-          command.name(),
-          generateComment(objectMapper, false, false, command.name(), null, null, null),
+          name,
+          generateComment(objectMapper, false, false, name, null, null, null),
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
           false); // Since the options is null
@@ -98,7 +98,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             objectMapper,
             hasIndexing,
             hasVectorSearch,
-            command.name(),
+            name,
             command.options().indexing(),
             vector,
             command.options().idConfig());
@@ -109,7 +109,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           dbLimitsConfig,
           objectMapper,
           cqlSessionCache,
-          command.name(),
+          name,
           vector.dimension(),
           vector.metric(),
           vector.sourceModel(),
@@ -123,7 +123,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           dbLimitsConfig,
           objectMapper,
           cqlSessionCache,
-          command.name(),
+          name,
           comment,
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),

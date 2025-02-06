@@ -27,7 +27,7 @@ public class CreateNamespaceCommandResolver
   public Operation resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, CreateNamespaceCommand command) {
 
-    validateSchemaName(command.name(), NamingRules.KEYSPACE);
+    var name = validateSchemaName(command.name(), NamingRules.KEYSPACE);
 
     String strategy =
         (command.options() != null && command.options().replication() != null)
@@ -40,6 +40,6 @@ public class CreateNamespaceCommandResolver
             : null;
 
     String replicationMap = getReplicationMap(strategy, strategyOptions);
-    return new CreateKeyspaceOperation(command.name(), replicationMap);
+    return new CreateKeyspaceOperation(name, replicationMap);
   }
 }

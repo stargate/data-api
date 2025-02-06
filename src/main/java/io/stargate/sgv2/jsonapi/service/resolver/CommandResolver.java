@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandTarget;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ErrorTemplate;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
@@ -222,9 +223,10 @@ public interface CommandResolver<C extends Command> {
    *
    * @param name The name to validate.
    * @param namingRule The naming rule to apply.
+   * @return The validated name.
    * @throws SchemaException if the name is invalid.
    */
-  default void validateSchemaName(String name, SchemaObjectNamingRule namingRule) {
+  default String validateSchemaName(String name, SchemaObjectNamingRule namingRule) {
     if (!namingRule.apply(name)) {
       throw SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
           Map.of(
@@ -233,7 +235,8 @@ public interface CommandResolver<C extends Command> {
               "maxNameLength",
               String.valueOf(namingRule.getMaxLength()),
               "unsupportedSchemaName",
-              name == null ? "<null>" : name));
+              ErrorTemplate.replaceIfNull(name)));
     }
+    return name;
   }
 }

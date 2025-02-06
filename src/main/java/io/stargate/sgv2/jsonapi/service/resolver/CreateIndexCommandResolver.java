@@ -38,7 +38,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, CreateIndexCommand command) {
 
-    validateSchemaName(command.name(), NamingRules.INDEX);
+    var name = validateSchemaName(command.name(), NamingRules.INDEX);
 
     var indexType =
         command.indexType() == null
@@ -78,8 +78,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
 
     // this will throw APIException if the index is not supported
     var apiIndex =
-        ApiRegularIndex.FROM_DESC_FACTORY.create(
-            ctx.schemaObject(), command.name(), command.definition());
+        ApiRegularIndex.FROM_DESC_FACTORY.create(ctx.schemaObject(), name, command.definition());
     var attempt = attemptBuilder.build(apiIndex);
 
     var pageBuilder =

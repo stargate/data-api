@@ -34,7 +34,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, CreateVectorIndexCommand command) {
 
-    validateSchemaName(command.name(), NamingRules.INDEX);
+    var name = validateSchemaName(command.name(), NamingRules.INDEX);
 
     var indexType =
         command.indexType() == null
@@ -78,8 +78,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
 
     // this will throw APIException if the index is not supported
     var apiIndex =
-        ApiVectorIndex.FROM_DESC_FACTORY.create(
-            ctx.schemaObject(), command.name(), command.definition());
+        ApiVectorIndex.FROM_DESC_FACTORY.create(ctx.schemaObject(), name, command.definition());
     var attempt = attemptBuilder.build(apiIndex);
 
     var pageBuilder =
