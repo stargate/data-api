@@ -30,10 +30,10 @@ public class ListIndexesCommandResolver implements CommandResolver<ListIndexesCo
     var taskBuilder = ListIndexesDBTask.builder(commandContext.schemaObject());
     taskBuilder.withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
-    var tasks = new TaskGroup<ListIndexesDBTask, TableSchemaObject>(taskBuilder.build());
+    var tasks = new TaskGroup<>(taskBuilder.build());
 
     var accumulator =
-        MetadataDBTaskPage.<TableSchemaObject>accumulator(commandContext)
+        MetadataDBTaskPage.accumulator(ListIndexesDBTask.class, commandContext)
             .showSchema(explain)
             .usingCommandStatus(CommandStatus.EXISTING_INDEXES);
 

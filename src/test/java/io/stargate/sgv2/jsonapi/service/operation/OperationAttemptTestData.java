@@ -17,12 +17,12 @@ public class OperationAttemptTestData extends TestDataSuplier {
     super(testData);
   }
 
-  public OperationAttemptFixture<TestOperationAttempt, TableSchemaObject> emptyFixture() {
+  public BaseTaskFixture<TestOperationAttempt, TableSchemaObject> emptyFixture() {
 
     return newFixture(null, null, null);
   }
 
-  public OperationAttemptFixture<TestOperationAttempt, TableSchemaObject> fixtureWithOneRetry() {
+  public BaseTaskFixture<TestOperationAttempt, TableSchemaObject> fixtureWithOneRetry() {
 
     var retryPolicy =
         new OperationAttempt.RetryPolicy(1, Duration.ofMillis(1)) {
@@ -35,7 +35,7 @@ public class OperationAttemptTestData extends TestDataSuplier {
     return newFixture(null, retryPolicy, null);
   }
 
-  private OperationAttemptFixture<TestOperationAttempt, TableSchemaObject> newFixture(
+  private BaseTaskFixture<TestOperationAttempt, TableSchemaObject> newFixture(
       AsyncResultSet resultSet,
       OperationAttempt.RetryPolicy retryPolicy,
       DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory) {
@@ -58,7 +58,7 @@ public class OperationAttemptTestData extends TestDataSuplier {
             new TestOperationAttempt(
                 0, testData.schemaObject().emptyTableSchemaObject(), retryPolicy, resultSet));
 
-    return new OperationAttemptFixture<>(
+    return new BaseTaskFixture<>(
         attempt, commandExecutor, exceptionHandlerFactory, resultSet);
   }
 }

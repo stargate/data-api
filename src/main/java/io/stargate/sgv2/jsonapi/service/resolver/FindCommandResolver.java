@@ -56,7 +56,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   }
 
   @Override
-  public Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, FindCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(CommandContext<TableSchemaObject> commandContext, FindCommand command) {
 
     // TODO: if we are doing in memory sorting how do we get a paging state working ?
     // The in memory sorting will blank out the paging state so we need to handle this
@@ -65,17 +65,17 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
             ? CqlPagingState.EMPTY
             : CqlPagingState.from(command.options().pageState());
 
-    var pageBuilder =
-        ReadDBTaskPage.<TableSchemaObject>builder().singleResponse(false).mayReturnVector(command);
+    var accumulator =
+        ReadDBTaskPage.accumulator(commandContext).singleResponse(false).mayReturnVector(command);
 
-    return readCommandResolver.buildReadOperation(ctx, command, cqlPageState, pageBuilder);
+    return readCommandResolver.buildReadOperation(commandContext, command, cqlPageState, accumulator);
 
     // TODO: AARON MAHESH this is what was here before, leaving until we confirm all good
 
-    //    var rowSorterWithWarnings = tableRowSorterClauseResolver.resolve(ctx, command);
+    //    var rowSorterWithWarnings = tableRowSorterClauseResolver.resolve(commandContext, command);
     //
     //    boolean inMemorySort = rowSorterWithWarnings != null;
-    //    var operationConfig = ctx.getConfig(OperationsConfig.class);
+    //    var operationConfig = commandContext.getConfig(OperationsConfig.class);
     //    int limit =
     //        Optional.ofNullable(command.options())
     //            .map(FindCommand.Options::limit)
@@ -94,7 +94,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     //        inMemorySort ? operationsConfig.defaultSortPageSize() :
     // operationsConfig.defaultPageSize();
     //
-    //    var orderBy = tableSortOrderByCqlClauseResolver.resolve(ctx, command);
+    //    var orderBy = tableSortOrderByCqlClauseResolver.resolve(commandContext, command);
     //
     //    int skip =
     // Optional.ofNullable(command.options()).map(FindCommand.Options::skip).orElse(0);
@@ -107,7 +107,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     //        TableProjection.fromDefinition(
     //            objectMapper,
     //            command.tableProjectionDefinition(),
-    //            ctx.schemaObject(),
+    //            commandContext.schemaObject(),
     //            inMemorySort
     //                ?
     // rowSorterWithWarnings.getOrderingColumns().stream().map(ApiColumnDef::name).toList()
@@ -115,7 +115,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     //
     //    var builder =
     //        new TableReadDBTaskBuilder(
-    //                ctx.schemaObject(),
+    //                commandContext.schemaObject(),
     //                projection,
     //                projection,
     //                orderBy,
@@ -127,7 +127,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     //
     //    var where =
     //        TableWhereCQLClause.forSelect(
-    //            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
+    //            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command).target());
     //    var attempts = new OperationAttemptContainer<>(builder.build(where));
     //
     //    var pageBuilder =
@@ -135,8 +135,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     //            .singleResponse(false)
     //            .includeSortVector(command.options() != null &&
     // command.options().includeSortVector())
-    //            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-    //            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+    //            .debugMode(commandContext.getConfig(DebugModeConfig.class).enabled())
+    //            .useErrorObjectV2(commandContext.getConfig(OperationsConfig.class).extendError());
     //
     //    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
   }

@@ -11,20 +11,22 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class OperationAttemptAssertions<
-    FixtureT, SubT extends OperationAttempt<SubT, SchemaT>, SchemaT extends SchemaObject> {
+    FixtureT> {
 
   private static Logger LOGGER = LoggerFactory.getLogger(OperationAttemptAssertions.class);
 
   private final FixtureT fixture;
-  public final OperationAttempt<SubT, SchemaT> target;
+  public final BaseTask<?,?,?> task;
   private final CommandQueryExecutor queryExecutor;
   private final DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory;
 
@@ -34,36 +36,36 @@ public class OperationAttemptAssertions<
       CommandQueryExecutor queryExecutor,
       DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
     this.fixture = fixture;
-    this.target = target;
+    this.task = target;
     this.queryExecutor = queryExecutor;
     this.exceptionHandlerFactory = exceptionHandlerFactory;
   }
 
   public FixtureT assertCompleted() {
 
-    LOGGER.warn("assertCompleted() starting \nattempt={}", target.toString(true));
-    target
+    LOGGER.warn("assertCompleted() starting \nattempt={}", task.toString(true));
+    task
         .execute(queryExecutor, exceptionHandlerFactory)
         .subscribe()
         .withSubscriber(UniAssertSubscriber.create())
         .awaitItem(Duration.ofSeconds(1)) // wait up to 1 second, so retries can be handled
         .assertCompleted();
-    LOGGER.warn("assertCompleted() finished \nattempt={}", target.toString(true));
+    LOGGER.warn("assertCompleted() finished \nattempt={}", task.toString(true));
     return fixture;
   }
 
   public FixtureT maybeAddFailure(Throwable expectedException) {
-    target.maybeAddFailure(expectedException);
+    task.maybeAddFailure(expectedException);
     return fixture;
   }
 
   public FixtureT setStatus(OperationAttempt.OperationStatus status) {
-    target.setStatus(status);
+    task.setStatus(status);
     return fixture;
   }
 
   public FixtureT doThrowOnBuildStatementContext(Throwable expectedException) {
-    doThrow(expectedException).when(target).buildStatementContext(any());
+    doThrow(expectedException).when(task).buildStatementContext(any());
     return fixture;
   }
 
@@ -78,20 +80,20 @@ public class OperationAttemptAssertions<
               return invocation
                   .callRealMethod(); // Or return null/appropriate value if using a mock
             })
-        .when(target)
+        .when(task)
         .buildStatementContext(any());
     return fixture;
   }
 
   public FixtureT assertStatus(OperationAttempt.OperationStatus status, String message) {
-    assertThat(target.status())
+    assertThat(task.status())
         .as("Status should be %s when: %s", status, message)
         .isEqualTo(status);
     return fixture;
   }
 
   public FixtureT assertFailure(Class<? extends Throwable> clazz, String message) {
-    assertThat(target.failure())
+    assertThat(task.failure())
         .as("Attempt should have the failure class %s when: %s", clazz.getSimpleName(), message)
         .isPresent()
         .get()
@@ -100,7 +102,7 @@ public class OperationAttemptAssertions<
   }
 
   public FixtureT assertFailure(Throwable throwable, String message) {
-    assertThat(target.failure())
+    assertThat(task.failure())
         .as("Attempt should have the failure %s when: %s", throwable.toString(), message)
         .isPresent()
         .get()
@@ -109,13 +111,13 @@ public class OperationAttemptAssertions<
   }
 
   public FixtureT assertFailureEmpty(String message) {
-    assertThat(target.failure()).as("Attempt failure should be empty when: %s", message).isEmpty();
+    assertThat(task.failure()).as("Attempt failure should be empty when: %s", message).isEmpty();
     return fixture;
   }
 
   public FixtureT verifyExecuteStatementCalled(int times, String message) {
     verify(
-            target,
+        task,
             times(times)
                 .description("execute() called %s times when: %s".formatted(times, message)))
         .buildStatementContext(any());
@@ -125,7 +127,7 @@ public class OperationAttemptAssertions<
   public FixtureT verifyOnCompletionCalled(int times, String message) {
 
     verify(
-            target,
+        task,
             times(times)
                 .description("onCompletion() called %s times when: %s".formatted(times, message)))
         .onCompletion(any(), any(), any());
@@ -134,7 +136,7 @@ public class OperationAttemptAssertions<
 
   public FixtureT verifyOnCompletionResultSet(AsyncResultSet expectedResultSet, String message) {
     verify(
-            target,
+        task,
             times(1)
                 .description(
                     "onCompletion() called 1 time with resultset %s when: %s"
@@ -145,7 +147,7 @@ public class OperationAttemptAssertions<
 
   public FixtureT verifyOnCompletionThrowable(Throwable expectedThrowable, String message) {
     verify(
-            target,
+        task,
             times(1)
                 .description(
                     "onCompletion() called 1 time with throwable %s when: %s"
@@ -156,7 +158,7 @@ public class OperationAttemptAssertions<
 
   public FixtureT verifyOnSuccessCalled(int times, String message) {
     verify(
-            target,
+        task,
             times(times)
                 .description("onSuccess() called %s times when: %s".formatted(times, message)))
         .onSuccess(any());
@@ -165,7 +167,7 @@ public class OperationAttemptAssertions<
 
   public FixtureT verifyOnSuccessResultSet(AsyncResultSet expected, String message) {
     verify(
-            target,
+        task,
             times(1)
                 .description(
                     "onSuccess() called with assertions resultset %s when: %s"
@@ -176,7 +178,7 @@ public class OperationAttemptAssertions<
 
   public FixtureT verifyOneWarning(WarningException.Code code, String message) {
 
-    assertThat(target.allWarnings())
+    assertThat(task.allWarnings())
         .as("Warning exists with code=%s when %s:".formatted(code, message))
         .hasSize(1)
         .anyMatch(
@@ -186,7 +188,7 @@ public class OperationAttemptAssertions<
 
   public FixtureT verifyWarningContains(String contains, String message) {
 
-    assertThat(target.allWarnings())
+    assertThat(task.allWarnings())
         .as("Warning message contains assertions when: %s".formatted(message))
         .hasSize(1)
         .first()

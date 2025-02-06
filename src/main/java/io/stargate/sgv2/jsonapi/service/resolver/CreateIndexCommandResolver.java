@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
-import static io.stargate.sgv2.jsonapi.util.ApiPropertyUtils.getOrDefault;
+import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
@@ -83,6 +83,6 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
 
     var taskGroup = new TaskGroup<>(taskBuilder.build(apiIndex));
 
-    return new TaskOperation<>(taskGroup, SchemaDBTaskPage.accumulator(commandContext));
+    return new TaskOperation<>(taskGroup, SchemaDBTaskPage.accumulator(CreateIndexDBTask.class, commandContext));
   }
 }

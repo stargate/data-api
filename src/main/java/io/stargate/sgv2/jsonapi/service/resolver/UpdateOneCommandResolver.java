@@ -18,6 +18,8 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
@@ -74,32 +76,28 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
   }
 
   @Override
-  public Operation resolveTableCommand(
-      CommandContext<TableSchemaObject> ctx, UpdateOneCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, UpdateOneCommand command) {
 
     // Sort clause is not supported for table updateOne command.
     if (command.sortClause() != null && !command.sortClause().isEmpty()) {
       throw SortException.Code.UNSUPPORTED_SORT_FOR_TABLE_UPDATE_COMMAND.get(
-          errVars(ctx.schemaObject(), map -> {}));
+          errVars(commandContext.schemaObject(), map -> {}));
     }
 
-    var builder = new UpdateDBTaskBuilder<>(ctx.schemaObject(), true);
+    var taskBuilder = UpdateDBTask.builder(commandContext.schemaObject())
+        .withUpdateOne(true);
+    taskBuilder.withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
     // need to update so we use WithWarnings correctly
     var where =
         TableWhereCQLClause.forUpdate(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
+            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command).target());
 
-    var attempts =
-        new OperationAttemptContainer<>(
-            builder.build(where, tableUpdateResolver.resolve(ctx, command)));
+    var taskGroup = new TaskGroup<>(
+            taskBuilder.build(where, tableUpdateResolver.resolve(commandContext, command)));
 
-    var pageBuilder =
-        UpdateAttemptPage.<TableSchemaObject>builder()
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
-
-    return new GenericOperation<>(attempts, pageBuilder, TableDriverExceptionHandler::new);
+    return new TaskOperation<>(taskGroup, UpdateAttemptPage.accumulator(commandContext));
   }
 
   @Override

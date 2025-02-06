@@ -71,7 +71,7 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
       taskBuilder.withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
       var taskGroup = new TaskGroup<>(taskBuilder.build());
-      return new TaskOperation<>(taskGroup, TruncateDBTaskPage.accumulator(commandContext));
+      return new TaskOperation<>(taskGroup, TruncateDBTaskPage.accumulator(TruncateDBTask.class, commandContext));
     }
 
     TableDeleteDBTaskBuilder taskBuilder =

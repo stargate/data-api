@@ -66,6 +66,7 @@ public abstract class TaskBuilder<TaskT extends Task<SchemaT>, SchemaT extends S
     @FunctionalInterface
     public interface BasicTaskConstructor<
         TaskT extends Task<SchemaT>, SchemaT extends SchemaObject> {
+
       TaskT create(
           int position,
           SchemaT schemaObject,

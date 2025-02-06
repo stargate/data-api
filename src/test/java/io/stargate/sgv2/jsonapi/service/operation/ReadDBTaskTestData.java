@@ -15,17 +15,17 @@ import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableProjection;
 
-public class ReadAttemptTestData extends OperationAttemptTestData {
+public class ReadDBTaskTestData extends OperationAttemptTestData {
 
-  public ReadAttemptTestData(TestData testData) {
+  public ReadDBTaskTestData(TestData testData) {
     super(testData);
   }
 
-  public OperationAttemptFixture<?, TableSchemaObject> emptyReadAttemptFixture() {
+  public BaseTaskFixture<?, TableSchemaObject> emptyReadAttemptFixture() {
     return newReadAttemptFixture(null, null);
   }
 
-  private OperationAttemptFixture<?, TableSchemaObject> newReadAttemptFixture(
+  private BaseTaskFixture<?, TableSchemaObject> newReadAttemptFixture(
       AsyncResultSet resultSet,
       DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory) {
 
@@ -42,7 +42,7 @@ public class ReadAttemptTestData extends OperationAttemptTestData {
     var objectMapper = new ObjectMapper();
 
     // spy() the attempt and handler so we get default behaviour and can track calls to the methods
-    var attempt =
+    var task =
         spy(
             new TestReadDBTask(
                 0,
@@ -58,8 +58,8 @@ public class ReadAttemptTestData extends OperationAttemptTestData {
                     TableSchemaObject.from(testData.tableMetadata().keyValue(), objectMapper)),
                 resultSet));
 
-    return new OperationAttemptFixture<>(
-        attempt, queryExecutor, exceptionHandlerFactory, resultSet);
+    return new BaseTaskFixture<>(
+        task, queryExecutor, exceptionHandlerFactory, resultSet);
   }
 
   private FindCommand mockFindCommand() {

@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
  * A page of results from a update command, use {@link #builder()} to get a builder to pass to
  * {@link GenericOperation}.
  */
-public class UpdateAttemptPage<SchemaT extends TableBasedSchemaObject>
+public class UpdateAttemptPage<SchemaT extends TableSchemaObject>
     extends DBTaskPage<UpdateDBTask<SchemaT>, SchemaT> {
 
   private UpdateAttemptPage(
@@ -44,7 +44,7 @@ public class UpdateAttemptPage<SchemaT extends TableBasedSchemaObject>
     }
   }
 
-  public static class Accumulator<SchemaT extends TableBasedSchemaObject>
+  public static class Accumulator<SchemaT extends TableSchemaObject>
       extends TaskAccumulator<UpdateDBTask<SchemaT>, SchemaT> {
 
     Accumulator() {}

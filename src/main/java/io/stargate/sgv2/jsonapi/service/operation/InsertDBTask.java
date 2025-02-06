@@ -8,7 +8,9 @@ import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
@@ -42,6 +44,7 @@ public abstract class InsertDBTask<SchemaT extends TableBasedSchemaObject> exten
     // and if there is an error shredding we will not have the insert clause
     this.insertValuesCQLClause = insertValuesCQLClause;
   }
+
 
   // =================================================================================================
   // BaseTask overrides

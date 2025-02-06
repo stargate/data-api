@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.DropIndexDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DropIndexExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
-import io.stargate.sgv2.jsonapi.util.ApiPropertyUtils;
+import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 
@@ -53,7 +53,7 @@ public class DropIndexCommandResolver implements CommandResolver<DropIndexComman
     taskBuilder
         .withIndexName(indexName)
         .withIfExists(
-          ApiPropertyUtils.getOrDefault(command.options(),
+          ApiOptionUtils.getOrDefault(command.options(),
             DropIndexCommand.Options::ifExists, IF_EXISTS_DEFAULT));
 
 
@@ -61,6 +61,6 @@ public class DropIndexCommandResolver implements CommandResolver<DropIndexComman
 
     return new TaskOperation<>(
         taskGroup,
-        SchemaDBTaskPage.accumulator(commandContext));
+        SchemaDBTaskPage.accumulator(DropIndexDBTask.class, commandContext));
   }
 }

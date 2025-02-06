@@ -52,11 +52,11 @@ public class CommandProcessor {
    * @param commandContext {@link CommandContext}
    * @param command {@link Command}
    * @return Uni emitting the result of the command execution.
-   * @param <T> Type of the command.
-   * @param <U> Type of the schema object command operates on.
+   * @param <CommandT> Type of the command.
+   * @param <SchemaT> Type of the schema object command operates on.
    */
-  public <T extends Command, U extends SchemaObject> Uni<CommandResult> processCommand(
-      CommandContext<U> commandContext, T command) {
+  public <CommandT extends Command, SchemaT extends SchemaObject> Uni<CommandResult> processCommand(
+      CommandContext<SchemaT> commandContext, CommandT command) {
 
     var debugMode = commandContext.getConfig(DebugModeConfig.class).enabled();
     var errorObjectV2 = commandContext.getConfig(OperationsConfig.class).extendError();
@@ -75,7 +75,7 @@ public class CommandProcessor {
                   .flatMap(
                       resolver -> {
                         // if we have resolver, resolve operation
-                        Operation<U> operation =
+                        Operation<SchemaT> operation =
                             resolver.resolveCommand(commandContext, vectorizedCommand);
                         return Uni.createFrom().item(operation);
                       });

@@ -35,6 +35,10 @@ public class TableInsertDBTask extends InsertDBTask<TableSchemaObject> {
     setStatus(TaskStatus.READY);
   }
 
+  public static TableInsertDBTaskBuilder builder(TableSchemaObject schemaObject) {
+    return new TableInsertDBTaskBuilder(schemaObject);
+  }
+
   @Override
   public Optional<DocRowIdentifer> docRowID() {
     return Optional.ofNullable(rowId);

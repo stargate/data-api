@@ -3,23 +3,27 @@ package io.stargate.sgv2.jsonapi.service.operation;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DriverExceptionHandlerAssertions;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 
-public class OperationAttemptFixture<
-    SubT extends OperationAttempt<SubT, SchemaT>, SchemaT extends SchemaObject> {
+public class BaseTaskFixture<
+    TaskT extends BaseTask<SchemaT, ResultSupplierT, ResultT>,
+    SchemaT extends SchemaObject,
+    ResultSupplierT extends BaseTask.UniSupplier<ResultT>,
+    ResultT> {
 
-  private final OperationAttemptAssertions<OperationAttemptFixture<SubT, SchemaT>, SubT, SchemaT>
+  private final OperationAttemptAssertions<BaseTaskFixture<SubT, SchemaT>, SubT, SchemaT>
       attempt;
 
-  private final CommandQueryExecutorAssertions<OperationAttemptFixture<SubT, SchemaT>>
+  private final CommandQueryExecutorAssertions<BaseTaskFixture<SubT, SchemaT>>
       queryExecutor;
 
-  private final DriverExceptionHandlerAssertions<OperationAttemptFixture<SubT, SchemaT>, SchemaT>
+  private final DriverExceptionHandlerAssertions<BaseTaskFixture<SubT, SchemaT>, SchemaT>
       exceptionHandler;
 
   private final AsyncResultSet resultSet;
 
-  public OperationAttemptFixture(
-      OperationAttempt<SubT, SchemaT> attempt,
+  public BaseTaskFixture(
+      BaseTask<SubT, SchemaT, ?> attempt,
       CommandQueryExecutor queryExecutor,
       DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory,
       AsyncResultSet resultSet) {
@@ -35,16 +39,16 @@ public class OperationAttemptFixture<
     this.resultSet = resultSet;
   }
 
-  public OperationAttemptAssertions<OperationAttemptFixture<SubT, SchemaT>, SubT, SchemaT>
+  public OperationAttemptAssertions<BaseTaskFixture<SubT, SchemaT>, SubT, SchemaT>
       attempt() {
     return attempt;
   }
 
-  public CommandQueryExecutorAssertions<OperationAttemptFixture<SubT, SchemaT>> queryExecutor() {
+  public CommandQueryExecutorAssertions<BaseTaskFixture<SubT, SchemaT>> queryExecutor() {
     return queryExecutor;
   }
 
-  public DriverExceptionHandlerAssertions<OperationAttemptFixture<SubT, SchemaT>, SchemaT>
+  public DriverExceptionHandlerAssertions<BaseTaskFixture<SubT, SchemaT>, SchemaT>
       exceptionHandler() {
     return exceptionHandler;
   }

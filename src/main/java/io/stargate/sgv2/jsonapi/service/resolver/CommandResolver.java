@@ -19,6 +19,8 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+
+import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -59,18 +61,20 @@ public interface CommandResolver<C extends Command> {
    * @param commandContext Context the command is running in
    * @param command The command to resolve into an opertion
    * @return Operation, must not be <code>null</code>
-   * @param <T> The type of the schema object the command is operating on.
+   * @param <SchemaT> The type of the schema object the command is operating on.
    */
-  default <T extends SchemaObject> Operation<? extends SchemaObject> resolveCommand(
-      CommandContext<T> commandContext, C command) {
+  @SuppressWarnings("unchecked")
+  default <SchemaT extends SchemaObject> Operation<SchemaT> resolveCommand(
+      CommandContext<SchemaT> commandContext, C command) {
     Objects.requireNonNull(commandContext, "commandContext must not be null");
     Objects.requireNonNull(command, "command must not be null");
 
+    // aaron - feb 6 20254 - adding the unchecked was the only way I could get this to compile
     return switch (commandContext.schemaObject().type()) {
-      case COLLECTION -> resolveCollectionCommand(commandContext.asCollectionContext(), command);
-      case TABLE -> resolveTableCommand(commandContext.asTableContext(), command);
-      case KEYSPACE -> resolveKeyspaceCommand(commandContext.asKeyspaceContext(), command);
-      case DATABASE -> resolveDatabaseCommand(commandContext.asDatabaseContext(), command);
+      case COLLECTION -> (Operation<SchemaT>) resolveCollectionCommand(commandContext.asCollectionContext(), command);
+      case TABLE -> (Operation<SchemaT>)resolveTableCommand(commandContext.asTableContext(), command);
+      case KEYSPACE -> (Operation<SchemaT>)resolveKeyspaceCommand(commandContext.asKeyspaceContext(), command);
+      case DATABASE -> (Operation<SchemaT>)resolveDatabaseCommand(commandContext.asDatabaseContext(), command);
     };
   }
 

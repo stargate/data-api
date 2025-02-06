@@ -23,12 +23,13 @@ public class TruncateDBTask<SchemaT extends TableBasedSchemaObject>
                         SchemaT schemaObject,
                         DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
     super(position, schemaObject, TaskRetryPolicy.NO_RETRY, exceptionHandlerFactory);
+
     setStatus(TaskStatus.READY);
   }
 
   public static <SchemaT extends TableBasedSchemaObject> TaskBuilder.BasicTaskBuilder<TruncateDBTask<SchemaT>, SchemaT> builder(
-      TableSchemaObject schemaObject) {
-    return new TaskBuilder.BasicTaskBuilder<>(schemaObject, TruncateDBTask::new);
+      SchemaT schemaObject) {
+    return new TaskBuilder.BasicTaskBuilder<TruncateDBTask<SchemaT>, SchemaT>(schemaObject, TruncateDBTask::new);
   }
 
 

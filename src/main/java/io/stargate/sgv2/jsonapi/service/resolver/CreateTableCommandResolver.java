@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableExceptionHan
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
-import io.stargate.sgv2.jsonapi.util.ApiPropertyUtils;
+import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
@@ -33,8 +33,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
   public Operation<KeyspaceSchemaObject> resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> commandContext, CreateTableCommand command) {
 
-    var taskBuilder =
-        CreateTableDBTask.builder(commandContext.schemaObject())
+    var taskBuilder = CreateTableDBTask.builder(commandContext.schemaObject())
             .withSchemaRetryPolicy(
                 new SchemaDBTask.SchemaRetryPolicy(
                     commandContext.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
@@ -45,12 +44,13 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
                             .ddlRetryDelayMillis())));
 
     taskBuilder.ifNotExists(
-        ApiPropertyUtils.getOrDefault(
+        ApiOptionUtils.getOrDefault(
             command.options(), CreateTableCommand.Options::ifNotExists, false));
 
     var apiTableDef =
         ApiTableDef.FROM_TABLE_DESC_FACTORY.create(
             command.name(), command.definition(), validateVectorize);
+    // todo - move the custom properties building into the builder
     taskBuilder
         .tableDef(apiTableDef)
         .customProperties(
@@ -62,8 +62,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
 
     var taskGroup = new TaskGroup<>(taskBuilder.build());
 
-    return new TaskOperation<CreateTableDBTask, KeyspaceSchemaObject>(
-        taskGroup, SchemaDBTaskPage.accumulator(commandContext));
+    return new TaskOperation<>(taskGroup, SchemaDBTaskPage.accumulator(CreateTableDBTask.class, commandContext));
   }
 
   @Override

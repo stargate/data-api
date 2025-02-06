@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
-import static io.stargate.sgv2.jsonapi.util.ApiPropertyUtils.getOrDefault;
+import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptio
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexDBTask;
+import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexDBTaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
@@ -58,8 +59,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     }
 
     // TODO: we need a centralised way of creating retry attempt.
-    var taskBuilder =
-        CreateIndexDBTask.builder(commandContext.schemaObject())
+    CreateIndexDBTaskBuilder taskBuilder = CreateIndexDBTask.builder(commandContext.schemaObject())
             .withIfNotExists(
                 getOrDefault(
                     command.options(),
@@ -84,6 +84,6 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
 
     var taskGroup = new TaskGroup<>(taskBuilder.build(apiIndex));
 
-    return new TaskOperation<>(taskGroup, SchemaDBTaskPage.accumulator(commandContext));
+    return new TaskOperation<>(taskGroup, SchemaDBTaskPage.accumulator(CreateIndexDBTask.class, commandContext));
   }
 }

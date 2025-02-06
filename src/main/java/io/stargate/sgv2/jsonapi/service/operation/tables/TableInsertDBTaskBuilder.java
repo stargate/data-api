@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.InsertDBTask;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
@@ -21,29 +22,21 @@ public class TableInsertDBTaskBuilder
     extends TaskBuilder<InsertDBTask<TableSchemaObject>, TableSchemaObject> {
 
   private RowShredder rowShredder = null;
-  private WriteableTableRowBuilder writeableTableRowBuilder = null;
 
   public TableInsertDBTaskBuilder(TableSchemaObject tableSchemaObject) {
     super(tableSchemaObject);
   }
 
   public TableInsertDBTaskBuilder withRowShredder(RowShredder rowShredder) {
-    this.rowShredder = Objects.requireNonNull(rowShredder, "rowShredder cannot be null");
-    return this;
-  }
-
-  public TableInsertDBTaskBuilder withWriteableTableRowBuilder(
-      WriteableTableRowBuilder writeableTableRowBuilder) {
-    // we could build this in the builder, but keeping it as a prop for now incase it is easier for
-    // testing
-    this.writeableTableRowBuilder =
-        Objects.requireNonNull(writeableTableRowBuilder, "writeableTableRowBuilder cannot be null");
+    this.rowShredder = rowShredder;
     return this;
   }
 
   public TableInsertDBTask build(JsonNode jsonNode) {
     Objects.requireNonNull(jsonNode, "jsonNode cannot be null");
     Objects.requireNonNull(rowShredder, "rowShredder cannot be null");
+
+    var writeableTableRowBuilder = new WriteableTableRowBuilder(schemaObject, JSONCodecRegistries.DEFAULT_REGISTRY);
 
     WriteableTableRow writeableRow = null;
     Exception exception = null;

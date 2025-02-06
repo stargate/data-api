@@ -528,6 +528,7 @@ public abstract class OperationAttempt<
    *
    * @return An unmodifiable list of warnings, never <code>null</code>
    */
+  @Override
   public List<WarningException> allWarnings() {
     return List.copyOf(warnings);
   }
@@ -539,7 +540,8 @@ public abstract class OperationAttempt<
    *
    * @return An unmodifiable list of warnings, never <code>null</code>
    */
-  protected List<WarningException> warningsExcludingSuppressed() {
+  @Override
+  public List<WarningException> warningsExcludingSuppressed() {
     if (suppressedWarnings.isEmpty()) {
       return warnings;
     }

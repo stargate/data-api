@@ -13,10 +13,9 @@ import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
-import io.stargate.sgv2.jsonapi.util.ApiPropertyUtils;
+import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
-import java.util.Optional;
 
 /** Resolver for the {@link DropTableCommand}. */
 @ApplicationScoped
@@ -48,13 +47,13 @@ public class DropTableCommandResolver implements CommandResolver<DropTableComman
     taskBuilder
         .withTableName(tableName)
         .withIfExists(
-            ApiPropertyUtils.getOrDefault(command.options(),
+            ApiOptionUtils.getOrDefault(command.options(),
                 DropTableCommand.Options::ifExists, false));
 
     var taskGroup = new TaskGroup<>(taskBuilder.build());
 
     return new TaskOperation<>(
         taskGroup,
-        SchemaDBTaskPage.accumulator(commandContext));
+        SchemaDBTaskPage.accumulator(DropTableDBTask.class,commandContext));
   }
 }

@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionInsertAt
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.WriteableTableRowBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
@@ -52,21 +53,18 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, InsertOneCommand command) {
 
-    TableInsertDBTaskBuilder taskBuilder =
-        new TableInsertDBTaskBuilder(commandContext.schemaObject())
+    TableInsertDBTaskBuilder taskBuilder = TableInsertDBTask.builder(commandContext.schemaObject())
             .withRowShredder(rowShredder)
-            .withWriteableTableRowBuilder(
-                new WriteableTableRowBuilder(
-                    commandContext.schemaObject(), JSONCodecRegistries.DEFAULT_REGISTRY))
             .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
-    var tasks =
+    var taskGroup =
         new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(
             taskBuilder.build(command.document()));
+
     var accumulator =
         InsertDBTaskPage.accumulator(commandContext)
             .returnDocumentResponses(false); // never for insertOne
 
-    return new TaskOperation<>(tasks, accumulator);
+    return new TaskOperation<>(taskGroup, accumulator);
   }
 }

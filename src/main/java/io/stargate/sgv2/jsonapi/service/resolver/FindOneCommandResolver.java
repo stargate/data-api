@@ -53,17 +53,17 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   }
 
   @Override
-  public Operation resolveTableCommand(
-      CommandContext<TableSchemaObject> ctx, FindOneCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, FindOneCommand command) {
 
-    var pageBuilder = ReadDBTaskPage.builder().singleResponse(true).mayReturnVector(command);
+    var accumulator = ReadDBTaskPage.accumulator(commandContext).singleResponse(true).mayReturnVector(command);
 
     // the skip is 0 and the limit is 1 always for findOne
-    return readCommandResolver.buildReadOperation(ctx, command, CqlPagingState.EMPTY, pageBuilder);
+    return readCommandResolver.buildReadOperation(commandContext, command, CqlPagingState.EMPTY, accumulator);
 
     // TODO: AARON MAHESH - this is what was here before, leaving until we confirm all good
 
-    //    var attemptBuilder = new TableReadDBTaskBuilder(ctx.schemaObject());
+    //    var attemptBuilder = new TableReadDBTaskBuilder(commandContext.schemaObject());
     //
     //    // the skip is 0 and the limit is 1 always for findOne. just making that explicit
     //    var commandSkip = 0;
@@ -71,7 +71,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     //    attemptBuilder.addBuilderOption(CQLOption.ForSelect.limit(commandLimit));
     //
     //    // work out the CQL order by
-    //    var orderByWithWarnings = tableCqlSortClauseResolver.resolve(ctx, command);
+    //    var orderByWithWarnings = tableCqlSortClauseResolver.resolve(commandContext, command);
     //    attemptBuilder.addOrderBy(orderByWithWarnings);
     //
     //    // and then if we need to do in memory sorting
@@ -81,13 +81,13 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     //          orderByWithWarnings.target(),
     //          commandSkip,
     //          commandLimit)
-    //        .resolve(ctx, command));
+    //        .resolve(commandContext, command));
     //
     //    // the columns the user wants
     //    // NOTE: the projection is doing double duty as the select and the doc provider, this
     // projection is still at POC leve
     //    var projection = TableProjection.fromDefinition(objectMapper,
-    // command.tableProjectionDefinition(), ctx.schemaObject());
+    // command.tableProjectionDefinition(), commandContext.schemaObject());
     //    attemptBuilder.addSelect(WithWarnings.of(projection));
     //    attemptBuilder.addDocumentSourceSupplier(projection);
     //
@@ -95,7 +95,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     //    // dbLogicalExpressions, which will map into multiple readAttempts
     //    var where =
     //        TableWhereCQLClause.forSelect(
-    //            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command).target());
+    //            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command).target());
     //
     //    var attempts = new OperationAttemptContainer<>(attemptBuilder.build(where));
     //
@@ -103,8 +103,8 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     //        ReadDBTaskPage.<TableSchemaObject>builder()
     //            .singleResponse(true)
     //            .includeSortVector(false)
-    //            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-    //            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+    //            .debugMode(commandContext.getConfig(DebugModeConfig.class).enabled())
+    //            .useErrorObjectV2(commandContext.getConfig(OperationsConfig.class).extendError());
     //
     //    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
   }

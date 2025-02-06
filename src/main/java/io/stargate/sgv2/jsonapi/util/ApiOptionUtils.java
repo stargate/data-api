@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.util;
 import java.util.function.Function;
 
 /**
- * Utility methods for working with properties on the API.
+ * Utility methods for working with options on the API.
  *
  * <p>When working with properties such as those on in the Options for a command we have to do deal
  * with:
@@ -18,9 +18,9 @@ import java.util.function.Function;
  * So we need to either get the actual value the user provided, or a default. This results in a
  * bunch of repeated code.
  */
-public abstract class ApiPropertyUtils {
+public abstract class ApiOptionUtils {
 
-  private ApiPropertyUtils() {
+  private ApiOptionUtils() {
     // prevent instantiation
   }
 

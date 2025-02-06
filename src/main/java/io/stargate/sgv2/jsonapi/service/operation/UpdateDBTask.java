@@ -8,6 +8,7 @@ import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** An attempt to update a row from a table */
-public class UpdateDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<SchemaT> {
+public class UpdateDBTask<SchemaT extends TableSchemaObject> extends DBTask<SchemaT> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UpdateDBTask.class);
 
@@ -40,6 +41,10 @@ public class UpdateDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask
     this.whereCQLClause = whereCQLClause;
     this.updateCQLClause = updateCQLClause;
     setStatus(TaskStatus.READY);
+  }
+
+  public static <SchemaT extends TableSchemaObject> UpdateDBTaskBuilder<SchemaT> builder(SchemaT schemaObject) {
+    return new UpdateDBTaskBuilder<>(schemaObject);
   }
 
   // =================================================================================================

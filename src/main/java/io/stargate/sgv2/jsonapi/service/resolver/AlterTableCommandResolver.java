@@ -46,8 +46,6 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, AlterTableCommand command) {
 
-    final AlterTableOperation operation = command.operation();
-
     // TODO: centralized way of getting the retry policy
     var schemaRetryPolicy =
         new SchemaDBTask.SchemaRetryPolicy(
@@ -58,17 +56,16 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
                     .databaseConfig()
                     .ddlRetryDelayMillis()));
 
-    var taskBuilder =
-        AlterTableDBTask.builder(commandContext.schemaObject())
+    AlterTableDBTaskBuilder taskBuilder = AlterTableDBTask.builder(commandContext.schemaObject())
             .withRetryPolicy(schemaRetryPolicy)
             .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
     // use sequential processing for the attempts, because we sometimes need to do multiple
     // statements
-    var taskGroup = new TaskGroup<SchemaDBTask<TableSchemaObject>, TableSchemaObject>(true);
+    var taskGroup = new TaskGroup<AlterTableDBTask, TableSchemaObject>(true);
 
     taskGroup.addAll(
-        switch (operation) {
+        switch (command.operation()) {
           case AlterTableOperationImpl.AddColumns ac ->
               handleAddColumns(taskBuilder, commandContext.schemaObject(), ac);
           case AlterTableOperationImpl.DropColumns dc ->
@@ -79,10 +76,10 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
               handleDropVectorize(taskBuilder, commandContext.schemaObject(), dc);
           default ->
               throw new IllegalStateException(
-                  "Unexpected AlterTable Operation class: " + operation.getClass().getSimpleName());
+                  "Unexpected AlterTableOperation class: " + command.operation().getClass().getSimpleName());
         });
 
-    return new TaskOperation<>(taskGroup, SchemaDBTaskPage.accumulator(commandContext));
+    return new TaskOperation<>(taskGroup, SchemaDBTaskPage.accumulator(AlterTableDBTask.class, commandContext));
   }
 
   private List<AlterTableDBTask> handleAddColumns(

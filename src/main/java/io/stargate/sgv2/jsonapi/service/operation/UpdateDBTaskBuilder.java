@@ -18,22 +18,22 @@ import java.util.Objects;
  * Builds an attempt to delete a row from an API Table, create a single instance and then call
  * {@link #build(WhereCQLClause)} for each different where clause the command creates.
  */
-public class UpdateDBTaskBuilder extends TaskBuilder<UpdateDBTask<TableSchemaObject>, TableSchemaObject> {
+public class UpdateDBTaskBuilder<SchemaT extends TableSchemaObject> extends TaskBuilder<UpdateDBTask<SchemaT>, SchemaT> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UpdateDBTaskBuilder.class);
 
   private Boolean updateOne = null;
 
-  public UpdateDBTaskBuilder( TableSchemaObject schemaObject) {
+  protected UpdateDBTaskBuilder(SchemaT schemaObject) {
     super(schemaObject);
   }
 
-  public UpdateDBTaskBuilder withUpdateOne(Boolean updateOne) {
+  public UpdateDBTaskBuilder<SchemaT> withUpdateOne(Boolean updateOne) {
     this.updateOne = updateOne;
     return this;
   }
 
-  public UpdateDBTask<TableSchemaObject> build(
+  public UpdateDBTask<SchemaT> build(
       WhereCQLClause<Update> whereCQLClause, WithWarnings<UpdateValuesCQLClause> updateCQLClause) {
 
     Objects.requireNonNull(updateOne, "updateOne must be set");

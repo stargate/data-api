@@ -14,14 +14,14 @@ import java.util.function.Supplier;
  * A page of results for metadata based command, use {@link #builder()} to get a builder to pass to
  * {@link GenericOperation}.
  */
-public class MetadataDBTaskPage<SchemaT extends SchemaObject>
-    extends DBTaskPage<MetadataDBTask<SchemaT>, SchemaT> {
+public class MetadataDBTaskPage<TaskT extends MetadataDBTask<SchemaT>, SchemaT extends SchemaObject>
+    extends DBTaskPage<TaskT, SchemaT> {
 
   private final boolean showSchema;
   private final CommandStatus statusKey;
 
   private MetadataDBTaskPage(
-      TaskGroup<MetadataDBTask<SchemaT>, SchemaT> tasks,
+      TaskGroup<TaskT, SchemaT> tasks,
       CommandResultBuilder resultBuilder,
       boolean showSchema,
       CommandStatus statusKey) {
@@ -31,7 +31,18 @@ public class MetadataDBTaskPage<SchemaT extends SchemaObject>
     this.statusKey = statusKey;
   }
 
-  public static <SchemaT extends SchemaObject> Accumulator<SchemaT> accumulator(
+  /**
+   * Gets the {@link TaskAccumulator} for building a {@link MetadataDBTaskPage} for a metadata command.
+   *
+   * @param taskClass The class of the {@link MetadataDBTask} we are accumulating, this is only needed to lock the
+   *                  generics in. Param is not actually used.
+   * @param commandContext Context used to configure common properties for the {@link TaskAccumulator}
+   * @return A new {@link TaskAccumulator} for building a {@link MetadataDBTaskPage}
+   * @param <TaskT> Subtype of {@link MetadataDBTask} to accumulate.
+   * @param <SchemaT> Schema object type.
+   */
+  public static <TaskT extends MetadataDBTask<SchemaT>, SchemaT extends SchemaObject> Accumulator<TaskT, SchemaT> accumulator(
+      Class<TaskT> taskClass,
       CommandContext<SchemaT> commandContext) {
     return TaskAccumulator.configureForContext(
         new MetadataDBTaskPage.Accumulator<>(), commandContext);
@@ -55,20 +66,20 @@ public class MetadataDBTaskPage<SchemaT extends SchemaObject>
     }
   }
 
-  public static class Accumulator<SchemaT extends SchemaObject>
-      extends TaskAccumulator<MetadataDBTask<SchemaT>, SchemaT> {
+  public static class Accumulator<TaskT extends MetadataDBTask<SchemaT>, SchemaT extends SchemaObject>
+      extends TaskAccumulator<TaskT, SchemaT> {
 
     private boolean showSchema = false;
     private CommandStatus statusKey;
 
     Accumulator() {}
 
-    public Accumulator<SchemaT> showSchema(boolean showSchema) {
+    public Accumulator<TaskT, SchemaT> showSchema(boolean showSchema) {
       this.showSchema = showSchema;
       return this;
     }
 
-    public Accumulator<SchemaT> usingCommandStatus(CommandStatus statusKey) {
+    public Accumulator<TaskT, SchemaT> usingCommandStatus(CommandStatus statusKey) {
       this.statusKey = statusKey;
       return this;
     }
