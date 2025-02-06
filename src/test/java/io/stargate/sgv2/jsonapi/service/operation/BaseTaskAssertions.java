@@ -8,6 +8,7 @@ import static org.mockito.Mockito.times;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
@@ -16,41 +17,42 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OperationAttemptAssertions<
-    FixtureT> {
+public class BaseTaskAssertions<FixtureT> {
 
-  private static Logger LOGGER = LoggerFactory.getLogger(OperationAttemptAssertions.class);
+  private static Logger LOGGER = LoggerFactory.getLogger(BaseTaskAssertions.class);
 
   private final FixtureT fixture;
-  public final BaseTask<?,?,?> task;
-  private final CommandQueryExecutor queryExecutor;
-  private final DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory;
+  public final TestBaseTask task;
+  private final CommandContext<SchemaT> commandContext;
+  private final DefaultDriverExceptionHandler.Factory<?> exceptionHandlerFactory;
 
-  public OperationAttemptAssertions(
+  public BaseTaskAssertions(
       FixtureT fixture,
-      OperationAttempt<SubT, SchemaT> target,
-      CommandQueryExecutor queryExecutor,
-      DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
+      TestBaseTask task,
+      CommandContext<SchemaT> commandContext,
+      DefaultDriverExceptionHandler.Factory<?> exceptionHandlerFactory) {
     this.fixture = fixture;
-    this.task = target;
-    this.queryExecutor = queryExecutor;
+    this.task = task;
+    this.commandContext = commandContext;
     this.exceptionHandlerFactory = exceptionHandlerFactory;
   }
 
   public FixtureT assertCompleted() {
 
-    LOGGER.warn("assertCompleted() starting \nattempt={}", task.toString(true));
+    LOGGER.warn("assertCompleted() starting \ntask={}", task.toString(true));
     task
-        .execute(queryExecutor, exceptionHandlerFactory)
+        .execute(commandContext)
         .subscribe()
         .withSubscriber(UniAssertSubscriber.create())
         .awaitItem(Duration.ofSeconds(1)) // wait up to 1 second, so retries can be handled
         .assertCompleted();
-    LOGGER.warn("assertCompleted() finished \nattempt={}", task.toString(true));
+    LOGGER.warn("assertCompleted() finished \ntask={}", task.toString(true));
     return fixture;
   }
 
@@ -59,7 +61,7 @@ public class OperationAttemptAssertions<
     return fixture;
   }
 
-  public FixtureT setStatus(OperationAttempt.OperationStatus status) {
+  public FixtureT setStatus(Task.TaskStatus status) {
     task.setStatus(status);
     return fixture;
   }
@@ -94,7 +96,7 @@ public class OperationAttemptAssertions<
 
   public FixtureT assertFailure(Class<? extends Throwable> clazz, String message) {
     assertThat(task.failure())
-        .as("Attempt should have the failure class %s when: %s", clazz.getSimpleName(), message)
+        .as("task should have the failure class %s when: %s", clazz.getSimpleName(), message)
         .isPresent()
         .get()
         .isInstanceOf(clazz);
@@ -103,7 +105,7 @@ public class OperationAttemptAssertions<
 
   public FixtureT assertFailure(Throwable throwable, String message) {
     assertThat(task.failure())
-        .as("Attempt should have the failure %s when: %s", throwable.toString(), message)
+        .as("task should have the failure %s when: %s", throwable.toString(), message)
         .isPresent()
         .get()
         .isSameAs(throwable);
@@ -111,7 +113,7 @@ public class OperationAttemptAssertions<
   }
 
   public FixtureT assertFailureEmpty(String message) {
-    assertThat(task.failure()).as("Attempt failure should be empty when: %s", message).isEmpty();
+    assertThat(task.failure()).as("task failure should be empty when: %s", message).isEmpty();
     return fixture;
   }
 

@@ -17,12 +17,12 @@ public class OperationAttemptTestData extends TestDataSuplier {
     super(testData);
   }
 
-  public BaseTaskFixture<TestOperationAttempt, TableSchemaObject> emptyFixture() {
+  public BaseTaskFixture<TestBaseTask, TableSchemaObject> emptyFixture() {
 
     return newFixture(null, null, null);
   }
 
-  public BaseTaskFixture<TestOperationAttempt, TableSchemaObject> fixtureWithOneRetry() {
+  public BaseTaskFixture<TestBaseTask, TableSchemaObject> fixtureWithOneRetry() {
 
     var retryPolicy =
         new OperationAttempt.RetryPolicy(1, Duration.ofMillis(1)) {
@@ -35,7 +35,7 @@ public class OperationAttemptTestData extends TestDataSuplier {
     return newFixture(null, retryPolicy, null);
   }
 
-  private BaseTaskFixture<TestOperationAttempt, TableSchemaObject> newFixture(
+  private BaseTaskFixture<TestBaseTask, TableSchemaObject> newFixture(
       AsyncResultSet resultSet,
       OperationAttempt.RetryPolicy retryPolicy,
       DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory) {
@@ -55,7 +55,7 @@ public class OperationAttemptTestData extends TestDataSuplier {
     // spy() the attempt so we get default behaviour and can track calls to the methods
     var attempt =
         spy(
-            new TestOperationAttempt(
+            new TestBaseTask(
                 0, testData.schemaObject().emptyTableSchemaObject(), retryPolicy, resultSet));
 
     return new BaseTaskFixture<>(

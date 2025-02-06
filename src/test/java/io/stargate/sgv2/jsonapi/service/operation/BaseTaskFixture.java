@@ -1,18 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DriverExceptionHandlerAssertions;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 
-public class BaseTaskFixture<
-    TaskT extends BaseTask<SchemaT, ResultSupplierT, ResultT>,
-    SchemaT extends SchemaObject,
-    ResultSupplierT extends BaseTask.UniSupplier<ResultT>,
-    ResultT> {
+public class BaseTaskFixture {
 
-  private final OperationAttemptAssertions<BaseTaskFixture<SubT, SchemaT>, SubT, SchemaT>
-      attempt;
+  private final BaseTaskAssertions<BaseTaskFixture<SubT, SchemaT>, SubT, SchemaT>
+      task;
 
   private final CommandQueryExecutorAssertions<BaseTaskFixture<SubT, SchemaT>>
       queryExecutor;
@@ -23,23 +20,18 @@ public class BaseTaskFixture<
   private final AsyncResultSet resultSet;
 
   public BaseTaskFixture(
-      BaseTask<SubT, SchemaT, ?> attempt,
-      CommandQueryExecutor queryExecutor,
-      DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory,
+      TestBaseTask task,
+      CommandContext<TableSchemaObject> commandContext,
       AsyncResultSet resultSet) {
 
-    this.exceptionHandler = new DriverExceptionHandlerAssertions<>(this, exceptionHandlerFactory);
-    // the assertions for the exceptionHandlerFactory wrap the original factory so we know when it
-    // is
-    // called and can run assertions on the handler
-    this.attempt =
-        new OperationAttemptAssertions<>(
+    this.task =
+        new BaseTaskAssertions<>(
             this, attempt, queryExecutor, this.exceptionHandler.getHandlerFactory());
     this.queryExecutor = new CommandQueryExecutorAssertions<>(this, queryExecutor);
     this.resultSet = resultSet;
   }
 
-  public OperationAttemptAssertions<BaseTaskFixture<SubT, SchemaT>, SubT, SchemaT>
+  public BaseTaskAssertions<BaseTaskFixture<SubT, SchemaT>, SubT, SchemaT>
       attempt() {
     return attempt;
   }

@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Unit tests for {@link OperationAttempt}.
  *
- * <p><b>NOTE:</b> This is uses the {@link TestOperationAttempt} which is neither a read, write, or
+ * <p><b>NOTE:</b> This is uses the {@link TestBaseTask} which is neither a read, write, or
  * schema attempt it is a generic attempt that is used to test the operation attempt class - it does
  * not call to the QueryExecutor
  */
