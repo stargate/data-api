@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.naming;
 
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.util.regex.Pattern;
 
 /**
@@ -15,19 +16,13 @@ import java.util.regex.Pattern;
  *       #PATTERN_WORD_CHARS}. Word characters typically include letters, digits, and underscores.
  * </ul>
  */
-public abstract class SchemaObjectNamingRule implements NamingRule {
+public abstract class SchemaObjectNamingRule extends NamingRule {
 
   private static final int MAX_NAME_LENGTH = 48;
   private static final Pattern PATTERN_WORD_CHARS = Pattern.compile("\\w+");
-  private final String name;
 
-  public SchemaObjectNamingRule(String name) {
-    this.name = name;
-  }
-
-  @Override
-  public String name() {
-    return name;
+  public SchemaObjectNamingRule(SchemaObject.SchemaObjectType schemaType) {
+    super(schemaType, schemaType.name());
   }
 
   @Override

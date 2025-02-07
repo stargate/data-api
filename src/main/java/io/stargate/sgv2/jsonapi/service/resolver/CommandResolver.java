@@ -21,7 +21,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.naming.SchemaObjectNamingRule;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRule;
 import java.util.Map;
 import java.util.Objects;
 
@@ -75,6 +75,11 @@ public interface CommandResolver<C extends Command> {
       case TABLE -> resolveTableCommand(commandContext.asTableContext(), command);
       case KEYSPACE -> resolveKeyspaceCommand(commandContext.asKeyspaceContext(), command);
       case DATABASE -> resolveDatabaseCommand(commandContext.asDatabaseContext(), command);
+        // should not get here, only the above types will be passed in commandContext
+      default ->
+          throw new IllegalStateException(
+              "Unsupported schema object type to resolve command: "
+                  + commandContext.schemaObject().type().apiName());
     };
   }
 
@@ -226,12 +231,12 @@ public interface CommandResolver<C extends Command> {
    * @return The validated name.
    * @throws SchemaException if the name is invalid.
    */
-  default String validateSchemaName(String name, SchemaObjectNamingRule namingRule) {
+  default String validateSchemaName(String name, NamingRule namingRule) {
     if (!namingRule.apply(name)) {
       throw SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
           Map.of(
               "schemaType",
-              namingRule.name(),
+              namingRule.schemaType().apiName(),
               "maxNameLength",
               String.valueOf(namingRule.getMaxLength()),
               "unsupportedSchemaName",
