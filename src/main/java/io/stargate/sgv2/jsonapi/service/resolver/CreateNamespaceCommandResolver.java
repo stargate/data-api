@@ -27,7 +27,7 @@ public class CreateNamespaceCommandResolver
   public Operation resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, CreateNamespaceCommand command) {
 
-    var name = validateSchemaName(command.name(), NamingRules.KEYSPACE);
+    final var name = validateSchemaName(command.name(), NamingRules.KEYSPACE);
 
     String strategy =
         (command.options() != null && command.options().replication() != null)

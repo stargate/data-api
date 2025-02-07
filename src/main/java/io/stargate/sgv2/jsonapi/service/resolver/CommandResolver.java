@@ -21,7 +21,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRule;
+import io.stargate.sgv2.jsonapi.service.schema.naming.SchemaObjectNamingRule;
 import java.util.Map;
 import java.util.Objects;
 
@@ -231,7 +231,7 @@ public interface CommandResolver<C extends Command> {
    * @return The validated name.
    * @throws SchemaException if the name is invalid.
    */
-  default String validateSchemaName(String name, NamingRule namingRule) {
+  default String validateSchemaName(String name, SchemaObjectNamingRule namingRule) {
     if (!namingRule.apply(name)) {
       throw SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
           Map.of(

@@ -34,7 +34,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, CreateVectorIndexCommand command) {
 
-    var name = validateSchemaName(command.name(), NamingRules.INDEX);
+    final var name = validateSchemaName(command.name(), NamingRules.INDEX);
 
     var indexType =
         command.indexType() == null

@@ -60,7 +60,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateCollectionCommand command) {
 
-    var name = validateSchemaName(command.name(), NamingRules.COLLECTION);
+    final var name = validateSchemaName(command.name(), NamingRules.COLLECTION);
 
     if (command.options() == null) {
       return CreateCollectionOperation.withoutVectorSearch(

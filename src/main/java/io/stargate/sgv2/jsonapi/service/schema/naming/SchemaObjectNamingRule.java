@@ -20,21 +20,38 @@ public abstract class SchemaObjectNamingRule extends NamingRule {
 
   private static final int MAX_NAME_LENGTH = 48;
   private static final Pattern PATTERN_WORD_CHARS = Pattern.compile("\\w+");
+  private final SchemaObject.SchemaObjectType schemaType;
 
   public SchemaObjectNamingRule(SchemaObject.SchemaObjectType schemaType) {
-    super(schemaType, schemaType.name());
+    super(schemaType.name());
+    this.schemaType = schemaType;
   }
 
-  @Override
-  public int getMaxLength() {
-    return MAX_NAME_LENGTH;
+  /**
+   * @return the type of schema object that this rule is applied to
+   */
+  public SchemaObject.SchemaObjectType schemaType() {
+    return schemaType;
   }
 
-  @Override
+  /**
+   * Validates the given name. The name must not be null or empty, must not exceed {@value
+   * #MAX_NAME_LENGTH} characters, and must not contain non-alphanumeric-underscore characters
+   *
+   * @param name the name to validate
+   * @return true if the name is valid, false otherwise
+   */
   public boolean apply(String name) {
     return name != null
         && !name.isEmpty()
         && name.length() <= MAX_NAME_LENGTH
         && PATTERN_WORD_CHARS.matcher(name).matches();
+  }
+
+  /**
+   * @return the maximum allowed length of a name
+   */
+  public int getMaxLength() {
+    return MAX_NAME_LENGTH;
   }
 }

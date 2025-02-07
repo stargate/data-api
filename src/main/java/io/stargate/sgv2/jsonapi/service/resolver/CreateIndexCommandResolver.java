@@ -38,7 +38,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, CreateIndexCommand command) {
 
-    var name = validateSchemaName(command.name(), NamingRules.INDEX);
+    final var name = validateSchemaName(command.name(), NamingRules.INDEX);
 
     var indexType =
         command.indexType() == null

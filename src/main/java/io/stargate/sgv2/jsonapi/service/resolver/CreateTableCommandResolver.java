@@ -33,7 +33,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateTableCommand command) {
 
-    var name = validateSchemaName(command.name(), NamingRules.TABLE);
+    final var name = validateSchemaName(command.name(), NamingRules.TABLE);
 
     var tableName = cqlIdentifierFromUserInput(name);
 

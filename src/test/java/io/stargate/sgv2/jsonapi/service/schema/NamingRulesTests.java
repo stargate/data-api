@@ -2,8 +2,8 @@ package io.stargate.sgv2.jsonapi.service.schema;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRule;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
+import io.stargate.sgv2.jsonapi.service.schema.naming.SchemaObjectNamingRule;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
@@ -18,7 +18,10 @@ public class NamingRulesTests {
   @ParameterizedTest
   @MethodSource("schemaObjectNamingTestCases")
   public void schemaObjectNamingValidation(
-      String invalidName, NamingRule namingRule, boolean expectedResult, String description) {
+      String invalidName,
+      SchemaObjectNamingRule namingRule,
+      boolean expectedResult,
+      String description) {
 
     assertThat(namingRule.apply(invalidName)).as(description).isEqualTo(expectedResult);
   }
@@ -48,7 +51,7 @@ public class NamingRulesTests {
             new TestCase("Ab12A_", true, "name can be mixed case"));
 
     // List of naming rules to test.
-    List<NamingRule> namingRules =
+    List<SchemaObjectNamingRule> namingRules =
         Arrays.asList(
             NamingRules.KEYSPACE, NamingRules.COLLECTION, NamingRules.TABLE, NamingRules.INDEX);
 
