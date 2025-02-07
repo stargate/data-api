@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
-import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.api.model.command.table.ApiMapComponent;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownCqlIndexFunctionException;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,20 +39,21 @@ public enum ApiIndexFunction {
     return FUNCTION_MAP.get(cqlFunction.toLowerCase());
   }
 
-  public static ApiIndexFunction fromDollarCommand(String indexFunctionWithDollarSign) {
-    return switch (indexFunctionWithDollarSign) {
-      case TableDescConstants.CollectionTypeComponent.keys -> KEYS;
-      case TableDescConstants.CollectionTypeComponent.values -> VALUES;
-      case TableDescConstants.CollectionTypeComponent.entries -> ENTRIES;
-      default -> throw SchemaException.Code.INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN.get();
+  public static ApiIndexFunction fromApiMapComponent(ApiMapComponent apiMapComponent) {
+    return switch (apiMapComponent) {
+      case KEYS -> ApiIndexFunction.KEYS;
+      case VALUES -> ApiIndexFunction.VALUES;
+        // There is no $entries for map, null will be default to entries
+      case null -> ApiIndexFunction.ENTRIES;
     };
   }
 
-  public String toDollarCommand() {
+  public ApiMapComponent toApiMapComponent() {
     return switch (this) {
-      case KEYS -> TableDescConstants.CollectionTypeComponent.keys;
-      case VALUES -> TableDescConstants.CollectionTypeComponent.values;
-      case ENTRIES -> TableDescConstants.CollectionTypeComponent.entries;
+      case KEYS -> ApiMapComponent.KEYS;
+      case VALUES -> ApiMapComponent.VALUES;
+        // There is no $entries for map, null will be default to entries
+      case ENTRIES -> null;
     };
   }
 }

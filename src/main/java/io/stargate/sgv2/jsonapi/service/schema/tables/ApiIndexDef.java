@@ -57,6 +57,7 @@ public interface ApiIndexDef extends PrettyPrintable {
         .append("indexName", cqlIdentifierToMessageString(indexName()))
         .append("targetColumn", cqlIdentifierToMessageString(targetColumn()))
         .append("indexType", indexType())
+        .append("indexFunction", indexFunction())
         .append("indexOptions", indexOptions())
         .append("isUnsupported", isUnsupported());
   }

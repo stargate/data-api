@@ -2,7 +2,11 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.DataType;
 
-/** Interface defining the api data type for collection types */
+/**
+ * Interface defining the api data type for collection types. <br>
+ * DataType T is a generic type that can be map/set/list/vector, inheritors should implement
+ * isFrozen() based on T.
+ */
 public abstract class CollectionApiDataType<T extends DataType> implements ApiDataType {
 
   // Default collection support, they cannot be used in filtering

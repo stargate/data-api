@@ -7,6 +7,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.*;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.api.model.command.table.ApiMapComponent;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
@@ -59,7 +60,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
     var definition =
         new RegularIndexDefinitionDesc(
             new RegularIndexDefinitionDesc.RegularIndexColumn(
-                cqlIdentifierToJsonKey(targetColumn), indexFunction),
+                cqlIdentifierToJsonKey(targetColumn), indexFunction.toApiMapComponent()),
             definitionOptions);
 
     return new IndexDesc<>() {
@@ -113,7 +114,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
       // specified userNameToIdentifier will throw an exception if the values are not specified
       var indexIdentifier = userNameToIdentifier(indexName, "indexName");
       var targetIdentifier = userNameToIdentifier(indexDesc.column().columnName(), "targetColumn");
-      var indexFunctionUserInput = indexDesc.column().indexFunction();
+      var indexFunctionUserInput = indexDesc.column().indexOnMapComponent();
 
       var apiColumnDef = checkIndexColumnExists(tableSchemaObject, targetIdentifier);
 
@@ -176,7 +177,6 @@ public class ApiRegularIndex extends ApiSupportedIndex {
      * <pre>
      * Index on map keys: {"column": {"mapColumn" : "$keys"}}
      * Index on map values: {"column": {"mapColumn" : "$values"}}
-     * Index on map entries: {"column": {"mapColumn" : "$entries"}}
      * Index on map entries(default): {"column": "mapColumn"}
      *
      * </pre>
@@ -193,7 +193,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
         ApiColumnDef apiColumnDef,
         CqlIdentifier indexIdentifier,
         CqlIdentifier targetIdentifier,
-        ApiIndexFunction indexFunctionUserInput,
+        ApiMapComponent apiMapComponent,
         RegularIndexDefinitionDesc indexDesc)
         throws UnknownCqlIndexFunctionException {
       Map<String, String> indexOptions = new HashMap<>();
@@ -214,11 +214,9 @@ public class ApiRegularIndex extends ApiSupportedIndex {
       }
 
       // validate user specified index function
-      // TODO, discuss should we have these defaults or error out?
       ApiIndexFunction indexFunction = null;
       if (apiColumnDef.type() instanceof ApiMapType) {
-        indexFunction =
-            indexFunctionUserInput == null ? ApiIndexFunction.ENTRIES : indexFunctionUserInput;
+        indexFunction = ApiIndexFunction.fromApiMapComponent(apiMapComponent);
       } else {
         // Default index function for set and list is values
         indexFunction = ApiIndexFunction.VALUES;
@@ -262,7 +260,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
 
         } else if (indexFunction == ApiIndexFunction.VALUES) {
           targetColumnType = apiMapType.getValueType().typeName();
-        } else if (indexFunction == ApiIndexFunction.ENTRIES) {
+        } else if (indexFunction == ApiIndexFunction.ENTRIES && optionsDesc != null) {
           // Map index on entries is not supported for analyzer options.
           throw SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS.get(
               errVars(

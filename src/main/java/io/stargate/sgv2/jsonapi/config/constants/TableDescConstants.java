@@ -32,7 +32,6 @@ public interface TableDescConstants {
     String INDEX_TYPE = "indexType";
     String NAME = "name";
     String OPTIONS = "options";
-    String INDEX_ON = "indexOn";
   }
 
   interface IndexDefinitionDesc {
@@ -52,10 +51,9 @@ public interface TableDescConstants {
     String SIMILARITY_FUNCTION = "similarity_function";
   }
 
-  // These strings will be used in createIndex, filtering for collection datatypes
-  interface CollectionTypeComponent {
+  // These strings will be used in createIndex, filtering for map datatype
+  interface MapTypeComponent {
     String keys = "$keys";
     String values = "$values";
-    String entries = "$entries";
   }
 }

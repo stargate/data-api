@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateIndex;
@@ -11,7 +10,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedCreateIndex;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexDef;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexFunction;
 import io.stargate.sgv2.jsonapi.service.schema.tables.CQLSAIIndex;
 import java.util.Objects;
 
@@ -54,9 +52,7 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
         createIndexStart.onTable(
             schemaObject.tableMetadata().getKeyspace(), schemaObject.tableMetadata().getName());
 
-    var createIndex =
-        createIndexWithIndexFunction(
-            indexDef.indexFunction(), createIndexOnTable, indexDef.targetColumn());
+    var createIndex = createIndexWithIndexFunction(indexDef, createIndexOnTable);
 
     // options are things like vector function, or text case sensitivity
     var indexOptions = indexDef.indexOptions();
@@ -75,9 +71,10 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
    * If indexFunction is null, then it is a regular index on a scalar column.
    */
   private CreateIndex createIndexWithIndexFunction(
-      ApiIndexFunction apiIndexFunction,
-      CreateIndexOnTable createIndexOnTable,
-      CqlIdentifier indexColumn) {
+      ApiIndexDef apiIndexDef, CreateIndexOnTable createIndexOnTable) {
+
+    var apiIndexFunction = apiIndexDef.indexFunction();
+    var indexColumn = apiIndexDef.targetColumn();
 
     if (apiIndexFunction == null) {
       return createIndexOnTable.andColumn(indexColumn);

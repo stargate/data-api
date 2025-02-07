@@ -1092,7 +1092,6 @@ request-errors:
         - Default to index on map entries: {"column": "mapColumn"}
         - Index on map keys: {"column": {"mapColumn" : "$keys"}}
         - Index on map values: {"column": {"mapColumn" : "$values"}}
-        - Index on map entries: {"column": {"mapColumn" : "$entries"}}
       
       Resend the command using a valid format for index creation column.
 

@@ -299,7 +299,6 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
       return Stream.of(
           // default to entries
           Arguments.of("\"map_type\""),
-          Arguments.of("{\"map_type\": \"$entries\"}"),
           Arguments.of("{\"map_type\": \"$keys\"}"),
           Arguments.of("{\"map_type\": \"$values\"}"));
     }
@@ -701,7 +700,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     private static Stream<Arguments> entriesIndexOnMap() {
-      return Stream.of(Arguments.of("\"map_type\""), Arguments.of("{\"map_type\": \"$entries\"}"));
+      return Stream.of(Arguments.of("\"map_type\""));
     }
 
     @ParameterizedTest
