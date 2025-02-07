@@ -293,9 +293,9 @@ class CreateCollectionCommandResolverTest {
       verifySchemaException(
           throwable,
           SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a collection with a name that is not supported.",
-          "The supported collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported collection name: (null).");
+          "The command attempted to create a Collection with a name that is not supported.",
+          "The supported Collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+          "The command used the unsupported Collection name: '(null)'.");
     }
 
     @Test
@@ -315,9 +315,9 @@ class CreateCollectionCommandResolverTest {
       verifySchemaException(
           throwable,
           SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a collection with a name that is not supported.",
-          "The supported collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported collection name: .");
+          "The command attempted to create a Collection with a name that is not supported.",
+          "The supported Collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+          "The command used the unsupported Collection name: ''.");
     }
 
     @Test
@@ -337,9 +337,9 @@ class CreateCollectionCommandResolverTest {
       verifySchemaException(
           throwable,
           SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a collection with a name that is not supported.",
-          "The supported collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported collection name:  .");
+          "The command attempted to create a Collection with a name that is not supported.",
+          "The supported Collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+          "The command used the unsupported Collection name: ' '.");
     }
 
     @Test
@@ -361,9 +361,9 @@ class CreateCollectionCommandResolverTest {
       verifySchemaException(
           throwable,
           SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a collection with a name that is not supported.",
-          "The supported collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported collection name: %s.".formatted(name));
+          "The command attempted to create a Collection with a name that is not supported.",
+          "The supported Collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+          "The command used the unsupported Collection name: '%s'.".formatted(name));
     }
 
     @Test
@@ -383,9 +383,9 @@ class CreateCollectionCommandResolverTest {
       verifySchemaException(
           throwable,
           SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a collection with a name that is not supported.",
-          "The supported collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported collection name: !@-.");
+          "The command attempted to create a Collection with a name that is not supported.",
+          "The supported Collection names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+          "The command used the unsupported Collection name: '!@-'.");
     }
   }
 

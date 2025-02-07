@@ -224,9 +224,9 @@ class CreateKeyspaceCommandResolverTest {
       verifySchemaException(
           throwable,
           SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a keyspace with a name that is not supported.",
-          "The supported keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported keyspace name: (null).");
+          "The command attempted to create a Keyspace with a name that is not supported.",
+          "The supported Keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+          "The command used the unsupported Keyspace name: '(null)'.");
     }
 
     @Test
@@ -246,9 +246,9 @@ class CreateKeyspaceCommandResolverTest {
       verifySchemaException(
           throwable,
           SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a keyspace with a name that is not supported.",
-          "The supported keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported keyspace name: .");
+          "The command attempted to create a Keyspace with a name that is not supported.",
+          "The supported Keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+          "The command used the unsupported Keyspace name: ''.");
     }
 
     @Test
@@ -268,9 +268,9 @@ class CreateKeyspaceCommandResolverTest {
       verifySchemaException(
           throwable,
           SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a keyspace with a name that is not supported.",
-          "The supported keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported keyspace name:  .");
+          "The command attempted to create a Keyspace with a name that is not supported.",
+          "The supported Keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+          "The command used the unsupported Keyspace name: ' '.");
     }
 
     @Test
@@ -292,9 +292,9 @@ class CreateKeyspaceCommandResolverTest {
       verifySchemaException(
           throwable,
           SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a keyspace with a name that is not supported.",
-          "The supported keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported keyspace name: %s.".formatted(name));
+          "The command attempted to create a Keyspace with a name that is not supported.",
+          "The supported Keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+          "The command used the unsupported Keyspace name: '%s'.".formatted(name));
     }
 
     @Test
@@ -314,9 +314,9 @@ class CreateKeyspaceCommandResolverTest {
       verifySchemaException(
           throwable,
           SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a keyspace with a name that is not supported.",
-          "The supported keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported keyspace name: a b.");
+          "The command attempted to create a Keyspace with a name that is not supported.",
+          "The supported Keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+          "The command used the unsupported Keyspace name: 'a b'.");
     }
 
     @Test
@@ -336,9 +336,9 @@ class CreateKeyspaceCommandResolverTest {
       verifySchemaException(
           throwable,
           SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
-          "The command attempted to create a keyspace with a name that is not supported.",
-          "The supported keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-          "The command used the unsupported keyspace name: !@-.");
+          "The command attempted to create a Keyspace with a name that is not supported.",
+          "The supported Keyspace names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+          "The command used the unsupported Keyspace name: '!@-'.");
     }
   }
 

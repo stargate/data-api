@@ -164,7 +164,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .body(
               "errors[0].message",
               containsString(
-                  "The command attempted to create a keyspace with a name that is not supported."));
+                  "The command attempted to create a Keyspace with a name that is not supported."));
     }
   }
 
@@ -330,7 +330,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .body(
               "errors[0].message",
               containsString(
-                  "The command attempted to create a keyspace with a name that is not supported."));
+                  "The command attempted to create a Keyspace with a name that is not supported."));
       // Since command failed in Deserialization, so command result won't have deprecated command
       // warning.
     }

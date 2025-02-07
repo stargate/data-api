@@ -421,9 +421,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
               SchemaException.class,
-              "The command attempted to create a index with a name that is not supported.",
-              "The supported index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-              "The command used the unsupported index name: .");
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: ''.");
     }
 
     @Test
@@ -443,9 +443,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
               SchemaException.class,
-              "The command attempted to create a index with a name that is not supported.",
-              "The supported index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-              "The command used the unsupported index name:  .");
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: ' '.");
     }
 
     @Test
@@ -463,9 +463,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
               SchemaException.class,
-              "The command attempted to create a index with a name that is not supported.",
-              "The supported index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-              "The command used the unsupported index name: this_is_a_very_long_index_name_that_is_longer_than_48_characters.");
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: 'this_is_a_very_long_index_name_that_is_longer_than_48_characters'.");
     }
 
     @Test
@@ -483,9 +483,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
               SchemaException.class,
-              "The command attempted to create a index with a name that is not supported.",
-              "The supported index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-              "The command used the unsupported index name: vehicle id_7@idx.");
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: 'vehicle id_7@idx'.");
     }
 
     @Test
@@ -613,9 +613,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
               SchemaException.class,
-              "The command attempted to create a index with a name that is not supported.",
-              "The supported index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-              "The command used the unsupported index name: .");
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: ''.");
     }
 
     @Test
@@ -635,9 +635,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
               SchemaException.class,
-              "The command attempted to create a index with a name that is not supported.",
-              "The supported index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-              "The command used the unsupported index name:  .");
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: ' '.");
     }
 
     @Test
@@ -655,9 +655,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
               SchemaException.class,
-              "The command attempted to create a index with a name that is not supported.",
-              "The supported index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-              "The command used the unsupported index name: this_is_a_very_long_index_name_that_is_longer_than_48_characters.");
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: 'this_is_a_very_long_index_name_that_is_longer_than_48_characters'.");
     }
 
     @Test
@@ -675,9 +675,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
               SchemaException.class,
-              "The command attempted to create a index with a name that is not supported.",
-              "The supported index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
-              "The command used the unsupported index name: vehicle id_7@idx.");
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 48 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: 'vehicle id_7@idx'.");
     }
 
     @Test

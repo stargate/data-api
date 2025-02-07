@@ -944,7 +944,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   "",
                   true,
                   SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
-                  "The command used the unsupported table name: .")));
+                  "The command used the unsupported Table name: ''.")));
 
       // table name is black
       testCases.add(
@@ -966,7 +966,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   " ",
                   true,
                   SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
-                  "The command used the unsupported table name:  .")));
+                  "The command used the unsupported Table name: ' '.")));
 
       // table name too long
       testCases.add(
@@ -988,7 +988,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   "this_is_a_very_long_table_name_that_is_longer_than_48_characters",
                   true,
                   SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
-                  "The command used the unsupported table name: this_is_a_very_long_table_name_that_is_longer_than_48_characters.")));
+                  "The command used the unsupported Table name: 'this_is_a_very_long_table_name_that_is_longer_than_48_characters'.")));
 
       // table name with special characters
       testCases.add(
@@ -1010,7 +1010,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   " !@#",
                   true,
                   SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
-                  "The command used the unsupported table name:  !@#.")));
+                  "The command used the unsupported Table name: ' !@#'.")));
 
       return testCases.stream();
     }
