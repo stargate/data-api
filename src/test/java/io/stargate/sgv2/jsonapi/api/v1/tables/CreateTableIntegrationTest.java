@@ -923,6 +923,95 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   true,
                   SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN.name(),
                   "The dimension is required for vector columns if the embedding service is not specified.")));
+
+      // table name is empty
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                        {
+                            "name": "",
+                            "definition": {
+                                "columns": {
+                                    "id": "text",
+                                    "age": "int",
+                                    "name": "text"
+                                },
+                                "primaryKey": "id"
+                            }
+                        }
+                        """,
+                  "",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
+                  "The command used the unsupported Table name: ''.")));
+
+      // table name is black
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                        {
+                            "name": " ",
+                            "definition": {
+                                "columns": {
+                                    "id": "text",
+                                    "age": "int",
+                                    "name": "text"
+                                },
+                                "primaryKey": "id"
+                            }
+                        }
+                        """,
+                  " ",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
+                  "The command used the unsupported Table name: ' '.")));
+
+      // table name too long
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                            {
+                                "name": "this_is_a_very_long_table_name_that_is_longer_than_48_characters",
+                                "definition": {
+                                    "columns": {
+                                        "id": "text",
+                                        "age": "int",
+                                        "name": "text"
+                                    },
+                                    "primaryKey": "id"
+                                }
+                            }
+                            """,
+                  "this_is_a_very_long_table_name_that_is_longer_than_48_characters",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
+                  "The command used the unsupported Table name: 'this_is_a_very_long_table_name_that_is_longer_than_48_characters'.")));
+
+      // table name with special characters
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                {
+                                    "name": " !@#",
+                                    "definition": {
+                                        "columns": {
+                                            "id": "text",
+                                            "age": "int",
+                                            "name": "text"
+                                        },
+                                        "primaryKey": "id"
+                                    }
+                                }
+                                """,
+                  " !@#",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
+                  "The command used the unsupported Table name: ' !@#'.")));
+
       return testCases.stream();
     }
   }

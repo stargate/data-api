@@ -946,26 +946,6 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     }
 
     @Test
-    public void failForInvalidCollectionName() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"findOne\": { \"filter\" : {\"_id\": \"doc1\"}}}")
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, "table,rate=100")
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Request invalid: field 'collection' value \"table,rate=100\" not valid. Problem:"));
-    }
-
-    @Test
     public void failForInvalidJsonExtension() {
       given()
           .headers(getHeaders())

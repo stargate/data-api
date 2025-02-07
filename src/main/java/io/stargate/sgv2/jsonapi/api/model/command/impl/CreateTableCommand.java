@@ -8,19 +8,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDefiniti
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that creates an API Table.")
 @JsonTypeName(CommandName.Names.CREATE_TABLE)
 public record CreateTableCommand(
-    @NotNull
-        @Size(min = 1, max = 48)
-        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-        @Schema(description = "Name of the table")
-        String name,
+    @Schema(description = "Required name of the new Table") String name,
     @Valid @NotNull @Schema(description = "Table definition") TableDefinitionDesc definition,
     @Valid
         @JsonInclude(JsonInclude.Include.NON_NULL)

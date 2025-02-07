@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -32,7 +33,9 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateTableCommand command) {
 
-    var tableName = cqlIdentifierFromUserInput(command.name());
+    final var name = validateSchemaName(command.name(), NamingRules.TABLE);
+
+    var tableName = cqlIdentifierFromUserInput(name);
 
     boolean ifNotExists =
         Optional.ofNullable(command.options())
@@ -44,8 +47,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
     // TODO: this code is also is alter table, remove the duplication
 
     var apiTableDef =
-        ApiTableDef.FROM_TABLE_DESC_FACTORY.create(
-            command.name(), command.definition(), validateVectorize);
+        ApiTableDef.FROM_TABLE_DESC_FACTORY.create(name, command.definition(), validateVectorize);
 
     var customProperties =
         TableExtensions.createCustomProperties(
