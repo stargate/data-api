@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -290,7 +291,7 @@ public class DocumentShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              "property path length (1003) exceeds maximum allowed ("
+              "field path length (1003) exceeds maximum allowed ("
                   + docLimits.maxPropertyPathLength()
                   + ") (path ends with '"
                   + lastSegment
@@ -406,7 +407,7 @@ public class DocumentShredderDocLimitsTest {
   class ValidationDocNameViolations {
     @ParameterizedTest
     @ValueSource(strings = {"name", "a123", "snake_case", "camelCase", "ab-cd-ef"})
-    public void allowRegularPropertyNames(String validName) {
+    public void allowRegularFieldNames(String validName) {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       doc.put(validName, 123456);
@@ -416,36 +417,51 @@ public class DocumentShredderDocLimitsTest {
     }
 
     @Test
-    public void catchEmptyPropertyName() {
+    public void allowEmptyFieldName() {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("", 123456);
+      assertThat(documentShredder.shred(doc)).isNotNull();
+    }
 
-      Exception e = catchException(() -> documentShredder.shred(doc));
-      assertThat(e)
-          .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
-          .hasMessageEndingWith("empty names not allowed");
+    // formerly invalid names that now are allowed
+    @ParameterizedTest
+    @ValueSource(strings = {"app.kubernetes.io/name", "index[1]", "a/b", "a\\b", "a$b"})
+    public void allowUnusualFieldNames(String validName) {
+      final ObjectNode doc = objectMapper.createObjectNode();
+      doc.put("_id", 123);
+      doc.put(validName, 123456);
+
+      // Enough to verify that shredder does not throw exception
+      assertThat(documentShredder.shred(doc)).isNotNull();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"$function", "dot.ted", "index[1]", "a/b", "a\\b"})
-    public void catchInvalidPropertyName(String invalidName) {
+    @ValueSource(
+        strings = {
+          "{\"app\": { \"amount.total\": 30 }}",
+          "{\"x\": { \"r&b\": true, \"a\\b\": 12 }}",
+          "{\"app.kubernetes.io/name\": { \"type\": \"app\", \"abc$def\": 37 }}",
+        })
+    public void allowUnusualNestedFieldNames(String json) throws IOException {
+      assertThat(documentShredder.shred(objectMapper.readTree(json))).isNotNull();
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = {
+          "$function",
+        })
+    public void catchInvalidFieldName(String invalidName) {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       doc.put(invalidName, 123456);
 
       Exception e = catchException(() -> documentShredder.shred(doc));
       assertThat(e)
-          .isNotNull()
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
           .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
-          .hasMessageEndingWith(
-              "field name ('"
-                  + invalidName
-                  + "') contains invalid character(s), can contain only letters (a-z/A-Z), numbers (0-9), underscores (_), and hyphens (-)");
+          .hasMessageEndingWith("field name '" + invalidName + "' starts with '$'");
     }
   }
 

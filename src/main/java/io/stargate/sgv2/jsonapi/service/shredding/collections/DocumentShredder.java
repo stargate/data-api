@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIdType;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -448,11 +449,9 @@ public class DocumentShredder {
     }
 
     private void validateObjectKey(String key, JsonNode value, int depth, int parentPathLength) {
-      if (key.length() == 0) {
-        // NOTE: validity failure, not size limit
-        throw ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.toApiException("empty names not allowed");
-      }
-      if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()) {
+      // NOTE: empty keys are allowed on v1.0.21 and later
+
+      if (!NamingRules.FIELD.apply(depth, key)) {
         // Special names are accepted in some cases:
         if ((depth == 1)
             && (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
@@ -460,14 +459,13 @@ public class DocumentShredder {
           ;
         } else {
           throw ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.toApiException(
-              "field name ('%s') contains invalid character(s), can contain only letters (a-z/A-Z), numbers (0-9), underscores (_), and hyphens (-)",
-              key);
+              "field name '%s' starts with '$'", key);
         }
       }
       int totalPathLength = parentPathLength + key.length();
       if (totalPathLength > limits.maxPropertyPathLength()) {
         throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "property path length (%d) exceeds maximum allowed (%d) (path ends with '%s')",
+            "field path length (%d) exceeds maximum allowed (%d) (path ends with '%s')",
             totalPathLength, limits.maxPropertyPathLength(), key);
       }
     }
