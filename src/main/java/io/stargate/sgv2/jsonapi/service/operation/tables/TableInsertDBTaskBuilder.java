@@ -36,7 +36,8 @@ public class TableInsertDBTaskBuilder
     Objects.requireNonNull(jsonNode, "jsonNode cannot be null");
     Objects.requireNonNull(rowShredder, "rowShredder cannot be null");
 
-    var writeableTableRowBuilder = new WriteableTableRowBuilder(schemaObject, JSONCodecRegistries.DEFAULT_REGISTRY);
+    var writeableTableRowBuilder =
+        new WriteableTableRowBuilder(schemaObject, JSONCodecRegistries.DEFAULT_REGISTRY);
 
     WriteableTableRow writeableRow = null;
     Exception exception = null;
@@ -52,6 +53,7 @@ public class TableInsertDBTaskBuilder
         new TableInsertDBTask(
             nextPosition(), schemaObject, getExceptionHandlerFactory(), rowId, writeableRow);
     // ok to always add the failure, if it is null it will be ignored
-    return task.maybeAddFailure(exception);
+    task.maybeAddFailure(exception);
+    return task;
   }
 }

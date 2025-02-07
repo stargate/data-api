@@ -7,16 +7,14 @@ import com.datastax.oss.driver.api.querybuilder.update.Update;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +41,8 @@ public class UpdateDBTask<SchemaT extends TableSchemaObject> extends DBTask<Sche
     setStatus(TaskStatus.READY);
   }
 
-  public static <SchemaT extends TableSchemaObject> UpdateDBTaskBuilder<SchemaT> builder(SchemaT schemaObject) {
+  public static <SchemaT extends TableSchemaObject> UpdateDBTaskBuilder<SchemaT> builder(
+      SchemaT schemaObject) {
     return new UpdateDBTaskBuilder<>(schemaObject);
   }
 
@@ -53,21 +52,17 @@ public class UpdateDBTask<SchemaT extends TableSchemaObject> extends DBTask<Sche
 
   /** {@inheritDoc} */
   @Override
-  protected AsyncResultSetSupplier buildResultSupplier(CommandQueryExecutor queryExecutor) {
+  protected AsyncResultSetSupplier buildDBResultSupplier(CommandQueryExecutor queryExecutor) {
 
     var statement = buildUpdateStatement();
 
-
     logStatement(LOGGER, "buildResultSupplier()", statement);
-    return new AsyncResultSetSupplier(
-        statement, () -> queryExecutor.executeWrite(statement));
+    return new AsyncResultSetSupplier(statement, () -> queryExecutor.executeWrite(statement));
   }
-
 
   // =================================================================================================
   // Implementation and internals
   // =================================================================================================
-
 
   /**
    * The framework for WhereCQLClause expects something extending OngoingWhereClause, and there is

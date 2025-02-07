@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 
 public abstract class TableBasedSchemaObject extends SchemaObject {
@@ -25,6 +26,14 @@ public abstract class TableBasedSchemaObject extends SchemaObject {
     // uses asCql(pretty) so the names do not always include double quotes
     super(type, name);
     this.tableMetadata = tableMetadata;
+  }
+
+  public CqlIdentifier keyspaceName() {
+    return tableMetadata.getKeyspace();
+  }
+
+  public CqlIdentifier tableName() {
+    return tableMetadata.getName();
   }
 
   public TableMetadata tableMetadata() {

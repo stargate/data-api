@@ -32,18 +32,20 @@ public class MetadataDBTaskPage<TaskT extends MetadataDBTask<SchemaT>, SchemaT e
   }
 
   /**
-   * Gets the {@link TaskAccumulator} for building a {@link MetadataDBTaskPage} for a metadata command.
+   * Gets the {@link TaskAccumulator} for building a {@link MetadataDBTaskPage} for a metadata
+   * command.
    *
-   * @param taskClass The class of the {@link MetadataDBTask} we are accumulating, this is only needed to lock the
-   *                  generics in. Param is not actually used.
-   * @param commandContext Context used to configure common properties for the {@link TaskAccumulator}
+   * @param taskClass The class of the {@link MetadataDBTask} we are accumulating, this is only
+   *     needed to lock the generics in. Param is not actually used.
+   * @param commandContext Context used to configure common properties for the {@link
+   *     TaskAccumulator}
    * @return A new {@link TaskAccumulator} for building a {@link MetadataDBTaskPage}
    * @param <TaskT> Subtype of {@link MetadataDBTask} to accumulate.
    * @param <SchemaT> Schema object type.
    */
-  public static <TaskT extends MetadataDBTask<SchemaT>, SchemaT extends SchemaObject> Accumulator<TaskT, SchemaT> accumulator(
-      Class<TaskT> taskClass,
-      CommandContext<SchemaT> commandContext) {
+  public static <TaskT extends MetadataDBTask<SchemaT>, SchemaT extends SchemaObject>
+      Accumulator<TaskT, SchemaT> accumulator(
+          Class<TaskT> taskClass, CommandContext<SchemaT> commandContext) {
     return TaskAccumulator.configureForContext(
         new MetadataDBTaskPage.Accumulator<>(), commandContext);
   }
@@ -66,7 +68,8 @@ public class MetadataDBTaskPage<TaskT extends MetadataDBTask<SchemaT>, SchemaT e
     }
   }
 
-  public static class Accumulator<TaskT extends MetadataDBTask<SchemaT>, SchemaT extends SchemaObject>
+  public static class Accumulator<
+          TaskT extends MetadataDBTask<SchemaT>, SchemaT extends SchemaObject>
       extends TaskAccumulator<TaskT, SchemaT> {
 
     private boolean showSchema = false;

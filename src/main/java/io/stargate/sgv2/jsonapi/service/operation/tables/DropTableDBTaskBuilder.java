@@ -7,12 +7,10 @@ import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
-
 import java.util.Objects;
 
 /** Builds a {@link DropTableDBTask}. */
-public class DropTableDBTaskBuilder  extends TaskBuilder<DropTableDBTask, KeyspaceSchemaObject> {
+public class DropTableDBTaskBuilder extends TaskBuilder<DropTableDBTask, KeyspaceSchemaObject> {
 
   private CqlIdentifier name = null;
   private SchemaDBTask.SchemaRetryPolicy schemaRetryPolicy = null;
@@ -53,6 +51,12 @@ public class DropTableDBTaskBuilder  extends TaskBuilder<DropTableDBTask, Keyspa
       cqlOptions.addBuilderOption(CQLOption.ForDrop.ifExists());
     }
 
-    return new DropTableDBTask(nextPosition(), schemaObject, schemaRetryPolicy, getExceptionHandlerFactory(),  name, cqlOptions);
+    return new DropTableDBTask(
+        nextPosition(),
+        schemaObject,
+        schemaRetryPolicy,
+        getExceptionHandlerFactory(),
+        name,
+        cqlOptions);
   }
 }

@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
+package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentCaptor.forClass;
@@ -8,8 +8,14 @@ import static org.mockito.Mockito.*;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import java.util.List;
 
+/**
+ * TOD: THIS IS NOT NEEDED TO TEST THE BASETASK, NEEDED TO TEST THE DBTASK
+ *
+ * @param <FixtureT>
+ */
 public class CommandQueryExecutorAssertions<FixtureT> {
 
   private final CommandQueryExecutor target;

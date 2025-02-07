@@ -6,11 +6,9 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionInsertAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTaskBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.tables.WriteableTableRowBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -53,7 +51,8 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, InsertOneCommand command) {
 
-    TableInsertDBTaskBuilder taskBuilder = TableInsertDBTask.builder(commandContext.schemaObject())
+    TableInsertDBTaskBuilder taskBuilder =
+        TableInsertDBTask.builder(commandContext.schemaObject())
             .withRowShredder(rowShredder)
             .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 

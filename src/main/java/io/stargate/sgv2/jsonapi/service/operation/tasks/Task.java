@@ -55,7 +55,6 @@ public interface Task<SchemaT extends SchemaObject>
    *
    * @param commandContext
    * @return
-   * @param <SubT>
    */
   <SubT extends Task<SchemaT>> Uni<SubT> execute(CommandContext<SchemaT> commandContext);
 
@@ -90,9 +89,9 @@ public interface Task<SchemaT extends SchemaObject>
    * <p>This is a small method, but is here and public to make it clear what the intention is for
    * external callers. We use this when skipping tasks in a sequential task group.
    *
-   * @return This task, cast to {@link SubT} for chaining methods.
+   * @return This task
    */
-  <SubT extends Task<SchemaT>> SubT setSkippedIfReady();
+  Task<SchemaT> setSkippedIfReady();
 
   /**
    * Updates the Task with an error that occurred while trying to process the attempt, and sets the
@@ -112,9 +111,9 @@ public interface Task<SchemaT extends SchemaObject>
    * @param throwable An error that happened when trying to process the attempt, ok to pass <code>
    *     null</code> it will be ignored. If a non-null failure has already been added this call will
    *     be ignored.
-   * @return This task, cast to {@link SubT} for chaining methods.
+   * @return This task
    */
-  <SubT extends Task<SchemaT>> SubT maybeAddFailure(Throwable throwable);
+  Task<SchemaT> maybeAddFailure(Throwable throwable);
 
   /**
    * The <b>first</b> error that happened when trying to process the task.

@@ -59,7 +59,8 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     }
 
     // TODO: we need a centralised way of creating retry attempt.
-    CreateIndexDBTaskBuilder taskBuilder = CreateIndexDBTask.builder(commandContext.schemaObject())
+    CreateIndexDBTaskBuilder taskBuilder =
+        CreateIndexDBTask.builder(commandContext.schemaObject())
             .withIfNotExists(
                 getOrDefault(
                     command.options(),
@@ -84,6 +85,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
 
     var taskGroup = new TaskGroup<>(taskBuilder.build(apiIndex));
 
-    return new TaskOperation<>(taskGroup, SchemaDBTaskPage.accumulator(CreateIndexDBTask.class, commandContext));
+    return new TaskOperation<>(
+        taskGroup, SchemaDBTaskPage.accumulator(CreateIndexDBTask.class, commandContext));
   }
 }

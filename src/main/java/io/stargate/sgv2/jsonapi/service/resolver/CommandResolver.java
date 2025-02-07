@@ -19,8 +19,6 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-
-import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -71,10 +69,15 @@ public interface CommandResolver<C extends Command> {
 
     // aaron - feb 6 20254 - adding the unchecked was the only way I could get this to compile
     return switch (commandContext.schemaObject().type()) {
-      case COLLECTION -> (Operation<SchemaT>) resolveCollectionCommand(commandContext.asCollectionContext(), command);
-      case TABLE -> (Operation<SchemaT>)resolveTableCommand(commandContext.asTableContext(), command);
-      case KEYSPACE -> (Operation<SchemaT>)resolveKeyspaceCommand(commandContext.asKeyspaceContext(), command);
-      case DATABASE -> (Operation<SchemaT>)resolveDatabaseCommand(commandContext.asDatabaseContext(), command);
+      case COLLECTION ->
+          (Operation<SchemaT>)
+              resolveCollectionCommand(commandContext.asCollectionContext(), command);
+      case TABLE ->
+          (Operation<SchemaT>) resolveTableCommand(commandContext.asTableContext(), command);
+      case KEYSPACE ->
+          (Operation<SchemaT>) resolveKeyspaceCommand(commandContext.asKeyspaceContext(), command);
+      case DATABASE ->
+          (Operation<SchemaT>) resolveDatabaseCommand(commandContext.asDatabaseContext(), command);
     };
   }
 

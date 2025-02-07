@@ -12,9 +12,11 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
  * handling for the command, or it may be subclassed by exception handlers for a command that have
  * specific exception handling such as for {@link CreateIndexExceptionHandler}
  */
-public class TableDriverExceptionHandler extends DefaultDriverExceptionHandler<TableBasedSchemaObject> {
+public class TableDriverExceptionHandler
+    extends DefaultDriverExceptionHandler<TableBasedSchemaObject> {
 
-  public TableDriverExceptionHandler(TableBasedSchemaObject schemaObject, SimpleStatement statement) {
+  public TableDriverExceptionHandler(
+      TableBasedSchemaObject schemaObject, SimpleStatement statement) {
     super(schemaObject, statement);
   }
 }

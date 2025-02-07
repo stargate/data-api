@@ -56,10 +56,12 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, FindOneCommand command) {
 
-    var accumulator = ReadDBTaskPage.accumulator(commandContext).singleResponse(true).mayReturnVector(command);
+    var accumulator =
+        ReadDBTaskPage.accumulator(commandContext).singleResponse(true).mayReturnVector(command);
 
     // the skip is 0 and the limit is 1 always for findOne
-    return readCommandResolver.buildReadOperation(commandContext, command, CqlPagingState.EMPTY, accumulator);
+    return readCommandResolver.buildReadOperation(
+        commandContext, command, CqlPagingState.EMPTY, accumulator);
 
     // TODO: AARON MAHESH - this is what was here before, leaving until we confirm all good
 
@@ -95,7 +97,8 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     //    // dbLogicalExpressions, which will map into multiple readAttempts
     //    var where =
     //        TableWhereCQLClause.forSelect(
-    //            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command).target());
+    //            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext,
+    // command).target());
     //
     //    var attempts = new OperationAttemptContainer<>(attemptBuilder.build(where));
     //

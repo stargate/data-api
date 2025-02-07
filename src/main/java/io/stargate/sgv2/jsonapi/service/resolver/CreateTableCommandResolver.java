@@ -33,7 +33,8 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
   public Operation<KeyspaceSchemaObject> resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> commandContext, CreateTableCommand command) {
 
-    var taskBuilder = CreateTableDBTask.builder(commandContext.schemaObject())
+    var taskBuilder =
+        CreateTableDBTask.builder(commandContext.schemaObject())
             .withSchemaRetryPolicy(
                 new SchemaDBTask.SchemaRetryPolicy(
                     commandContext.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
@@ -62,7 +63,8 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
 
     var taskGroup = new TaskGroup<>(taskBuilder.build());
 
-    return new TaskOperation<>(taskGroup, SchemaDBTaskPage.accumulator(CreateTableDBTask.class, commandContext));
+    return new TaskOperation<>(
+        taskGroup, SchemaDBTaskPage.accumulator(CreateTableDBTask.class, commandContext));
   }
 
   @Override

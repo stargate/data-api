@@ -3,22 +3,21 @@ package io.stargate.sgv2.jsonapi.service.operation;
 import com.datastax.oss.driver.api.querybuilder.update.Update;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Objects;
 
 /**
  * Builds an attempt to delete a row from an API Table, create a single instance and then call
  * {@link #build(WhereCQLClause)} for each different where clause the command creates.
  */
-public class UpdateDBTaskBuilder<SchemaT extends TableSchemaObject> extends TaskBuilder<UpdateDBTask<SchemaT>, SchemaT> {
+public class UpdateDBTaskBuilder<SchemaT extends TableSchemaObject>
+    extends TaskBuilder<UpdateDBTask<SchemaT>, SchemaT> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UpdateDBTaskBuilder.class);
 
@@ -43,8 +42,8 @@ public class UpdateDBTaskBuilder<SchemaT extends TableSchemaObject> extends Task
     if (!updateOne) {
       throw new IllegalStateException("Update many is not supported for tables");
     }
-    var whereCQLClauseAnalyzer = new WhereCQLClauseAnalyzer(
-            schemaObject, WhereCQLClauseAnalyzer.StatementType.UPDATE_ONE);
+    var whereCQLClauseAnalyzer =
+        new WhereCQLClauseAnalyzer(schemaObject, WhereCQLClauseAnalyzer.StatementType.UPDATE_ONE);
 
     WhereCQLClauseAnalyzer.WhereClauseWithWarnings whereClauseWithWarnings = null;
     Exception exception = null;
@@ -56,7 +55,11 @@ public class UpdateDBTaskBuilder<SchemaT extends TableSchemaObject> extends Task
 
     var task =
         new UpdateDBTask<>(
-            nextPosition(), schemaObject, getExceptionHandlerFactory(), updateCQLClause.target(), whereCQLClause);
+            nextPosition(),
+            schemaObject,
+            getExceptionHandlerFactory(),
+            updateCQLClause.target(),
+            whereCQLClause);
 
     // ok to pass null exception, will be ignored
     task.maybeAddFailure(exception);

@@ -90,18 +90,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
   /** {@inheritDoc} */
   @Override
   protected AsyncResultSetSupplier buildResultSupplier(CommandContext<SchemaT> commandContext) {
-
-    // TODO: HACK: aaron feb 4th '25, quick code to get the command query executor we use with tasks
-    // , improve later
-    var commandQueryExecutor =
-        new CommandQueryExecutor(
-            commandContext.cqlSessionCache(),
-            new CommandQueryExecutor.DBRequestContext(
-                commandContext.requestContext().getTenantId(),
-                commandContext.requestContext().getCassandraToken()),
-            CommandQueryExecutor.QueryTarget.TABLE);
-
-    return buildResultSupplier(commandQueryExecutor);
+    return buildDBResultSupplier(getCommandQueryExecutor(commandContext));
   }
 
   /** {@inheritDoc} */
@@ -127,7 +116,8 @@ public abstract class DBTask<SchemaT extends SchemaObject>
    *     the <code>Uni<AsyncResultSet></code> when it is called. It is important that the DB call
    *     not happen until the supplier is called, otherwise this will block.
    */
-  protected abstract AsyncResultSetSupplier buildResultSupplier(CommandQueryExecutor queryExecutor);
+  protected abstract AsyncResultSetSupplier buildDBResultSupplier(
+      CommandQueryExecutor queryExecutor);
 
   /**
    * Called to get the description of the schema to use when building the response.
@@ -144,6 +134,27 @@ public abstract class DBTask<SchemaT extends SchemaObject>
   // =================================================================================================
   // Internal and helpers
   // =================================================================================================
+
+  /**
+   * Build a {@link CommandQueryExecutor} for the context.
+   *
+   * <p>Here for subclasses to override if they want to, and for testing so it in spy/mock the calls
+   * to the DB
+   *
+   * @param commandContext The context to build the executor for.
+   * @return The {@link CommandQueryExecutor} to use to access the database.
+   */
+  protected CommandQueryExecutor getCommandQueryExecutor(CommandContext<SchemaT> commandContext) {
+
+    // TODO: HACK: aaron feb 4th '25, quick code to get the command query executor we use with tasks
+    // , improve later
+    return new CommandQueryExecutor(
+        commandContext.cqlSessionCache(),
+        new CommandQueryExecutor.DBRequestContext(
+            commandContext.requestContext().getTenantId(),
+            commandContext.requestContext().getCassandraToken()),
+        CommandQueryExecutor.QueryTarget.TABLE);
+  }
 
   /**
    * Helper to log CQL statements at debug and trace level, trimming vectors and other long values.

@@ -37,7 +37,7 @@ public abstract class SchemaDBTask<SchemaT extends SchemaObject> extends DBTask<
 
   /** {@inheritDoc} */
   @Override
-  protected AsyncResultSetSupplier buildResultSupplier(CommandQueryExecutor queryExecutor) {
+  protected AsyncResultSetSupplier buildDBResultSupplier(CommandQueryExecutor queryExecutor) {
 
     var statement = buildStatement();
 

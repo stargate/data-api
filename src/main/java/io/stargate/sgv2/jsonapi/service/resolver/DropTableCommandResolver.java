@@ -31,29 +31,30 @@ public class DropTableCommandResolver implements CommandResolver<DropTableComman
 
     var tableName = cqlIdentifierFromUserInput(command.name());
 
-    var taskBuilder = DropTableDBTask.builder(commandContext.schemaObject())
-        .withSchemaRetryPolicy(
-            new SchemaDBTask.SchemaRetryPolicy(
-                commandContext.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
-                Duration.ofMillis(
-                    commandContext
-                        .getConfig(OperationsConfig.class)
-                        .databaseConfig()
-                        .ddlRetryDelayMillis())));
+    var taskBuilder =
+        DropTableDBTask.builder(commandContext.schemaObject())
+            .withSchemaRetryPolicy(
+                new SchemaDBTask.SchemaRetryPolicy(
+                    commandContext.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
+                    Duration.ofMillis(
+                        commandContext
+                            .getConfig(OperationsConfig.class)
+                            .databaseConfig()
+                            .ddlRetryDelayMillis())));
 
-    taskBuilder.withExceptionHandlerFactory(DefaultDriverExceptionHandler.Factory.withIdentifier(
-        DropTableExceptionHandler::new, tableName));
+    taskBuilder.withExceptionHandlerFactory(
+        DefaultDriverExceptionHandler.Factory.withIdentifier(
+            DropTableExceptionHandler::new, tableName));
 
     taskBuilder
         .withTableName(tableName)
         .withIfExists(
-            ApiOptionUtils.getOrDefault(command.options(),
-                DropTableCommand.Options::ifExists, false));
+            ApiOptionUtils.getOrDefault(
+                command.options(), DropTableCommand.Options::ifExists, false));
 
     var taskGroup = new TaskGroup<>(taskBuilder.build());
 
     return new TaskOperation<>(
-        taskGroup,
-        SchemaDBTaskPage.accumulator(DropTableDBTask.class,commandContext));
+        taskGroup, SchemaDBTaskPage.accumulator(DropTableDBTask.class, commandContext));
   }
 }

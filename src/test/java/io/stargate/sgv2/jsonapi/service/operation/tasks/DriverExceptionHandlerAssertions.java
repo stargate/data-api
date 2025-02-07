@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.operation.tables;
+package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -10,10 +10,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @param <FixtureT>
- * @param <SchemaT>
- */
+/** TODO = NOT needed to test the BaseTask, only for the DBTask */
 public class DriverExceptionHandlerAssertions<FixtureT, SchemaT extends SchemaObject> {
 
   private final FixtureT fixture;

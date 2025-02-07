@@ -16,7 +16,6 @@ import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.Task;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -84,7 +83,7 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
 
   /** {@inheritDoc} */
   @Override
-  protected AsyncResultSetSupplier buildResultSupplier(CommandQueryExecutor queryExecutor) {
+  protected AsyncResultSetSupplier buildDBResultSupplier(CommandQueryExecutor queryExecutor) {
 
     var statement = buildReadStatement();
 
@@ -101,11 +100,11 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
 
   /** {@inheritDoc} */
   @Override
-  protected <SubT extends Task<SchemaT>> SubT onSuccess(AsyncResultSet result) {
+  public void onSuccess(AsyncResultSet result) {
     readResult = new ReadResult(rowSorter, result);
 
     // call to make sure status is set
-    return super.onSuccess(result);
+    super.onSuccess(result);
   }
 
   /** {@inheritDoc} */
@@ -168,10 +167,9 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
 
   protected SimpleStatement buildReadStatement() {
 
-    var metadata = schemaObject.tableMetadata();
     List<Object> positionalValues = new ArrayList<>();
 
-    var selectFrom = selectFrom(metadata.getKeyspace(), metadata.getName());
+    var selectFrom = selectFrom(schemaObject.keyspaceName(), schemaObject.tableName());
     var select = applySelect(selectFrom, positionalValues);
     // these are options that go on the query builder, such as limit or allow filtering
     var bindableQuery = applyOptions(select);
@@ -262,35 +260,34 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
 
       var allowFilteringMissing =
           throwable instanceof InvalidQueryException
-              && throwable.getMessage().endsWith("use ALLOW FILTERING");
+              && throwable.getMessage().contains("use ALLOW FILTERING");
 
       if (allowFilteringMissing) {
         if (LOGGER.isWarnEnabled()) {
           LOGGER.warn(
               "Retrying read attempt with added ALLOW FILTERING for {}, original query cql={} , values={}",
-              currentRetryContext.attempt.positionAndTaskId(),
+              currentRetryContext.task.positionAndTaskId(),
               currentRetryContext.lastStatement.getQuery(),
               currentRetryContext.lastStatement.getPositionalValues());
         }
 
-        currentRetryContext.attempt.addWarning(
+        currentRetryContext.task.addWarning(
             WarningException.Code.QUERY_RETRIED_DUE_TO_INDEXING.get(
                 errVars(
-                    currentRetryContext.attempt.schemaObject,
+                    currentRetryContext.task.schemaObject,
                     map -> {
                       map.put("originalCql", currentRetryContext.lastStatement.getQuery());
                       map.put(
                           "originalParameters",
                           currentRetryContext.lastStatement.getPositionalValues().toString());
                     })));
-        currentRetryContext.attempt.cqlOptions.addBuilderOption(
-            CQLOption.ForSelect.allowFiltering());
+        currentRetryContext.task.cqlOptions.addBuilderOption(CQLOption.ForSelect.allowFiltering());
         return true;
       }
       return false;
     }
 
     record RetryContext<T extends TableBasedSchemaObject>(
-        SimpleStatement lastStatement, ReadDBTask<T> attempt) {}
+        SimpleStatement lastStatement, ReadDBTask<T> task) {}
   }
 }

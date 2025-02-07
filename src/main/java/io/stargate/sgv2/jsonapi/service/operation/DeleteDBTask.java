@@ -42,7 +42,7 @@ public class DeleteDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask
 
   /** {@inheritDoc} */
   @Override
-  protected AsyncResultSetSupplier buildResultSupplier(CommandQueryExecutor queryExecutor) {
+  protected AsyncResultSetSupplier buildDBResultSupplier(CommandQueryExecutor queryExecutor) {
 
     var statement = buildDeleteStatement();
 

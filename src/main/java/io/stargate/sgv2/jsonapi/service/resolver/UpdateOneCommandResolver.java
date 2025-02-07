@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -85,16 +84,17 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
           errVars(commandContext.schemaObject(), map -> {}));
     }
 
-    var taskBuilder = UpdateDBTask.builder(commandContext.schemaObject())
-        .withUpdateOne(true);
+    var taskBuilder = UpdateDBTask.builder(commandContext.schemaObject()).withUpdateOne(true);
     taskBuilder.withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
     // need to update so we use WithWarnings correctly
     var where =
         TableWhereCQLClause.forUpdate(
-            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command).target());
+            commandContext.schemaObject(),
+            tableFilterResolver.resolve(commandContext, command).target());
 
-    var taskGroup = new TaskGroup<>(
+    var taskGroup =
+        new TaskGroup<>(
             taskBuilder.build(where, tableUpdateResolver.resolve(commandContext, command)));
 
     return new TaskOperation<>(taskGroup, UpdateAttemptPage.accumulator(commandContext));

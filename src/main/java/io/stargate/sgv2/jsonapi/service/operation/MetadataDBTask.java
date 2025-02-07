@@ -47,7 +47,7 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
   protected abstract Object getSchema();
 
   @Override
-  protected AsyncResultSetSupplier buildResultSupplier(CommandQueryExecutor queryExecutor) {
+  protected AsyncResultSetSupplier buildDBResultSupplier(CommandQueryExecutor queryExecutor) {
 
     this.keyspaceMetadata = queryExecutor.getKeyspaceMetadata(schemaObject.name().keyspace());
 

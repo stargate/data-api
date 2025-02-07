@@ -6,10 +6,9 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.DeleteDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Objects;
 
 /** Builds a {@link DeleteDBTask} to delete from a {@link TableSchemaObject} */
 public class TableDeleteDBTaskBuilder
@@ -40,7 +39,7 @@ public class TableDeleteDBTaskBuilder
   public DeleteDBTask<TableSchemaObject> build(WhereCQLClause<Delete> whereCQLClause) {
 
     Objects.requireNonNull(deleteOne, "deleteOne must be set");
-    
+
     var whereCQLClauseAnalyzer =
         new WhereCQLClauseAnalyzer(
             schemaObject,

@@ -8,8 +8,8 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DropIndexDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DropIndexExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
@@ -37,8 +37,9 @@ public class DropIndexCommandResolver implements CommandResolver<DropIndexComman
     // Check if the index exists, we check if columns exist before trying to drop them so do for
     // indexes as well
 
-    var taskBuilder = DropIndexDBTask.builder(commandContext.schemaObject())
-        .withSchemaRetryPolicy(
+    var taskBuilder =
+        DropIndexDBTask.builder(commandContext.schemaObject())
+            .withSchemaRetryPolicy(
                 new SchemaDBTask.SchemaRetryPolicy(
                     commandContext.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
                     Duration.ofMillis(
@@ -47,20 +48,19 @@ public class DropIndexCommandResolver implements CommandResolver<DropIndexComman
                             .databaseConfig()
                             .ddlRetryDelayMillis())));
 
-    taskBuilder.withExceptionHandlerFactory(DefaultDriverExceptionHandler.Factory.withIdentifier(
-        DropIndexExceptionHandler::new, indexName));
+    taskBuilder.withExceptionHandlerFactory(
+        DefaultDriverExceptionHandler.Factory.withIdentifier(
+            DropIndexExceptionHandler::new, indexName));
 
     taskBuilder
         .withIndexName(indexName)
         .withIfExists(
-          ApiOptionUtils.getOrDefault(command.options(),
-            DropIndexCommand.Options::ifExists, IF_EXISTS_DEFAULT));
-
+            ApiOptionUtils.getOrDefault(
+                command.options(), DropIndexCommand.Options::ifExists, IF_EXISTS_DEFAULT));
 
     var taskGroup = new TaskGroup<>(taskBuilder.build());
 
     return new TaskOperation<>(
-        taskGroup,
-        SchemaDBTaskPage.accumulator(DropIndexDBTask.class, commandContext));
+        taskGroup, SchemaDBTaskPage.accumulator(DropIndexDBTask.class, commandContext));
   }
 }

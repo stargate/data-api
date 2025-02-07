@@ -56,7 +56,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   }
 
   @Override
-  public Operation<TableSchemaObject> resolveTableCommand(CommandContext<TableSchemaObject> commandContext, FindCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, FindCommand command) {
 
     // TODO: if we are doing in memory sorting how do we get a paging state working ?
     // The in memory sorting will blank out the paging state so we need to handle this
@@ -68,7 +69,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     var accumulator =
         ReadDBTaskPage.accumulator(commandContext).singleResponse(false).mayReturnVector(command);
 
-    return readCommandResolver.buildReadOperation(commandContext, command, cqlPageState, accumulator);
+    return readCommandResolver.buildReadOperation(
+        commandContext, command, cqlPageState, accumulator);
 
     // TODO: AARON MAHESH this is what was here before, leaving until we confirm all good
 
@@ -127,7 +129,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     //
     //    var where =
     //        TableWhereCQLClause.forSelect(
-    //            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command).target());
+    //            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext,
+    // command).target());
     //    var attempts = new OperationAttemptContainer<>(builder.build(where));
     //
     //    var pageBuilder =

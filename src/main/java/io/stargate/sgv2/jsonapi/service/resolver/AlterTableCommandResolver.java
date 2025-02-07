@@ -8,7 +8,6 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperationImpl;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -17,8 +16,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableExtensions;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.tables.AlterTableDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tables.AlterTableDBTaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
@@ -56,7 +55,8 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
                     .databaseConfig()
                     .ddlRetryDelayMillis()));
 
-    AlterTableDBTaskBuilder taskBuilder = AlterTableDBTask.builder(commandContext.schemaObject())
+    AlterTableDBTaskBuilder taskBuilder =
+        AlterTableDBTask.builder(commandContext.schemaObject())
             .withRetryPolicy(schemaRetryPolicy)
             .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
@@ -76,10 +76,12 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
               handleDropVectorize(taskBuilder, commandContext.schemaObject(), dc);
           default ->
               throw new IllegalStateException(
-                  "Unexpected AlterTableOperation class: " + command.operation().getClass().getSimpleName());
+                  "Unexpected AlterTableOperation class: "
+                      + command.operation().getClass().getSimpleName());
         });
 
-    return new TaskOperation<>(taskGroup, SchemaDBTaskPage.accumulator(AlterTableDBTask.class, commandContext));
+    return new TaskOperation<>(
+        taskGroup, SchemaDBTaskPage.accumulator(AlterTableDBTask.class, commandContext));
   }
 
   private List<AlterTableDBTask> handleAddColumns(

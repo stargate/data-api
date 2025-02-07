@@ -6,7 +6,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
@@ -71,7 +70,8 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
       taskBuilder.withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
       var taskGroup = new TaskGroup<>(taskBuilder.build());
-      return new TaskOperation<>(taskGroup, TruncateDBTaskPage.accumulator(TruncateDBTask.class, commandContext));
+      return new TaskOperation<>(
+          taskGroup, TruncateDBTaskPage.accumulator(TruncateDBTask.class, commandContext));
     }
 
     TableDeleteDBTaskBuilder taskBuilder =

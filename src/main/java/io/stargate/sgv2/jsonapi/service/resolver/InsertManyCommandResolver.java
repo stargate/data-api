@@ -55,26 +55,23 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, InsertManyCommand command) {
 
-    TableInsertDBTaskBuilder taskBuilder = TableInsertDBTask.builder(commandContext.schemaObject())
-        .withRowShredder(rowShredder)
-        .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+    TableInsertDBTaskBuilder taskBuilder =
+        TableInsertDBTask.builder(commandContext.schemaObject())
+            .withRowShredder(rowShredder)
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
     // TODO: move the default for ordered to a constant and use in the API
-    var taskGroup = new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(
-        ApiOptionUtils.getOrDefault(
-            command.options(),
-            InsertManyCommand.Options::ordered,
-            false
-        )
-    );
+    var taskGroup =
+        new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(
+            ApiOptionUtils.getOrDefault(
+                command.options(), InsertManyCommand.Options::ordered, false));
     taskGroup.addAll(command.documents().stream().map(taskBuilder::build).toList());
 
-    var accumulator = InsertDBTaskPage.accumulator(commandContext)
-            .returnDocumentResponses(        ApiOptionUtils.getOrDefault(
-                command.options(),
-                InsertManyCommand.Options::returnDocumentResponses,
-                false
-            ));
+    var accumulator =
+        InsertDBTaskPage.accumulator(commandContext)
+            .returnDocumentResponses(
+                ApiOptionUtils.getOrDefault(
+                    command.options(), InsertManyCommand.Options::returnDocumentResponses, false));
 
     return new TaskOperation<>(taskGroup, accumulator);
   }

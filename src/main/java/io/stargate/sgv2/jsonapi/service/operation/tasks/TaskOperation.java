@@ -99,7 +99,8 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
             if (failFast) {
               // Stop processing tasks, but we do not want to return a UniFailure, so we set the
               // tasks to skipped and do not call execute() on it.
-              return Uni.createFrom().item(task::setSkippedIfReady);
+              task.setSkippedIfReady();
+              return Uni.createFrom().item(task);
             }
             return task.execute(commandContext);
           });

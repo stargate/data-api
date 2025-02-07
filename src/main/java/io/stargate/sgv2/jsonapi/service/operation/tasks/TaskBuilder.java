@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
