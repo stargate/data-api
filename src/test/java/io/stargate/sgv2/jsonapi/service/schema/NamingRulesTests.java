@@ -11,8 +11,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+/** Unit tests for the {@link NamingRules} class. */
 public class NamingRulesTests {
 
+  /** Tests the naming rules for schema objects like Keyspace, Collection, Table, and Index. */
   @ParameterizedTest
   @MethodSource("schemaObjectNamingTestCases")
   public void schemaObjectNamingValidation(
@@ -25,7 +27,7 @@ public class NamingRulesTests {
     // Define a simple record to encapsulate a test case.
     record TestCase(String name, boolean expected, String description) {}
 
-    // List of invalid cases
+    // List of cases
     List<TestCase> invalidCases =
         Arrays.asList(
             new TestCase(null, false, "name cannot be null"),
@@ -50,7 +52,7 @@ public class NamingRulesTests {
         Arrays.asList(
             NamingRules.KEYSPACE, NamingRules.COLLECTION, NamingRules.TABLE, NamingRules.INDEX);
 
-    // Combine each naming rule with each invalid test case.
+    // Combine each naming rule with each test case.
     return namingRules.stream()
         .flatMap(
             rule ->

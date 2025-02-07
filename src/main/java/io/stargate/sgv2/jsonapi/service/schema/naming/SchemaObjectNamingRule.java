@@ -4,8 +4,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.util.regex.Pattern;
 
 /**
- * An abstract implementation of the {@link NamingRule} interface that provides a default naming
- * rule for schema objects (keyspaces, tables, collections, indexes).
+ * An abstract class of the {@link NamingRule} that provides a default naming rule for schema
+ * objects (keyspaces, tables, collections, indexes).
  *
  * <p>This class validates a given name based on the following criteria:
  *
