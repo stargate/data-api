@@ -157,7 +157,7 @@ public class DocumentShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " number of properties an indexable Object (property 'subdoc') has ("
+              " number of properties an indexable Object (field 'subdoc') has ("
                   + tooManyProps
                   + ") exceeds maximum allowed ("
                   + maxObProps
@@ -235,7 +235,7 @@ public class DocumentShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " number of elements an indexable Array (property 'arr') has ("
+              " number of elements an indexable Array (field 'arr') has ("
                   + arraySizeAboveMax
                   + ") exceeds maximum allowed ("
                   + docLimits.maxArrayLength()
@@ -325,7 +325,7 @@ public class DocumentShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " String value (property 'arr') length ("
+              " String value (field 'arr') length ("
                   + tooLongLength
                   + " bytes) exceeds maximum allowed ("
                   + docLimits.maxStringLengthInBytes()
@@ -357,7 +357,7 @@ public class DocumentShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " String value (property 'text') length ("
+              " String value (field 'text') length ("
                   + (tooLongCharLength * 3)
                   + " bytes) exceeds maximum allowed ("
                   + docLimits.maxStringLengthInBytes()
