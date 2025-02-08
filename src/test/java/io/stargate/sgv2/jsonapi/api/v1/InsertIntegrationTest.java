@@ -56,7 +56,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   class InsertOne {
 
     @Test
-    public void shredFailure() {
+    public void shredFailureOnNullDoc() {
       // This used to be a unit test for the InsertOneCommandResolver calld shredderFailure(), but
       // the resolver does not throw this
       // error any more, it is instead handed in the result.
@@ -140,9 +140,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               """));
     }
 
-    // [https://github.com/stargate/jsonapi/issues/521]: allow hyphens in property names
+    // [https://github.com/stargate/jsonapi/issues/521]: allow hyphens in Field names
     @Test
-    public void insertDocumentWithHyphenatedColumn() {
+    public void insertDocumentWithHyphenatedField() {
       String json =
           """
               {
@@ -190,6 +190,41 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                 "user-name": "user #1"
               }
               """));
+    }
+
+    // [https://github.com/stargate/jsonapi/issues/1847]: allow dots (and more) in Field names
+    @Test
+    public void insertDocumentWithDottedField() {
+      String doc =
+          """
+                  {
+                    "_id": "doc-with-dots",
+                    "app.kubernetes.io/id": 123,
+                    "metadata": {
+                      "app.kubernetes.io/name": "Bob"
+                    }
+                  }
+                  """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("doc-with-dots"));
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"find\": { \"filter\" : {\"_id\" : \"doc-with-dots\" }}}")
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]", jsonEquals(doc));
     }
 
     @Test
