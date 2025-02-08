@@ -923,7 +923,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               is(
-                  "Document size limitation violated: number of elements an indexable Array (property 'arr') has ("
+                  "Document size limitation violated: number of elements an indexable Array (field 'arr') has ("
                       + ARRAY_LEN
                       + ") exceeds maximum allowed ("
                       + MAX_ARRAY_LENGTH
@@ -976,7 +976,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: property path length (1003) exceeds maximum allowed (1000)"));
+                  "Document size limitation violated: field path length (1003) exceeds maximum allowed (1000)"));
     }
 
     @Test
@@ -1079,7 +1079,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: indexed String value (property 'bigString') length (8056 bytes) exceeds maximum allowed"));
+                  "Document size limitation violated: indexed String value (field 'bigString') length (8056 bytes) exceeds maximum allowed"));
     }
 
     private String createBigString(int minLen) {
@@ -1185,7 +1185,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               endsWith(
-                  "indexable Object (property 'subdoc') has (1001) exceeds maximum allowed (1000)"));
+                  "indexable Object (field 'subdoc') has (1001) exceeds maximum allowed (1000)"));
     }
 
     @Test
@@ -2120,7 +2120,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     boolean bigEnough = false;
 
-    // Since we add one property before loop, reduce max by 1.
+    // Since we add one field before loop, reduce max by 1.
     // Target is around 1 meg; can have at most 2000 properties, and for
     // big doc we don't want to exceed 1000 bytes per property.
     // So let's make properties arrays of 4 Constants to get there.

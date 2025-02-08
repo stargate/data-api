@@ -449,6 +449,8 @@ public class DocumentShredderDocLimitsTest {
     @ParameterizedTest
     @ValueSource(
         strings = {
+          "$",
+          "$a.b",
           "$function",
         })
     public void catchInvalidFieldName(String invalidName) {
@@ -456,7 +458,20 @@ public class DocumentShredderDocLimitsTest {
       doc.put("_id", 123);
       doc.put(invalidName, 123456);
 
+      // First check at root level
       Exception e = catchException(() -> documentShredder.shred(doc));
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
+          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
+          .hasMessageEndingWith("field name '" + invalidName + "' starts with '$'");
+
+      // And then as a nested field
+      final ObjectNode doc2 = objectMapper.createObjectNode();
+      ObjectNode leaf = doc2.putObject("root");
+      leaf.put(invalidName, 13);
+
+      e = catchException(() -> documentShredder.shred(doc));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
