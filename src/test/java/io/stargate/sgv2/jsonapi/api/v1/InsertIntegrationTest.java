@@ -1863,7 +1863,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                         "insertMany": {
                           "documents": [
                             { "_id": "doc1", "username": "userA"  },
-                            { "_id": "doc2", "username's": "userB" },
+                            { "_id": "doc2", "$username": "userB" },
                             { "_id": "doc3", "username": "userC"
                             }
                           ],
@@ -1886,8 +1886,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].errorCode", is("SHRED_DOC_KEY_NAME_VIOLATION"))
           .body(
               "errors[0].message",
-              startsWith(
-                  "Document field name invalid: field name ('username's') contains invalid character(s)"))
+              startsWith("Document field name invalid: field name '$username' starts with '$'"))
           .body("insertedIds", is(nullValue()))
           .body("status.documentResponses", hasSize(3))
           .body("status.documentResponses[0]", is(Map.of("_id", "doc1", "status", "OK")))
@@ -1964,7 +1963,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                             "insertMany": {
                               "documents": [
                                 { "_id": "doc1", "username": "userA"  },
-                                { "_id": "doc2", "username's": "userB" },
+                                { "_id": "doc2", "$username": "userB" },
                                 { "_id": "doc3", "username": "userC"
                                 }
                               ],
@@ -1987,8 +1986,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].errorCode", is("SHRED_DOC_KEY_NAME_VIOLATION"))
           .body(
               "errors[0].message",
-              startsWith(
-                  "Document field name invalid: field name ('username's') contains invalid character(s)"))
+              startsWith("Document field name invalid: field name '$username' starts with '$'"))
           .body("insertedIds", is(nullValue()))
           .body("status.documentResponses", hasSize(3))
           .body("status.documentResponses[0]", is(Map.of("_id", "doc1", "status", "OK")))
