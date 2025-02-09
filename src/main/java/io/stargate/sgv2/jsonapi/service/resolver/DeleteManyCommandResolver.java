@@ -90,7 +90,7 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, DeleteManyCommand command) {
     final FilterClause filterClause = command.filterClause(ctx);
     // If there is no filter or filter is empty, use Truncate operation instead of Delete

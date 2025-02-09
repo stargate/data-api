@@ -27,18 +27,18 @@ public abstract class TaskBuilder<TaskT extends Task<SchemaT>, SchemaT extends S
     return taskPosition += 1;
   }
 
-  protected DefaultDriverExceptionHandler.Factory<SchemaT> getExceptionHandlerFactory() {
-    if (exceptionHandlerFactory == null) {
-      throw new IllegalStateException("exceptionHandlerFactory must be set");
-    }
-    return exceptionHandlerFactory;
-  }
-
   @SuppressWarnings("unchecked")
   public <T extends TaskBuilder<TaskT, SchemaT>> T withExceptionHandlerFactory(
       DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
     this.exceptionHandlerFactory = exceptionHandlerFactory;
     return (T) this;
+  }
+
+  protected DefaultDriverExceptionHandler.Factory<SchemaT> getExceptionHandlerFactory() {
+    if (exceptionHandlerFactory == null) {
+      throw new IllegalStateException("exceptionHandlerFactory must be set");
+    }
+    return exceptionHandlerFactory;
   }
 
   /**

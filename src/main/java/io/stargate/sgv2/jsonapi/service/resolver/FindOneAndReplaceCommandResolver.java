@@ -62,7 +62,7 @@ public class FindOneAndReplaceCommandResolver implements CommandResolver<FindOne
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, FindOneAndReplaceCommand command) {
     // Add $vector and $vectorize replacement validation here
     if (command.replacementDocument().has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)

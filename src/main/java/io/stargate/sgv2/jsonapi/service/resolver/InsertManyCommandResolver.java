@@ -37,7 +37,7 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, InsertManyCommand command) {
 
     final InsertManyCommand.Options options = command.options();

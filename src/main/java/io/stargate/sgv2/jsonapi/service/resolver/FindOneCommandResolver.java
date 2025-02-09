@@ -62,58 +62,10 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     // the skip is 0 and the limit is 1 always for findOne
     return readCommandResolver.buildReadOperation(
         commandContext, command, CqlPagingState.EMPTY, accumulator);
-
-    // TODO: AARON MAHESH - this is what was here before, leaving until we confirm all good
-
-    //    var attemptBuilder = new TableReadDBTaskBuilder(commandContext.schemaObject());
-    //
-    //    // the skip is 0 and the limit is 1 always for findOne. just making that explicit
-    //    var commandSkip = 0;
-    //    var commandLimit = 1;
-    //    attemptBuilder.addBuilderOption(CQLOption.ForSelect.limit(commandLimit));
-    //
-    //    // work out the CQL order by
-    //    var orderByWithWarnings = tableCqlSortClauseResolver.resolve(commandContext, command);
-    //    attemptBuilder.addOrderBy(orderByWithWarnings);
-    //
-    //    // and then if we need to do in memory sorting
-    //    attemptBuilder.addSorter(
-    //        new TableMemorySortClauseResolver<>(
-    //          operationsConfig,
-    //          orderByWithWarnings.target(),
-    //          commandSkip,
-    //          commandLimit)
-    //        .resolve(commandContext, command));
-    //
-    //    // the columns the user wants
-    //    // NOTE: the projection is doing double duty as the select and the doc provider, this
-    // projection is still at POC leve
-    //    var projection = TableProjection.fromDefinition(objectMapper,
-    // command.tableProjectionDefinition(), commandContext.schemaObject());
-    //    attemptBuilder.addSelect(WithWarnings.of(projection));
-    //    attemptBuilder.addDocumentSourceSupplier(projection);
-    //
-    //    // TODO, we may want the ability to resolve API filter clause into multiple
-    //    // dbLogicalExpressions, which will map into multiple readAttempts
-    //    var where =
-    //        TableWhereCQLClause.forSelect(
-    //            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext,
-    // command).target());
-    //
-    //    var attempts = new OperationAttemptContainer<>(attemptBuilder.build(where));
-    //
-    //    var pageBuilder =
-    //        ReadDBTaskPage.<TableSchemaObject>builder()
-    //            .singleResponse(true)
-    //            .includeSortVector(false)
-    //            .debugMode(commandContext.getConfig(DebugModeConfig.class).enabled())
-    //            .useErrorObjectV2(commandContext.getConfig(OperationsConfig.class).extendError());
-    //
-    //    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> commandContext, FindOneCommand command) {
 
     final DBLogicalExpression dbLogicalExpression =

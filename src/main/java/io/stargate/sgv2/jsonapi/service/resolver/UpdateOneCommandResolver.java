@@ -101,7 +101,7 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, UpdateOneCommand command) {
     FindCollectionOperation findCollectionOperation = getFindOperation(ctx, command);
 

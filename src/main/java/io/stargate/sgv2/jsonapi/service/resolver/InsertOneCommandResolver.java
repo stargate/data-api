@@ -37,7 +37,7 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, InsertOneCommand command) {
 
     var builder =

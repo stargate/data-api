@@ -54,7 +54,7 @@ public class FindOneAndDeleteCommandResolver implements CommandResolver<FindOneA
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, FindOneAndDeleteCommand command) {
     FindCollectionOperation findCollectionOperation = getFindOperation(ctx, command);
     final DocumentProjector documentProjector = command.buildProjector();

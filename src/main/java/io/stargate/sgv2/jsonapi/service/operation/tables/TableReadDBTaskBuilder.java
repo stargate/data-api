@@ -4,7 +4,6 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.OperationProjection;
 import io.stargate.sgv2.jsonapi.service.operation.ReadDBTask;
@@ -27,7 +26,6 @@ public class TableReadDBTaskBuilder
 
   private final WhereCQLClauseAnalyzer whereCQLClauseAnalyzer;
 
-  private DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory;
   private WithWarnings<SelectCQLClause> selectWithWarnings;
   private WithWarnings<OrderByCqlClause> orderByWithWarnings;
   private WithWarnings<RowSorter> rowSorterWithWarnings;
@@ -38,49 +36,43 @@ public class TableReadDBTaskBuilder
 
   public TableReadDBTaskBuilder(TableSchemaObject tableSchemaObject) {
     super(tableSchemaObject);
+
     this.whereCQLClauseAnalyzer =
         new WhereCQLClauseAnalyzer(tableSchemaObject, WhereCQLClauseAnalyzer.StatementType.SELECT);
   }
 
-  public TableReadDBTaskBuilder addExceptionHandlerFactory(
-      DefaultDriverExceptionHandler.Factory<TableSchemaObject> exceptionHandlerFactory) {
-    this.exceptionHandlerFactory = exceptionHandlerFactory;
-    return this;
-  }
-
-  public TableReadDBTaskBuilder addSelect(WithWarnings<SelectCQLClause> selectWithWarnings) {
+  public TableReadDBTaskBuilder withSelect(WithWarnings<SelectCQLClause> selectWithWarnings) {
     this.selectWithWarnings = selectWithWarnings;
     return this;
   }
 
-  public TableReadDBTaskBuilder addOrderBy(WithWarnings<OrderByCqlClause> orderByWithWarnings) {
+  public TableReadDBTaskBuilder withProjection(OperationProjection projection) {
+    this.projection = projection;
+    return this;
+  }
+
+  public TableReadDBTaskBuilder withOrderBy(WithWarnings<OrderByCqlClause> orderByWithWarnings) {
     this.orderByWithWarnings = orderByWithWarnings;
     return this;
   }
 
-  public TableReadDBTaskBuilder addSorter(WithWarnings<RowSorter> rowSorterWithWarnings) {
+  public TableReadDBTaskBuilder withSorter(WithWarnings<RowSorter> rowSorterWithWarnings) {
     this.rowSorterWithWarnings = rowSorterWithWarnings;
     return this;
   }
 
-  public TableReadDBTaskBuilder addBuilderOption(CQLOption<Select> option) {
+  public TableReadDBTaskBuilder withBuilderOption(CQLOption<Select> option) {
     cqlOptions.addBuilderOption(option);
     return this;
   }
 
-  public TableReadDBTaskBuilder addPagingState(CqlPagingState pagingState) {
+  public TableReadDBTaskBuilder withPagingState(CqlPagingState pagingState) {
     this.pagingState = pagingState;
-    return this;
-  }
-
-  public TableReadDBTaskBuilder addProjection(OperationProjection projection) {
-    this.projection = projection;
     return this;
   }
 
   public ReadDBTask<TableSchemaObject> build(WhereCQLClause<Select> whereCQLClause) {
 
-    Objects.requireNonNull(exceptionHandlerFactory, "exceptionHandlerFactory is required");
     Objects.requireNonNull(selectWithWarnings, "selectWithWarnings is required");
     Objects.requireNonNull(orderByWithWarnings, "orderByWithWarnings is required");
     Objects.requireNonNull(rowSorterWithWarnings, "rowSorterWithWarnings is required");
@@ -106,7 +98,7 @@ public class TableReadDBTaskBuilder
         new ReadDBTask<>(
             nextPosition(),
             schemaObject,
-            exceptionHandlerFactory,
+            getExceptionHandlerFactory(),
             selectWithWarnings.target(),
             whereCQLClause,
             orderByWithWarnings.target(),

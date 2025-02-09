@@ -42,7 +42,7 @@ public class CountDocumentsCommandResolver implements CommandResolver<CountDocum
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> commandContext, CountDocumentsCommand command) {
 
     DBLogicalExpression dbLogicalExpression =

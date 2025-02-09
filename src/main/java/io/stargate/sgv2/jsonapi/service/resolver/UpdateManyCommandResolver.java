@@ -58,7 +58,7 @@ public class UpdateManyCommandResolver implements CommandResolver<UpdateManyComm
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, UpdateManyCommand command) {
     FindCollectionOperation findCollectionOperation = getFindOperation(ctx, command);
 

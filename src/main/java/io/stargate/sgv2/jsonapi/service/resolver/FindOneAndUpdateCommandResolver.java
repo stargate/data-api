@@ -60,7 +60,7 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, FindOneAndUpdateCommand command) {
     FindCollectionOperation findCollectionOperation = getFindOperation(ctx, command);
 

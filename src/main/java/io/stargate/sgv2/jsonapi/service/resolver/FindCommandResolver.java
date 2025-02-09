@@ -71,81 +71,10 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
 
     return readCommandResolver.buildReadOperation(
         commandContext, command, cqlPageState, accumulator);
-
-    // TODO: AARON MAHESH this is what was here before, leaving until we confirm all good
-
-    //    var rowSorterWithWarnings = tableRowSorterClauseResolver.resolve(commandContext, command);
-    //
-    //    boolean inMemorySort = rowSorterWithWarnings != null;
-    //    var operationConfig = commandContext.getConfig(OperationsConfig.class);
-    //    int limit =
-    //        Optional.ofNullable(command.options())
-    //            .map(FindCommand.Options::limit)
-    //            .orElse(inMemorySort ? operationsConfig.defaultPageSize() : Integer.MAX_VALUE);
-    //
-    //    var selectLimit = inMemorySort ? operationConfig.maxDocumentSortCount() + 1 : limit;
-    //
-    //    var cqlPageState =
-    //        inMemorySort
-    //            ? CqlPagingState.EMPTY
-    //            : Optional.ofNullable(command.options())
-    //                .map(options -> CqlPagingState.from(options.pageState()))
-    //                .orElse(CqlPagingState.EMPTY);
-    //
-    //    int pageSize =
-    //        inMemorySort ? operationsConfig.defaultSortPageSize() :
-    // operationsConfig.defaultPageSize();
-    //
-    //    var orderBy = tableSortOrderByCqlClauseResolver.resolve(commandContext, command);
-    //
-    //    int skip =
-    // Optional.ofNullable(command.options()).map(FindCommand.Options::skip).orElse(0);
-    //
-    //    SortedRowAccumulator.RowSortSettings rowSortSettings =
-    //        inMemorySort ? SortedRowAccumulator.RowSortSettings.from(limit, skip, selectLimit) :
-    // null;
-    //
-    //    var projection =
-    //        TableProjection.fromDefinition(
-    //            objectMapper,
-    //            command.tableProjectionDefinition(),
-    //            commandContext.schemaObject(),
-    //            inMemorySort
-    //                ?
-    // rowSorterWithWarnings.getOrderingColumns().stream().map(ApiColumnDef::name).toList()
-    //                : null);
-    //
-    //    var builder =
-    //        new TableReadDBTaskBuilder(
-    //                commandContext.schemaObject(),
-    //                projection,
-    //                projection,
-    //                orderBy,
-    //                rowSorterWithWarnings,
-    //            rowSortSettings)
-    //            .addBuilderOption(CQLOption.ForSelect.limit(selectLimit))
-    //            .addStatementOption(CQLOption.ForStatement.pageSize(pageSize))
-    //            .addPagingState(cqlPageState);
-    //
-    //    var where =
-    //        TableWhereCQLClause.forSelect(
-    //            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext,
-    // command).target());
-    //    var attempts = new OperationAttemptContainer<>(builder.build(where));
-    //
-    //    var pageBuilder =
-    //        ReadDBTaskPage.<TableSchemaObject>builder()
-    //            .singleResponse(false)
-    //            .includeSortVector(command.options() != null &&
-    // command.options().includeSortVector())
-    //            .debugMode(commandContext.getConfig(DebugModeConfig.class).enabled())
-    //            .useErrorObjectV2(commandContext.getConfig(OperationsConfig.class).extendError());
-    //
-    //    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> commandContext, FindCommand command) {
 
     var resolvedDbLogicalExpression =
