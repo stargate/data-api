@@ -98,7 +98,7 @@ public final class TestConstants {
         embeddingProvider,
         commandName,
         metricsReporter,
-        new RequestContext(Optional.of("testTenant")),
+        new RequestContext(Optional.of("test-tenant")),
         null);
   }
 
