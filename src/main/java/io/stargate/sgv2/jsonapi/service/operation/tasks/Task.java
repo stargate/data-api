@@ -52,21 +52,27 @@ public interface Task<SchemaT extends SchemaObject>
 
   /**
    * Execute the task, using the resources on the supplied {@link CommandContext}.
+   *
+   * <p>The tasks should start executing if and only if the status is {@link TaskStatus#READY}.
+   *
+   * <p>Tasks do not return the result of their execution, they should retain this as state, and
+   * make it available on their public interface. The result of running the task(s) is then
+   * aggregated together by a {@link TaskAccumulator} to get the final result of running all the
+   * tasks.
+   *
+   * <p>Tasks may throw an exception from this method, if so it will be caught and first passed
+   * through the {@link TaskRetryPolicy} to determine if this method should be retried. The last
+   * exception thrown from the method will be passed through a {@link
+   * io.stargate.sgv2.jsonapi.exception.ExceptionHandler} to where it can be re-mapped into
+   * something we want to return to a user, and then set as the failure via {@link
+   * #maybeAddFailure(Throwable)} so the accumulator can see it.
+   *
    * <p>
-   * The tasks should start executing if and only if the status is {@link TaskStatus#READY}.
-   * <p>
-   * Tasks do not return the result of their execution, they should retain this as state, and make it available
-   * on their public interface. The result of running the task(s) is then aggregated together by a
-   * {@link TaskAccumulator} to get the final result of running all the tasks.
-   * <p>
-   * Tasks may throw an exception from this method, if so it will be caught and first passed through the
-   * {@link TaskRetryPolicy} to determine if this method should be retried. The last exception thrown
-   * from the method will be passed through a {@link io.stargate.sgv2.jsonapi.exception.ExceptionHandler} to
-   * where it can be re-mapped into something we want to return to a user, and then set as the failure via
-   * {@link #maybeAddFailure(Throwable)} so the accumulator can see it.
-   * <p>
-   * @param commandContext The context for the task that contains any resources or configuration needed.
-   * @return The task as a subclass, so that the task can be accumulated into a {@link TaskAccumulator}.
+   *
+   * @param commandContext The context for the task that contains any resources or configuration
+   *     needed.
+   * @return The task as a subclass, so that the task can be accumulated into a {@link
+   *     TaskAccumulator}.
    * @param <SubT> The type of the class this is implementing {@link Task}
    */
   <SubT extends Task<SchemaT>> Uni<SubT> execute(CommandContext<SchemaT> commandContext);
@@ -86,7 +92,8 @@ public interface Task<SchemaT extends SchemaObject>
   UUID taskId();
 
   /**
-   * The status of the task, the status should change while the task is processing until it reaches a terminal state.
+   * The status of the task, the status should change while the task is processing until it reaches
+   * a terminal state.
    *
    * @return {@link TaskStatus} status, the status may change but never after it has reached a
    *     {@link TaskStatus#isTerminal()} state.
@@ -107,8 +114,8 @@ public interface Task<SchemaT extends SchemaObject>
   Task<SchemaT> setSkippedIfReady();
 
   /**
-   * Updates the Task with an error that occurred while trying to process the user request, and sets the
-   * status to {@link TaskStatus#ERROR} if no non-null failure is added.
+   * Updates the Task with an error that occurred while trying to process the user request, and sets
+   * the status to {@link TaskStatus#ERROR} if no non-null failure is added.
    *
    * <p>If this method is called multiple times then only the first error is must be kept.
    *

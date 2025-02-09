@@ -99,9 +99,11 @@ public abstract class DBTask<SchemaT extends SchemaObject>
       AsyncResultSetSupplier resultSupplier, RuntimeException runtimeException) {
 
     // resultSupplier may be null if we did not get to execute a statement
-    var handler = Objects.requireNonNull(
-        exceptionHandlerFactory.apply(schemaObject, resultSupplier == null ? null : resultSupplier.statement),
-        "DBTask.maybeHandleException() - exceptionHandlerFactory returned null");
+    var handler =
+        Objects.requireNonNull(
+            exceptionHandlerFactory.apply(
+                schemaObject, resultSupplier == null ? null : resultSupplier.statement),
+            "DBTask.maybeHandleException() - exceptionHandlerFactory returned null");
 
     return handler.maybeHandle(runtimeException);
   }

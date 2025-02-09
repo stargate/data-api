@@ -235,9 +235,9 @@ public abstract class BaseTask<
    * tracked, only the final error.
    *
    * @param resultSupplier The {@link ResultSupplierT} returned by the subclass from {@link
-   *     #buildResultSupplier(CommandContext)}. Note: this may be <b>null</b> if the task either did not start
-   *                       executing or did not get to build a valid statement, e.g. a request error was found during
-   *                       the creation of the task such as invalid data type.
+   *     #buildResultSupplier(CommandContext)}. Note: this may be <b>null</b> if the task either did
+   *     not start executing or did not get to build a valid statement, e.g. a request error was
+   *     found during the creation of the task such as invalid data type.
    * @param runtimeException The exception to handle.
    * @return The exception to return to the user, if null then the error is swallowed. Generally we
    *     want to turn the exception into a {@link io.stargate.sgv2.jsonapi.exception.APIException}.
@@ -309,7 +309,8 @@ public abstract class BaseTask<
     resultSupplier = buildResultSupplier(commandContext);
     if (resultSupplier == null) {
       throw new IllegalStateException(
-          "executeIfInProgress() - buildStatementExecutor() returned null, " + positionTaskIdStatus());
+          "executeIfInProgress() - buildStatementExecutor() returned null, "
+              + positionTaskIdStatus());
     }
 
     return resultSupplier.get();
@@ -396,11 +397,11 @@ public abstract class BaseTask<
     }
 
     if (LOGGER.isDebugEnabled() && (null != throwable)) {
-       // we started with an exception, so log what it is now
-        LOGGER.debug(
-            "onCompletion() - after exception handling {}, handledException={}",
-            positionTaskIdStatus(),
-            Objects.toString(handledException, "NULL"));
+      // we started with an exception, so log what it is now
+      LOGGER.debug(
+          "onCompletion() - after exception handling {}, handledException={}",
+          positionTaskIdStatus(),
+          Objects.toString(handledException, "NULL"));
     }
 
     // If we were in progress, we will switch state to either COMPLETE by calling onSuccess
