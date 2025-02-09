@@ -34,9 +34,11 @@ public class ReadDBTaskTest {
             .formatted(
                 CqlIdentifier.fromInternal(keyspace).asCql(true),
                 CqlIdentifier.fromInternal(table).asCql(true));
-    var cql2 = "SELECT * FROM %s.%s ALLOW FILTERING".formatted(
-        CqlIdentifier.fromInternal(keyspace).asCql(true),
-        CqlIdentifier.fromInternal(table).asCql(true));
+    var cql2 =
+        "SELECT * FROM %s.%s ALLOW FILTERING"
+            .formatted(
+                CqlIdentifier.fromInternal(keyspace).asCql(true),
+                CqlIdentifier.fromInternal(table).asCql(true));
 
     task.doExecuteReadThrowThenReturn(allowFilteringError, task.resultSet)
         .setStatus(Task.TaskStatus.READY)
