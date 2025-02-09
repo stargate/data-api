@@ -12,10 +12,10 @@ import java.util.UUID;
  *
  * <p>Operations work on a group of tasks in a {@link TaskGroup}.
  *
- * <p>We have an interface to make it easier for other code to be generic when using a task, but the
- * {@link BaseTask} has the logic we need to retry and manage state etc.
+ * <p>We have an interface to make it easier for other code to be generic when using a task, the
+ * {@link BaseTask} has the logic we need to retry and manage state etc. so subclass that.
  *
- * @param <SchemaT>
+ * @param <SchemaT> The type of the schema object that the task works on
  */
 public interface Task<SchemaT extends SchemaObject>
     extends Comparable<Task<SchemaT>>, WithWarnings.WarningsSink {
@@ -27,11 +27,11 @@ public interface Task<SchemaT extends SchemaObject>
     READY(false),
     /** The task is in progress, it has started but has not completed yet. */
     IN_PROGRESS(false),
-    /** The task has completed successfully. */
+    /** The task has completed successfully, this is a terminal state. */
     COMPLETED(true),
-    /** The task has failed, and has an error */
+    /** The task has failed, and has an error, this is a terminal state */
     ERROR(true),
-    /** The task was skipped, it was not run */
+    /** The task was skipped, it was not run, this is a terminal state */
     SKIPPED(true);
 
     private final boolean isTerminal;
@@ -51,29 +51,42 @@ public interface Task<SchemaT extends SchemaObject>
   }
 
   /**
-   * Executes the task TODO: more comments
-   *
-   * @param commandContext
-   * @return
+   * Execute the task, using the resources on the supplied {@link CommandContext}.
+   * <p>
+   * The tasks should start executing if and only if the status is {@link TaskStatus#READY}.
+   * <p>
+   * Tasks do not return the result of their execution, they should retain this as state, and make it available
+   * on their public interface. The result of running the task(s) is then aggregated together by a
+   * {@link TaskAccumulator} to get the final result of running all the tasks.
+   * <p>
+   * Tasks may throw an exception from this method, if so it will be caught and first passed through the
+   * {@link TaskRetryPolicy} to determine if this method should be retried. The last exception thrown
+   * from the method will be passed through a {@link io.stargate.sgv2.jsonapi.exception.ExceptionHandler} to
+   * where it can be re-mapped into something we want to return to a user, and then set as the failure via
+   * {@link #maybeAddFailure(Throwable)} so the accumulator can see it.
+   * <p>
+   * @param commandContext The context for the task that contains any resources or configuration needed.
+   * @return The task as a subclass, so that the task can be accumulated into a {@link TaskAccumulator}.
+   * @param <SubT> The type of the class this is implementing {@link Task}
    */
   <SubT extends Task<SchemaT>> Uni<SubT> execute(CommandContext<SchemaT> commandContext);
 
   /**
-   * The zero based position of the task in the group.
+   * The zero based position of the task in the group, the value must never change.
    *
    * @return integer position
    */
   int position();
 
   /**
-   * The unique id of the task.
+   * The unique id of the task, the value must never change.
    *
-   * @return UUID
+   * @return UUID that is unique to this task
    */
   UUID taskId();
 
   /**
-   * The status of the task.
+   * The status of the task, the status should change while the task is processing until it reaches a terminal state.
    *
    * @return {@link TaskStatus} status, the status may change but never after it has reached a
    *     {@link TaskStatus#isTerminal()} state.
@@ -94,14 +107,12 @@ public interface Task<SchemaT extends SchemaObject>
   Task<SchemaT> setSkippedIfReady();
 
   /**
-   * Updates the Task with an error that occurred while trying to process the attempt, and sets the
+   * Updates the Task with an error that occurred while trying to process the user request, and sets the
    * status to {@link TaskStatus#ERROR} if no non-null failure is added.
    *
    * <p>If this method is called multiple times then only the first error is must be kept.
    *
-   * <p>The {@link #execute(CommandContext)} method should only add a failure after all retries have
-   * been attempted. The failure may be passed back in the request response, so returning
-   * intermediate errors is not useful.
+   * <p>This method is not normmaly called
    *
    * <p>OK to add a failure to the task before calling execute, we do this for shredding errors,
    * because the attempt will not execute if there was an error. This is also why this is on the

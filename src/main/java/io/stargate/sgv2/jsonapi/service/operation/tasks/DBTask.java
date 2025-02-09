@@ -97,9 +97,13 @@ public abstract class DBTask<SchemaT extends SchemaObject>
   @Override
   protected RuntimeException maybeHandleException(
       AsyncResultSetSupplier resultSupplier, RuntimeException runtimeException) {
-    return exceptionHandlerFactory
-        .apply(schemaObject, resultSupplier.statement)
-        .maybeHandle(runtimeException);
+
+    // resultSupplier may be null if we did not get to execute a statement
+    var handler = Objects.requireNonNull(
+        exceptionHandlerFactory.apply(schemaObject, resultSupplier == null ? null : resultSupplier.statement),
+        "DBTask.maybeHandleException() - exceptionHandlerFactory returned null");
+
+    return handler.maybeHandle(runtimeException);
   }
 
   // =================================================================================================
@@ -165,7 +169,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
       logger.debug(
           "{} - {}, cql={}, values={}",
           prefix,
-          positionAndTaskId(),
+          positionTaskIdStatus(),
           CqlPrintUtil.trimmedCql(statement),
           CqlPrintUtil.trimmedPositionalValues(statement));
     }
@@ -174,7 +178,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
       logger.trace(
           "{} - {}, cql={}, values={}",
           prefix,
-          positionAndTaskId(),
+          positionTaskIdStatus(),
           statement.getQuery(),
           statement.getPositionalValues());
     }

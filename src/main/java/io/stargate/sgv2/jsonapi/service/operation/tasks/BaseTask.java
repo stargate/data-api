@@ -95,7 +95,7 @@ public abstract class BaseTask<
           "execute() - starting subclass={}, status={}, {}",
           getClass().getSimpleName(),
           status(),
-          positionAndTaskId());
+          positionTaskIdStatus());
     }
 
     if (!swapStatus("start execute()", TaskStatus.READY, TaskStatus.IN_PROGRESS)) {
@@ -125,7 +125,7 @@ public abstract class BaseTask<
                     "execute() - finished durationMs={}, subclass={}, {}",
                     durationMs,
                     getClass().getSimpleName(),
-                    positionAndTaskId());
+                    positionTaskIdStatus());
               }
             });
   }
@@ -168,7 +168,7 @@ public abstract class BaseTask<
           // exception are not always bad (if we pass the exception it will log the stack)
           LOGGER.debug(
               "maybeAddFailure() - added failure for {}, failure={}",
-              positionAndTaskId(),
+              positionTaskIdStatus(),
               failure.toString());
         }
         setStatus(TaskStatus.ERROR);
@@ -176,7 +176,7 @@ public abstract class BaseTask<
     } else if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
           "maybeAddFailure() - will not add failure for {}, because has existing failure={}, attempted new failure={}",
-          positionAndTaskId(),
+          positionTaskIdStatus(),
           failure.toString(),
           throwable.toString());
     }
@@ -235,8 +235,9 @@ public abstract class BaseTask<
    * tracked, only the final error.
    *
    * @param resultSupplier The {@link ResultSupplierT} returned by the subclass from {@link
-   *     #buildResultSupplier(CommandContext)} this may be null if the task was never executed, e.g.
-   *     it erred during the creation such as invalid data type.
+   *     #buildResultSupplier(CommandContext)}. Note: this may be <b>null</b> if the task either did not start
+   *                       executing or did not get to build a valid statement, e.g. a request error was found during
+   *                       the creation of the task such as invalid data type.
    * @param runtimeException The exception to handle.
    * @return The exception to return to the user, if null then the error is swallowed. Generally we
    *     want to turn the exception into a {@link io.stargate.sgv2.jsonapi.exception.APIException}.
@@ -294,7 +295,7 @@ public abstract class BaseTask<
         LOGGER.debug(
             "executeIfInProgress() - state was {}, will not execute {}",
             status(),
-            positionAndTaskId());
+            positionTaskIdStatus());
       }
       return Uni.createFrom().item(null);
     }
@@ -308,7 +309,7 @@ public abstract class BaseTask<
     resultSupplier = buildResultSupplier(commandContext);
     if (resultSupplier == null) {
       throw new IllegalStateException(
-          "executeIfInProgress() - buildStatementExecutor() returned null, " + positionAndTaskId());
+          "executeIfInProgress() - buildStatementExecutor() returned null, " + positionTaskIdStatus());
     }
 
     return resultSupplier.get();
@@ -330,7 +331,7 @@ public abstract class BaseTask<
       throw new IllegalStateException(
           String.format(
               "decideRetry() called when not IN_PROGRESS status=%s, %s",
-              status(), positionAndTaskId()));
+              status(), positionTaskIdStatus()));
     }
 
     var shouldRetry = retryPolicy.shouldRetry(throwable);
@@ -341,7 +342,7 @@ public abstract class BaseTask<
           retryCount,
           retryPolicy.maxRetries(),
           retryPolicy.getClass().getName(),
-          positionAndTaskId(),
+          positionTaskIdStatus(),
           throwable.toString());
     }
     retryCount++;
@@ -366,17 +367,17 @@ public abstract class BaseTask<
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "onCompletion() - result == null {}, throwable={}, {}",
+          "onCompletion() - {}, result is null={}, throwable={}",
+          positionTaskIdStatus(),
           result == null,
-          Objects.toString(throwable, "NULL"),
-          positionAndTaskId());
+          Objects.toString(throwable, "NULL"));
     }
 
     // sanity check, if we do not have a result then we should have an exception
     if (result == null && throwable == null) {
       throw new IllegalStateException(
           String.format(
-              "onCompletion() - result and throwable are both null, %s", positionAndTaskId()));
+              "onCompletion() - result and throwable are both null, %s", positionTaskIdStatus()));
     }
 
     // handle the error, it is turned into what we want to return to the user
@@ -389,18 +390,17 @@ public abstract class BaseTask<
     if ((handledException == null && throwable != null) && LOGGER.isWarnEnabled()) {
       // this means we are swallowing an error, may be correct but make sure we warn
       LOGGER.warn(
-          "onCompletion() - exception handler returned null so error is swallowed, throwable={}, {}",
-          throwable,
-          positionAndTaskId());
+          "onCompletion() - exception handler returned null so error is swallowed, {}, throwable={}",
+          positionTaskIdStatus(),
+          Objects.toString(throwable, "NULL"));
     }
 
-    if (LOGGER.isDebugEnabled()) {
-      if (handledException != throwable) {
+    if (LOGGER.isDebugEnabled() && (null != throwable)) {
+       // we started with an exception, so log what it is now
         LOGGER.debug(
-            "onCompletion() - exception mapped to handledException={}, {}",
-            handledException,
-            positionAndTaskId());
-      }
+            "onCompletion() - after exception handling {}, handledException={}",
+            positionTaskIdStatus(),
+            Objects.toString(handledException, "NULL"));
     }
 
     // If we were in progress, we will switch state to either COMPLETE by calling onSuccess
@@ -421,7 +421,7 @@ public abstract class BaseTask<
       default ->
           throw new IllegalStateException(
               String.format(
-                  "onCompletion() unsupported status=%s, %s", status(), positionAndTaskId()));
+                  "onCompletion() unsupported status=%s, %s", status(), positionTaskIdStatus()));
     }
     ;
   }
@@ -441,7 +441,7 @@ public abstract class BaseTask<
           "setStatus() - status changing from {} to {} for {}",
           status(),
           newStatus,
-          positionAndTaskId());
+          positionTaskIdStatus());
     }
     status = newStatus;
   }
@@ -466,7 +466,7 @@ public abstract class BaseTask<
         new IllegalStateException(
             String.format(
                 "BaseTask: checkStatus() - failed for %s, expected %s but actual %s for %s",
-                context, expectedStatus, status(), positionAndTaskId())));
+                context, expectedStatus, status(), positionTaskIdStatus())));
     return false;
   }
 
@@ -509,12 +509,12 @@ public abstract class BaseTask<
     throw new IllegalStateException(
         String.format(
             "BaseTask: checkTerminal() failed for %s, non-terminal status %s for %s",
-            context, status(), positionAndTaskId()));
+            context, status(), positionTaskIdStatus()));
   }
 
   /** Helper method to build a string with the position and taskId, used in logging. */
-  public String positionAndTaskId() {
-    return String.format("position=%d, taskId=%s", position, taskId);
+  public String positionTaskIdStatus() {
+    return String.format("position=%d, taskId=%s, status=%s", position, taskId, status());
   }
 
   @Override
