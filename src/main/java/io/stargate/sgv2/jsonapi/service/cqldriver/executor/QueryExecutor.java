@@ -14,6 +14,8 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Base64;
@@ -22,6 +24,7 @@ import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ApplicationScoped
 public class QueryExecutor {
   private static final Logger logger = LoggerFactory.getLogger(QueryExecutor.class);
   private final OperationsConfig operationsConfig;
@@ -29,6 +32,7 @@ public class QueryExecutor {
   /** CQLSession cache. */
   private final CQLSessionCache cqlSessionCache;
 
+  @Inject
   public QueryExecutor(CQLSessionCache cqlSessionCache, OperationsConfig operationsConfig) {
     this.cqlSessionCache = cqlSessionCache;
     this.operationsConfig = operationsConfig;
