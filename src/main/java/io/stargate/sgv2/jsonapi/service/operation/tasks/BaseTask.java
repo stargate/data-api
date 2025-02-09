@@ -92,10 +92,7 @@ public abstract class BaseTask<
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "execute() - starting subclass={}, status={}, {}",
-          getClass().getSimpleName(),
-          status(),
-          positionTaskIdStatus());
+          "execute() - starting {}, subclass={}", positionTaskIdStatus(), getClass().getName());
     }
 
     if (!swapStatus("start execute()", TaskStatus.READY, TaskStatus.IN_PROGRESS)) {
@@ -122,10 +119,10 @@ public abstract class BaseTask<
               if (LOGGER.isDebugEnabled()) {
                 double durationMs = (System.nanoTime() - startNano) / 1_000_000.0;
                 LOGGER.debug(
-                    "execute() - finished durationMs={}, subclass={}, {}",
+                    "execute() - finished {}, durationMs={}, subclass={}",
+                    positionTaskIdStatus(),
                     durationMs,
-                    getClass().getSimpleName(),
-                    positionTaskIdStatus());
+                    getClass().getSimpleName());
               }
             });
   }
@@ -169,7 +166,7 @@ public abstract class BaseTask<
           LOGGER.debug(
               "maybeAddFailure() - added failure for {}, failure={}",
               positionTaskIdStatus(),
-              failure.toString());
+              Objects.toString(failure, "NULL"));
         }
         setStatus(TaskStatus.ERROR);
       }
@@ -177,8 +174,8 @@ public abstract class BaseTask<
       LOGGER.debug(
           "maybeAddFailure() - will not add failure for {}, because has existing failure={}, attempted new failure={}",
           positionTaskIdStatus(),
-          failure.toString(),
-          throwable.toString());
+          Objects.toString(failure, "NULL"),
+          Objects.toString(throwable, "NULL"));
     }
     return upcastToTask();
   }
@@ -275,6 +272,7 @@ public abstract class BaseTask<
     return this;
   }
 
+  @SuppressWarnings("unchecked")
   protected <SubT extends Task<SchemaT>> SubT downcast() {
     return (SubT) this;
   }
@@ -293,9 +291,7 @@ public abstract class BaseTask<
     if (status() == TaskStatus.ERROR) {
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug(
-            "executeIfInProgress() - state was {}, will not execute {}",
-            status(),
-            positionTaskIdStatus());
+            "executeIfInProgress() - in ERROR state, will not execute {}", positionTaskIdStatus());
       }
       return Uni.createFrom().item(null);
     }
@@ -338,13 +334,13 @@ public abstract class BaseTask<
     var shouldRetry = retryPolicy.shouldRetry(throwable);
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "decideRetry() - Retry decision: shouldRetry={}, retryCount={}, retryPolicy.maxRetries={}, policy={}, {}, for throwable {}",
+          "decideRetry() - retry decision: {}, shouldRetry={}, retryCount={}, retryPolicy.maxRetries={}, policy={}, for throwable {}",
+          positionTaskIdStatus(),
           shouldRetry,
           retryCount,
           retryPolicy.maxRetries(),
-          retryPolicy.getClass().getName(),
-          positionTaskIdStatus(),
-          throwable.toString());
+          retryPolicy.getClass().getName(), // full name for so lambda can be used
+          Objects.toString(throwable, "NULL"));
     }
     retryCount++;
     return shouldRetry;
@@ -367,11 +363,12 @@ public abstract class BaseTask<
   protected void onCompletion(ResultT result, Throwable throwable) {
 
     if (LOGGER.isDebugEnabled()) {
+      // in a lot of places we only want to log the toString() of the exception, not the stack
+      // we want to log the full exception here as the one place we have the stack
       LOGGER.debug(
-          "onCompletion() - {}, result is null={}, throwable={}",
-          positionTaskIdStatus(),
-          result == null,
-          Objects.toString(throwable, "NULL"));
+          "onCompletion() - %s, result is null=%s (throwable in message if present)"
+              .formatted(positionTaskIdStatus(), result == null),
+          throwable);
     }
 
     // sanity check, if we do not have a result then we should have an exception
@@ -391,7 +388,7 @@ public abstract class BaseTask<
     if ((handledException == null && throwable != null) && LOGGER.isWarnEnabled()) {
       // this means we are swallowing an error, may be correct but make sure we warn
       LOGGER.warn(
-          "onCompletion() - exception handler returned null so error is swallowed, {}, throwable={}",
+          "onCompletion() - exception handler returned null so error is swallowed {}, throwable={}",
           positionTaskIdStatus(),
           Objects.toString(throwable, "NULL"));
     }
@@ -399,7 +396,7 @@ public abstract class BaseTask<
     if (LOGGER.isDebugEnabled() && (null != throwable)) {
       // we started with an exception, so log what it is now
       LOGGER.debug(
-          "onCompletion() - after exception handling {}, handledException={}",
+          "onCompletion() - started with a throwable, after exception handling {}, handledException={}",
           positionTaskIdStatus(),
           Objects.toString(handledException, "NULL"));
     }
@@ -438,11 +435,7 @@ public abstract class BaseTask<
   protected void setStatus(TaskStatus newStatus) {
 
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
-          "setStatus() - status changing from {} to {} for {}",
-          status(),
-          newStatus,
-          positionTaskIdStatus());
+      LOGGER.debug("setStatus() - status changing to {} for {}", newStatus, positionTaskIdStatus());
     }
     status = newStatus;
   }

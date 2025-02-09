@@ -18,7 +18,7 @@ public class TaskGroup<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject
     extends ArrayList<TaskT> {
 
   private boolean sequentialProcessing = false;
-  private final UUID containerId = UUID.randomUUID();
+  private final UUID groupId = UUID.randomUUID();
 
   public TaskGroup() {
     super();
@@ -99,8 +99,8 @@ public class TaskGroup<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject
     forEach(task -> statusCount.merge(task.status(), 1, Math::addExact));
 
     return new StringBuilder("TaskGroup{")
-        .append("containerId=")
-        .append(containerId)
+        .append("groupId=")
+        .append(groupId)
         .append(", sequentialProcessing=")
         .append(sequentialProcessing)
         .append(", count=")
