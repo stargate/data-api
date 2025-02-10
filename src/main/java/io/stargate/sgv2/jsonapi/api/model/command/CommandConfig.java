@@ -64,7 +64,8 @@ public class CommandConfig {
   @SuppressWarnings("unchecked")
   public <ConfigType> ConfigType get(Class<ConfigType> configType) {
     return (ConfigType)
-        configCache.computeIfAbsent(configType, k -> getConfigProvider().getConfigMapping(configType));
+        configCache.computeIfAbsent(
+            configType, k -> getConfigProvider().getConfigMapping(configType));
   }
 
   /**
@@ -77,10 +78,10 @@ public class CommandConfig {
     // TODO - cleanup how we get config, this seem unnecessary complicated
 
     if (_config_provider == null) {
-      _config_provider = ApiConstants.isOffline() ?
-        new SmallRyeConfigBuilder().build()
-        :
-        ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+      _config_provider =
+          ApiConstants.isOffline()
+              ? new SmallRyeConfigBuilder().build()
+              : ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
     }
     return _config_provider;
   }

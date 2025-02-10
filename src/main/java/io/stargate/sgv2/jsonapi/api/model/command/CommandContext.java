@@ -40,7 +40,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
   private final String commandName; // TODO: remove the command name, but it is used in 14 places
   private final RequestContext requestContext;
   // created on demand, otherwise we need to read from config too early when running tests
-  private  ApiFeatures apiFeatures;
+  private ApiFeatures apiFeatures;
 
   private CommandContext(
       SchemaT schemaObject,
@@ -83,16 +83,18 @@ public class CommandContext<SchemaT extends SchemaObject> {
 
   public ApiFeatures apiFeatures() {
     // using a sync block here because the context can be accessed by multiple tasks concurrently
-    if (apiFeatures == null){
-      synchronized(this) {
-        if (apiFeatures == null){
+    if (apiFeatures == null) {
+      synchronized (this) {
+        if (apiFeatures == null) {
           // Merging the config for features with the request headers to get the final feature set
           apiFeatures =
-            ApiFeatures.fromConfigAndRequest(
-                commandConfig.get(FeaturesConfig.class), requestContext.getHttpHeaders());
-        };
+              ApiFeatures.fromConfigAndRequest(
+                  commandConfig.get(FeaturesConfig.class), requestContext.getHttpHeaders());
+        }
+        ;
       }
-    };
+    }
+    ;
     return apiFeatures;
   }
 
@@ -218,7 +220,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
         // all the providers
         Objects.requireNonNull(commandName, "commandName must not be null");
         Objects.requireNonNull(requestContext, "requestContext must not be null");
-
 
         return new CommandContext<>(
             schemaObject,
