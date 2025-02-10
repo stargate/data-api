@@ -442,7 +442,7 @@ public class DocumentShredder {
         }
 
         validateObjectKey(key, entry.getValue(), depth, parentPathLength);
-        // Path through field consists of segments separated by comma:
+        // Path through field consists of segments separated by periods:
         final int propPathLength = parentPathLength + 1 + key.length();
         validateValue(key, entry.getValue(), depth, propPathLength);
       }
