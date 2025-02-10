@@ -109,7 +109,8 @@ public final class TestConstants {
   }
 
   public static CommandContext<KeyspaceSchemaObject> keyspaceContext() {
-    return keyspaceContext(TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, null);
+    return keyspaceContext(
+        TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, mock(JsonProcessingMetricsReporter.class));
   }
 
   public static CommandContext<KeyspaceSchemaObject> keyspaceContext(

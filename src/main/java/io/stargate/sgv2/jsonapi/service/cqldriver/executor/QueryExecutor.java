@@ -65,8 +65,7 @@ public class QueryExecutor {
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
     return Uni.createFrom()
-        .completionStage(
-            cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement));
+        .completionStage(cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement));
   }
 
   /**
@@ -124,8 +123,7 @@ public class QueryExecutor {
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
     return Uni.createFrom()
-        .completionStage(
-            cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement));
+        .completionStage(cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement));
   }
 
   /**

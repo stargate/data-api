@@ -84,8 +84,7 @@ public class NamespaceCache {
     }
   }
 
-  private Uni<SchemaObject> loadSchemaObject(
-      RequestContext requestContext, String collectionName) {
+  private Uni<SchemaObject> loadSchemaObject(RequestContext requestContext, String collectionName) {
 
     return queryExecutor
         .getSchema(requestContext, namespace, collectionName)
