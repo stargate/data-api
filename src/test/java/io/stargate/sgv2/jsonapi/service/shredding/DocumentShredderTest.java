@@ -360,6 +360,31 @@ public class DocumentShredderTest {
           .hasMessage("Bad value for '_id' property: empty String not allowed")
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_EMPTY_STRING);
     }
+
+    @Test
+    public void docBadFieldNameRootLeadingDollar() {
+      Throwable t =
+          catchThrowable(() -> documentShredder.shred(objectMapper.readTree("{ \"$id\" : 42 }")));
+
+      assertThat(t)
+          .isNotNull()
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
+          .hasMessage("Document field name invalid: field name '$id' starts with '$'");
+    }
+
+    @Test
+    public void docBadFieldNameNestedLeadingDollar() {
+      Throwable t =
+          catchThrowable(
+              () ->
+                  documentShredder.shred(
+                      objectMapper.readTree("{ \"price\": { \"$usd\" : 42.0 } }")));
+
+      assertThat(t)
+          .isNotNull()
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
+          .hasMessage("Document field name invalid: field name '$usd' starts with '$'");
+    }
   }
 
   @Nested
