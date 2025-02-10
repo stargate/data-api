@@ -58,8 +58,8 @@ public class CommandProcessor {
   public <CommandT extends Command, SchemaT extends SchemaObject> Uni<CommandResult> processCommand(
       CommandContext<SchemaT> commandContext, CommandT command) {
 
-    var debugMode = commandContext.getConfig(DebugModeConfig.class).enabled();
-    var errorObjectV2 = commandContext.getConfig(OperationsConfig.class).extendError();
+    var debugMode = commandContext.config().get(DebugModeConfig.class).enabled();
+    var errorObjectV2 = commandContext.config().get(OperationsConfig.class).extendError();
 
     // vectorize the data
     return dataVectorizerService
@@ -92,9 +92,7 @@ public class CommandProcessor {
                   case APIException apiException -> {
                     // new error object V2
                     var errorBuilder =
-                        new APIExceptionCommandErrorBuilder(
-                            commandContext.getConfig(DebugModeConfig.class).enabled(),
-                            commandContext.getConfig(OperationsConfig.class).extendError());
+                        new APIExceptionCommandErrorBuilder(debugMode, errorObjectV2);
 
                     // yet more mucking about with suppliers everywhere :(
                     yield (Supplier<CommandResult>)

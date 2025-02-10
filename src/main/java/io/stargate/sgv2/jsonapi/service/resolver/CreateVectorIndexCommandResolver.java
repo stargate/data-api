@@ -68,10 +68,15 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
                     TableDescDefaults.CreateVectorIndexOptionsDefaults.IF_NOT_EXISTS))
             .withSchemaRetryPolicy(
                 new SchemaDBTask.SchemaRetryPolicy(
-                    commandContext.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
+                    commandContext
+                        .config()
+                        .get(OperationsConfig.class)
+                        .databaseConfig()
+                        .ddlRetries(),
                     Duration.ofMillis(
                         commandContext
-                            .getConfig(OperationsConfig.class)
+                            .config()
+                            .get(OperationsConfig.class)
                             .databaseConfig()
                             .ddlRetryDelayMillis())));
 

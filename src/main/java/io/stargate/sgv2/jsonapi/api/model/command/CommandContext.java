@@ -1,20 +1,13 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
-import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.SmallRyeConfigBuilder;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
  * Defines the context in which to execute the command.
@@ -22,15 +15,68 @@ import org.eclipse.microprofile.config.ConfigProvider;
  * @param schemaObject Settings for the collection, if Collection-specific command; if not, "empty"
  *     Settings {see CollectionSettings#empty()}.
  */
-public record CommandContext<T extends SchemaObject>(
-    T schemaObject,
-    EmbeddingProvider embeddingProvider,
-    String commandName,
-    JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-    RequestContext requestContext,
-    CQLSessionCache cqlSessionCache) {
+public class CommandContext<T extends SchemaObject> {
 
-  private static final ConcurrentMap<Class<?>, Object> configCache = new ConcurrentHashMap<>();
+  // Common for all instances
+  private final JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
+  private final CQLSessionCache cqlSessionCache;
+  private CommandConfig commandConfig;
+
+  // Request specific
+  private final T schemaObject;
+  private final EmbeddingProvider
+      embeddingProvider; // to be removed later,  this is a single provider we want all
+  private final String commandName; // TODO: remove the command name, but it is used in 14 places
+  private final RequestContext requestContext;
+
+  private CommandContext(
+      T schemaObject,
+      EmbeddingProvider embeddingProvider,
+      String commandName,
+      RequestContext requestContext,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      CQLSessionCache cqlSessionCache) {
+
+    this.schemaObject = schemaObject;
+    this.embeddingProvider = embeddingProvider;
+    this.commandName = commandName;
+    this.requestContext = requestContext;
+
+    this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
+    this.cqlSessionCache = cqlSessionCache;
+  }
+
+  public static BuilderSupplier builderSupplier() {
+    return new BuilderSupplier();
+  }
+
+  public T schemaObject() {
+    return schemaObject;
+  }
+
+  public EmbeddingProvider embeddingProvider() {
+    return embeddingProvider;
+  }
+
+  public String commandName() {
+    return commandName;
+  }
+
+  public RequestContext requestContext() {
+    return requestContext;
+  }
+
+  public JsonProcessingMetricsReporter jsonProcessingMetricsReporter() {
+    return jsonProcessingMetricsReporter;
+  }
+
+  public CQLSessionCache cqlSessionCache() {
+    return cqlSessionCache;
+  }
+
+  public CommandConfig config() {
+    return commandConfig;
+  }
 
   /**
    * Factory method to create a new instance of {@link CommandContext} based on the schema object we
@@ -44,25 +90,25 @@ public record CommandContext<T extends SchemaObject>(
    * @param jsonProcessingMetricsReporter
    * @return
    */
-  @SuppressWarnings("unchecked")
-  public static <T extends SchemaObject> CommandContext<T> forSchemaObject(
-      T schemaObject,
-      EmbeddingProvider embeddingProvider,
-      String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      RequestContext requestContext,
-      CQLSessionCache cqlSessionCache) {
-
-    Objects.requireNonNull(schemaObject);
-
-    return new CommandContext<>(
-        schemaObject,
-        embeddingProvider,
-        commandName,
-        jsonProcessingMetricsReporter,
-        requestContext,
-        cqlSessionCache);
-  }
+  //  @SuppressWarnings("unchecked")
+  //  public static <T extends SchemaObject> CommandContext<T> forSchemaObject(
+  //      T schemaObject,
+  //      EmbeddingProvider embeddingProvider,
+  //      String commandName,
+  //      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+  //      RequestContext requestContext,
+  //      CQLSessionCache cqlSessionCache) {
+  //
+  //    Objects.requireNonNull(schemaObject);
+  //
+  //    return new CommandContext<>(
+  //        schemaObject,
+  //        embeddingProvider,
+  //        commandName,
+  //        jsonProcessingMetricsReporter,
+  //        requestContext,
+  //        cqlSessionCache);
+  //  }
 
   @SuppressWarnings("unchecked")
   public CommandContext<CollectionSchemaObject> asCollectionContext() {
@@ -97,47 +143,86 @@ public record CommandContext<T extends SchemaObject>(
   }
 
   /**
-   * Uses the config service to populate the config interface passed in.
-   *
-   * <p>Example: <code>
-   *   bool isDebugMode = getConfig(DebugModeConfig.class).enabled()
-   * </code>
-   *
-   * @param configType The configuration interface to populate, normally be decorated with {@link
-   *     io.smallrye.config.ConfigMapping}
-   * @return Populated configration object of type <code>configType</code>
-   * @param <ConfigType> The configuration interface to populate
+   * Configure the BuilderSupplier with resources and config that will be used for all the {@link
+   * CommandContext} that will be created. Then called {@link BuilderSupplier#getBuilder()} to get a
+   * builder to configure the {@link CommandContext} for the specific request.
    */
-  public <ConfigType> ConfigType getConfig(Class<ConfigType> configType) {
-    return (ConfigType)
-        configCache.computeIfAbsent(
-            configType,
-            k -> {
-              return getConfig().getConfigMapping(configType);
-            });
-  }
+  public static class BuilderSupplier {
 
-  /**
-   * Gets the config service to use, depends on the offline mode.
-   *
-   * <p>Exposed as we may need to get this from multiple places, best to use {@link
-   * #getConfig(Class)}
-   *
-   * <p>TODO: Copied from JsonAPIException , not sure why we need to do this
-   */
-  public SmallRyeConfig getConfig() {
-    // aaron - copied from JsonAPIException , not sure why we need to do this
-    // TODO - cleanup how we get config, this seem unnecessary complicated
+    private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
+    private CQLSessionCache cqlSessionCache;
+    private CommandConfig commandConfig;
 
-    if (ApiConstants.isOffline()) {
-      // Prev code  is below, but confusing that it was then used to map different interfaces
-      // config = new SmallRyeConfigBuilder().withMapping(DebugModeConfig.class).build();
-      return new SmallRyeConfigBuilder().build();
+    BuilderSupplier() {}
+
+    public BuilderSupplier withJsonProcessingMetricsReporter(
+        JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+      this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
+      return this;
     }
-    return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-  }
 
-  public OperationsConfig operationsConfig() {
-    return getConfig(OperationsConfig.class);
+    public BuilderSupplier withCqlSessionCache(CQLSessionCache cqlSessionCache) {
+      this.cqlSessionCache = cqlSessionCache;
+      return this;
+    }
+
+    public BuilderSupplier withCommandConfig(CommandConfig commandConfig) {
+      this.commandConfig = commandConfig;
+      return this;
+    }
+
+    public <SchemaT extends SchemaObject> Builder<SchemaT> getBuilder(SchemaT schemaObject) {
+
+      // TODO: old code allowed the jsonProcessingMetricsReporter to be null, make it required
+      // TODO: testing needs to pass a null cqlSessionCache make it required
+      Objects.requireNonNull(cqlSessionCache, "cqlSessionCache must not be null");
+      Objects.requireNonNull(commandConfig, "commandConfig must not be null");
+
+      // SchemaObject is passed here so the genrics gets locked here, makes call chaining easier
+      Objects.requireNonNull(schemaObject, "schemaObject must not be null");
+      return new Builder<>(schemaObject);
+    }
+
+    public class Builder<SchemaT extends SchemaObject> {
+
+      private final SchemaT schemaObject;
+      private EmbeddingProvider embeddingProvider;
+      private String commandName;
+      private RequestContext requestContext;
+
+      Builder(SchemaT schemaObject) {
+        this.schemaObject = schemaObject;
+      }
+
+      public Builder<SchemaT> withEmbeddingProvider(EmbeddingProvider embeddingProvider) {
+        this.embeddingProvider = embeddingProvider;
+        return this;
+      }
+
+      public Builder<SchemaT> withCommandName(String commandName) {
+        this.commandName = commandName;
+        return this;
+      }
+
+      public Builder<SchemaT> withRequestContext(RequestContext requestContext) {
+        this.requestContext = requestContext;
+        return this;
+      }
+
+      public CommandContext<SchemaT> build() {
+        // embeddingProvider may be null, e.g. a keyspace command this will change when we pass in
+        // all the providers
+        Objects.requireNonNull(commandName, "commandName must not be null");
+        Objects.requireNonNull(requestContext, "requestContext must not be null");
+
+        return new CommandContext<>(
+            schemaObject,
+            embeddingProvider,
+            commandName,
+            requestContext,
+            jsonProcessingMetricsReporter,
+            cqlSessionCache);
+      }
+    }
   }
 }

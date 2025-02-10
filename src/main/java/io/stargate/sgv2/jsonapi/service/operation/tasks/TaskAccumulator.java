@@ -35,8 +35,8 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
     Objects.requireNonNull(commandContext, "commandContext cannot be null");
 
     accumulator
-        .debugMode(commandContext.getConfig(DebugModeConfig.class).enabled())
-        .useErrorObjectV2(commandContext.getConfig(OperationsConfig.class).extendError());
+        .debugMode(commandContext.config().get(DebugModeConfig.class).enabled())
+        .useErrorObjectV2(commandContext.config().get(OperationsConfig.class).extendError());
     return accumulator;
   }
 

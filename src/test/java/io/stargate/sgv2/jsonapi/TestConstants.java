@@ -93,13 +93,14 @@ public final class TestConstants {
       CollectionSchemaObject schema,
       JsonProcessingMetricsReporter metricsReporter,
       EmbeddingProvider embeddingProvider) {
-    return new CommandContext<>(
-        schema,
-        embeddingProvider,
-        commandName,
-        metricsReporter,
-        new RequestContext(Optional.of("test-tenant")),
-        null);
+
+    return CommandContext.builderSupplier()
+        .withJsonProcessingMetricsReporter(metricsReporter)
+        .getBuilder(schema)
+        .withEmbeddingProvider(embeddingProvider)
+        .withCommandName(commandName)
+        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+        .build();
   }
 
   public static CommandContext<KeyspaceSchemaObject> keyspaceContext() {
@@ -110,11 +111,21 @@ public final class TestConstants {
       String commandName,
       KeyspaceSchemaObject schema,
       JsonProcessingMetricsReporter metricsReporter) {
-    return new CommandContext<>(schema, null, commandName, metricsReporter, null, null);
+
+    return CommandContext.builderSupplier()
+        .withJsonProcessingMetricsReporter(metricsReporter)
+        .getBuilder(schema)
+        .withCommandName(commandName)
+        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+        .build();
   }
 
   private static final CommandContext<DatabaseSchemaObject> DATABASE_CONTEXT =
-      new CommandContext<>(DATABASE_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null, null, null);
+      CommandContext.builderSupplier()
+          .getBuilder(DATABASE_SCHEMA_OBJECT)
+          .withCommandName(TEST_COMMAND_NAME)
+          .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+          .build();
 
   public static CommandContext<DatabaseSchemaObject> databaseContext() {
     return DATABASE_CONTEXT;

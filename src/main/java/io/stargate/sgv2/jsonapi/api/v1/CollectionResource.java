@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
 
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
@@ -87,9 +88,17 @@ public class CollectionResource {
 
   @Inject private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
 
+  private final CommandContext.BuilderSupplier contextBuilderSupplier;
+
   @Inject
   public CollectionResource(MeteredCommandProcessor meteredCommandProcessor) {
     this.meteredCommandProcessor = meteredCommandProcessor;
+
+    contextBuilderSupplier =
+        CommandContext.builderSupplier()
+            .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
+            .withCqlSessionCache(cqlSessionCache)
+            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty());
   }
 
   @Operation(
@@ -260,13 +269,12 @@ public class CollectionResource {
                             command.getClass().getSimpleName());
 
                 var commandContext =
-                    CommandContext.forSchemaObject(
-                        schemaObject,
-                        embeddingProvider,
-                        command.getClass().getSimpleName(),
-                        jsonProcessingMetricsReporter,
-                        requestContext,
-                        cqlSessionCache);
+                    contextBuilderSupplier
+                        .getBuilder(schemaObject)
+                        .withEmbeddingProvider(embeddingProvider)
+                        .withCommandName(command.getClass().getSimpleName())
+                        .withRequestContext(requestContext)
+                        .build();
 
                 return meteredCommandProcessor.processCommand(commandContext, command);
               }

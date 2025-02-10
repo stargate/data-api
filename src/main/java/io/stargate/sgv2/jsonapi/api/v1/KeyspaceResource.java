@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
@@ -65,6 +66,8 @@ public class KeyspaceResource {
 
   @Inject private RequestContext requestContext;
 
+  private final CommandContext.BuilderSupplier contextBuilderSupplier;
+
   @Inject
   public KeyspaceResource(
       MeteredCommandProcessor meteredCommandProcessor,
@@ -73,6 +76,12 @@ public class KeyspaceResource {
     this.meteredCommandProcessor = meteredCommandProcessor;
     this.apiFeatureConfig = apiFeatureConfig;
     this.operationsConfig = operationsConfig;
+
+    contextBuilderSupplier =
+        CommandContext.builderSupplier()
+            // old code did not pass a jsonProcessingMetricsReporter not sure why - Aaron Feb 10
+            .withCqlSessionCache(cqlSessionCache)
+            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty());
   }
 
   @Operation(
@@ -138,14 +147,14 @@ public class KeyspaceResource {
     // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
     //    CommandContext commandContext = new CommandContext(keyspace, null);
     // HACK TODO: The above did not set a command name on the command context, how did that work ?
-    CommandContext<KeyspaceSchemaObject> commandContext =
-        new CommandContext<>(
-            new KeyspaceSchemaObject(keyspace),
-            null,
-            command.getClass().getSimpleName(),
-            null,
-            requestContext,
-            cqlSessionCache);
+
+    var commandContext =
+        contextBuilderSupplier
+            .getBuilder(new KeyspaceSchemaObject(keyspace))
+            .withEmbeddingProvider(null)
+            .withCommandName(command.getClass().getSimpleName())
+            .withRequestContext(requestContext)
+            .build();
 
     // Need context first to check if feature is enabled
     if (command instanceof TableOnlyCommand && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {

@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
@@ -50,9 +51,17 @@ public class GeneralResource {
 
   @Inject private OperationsConfig operationsConfig;
 
+  private final CommandContext.BuilderSupplier contextBuilderSupplier;
+
   @Inject
   public GeneralResource(MeteredCommandProcessor meteredCommandProcessor) {
     this.meteredCommandProcessor = meteredCommandProcessor;
+
+    contextBuilderSupplier =
+        CommandContext.builderSupplier()
+            // old code did not set jsonProcessingMetricsReporter - Aaron Feb 10
+            .withCqlSessionCache(cqlSessionCache)
+            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty());
   }
 
   // TODO: add example for findEmbeddingProviders
@@ -88,13 +97,11 @@ public class GeneralResource {
         ApiFeatures.fromConfigAndRequest(apiFeatureConfig, requestContext.getHttpHeaders());
 
     var commandContext =
-        CommandContext.forSchemaObject(
-            new DatabaseSchemaObject(),
-            null,
-            command.getClass().getSimpleName(),
-            null,
-            requestContext,
-            cqlSessionCache);
+        contextBuilderSupplier
+            .getBuilder(new DatabaseSchemaObject())
+            .withCommandName(command.getClass().getSimpleName())
+            .withRequestContext(requestContext)
+            .build();
 
     return meteredCommandProcessor
         .processCommand(commandContext, command)

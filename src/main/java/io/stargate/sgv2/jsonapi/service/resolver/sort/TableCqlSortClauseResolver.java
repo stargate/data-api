@@ -198,7 +198,8 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
       Optional<Integer> limit) {
 
     if (limit.isPresent()
-        && limit.get() > commandContext.getConfig(OperationsConfig.class).maxVectorSearchLimit()) {
+        && limit.get()
+            > commandContext.config().get(OperationsConfig.class).maxVectorSearchLimit()) {
       throw SortException.Code.CANNOT_VECTOR_SORT_WITH_LIMIT_EXCEEDS_MAX.get(
           errVars(
               commandContext.schemaObject(),
@@ -210,7 +211,10 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
                 map.put(
                     "maxLimit",
                     String.valueOf(
-                        commandContext.getConfig(OperationsConfig.class).maxVectorSearchLimit()));
+                        commandContext
+                            .config()
+                            .get(OperationsConfig.class)
+                            .maxVectorSearchLimit()));
               }));
     }
 
@@ -348,7 +352,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
         new TableOrderByANNCqlClause(
             vectorSortColumn,
             cqlVector,
-            commandContext.getConfig(OperationsConfig.class).maxVectorSearchLimit()),
+            commandContext.config().get(OperationsConfig.class).maxVectorSearchLimit()),
         List.of(WarningException.Code.ZERO_FILTER_OPERATIONS));
   }
 
