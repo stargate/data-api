@@ -261,7 +261,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(
               "errors[0].message",
-              containsString("number of elements an indexable Array (property 'bigArray')"))
+              containsString("number of elements an indexable Array (field 'bigArray')"))
           .body("errors[0].message", containsString("exceeds maximum allowed"));
     }
 
@@ -332,7 +332,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
             .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
             .body(
                 "errors[0].message",
-                containsString("number of properties an indexable Object (property 'bigObject')"))
+                containsString("number of properties an indexable Object (field 'bigObject')"))
             .body("errors[0].message", containsString("exceeds maximum allowed"));
       }
     }

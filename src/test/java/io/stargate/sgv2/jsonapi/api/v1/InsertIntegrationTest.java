@@ -56,7 +56,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   class InsertOne {
 
     @Test
-    public void shredFailure() {
+    public void shredFailureOnNullDoc() {
       // This used to be a unit test for the InsertOneCommandResolver calld shredderFailure(), but
       // the resolver does not throw this
       // error any more, it is instead handed in the result.
@@ -140,9 +140,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               """));
     }
 
-    // [https://github.com/stargate/jsonapi/issues/521]: allow hyphens in property names
+    // [https://github.com/stargate/jsonapi/issues/521]: allow hyphens in Field names
     @Test
-    public void insertDocumentWithHyphenatedColumn() {
+    public void insertDocumentWithHyphenatedField() {
       String json =
           """
               {
@@ -190,6 +190,41 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                 "user-name": "user #1"
               }
               """));
+    }
+
+    // [https://github.com/stargate/jsonapi/issues/1847]: allow dots (and more) in Field names
+    @Test
+    public void insertDocumentWithDottedField() {
+      String doc =
+          """
+                  {
+                    "_id": "doc-with-dots",
+                    "app.kubernetes.io/id": 123,
+                    "metadata": {
+                      "app.kubernetes.io/name": "Bob"
+                    }
+                  }
+                  """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("doc-with-dots"));
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"find\": { \"filter\" : {\"_id\" : \"doc-with-dots\" }}}")
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]", jsonEquals(doc));
     }
 
     @Test
@@ -923,7 +958,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               is(
-                  "Document size limitation violated: number of elements an indexable Array (property 'arr') has ("
+                  "Document size limitation violated: number of elements an indexable Array (field 'arr') has ("
                       + ARRAY_LEN
                       + ") exceeds maximum allowed ("
                       + MAX_ARRAY_LENGTH
@@ -976,7 +1011,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: property path length (1003) exceeds maximum allowed (1000)"));
+                  "Document size limitation violated: field path length (1003) exceeds maximum allowed (1000)"));
     }
 
     @Test
@@ -1079,7 +1114,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Document size limitation violated: indexed String value (property 'bigString') length (8056 bytes) exceeds maximum allowed"));
+                  "Document size limitation violated: indexed String value (field 'bigString') length (8056 bytes) exceeds maximum allowed"));
     }
 
     private String createBigString(int minLen) {
@@ -1185,7 +1220,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               endsWith(
-                  "indexable Object (property 'subdoc') has (1001) exceeds maximum allowed (1000)"));
+                  "indexable Object (field 'subdoc') has (1001) exceeds maximum allowed (1000)"));
     }
 
     @Test
@@ -1863,7 +1898,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                         "insertMany": {
                           "documents": [
                             { "_id": "doc1", "username": "userA"  },
-                            { "_id": "doc2", "username's": "userB" },
+                            { "_id": "doc2", "$username": "userB" },
                             { "_id": "doc3", "username": "userC"
                             }
                           ],
@@ -1886,8 +1921,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].errorCode", is("SHRED_DOC_KEY_NAME_VIOLATION"))
           .body(
               "errors[0].message",
-              startsWith(
-                  "Document field name invalid: field name ('username's') contains invalid character(s)"))
+              startsWith("Document field name invalid: field name '$username' starts with '$'"))
           .body("insertedIds", is(nullValue()))
           .body("status.documentResponses", hasSize(3))
           .body("status.documentResponses[0]", is(Map.of("_id", "doc1", "status", "OK")))
@@ -1964,7 +1998,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                             "insertMany": {
                               "documents": [
                                 { "_id": "doc1", "username": "userA"  },
-                                { "_id": "doc2", "username's": "userB" },
+                                { "_id": "doc2", "$username": "userB" },
                                 { "_id": "doc3", "username": "userC"
                                 }
                               ],
@@ -1987,8 +2021,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].errorCode", is("SHRED_DOC_KEY_NAME_VIOLATION"))
           .body(
               "errors[0].message",
-              startsWith(
-                  "Document field name invalid: field name ('username's') contains invalid character(s)"))
+              startsWith("Document field name invalid: field name '$username' starts with '$'"))
           .body("insertedIds", is(nullValue()))
           .body("status.documentResponses", hasSize(3))
           .body("status.documentResponses[0]", is(Map.of("_id", "doc1", "status", "OK")))
@@ -2120,7 +2153,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     boolean bigEnough = false;
 
-    // Since we add one property before loop, reduce max by 1.
+    // Since we add one field before loop, reduce max by 1.
     // Target is around 1 meg; can have at most 2000 properties, and for
     // big doc we don't want to exceed 1000 bytes per property.
     // So let's make properties arrays of 4 Constants to get there.

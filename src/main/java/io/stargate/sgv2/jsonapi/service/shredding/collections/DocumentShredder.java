@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIdType;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -189,7 +190,7 @@ public class DocumentShredder {
 
   /**
    * Method called to ensure that Document has Document Id (generating id if necessary), and that it
-   * is the very first property in the document (reordering as needed). Note that a new document is
+   * is the very first field in the document (reordering as needed). Note that a new document is
    * created and returned; input document is never modified.
    *
    * @param collectionSettings Collection settings to use for document id generation
@@ -372,7 +373,7 @@ public class DocumentShredder {
   /**
    * Validator applied to the full document, before removing non-indexable properties. Used to
    * ensure that the full document does not violate overall structural limits such as total length
-   * or maximum nesting depth, or invalid property names. Most checks are done at a later point with
+   * or maximum nesting depth, or invalid field names. Most checks are done at a later point with
    * {@link IndexableValueValidator}.
    */
   static class FullDocValidator {
@@ -441,18 +442,16 @@ public class DocumentShredder {
         }
 
         validateObjectKey(key, entry.getValue(), depth, parentPathLength);
-        // Path through property consists of segments separated by comma:
+        // Path through field consists of segments separated by periods:
         final int propPathLength = parentPathLength + 1 + key.length();
         validateValue(key, entry.getValue(), depth, propPathLength);
       }
     }
 
     private void validateObjectKey(String key, JsonNode value, int depth, int parentPathLength) {
-      if (key.length() == 0) {
-        // NOTE: validity failure, not size limit
-        throw ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.toApiException("empty names not allowed");
-      }
-      if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()) {
+      // NOTE: empty keys are allowed on v1.0.21 and later
+
+      if (!NamingRules.FIELD.apply(key)) {
         // Special names are accepted in some cases:
         if ((depth == 1)
             && (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
@@ -460,14 +459,13 @@ public class DocumentShredder {
           ;
         } else {
           throw ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.toApiException(
-              "field name ('%s') contains invalid character(s), can contain only letters (a-z/A-Z), numbers (0-9), underscores (_), and hyphens (-)",
-              key);
+              "field name '%s' starts with '$'", key);
         }
       }
       int totalPathLength = parentPathLength + key.length();
       if (totalPathLength > limits.maxPropertyPathLength()) {
         throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "property path length (%d) exceeds maximum allowed (%d) (path ends with '%s')",
+            "field path length (%d) exceeds maximum allowed (%d) (path ends with '%s')",
             totalPathLength, limits.maxPropertyPathLength(), key);
       }
     }
@@ -519,12 +517,12 @@ public class DocumentShredder {
         if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(referringPropertyName)) {
           if (arrayValue.size() > limits.maxVectorEmbeddingLength()) {
             throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-                "number of elements Vector embedding (property '%s') has (%d) exceeds maximum allowed (%d)",
+                "number of elements Vector embedding (field '%s') has (%d) exceeds maximum allowed (%d)",
                 referringPropertyName, arrayValue.size(), limits.maxVectorEmbeddingLength());
           }
         } else {
           throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-              "number of elements an indexable Array (property '%s') has (%d) exceeds maximum allowed (%d)",
+              "number of elements an indexable Array (field '%s') has (%d) exceeds maximum allowed (%d)",
               referringPropertyName, arrayValue.size(), limits.maxArrayLength());
         }
       }
@@ -538,7 +536,7 @@ public class DocumentShredder {
       final int propCount = objectValue.size();
       if (propCount > limits.maxObjectProperties()) {
         throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "number of properties an indexable Object (property '%s') has (%d) exceeds maximum allowed (%s)",
+            "number of properties an indexable Object (field '%s') has (%d) exceeds maximum allowed (%s)",
             referringPropertyName, objectValue.size(), limits.maxObjectProperties());
       }
       totalProperties.addAndGet(propCount);
@@ -558,7 +556,7 @@ public class DocumentShredder {
           JsonUtil.lengthInBytesIfAbove(value, limits.maxStringLengthInBytes());
       if (encodedLength.isPresent()) {
         throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
-            "indexed String value (property '%s') length (%d bytes) exceeds maximum allowed (%d bytes)",
+            "indexed String value (field '%s') length (%d bytes) exceeds maximum allowed (%d bytes)",
             referringPropertyName, encodedLength.getAsInt(), limits.maxStringLengthInBytes());
       }
     }
