@@ -451,7 +451,7 @@ public class DocumentShredder {
     private void validateObjectKey(String key, JsonNode value, int depth, int parentPathLength) {
       // NOTE: empty keys are allowed on v1.0.21 and later
 
-      if (!NamingRules.FIELD.apply(depth, key)) {
+      if (!NamingRules.FIELD.apply(key)) {
         // Special names are accepted in some cases:
         if ((depth == 1)
             && (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
