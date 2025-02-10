@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi;
 
 import static org.mockito.Mockito.mock;
 
+import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
@@ -66,22 +67,7 @@ public final class TestConstants {
   public static final ApiFeatures DEFAULT_API_FEATURES_FOR_TESTS = ApiFeatures.empty();
 
   public static CommandContext<CollectionSchemaObject> collectionContext() {
-    return collectionContext(COLLECTION_SCHEMA_OBJECT);
-  }
-
-  public static CommandContext<CollectionSchemaObject> collectionContext(
-      JsonProcessingMetricsReporter metricsReporter) {
-    return collectionContext(TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, metricsReporter);
-  }
-
-  public static CommandContext<CollectionSchemaObject> collectionContext(
-      String commandName, JsonProcessingMetricsReporter metricsReporter) {
-    return collectionContext(commandName, COLLECTION_SCHEMA_OBJECT, metricsReporter);
-  }
-
-  public static CommandContext<CollectionSchemaObject> collectionContext(
-      CollectionSchemaObject schema) {
-    return collectionContext(TEST_COMMAND_NAME, schema, null);
+    return collectionContext(TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null);
   }
 
   public static CommandContext<CollectionSchemaObject> collectionContext(
@@ -98,9 +84,10 @@ public final class TestConstants {
       EmbeddingProvider embeddingProvider) {
 
     return CommandContext.builderSupplier()
-        .withJsonProcessingMetricsReporter(metricsReporter)
+        .withJsonProcessingMetricsReporter(
+            metricsReporter == null ? mock(JsonProcessingMetricsReporter.class) : metricsReporter)
         .withCqlSessionCache(mock(CQLSessionCache.class))
-        .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
+        .withCommandConfig(new CommandConfig())
         .getBuilder(schema)
         .withEmbeddingProvider(embeddingProvider)
         .withCommandName(commandName)
@@ -121,7 +108,7 @@ public final class TestConstants {
     return CommandContext.builderSupplier()
         .withJsonProcessingMetricsReporter(metricsReporter)
         .withCqlSessionCache(mock(CQLSessionCache.class))
-        .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
+        .withCommandConfig(new CommandConfig())
         .getBuilder(schema)
         .withCommandName(commandName)
         .withRequestContext(new RequestContext(Optional.of("test-tenant")))
@@ -132,7 +119,7 @@ public final class TestConstants {
       CommandContext.builderSupplier()
           .withJsonProcessingMetricsReporter(mock(JsonProcessingMetricsReporter.class))
           .withCqlSessionCache(mock(CQLSessionCache.class))
-          .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
+          .withCommandConfig(new CommandConfig())
           .getBuilder(DATABASE_SCHEMA_OBJECT)
           .withCommandName(TEST_COMMAND_NAME)
           .withRequestContext(new RequestContext(Optional.of("test-tenant")))

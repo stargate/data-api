@@ -39,14 +39,14 @@ public class CommandContext<SchemaT extends SchemaObject> {
       embeddingProvider; // to be removed later, this is a single provider
   private final String commandName; // TODO: remove the command name, but it is used in 14 places
   private final RequestContext requestContext;
-  private final ApiFeatures apiFeatures;
+  // created on demand, otherwise we need to read from config too early when running tests
+  private  ApiFeatures apiFeatures;
 
   private CommandContext(
       SchemaT schemaObject,
       EmbeddingProvider embeddingProvider,
       String commandName,
       RequestContext requestContext,
-      ApiFeatures apiFeatures,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CQLSessionCache cqlSessionCache,
       CommandConfig commandConfig) {
@@ -55,7 +55,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
     this.embeddingProvider = embeddingProvider;
     this.commandName = commandName;
     this.requestContext = requestContext;
-    this.apiFeatures = apiFeatures;
 
     this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
     this.cqlSessionCache = cqlSessionCache;
@@ -83,6 +82,17 @@ public class CommandContext<SchemaT extends SchemaObject> {
   }
 
   public ApiFeatures apiFeatures() {
+    // using a sync block here because the context can be accessed by multiple tasks concurrently
+    if (apiFeatures == null){
+      synchronized(this) {
+        if (apiFeatures == null){
+          // Merging the config for features with the request headers to get the final feature set
+          apiFeatures =
+            ApiFeatures.fromConfigAndRequest(
+                commandConfig.get(FeaturesConfig.class), requestContext.getHttpHeaders());
+        };
+      }
+    };
     return apiFeatures;
   }
 
@@ -209,17 +219,12 @@ public class CommandContext<SchemaT extends SchemaObject> {
         Objects.requireNonNull(commandName, "commandName must not be null");
         Objects.requireNonNull(requestContext, "requestContext must not be null");
 
-        // Merging the config for features with the request headers to get the final feature set
-        var apiFeatures =
-            ApiFeatures.fromConfigAndRequest(
-                commandConfig.get(FeaturesConfig.class), requestContext.getHttpHeaders());
 
         return new CommandContext<>(
             schemaObject,
             embeddingProvider,
             commandName,
             requestContext,
-            apiFeatures,
             jsonProcessingMetricsReporter,
             cqlSessionCache,
             commandConfig);

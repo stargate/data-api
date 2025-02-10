@@ -33,7 +33,8 @@ public class CommandConfig {
 
   private final ConcurrentMap<Class<?>, Object> configCache = new ConcurrentHashMap<>();
 
-  private final SmallRyeConfig CONFIG_PROVIDER = getConfigProvider();
+  // use getConfigProvider()
+  private static SmallRyeConfig _config_provider = null;
 
   /**
    * Call to preload and log the config classes.
@@ -63,7 +64,7 @@ public class CommandConfig {
   @SuppressWarnings("unchecked")
   public <ConfigType> ConfigType get(Class<ConfigType> configType) {
     return (ConfigType)
-        configCache.computeIfAbsent(configType, k -> CONFIG_PROVIDER.getConfigMapping(configType));
+        configCache.computeIfAbsent(configType, k -> getConfigProvider().getConfigMapping(configType));
   }
 
   /**
@@ -75,12 +76,13 @@ public class CommandConfig {
     // aaron - copied from JsonAPIException , not sure why we need to do this
     // TODO - cleanup how we get config, this seem unnecessary complicated
 
-    if (ApiConstants.isOffline()) {
-      // Prev code  is below, but confusing that it was then used to map different interfaces
-      // config = new SmallRyeConfigBuilder().withMapping(DebugModeConfig.class).build();
-      return new SmallRyeConfigBuilder().build();
+    if (_config_provider == null) {
+      _config_provider = ApiConstants.isOffline() ?
+        new SmallRyeConfigBuilder().build()
+        :
+        ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
     }
-    return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+    return _config_provider;
   }
 
   /**
