@@ -7,10 +7,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateKeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
@@ -43,23 +41,21 @@ public class GeneralResource {
 
   private final MeteredCommandProcessor meteredCommandProcessor;
 
-  @Inject private CQLSessionCache cqlSessionCache;
-
   @Inject private RequestContext requestContext;
-
-  @Inject private FeaturesConfig apiFeatureConfig;
-
-  @Inject private OperationsConfig operationsConfig;
 
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
 
   @Inject
-  public GeneralResource(MeteredCommandProcessor meteredCommandProcessor) {
+  public GeneralResource(
+      MeteredCommandProcessor meteredCommandProcessor,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      CQLSessionCache cqlSessionCache) {
     this.meteredCommandProcessor = meteredCommandProcessor;
 
     contextBuilderSupplier =
         CommandContext.builderSupplier()
             // old code did not set jsonProcessingMetricsReporter - Aaron Feb 10
+            .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
             .withCqlSessionCache(cqlSessionCache)
             .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty());
   }
@@ -93,8 +89,6 @@ public class GeneralResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid GeneralCommand command) {
-    final ApiFeatures apiFeatures =
-        ApiFeatures.fromConfigAndRequest(apiFeatureConfig, requestContext.getHttpHeaders());
 
     var commandContext =
         contextBuilderSupplier

@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
+import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -10,47 +12,61 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import java.util.Objects;
 
 /**
- * Defines the context in which to execute the command.
+ * Defines the context in which to execute the command, providing access to the schema and config,
+ * and any external resources for the command to use.
  *
- * @param schemaObject Settings for the collection, if Collection-specific command; if not, "empty"
- *     Settings {see CollectionSettings#empty()}.
+ * <p>To get an instance, call {@link CommandContext#builderSupplier()} to get a {@link
+ * BuilderSupplier}, configure this with application wide config, then when ready to build the
+ * context for a specific request call {@link BuilderSupplier#getBuilder(SchemaObject)} to get a
+ * {@link BuilderSupplier.Builder} to configure the context for the request.
+ *
+ * <p>
+ *
+ * @param <SchemaT> The schema object type that this context is for. There are times we need to lock
+ *     this down to the specific type, if so use the "as" methods such as {@link
+ *     CommandContext#asCollectionContext()}
  */
-public class CommandContext<T extends SchemaObject> {
+public class CommandContext<SchemaT extends SchemaObject> {
 
   // Common for all instances
   private final JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
   private final CQLSessionCache cqlSessionCache;
-  private CommandConfig commandConfig;
+  private final CommandConfig commandConfig;
 
   // Request specific
-  private final T schemaObject;
+  private final SchemaT schemaObject;
   private final EmbeddingProvider
-      embeddingProvider; // to be removed later,  this is a single provider we want all
+      embeddingProvider; // to be removed later, this is a single provider
   private final String commandName; // TODO: remove the command name, but it is used in 14 places
   private final RequestContext requestContext;
+  private final ApiFeatures apiFeatures;
 
   private CommandContext(
-      T schemaObject,
+      SchemaT schemaObject,
       EmbeddingProvider embeddingProvider,
       String commandName,
       RequestContext requestContext,
+      ApiFeatures apiFeatures,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      CQLSessionCache cqlSessionCache) {
+      CQLSessionCache cqlSessionCache,
+      CommandConfig commandConfig) {
 
     this.schemaObject = schemaObject;
     this.embeddingProvider = embeddingProvider;
     this.commandName = commandName;
     this.requestContext = requestContext;
+    this.apiFeatures = apiFeatures;
 
     this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
     this.cqlSessionCache = cqlSessionCache;
+    this.commandConfig = commandConfig;
   }
 
   public static BuilderSupplier builderSupplier() {
     return new BuilderSupplier();
   }
 
-  public T schemaObject() {
+  public SchemaT schemaObject() {
     return schemaObject;
   }
 
@@ -66,6 +82,10 @@ public class CommandContext<T extends SchemaObject> {
     return requestContext;
   }
 
+  public ApiFeatures apiFeatures() {
+    return apiFeatures;
+  }
+
   public JsonProcessingMetricsReporter jsonProcessingMetricsReporter() {
     return jsonProcessingMetricsReporter;
   }
@@ -77,38 +97,6 @@ public class CommandContext<T extends SchemaObject> {
   public CommandConfig config() {
     return commandConfig;
   }
-
-  /**
-   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
-   * are working with.
-   *
-   * <p>This one handles the super class of {@link SchemaObject}
-   *
-   * @param schemaObject
-   * @param embeddingProvider
-   * @param commandName
-   * @param jsonProcessingMetricsReporter
-   * @return
-   */
-  //  @SuppressWarnings("unchecked")
-  //  public static <T extends SchemaObject> CommandContext<T> forSchemaObject(
-  //      T schemaObject,
-  //      EmbeddingProvider embeddingProvider,
-  //      String commandName,
-  //      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-  //      RequestContext requestContext,
-  //      CQLSessionCache cqlSessionCache) {
-  //
-  //    Objects.requireNonNull(schemaObject);
-  //
-  //    return new CommandContext<>(
-  //        schemaObject,
-  //        embeddingProvider,
-  //        commandName,
-  //        jsonProcessingMetricsReporter,
-  //        requestContext,
-  //        cqlSessionCache);
-  //  }
 
   @SuppressWarnings("unchecked")
   public CommandContext<CollectionSchemaObject> asCollectionContext() {
@@ -144,8 +132,9 @@ public class CommandContext<T extends SchemaObject> {
 
   /**
    * Configure the BuilderSupplier with resources and config that will be used for all the {@link
-   * CommandContext} that will be created. Then called {@link BuilderSupplier#getBuilder()} to get a
-   * builder to configure the {@link CommandContext} for the specific request.
+   * CommandContext} that will be created. Then called {@link
+   * BuilderSupplier#getBuilder(SchemaObject)} to get a builder to configure the {@link
+   * CommandContext} for the specific request.
    */
   public static class BuilderSupplier {
 
@@ -173,16 +162,21 @@ public class CommandContext<T extends SchemaObject> {
 
     public <SchemaT extends SchemaObject> Builder<SchemaT> getBuilder(SchemaT schemaObject) {
 
-      // TODO: old code allowed the jsonProcessingMetricsReporter to be null, make it required
-      // TODO: testing needs to pass a null cqlSessionCache make it required
+      Objects.requireNonNull(
+          jsonProcessingMetricsReporter, "jsonProcessingMetricsReporter must not be null");
       Objects.requireNonNull(cqlSessionCache, "cqlSessionCache must not be null");
       Objects.requireNonNull(commandConfig, "commandConfig must not be null");
 
-      // SchemaObject is passed here so the genrics gets locked here, makes call chaining easier
+      // SchemaObject is passed here so the generics gets locked here, makes call chaining easier
       Objects.requireNonNull(schemaObject, "schemaObject must not be null");
       return new Builder<>(schemaObject);
     }
 
+    /**
+     * A builder for a {@link CommandContext} that is configured with for a specific request.
+     *
+     * @param <SchemaT> The schema object type that this context is for.
+     */
     public class Builder<SchemaT extends SchemaObject> {
 
       private final SchemaT schemaObject;
@@ -215,13 +209,20 @@ public class CommandContext<T extends SchemaObject> {
         Objects.requireNonNull(commandName, "commandName must not be null");
         Objects.requireNonNull(requestContext, "requestContext must not be null");
 
+        // Merging the config for features with the request headers to get the final feature set
+        var apiFeatures =
+            ApiFeatures.fromConfigAndRequest(
+                commandConfig.get(FeaturesConfig.class), requestContext.getHttpHeaders());
+
         return new CommandContext<>(
             schemaObject,
             embeddingProvider,
             commandName,
             requestContext,
+            apiFeatures,
             jsonProcessingMetricsReporter,
-            cqlSessionCache);
+            cqlSessionCache,
+            commandConfig);
       }
     }
   }

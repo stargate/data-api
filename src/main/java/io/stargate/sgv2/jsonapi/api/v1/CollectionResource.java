@@ -24,7 +24,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
@@ -74,24 +73,24 @@ public class CollectionResource {
 
   private final MeteredCommandProcessor meteredCommandProcessor;
 
-  @Inject private CQLSessionCache cqlSessionCache;
-
   @Inject private SchemaCache schemaCache;
 
   @Inject private EmbeddingProviderFactory embeddingProviderFactory;
 
   @Inject private RequestContext requestContext;
 
+  //  need to keep for a little because we have to check the schema type before making the command
+  // context
+  // TODO remove apiFeatureConfig as a property after cleanup for how we get schema from cache
   @Inject private FeaturesConfig apiFeatureConfig;
-
-  @Inject private OperationsConfig operationsConfig;
-
-  @Inject private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
 
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
 
   @Inject
-  public CollectionResource(MeteredCommandProcessor meteredCommandProcessor) {
+  public CollectionResource(
+      MeteredCommandProcessor meteredCommandProcessor,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      CQLSessionCache cqlSessionCache) {
     this.meteredCommandProcessor = meteredCommandProcessor;
 
     contextBuilderSupplier =

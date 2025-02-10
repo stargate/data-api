@@ -10,6 +10,9 @@ import java.util.Map;
  * is enabled or not, method to use is {@link ApiFeatures#isFeatureEnabled(ApiFeature)}. For details
  * on how configuration settings and request headers are combined, see {@link ApiFeature} and {@link
  * FeaturesConfig}
+ *
+ * <p>To get the features for the request use {@link
+ * io.stargate.sgv2.jsonapi.api.model.command.CommandContext#apiFeatures()}
  */
 public class ApiFeatures {
   private final Map<ApiFeature, Boolean> fromConfig;

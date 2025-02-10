@@ -19,6 +19,7 @@ import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
@@ -34,8 +35,10 @@ public class QueryExecutor {
 
   @Inject
   public QueryExecutor(CQLSessionCache cqlSessionCache, OperationsConfig operationsConfig) {
-    this.cqlSessionCache = cqlSessionCache;
-    this.operationsConfig = operationsConfig;
+    this.cqlSessionCache =
+        Objects.requireNonNull(cqlSessionCache, "cqlSessionCache must not be null");
+    this.operationsConfig =
+        Objects.requireNonNull(operationsConfig, "operationsConfig must not be null");
   }
 
   /**

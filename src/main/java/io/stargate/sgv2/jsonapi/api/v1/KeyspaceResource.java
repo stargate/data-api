@@ -14,11 +14,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListTablesCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -58,12 +56,6 @@ public class KeyspaceResource {
   public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}";
   private final MeteredCommandProcessor meteredCommandProcessor;
 
-  @Inject private CQLSessionCache cqlSessionCache;
-
-  private final FeaturesConfig apiFeatureConfig;
-
-  private final OperationsConfig operationsConfig;
-
   @Inject private RequestContext requestContext;
 
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
@@ -71,15 +63,14 @@ public class KeyspaceResource {
   @Inject
   public KeyspaceResource(
       MeteredCommandProcessor meteredCommandProcessor,
-      FeaturesConfig apiFeatureConfig,
-      OperationsConfig operationsConfig) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      CQLSessionCache cqlSessionCache) {
     this.meteredCommandProcessor = meteredCommandProcessor;
-    this.apiFeatureConfig = apiFeatureConfig;
-    this.operationsConfig = operationsConfig;
 
     contextBuilderSupplier =
         CommandContext.builderSupplier()
             // old code did not pass a jsonProcessingMetricsReporter not sure why - Aaron Feb 10
+            .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
             .withCqlSessionCache(cqlSessionCache)
             .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty());
   }
@@ -140,9 +131,6 @@ public class KeyspaceResource {
           @Size(min = 1, max = 48)
           String keyspace) {
 
-    final ApiFeatures apiFeatures =
-        ApiFeatures.fromConfigAndRequest(apiFeatureConfig, requestContext.getHttpHeaders());
-
     // create context
     // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
     //    CommandContext commandContext = new CommandContext(keyspace, null);
@@ -157,7 +145,8 @@ public class KeyspaceResource {
             .build();
 
     // Need context first to check if feature is enabled
-    if (command instanceof TableOnlyCommand && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
+    if (command instanceof TableOnlyCommand
+        && !commandContext.apiFeatures().isFeatureEnabled(ApiFeature.TABLES)) {
       return Uni.createFrom()
           .item(
               new ThrowableCommandResultSupplier(
