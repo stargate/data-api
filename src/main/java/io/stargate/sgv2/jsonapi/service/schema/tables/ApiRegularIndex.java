@@ -60,7 +60,8 @@ public class ApiRegularIndex extends ApiSupportedIndex {
     var definition =
         new RegularIndexDefinitionDesc(
             new RegularIndexDefinitionDesc.RegularIndexColumn(
-                cqlIdentifierToJsonKey(targetColumn), indexFunction.toApiMapComponent()),
+                cqlIdentifierToJsonKey(targetColumn),
+                indexFunction == null ? null : indexFunction.toApiMapComponent()),
             definitionOptions);
 
     return new IndexDesc<>() {
