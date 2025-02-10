@@ -19,7 +19,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * Configured to execute queries for a specific command that relies on drive profiles MORE TODO
  * WORDS
  *
- * <p><b>NOTE:</b> this is a WIP replacing the earlier QueryExecutor that was built with injection
+ * <p><b>NOTE:</b> this is a WIP replacing the earlier QueryExecutor that was built with injection. This is
+ * for use by a {@link io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask}
  *
  * <p>The following settings should be set via the driver profile:
  *
@@ -59,15 +60,15 @@ public class CommandQueryExecutor {
   }
 
   private final CQLSessionCache cqlSessionCache;
-  private final DBRequestContext DBRequestContext;
+  private final DBRequestContext dbRequestContext;
   private final QueryTarget queryTarget;
 
   public CommandQueryExecutor(
-      CQLSessionCache cqlSessionCache, DBRequestContext DBRequestContext, QueryTarget queryTarget) {
+      CQLSessionCache cqlSessionCache, DBRequestContext dbRequestContext, QueryTarget queryTarget) {
     this.cqlSessionCache =
         Objects.requireNonNull(cqlSessionCache, "cqlSessionCache must not be null");
-    this.DBRequestContext =
-        Objects.requireNonNull(DBRequestContext, "DBRequestContext must not be null");
+    this.dbRequestContext =
+        Objects.requireNonNull(dbRequestContext, "dbRequestContext must not be null");
     this.queryTarget = queryTarget;
   }
 
@@ -157,7 +158,7 @@ public class CommandQueryExecutor {
 
   private CqlSession session() {
     return cqlSessionCache.getSession(
-        DBRequestContext.tenantId().orElse(""), DBRequestContext.authToken().orElse(""));
+        dbRequestContext.tenantId().orElse(""), dbRequestContext.authToken().orElse(""));
   }
 
   private String getExecutionProfile(QueryType queryType) {

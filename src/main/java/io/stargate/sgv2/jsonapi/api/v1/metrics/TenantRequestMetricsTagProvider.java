@@ -23,7 +23,7 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
   private final MetricsConfig.TenantRequestCounterConfig config;
 
   /** The request info bean. */
-  private final RequestContext requestInfo;
+  private final RequestContext requestContext;
 
   /** The tag for error being true, created only once. */
   private final Tag errorTrue;
@@ -36,8 +36,8 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
 
   /** Default constructor. */
   @Inject
-  public TenantRequestMetricsTagProvider(RequestContext requestInfo, MetricsConfig metricsConfig) {
-    this.requestInfo = requestInfo;
+  public TenantRequestMetricsTagProvider(RequestContext requestContext, MetricsConfig metricsConfig) {
+    this.requestContext = requestContext;
     this.config = metricsConfig.tenantRequestCounter();
     errorTrue = Tag.of(config.errorTag(), "true");
     errorFalse = Tag.of(config.errorTag(), "false");
@@ -48,7 +48,7 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
   public Tags contribute(Context context) {
     // resolve tenant
     Tag tenantTag =
-        requestInfo.getTenantId().map(id -> Tag.of(config.tenantTag(), id)).orElse(tenantUnknown);
+        requestContext.getTenantId().map(id -> Tag.of(config.tenantTag(), id)).orElse(tenantUnknown);
 
     // check if we need user agent as well
     Tags tags = Tags.of(tenantTag);

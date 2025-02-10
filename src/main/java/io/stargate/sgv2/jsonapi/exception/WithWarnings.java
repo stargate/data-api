@@ -103,7 +103,7 @@ public class WithWarnings<T> implements Consumer<WithWarnings.WarningsSink> {
   }
 
   /**
-   * Adds all the warnings to the {@link OperationAttempt}
+   * Adds all the warnings to the warnings sink
    *
    * @param sink the {@link WarningsSink} to add the warnings to
    */
@@ -143,10 +143,8 @@ public class WithWarnings<T> implements Consumer<WithWarnings.WarningsSink> {
     List<WarningException> allWarnings();
 
     /**
-     * The warnings are filtered using suppressed warning and only those to be added to the
-     * response.
-     *
-     * <p>See {@link OperationAttemptPage} for how warnings are included in the response.
+     * Gets the warnings excluding all instances of warnings that have been suppressed using
+     * {@link #addSuppressedWarning(WarningException.Code)}.
      *
      * @return An unmodifiable list of warnings, never <code>null</code>
      */

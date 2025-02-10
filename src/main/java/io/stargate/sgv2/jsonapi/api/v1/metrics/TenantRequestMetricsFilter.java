@@ -48,7 +48,7 @@ public class TenantRequestMetricsFilter {
   private final MetricsConfig.TenantRequestCounterConfig config;
 
   /** The request info bean. */
-  private final RequestContext requestInfo;
+  private final RequestContext requestContext;
 
   /** The tag for error being true, created only once. */
   private final Tag errorTrue;
@@ -62,9 +62,9 @@ public class TenantRequestMetricsFilter {
   /** Default constructor. */
   @Inject
   public TenantRequestMetricsFilter(
-      MeterRegistry meterRegistry, RequestContext requestInfo, MetricsConfig metricsConfig) {
+      MeterRegistry meterRegistry, RequestContext requestContext, MetricsConfig metricsConfig) {
     this.meterRegistry = meterRegistry;
-    this.requestInfo = requestInfo;
+    this.requestContext = requestContext;
     this.config = metricsConfig.tenantRequestCounter();
     errorTrue = Tag.of(config.errorTag(), "true");
     errorFalse = Tag.of(config.errorTag(), "false");
@@ -86,7 +86,7 @@ public class TenantRequestMetricsFilter {
 
       // resolve tenant
       Tag tenantTag =
-          requestInfo.getTenantId().map(id -> Tag.of(config.tenantTag(), id)).orElse(tenantUnknown);
+          this.requestContext.getTenantId().map(id -> Tag.of(config.tenantTag(), id)).orElse(tenantUnknown);
 
       // resolve error
       boolean error = responseContext.getStatus() >= 500;
