@@ -1,10 +1,13 @@
 package io.stargate.sgv2.jsonapi;
 
+import static org.mockito.Mockito.mock;
+
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
@@ -96,6 +99,8 @@ public final class TestConstants {
 
     return CommandContext.builderSupplier()
         .withJsonProcessingMetricsReporter(metricsReporter)
+        .withCqlSessionCache(mock(CQLSessionCache.class))
+        .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
         .getBuilder(schema)
         .withEmbeddingProvider(embeddingProvider)
         .withCommandName(commandName)
@@ -114,6 +119,8 @@ public final class TestConstants {
 
     return CommandContext.builderSupplier()
         .withJsonProcessingMetricsReporter(metricsReporter)
+        .withCqlSessionCache(mock(CQLSessionCache.class))
+        .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
         .getBuilder(schema)
         .withCommandName(commandName)
         .withRequestContext(new RequestContext(Optional.of("test-tenant")))
@@ -122,6 +129,9 @@ public final class TestConstants {
 
   private static final CommandContext<DatabaseSchemaObject> DATABASE_CONTEXT =
       CommandContext.builderSupplier()
+          .withJsonProcessingMetricsReporter(mock(JsonProcessingMetricsReporter.class))
+          .withCqlSessionCache(mock(CQLSessionCache.class))
+          .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
           .getBuilder(DATABASE_SCHEMA_OBJECT)
           .withCommandName(TEST_COMMAND_NAME)
           .withRequestContext(new RequestContext(Optional.of("test-tenant")))

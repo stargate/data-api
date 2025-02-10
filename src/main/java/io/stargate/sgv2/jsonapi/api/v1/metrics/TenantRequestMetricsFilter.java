@@ -86,7 +86,10 @@ public class TenantRequestMetricsFilter {
 
       // resolve tenant
       Tag tenantTag =
-          this.requestContext.getTenantId().map(id -> Tag.of(config.tenantTag(), id)).orElse(tenantUnknown);
+          this.requestContext
+              .getTenantId()
+              .map(id -> Tag.of(config.tenantTag(), id))
+              .orElse(tenantUnknown);
 
       // resolve error
       boolean error = responseContext.getStatus() >= 500;

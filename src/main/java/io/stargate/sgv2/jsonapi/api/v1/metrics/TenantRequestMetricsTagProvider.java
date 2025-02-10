@@ -36,7 +36,8 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
 
   /** Default constructor. */
   @Inject
-  public TenantRequestMetricsTagProvider(RequestContext requestContext, MetricsConfig metricsConfig) {
+  public TenantRequestMetricsTagProvider(
+      RequestContext requestContext, MetricsConfig metricsConfig) {
     this.requestContext = requestContext;
     this.config = metricsConfig.tenantRequestCounter();
     errorTrue = Tag.of(config.errorTag(), "true");
@@ -48,7 +49,10 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
   public Tags contribute(Context context) {
     // resolve tenant
     Tag tenantTag =
-        requestContext.getTenantId().map(id -> Tag.of(config.tenantTag(), id)).orElse(tenantUnknown);
+        requestContext
+            .getTenantId()
+            .map(id -> Tag.of(config.tenantTag(), id))
+            .orElse(tenantUnknown);
 
     // check if we need user agent as well
     Tags tags = Tags.of(tenantTag);

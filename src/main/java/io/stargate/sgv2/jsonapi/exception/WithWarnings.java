@@ -143,8 +143,8 @@ public class WithWarnings<T> implements Consumer<WithWarnings.WarningsSink> {
     List<WarningException> allWarnings();
 
     /**
-     * Gets the warnings excluding all instances of warnings that have been suppressed using
-     * {@link #addSuppressedWarning(WarningException.Code)}.
+     * Gets the warnings excluding all instances of warnings that have been suppressed using {@link
+     * #addSuppressedWarning(WarningException.Code)}.
      *
      * @return An unmodifiable list of warnings, never <code>null</code>
      */
