@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -58,14 +59,17 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   @Override
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateCollectionCommand command) {
+
+    final var name = validateSchemaName(command.name(), NamingRules.COLLECTION);
+
     if (command.options() == null) {
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
           dbLimitsConfig,
           objectMapper,
           cqlSessionCache,
-          command.name(),
-          generateComment(objectMapper, false, false, command.name(), null, null, null),
+          name,
+          generateComment(objectMapper, false, false, name, null, null, null),
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
           false); // Since the options is null
@@ -94,7 +98,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             objectMapper,
             hasIndexing,
             hasVectorSearch,
-            command.name(),
+            name,
             command.options().indexing(),
             vector,
             command.options().idConfig());
@@ -105,7 +109,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           dbLimitsConfig,
           objectMapper,
           cqlSessionCache,
-          command.name(),
+          name,
           vector.dimension(),
           vector.metric(),
           vector.sourceModel(),
@@ -119,7 +123,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           dbLimitsConfig,
           objectMapper,
           cqlSessionCache,
-          command.name(),
+          name,
           comment,
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),

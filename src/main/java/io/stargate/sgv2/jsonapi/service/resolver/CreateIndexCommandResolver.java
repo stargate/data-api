@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiRegularIndex;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -36,6 +37,8 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
   @Override
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, CreateIndexCommand command) {
+
+    final var name = validateSchemaName(command.name(), NamingRules.INDEX);
 
     var indexType =
         command.indexType() == null
@@ -75,8 +78,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
 
     // this will throw APIException if the index is not supported
     var apiIndex =
-        ApiRegularIndex.FROM_DESC_FACTORY.create(
-            ctx.schemaObject(), command.name(), command.definition());
+        ApiRegularIndex.FROM_DESC_FACTORY.create(ctx.schemaObject(), name, command.definition());
     var attempt = attemptBuilder.build(apiIndex);
 
     var pageBuilder =

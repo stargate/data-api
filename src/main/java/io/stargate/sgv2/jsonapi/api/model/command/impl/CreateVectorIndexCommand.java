@@ -26,7 +26,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 })
 public record CreateVectorIndexCommand(
     @NotNull
-        @Schema(description = "Required name of the new Index.")
+        @Schema(description = "Name of the column to create the index on.")
         @JsonProperty(TableDescConstants.IndexDesc.NAME)
         String name,
     //

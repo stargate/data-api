@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorIndex;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -32,6 +33,8 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
   @Override
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, CreateVectorIndexCommand command) {
+
+    final var name = validateSchemaName(command.name(), NamingRules.INDEX);
 
     var indexType =
         command.indexType() == null
@@ -75,8 +78,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
 
     // this will throw APIException if the index is not supported
     var apiIndex =
-        ApiVectorIndex.FROM_DESC_FACTORY.create(
-            ctx.schemaObject(), command.name(), command.definition());
+        ApiVectorIndex.FROM_DESC_FACTORY.create(ctx.schemaObject(), name, command.definition());
     var attempt = attemptBuilder.build(apiIndex);
 
     var pageBuilder =

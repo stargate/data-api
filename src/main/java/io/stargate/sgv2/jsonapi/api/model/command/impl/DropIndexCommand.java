@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
 import jakarta.annotation.Nullable;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -18,7 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that drops an index for a column.")
 @JsonTypeName(CommandName.Names.DROP_INDEX)
 public record DropIndexCommand(
-    @NotNull @Schema(description = "Name for the index to be dropped.") String name,
+    @NotEmpty @Schema(description = "Required name of the Index to remove") String name,
     @Nullable @Schema(description = "Dropping index command option.", type = SchemaType.OBJECT)
         Options options)
     implements NoOptionsCommand, KeyspaceCommand {
