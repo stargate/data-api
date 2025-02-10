@@ -40,7 +40,7 @@ public class NamespaceCache {
   }
 
   protected Uni<SchemaObject> getSchemaObject(
-      RequestContext dataApiRequestInfo, String collectionName, boolean forceRefresh) {
+      RequestContext requestContext, String collectionName, boolean forceRefresh) {
 
     // TODO: why is this not using the loader pattern ?
     SchemaObject schemaObject = null;
@@ -50,7 +50,7 @@ public class NamespaceCache {
     if (null != schemaObject) {
       return Uni.createFrom().item(schemaObject);
     } else {
-      return loadSchemaObject(dataApiRequestInfo, collectionName)
+      return loadSchemaObject(requestContext, collectionName)
           .onItemOrFailure()
           .transformToUni(
               (result, error) -> {
@@ -85,10 +85,10 @@ public class NamespaceCache {
   }
 
   private Uni<SchemaObject> loadSchemaObject(
-      RequestContext dataApiRequestInfo, String collectionName) {
+      RequestContext requestContext, String collectionName) {
 
     return queryExecutor
-        .getSchema(dataApiRequestInfo, namespace, collectionName)
+        .getSchema(requestContext, namespace, collectionName)
         .onItem()
         .transform(
             optionalTable -> {

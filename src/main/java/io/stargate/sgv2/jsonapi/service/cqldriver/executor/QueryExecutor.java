@@ -52,7 +52,7 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeRead(
-      RequestContext dataApiRequestInfo,
+      RequestContext requestContext,
       SimpleStatement simpleStatement,
       Optional<String> pagingState,
       int pageSize) {
@@ -66,7 +66,7 @@ public class QueryExecutor {
     }
     return Uni.createFrom()
         .completionStage(
-            cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement));
+            cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement));
   }
 
   /**
@@ -77,12 +77,12 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public CompletionStage<AsyncResultSet> executeCount(
-      RequestContext dataApiRequestInfo, SimpleStatement simpleStatement) {
+      RequestContext requestContext, SimpleStatement simpleStatement) {
     simpleStatement =
         simpleStatement
             .setExecutionProfileName("count")
             .setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
-    return cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement);
+    return cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement);
   }
 
   /**
@@ -93,11 +93,11 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public CompletionStage<AsyncResultSet> executeEstimatedCount(
-      RequestContext dataApiRequestInfo, SimpleStatement simpleStatement) {
+      RequestContext requestContext, SimpleStatement simpleStatement) {
     simpleStatement =
         simpleStatement.setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
 
-    return cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement);
+    return cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement);
   }
 
   /**
@@ -111,7 +111,7 @@ public class QueryExecutor {
    * @return
    */
   public Uni<AsyncResultSet> executeVectorSearch(
-      RequestContext dataApiRequestInfo,
+      RequestContext requestContext,
       SimpleStatement simpleStatement,
       Optional<String> pagingState,
       int pageSize) {
@@ -125,7 +125,7 @@ public class QueryExecutor {
     }
     return Uni.createFrom()
         .completionStage(
-            cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement));
+            cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement));
   }
 
   /**
@@ -136,11 +136,11 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeWrite(
-      RequestContext dataApiRequestInfo, SimpleStatement statement) {
+      RequestContext requestContext, SimpleStatement statement) {
     return Uni.createFrom()
         .completionStage(
             cqlSessionCache
-                .getSession(dataApiRequestInfo)
+                .getSession(requestContext)
                 .executeAsync(
                     statement
                         .setIdempotent(true)
@@ -158,8 +158,8 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeCreateSchemaChange(
-      RequestContext dataApiRequestInfo, SimpleStatement boundStatement) {
-    return executeSchemaChange(dataApiRequestInfo, boundStatement, "create");
+      RequestContext requestContext, SimpleStatement boundStatement) {
+    return executeSchemaChange(requestContext, boundStatement, "create");
   }
 
   /**
@@ -170,8 +170,8 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeDropSchemaChange(
-      RequestContext dataApiRequestInfo, SimpleStatement boundStatement) {
-    return executeSchemaChange(dataApiRequestInfo, boundStatement, "drop");
+      RequestContext requestContext, SimpleStatement boundStatement) {
+    return executeSchemaChange(requestContext, boundStatement, "drop");
   }
 
   /**
@@ -182,16 +182,16 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeTruncateSchemaChange(
-      RequestContext dataApiRequestInfo, SimpleStatement boundStatement) {
-    return executeSchemaChange(dataApiRequestInfo, boundStatement, "truncate");
+      RequestContext requestContext, SimpleStatement boundStatement) {
+    return executeSchemaChange(requestContext, boundStatement, "truncate");
   }
 
   private Uni<AsyncResultSet> executeSchemaChange(
-      RequestContext dataApiRequestInfo, SimpleStatement boundStatement, String profile) {
+      RequestContext requestContext, SimpleStatement boundStatement, String profile) {
     return Uni.createFrom()
         .completionStage(
             cqlSessionCache
-                .getSession(dataApiRequestInfo)
+                .getSession(requestContext)
                 .executeAsync(
                     boundStatement
                         .setExecutionProfileName(profile)
@@ -221,7 +221,7 @@ public class QueryExecutor {
                           Uni.createFrom()
                               .completionStage(
                                   cqlSessionCache
-                                      .getSession(dataApiRequestInfo)
+                                      .getSession(requestContext)
                                       .executeAsync(
                                           duplicate
                                               .setExecutionProfileName(profile)
@@ -250,9 +250,9 @@ public class QueryExecutor {
    * @return
    */
   protected Uni<Optional<TableMetadata>> getSchema(
-      RequestContext dataApiRequestInfo, String namespace, String collectionName) {
+      RequestContext requestContext, String namespace, String collectionName) {
     try {
-      var session = cqlSessionCache.getSession(dataApiRequestInfo);
+      var session = cqlSessionCache.getSession(requestContext);
       return Uni.createFrom()
           .completionStage(session.refreshSchemaAsync())
           .onItem()
@@ -281,10 +281,10 @@ public class QueryExecutor {
    * @return TableMetadata
    */
   protected Uni<TableMetadata> getCollectionSchema(
-      RequestContext dataApiRequestInfo, String namespace, String collectionName) {
+      RequestContext requestContext, String namespace, String collectionName) {
     Optional<KeyspaceMetadata> keyspaceMetadata;
     if ((keyspaceMetadata =
-            cqlSessionCache.getSession(dataApiRequestInfo).getMetadata().getKeyspace(namespace))
+            cqlSessionCache.getSession(requestContext).getMetadata().getKeyspace(namespace))
         .isPresent()) {
       Optional<TableMetadata> tableMetadata = keyspaceMetadata.get().getTable(collectionName);
       if (tableMetadata.isPresent()) {
