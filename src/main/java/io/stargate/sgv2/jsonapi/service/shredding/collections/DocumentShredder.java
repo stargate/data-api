@@ -459,7 +459,7 @@ public class DocumentShredder {
           ;
         } else {
           throw ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.toApiException(
-              "field name '%s' starts with '$'", key);
+              "field name '%s' %s", key, key.isEmpty() ? "is empty" : "starts with '$'");
         }
       }
       int totalPathLength = parentPathLength + key.length();
