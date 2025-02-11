@@ -18,8 +18,7 @@ public class NetworkUsageInterceptor implements ClientRequestFilter, ClientRespo
 
   @Override
   public void filter(ClientRequestContext requestContext) throws IOException {
-
-    // **3. Calculate Body size (if present)**
+    // **1. Calculate Body size (if present)**
     if (requestContext.hasEntity()) {
       try {
         byte[] requestBody = OBJECT_MAPPER.writeValueAsBytes(requestContext.getEntity());

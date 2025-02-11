@@ -2,9 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import jakarta.enterprise.context.RequestScoped;
 
-/**
- * Bean class which is used to return as response json in header
- */
+/** Bean class which is used to return as response json in header */
 @RequestScoped
 public class VectorizeUsageBean {
   private int requestSize;

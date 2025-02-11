@@ -36,8 +36,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(PropertyBasedOverrideProfile.class)
 public class DataVectorizerTest {
   @Inject ObjectMapper objectMapper;
-  @Inject
-  VectorizeUsageBean vectorizeUsageBean;
+  @Inject VectorizeUsageBean vectorizeUsageBean;
   private final EmbeddingProvider testService = new TestEmbeddingProvider();
   private final CollectionSchemaObject collectionSettings =
       TestEmbeddingProvider.commandContextWithVectorize.schemaObject();

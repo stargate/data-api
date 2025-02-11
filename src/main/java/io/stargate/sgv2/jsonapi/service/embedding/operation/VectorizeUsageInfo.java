@@ -1,8 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-/**
- * Used to track the metric at a request level to the embedding service
- */
+/** Used to track the metric at a request level to the embedding service */
 public class VectorizeUsageInfo {
   private int requestSize;
   private int responseSize;
