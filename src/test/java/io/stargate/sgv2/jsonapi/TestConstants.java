@@ -67,15 +67,15 @@ public final class TestConstants {
   public static final ApiFeatures DEFAULT_API_FEATURES_FOR_TESTS = ApiFeatures.empty();
 
   public static CommandContext<CollectionSchemaObject> collectionContext() {
-    return collectionContext(TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null);
+    return collectionContext(TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null, null);
   }
 
-  public static CommandContext<CollectionSchemaObject> collectionContext(
-      String commandName,
-      CollectionSchemaObject schema,
-      JsonProcessingMetricsReporter metricsReporter) {
-    return collectionContext(commandName, schema, metricsReporter, null);
-  }
+  //  public static CommandContext<CollectionSchemaObject> collectionContext(
+  //      String commandName,
+  //      CollectionSchemaObject schema,
+  //      JsonProcessingMetricsReporter metricsReporter) {
+  //    return collectionContext(commandName, schema, metricsReporter, null);
+  //  }
 
   public static CommandContext<CollectionSchemaObject> collectionContext(
       String commandName,
@@ -106,7 +106,8 @@ public final class TestConstants {
       JsonProcessingMetricsReporter metricsReporter) {
 
     return CommandContext.builderSupplier()
-        .withJsonProcessingMetricsReporter(metricsReporter)
+        .withJsonProcessingMetricsReporter(
+            metricsReporter == null ? mock(JsonProcessingMetricsReporter.class) : metricsReporter)
         .withCqlSessionCache(mock(CQLSessionCache.class))
         .withCommandConfig(new CommandConfig())
         .getBuilder(schema)

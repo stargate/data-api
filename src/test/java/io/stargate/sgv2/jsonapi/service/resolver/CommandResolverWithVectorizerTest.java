@@ -97,6 +97,7 @@ public class CommandResolverWithVectorizerTest {
                             EmbeddingSourceModel.OTHER,
                             null))),
                 null),
+            null,
             null);
 
     @Test

@@ -18,7 +18,6 @@ import io.quarkus.test.InjectMock;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
@@ -27,14 +26,15 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
-import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.*;
 import org.apache.commons.lang3.RandomStringUtils;
 
 public class OperationTestBase {
 
-  @Inject JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
+  // this will work even though the base class is not managed by Quarkus
+  @InjectMock protected RequestContext dataApiRequestInfo;
+
   protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final SchemaObjectName SCHEMA_OBJECT_NAME =
@@ -53,21 +53,17 @@ public class OperationTestBase {
 
   protected final CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT =
       TestConstants.collectionContext(
-          TestConstants.TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
+          TestConstants.TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null, null);
 
   protected final CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT =
-      TestConstants.keyspaceContext(
-          TestConstants.TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
-
-  @InjectMock protected RequestContext dataApiRequestInfo;
+      TestConstants.keyspaceContext(TestConstants.TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, null);
 
   protected static final TupleType DOC_KEY_TYPE =
       DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT);
 
   protected CommandContext<CollectionSchemaObject> createCommandContextWithCommandName(
       String commandName) {
-    return TestConstants.collectionContext(
-        commandName, COLLECTION_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
+    return TestConstants.collectionContext(commandName, COLLECTION_SCHEMA_OBJECT, null, null);
   }
 
   protected ColumnDefinitions buildColumnDefs(TestColumn... columns) {
