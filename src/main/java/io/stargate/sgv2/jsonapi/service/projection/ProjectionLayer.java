@@ -259,7 +259,7 @@ class ProjectionLayer {
    * @return {@code true} if path is included; {@code false} if not.
    */
   public boolean isPathIncluded(String path) {
-    final String[] segments = decodePath(fullPath);
+    final String[] segments = decodePath(path);
     return isPathIncluded(segments, 0);
   }
 
