@@ -8,9 +8,10 @@ package io.stargate.sgv2.jsonapi.service.schema.naming;
  * <p>The rules for field names are:
  *
  * <ul>
+ *   <li>Field names must not be Empty (length > 0)
  *   <li>Field names must not start with a dollar sign ($).
- *   <li>Field names are hierarchical (forming a Path), but validation is done on name-by-name
- *       basis.
+ *   <li>Field names are hierarchical (forming a Path), but validation is done on segment-by-segment
+ *       (individual JSON property name) basis.
  * </ul>
  */
 public class FieldNamingRule extends NamingRule {
@@ -26,7 +27,7 @@ public class FieldNamingRule extends NamingRule {
    * @return true if the name is valid, false otherwise
    */
   public boolean apply(String name) {
-    // Dollar not allowed to start any field name (not just root)
-    return !name.startsWith("$");
+    // Dollar not allowed to start any field name (not just root); empty names are also invalid
+    return !name.isEmpty() && !name.startsWith("$");
   }
 }

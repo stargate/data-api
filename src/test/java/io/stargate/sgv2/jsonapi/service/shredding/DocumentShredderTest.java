@@ -385,6 +385,51 @@ public class DocumentShredderTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
           .hasMessage("Document field name invalid: field name '$usd' starts with '$'");
     }
+
+    @Test
+    public void docBadFieldNameEmptyRoot() {
+      Throwable t =
+          catchThrowable(() -> documentShredder.shred(objectMapper.readTree("{ \"\" : 1972 }")));
+
+      assertThat(t)
+          .isNotNull()
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
+          .hasMessage("Document field name invalid: field name '' is empty");
+    }
+
+    @Test
+    public void docBadFieldNameEmptyNested() {
+      Throwable t =
+          catchThrowable(
+              () ->
+                  documentShredder.shred(objectMapper.readTree("{ \"price\": { \"\" : false } }")));
+
+      assertThat(t)
+          .isNotNull()
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
+          .hasMessage("Document field name invalid: field name '' is empty");
+    }
+
+    @Test
+    public void docFailConflictingPaths() {
+      Throwable t =
+          catchThrowable(
+              () ->
+                  documentShredder.shred(
+                      objectMapper.readTree(
+                          """
+                              {
+                                "price": {
+                                  "usd": 5.0
+                                },
+                                "price.usd": 8.50
+                              }
+                              """)));
+
+      assertThat(t)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCUMENT_PATH_CONFLICTS)
+          .hasMessage("Bad document to shred, contains conflicting Field path(s): [price.usd]");
+    }
   }
 
   @Nested
