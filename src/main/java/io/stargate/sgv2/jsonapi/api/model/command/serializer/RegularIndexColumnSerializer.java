@@ -29,10 +29,10 @@ public class RegularIndexColumnSerializer
       JsonGenerator jsonGenerator,
       SerializerProvider serializerProvider)
       throws IOException {
-    if (regularIndexColumn.indexOnMapComponent() != null) {
+    if (regularIndexColumn.mapComponent() != null) {
       jsonGenerator.writeStartObject();
       jsonGenerator.writeStringField(
-          regularIndexColumn.columnName(), regularIndexColumn.indexOnMapComponent().getValue());
+          regularIndexColumn.columnName(), regularIndexColumn.mapComponent().getApiName());
       jsonGenerator.writeEndObject();
     } else {
       jsonGenerator.writeString(regularIndexColumn.columnName());

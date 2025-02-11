@@ -28,6 +28,11 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
   }
 
   @Override
+  public boolean isFrozen() {
+    return cqlType.isFrozen();
+  }
+
+  @Override
   public ColumnDesc columnDesc() {
     return new SetColumnDesc(valueType.columnDesc(), ApiSupportDesc.from(this));
   }
@@ -114,10 +119,5 @@ public class ApiSetType extends CollectionApiDataType<SetType> {
       // must be a primitive type value
       return cqlType.getElementType() instanceof PrimitiveType;
     }
-  }
-
-  @Override
-  public boolean isFrozen() {
-    return cqlType.isFrozen();
   }
 }

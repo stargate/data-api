@@ -20,7 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 })
 public record VectorIndexDefinitionDesc(
     @NotNull
-        @Schema(description = "Name of the column to index.", required = true)
+        @Schema(description = "Required name of the column to index.", required = true)
         @JsonProperty(TableDescConstants.IndexDefinitionDesc.COLUMN)
         String column,
     //

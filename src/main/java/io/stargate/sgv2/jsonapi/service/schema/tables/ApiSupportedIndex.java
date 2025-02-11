@@ -27,6 +27,7 @@ abstract class ApiSupportedIndex implements ApiIndexDef {
     this.indexOptions =
         Collections.unmodifiableMap(
             Objects.requireNonNull(indexOptions, "options must not be null"));
+    // indexFunction is nullable for index on primitive types.
     this.indexFunction = indexFunction;
   }
 

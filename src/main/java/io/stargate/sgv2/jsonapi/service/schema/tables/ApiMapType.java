@@ -49,6 +49,11 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
   }
 
   @Override
+  public boolean isFrozen() {
+    return cqlType.isFrozen();
+  }
+
+  @Override
   public ColumnDesc columnDesc() {
     return new MapColumnDesc(
         keyType.columnDesc(), valueType.columnDesc(), ApiSupportDesc.from(this));
@@ -158,10 +163,5 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
       // must be a primitive type value
       return cqlType.getValueType() instanceof PrimitiveType;
     }
-  }
-
-  @Override
-  public boolean isFrozen() {
-    return cqlType.isFrozen();
   }
 }

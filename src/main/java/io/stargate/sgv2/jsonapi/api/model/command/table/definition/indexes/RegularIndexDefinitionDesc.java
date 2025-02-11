@@ -15,11 +15,12 @@ import jakarta.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-/*
- * API regular column can be primitive or map/set/list collection type.
- * CreateIndexCommand on collection column will have index function.
- * User can specify or use the default index function.
- * Details see {@link RegularIndexColumnDeserializer}
+/**
+ * Definition of a regular index on a primitive or collection type (map,list, or set), for the
+ * public API.
+ *
+ * <p>CreateIndexCommand on map column can have map component specified. Details see {@link
+ * RegularIndexColumnDeserializer}
  */
 @JsonPropertyOrder({
   TableDescConstants.IndexDefinitionDesc.COLUMN,
@@ -29,7 +30,7 @@ public record RegularIndexDefinitionDesc(
     @NotNull
         @Schema(
             description =
-                "Name of the column to index. (Optional: can also specify the index function for map column. E.G. {\"column\": {\"mapColumn\" : \"$keys\"}}",
+                "Required name of the column to index. To index the keys or values in a map column, use {\"my_map_colum\" : \"$keys\"} or {\"my_map_colum\" : \"$values\"}",
             required = true)
         @JsonDeserialize(using = RegularIndexColumnDeserializer.class)
         @JsonSerialize(using = RegularIndexColumnSerializer.class)
@@ -39,7 +40,7 @@ public record RegularIndexDefinitionDesc(
         @Nullable
         @Schema(
             description =
-                "Options for the new index, not all options are valid for all columns. Check documentation for details.",
+                "Options for the new index, not all options are valid for all data types. Check documentation for details.",
             type = SchemaType.OBJECT)
         @JsonProperty(TableDescConstants.IndexDefinitionDesc.OPTIONS)
         RegularIndexDescOptions options)
@@ -48,12 +49,12 @@ public record RegularIndexDefinitionDesc(
         RegularIndexDefinitionDesc.RegularIndexDescOptions> {
 
   public record RegularIndexColumn(
-      @NotNull @Schema(description = "Name of the column to index.", required = true)
+      @NotNull @Schema(description = "Required name of the column to index.", required = true)
           String columnName,
-      @Nullable @Schema(description = "User specified index component for map column.")
+      @Nullable @Schema(description = "Optional component of a map column to index, keys or values")
           // Note, user can only specify $keys and $values, default will be resolved in entries
           // later.
-          ApiMapComponent indexOnMapComponent) {}
+          ApiMapComponent mapComponent) {}
 
   /**
    * Options for the index. Text and ascii primitive datatypes can have the analyzer options

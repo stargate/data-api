@@ -6,10 +6,10 @@ package io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes;
  * IndexColumn type is different among {@link RegularIndexDefinitionDesc}, {@link
  * VectorIndexDefinitionDesc} and {@link UnsupportedIndexDefinitionDesc}.<br>
  *
- * <pre>
- *    It is String for VectorIndexDefinitionDesc and UnsupportedIndexDefinitionDesc indicating column name.
- *    It is RegularIndexColumn for RegularIndexDefinitionDesc indicating column name and mapComponent if user wants to index on map keys/values.
- * </pre>
+ * @param <IndexColumn> It is String for VectorIndexDefinitionDesc and
+ *     UnsupportedIndexDefinitionDesc indicating column name. It is RegularIndexColumn for
+ *     RegularIndexDefinitionDesc indicating column name and mapComponent if user wants to index on
+ *     map keys/values.
  */
 public interface IndexDefinitionDesc<IndexColumn, IndexOption> {
 

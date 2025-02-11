@@ -28,6 +28,11 @@ public class ApiListType extends CollectionApiDataType<ListType> {
   }
 
   @Override
+  public boolean isFrozen() {
+    return cqlType.isFrozen();
+  }
+
+  @Override
   public ColumnDesc columnDesc() {
     return new ListColumnDesc(valueType.columnDesc(), ApiSupportDesc.from(this));
   }
@@ -115,10 +120,5 @@ public class ApiListType extends CollectionApiDataType<ListType> {
       // must be a primitive type value
       return cqlType.getElementType() instanceof PrimitiveType;
     }
-  }
-
-  @Override
-  public boolean isFrozen() {
-    return cqlType.isFrozen();
   }
 }

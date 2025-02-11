@@ -39,6 +39,11 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
   }
 
   @Override
+  public boolean isFrozen() {
+    return false;
+  }
+
+  @Override
   public ColumnDesc columnDesc() {
     return new VectorColumnDesc(
         dimension,
@@ -147,10 +152,5 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
       // Must be a float
       return cqlType.getElementType() == DataTypes.FLOAT;
     }
-  }
-
-  @Override
-  public boolean isFrozen() {
-    return false;
   }
 }
