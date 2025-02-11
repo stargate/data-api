@@ -9,6 +9,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -167,6 +168,87 @@ public class DocumentProjectorTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
               "Unsupported projection parameter: '$vector'/'$vectorize' are the only allowed paths that can start with '$'");
+    }
+  }
+
+  // [jsonapi#1853]: Support ampersand-escape in projection
+  @Nested
+  class ProjectorPathValidation {
+    @Test
+    public void verifyAmpersandEscape() throws Exception {
+      final String docJson =
+          """
+                      "pricing": {
+                          "price.usd": 1.0,
+                          "price&jpy": 2.0,
+                          "price&.aud": 3.0,
+                          "app.kubernetes.io/name": {
+                              "abc$def": "123",
+                              "a b": "456"
+                          }
+                      }
+                      """;
+      final String projectionString =
+          """
+                      {
+                          "pricing.price&.usd": 1,
+                          "pricing.price&&jpy": 1,
+                          "pricing.price&&&.aud": 1,
+                          "pricing.app&.kubernetes&.io/name": 1
+                      }
+                      """;
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(objectMapper.readTree(projectionString));
+      final JsonNode doc = objectMapper.readTree(docJson);
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree(docJson));
+    }
+
+    @Test
+    public void verifyAmpersandEscapeAtTheEnd() throws Exception {
+      final String projectionString =
+          """
+                      {
+                          "pricing.price&.usd&": 0
+                      }
+                      """;
+
+      Throwable t =
+          catchThrowable(
+              () ->
+                  DocumentProjector.createFromDefinition(objectMapper.readTree(projectionString)));
+      assertThat(t)
+          .isInstanceOf(ProjectionException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.name())
+          .hasMessageContaining(
+              "Ampersand `&` escape is only allowed to escape and followed by ampersand `&` and dot `.`.")
+          .hasMessageContaining(
+              "The command used the unsupported ampersand escape path: pricing.price&.usd&.");
+    }
+
+    @Test
+    public void verifyAmpersandEscapeNotFollowedByAmpersandOrDot() throws Exception {
+      final String projectionString =
+          """
+                      {
+                          "pricing.price&usd": 0
+                      }
+                      """;
+
+      Throwable t =
+          catchThrowable(
+              () ->
+                  DocumentProjector.createFromDefinition(objectMapper.readTree(projectionString)));
+      assertThat(t)
+          .isInstanceOf(ProjectionException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.name())
+          .hasMessageContaining(
+              "Ampersand `&` escape is only allowed to escape and followed by ampersand `&` and dot `.`.")
+          .hasMessageContaining(
+              "The command used the unsupported ampersand escape path: pricing.price&usd.");
     }
   }
 

@@ -15,6 +15,7 @@ public class ProjectionException extends RequestException {
 
   public enum Code implements ErrorCode<ProjectionException> {
     UNSUPPORTED_COLUMN_TYPES,
+    UNSUPPORTED_AMPERSAND_ESCAPE_USAGE,
     UNKNOWN_TABLE_COLUMNS;
 
     private final ErrorTemplate<ProjectionException> template;
