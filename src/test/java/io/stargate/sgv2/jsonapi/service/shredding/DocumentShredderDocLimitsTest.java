@@ -416,16 +416,9 @@ public class DocumentShredderDocLimitsTest {
       assertThat(documentShredder.shred(doc)).isNotNull();
     }
 
-    @Test
-    public void allowEmptyFieldName() {
-      final ObjectNode doc = objectMapper.createObjectNode();
-      doc.put("", 123456);
-      assertThat(documentShredder.shred(doc)).isNotNull();
-    }
-
     // formerly invalid names that now are allowed
     @ParameterizedTest
-    @ValueSource(strings = {"app.kubernetes.io/name", "index[1]", "a/b", "a\\b", "a$b"})
+    @ValueSource(strings = {"app.kubernetes.io/name", "index[1]", "a/b", "a\\b", "a$b", "   "})
     public void allowUnusualFieldNames(String validName) {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
@@ -441,6 +434,8 @@ public class DocumentShredderDocLimitsTest {
           "{\"app\": { \"amount.total\": 30 }}",
           "{\"x\": { \"r&b\": true, \"a\\b\": 12 }}",
           "{\"app.kubernetes.io/name\": { \"type\": \"app\", \"abc$def\": 37 }}",
+          // Blank names ok (just not empty)
+          "{\"root\": { \" \": 12 }}",
         })
     public void allowUnusualNestedFieldNames(String json) throws IOException {
       assertThat(documentShredder.shred(objectMapper.readTree(json))).isNotNull();
@@ -453,7 +448,7 @@ public class DocumentShredderDocLimitsTest {
           "$a.b",
           "$function",
         })
-    public void catchInvalidFieldName(String invalidName) {
+    public void catchInvalidFieldNameDollar(String invalidName) {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       doc.put(invalidName, 123456);
