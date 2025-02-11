@@ -32,11 +32,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.bson.types.ObjectId;
 
 /**
- * Shred an incoming JSON document into the data we need to store in the DB, and then de-shred.
- *
- * <p>Implementation is based on the ideas from the earlier prototype, and extended to do things
- * like make better decisions about when to use a hash and when to use the actual value. i.e. a hash
- * of "a" is a lot longer than "a".
+ * Object that will shred an incoming JSON document into indexable entries we need to store in the
+ * DB, to be able to support filtering queries.
  *
  * <p>Note that currently document id ({@code _id}) is auto-generated using UUID random method if
  * incoming JSON does not contain it (otherwise passed-in {@code _id} is used as-is).
@@ -444,10 +441,10 @@ public class DocumentShredder {
 
   /** Handler constructed for traversing JSON document and producing indexable properties. */
   static class ShreddingTraverser {
-    private final DocumentShredderListener callback;
+    private final DocumentShredderListener shredder;
 
-    ShreddingTraverser(DocumentShredderListener callback) {
-      this.callback = callback;
+    ShreddingTraverser(DocumentShredderListener shredder) {
+      this.shredder = shredder;
     }
 
     /**
@@ -497,21 +494,21 @@ public class DocumentShredder {
       } else {
         if (value.isObject()) {
           ObjectNode ob = (ObjectNode) value;
-          if (callback.shredObject(path, ob)) {
+          if (shredder.shredObject(path, ob)) {
             traverseObject(ob, pathBuilder.nestedObjectBuilder());
           }
         } else if (value.isArray()) {
           ArrayNode arr = (ArrayNode) value;
-          callback.shredArray(path, arr);
+          shredder.shredArray(path, arr);
           traverseArray(arr, pathBuilder.nestedArrayBuilder());
         } else if (value.isTextual()) {
-          callback.shredText(path, value.textValue());
+          shredder.shredText(path, value.textValue());
         } else if (value.isNumber()) {
-          callback.shredNumber(path, value.decimalValue());
+          shredder.shredNumber(path, value.decimalValue());
         } else if (value.isBoolean()) {
-          callback.shredBoolean(path, value.booleanValue());
+          shredder.shredBoolean(path, value.booleanValue());
         } else if (value.isNull()) {
-          callback.shredNull(path);
+          shredder.shredNull(path);
         } else {
           throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
               "Unsupported `JsonNodeType` in input document, `%s`", value.getNodeType());
@@ -531,7 +528,7 @@ public class DocumentShredder {
         if (arr.size() == 0) {
           throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
         }
-        callback.shredVector(path, arr);
+        shredder.shredVector(path, arr);
       } else if (value.isObject()) {
         // e.g. "$vector": {"$binary": "c3VyZS4="}
         ObjectNode obj = (ObjectNode) value;
@@ -548,7 +545,7 @@ public class DocumentShredder {
               binaryValue.getNodeType());
         }
         try {
-          callback.shredVector(path, binaryValue.binaryValue());
+          shredder.shredVector(path, binaryValue.binaryValue());
         } catch (IOException e) {
           throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
               "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String, problem: %s"
@@ -562,7 +559,7 @@ public class DocumentShredder {
 
     private void traverseVectorize(JsonPath path, JsonNode value) {
       if (!value.isNull()) {
-        callback.shredVectorize(path);
+        shredder.shredVectorize(path);
       }
     }
   }
