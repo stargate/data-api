@@ -184,7 +184,7 @@ public class DocumentShredder {
     new IndexableValueValidator(documentLimits).validate(indexableDocument);
 
     // And finally let's traverse the document to actually "shred" (build index properties)
-    traverse(indexableDocument, b, JsonPath.rootBuilder());
+    new ShreddingTraverser(b).traverse(indexableDocument);
     return b.build();
   }
 
@@ -239,126 +239,6 @@ public class DocumentShredder {
   private static JsonNode wrapExtensionType(
       JsonNodeFactory jnf, JsonExtensionType etype, Object value) {
     return jnf.objectNode().put(etype.encodedName(), value.toString());
-  }
-
-  /**
-   * Main traversal method we need to produce callbacks to passed-in listener; used to separate
-   * shredding logic from that of recursive-descent traversal.
-   */
-  private void traverse(
-      JsonNode doc, DocumentShredderListener callback, JsonPath.Builder pathBuilder) {
-    // NOTE: main level is handled a bit differently; no callbacks for Objects or Arrays,
-    // only for the (rare) case of atomic values. Just traversal.
-
-    if (doc.isObject()) {
-      traverseObject((ObjectNode) doc, callback, pathBuilder);
-    } else if (doc.isArray()) {
-      traverseArray((ArrayNode) doc, callback, pathBuilder);
-    } else {
-      traverseValue(doc, callback, pathBuilder);
-    }
-  }
-
-  private void traverseObject(
-      ObjectNode obj, DocumentShredderListener callback, JsonPath.Builder pathBuilder) {
-
-    Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
-    while (it.hasNext()) {
-      Map.Entry<String, JsonNode> entry = it.next();
-      pathBuilder.property(entry.getKey());
-      traverseValue(entry.getValue(), callback, pathBuilder);
-    }
-  }
-
-  private void traverseArray(
-      ArrayNode arr, DocumentShredderListener callback, JsonPath.Builder pathBuilder) {
-    int ix = 0;
-    for (JsonNode value : arr) {
-      pathBuilder.index(ix++);
-      traverseValue(value, callback, pathBuilder);
-    }
-  }
-
-  private void traverseValue(
-      JsonNode value, DocumentShredderListener callback, JsonPath.Builder pathBuilder) {
-    final JsonPath path = pathBuilder.build();
-    final String pathAsString = path.toString();
-
-    if (pathAsString.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-      traverseVector(path, value, callback);
-    } else if (pathAsString.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-      traverseVectorize(path, value, callback);
-    } else {
-      if (value.isObject()) {
-        ObjectNode ob = (ObjectNode) value;
-        if (callback.shredObject(path, ob)) {
-          traverseObject(ob, callback, pathBuilder.nestedObjectBuilder());
-        }
-      } else if (value.isArray()) {
-        ArrayNode arr = (ArrayNode) value;
-        callback.shredArray(path, arr);
-        traverseArray(arr, callback, pathBuilder.nestedArrayBuilder());
-      } else if (value.isTextual()) {
-        callback.shredText(path, value.textValue());
-      } else if (value.isNumber()) {
-        callback.shredNumber(path, value.decimalValue());
-      } else if (value.isBoolean()) {
-        callback.shredBoolean(path, value.booleanValue());
-      } else if (value.isNull()) {
-        callback.shredNull(path);
-      } else {
-        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-            "Unsupported `JsonNodeType` in input document, `%s`", value.getNodeType());
-      }
-    }
-  }
-
-  private void traverseVector(JsonPath path, JsonNode value, DocumentShredderListener callback) {
-    if (value.isNull()) {
-      return;
-    }
-
-    // should be either array or object
-    if (value.isArray()) {
-      // e.g. "$vector": [0.25, 0.25]
-      ArrayNode arr = (ArrayNode) value;
-      if (arr.size() == 0) {
-        throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
-      }
-      callback.shredVector(path, arr);
-    } else if (value.isObject()) {
-      // e.g. "$vector": {"$binary": "c3VyZS4="}
-      ObjectNode obj = (ObjectNode) value;
-      final Map.Entry<String, JsonNode> entry = obj.fields().next();
-      JsonExtensionType keyType = JsonExtensionType.fromEncodedName(entry.getKey());
-      if (keyType != BINARY) {
-        throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
-            "The key for the %s object must be '%s'", path, BINARY.encodedName());
-      }
-      JsonNode binaryValue = entry.getValue();
-      if (!binaryValue.isTextual()) {
-        throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
-            "Unsupported JSON value type in EJSON $binary wrapper (%s): only STRING allowed",
-            binaryValue.getNodeType());
-      }
-      try {
-        callback.shredVector(path, binaryValue.binaryValue());
-      } catch (IOException e) {
-        throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
-            "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String, problem: %s"
-                .formatted(e.getMessage()));
-      }
-    } else {
-      throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
-          value.getNodeType().toString());
-    }
-  }
-
-  private void traverseVectorize(JsonPath path, JsonNode value, DocumentShredderListener callback) {
-    if (value.isNull()) {
-      return;
-    }
-    callback.shredVectorize(path);
   }
 
   private void validateDocumentSize(DocumentLimitsConfig limits, String docJson) {
@@ -558,6 +438,131 @@ public class DocumentShredder {
         throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
             "indexed String value (field '%s') length (%d bytes) exceeds maximum allowed (%d bytes)",
             referringPropertyName, encodedLength.getAsInt(), limits.maxStringLengthInBytes());
+      }
+    }
+  }
+
+  /** Handler constructed for traversing JSON document and producing indexable properties. */
+  static class ShreddingTraverser {
+    private final DocumentShredderListener callback;
+
+    ShreddingTraverser(DocumentShredderListener callback) {
+      this.callback = callback;
+    }
+
+    /**
+     * Main traversal method we need to produce callbacks to passed-in listener; used to separate
+     * shredding logic from that of recursive-descent traversal.
+     */
+    public void traverse(JsonNode doc) {
+      final JsonPath.Builder pathBuilder = JsonPath.rootBuilder();
+      // NOTE: main level is handled a bit differently; no callbacks for Objects or Arrays,
+      // only for the (rare) case of atomic values. Just traversal.
+
+      if (doc.isObject()) {
+        traverseObject((ObjectNode) doc, pathBuilder);
+      } else if (doc.isArray()) {
+        traverseArray((ArrayNode) doc, pathBuilder);
+      } else {
+        traverseValue(doc, pathBuilder);
+      }
+    }
+
+    private void traverseObject(ObjectNode obj, JsonPath.Builder pathBuilder) {
+
+      Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
+      while (it.hasNext()) {
+        Map.Entry<String, JsonNode> entry = it.next();
+        pathBuilder.property(entry.getKey());
+        traverseValue(entry.getValue(), pathBuilder);
+      }
+    }
+
+    private void traverseArray(ArrayNode arr, JsonPath.Builder pathBuilder) {
+      int ix = 0;
+      for (JsonNode value : arr) {
+        pathBuilder.index(ix++);
+        traverseValue(value, pathBuilder);
+      }
+    }
+
+    private void traverseValue(JsonNode value, JsonPath.Builder pathBuilder) {
+      final JsonPath path = pathBuilder.build();
+      final String pathAsString = path.toString();
+
+      if (pathAsString.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+        traverseVector(path, value);
+      } else if (pathAsString.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+        traverseVectorize(path, value);
+      } else {
+        if (value.isObject()) {
+          ObjectNode ob = (ObjectNode) value;
+          if (callback.shredObject(path, ob)) {
+            traverseObject(ob, pathBuilder.nestedObjectBuilder());
+          }
+        } else if (value.isArray()) {
+          ArrayNode arr = (ArrayNode) value;
+          callback.shredArray(path, arr);
+          traverseArray(arr, pathBuilder.nestedArrayBuilder());
+        } else if (value.isTextual()) {
+          callback.shredText(path, value.textValue());
+        } else if (value.isNumber()) {
+          callback.shredNumber(path, value.decimalValue());
+        } else if (value.isBoolean()) {
+          callback.shredBoolean(path, value.booleanValue());
+        } else if (value.isNull()) {
+          callback.shredNull(path);
+        } else {
+          throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
+              "Unsupported `JsonNodeType` in input document, `%s`", value.getNodeType());
+        }
+      }
+    }
+
+    private void traverseVector(JsonPath path, JsonNode value) {
+      if (value.isNull()) {
+        return;
+      }
+
+      // should be either array or object
+      if (value.isArray()) {
+        // e.g. "$vector": [0.25, 0.25]
+        ArrayNode arr = (ArrayNode) value;
+        if (arr.size() == 0) {
+          throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+        }
+        callback.shredVector(path, arr);
+      } else if (value.isObject()) {
+        // e.g. "$vector": {"$binary": "c3VyZS4="}
+        ObjectNode obj = (ObjectNode) value;
+        final Map.Entry<String, JsonNode> entry = obj.fields().next();
+        JsonExtensionType keyType = JsonExtensionType.fromEncodedName(entry.getKey());
+        if (keyType != BINARY) {
+          throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
+              "The key for the %s object must be '%s'", path, BINARY.encodedName());
+        }
+        JsonNode binaryValue = entry.getValue();
+        if (!binaryValue.isTextual()) {
+          throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
+              "Unsupported JSON value type in EJSON $binary wrapper (%s): only STRING allowed",
+              binaryValue.getNodeType());
+        }
+        try {
+          callback.shredVector(path, binaryValue.binaryValue());
+        } catch (IOException e) {
+          throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
+              "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String, problem: %s"
+                  .formatted(e.getMessage()));
+        }
+      } else {
+        throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
+            value.getNodeType().toString());
+      }
+    }
+
+    private void traverseVectorize(JsonPath path, JsonNode value) {
+      if (!value.isNull()) {
+        callback.shredVectorize(path);
       }
     }
   }
