@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvide
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -23,6 +24,7 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
+@ActivateRequestContext
 public class OpenAIEmbeddingProvider extends EmbeddingProvider {
   private static final String providerId = ProviderConstants.OPENAI;
   private final OpenAIEmbeddingProviderClient openAIEmbeddingProviderClient;
@@ -50,11 +52,12 @@ public class OpenAIEmbeddingProvider extends EmbeddingProvider {
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
+  @RegisterProvider(NetworkUsageInterceptor.class)
   public interface OpenAIEmbeddingProviderClient {
     @POST
     @Path("/embeddings")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
-    Uni<EmbeddingResponse> embed(
+    Uni<jakarta.ws.rs.core.Response> embed(
         @HeaderParam("Authorization") String accessToken,
         @HeaderParam("OpenAI-Organization") String organizationId,
         @HeaderParam("OpenAI-Project") String projectId,
@@ -122,25 +125,36 @@ public class OpenAIEmbeddingProvider extends EmbeddingProvider {
     String organizationId = (String) vectorizeServiceParameters.get("organizationId");
     String projectId = (String) vectorizeServiceParameters.get("projectId");
 
-    Uni<EmbeddingResponse> response =
+    // ✅ Create an instance of NetworkUsageInfo and pass it to request properties
+    Uni<jakarta.ws.rs.core.Response> response =
         applyRetry(
             openAIEmbeddingProviderClient.embed(
                 "Bearer " + embeddingCredentials.apiKey().get(),
                 organizationId,
                 projectId,
-                request));
+                request)); // Pass the object dynamically
 
     return response
         .onItem()
         .transform(
-            resp -> {
-              if (resp.data() == null) {
-                return Response.of(batchId, Collections.emptyList());
+            res -> {
+              EmbeddingResponse embeddingResponse = res.readEntity(EmbeddingResponse.class);
+              int sentBytes = Integer.parseInt(res.getHeaderString("sent-bytes"));
+              int receivedBytes = Integer.parseInt(res.getHeaderString("received-bytes"));
+              VectorizeUsageInfo vectorizeUsageInfo =
+                  new VectorizeUsageInfo(
+                      sentBytes,
+                      receivedBytes,
+                      embeddingResponse.usage().total_tokens,
+                      "openai",
+                      modelName);
+              if (embeddingResponse.data() == null) {
+                return Response.of(batchId, Collections.emptyList(), vectorizeUsageInfo);
               }
-              Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
+              Arrays.sort(embeddingResponse.data(), (a, b) -> a.index() - b.index());
               List<float[]> vectors =
-                  Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
-              return Response.of(batchId, vectors);
+                  Arrays.stream(embeddingResponse.data()).map(data -> data.embedding()).toList();
+              return Response.of(batchId, vectors, vectorizeUsageInfo);
             });
   }
 

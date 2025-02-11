@@ -19,6 +19,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.api.model.command.VectorizeUsageBean;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
@@ -34,6 +35,7 @@ public class DataVectorizer {
   private final JsonNodeFactory nodeFactory;
   private final EmbeddingCredentials embeddingCredentials;
   private final SchemaObject schemaObject;
+  private final VectorizeUsageBean vectorizeUsageBean;
 
   /**
    * Constructor
@@ -48,11 +50,13 @@ public class DataVectorizer {
       EmbeddingProvider embeddingProvider,
       JsonNodeFactory nodeFactory,
       EmbeddingCredentials embeddingCredentials,
-      SchemaObject schemaObject) {
+      SchemaObject schemaObject,
+      VectorizeUsageBean vectorizeUsageBean) {
     this.embeddingProvider = embeddingProvider;
     this.nodeFactory = nodeFactory;
     this.embeddingCredentials = embeddingCredentials;
     this.schemaObject = schemaObject;
+    this.vectorizeUsageBean = vectorizeUsageBean;
   }
 
   /**
@@ -107,7 +111,16 @@ public class DataVectorizer {
                     vectorizeTexts,
                     embeddingCredentials,
                     EmbeddingProvider.EmbeddingRequestType.INDEX)
-                .map(res -> res.embeddings());
+                .map(
+                    res -> {
+                      vectorizeUsageBean.setRequestSize(res.vectorizeUsageInfo().getRequestSize());
+                      vectorizeUsageBean.setResponseSize(
+                          res.vectorizeUsageInfo().getResponseSize());
+                      vectorizeUsageBean.setTotalTokens(res.vectorizeUsageInfo().getTotalTokens());
+                      vectorizeUsageBean.setProvider(res.vectorizeUsageInfo().getProvider());
+                      vectorizeUsageBean.setModel(res.vectorizeUsageInfo().getModel());
+                      return res.embeddings();
+                    });
         return vectors
             .onItem()
             .transform(
@@ -174,7 +187,15 @@ public class DataVectorizer {
                 List.of(vectorizeContent),
                 embeddingCredentials,
                 EmbeddingProvider.EmbeddingRequestType.INDEX)
-            .map(EmbeddingProvider.Response::embeddings);
+            .map(
+                res -> {
+                  vectorizeUsageBean.setRequestSize(res.vectorizeUsageInfo().getRequestSize());
+                  vectorizeUsageBean.setResponseSize(res.vectorizeUsageInfo().getResponseSize());
+                  vectorizeUsageBean.setTotalTokens(res.vectorizeUsageInfo().getTotalTokens());
+                  vectorizeUsageBean.setProvider(res.vectorizeUsageInfo().getProvider());
+                  vectorizeUsageBean.setModel(res.vectorizeUsageInfo().getModel());
+                  return res.embeddings();
+                });
     return vectors
         .onItem()
         .transform(
@@ -221,7 +242,16 @@ public class DataVectorizer {
                     List.of(text),
                     embeddingCredentials,
                     EmbeddingProvider.EmbeddingRequestType.SEARCH)
-                .map(res -> res.embeddings());
+                .map(
+                    res -> {
+                      vectorizeUsageBean.setRequestSize(res.vectorizeUsageInfo().getRequestSize());
+                      vectorizeUsageBean.setResponseSize(
+                          res.vectorizeUsageInfo().getResponseSize());
+                      vectorizeUsageBean.setTotalTokens(res.vectorizeUsageInfo().getTotalTokens());
+                      vectorizeUsageBean.setProvider(res.vectorizeUsageInfo().getProvider());
+                      vectorizeUsageBean.setModel(res.vectorizeUsageInfo().getModel());
+                      return res.embeddings();
+                    });
         return vectors
             .onItem()
             .transform(

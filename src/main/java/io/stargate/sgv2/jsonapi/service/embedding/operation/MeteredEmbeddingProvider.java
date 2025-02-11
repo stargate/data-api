@@ -91,11 +91,25 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
               Collections.sort(
                   vectorizedBatches, (a, b) -> Integer.compare(a.batchId(), b.batchId()));
               List<float[]> result = new ArrayList<>();
+              int sentBytes = 0;
+              int receivedBytes = 0;
+              int totalToken = 0;
+              String provider = "";
+              String modelName = "";
               for (Response vectorizedBatch : vectorizedBatches) {
                 // create the final ordered result
                 result.addAll(vectorizedBatch.embeddings());
+                sentBytes += vectorizedBatch.vectorizeUsageInfo().getRequestSize();
+                receivedBytes += vectorizedBatch.vectorizeUsageInfo().getResponseSize();
+                totalToken += vectorizedBatch.vectorizeUsageInfo().getTotalTokens();
+                provider = vectorizedBatch.vectorizeUsageInfo().getProvider();
+                modelName = vectorizedBatch.vectorizeUsageInfo().getModel();
               }
-              return Response.of(1, result);
+              return Response.of(
+                  1,
+                  result,
+                  new VectorizeUsageInfo(
+                      sentBytes, receivedBytes, totalToken, provider, modelName));
             })
         .invoke(
             () ->

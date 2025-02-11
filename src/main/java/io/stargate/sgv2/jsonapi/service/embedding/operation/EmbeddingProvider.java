@@ -175,9 +175,15 @@ public abstract class EmbeddingProvider {
    * @param batchId - Sequence number for the batch to order the vectors.
    * @param embeddings - Embedding vectors for the given text inputs.
    */
-  public record Response(int batchId, List<float[]> embeddings) {
+  public record Response(
+      int batchId, List<float[]> embeddings, VectorizeUsageInfo vectorizeUsageInfo) {
     public static Response of(int batchId, List<float[]> embeddings) {
-      return new Response(batchId, embeddings);
+      return new Response(batchId, embeddings, new VectorizeUsageInfo(0, 0, 0, "", ""));
+    }
+
+    public static Response of(
+        int batchId, List<float[]> embeddings, VectorizeUsageInfo vectorizeUsageInfo) {
+      return new Response(batchId, embeddings, vectorizeUsageInfo);
     }
   }
 

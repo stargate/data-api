@@ -22,6 +22,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.MeteredEmbeddingProvider;
+import io.stargate.sgv2.jsonapi.api.model.command.VectorizeUsageBean;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
@@ -37,15 +38,18 @@ public class DataVectorizerService {
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
+  private final VectorizeUsageBean vectorizeUsageBean;
 
   @Inject
   public DataVectorizerService(
       ObjectMapper objectMapper,
       MeterRegistry meterRegistry,
-      JsonApiMetricsConfig jsonApiMetricsConfig) {
+      JsonApiMetricsConfig jsonApiMetricsConfig,
+      VectorizeUsageBean vectorizeUsageBean) {
     this.objectMapper = objectMapper;
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
+    this.vectorizeUsageBean = vectorizeUsageBean;
   }
 
   /**
@@ -95,7 +99,8 @@ public class DataVectorizerService {
         embeddingProvider,
         objectMapper.getNodeFactory(),
         dataApiRequestInfo.getEmbeddingCredentials(),
-        commandContext.schemaObject());
+        commandContext.schemaObject(),
+        vectorizeUsageBean);
   }
 
   private <T extends SchemaObject> Uni<Boolean> vectorizeSortClause(
