@@ -34,7 +34,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 
 public class OperationTestBase {
 
-
   // aaron feb 11 2025 - not sure how this is working, not sure how @Inject works when then
   // super class is not under quarkus control. But if I remove it tests break
   @Inject JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
