@@ -1309,6 +1309,42 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
   @Nested
   @Order(4)
+  class InsertOneFails {
+    @Test
+    void failForPathConflict() {
+      String doc =
+          """
+                  {
+                    "_id": "doc-with-path-overlap",
+                    "price.total": {
+                        "usd": 15.0
+                    },
+                    "price": {
+                      "total.usd": 5.0
+                    }
+                  }
+              """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsWritePartialSuccess())
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_DOCUMENT_PATH_CONFLICTS"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Bad document to shred, contains conflicting Field path(s): [price.total.usd]"));
+    }
+  }
+
+  @Nested
+  @Order(5)
   class InsertInMixedCaseCollection {
     private static final String COLLECTION_MIXED = "MyCollection";
 
@@ -1367,7 +1403,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(5)
+  @Order(6)
   class InsertMany {
 
     @Test
@@ -1684,7 +1720,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(6)
+  @Order(7)
   class InsertManyLimitsChecking {
     @Test
     public void tryInsertTooLongNumber() {
@@ -1810,7 +1846,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(7)
+  @Order(8)
   class InsertManyFails {
     @Test
     public void orderedFailOnDups() {
