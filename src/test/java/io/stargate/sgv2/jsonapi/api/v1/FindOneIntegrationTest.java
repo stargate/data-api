@@ -647,11 +647,11 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
         """
                     {
                       "_id": "dotted1",
+                      "app.kubernetes.io/name": "dotted1",
                       "pricing": {
                         "price.usd": 25.5,
                         "currency": "USD"
-                      },
-                      "stuff": 42
+                      }
                     }
                     """;
 
@@ -659,9 +659,9 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
         """
                     {
                       "_id": "dotted2",
+                      "app.kubernetes.io/name": "dotted2",
                       "pricing.price.usd": 12.5,
-                      "pricing.currency": "USD",
-                      "stuff": 1972
+                      "pricing.currency": "USD"
                     }
                     """;
 
@@ -696,7 +696,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
             "findOne": {
               "filter": {
                 "pricing.currency": {"$eq": "USD"},
-                "stuff": {"$eq": 1972}
+                "app.kubernetes.io/name": {"$eq": "dotted2"}
               }
             }
           }
