@@ -31,16 +31,16 @@ public class NamingRulesTests {
     record TestCase(String name, boolean expected, String description) {}
 
     // List of cases
-    List<TestCase> invalidCases =
+    List<TestCase> generalInvalidCases =
         Arrays.asList(
             new TestCase(null, false, "name cannot be null"),
             new TestCase("", false, "name cannot be empty"),
             new TestCase(" ", false, "name cannot be blank"),
             new TestCase("a b", false, "name cannot contain spaces"),
             new TestCase(
-                "this_is_a_very_long_name_that_is_longer_than_48_characters",
+                "this_is_a_string_that_is_designed_to_be_more_than_one_hundred_characters_long_so_we_can_demonstrate_a_valid_example_with_extra_text_here",
                 false,
-                "name cannot be longer than 48 characters"),
+                "name cannot be longer than 100 characters"),
             new TestCase(
                 "!@#$%^&*()=-[]{}';:.></?`~", false, "name cannot contain special characters"),
             new TestCase("a", true, "name can be 1 character"),
@@ -56,16 +56,28 @@ public class NamingRulesTests {
             NamingRules.KEYSPACE, NamingRules.COLLECTION, NamingRules.TABLE, NamingRules.INDEX);
 
     // Combine each naming rule with each test case.
-    return namingRules.stream()
-        .flatMap(
-            rule ->
-                invalidCases.stream()
-                    .map(
-                        tc ->
-                            Arguments.of(
-                                tc.name,
-                                rule,
-                                tc.expected,
-                                rule.schemaType().apiName() + tc.description)));
+    var generalTestCases =
+        namingRules.stream()
+            .flatMap(
+                rule ->
+                    generalInvalidCases.stream()
+                        .map(
+                            tc ->
+                                Arguments.of(
+                                    tc.name,
+                                    rule,
+                                    tc.expected,
+                                    rule.schemaType().apiName() + tc.description)));
+
+    // Create the stream of special test cases.
+    Stream<Arguments> specialTestCases =
+        Stream.of(
+            Arguments.of(
+                "this_is_a_very_long_name_that_is_longer_than_48_characters",
+                NamingRules.INDEX,
+                true,
+                "Index name can be longer than 48 characters"));
+
+    return Stream.concat(generalTestCases, specialTestCases);
   }
 }
