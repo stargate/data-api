@@ -6,14 +6,15 @@ import com.google.common.io.CountingOutputStream;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.logging.Logger;
+import java.io.OutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NetworkUsageInterceptor implements ClientResponseFilter {
 
-  private static final Logger LOGGER = Logger.getLogger(NetworkUsageInterceptor.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(NetworkUsageInterceptor.class);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(); // Jackson object mapper
 
   @Override
@@ -23,13 +24,12 @@ public class NetworkUsageInterceptor implements ClientResponseFilter {
     int sentBytes = 0;
     if (requestContext.hasEntity()) {
       try {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        CountingOutputStream cus = new CountingOutputStream(byteArrayOutputStream);
+        CountingOutputStream cus = new CountingOutputStream(OutputStream.nullOutputStream());
         OBJECT_MAPPER.writeValue(cus, requestContext.getEntity());
         cus.close();
         sentBytes = (int) cus.getCount();
       } catch (Exception e) {
-        LOGGER.warning("Failed to measure request body size: " + e.getMessage());
+        LOGGER.warn("Failed to measure request body size: " + e.getMessage());
       }
     }
     if (responseContext.hasEntity()) {
@@ -37,8 +37,7 @@ public class NetworkUsageInterceptor implements ClientResponseFilter {
       if (receivedBytes <= 0) {
         // Read the response entity stream to measure its size
         InputStream inputStream = responseContext.getEntityStream();
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        receivedBytes = (int) ByteStreams.copy(inputStream, byteArrayOutputStream);
+        receivedBytes = (int) ByteStreams.copy(inputStream, OutputStream.nullOutputStream());
       }
     }
 
