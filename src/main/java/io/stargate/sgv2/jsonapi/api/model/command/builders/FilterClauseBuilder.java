@@ -548,7 +548,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
             "filter clause path cannot be empty String");
       }
       throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-          "filter clause path ('%s') starts with `$`", path);
+          "filter clause path ('%s') cannot start with `$`", path);
     }
     return path;
   }
