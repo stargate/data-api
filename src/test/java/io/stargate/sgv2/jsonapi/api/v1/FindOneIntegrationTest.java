@@ -642,6 +642,73 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
   @Nested
   @Order(3)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class FindOneWithDottedPaths {
+    private final String DOC1 =
+        """
+                    {
+                      "_id": "dotted1",
+                      "pricing": {
+                        "price.usd": 25.5,
+                        "currency": "USD"
+                      },
+                      "stuff": 42
+                    }
+                    """;
+
+    private final String DOC2 =
+        """
+                    {
+                      "_id": "dotted2",
+                      "pricing.price.usd": 12.5,
+                      "pricing.currency": "USD",
+                      "stuff": 1972
+                    }
+                    """;
+
+    @Test
+    @Order(1)
+    public void setUp() {
+      insertDoc(DOC1);
+      insertDoc(DOC2);
+    }
+
+    @Test
+    @Order(2)
+    public void byDottedFieldSimpleEq() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+          {
+            "findOne": {
+              "filter" : {"pricing.price.usd" : 25.5}
+            }
+          }
+          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+    }
+
+    @Test
+    @Order(2)
+    public void byDottedFieldTwoEqs() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+          {
+            "findOne": {
+              "filter": {
+                "pricing.currency": {"$eq": "USD"},
+                "stuff": {"$eq": 1972}
+              }
+            }
+          }
+          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC2));
+    }
+  }
+
+  @Nested
+  @Order(4)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FindOneFail {
     @Test
     public void failForMissingCollection() {
