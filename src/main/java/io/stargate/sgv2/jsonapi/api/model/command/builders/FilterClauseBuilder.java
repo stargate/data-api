@@ -202,18 +202,19 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         return comparisonExpressionList;
       }
 
-      // if the key does not match pattern or the entry is not ($vector and $exist operator)
-      // combination, throw error
-      String entryKey = validateFilterClausePath(entry.getKey());
+      // Before validating Filter path, check for special cases:
+      // ($vector/$vectorize and $exist operator)
+      String entryKey = entry.getKey();
       if ((entryKey.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
               && updateField.getKey().equals("$exists"))
           || (entryKey.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)
               && updateField.getKey().equals("$exists"))) {
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-            "filter clause path ('%s') contains character(s) not allowed", entry.getKey());
+        ; // fine, special cases
+      } else {
+        entryKey = validateFilterClausePath(entryKey);
       }
       JsonNode value = updateField.getValue();
-      Object valueObject = jsonNodeValue(entry.getKey(), value);
+      Object valueObject = jsonNodeValue(entryKey, value);
       if (operator == ValueComparisonOperator.GT
           || operator == ValueComparisonOperator.GTE
           || operator == ValueComparisonOperator.LT
@@ -234,8 +235,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
               operator.getOperator());
         }
       }
-      ComparisonExpression expression =
-          new ComparisonExpression(entry.getKey(), new ArrayList<>(), null);
+      ComparisonExpression expression = new ComparisonExpression(entryKey, new ArrayList<>(), null);
       expression.add(operator, valueObject);
       comparisonExpressionList.add(expression);
     }

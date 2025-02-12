@@ -1194,8 +1194,7 @@ public class FilterClauseBuilderTest {
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .isEqualTo(
-                        "Invalid filter expression: filter clause path ('$gt') contains character(s) not allowed");
+                    .startsWith("Invalid filter expression: filter clause path ('$gt')");
               });
     }
 
@@ -1252,8 +1251,7 @@ public class FilterClauseBuilderTest {
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .isEqualTo(
-                        "Invalid filter expression: filter clause path ('$exists') contains character(s) not allowed");
+                    .startsWith("Invalid filter expression: filter clause path ('$exists')");
               });
     }
   }
