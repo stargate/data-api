@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -151,14 +152,9 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       logicalExpression.addLogicalExpression(innerLogicalExpression);
     } else {
       // the key should match pattern
-      if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()) {
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-            "filter clause path ('%s') contains character(s) not allowed", entry.getKey());
-      }
+      String key = validateFilterClausePath(entry.getKey());
       logicalExpression.addComparisonExpressions(
-          List.of(
-              ComparisonExpression.eq(
-                  entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue()))));
+          List.of(ComparisonExpression.eq(key, jsonNodeValue(key, entry.getValue()))));
     }
   }
 
@@ -189,38 +185,36 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         if ((etype == null) && updateKey.startsWith("$")) {
           throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(updateKey);
         }
-        if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()) {
-          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-              "filter clause path ('%s') contains character(s) not allowed", entry.getKey());
-        }
+        String key = validateFilterClausePath(entry.getKey());
         // JSON Extension type needs to be explicitly handled:
         Object value;
         if (etype != null) {
-          if (isDocId(entry.getKey())) {
+          if (isDocId(key)) {
             value = DocumentId.fromJson(entry.getValue());
           } else {
             value = JsonUtil.extractExtendedValue(etype, updateField);
           }
         } else {
           // Otherwise we have a full JSON Object to match:
-          value = jsonNodeValue(entry.getKey(), entry.getValue());
+          value = jsonNodeValue(key, entry.getValue());
         }
         comparisonExpressionList.add(ComparisonExpression.eq(entry.getKey(), value));
         return comparisonExpressionList;
       }
 
-      // if the key does not match pattern or the entry is not ($vector and $exist operator)
-      // combination, throw error
-      if (!(DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()
-          || (entry.getKey().equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
+      // Before validating Filter path, check for special cases:
+      // ($vector/$vectorize and $exist operator)
+      String entryKey = entry.getKey();
+      if ((entryKey.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
               && updateField.getKey().equals("$exists"))
-          || (entry.getKey().equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)
-              && updateField.getKey().equals("$exists")))) {
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-            "filter clause path ('%s') contains character(s) not allowed", entry.getKey());
+          || (entryKey.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)
+              && updateField.getKey().equals("$exists"))) {
+        ; // fine, special cases
+      } else {
+        entryKey = validateFilterClausePath(entryKey);
       }
       JsonNode value = updateField.getValue();
-      Object valueObject = jsonNodeValue(entry.getKey(), value);
+      Object valueObject = jsonNodeValue(entryKey, value);
       if (operator == ValueComparisonOperator.GT
           || operator == ValueComparisonOperator.GTE
           || operator == ValueComparisonOperator.LT
@@ -241,8 +235,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
               operator.getOperator());
         }
       }
-      ComparisonExpression expression =
-          new ComparisonExpression(entry.getKey(), new ArrayList<>(), null);
+      ComparisonExpression expression = new ComparisonExpression(entryKey, new ArrayList<>(), null);
       expression.add(operator, valueObject);
       comparisonExpressionList.add(expression);
     }
@@ -546,5 +539,17 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
     for (ComparisonExpression childComparisonExpression : logicalExpression.comparisonExpressions) {
       childComparisonExpression.invert();
     }
+  }
+
+  private String validateFilterClausePath(String path) {
+    if (!NamingRules.FIELD.apply(path)) {
+      if (path.isEmpty()) {
+        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+            "filter clause path cannot be empty String");
+      }
+      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+          "filter clause path ('%s') cannot start with `$`", path);
+    }
+    return path;
   }
 }
