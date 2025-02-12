@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -16,11 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that creates a keyspace.")
 @JsonTypeName(CommandName.Names.CREATE_KEYSPACE)
 public record CreateKeyspaceCommand(
-    @NotNull
-        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-        @Size(min = 1, max = 48)
-        @Schema(description = "Name of the keyspace")
-        String name,
+    @Schema(description = "Required name of the new Keyspace") String name,
     @Nullable @Valid CreateKeyspaceCommand.Options options)
     implements GeneralCommand {
 

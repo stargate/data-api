@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -49,13 +50,15 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
                             .databaseConfig()
                             .ddlRetryDelayMillis())));
 
+    var tableName = validateSchemaName(command.name(), NamingRules.TABLE);
+
     taskBuilder.ifNotExists(
         ApiOptionUtils.getOrDefault(
             command.options(), CreateTableCommand.Options::ifNotExists, false));
 
     var apiTableDef =
         ApiTableDef.FROM_TABLE_DESC_FACTORY.create(
-            command.name(), command.definition(), validateVectorize);
+            tableName, command.definition(), validateVectorize);
     // todo - move the custom properties building into the builder
     taskBuilder
         .tableDef(apiTableDef)
@@ -64,7 +67,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
                 apiTableDef.allColumns().getVectorizeDefs(), objectMapper))
         .withExceptionHandlerFactory(
             DefaultDriverExceptionHandler.Factory.withIdentifier(
-                CreateTableExceptionHandler::new, cqlIdentifierFromUserInput(command.name())));
+                CreateTableExceptionHandler::new, cqlIdentifierFromUserInput(tableName)));
 
     var taskGroup = new TaskGroup<>(taskBuilder.build());
 

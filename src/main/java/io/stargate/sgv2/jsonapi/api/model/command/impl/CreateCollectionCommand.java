@@ -18,11 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that creates a collection.")
 @JsonTypeName(CommandName.Names.CREATE_COLLECTION)
 public record CreateCollectionCommand(
-    @NotNull
-        @Size(min = 1, max = 48)
-        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-        @Schema(description = "Name of the collection")
-        String name,
+    @Schema(description = "Required name of the new Collection") String name,
     @Valid
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable

@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -156,7 +157,7 @@ public class DocumentShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " number of properties an indexable Object (property 'subdoc') has ("
+              " number of properties an indexable Object (field 'subdoc') has ("
                   + tooManyProps
                   + ") exceeds maximum allowed ("
                   + maxObProps
@@ -234,7 +235,7 @@ public class DocumentShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " number of elements an indexable Array (property 'arr') has ("
+              " number of elements an indexable Array (field 'arr') has ("
                   + arraySizeAboveMax
                   + ") exceeds maximum allowed ("
                   + docLimits.maxArrayLength()
@@ -290,7 +291,7 @@ public class DocumentShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              "property path length (1003) exceeds maximum allowed ("
+              "field path length (1003) exceeds maximum allowed ("
                   + docLimits.maxPropertyPathLength()
                   + ") (path ends with '"
                   + lastSegment
@@ -324,7 +325,7 @@ public class DocumentShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " String value (property 'arr') length ("
+              " String value (field 'arr') length ("
                   + tooLongLength
                   + " bytes) exceeds maximum allowed ("
                   + docLimits.maxStringLengthInBytes()
@@ -356,7 +357,7 @@ public class DocumentShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION)
           .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              " String value (property 'text') length ("
+              " String value (field 'text') length ("
                   + (tooLongCharLength * 3)
                   + " bytes) exceeds maximum allowed ("
                   + docLimits.maxStringLengthInBytes()
@@ -406,7 +407,7 @@ public class DocumentShredderDocLimitsTest {
   class ValidationDocNameViolations {
     @ParameterizedTest
     @ValueSource(strings = {"name", "a123", "snake_case", "camelCase", "ab-cd-ef"})
-    public void allowRegularPropertyNames(String validName) {
+    public void allowRegularFieldNames(String validName) {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       doc.put(validName, 123456);
@@ -415,37 +416,62 @@ public class DocumentShredderDocLimitsTest {
       assertThat(documentShredder.shred(doc)).isNotNull();
     }
 
-    @Test
-    public void catchEmptyPropertyName() {
+    // formerly invalid names that now are allowed
+    @ParameterizedTest
+    @ValueSource(strings = {"app.kubernetes.io/name", "index[1]", "a/b", "a\\b", "a$b", "   "})
+    public void allowUnusualFieldNames(String validName) {
       final ObjectNode doc = objectMapper.createObjectNode();
-      doc.put("", 123456);
+      doc.put("_id", 123);
+      doc.put(validName, 123456);
 
-      Exception e = catchException(() -> documentShredder.shred(doc));
-      assertThat(e)
-          .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
-          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
-          .hasMessageEndingWith("empty names not allowed");
+      // Enough to verify that shredder does not throw exception
+      assertThat(documentShredder.shred(doc)).isNotNull();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"$function", "dot.ted", "index[1]", "a/b", "a\\b"})
-    public void catchInvalidPropertyName(String invalidName) {
+    @ValueSource(
+        strings = {
+          "{\"app\": { \"amount.total\": 30 }}",
+          "{\"x\": { \"r&b\": true, \"a\\b\": 12 }}",
+          "{\"app.kubernetes.io/name\": { \"type\": \"app\", \"abc$def\": 37 }}",
+          // Blank names ok (just not empty)
+          "{\"root\": { \" \": 12 }}",
+        })
+    public void allowUnusualNestedFieldNames(String json) throws IOException {
+      assertThat(documentShredder.shred(objectMapper.readTree(json))).isNotNull();
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = {
+          "$",
+          "$a.b",
+          "$function",
+        })
+    public void catchInvalidFieldNameDollar(String invalidName) {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       doc.put(invalidName, 123456);
 
+      // First check at root level
       Exception e = catchException(() -> documentShredder.shred(doc));
       assertThat(e)
-          .isNotNull()
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
           .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
-          .hasMessageEndingWith(
-              "field name ('"
-                  + invalidName
-                  + "') contains invalid character(s), can contain only letters (a-z/A-Z), numbers (0-9), underscores (_), and hyphens (-)");
+          .hasMessageEndingWith("field name '" + invalidName + "' starts with '$'");
+
+      // And then as a nested field
+      final ObjectNode doc2 = objectMapper.createObjectNode();
+      ObjectNode leaf = doc2.putObject("root");
+      leaf.put(invalidName, 13);
+
+      e = catchException(() -> documentShredder.shred(doc));
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
+          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
+          .hasMessageEndingWith("field name '" + invalidName + "' starts with '$'");
     }
   }
 
