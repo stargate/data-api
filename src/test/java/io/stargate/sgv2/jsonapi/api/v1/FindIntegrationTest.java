@@ -2230,7 +2230,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("$", responseIsError())
           .body(
               "errors[0].message",
-              containsString("The command used the unsupported ampersand escape path: price&."))
+              containsString("The command used the unsupported ampersand escape path: 'price&'."))
           .body(
               "errors[0].errorCode",
               is(ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.name()))
@@ -2259,7 +2259,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("$", responseIsError())
           .body(
               "errors[0].message",
-              containsString("The command used the unsupported ampersand escape path: price&abc."))
+              containsString(
+                  "The command used the unsupported ampersand escape path: 'price&abc'."))
           .body(
               "errors[0].errorCode",
               is(ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.name()))

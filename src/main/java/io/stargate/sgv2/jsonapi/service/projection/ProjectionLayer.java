@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import java.util.*;
 
 /**
@@ -65,8 +64,8 @@ class ProjectionLayer {
     // Root is always branch (not terminal):
     ProjectionLayer root = new ProjectionLayer("", false);
     for (String fullPath : dotPaths) {
-      String[] segments = decodePath(fullPath);
-      buildPath(failOnOverlap, fullPath, root, segments);
+      ProjectionPath path = ProjectionPath.from(fullPath);
+      buildPath(failOnOverlap, fullPath, root, path);
     }
     // Slices similar to path but processed differently (and while "exclusions"
     // in a way do not count as ones wrt compatibility)
@@ -82,120 +81,51 @@ class ProjectionLayer {
           failOnOverlap,
           DocumentConstants.Fields.DOC_ID,
           root,
-          new String[] {DocumentConstants.Fields.DOC_ID});
+          ProjectionPath.from(DocumentConstants.Fields.DOC_ID));
     }
     if (add$vector) {
       buildPath(
           failOnOverlap,
           DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
           root,
-          new String[] {DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD});
+          ProjectionPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD));
     }
     if (add$vectorize) {
       buildPath(
           failOnOverlap,
           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
           root,
-          new String[] {DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD});
+          ProjectionPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD));
     }
     return root;
   }
 
-  /**
-   * Decodes a path string into its constituent segments based on custom rules.
-   *
-   * <p>The decoding process follows these steps:
-   *
-   * <ol>
-   *   <li>
-   *       <p>Scan the encoded path string character-by-character to build segments.
-   *   <li>
-   *       <p>If the scanned character is {@code '.'}, consider the current segment complete, add it
-   *       to the list, and start a new segment.
-   *   <li>
-   *       <p>If the scanned character is {@code '&'}, check for a following character:
-   *       <ul>
-   *         <li>
-   *             <p>If there is no following character, an error is thrown.
-   *         <li>
-   *             <p>If the following character is either {@code '.'} or {@code '&'}, append that
-   *             following character into current segment.
-   *         <li>
-   *             <p>If it is any other character, an error is thrown (only {@code '&'} and {@code
-   *             '.'} are allowed to be escaped).
-   *       </ul>
-   *   <li>
-   *       <p>If the scanned character is neither {@code '&'} nor {@code '.'}, append it to the
-   *       current segment.
-   *   <li>
-   *       <p>When the end of the expression is reached, consider the last segment complete.
-   * </ol>
-   *
-   * <p>For example, the input {@code "pricing.price&.usd"} results in: {@code ["pricing",
-   * "price.usd"]}.
-   *
-   * @param path the encoded path string.
-   * @return an array of decoded segments.
-   */
-  private static String[] decodePath(String path) {
-    List<String> segments = new ArrayList<>();
-    StringBuilder segment = new StringBuilder();
-
-    for (int i = 0; i < path.length(); i++) {
-      char ch = path.charAt(i);
-      if (ch == '.') {
-        // Dot encountered: current segment complete
-        segments.add(segment.toString());
-        segment.setLength(0); // reset the segment
-      } else if (ch == '&') {
-        // Escape character encountered
-        if (i + 1 >= path.length()) {
-          throw ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.get(
-              "unsupportedAmpersandEscape", path);
-        }
-        char next = path.charAt(i + 1);
-        if (next == '.' || next == '&') {
-          // Valid escape: append the next character and skip it
-          segment.append(next);
-          i++;
-        } else {
-          throw ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.get(
-              "unsupportedAmpersandEscape", path);
-        }
-      } else {
-        // Regular character: add to the current segment
-        segment.append(ch);
-      }
-    }
-    // Add the last segment
-    segments.add(segment.toString());
-    return segments.toArray(new String[0]);
-  }
-
   static void buildPath(
-      boolean failOnOverlap, String fullPath, ProjectionLayer layer, String[] segments) {
+      boolean failOnOverlap, String fullPath, ProjectionLayer layer, ProjectionPath path) {
+    List<String> segments = path.getSegments();
     // First create branches
-    final int last = segments.length - 1;
+    final int last = segments.size() - 1;
     for (int i = 0; i < last; ++i) {
       // Try to find or create branch
-      layer = layer.findOrCreateBranch(failOnOverlap, fullPath, segments[i]);
+      layer = layer.findOrCreateBranch(failOnOverlap, fullPath, segments.get(i));
       // May be null if terminal layer found (shorter existing path); if so, we are done
       if (layer == null) {
         return;
       }
     }
     // And then attach terminal (leaf)
-    layer.addTerminal(failOnOverlap, fullPath, segments[last]);
+    layer.addTerminal(failOnOverlap, fullPath, segments.get(last));
   }
 
   static void buildSlicer(boolean failOnOverlap, SliceDef slice, ProjectionLayer layer) {
     final String fullPath = slice.path;
-    String[] segments = decodePath(fullPath);
-    final int last = segments.length - 1;
+    ProjectionPath path = ProjectionPath.from(fullPath);
+    List<String> segments = path.getSegments();
+    final int last = segments.size() - 1;
     for (int i = 0; i < last; ++i) {
-      layer = layer.findOrCreateBranch(failOnOverlap, fullPath, segments[i]);
+      layer = layer.findOrCreateBranch(failOnOverlap, fullPath, segments.get(i));
     }
-    layer.addSlicer(failOnOverlap, fullPath, segments[last], slice.slicer());
+    layer.addSlicer(failOnOverlap, fullPath, segments.get(last), slice.slicer());
   }
 
   ProjectionLayer findOrCreateBranch(boolean failOnOverlap, String fullPath, String segment) {
@@ -259,21 +189,22 @@ class ProjectionLayer {
    * @return {@code true} if path is included; {@code false} if not.
    */
   public boolean isPathIncluded(String path) {
-    final String[] segments = decodePath(path);
+    ProjectionPath p = ProjectionPath.from(path);
+    final List<String> segments = p.getSegments();
     return isPathIncluded(segments, 0);
   }
 
-  private boolean isPathIncluded(String[] segments, int index) {
+  private boolean isPathIncluded(List<String> segments, int index) {
     // If we are at a terminal layer, we are done
     if (isTerminal) {
       return true;
     }
     // Otherwise if we are at the end of path, we are not included
-    if (index == segments.length) {
+    if (index == segments.size()) {
       return false;
     }
     // Otherwise we need to traverse further
-    ProjectionLayer next = nextLayers.get(segments[index]);
+    ProjectionLayer next = nextLayers.get(segments.get(index));
     if (next == null) {
       return false;
     }

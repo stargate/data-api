@@ -618,11 +618,24 @@ request-errors:
     body: |-
       The usage of ampersand escape is not supported.
       
-      Ampersand `&` escape is only allowed to escape and followed by ampersand `&` and dot `.`.
+      Ampersand & can only be used as an escape character and must be followed by a & or . character.
       
-      The command used the unsupported ampersand escape path: ${unsupportedAmpersandEscape}.
+      The command used the unsupported ampersand escape path: '${unsupportedAmpersandEscape}'.
       
       Resend the command using supported ampersand escape.
+
+  - scope: PROJECTION
+    code: UNSUPPORTED_PROJECTION_PATH
+    title: The path in the projection is not supported
+    body: |-
+      The path in the projection is not supported.
+      
+      The segments from the path in the projection cannot be empty.
+      
+      The command used the unsupported projection path: '${unsupportedProjectionPath}'.
+      
+      Resend the command using supported projection path.
+
 
   - scope: PROJECTION
     code: UNKNOWN_TABLE_COLUMNS

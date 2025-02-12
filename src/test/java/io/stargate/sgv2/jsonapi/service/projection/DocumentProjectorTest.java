@@ -223,9 +223,9 @@ public class DocumentProjectorTest {
           .hasFieldOrPropertyWithValue(
               "code", ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.name())
           .hasMessageContaining(
-              "Ampersand `&` escape is only allowed to escape and followed by ampersand `&` and dot `.`.")
+              "Ampersand & can only be used as an escape character and must be followed by a & or . character.")
           .hasMessageContaining(
-              "The command used the unsupported ampersand escape path: pricing.price&.usd&.");
+              "The command used the unsupported ampersand escape path: 'pricing.price&.usd&'.");
     }
 
     @Test
@@ -246,9 +246,9 @@ public class DocumentProjectorTest {
           .hasFieldOrPropertyWithValue(
               "code", ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.name())
           .hasMessageContaining(
-              "Ampersand `&` escape is only allowed to escape and followed by ampersand `&` and dot `.`.")
+              "Ampersand & can only be used as an escape character and must be followed by a & or . character.")
           .hasMessageContaining(
-              "The command used the unsupported ampersand escape path: pricing.price&usd.");
+              "The command used the unsupported ampersand escape path: 'pricing.price&usd'.");
     }
   }
 
