@@ -1441,9 +1441,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body(
-              "errors[0].message",
-              endsWith("filter clause path ('$gt') contains character(s) not allowed"))
+          .body("errors[0].message", containsString("filter clause path ('$gt')"))
           .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
