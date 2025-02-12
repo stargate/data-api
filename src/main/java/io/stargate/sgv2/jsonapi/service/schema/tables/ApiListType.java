@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.ListType;
-import com.datastax.oss.driver.internal.core.type.PrimitiveType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ListColumnDesc;
@@ -37,21 +36,20 @@ public class ApiListType extends CollectionApiDataType<ListType> {
     return new ListColumnDesc(valueType.columnDesc(), ApiSupportDesc.from(this));
   }
 
+  /**
+   * Creates a new {@link ApiListType} from the given ApiDataType value.
+   *
+   * <p>ApiSupport for valueType should be already validated.
+   */
   static ApiListType from(ApiDataType valueType, boolean isFrozen) {
     Objects.requireNonNull(valueType, "valueType must not be null");
-
-    if (isValueTypeSupported(valueType)) {
-      return new ApiListType(
-          (PrimitiveApiDataTypeDef) valueType, defaultApiSupport(isFrozen), isFrozen);
-    }
-
-    throw new IllegalArgumentException(
-        "valueType must be primitive type, valueType%s".formatted(valueType));
+    return new ApiListType(
+        (PrimitiveApiDataTypeDef) valueType, defaultApiSupport(isFrozen), isFrozen);
   }
 
   public static boolean isValueTypeSupported(ApiDataType valueType) {
     Objects.requireNonNull(valueType, "valueType must not be null");
-    return valueType.isPrimitive();
+    return valueType.apiSupport().collectionSupport().asListValue();
   }
 
   private static class ColumnDescFactory
@@ -98,11 +96,12 @@ public class ApiListType extends CollectionApiDataType<ListType> {
         throws UnsupportedCqlType {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
-      if (!isSupported(cqlType)) {
-        throw new UnsupportedCqlType(cqlType);
-      }
-
       try {
+        ApiDataType valueType =
+            TypeFactoryFromCql.DEFAULT.create(cqlType.getElementType(), vectorizeDefn);
+        if (!isValueTypeSupported(valueType)) {
+          throw new UnsupportedCqlType(cqlType);
+        }
         return ApiListType.from(
             TypeFactoryFromCql.DEFAULT.create(cqlType.getElementType(), vectorizeDefn),
             cqlType.isFrozen());
@@ -115,10 +114,13 @@ public class ApiListType extends CollectionApiDataType<ListType> {
     @Override
     public boolean isSupported(ListType cqlType) {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
-
-      ///  we accept frozen, but change the support.
-      // must be a primitive type value
-      return cqlType.getElementType() instanceof PrimitiveType;
+      //  we accept frozen, but change the support.
+      try {
+        var valueType = TypeFactoryFromCql.DEFAULT.create(cqlType.getElementType(), null);
+        return isValueTypeSupported(valueType);
+      } catch (UnsupportedCqlType e) {
+        return false;
+      }
     }
   }
 }

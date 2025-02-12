@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.MapType;
-import com.datastax.oss.driver.internal.core.type.PrimitiveType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ApiSupportDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapColumnDesc;
@@ -59,32 +58,30 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
         keyType.columnDesc(), valueType.columnDesc(), ApiSupportDesc.from(this));
   }
 
+  /**
+   * Creates a new {@link ApiMapType} from the given ApiDataType key and ApiDataType types.
+   *
+   * <p>ApiSupport for keyType and valueType should be already validated.
+   */
   static ApiMapType from(ApiDataType keyType, ApiDataType valueType, boolean isFrozen) {
     Objects.requireNonNull(keyType, "keyType must not be null");
     Objects.requireNonNull(valueType, "valueType must not be null");
 
-    if (isKeyTypeSupported(keyType) && isValueTypeSupported(valueType)) {
-      return new ApiMapType(
-          (PrimitiveApiDataTypeDef) keyType,
-          (PrimitiveApiDataTypeDef) valueType,
-          defaultApiSupport(isFrozen),
-          isFrozen);
-    }
-    throw new IllegalArgumentException(
-        "keyType and valueType must be primitive types, keyType: %s valueType: %s"
-            .formatted(keyType, valueType));
+    return new ApiMapType(
+        (PrimitiveApiDataTypeDef) keyType,
+        (PrimitiveApiDataTypeDef) valueType,
+        defaultApiSupport(isFrozen),
+        isFrozen);
   }
 
   public static boolean isKeyTypeSupported(ApiDataType keyType) {
     Objects.requireNonNull(keyType, "keyType must not be null");
-
-    return keyType.isPrimitive();
+    return keyType.apiSupport().collectionSupport().asMapKey();
   }
 
   public static boolean isValueTypeSupported(ApiDataType valueType) {
     Objects.requireNonNull(valueType, "valueType must not be null");
-
-    return valueType.isPrimitive();
+    return valueType.apiSupport().collectionSupport().asMapValue();
   }
 
   public PrimitiveApiDataTypeDef getKeyType() {
@@ -141,15 +138,20 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
         throws UnsupportedCqlType {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
-      if (!isSupported(cqlType)) {
-        throw new UnsupportedCqlType(cqlType);
-      }
-
       try {
-        return ApiMapType.from(
-            TypeFactoryFromCql.DEFAULT.create(cqlType.getKeyType(), vectorizeDefn),
-            TypeFactoryFromCql.DEFAULT.create(cqlType.getValueType(), vectorizeDefn),
-            cqlType.isFrozen());
+        ApiDataType keyType =
+            TypeFactoryFromCql.DEFAULT.create(cqlType.getKeyType(), vectorizeDefn);
+        if (!isKeyTypeSupported(keyType)) {
+          throw new UnsupportedCqlType(cqlType);
+        }
+
+        ApiDataType valueType =
+            TypeFactoryFromCql.DEFAULT.create(cqlType.getValueType(), vectorizeDefn);
+        if (!isValueTypeSupported(valueType)) {
+          throw new UnsupportedCqlType(cqlType);
+        }
+
+        return ApiMapType.from(keyType, valueType, cqlType.isFrozen());
       } catch (UnsupportedCqlType e) {
         // make sure we have the map type, not just the key or value type
         throw new UnsupportedCqlType(cqlType, e);
@@ -159,9 +161,16 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
     @Override
     public boolean isSupported(MapType cqlType) {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
+
       // we accept frozen and then change the support
-      // must be a primitive type value
-      return cqlType.getValueType() instanceof PrimitiveType;
+      // TODO WHY there is vectorizeDefn in the create method?
+      try {
+        var keyType = TypeFactoryFromCql.DEFAULT.create(cqlType.getKeyType(), null);
+        var valueType = TypeFactoryFromCql.DEFAULT.create(cqlType.getValueType(), null);
+        return isKeyTypeSupported(keyType) && isValueTypeSupported(valueType);
+      } catch (UnsupportedCqlType e) {
+        return false;
+      }
     }
   }
 }
