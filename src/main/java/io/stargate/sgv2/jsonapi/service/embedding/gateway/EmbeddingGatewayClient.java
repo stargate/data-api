@@ -190,10 +190,14 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
                     ErrorCodeV1.valueOf(resp.getError().getErrorCode()),
                     resp.getError().getErrorMessage());
               }
+              VectorizeUsage vectorizeUsage = new VectorizeUsage(provider, modelName);
               if (resp.getEmbeddingsList() == null) {
-                return new Response(
-                    batchId, Collections.emptyList(), new VectorizeUsage(provider, modelName));
+                return new Response(batchId, Collections.emptyList(), vectorizeUsage);
               }
+              EmbeddingGateway.EmbeddingResponse.Usage usage = resp.getUsage();
+              vectorizeUsage.setRequestBytes(usage.getInputBytes());
+              vectorizeUsage.setResponseBytes(usage.getOutputBytes());
+              vectorizeUsage.setTotalTokens(usage.getTotalTokens());
               final List<float[]> vectors =
                   resp.getEmbeddingsList().stream()
                       .map(
@@ -205,7 +209,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
                             return embedding;
                           })
                       .toList();
-              return new Response(batchId, vectors, new VectorizeUsage(provider, modelName));
+              return new Response(batchId, vectors, vectorizeUsage);
             });
   }
 
