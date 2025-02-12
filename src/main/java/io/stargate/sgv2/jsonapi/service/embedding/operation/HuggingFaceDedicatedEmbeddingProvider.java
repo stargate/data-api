@@ -135,7 +135,7 @@ public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
                       sentBytes,
                       receivedBytes,
                       embeddingResponse.usage().total_tokens(),
-                      ProviderConstants.COHERE,
+                      ProviderConstants.HUGGINGFACE_DEDICATED,
                       modelName);
               return new Response(batchId, vectors, vectorizeUsage);
             });
