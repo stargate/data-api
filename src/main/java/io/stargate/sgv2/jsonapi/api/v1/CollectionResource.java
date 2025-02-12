@@ -2,12 +2,8 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
-import io.stargate.sgv2.jsonapi.api.model.command.VectorizeUsageBean;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
@@ -86,10 +82,6 @@ public class CollectionResource {
   @Inject private OperationsConfig operationsConfig;
 
   @Inject private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
-
-  @Inject VectorizeUsageBean vectorizeUsageBean;
-
-  @Inject ObjectMapper objectMapper;
 
   @Inject
   public CollectionResource(MeteredCommandProcessor meteredCommandProcessor) {
@@ -268,18 +260,6 @@ public class CollectionResource {
                     dataApiRequestInfo, commandContext, command);
               }
             })
-        .map(
-            commandResult -> {
-              String vectorize = null;
-              try {
-
-                if (!Strings.isNullOrEmpty(vectorizeUsageBean.getModel())) {
-                  vectorize = objectMapper.writeValueAsString(vectorizeUsageBean);
-                }
-              } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-              }
-              return commandResult.toRestResponse(vectorize);
-            });
+        .map(commandResult -> commandResult.toRestResponse());
   }
 }

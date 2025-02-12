@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
-import io.stargate.sgv2.jsonapi.api.model.command.VectorizeUsageBean;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
@@ -38,18 +37,15 @@ public class DataVectorizerService {
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
-  private final VectorizeUsageBean vectorizeUsageBean;
 
   @Inject
   public DataVectorizerService(
       ObjectMapper objectMapper,
       MeterRegistry meterRegistry,
-      JsonApiMetricsConfig jsonApiMetricsConfig,
-      VectorizeUsageBean vectorizeUsageBean) {
+      JsonApiMetricsConfig jsonApiMetricsConfig) {
     this.objectMapper = objectMapper;
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
-    this.vectorizeUsageBean = vectorizeUsageBean;
   }
 
   /**
@@ -99,8 +95,7 @@ public class DataVectorizerService {
         embeddingProvider,
         objectMapper.getNodeFactory(),
         dataApiRequestInfo.getEmbeddingCredentials(),
-        commandContext.schemaObject(),
-        vectorizeUsageBean);
+        commandContext.schemaObject());
   }
 
   private <T extends SchemaObject> Uni<Boolean> vectorizeSortClause(

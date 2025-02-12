@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.VectorizeUsageBean;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
@@ -35,7 +34,6 @@ public class DataVectorizer {
   private final JsonNodeFactory nodeFactory;
   private final EmbeddingCredentials embeddingCredentials;
   private final SchemaObject schemaObject;
-  private final VectorizeUsageBean vectorizeUsageBean;
 
   /**
    * Constructor
@@ -50,13 +48,11 @@ public class DataVectorizer {
       EmbeddingProvider embeddingProvider,
       JsonNodeFactory nodeFactory,
       EmbeddingCredentials embeddingCredentials,
-      SchemaObject schemaObject,
-      VectorizeUsageBean vectorizeUsageBean) {
+      SchemaObject schemaObject) {
     this.embeddingProvider = embeddingProvider;
     this.nodeFactory = nodeFactory;
     this.embeddingCredentials = embeddingCredentials;
     this.schemaObject = schemaObject;
-    this.vectorizeUsageBean = vectorizeUsageBean;
   }
 
   /**
@@ -111,15 +107,7 @@ public class DataVectorizer {
                     vectorizeTexts,
                     embeddingCredentials,
                     EmbeddingProvider.EmbeddingRequestType.INDEX)
-                .map(
-                    res -> {
-                      vectorizeUsageBean.setRequestSize(res.vectorizeUsage().getRequestBytes());
-                      vectorizeUsageBean.setResponseSize(res.vectorizeUsage().getResponseBytes());
-                      vectorizeUsageBean.setTotalTokens(res.vectorizeUsage().getTotalTokens());
-                      vectorizeUsageBean.setProvider(res.vectorizeUsage().getProvider());
-                      vectorizeUsageBean.setModel(res.vectorizeUsage().getModel());
-                      return res.embeddings();
-                    });
+                .map(res -> res.embeddings());
         return vectors
             .onItem()
             .transform(
@@ -186,15 +174,7 @@ public class DataVectorizer {
                 List.of(vectorizeContent),
                 embeddingCredentials,
                 EmbeddingProvider.EmbeddingRequestType.INDEX)
-            .map(
-                res -> {
-                  vectorizeUsageBean.setRequestSize(res.vectorizeUsage().getRequestBytes());
-                  vectorizeUsageBean.setResponseSize(res.vectorizeUsage().getResponseBytes());
-                  vectorizeUsageBean.setTotalTokens(res.vectorizeUsage().getTotalTokens());
-                  vectorizeUsageBean.setProvider(res.vectorizeUsage().getProvider());
-                  vectorizeUsageBean.setModel(res.vectorizeUsage().getModel());
-                  return res.embeddings();
-                });
+            .map(res -> res.embeddings());
     return vectors
         .onItem()
         .transform(
@@ -241,15 +221,7 @@ public class DataVectorizer {
                     List.of(text),
                     embeddingCredentials,
                     EmbeddingProvider.EmbeddingRequestType.SEARCH)
-                .map(
-                    res -> {
-                      vectorizeUsageBean.setRequestSize(res.vectorizeUsage().getRequestBytes());
-                      vectorizeUsageBean.setResponseSize(res.vectorizeUsage().getResponseBytes());
-                      vectorizeUsageBean.setTotalTokens(res.vectorizeUsage().getTotalTokens());
-                      vectorizeUsageBean.setProvider(res.vectorizeUsage().getProvider());
-                      vectorizeUsageBean.setModel(res.vectorizeUsage().getModel());
-                      return res.embeddings();
-                    });
+                .map(res -> res.embeddings());
         return vectors
             .onItem()
             .transform(

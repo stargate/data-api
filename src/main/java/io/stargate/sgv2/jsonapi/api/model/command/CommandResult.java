@@ -139,38 +139,6 @@ public record CommandResult(
   }
 
   /**
-   * Create the {@link RestResponse} Maps CommandResult to RestResponse. Except for few selective
-   * errors, all errors are mapped to http status 200. In case of 401, 500, 502 and 504 response is
-   * sent with appropriate status code.
-   *
-   * @return
-   */
-  public RestResponse<CommandResult> toRestResponse(String vectorizeHeader) {
-    if (null != this.errors()) {
-      final Optional<Error> first =
-          this.errors().stream()
-              .filter(error -> error.httpStatus() != Response.Status.OK)
-              .findFirst();
-
-      if (first.isPresent()) {
-        if (vectorizeHeader != null) {
-          return RestResponse.ResponseBuilder.create(first.get().httpStatus(), this)
-              .header("vectorize-usage", vectorizeHeader)
-              .build();
-        } else {
-          return RestResponse.ResponseBuilder.create(first.get().httpStatus(), this).build();
-        }
-      }
-    }
-    if (vectorizeHeader != null) {
-      return RestResponse.ResponseBuilder.create(RestResponse.Status.OK, this)
-          .header("vectorize-usage", vectorizeHeader)
-          .build();
-    }
-    return RestResponse.ok(this);
-  }
-
-  /**
    * returned a new CommandResult with warning message added in status map
    *
    * @param warning message
