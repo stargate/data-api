@@ -186,23 +186,70 @@ public class DocumentProjectorTest {
                               "abc$def": "123",
                               "a b": "456"
                           }
+                      },
+                      "metadata": {
+                          "name": "test-app",
+                          "namespace": "default",
+                          "metadata.name": 1
                       }
                       """;
-      final String projectionString =
+      // case 1: selecting "pricing.price.usd" (using the ampersand escape for the literal '.') and
+      // the nested "metadata.name" field (which requires no escaping).
+      String projectionString =
           """
                       {
                           "pricing.price&.usd": 1,
                           "pricing.price&&jpy": 1,
-                          "pricing.price&&&.aud": 1,
-                          "pricing.app&.kubernetes&.io/name": 1
+                          "metadata.name": 1
                       }
                       """;
+      JsonNode doc = objectMapper.readTree(docJson);
       DocumentProjector projection =
           DocumentProjector.createFromDefinition(objectMapper.readTree(projectionString));
-      final JsonNode doc = objectMapper.readTree(docJson);
       assertThat(projection.isInclusion()).isTrue();
       projection.applyProjection(doc);
-      assertThat(doc).isEqualTo(objectMapper.readTree(docJson));
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                      "pricing": {
+                          "price.usd": 1,
+                          "price&jpy": 2
+                      },
+                      "metadata": {
+                          "name": "test-app"
+                      }
+                      """));
+
+      // case 2: selecting "pricing.price&.aud" (using the ampersand escape for the literal '.' and
+      // '&')
+      // the nested "metadata.metadata.name" field will select nothing (not using ampersand escape
+      // to escape the dot).
+      doc = objectMapper.readTree(docJson);
+      projectionString =
+          """
+                        {
+                            "pricing.price&&&.aud": 1,
+                            "pricing.app&.kubernetes&.io/name": 1,
+                            "metadata.metadata.name": 1
+                        }
+                        """;
+      DocumentProjector projection1 =
+          DocumentProjector.createFromDefinition(objectMapper.readTree(projectionString));
+      assertThat(projection1.isInclusion()).isTrue();
+      projection1.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                              "pricing": {
+                                  "price&.aud": 3,
+                                  "app.kubernetes.io/name": {
+                                      "abc$def": "123",
+                                      "a b": "456"
+                                  }
+                              }
+                              """));
     }
 
     @Test

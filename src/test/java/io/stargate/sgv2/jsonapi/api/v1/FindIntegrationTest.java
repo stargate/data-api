@@ -2264,6 +2264,35 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               is(ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.name()))
           .body("errors[0].exceptionClass", is("ProjectionException"));
     }
+
+    @Test
+    public void failWithEmptySegment() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                        {
+                            "find": {
+                                "projection" : {
+                                    "foo..bar": 1
+                                }
+                            }
+                        }
+                        """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].message",
+              containsString("The segments from the path in the projection cannot be empty."))
+          .body(
+              "errors[0].errorCode",
+              is(ProjectionException.Code.UNSUPPORTED_PROJECTION_PATH.name()))
+          .body("errors[0].exceptionClass", is("ProjectionException"));
+    }
   }
 
   @Nested

@@ -39,7 +39,8 @@ public class ProjectionPathTest {
             "pricing.price&.usd&&value.unit&.&&million",
             List.of("pricing", "price.usd&value", "unit.&million"),
             "escape multiple dots and ampersands"),
-        Arguments.of("pricing. ", List.of("pricing", " "), "black string is a valid segment"));
+        Arguments.of("pricing. ", List.of("pricing", " "), "black string is a valid segment"),
+        Arguments.of(" ", List.of(" "), "black string is a valid segment"));
   }
 
   @ParameterizedTest
