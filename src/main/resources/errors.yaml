@@ -815,9 +815,11 @@ request-errors:
     body: |-
       The command attempted to create a map column that used unsupported types for either the key or value.
       
-      Maps can only use `text` or `ascii` types for the key type, and any primitive type for the value.
+      Maps can only use primitive type for the key and value with following exceptions:
+      1. The key can't be duration, counter, timeuuid.
+      2. The value can't be counter, timeuuid.
       
-      The supported primitive data types are: ${supportedTypes}.
+      The primitive data types are: ${supportedTypes}.
       The command used the key type: ${unsupportedKeyType}.
       The command used the value type: ${unsupportedValueType}.
       
@@ -829,9 +831,9 @@ request-errors:
     body: |-
       The command attempted to create a list column that used an unsupported type for the value.
       
-      List can only use primitive types for the value.
+      Lists can only use primitive type for the value, except for counter and timeuuid.
       
-      The supported primitive data types are: ${supportedTypes}.
+      The primitive data types are: ${supportedTypes}.
       The command used the value type: ${unsupportedValueType}.
       
       Resend the command using a supported value type.
@@ -854,9 +856,9 @@ request-errors:
     body: |-
       The command attempted to create a set column that used an unsupported type for the value.
       
-      Sets can only use primitive types for the value.
+      Sets can only use primitive type for the value, except for counter and timeuuid.
       
-      The supported primitive data types are: ${supportedTypes}.
+      The primitive data types are: ${supportedTypes}.
       The command used the value type: ${unsupportedValueType}.
       
       Resend the command using a supported value type.
