@@ -149,7 +149,9 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
                       ProviderConstants.JINA_AI,
                       modelName);
               List<float[]> vectors =
-                  Arrays.stream(resp.data()).map(EmbeddingResponse.Data::embedding).toList();
+                  Arrays.stream(embeddingResponse.data())
+                      .map(EmbeddingResponse.Data::embedding)
+                      .toList();
               return new Response(batchId, vectors, vectorizeUsage);
             });
   }
