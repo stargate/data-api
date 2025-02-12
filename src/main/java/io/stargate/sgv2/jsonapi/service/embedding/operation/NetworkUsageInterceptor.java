@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.CountingOutputStream;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,18 +38,10 @@ public class NetworkUsageInterceptor implements ClientResponseFilter {
         // Read the response entity stream to measure its size
         InputStream inputStream = responseContext.getEntityStream();
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024];
-        int bytesRead;
-        while ((bytesRead = inputStream.read(buffer)) != -1) {
-          byteArrayOutputStream.write(buffer, 0, bytesRead);
-          receivedBytes += bytesRead;
-        }
-        responseContext.setEntityStream(
-            new ByteArrayInputStream(byteArrayOutputStream.toByteArray()));
+        receivedBytes = (int) ByteStreams.copy(inputStream, byteArrayOutputStream);
       }
     }
 
-    LOGGER.info("Received Bytes: " + receivedBytes);
     responseContext.getHeaders().add("sent-bytes", String.valueOf(sentBytes));
     responseContext.getHeaders().add("received-bytes", String.valueOf(receivedBytes));
   }
