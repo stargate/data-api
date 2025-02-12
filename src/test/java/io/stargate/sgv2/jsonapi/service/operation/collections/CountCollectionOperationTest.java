@@ -34,6 +34,10 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class CountCollectionOperationTest extends OperationTestBase {
 
+  public CountCollectionOperationTest() {
+    super();
+  }
+
   private final ColumnDefinitions KEY_COLUMN = buildColumnDefs(TestColumn.keyColumn());
 
   MockRow resultRow(int index, String key) {

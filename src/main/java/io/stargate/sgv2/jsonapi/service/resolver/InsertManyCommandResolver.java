@@ -2,19 +2,19 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionInsertAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertAttemptBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.tables.WriteableTableRowBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTask;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTaskBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -37,7 +37,7 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, InsertManyCommand command) {
 
     final InsertManyCommand.Options options = command.options();
@@ -52,28 +52,27 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
   }
 
   @Override
-  public Operation resolveTableCommand(
-      CommandContext<TableSchemaObject> ctx, InsertManyCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, InsertManyCommand command) {
 
-    final InsertManyCommand.Options options = command.options();
-    final boolean ordered = (null != options) && options.ordered();
-    final boolean returnDocumentResponses = (null != options) && options.returnDocumentResponses();
+    TableInsertDBTaskBuilder taskBuilder =
+        TableInsertDBTask.builder(commandContext.schemaObject())
+            .withRowShredder(rowShredder)
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
-    var builder =
-        new TableInsertAttemptBuilder(
-            rowShredder,
-            new WriteableTableRowBuilder(ctx.schemaObject(), JSONCodecRegistries.DEFAULT_REGISTRY));
+    // TODO: move the default for ordered to a constant and use in the API
+    var taskGroup =
+        new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(
+            ApiOptionUtils.getOrDefault(
+                command.options(), InsertManyCommand.Options::ordered, false));
+    taskGroup.addAll(command.documents().stream().map(taskBuilder::build).toList());
 
-    OperationAttemptContainer<TableSchemaObject, InsertAttempt<TableSchemaObject>> attempts =
-        new OperationAttemptContainer<>(ordered);
-    attempts.addAll(command.documents().stream().map(builder::build).toList());
+    var accumulator =
+        InsertDBTaskPage.accumulator(commandContext)
+            .returnDocumentResponses(
+                ApiOptionUtils.getOrDefault(
+                    command.options(), InsertManyCommand.Options::returnDocumentResponses, false));
 
-    var pageBuilder =
-        InsertAttemptPage.<TableSchemaObject>builder()
-            .returnDocumentResponses(returnDocumentResponses)
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
-
-    return new GenericOperation<>(attempts, pageBuilder, TableDriverExceptionHandler::new);
+    return new TaskOperation<>(taskGroup, accumulator);
   }
 }

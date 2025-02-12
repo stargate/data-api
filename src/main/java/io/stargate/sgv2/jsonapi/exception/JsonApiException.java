@@ -259,11 +259,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
       return ErrorScope.DATA_LOADER;
     }
 
-    // decide the scope based on family
-    if (family == ErrorFamily.SERVER) {
-      return ErrorScope.DATABASE;
-    }
-
     return ErrorScope.EMPTY;
   }
 

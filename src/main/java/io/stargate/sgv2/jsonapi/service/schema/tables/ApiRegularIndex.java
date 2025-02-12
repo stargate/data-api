@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.util.ApiPropertyUtils;
+import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -140,21 +140,21 @@ public class ApiRegularIndex extends ApiSupportedIndex {
       } else {
         // text and ascii fields can have the text analysis options specified
         var ascii =
-            ApiPropertyUtils.getOrDefault(
+            ApiOptionUtils.getOrDefault(
                 optionsDesc,
                 RegularIndexDefinitionDesc.RegularIndexDescOptions::ascii,
                 TableDescDefaults.RegularIndexDescDefaults.ASCII);
         put(indexOptions, CQLOptions.ASCII, ascii);
 
         var case_sensitive =
-            ApiPropertyUtils.getOrDefault(
+            ApiOptionUtils.getOrDefault(
                 optionsDesc,
                 RegularIndexDefinitionDesc.RegularIndexDescOptions::caseSensitive,
                 TableDescDefaults.RegularIndexDescDefaults.CASE_SENSITIVE);
         put(indexOptions, CQLOptions.CASE_SENSITIVE, case_sensitive);
 
         var normalize =
-            ApiPropertyUtils.getOrDefault(
+            ApiOptionUtils.getOrDefault(
                 optionsDesc,
                 RegularIndexDefinitionDesc.RegularIndexDescOptions::normalize,
                 TableDescDefaults.RegularIndexDescDefaults.NORMALIZE);

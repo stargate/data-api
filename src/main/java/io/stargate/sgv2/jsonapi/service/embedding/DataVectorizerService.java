@@ -15,7 +15,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -57,10 +56,9 @@ public class DataVectorizerService {
    * @return
    */
   public <T extends SchemaObject> Uni<Command> vectorize(
-      DataApiRequestInfo dataApiRequestInfo, CommandContext<T> commandContext, Command command) {
+      CommandContext<T> commandContext, Command command) {
 
-    final DataVectorizer dataVectorizer =
-        constructDataVectorizer(dataApiRequestInfo, commandContext);
+    final DataVectorizer dataVectorizer = constructDataVectorizer(commandContext);
 
     // TODO, This is the hack to make table vectorize failure goes into command process flow
     try {
@@ -79,7 +77,7 @@ public class DataVectorizerService {
   }
 
   public <T extends SchemaObject> DataVectorizer constructDataVectorizer(
-      DataApiRequestInfo dataApiRequestInfo, CommandContext<T> commandContext) {
+      CommandContext<T> commandContext) {
     EmbeddingProvider embeddingProvider =
         Optional.ofNullable(commandContext.embeddingProvider())
             .map(
@@ -87,14 +85,14 @@ public class DataVectorizerService {
                     new MeteredEmbeddingProvider(
                         meterRegistry,
                         jsonApiMetricsConfig,
-                        dataApiRequestInfo,
+                        commandContext.requestContext(),
                         provider,
                         commandContext.commandName()))
             .orElse(null);
     return new DataVectorizer(
         embeddingProvider,
         objectMapper.getNodeFactory(),
-        dataApiRequestInfo.getEmbeddingCredentials(),
+        commandContext.requestContext().getEmbeddingCredentials(),
         commandContext.schemaObject());
   }
 

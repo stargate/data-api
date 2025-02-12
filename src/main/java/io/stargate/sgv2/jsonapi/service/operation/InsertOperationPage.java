@@ -15,7 +15,10 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 /**
- * Builds the response for an insert operation or one or more {@link InsertAttempt}s.
+ * IMPORTANT: THIS IS ALSO USED BY THE COLLECTIONS (JUST FOR INSERT) SO IT NEEDS TO STAY UNTIL
+ * COLLECTIONS CODE IS UPDATED (INSERTS STARTED THE "ATTEMPT" PATTERN)
+ *
+ * <p>Builds the response for an insert operation or one or more {@link InsertAttempt}s.
  *
  * <p>Keeps track of the inserts, their success status, and then builds the {@link CommandResult}
  * via {@link #get()}.

@@ -17,7 +17,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import jakarta.inject.Inject;
@@ -71,7 +71,7 @@ public class CqlSessionCacheTest {
 
   @Test
   public void testOSSCxCQLSessionCacheDefaultTenant() {
-    DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
+    RequestContext dataApiRequestInfo = mock(RequestContext.class);
     when(dataApiRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
@@ -96,7 +96,7 @@ public class CqlSessionCacheTest {
   public void testOSSCxCQLSessionCacheWithFixedToken()
       throws NoSuchFieldException, IllegalAccessException {
     // set request info
-    DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
+    RequestContext dataApiRequestInfo = mock(RequestContext.class);
     when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
     when(dataApiRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
@@ -128,7 +128,7 @@ public class CqlSessionCacheTest {
   public void testOSSCxCQLSessionCacheWithInvalidFixedToken()
       throws NoSuchFieldException, IllegalAccessException {
     // set request info
-    DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
+    RequestContext dataApiRequestInfo = mock(RequestContext.class);
     when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
     when(dataApiRequestInfo.getCassandraToken()).thenReturn(Optional.of("invalid_token"));
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
@@ -171,7 +171,7 @@ public class CqlSessionCacheTest {
     tenantIds.add("tenant5");
     for (String tenantId : tenantIds) {
       // set request info
-      DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
+      RequestContext dataApiRequestInfo = mock(RequestContext.class);
       when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
       when(dataApiRequestInfo.getCassandraToken())
           .thenReturn(operationsConfig.databaseConfig().fixedToken());
@@ -214,7 +214,7 @@ public class CqlSessionCacheTest {
     int sessionsToCreate = operationsConfig.databaseConfig().sessionCacheMaxSize() + 5;
     for (int i = 0; i < sessionsToCreate; i++) {
       String tenantId = "tenant" + i;
-      DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
+      RequestContext dataApiRequestInfo = mock(RequestContext.class);
       when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
       when(dataApiRequestInfo.getCassandraToken())
           .thenReturn(operationsConfig.databaseConfig().fixedToken());

@@ -12,7 +12,6 @@ import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
@@ -20,7 +19,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvide
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
-import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -576,7 +574,6 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   firstResponse,
                   dataVectorizerService,
-                  new DataApiRequestInfo(Optional.of("testTenant")),
                   TestEmbeddingProvider.commandContextWithVectorize)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -787,7 +784,6 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   firstResponse,
                   dataVectorizerService,
-                  new DataApiRequestInfo(Optional.of("testTenant")),
                   TestEmbeddingProvider.commandContextWithVectorize)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -957,7 +953,6 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   updatedDocument,
                   dataVectorizerService,
-                  new DataApiRequestInfo(Optional.of("testTenant")),
                   TestEmbeddingProvider.commandContextWithVectorize)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -1206,7 +1201,6 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   updatedDocument,
                   dataVectorizerService,
-                  new DataApiRequestInfo(Optional.of("testTenant")),
                   TestEmbeddingProvider.commandContextWithVectorize)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())

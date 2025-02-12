@@ -5,7 +5,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.quarkus.runtime.ShutdownEvent;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingServiceGrpc;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -22,7 +22,7 @@ public class ValidateCredentials {
 
   private ManagedChannel channel = null;
 
-  @Inject DataApiRequestInfo dataApiRequestInfo;
+  @Inject RequestContext dataApiRequestInfo;
 
   public boolean validate(String provider, String value) {
     if (channel == null) {

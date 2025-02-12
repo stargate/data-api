@@ -10,7 +10,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
@@ -163,7 +163,7 @@ public class CQLSessionCache {
    *
    * @return CQLSession
    */
-  public CqlSession getSession(DataApiRequestInfo dataApiRequestInfo) {
+  public CqlSession getSession(RequestContext dataApiRequestInfo) {
 
     // Validation happens when creating the credentials and session key
     return getSession(

@@ -131,7 +131,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                             EmbeddingSourceModel.OTHER,
                             null))),
                 null),
-            jsonProcessingMetricsReporter);
+            null,
+            null);
   }
 
   private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {

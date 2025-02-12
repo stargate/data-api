@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import java.util.Map;
 import java.util.Objects;
 
-/** Exception handler for the {@link CreateIndexAttempt} */
+/** Exception handler for the {@link CreateIndexDBTask} */
 public class CreateIndexExceptionHandler extends TableDriverExceptionHandler {
 
   private final CqlIdentifier indexName;

@@ -5,7 +5,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -24,7 +24,7 @@ public record CountCollectionOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     SimpleStatement simpleStatement = buildSelectQuery();
     Uni<CountResponse> countResponse = null;
     if (limit == -1)

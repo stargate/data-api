@@ -2,16 +2,15 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionInsertAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertAttemptBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.tables.WriteableTableRowBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTask;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTaskBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
@@ -38,7 +37,7 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, InsertOneCommand command) {
 
     var builder =
@@ -49,22 +48,22 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
   }
 
   @Override
-  public Operation resolveTableCommand(
-      CommandContext<TableSchemaObject> ctx, InsertOneCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, InsertOneCommand command) {
 
-    var builder =
-        new TableInsertAttemptBuilder(
-            rowShredder,
-            new WriteableTableRowBuilder(ctx.schemaObject(), JSONCodecRegistries.DEFAULT_REGISTRY));
+    TableInsertDBTaskBuilder taskBuilder =
+        TableInsertDBTask.builder(commandContext.schemaObject())
+            .withRowShredder(rowShredder)
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
-    var attempts = new OperationAttemptContainer<>(builder.build(command.document()));
+    var taskGroup =
+        new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(
+            taskBuilder.build(command.document()));
 
-    var pageBuilder =
-        InsertAttemptPage.<TableSchemaObject>builder()
-            .returnDocumentResponses(false) // always false for single document insert
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+    var accumulator =
+        InsertDBTaskPage.accumulator(commandContext)
+            .returnDocumentResponses(false); // never for insertOne
 
-    return new GenericOperation<>(attempts, pageBuilder, TableDriverExceptionHandler::new);
+    return new TaskOperation<>(taskGroup, accumulator);
   }
 }

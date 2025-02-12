@@ -8,23 +8,21 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperationImpl;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableExtensions;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
-import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
-import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
-import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
-import io.stargate.sgv2.jsonapi.service.operation.tables.AlterTableAttempt;
-import io.stargate.sgv2.jsonapi.service.operation.tables.AlterTableAttemptBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTaskPage;
+import io.stargate.sgv2.jsonapi.service.operation.tables.AlterTableDBTask;
+import io.stargate.sgv2.jsonapi.service.operation.tables.AlterTableDBTaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -44,50 +42,51 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
   @Inject VectorizeConfigValidator validateVectorize;
 
   @Override
-  public Operation resolveTableCommand(
-      CommandContext<TableSchemaObject> ctx, AlterTableCommand command) {
-
-    final AlterTableOperation operation = command.operation();
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, AlterTableCommand command) {
 
     // TODO: centralized way of getting the retry policy
     var schemaRetryPolicy =
-        new SchemaAttempt.SchemaRetryPolicy(
-            ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
+        new SchemaDBTask.SchemaRetryPolicy(
+            commandContext.config().get(OperationsConfig.class).databaseConfig().ddlRetries(),
             Duration.ofMillis(
-                ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
+                commandContext
+                    .config()
+                    .get(OperationsConfig.class)
+                    .databaseConfig()
+                    .ddlRetryDelayMillis()));
 
-    var builder = new AlterTableAttemptBuilder(ctx.schemaObject(), schemaRetryPolicy);
+    AlterTableDBTaskBuilder taskBuilder =
+        AlterTableDBTask.builder(commandContext.schemaObject())
+            .withRetryPolicy(schemaRetryPolicy)
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
     // use sequential processing for the attempts, because we sometimes need to do multiple
     // statements
-    OperationAttemptContainer<TableSchemaObject, SchemaAttempt<TableSchemaObject>> attempts =
-        new OperationAttemptContainer<>(true);
+    var taskGroup = new TaskGroup<AlterTableDBTask, TableSchemaObject>(true);
 
-    attempts.addAll(
-        switch (operation) {
+    taskGroup.addAll(
+        switch (command.operation()) {
           case AlterTableOperationImpl.AddColumns ac ->
-              handleAddColumns(builder, ctx.schemaObject(), ac);
+              handleAddColumns(taskBuilder, commandContext.schemaObject(), ac);
           case AlterTableOperationImpl.DropColumns dc ->
-              handleDropColumns(builder, ctx.schemaObject(), dc);
+              handleDropColumns(taskBuilder, commandContext.schemaObject(), dc);
           case AlterTableOperationImpl.AddVectorize av ->
-              handleAddVectorize(builder, ctx.schemaObject(), av);
+              handleAddVectorize(taskBuilder, commandContext.schemaObject(), av);
           case AlterTableOperationImpl.DropVectorize dc ->
-              handleDropVectorize(builder, ctx.schemaObject(), dc);
+              handleDropVectorize(taskBuilder, commandContext.schemaObject(), dc);
           default ->
               throw new IllegalStateException(
-                  "Unexpected AlterTable Operation class: " + operation.getClass().getSimpleName());
+                  "Unexpected AlterTableOperation class: "
+                      + command.operation().getClass().getSimpleName());
         });
 
-    var pageBuilder =
-        SchemaAttemptPage.<TableSchemaObject>builder()
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
-
-    return new GenericOperation<>(attempts, pageBuilder, TableDriverExceptionHandler::new);
+    return new TaskOperation<>(
+        taskGroup, SchemaDBTaskPage.accumulator(AlterTableDBTask.class, commandContext));
   }
 
-  private List<AlterTableAttempt> handleAddColumns(
-      AlterTableAttemptBuilder builder,
+  private List<AlterTableDBTask> handleAddColumns(
+      AlterTableDBTaskBuilder taskBuilder,
       TableSchemaObject tableSchemaObject,
       AlterTableOperationImpl.AddColumns addColumnsOperation) {
 
@@ -106,12 +105,12 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     var apiTableDef = tableSchemaObject.apiTableDef();
     // we can have multiple attempts to run if we need to also update the custom properties on the
     // table
-    List<AlterTableAttempt> attempts = new ArrayList<>();
+    List<AlterTableDBTask> attempts = new ArrayList<>();
     var addedColumns =
         ApiColumnDefContainer.FROM_COLUMN_DESC_FACTORY.create(
             addColumnsOperation.columns(), validateVectorize);
 
-    // TODO: move this to the attempt builder / factory
+    // TODO: move this to the attempt taskBuilder / factory
     var duplicateColumns =
         addedColumns.values().stream()
             .filter(apiTableDef.allColumns()::contains)
@@ -145,15 +144,15 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       // First execute the extension update for add columns
       // so if we fail to add this we do not end up with a column that has missing vectorize
       // definition
-      attempts.add(builder.buildUpdateExtensions(customProperties));
+      attempts.add(taskBuilder.buildUpdateExtensions(customProperties));
     }
 
-    attempts.add(builder.buildAddColumns(addedColumns));
+    attempts.add(taskBuilder.buildAddColumns(addedColumns));
     return attempts;
   }
 
-  private List<AlterTableAttempt> handleDropColumns(
-      AlterTableAttemptBuilder builder,
+  private List<AlterTableDBTask> handleDropColumns(
+      AlterTableDBTaskBuilder taskBuilder,
       TableSchemaObject tableSchemaObject,
       AlterTableOperationImpl.DropColumns dropColumnsOperation) {
 
@@ -171,7 +170,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
 
     var apiTableDef = tableSchemaObject.apiTableDef();
     // have to run multiple attempts if a vectorized column is dropped
-    List<AlterTableAttempt> attempts = new ArrayList<>();
+    List<AlterTableDBTask> attempts = new ArrayList<>();
 
     var droppedColumns =
         dropColumnsOperation.columns().stream()
@@ -179,7 +178,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
             .toList();
 
     // Validation
-    // TODO: move this validation into the builder like the other attempts do
+    // TODO: move this validation into the taskBuilder like the other attempts do
 
     var droppedPrimaryKeys =
         droppedColumns.stream()
@@ -248,19 +247,19 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
 
     // First should drop the columns, ok to have a vectorize config without the column but not the
     // other way around
-    attempts.add(builder.buildDropColumns(droppedColumns));
+    attempts.add(taskBuilder.buildDropColumns(droppedColumns));
 
     // and then update the custom properties on the table if we changed the vectorize config
     if (updateVectorize) {
       attempts.add(
-          builder.buildUpdateExtensions(
+          taskBuilder.buildUpdateExtensions(
               TableExtensions.createCustomProperties(existingVectorizeDefs, objectMapper)));
     }
     return attempts;
   }
 
-  private List<AlterTableAttempt> handleAddVectorize(
-      AlterTableAttemptBuilder builder,
+  private List<AlterTableDBTask> handleAddVectorize(
+      AlterTableDBTaskBuilder taskBuilder,
       TableSchemaObject tableSchemaObject,
       AlterTableOperationImpl.AddVectorize addVectorizeOperation) {
 
@@ -342,12 +341,12 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     existingVectorizeDefs.putAll(addedVectorizeDefs);
 
     return List.of(
-        builder.buildUpdateExtensions(
+        taskBuilder.buildUpdateExtensions(
             TableExtensions.createCustomProperties(existingVectorizeDefs, objectMapper)));
   }
 
-  private List<AlterTableAttempt> handleDropVectorize(
-      AlterTableAttemptBuilder builder,
+  private List<AlterTableDBTask> handleDropVectorize(
+      AlterTableDBTaskBuilder taskBuilder,
       TableSchemaObject tableSchemaObject,
       AlterTableOperationImpl.DropVectorize dropVectorizeOperation) {
 
@@ -426,7 +425,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     }
 
     return List.of(
-        builder.buildUpdateExtensions(
+        taskBuilder.buildUpdateExtensions(
             TableExtensions.createCustomProperties(existingVectorizeDefs, objectMapper)));
   }
 

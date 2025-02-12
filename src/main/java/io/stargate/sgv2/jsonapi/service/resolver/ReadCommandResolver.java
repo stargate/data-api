@@ -2,21 +2,19 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
-import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
-import io.stargate.sgv2.jsonapi.service.operation.ReadAttempt;
-import io.stargate.sgv2.jsonapi.service.operation.ReadAttemptPage;
+import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.RowSorter;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableProjection;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableReadAttemptBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableReadDBTaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.TableCqlSortClauseResolver;
@@ -53,76 +51,71 @@ class ReadCommandResolver<
    * @param commandContext
    * @param command
    * @param cqlPageState The CQL paging state, if any, must be non null
-   * @param pageBuilder The page builder to use, the caller should configure this with any command
-   *     specific options before passing, such as single document mode
+   * @param taskAccumulator The page builder to use, the caller should configure this with any
+   *     command specific options before passing, such as single document mode
    * @return Configured read operation
    */
-  protected GenericOperation<TableSchemaObject, ReadAttempt<TableSchemaObject>> buildReadOperation(
+  protected TaskOperation<ReadDBTask<TableSchemaObject>, TableSchemaObject> buildReadOperation(
       CommandContext<TableSchemaObject> commandContext,
       CmdT command,
       CqlPagingState cqlPageState,
-      ReadAttemptPage.Builder<TableSchemaObject> pageBuilder) {
+      ReadDBTaskPage.Accumulator<TableSchemaObject> taskAccumulator) {
 
-    var attemptBuilder = new TableReadAttemptBuilder(commandContext.schemaObject());
+    var taskBuilder = new TableReadDBTaskBuilder(commandContext.schemaObject());
+    taskBuilder.withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
     if (cqlPageState != null) {
-      attemptBuilder.addPagingState(cqlPageState);
+      taskBuilder.withPagingState(cqlPageState);
     }
 
-    // TODO, we may want the ability to resolve API filter clause into multiple
-    // dbLogicalExpressions, which will map into multiple readAttempts
-    var where =
-        TableWhereCQLClause.forSelect(
-            commandContext.schemaObject(),
-            tableFilterResolver.resolve(commandContext, command).target());
-
-    // work out the CQL order by
     var orderByWithWarnings = tableCqlSortClauseResolver.resolve(commandContext, command);
-    attemptBuilder.addOrderBy(orderByWithWarnings);
+    taskBuilder.withOrderBy(orderByWithWarnings);
 
-    // if the user did not provide a limit,we read all the possible rows. Paging is then handled
+    // if the user did not provide a limit, we read all the possible rows. Paging is then handled
     // by the driver pagination
     int commandLimit =
         command.limit().orElseGet(() -> orderByWithWarnings.target().getDefaultLimit());
-
-    int commandSkip = command.skip().orElse(0);
 
     // and then if we need to do in memory sorting
     var inMemorySort =
         new TableMemorySortClauseResolver<>(
                 operationsConfig,
                 orderByWithWarnings.target(),
-                commandSkip,
+                command.skip().orElse(0),
                 // Math.min is used because the max documents the api return is
                 // `operationsConfig.defaultPageSize()`
                 Math.min(commandLimit, operationsConfig.defaultPageSize()),
                 cqlPageState)
             .resolve(commandContext, command);
-    attemptBuilder.addSorter(inMemorySort);
+    taskBuilder.withSorter(inMemorySort);
 
     // if in memory sort the limit to use in select query will be
-    // `operationsConfig.maxDocumentSortCount() + 1`
-    var selectLimit =
-        inMemorySort.target() == RowSorter.NO_OP
-            ? commandLimit
-            : operationsConfig.maxDocumentSortCount() + 1;
-    attemptBuilder.addBuilderOption(CQLOption.ForSelect.limit(selectLimit));
+    // `operationsConfig.maxDocumentSortCount() + 1` so we read all the docs into memory and then
+    // sort
+    taskBuilder.withBuilderOption(
+        CQLOption.ForSelect.limit(
+            inMemorySort.target() == RowSorter.NO_OP
+                ? commandLimit
+                : operationsConfig.maxDocumentSortCount() + 1));
 
     // the columns the user wants
     // NOTE: the TableProjection is doing double duty as the select and the operation projection
     var projection =
         TableProjection.fromDefinition(objectMapper, command, commandContext.schemaObject());
 
-    attemptBuilder.addSelect(WithWarnings.of(projection));
-    attemptBuilder.addProjection(projection);
+    taskBuilder.withSelect(WithWarnings.of(projection));
+    taskBuilder.withProjection(projection);
 
-    var attempts = new OperationAttemptContainer<>(attemptBuilder.build(where));
+    // We will want the ability to turn a single find command into multiple tasks, this is why
+    // the builder builds on the where clause
+    var where =
+        TableWhereCQLClause.forSelect(
+            commandContext.schemaObject(),
+            tableFilterResolver.resolve(commandContext, command).target());
 
-    // the common page builder options
-    pageBuilder
-        .debugMode(commandContext.getConfig(DebugModeConfig.class).enabled())
-        .useErrorObjectV2(commandContext.getConfig(OperationsConfig.class).extendError());
+    // parallel processing all the of time
+    var taskGroup = new TaskGroup<>(taskBuilder.build(where));
 
-    return new GenericOperation<>(attempts, pageBuilder, TableDriverExceptionHandler::new);
+    return new TaskOperation<>(taskGroup, taskAccumulator);
   }
 }

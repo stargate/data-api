@@ -17,8 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An attempt to insert into a table, runs the query, does not hold the result set (e.g. for applied
- * LWT) that is for later.
+ * IMPORTANT: THIS IS ALSO USED BY THE COLLECTIONS (JUST FOR INSERT) SO IT NEEDS TO STAY UNTIL
+ * COLLECTIONS CODE IS UPDATED (INSERTS STARTED THE "ATTEMPT" PATTERN)
  */
 public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
     extends OperationAttempt<InsertAttempt<SchemaT>, SchemaT> {

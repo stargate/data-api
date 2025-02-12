@@ -6,6 +6,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
+import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
@@ -42,7 +43,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class OperationAttempt<
         SubT extends OperationAttempt<SubT, SchemaT>, SchemaT extends SchemaObject>
-    implements Comparable<SubT>, PrettyPrintable {
+    implements Comparable<SubT>, PrettyPrintable, WithWarnings.WarningsSink {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OperationAttempt.class);
 
@@ -501,6 +502,7 @@ public abstract class OperationAttempt<
    *
    * @param warning The warning message to add, cannot be <code>null</code> or blank.
    */
+  @Override
   public void addWarning(WarningException warning) {
     warnings.add(Objects.requireNonNull(warning, "warning cannot be null"));
   }
@@ -512,6 +514,7 @@ public abstract class OperationAttempt<
    *
    * @param suppressedWarning The warning message code to add, cannot be <code>null</code> or blank.
    */
+  @Override
   public void addSuppressedWarning(WarningException.Code suppressedWarning) {
     suppressedWarnings.add(
         Objects.requireNonNull(suppressedWarning, "suppressedWarning cannot be null"));
@@ -525,7 +528,8 @@ public abstract class OperationAttempt<
    *
    * @return An unmodifiable list of warnings, never <code>null</code>
    */
-  public List<WarningException> warnings() {
+  @Override
+  public List<WarningException> allWarnings() {
     return List.copyOf(warnings);
   }
 
@@ -536,7 +540,8 @@ public abstract class OperationAttempt<
    *
    * @return An unmodifiable list of warnings, never <code>null</code>
    */
-  protected List<WarningException> warningsExcludingSuppressed() {
+  @Override
+  public List<WarningException> warningsExcludingSuppressed() {
     if (suppressedWarnings.isEmpty()) {
       return warnings;
     }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.JsonDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.builders.FilterClauseBuilder;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -44,7 +45,8 @@ public class FilterSpec extends JsonDefinition {
   public FilterClause toFilterClause(CommandContext<?> ctx) {
     if (filterClause == null) {
       filterClause =
-          FilterClauseBuilder.builderFor(ctx.schemaObject()).build(ctx.operationsConfig(), json());
+          FilterClauseBuilder.builderFor(ctx.schemaObject())
+              .build(ctx.config().get(OperationsConfig.class), json());
     }
     return filterClause;
   }

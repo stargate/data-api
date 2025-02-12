@@ -6,7 +6,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
@@ -57,7 +57,7 @@ public record ReadAndUpdateCollectionOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     final AtomicReference pageStateReference = new AtomicReference();
     final AtomicInteger matchedCount = new AtomicInteger(0);
     final AtomicInteger modifiedCount = new AtomicInteger(0);
@@ -147,7 +147,7 @@ public record ReadAndUpdateCollectionOperation(
   }
 
   private Uni<UpdatedDocument> processUpdate(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       ReadDocument document,
       QueryExecutor queryExecutor,
       AtomicInteger modifiedCount) {
@@ -170,10 +170,7 @@ public record ReadAndUpdateCollectionOperation(
 
               return documentUpdaterResponse
                   .updateEmbeddingVector(
-                      documentUpdaterResponse,
-                      dataVectorizerService,
-                      dataApiRequestInfo,
-                      commandContext)
+                      documentUpdaterResponse, dataVectorizerService, commandContext)
                   .onItem()
                   .transformToUni(
                       vectorizedDocumentUpdaterResponse -> {
@@ -244,7 +241,7 @@ public record ReadAndUpdateCollectionOperation(
   }
 
   private Uni<DocumentId> updatedDocument(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       WritableShreddedDocument writableShreddedDocument) {
     final SimpleStatement updateQuery =
@@ -357,9 +354,7 @@ public record ReadAndUpdateCollectionOperation(
    * @return
    */
   private Uni<ReadDocument> readDocumentAgain(
-      DataApiRequestInfo dataApiRequestInfo,
-      QueryExecutor queryExecutor,
-      ReadDocument prevReadDoc) {
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor, ReadDocument prevReadDoc) {
     return findCollectionOperation()
         .getDocuments(
             dataApiRequestInfo,

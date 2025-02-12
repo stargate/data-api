@@ -112,7 +112,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                             EmbeddingSourceModel.OTHER,
                             null))),
                 null),
-            jsonProcessingMetricsReporter);
+            null,
+            null);
   }
 
   @Nested

@@ -4,7 +4,7 @@ import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -20,18 +20,18 @@ public class JsonProcessingMetricsReporter {
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
-  private final DataApiRequestInfo dataApiRequestInfo;
+  private final RequestContext requestContext;
   private final MetricsConfig.TenantRequestCounterConfig tenantConfig;
 
   @Inject
   public JsonProcessingMetricsReporter(
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig,
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext requestContext,
       MetricsConfig metricsConfig) {
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
-    this.dataApiRequestInfo = dataApiRequestInfo;
+    this.requestContext = requestContext;
     tenantConfig = metricsConfig.tenantRequestCounter();
   }
 
@@ -69,7 +69,7 @@ public class JsonProcessingMetricsReporter {
 
   private Tags getCustomTags(String commandName) {
     Tag tenantTag =
-        Tag.of(tenantConfig.tenantTag(), dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
+        Tag.of(tenantConfig.tenantTag(), requestContext.getTenantId().orElse(UNKNOWN_VALUE));
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
     return Tags.of(commandTag, tenantTag);
   }

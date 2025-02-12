@@ -95,7 +95,8 @@ public class FindCollectionOperationTest extends OperationTestBase {
                             EmbeddingSourceModel.OTHER,
                             null))),
                 null),
-            jsonProcessingMetricsReporter);
+            null,
+            null);
   }
 
   @Nested
