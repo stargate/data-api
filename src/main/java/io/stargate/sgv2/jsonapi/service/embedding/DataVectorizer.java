@@ -174,7 +174,7 @@ public class DataVectorizer {
                 List.of(vectorizeContent),
                 embeddingCredentials,
                 EmbeddingProvider.EmbeddingRequestType.INDEX)
-            .map(res -> res.embeddings());
+            .map(EmbeddingProvider.Response::embeddings);
     return vectors
         .onItem()
         .transform(
