@@ -22,6 +22,7 @@ public class ProjectionPathTest {
 
   private static Stream<Arguments> pathSegmentTestCases() {
     return Stream.of(
+        Arguments.of("pricing.price.usd", List.of("pricing", "price", "usd"), "no escape"),
         Arguments.of("pricing.price&.usd", List.of("pricing", "price.usd"), "escape single dot"),
         Arguments.of(
             "pricing.price&.usd&.value.unit&.million",
