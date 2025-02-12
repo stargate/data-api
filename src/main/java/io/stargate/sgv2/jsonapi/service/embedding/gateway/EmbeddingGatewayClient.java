@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.VectorizeUsage;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -190,7 +191,8 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
                     resp.getError().getErrorMessage());
               }
               if (resp.getEmbeddingsList() == null) {
-                return Response.of(batchId, Collections.emptyList());
+                return new Response(
+                    batchId, Collections.emptyList(), new VectorizeUsage(provider, modelName));
               }
               final List<float[]> vectors =
                   resp.getEmbeddingsList().stream()
@@ -203,7 +205,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
                             return embedding;
                           })
                       .toList();
-              return Response.of(batchId, vectors);
+              return new Response(batchId, vectors, new VectorizeUsage(provider, modelName));
             });
   }
 

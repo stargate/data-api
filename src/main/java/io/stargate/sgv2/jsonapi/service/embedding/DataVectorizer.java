@@ -113,12 +113,11 @@ public class DataVectorizer {
                     EmbeddingProvider.EmbeddingRequestType.INDEX)
                 .map(
                     res -> {
-                      vectorizeUsageBean.setRequestSize(res.vectorizeUsageInfo().getRequestSize());
-                      vectorizeUsageBean.setResponseSize(
-                          res.vectorizeUsageInfo().getResponseSize());
-                      vectorizeUsageBean.setTotalTokens(res.vectorizeUsageInfo().getTotalTokens());
-                      vectorizeUsageBean.setProvider(res.vectorizeUsageInfo().getProvider());
-                      vectorizeUsageBean.setModel(res.vectorizeUsageInfo().getModel());
+                      vectorizeUsageBean.setRequestSize(res.vectorizeUsage().getRequestBytes());
+                      vectorizeUsageBean.setResponseSize(res.vectorizeUsage().getResponseBytes());
+                      vectorizeUsageBean.setTotalTokens(res.vectorizeUsage().getTotalTokens());
+                      vectorizeUsageBean.setProvider(res.vectorizeUsage().getProvider());
+                      vectorizeUsageBean.setModel(res.vectorizeUsage().getModel());
                       return res.embeddings();
                     });
         return vectors
@@ -189,11 +188,11 @@ public class DataVectorizer {
                 EmbeddingProvider.EmbeddingRequestType.INDEX)
             .map(
                 res -> {
-                  vectorizeUsageBean.setRequestSize(res.vectorizeUsageInfo().getRequestSize());
-                  vectorizeUsageBean.setResponseSize(res.vectorizeUsageInfo().getResponseSize());
-                  vectorizeUsageBean.setTotalTokens(res.vectorizeUsageInfo().getTotalTokens());
-                  vectorizeUsageBean.setProvider(res.vectorizeUsageInfo().getProvider());
-                  vectorizeUsageBean.setModel(res.vectorizeUsageInfo().getModel());
+                  vectorizeUsageBean.setRequestSize(res.vectorizeUsage().getRequestBytes());
+                  vectorizeUsageBean.setResponseSize(res.vectorizeUsage().getResponseBytes());
+                  vectorizeUsageBean.setTotalTokens(res.vectorizeUsage().getTotalTokens());
+                  vectorizeUsageBean.setProvider(res.vectorizeUsage().getProvider());
+                  vectorizeUsageBean.setModel(res.vectorizeUsage().getModel());
                   return res.embeddings();
                 });
     return vectors
@@ -244,12 +243,11 @@ public class DataVectorizer {
                     EmbeddingProvider.EmbeddingRequestType.SEARCH)
                 .map(
                     res -> {
-                      vectorizeUsageBean.setRequestSize(res.vectorizeUsageInfo().getRequestSize());
-                      vectorizeUsageBean.setResponseSize(
-                          res.vectorizeUsageInfo().getResponseSize());
-                      vectorizeUsageBean.setTotalTokens(res.vectorizeUsageInfo().getTotalTokens());
-                      vectorizeUsageBean.setProvider(res.vectorizeUsageInfo().getProvider());
-                      vectorizeUsageBean.setModel(res.vectorizeUsageInfo().getModel());
+                      vectorizeUsageBean.setRequestSize(res.vectorizeUsage().getRequestBytes());
+                      vectorizeUsageBean.setResponseSize(res.vectorizeUsage().getResponseBytes());
+                      vectorizeUsageBean.setTotalTokens(res.vectorizeUsage().getTotalTokens());
+                      vectorizeUsageBean.setProvider(res.vectorizeUsage().getProvider());
+                      vectorizeUsageBean.setModel(res.vectorizeUsage().getModel());
                       return res.embeddings();
                     });
         return vectors

@@ -9,12 +9,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.google.common.io.ByteStreams;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -78,12 +81,14 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
             .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
             .region(Region.of(vectorizeServiceParameters.get("region").toString()))
             .build();
+    final VectorizeUsage vectorizeUsage = new VectorizeUsage(ProviderConstants.BEDROCK, modelName);
     final CompletableFuture<InvokeModelResponse> invokeModelResponseCompletableFuture =
         client.invokeModel(
             request -> {
               final byte[] inputData;
               try {
                 inputData = ow.writeValueAsBytes(new EmbeddingRequest(texts.get(0), dimension));
+                vectorizeUsage.setRequestBytes(inputData.length);
                 request.body(SdkBytes.fromByteArray(inputData)).modelId(modelName);
               } catch (JsonProcessingException e) {
                 throw ErrorCodeV1.EMBEDDING_REQUEST_ENCODING_ERROR.toApiException();
@@ -94,10 +99,15 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
         invokeModelResponseCompletableFuture.thenApply(
             res -> {
               try {
-                EmbeddingResponse response =
-                    or.readValue(res.body().asInputStream(), EmbeddingResponse.class);
+                InputStream inputStream = res.body().asInputStream();
+                int receivedBytes =
+                    (int) ByteStreams.copy(inputStream, OutputStream.nullOutputStream());
+                EmbeddingResponse response = or.readValue(inputStream, EmbeddingResponse.class);
+                vectorizeUsage.setResponseBytes(receivedBytes);
                 List<float[]> vectors = List.of(response.embedding);
-                return Response.of(batchId, vectors);
+                // Note: This is input tokens
+                vectorizeUsage.setTotalTokens(response.inputTextTokenCount());
+                return new Response(batchId, vectors, vectorizeUsage);
               } catch (IOException e) {
                 throw ErrorCodeV1.EMBEDDING_RESPONSE_DECODING_ERROR.toApiException();
               }

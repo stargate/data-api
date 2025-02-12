@@ -217,7 +217,8 @@ public class DataVectorizerTest {
               texts.forEach(t -> customResponse.add(new float[] {0.5f, 0.5f, 0.5f}));
               // add additional vector
               customResponse.add(new float[] {0.5f, 0.5f, 0.5f});
-              return Uni.createFrom().item(Response.of(batchId, customResponse));
+              return Uni.createFrom()
+                  .item(new Response(batchId, customResponse, new VectorizeUsage()));
             }
           };
       List<JsonNode> documents = new ArrayList<>();

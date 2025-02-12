@@ -93,8 +93,7 @@ public class OpenAIEmbeddingProvider extends EmbeddingProvider {
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
       logger.info(
-          String.format(
-              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
+          "Error response from embedding provider '{}': {}", providerId, rootNode.toString());
       // Extract the "message" node from the "error" node
       JsonNode messageNode = rootNode.at("/error/message");
       // Return the text of the "message" node, or the whole response body if it is missing
@@ -139,22 +138,25 @@ public class OpenAIEmbeddingProvider extends EmbeddingProvider {
         .transform(
             res -> {
               EmbeddingResponse embeddingResponse = res.readEntity(EmbeddingResponse.class);
+              if (embeddingResponse.data() == null) {
+                return new Response(
+                    batchId,
+                    Collections.emptyList(),
+                    new VectorizeUsage(ProviderConstants.OPENAI, modelName));
+              }
               int sentBytes = Integer.parseInt(res.getHeaderString("sent-bytes"));
               int receivedBytes = Integer.parseInt(res.getHeaderString("received-bytes"));
-              VectorizeUsageInfo vectorizeUsageInfo =
-                  new VectorizeUsageInfo(
+              VectorizeUsage vectorizeUsage =
+                  new VectorizeUsage(
                       sentBytes,
                       receivedBytes,
-                      embeddingResponse.usage().total_tokens,
-                      "openai",
+                      embeddingResponse.usage().total_tokens(),
+                      ProviderConstants.OPENAI,
                       modelName);
-              if (embeddingResponse.data() == null) {
-                return Response.of(batchId, Collections.emptyList(), vectorizeUsageInfo);
-              }
               Arrays.sort(embeddingResponse.data(), (a, b) -> a.index() - b.index());
               List<float[]> vectors =
                   Arrays.stream(embeddingResponse.data()).map(data -> data.embedding()).toList();
-              return Response.of(batchId, vectors, vectorizeUsageInfo);
+              return new Response(batchId, vectors, vectorizeUsage);
             });
   }
 

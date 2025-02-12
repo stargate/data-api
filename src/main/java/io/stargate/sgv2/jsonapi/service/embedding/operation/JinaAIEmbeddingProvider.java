@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstant
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -50,10 +51,11 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
+  @RegisterProvider(NetworkUsageInterceptor.class)
   public interface JinaAIEmbeddingProviderClient {
     @POST
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
-    Uni<EmbeddingResponse> embed(
+    Uni<jakarta.ws.rs.core.Response> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 
     @ClientExceptionMapper
@@ -83,8 +85,7 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
       logger.info(
-          String.format(
-              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
+          "Error response from embedding provider '{}}': {}", providerId, rootNode.toString());
       // Extract the "detail" node
       JsonNode detailNode = rootNode.path("detail");
       return detailNode.isMissingNode() ? rootNode.toString() : detailNode.toString();
@@ -121,7 +122,7 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
             (String) vectorizeServiceParameters.get("task"),
             (Boolean) vectorizeServiceParameters.get("late_chunking"));
 
-    Uni<EmbeddingResponse> response =
+    Uni<jakarta.ws.rs.core.Response> response =
         applyRetry(
             jinaAIEmbeddingProviderClient.embed(
                 "Bearer " + embeddingCredentials.apiKey().get(), request));
@@ -130,13 +131,26 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
         .onItem()
         .transform(
             resp -> {
-              if (resp.data() == null) {
-                return Response.of(batchId, Collections.emptyList());
+              EmbeddingResponse embeddingResponse = resp.readEntity(EmbeddingResponse.class);
+              if (embeddingResponse.data() == null) {
+                return new Response(
+                    batchId,
+                    Collections.emptyList(),
+                    new VectorizeUsage(ProviderConstants.JINA_AI, modelName));
               }
-              Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
+              Arrays.sort(embeddingResponse.data(), (a, b) -> a.index() - b.index());
+              int sentBytes = Integer.parseInt(resp.getHeaderString("sent-bytes"));
+              int receivedBytes = Integer.parseInt(resp.getHeaderString("received-bytes"));
+              VectorizeUsage vectorizeUsage =
+                  new VectorizeUsage(
+                      sentBytes,
+                      receivedBytes,
+                      embeddingResponse.usage().total_tokens(),
+                      ProviderConstants.JINA_AI,
+                      modelName);
               List<float[]> vectors =
                   Arrays.stream(resp.data()).map(EmbeddingResponse.Data::embedding).toList();
-              return Response.of(batchId, vectors);
+              return new Response(batchId, vectors, vectorizeUsage);
             });
   }
 
