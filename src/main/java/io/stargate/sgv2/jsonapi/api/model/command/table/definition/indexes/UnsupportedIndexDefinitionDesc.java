@@ -20,7 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
   TableDescConstants.IndexDefinitionDesc.OPTIONS,
   TableDescConstants.IndexDefinitionDesc.API_SUPPORT
 })
-public class UnsupportedIndexDefinitionDesc implements IndexDefinitionDesc<Object> {
+public class UnsupportedIndexDefinitionDesc implements IndexDefinitionDesc<String, Object> {
 
   private final ApiIndexSupportDesc apiIndexSupport;
 

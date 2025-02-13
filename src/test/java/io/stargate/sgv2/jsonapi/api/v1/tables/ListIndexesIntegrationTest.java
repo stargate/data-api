@@ -132,7 +132,7 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
 
     @Test
     @Order(2)
-    public void listIndexessWithDefinition() {
+    public void listIndexesWithDefinition() {
 
       assertTableCommand(keyspaceName, TABLE)
           .templated()

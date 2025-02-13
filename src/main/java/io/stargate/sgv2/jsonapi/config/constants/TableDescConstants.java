@@ -50,4 +50,10 @@ public interface TableDescConstants {
     String SOURCE_MODEL = "source_model";
     String SIMILARITY_FUNCTION = "similarity_function";
   }
+
+  // These strings will be used in createIndex, filtering for map datatype
+  interface MapTypeComponent {
+    String keys = "$keys";
+    String values = "$values";
+  }
 }
