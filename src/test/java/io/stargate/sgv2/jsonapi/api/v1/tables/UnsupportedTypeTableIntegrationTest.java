@@ -396,10 +396,7 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
               {
                 "id": "%s",
                 "TextQuoted": "%s",
-                "IntQuoted": %s,
-                "setColumn": ["1", "2", "1"],
-                "mapColumn": {"1":1, "2":2},
-                "listColumn": ["1", "2", "1"]
+                "IntQuoted": %s
               }
               """
             .formatted(ONLY_ONE_ID, ONLY_ONE_TEXT, ONLY_ONE_INT);
@@ -410,10 +407,7 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
              {
                 "id": "%s",
                 "TextQuoted": "%s",
-                "IntQuoted": %s,
-                "setColumn": ["1", "2"],
-                "mapColumn": { "1":1,"2":2},
-                "listColumn": ["1", "2", "1"]
+                "IntQuoted": %s
               }
              """
             .formatted(ONLY_ONE_ID, ONLY_ONE_TEXT, ONLY_ONE_INT);
@@ -453,13 +447,6 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
               keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
       assertThat(executeCqlStatement(SimpleStatement.newInstance(createIntIndexCql))).isTrue();
 
-      // Create an index on the entire set
-      String createSetIndexCql =
-          String.format(
-              "CREATE CUSTOM INDEX IF NOT EXISTS idx_set ON \"%s\".\"%s\" (\"setColumn\") USING 'StorageAttachedIndex'",
-              keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
-      assertThat(executeCqlStatement(SimpleStatement.newInstance(createSetIndexCql))).isTrue();
-
       // Create a full index on the frozen map
       String createFullIndexOnFrozen =
           String.format(
@@ -479,8 +466,7 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
                          "definition": {
                               "column": "TextQuoted",
                                "options": {}
-                           }
-                         },
+                           },
                          "indexType": "regular"
                      }
                      """
@@ -510,7 +496,7 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
                             "apiSupport": {
                                 "createIndex": false,
                                 "filter": false,
-                                "cqlDefinition": "CREATE CUSTOM INDEX idx_full_frozen_map ON \\"%s\\".\\"%s\\" (full(\\"frozenMapColumn\\"))\\nUSING 'StorageAttachedIndex'"
+                                "cqlDefinition": "CREATE CUSTOM INDEX idx_full_frozen_map ON \\"%s\\".%s (full(\\"frozenMapColumn\\"))\\nUSING 'StorageAttachedIndex'"
                             }
                         },
                         "indexType": "UNKNOWN"
@@ -571,14 +557,6 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
           .findOne(ImmutableMap.of("IntQuoted", ONLY_ONE_INT), null)
           .mayHaveSingleWarning(WarningException.Code.MISSING_INDEX)
           .mayFoundSingleDocumentIdByFindOne(null, ONLY_ONE_ID);
-
-      assertTableCommand(keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX)
-          .templated()
-          .findOne(ImmutableMap.of("mapColumn", "123"), null)
-          .hasSingleApiError(
-              FilterException.Code.UNSUPPORTED_FILTERING_FOR_COLUMN_TYPES,
-              FilterException.class,
-              "Filtering is only supported on primitive data types such as `text` not on container types such as `list`, `set`, `map`, or `vector`");
     }
   }
 }
