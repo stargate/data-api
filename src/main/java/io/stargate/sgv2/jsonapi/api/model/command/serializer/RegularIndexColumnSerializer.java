@@ -7,18 +7,23 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.Regul
 import java.io.IOException;
 
 /**
- * Custom serializer to encode the RegularIndexColumn to the JSON payload. This is required because
- * there may be additional properties to be serialized. <br>
- * E.G. Serialize result
+ * Custom serializer to encode the RegularIndexColumn to the JSON payload.
  *
- * <pre>
- * list column that is index on values: {"column": "listColumn", "indexOn": "values"}
- * set column that is index on values: {"column": "setColumn", "indexOn": "values"}
- * map column that is index on keys: {"column": "mapColumn", "indexOn": "keys"}
- * map column that is index on values: {"column": "mapColumn", "indexOn": "values"}
- * map column that is index on entries: {"column": "mapColumn"}
- * primitive column with index: {"column": "age"}
- * </pre>
+ * <p>This is required because there may be additional properties to be serialized.
+ *
+ * <p>E.G. Serialize result:
+ *
+ * <ul>
+ *   <li>list column that is index on values: <code>{"column": "listColumn", "indexOn": "values"}
+ *       </code>
+ *   <li>set column that is index on values: <code>{"column": "setColumn", "indexOn": "values"}
+ *       </code>
+ *   <li>map column that is index on keys: <code>{"column": "mapColumn", "indexOn": "keys"}</code>
+ *   <li>map column that is index on values: <code>{"column": "mapColumn", "indexOn": "values"}
+ *       </code>
+ *   <li>map column that is index on entries: <code>{"column": "mapColumn"}</code>
+ *   <li>primitive column with index: <code>{"column": "age"}</code>
+ * </ul>
  */
 public class RegularIndexColumnSerializer
     extends JsonSerializer<RegularIndexDefinitionDesc.RegularIndexColumn> {
