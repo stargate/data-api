@@ -298,7 +298,6 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                             "definition": {
                                 "column": "mapColumn",
                                 "options": {
-                                   \s
                                 }
                             },
                             "indexType": "regular"

@@ -433,11 +433,10 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
               .withColumn(
                   CqlIdentifierUtil.cqlIdentifierFromUserInput("IntQuoted"),
                   DataTypes.INT) // doubleQuoted int column
-              .withColumn("\"setColumn\"", DataTypes.setOf(DataTypes.TEXT, false)) // set column
               .withColumn(
-                  "\"mapColumn\"",
-                  DataTypes.mapOf(DataTypes.TEXT, DataTypes.INT, false)) // map column
-              .withColumn("\"listColumn\"", DataTypes.listOf(DataTypes.TEXT, false)); // list column
+                  "\"frozenMapColumn\"",
+                  DataTypes.mapOf(DataTypes.TEXT, DataTypes.INT, true)); // frozen map column
+      // map column
       assertThat(executeCqlStatement(createTable.build())).isTrue();
 
       // Create a Data API supported SAI index on the doubleQuoted column "TextQuoted"
@@ -461,120 +460,18 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
               keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
       assertThat(executeCqlStatement(SimpleStatement.newInstance(createSetIndexCql))).isTrue();
 
-      // Create an index on the entire list
-      String createListIndexCql =
+      // Create a full index on the frozen map
+      String createFullIndexOnFrozen =
           String.format(
-              "CREATE CUSTOM INDEX IF NOT EXISTS idx_list ON \"%s\".\"%s\" (\"listColumn\") USING 'StorageAttachedIndex'",
+              "CREATE CUSTOM INDEX IF NOT EXISTS idx_full_frozen_map ON \"%s\".\"%s\" (FULL(\"frozenMapColumn\")) USING 'StorageAttachedIndex'",
               keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
-      assertThat(executeCqlStatement(SimpleStatement.newInstance(createListIndexCql))).isTrue();
-
-      // Create an index on the keys of the map
-      String createMapKeyIndexCql =
-          String.format(
-              "CREATE CUSTOM INDEX IF NOT EXISTS idx_map_keys ON \"%s\".\"%s\" (KEYS(\"mapColumn\")) USING 'StorageAttachedIndex'",
-              keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
-      assertThat(executeCqlStatement(SimpleStatement.newInstance(createMapKeyIndexCql))).isTrue();
-
-      // Create an index on the values of the map
-      String createMapValueIndexCql =
-          String.format(
-              "CREATE CUSTOM INDEX IF NOT EXISTS idx_map_values ON \"%s\".\"%s\" (VALUES(\"mapColumn\")) USING 'StorageAttachedIndex'",
-              keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
-      assertThat(executeCqlStatement(SimpleStatement.newInstance(createMapValueIndexCql))).isTrue();
-
-      // Create an index on the entries of the map
-      String createMapEntryIndexCql =
-          String.format(
-              "CREATE CUSTOM INDEX IF NOT EXISTS idx_map_entries ON \"%s\".\"%s\" (ENTRIES(\"mapColumn\")) USING 'StorageAttachedIndex'",
-              keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
-      assertThat(executeCqlStatement(SimpleStatement.newInstance(createMapEntryIndexCql))).isTrue();
+      assertThat(executeCqlStatement(SimpleStatement.newInstance(createFullIndexOnFrozen)))
+          .isTrue();
     }
 
     @Test
     @Order(2)
     public void listIndexesWithDefinition() {
-      // TODO, currently ApiIndexType treats index on map/set/list as unsupported, so the index on
-      // these columns have UNKNOWN column in the definition
-      var expected_idx_set =
-              """
-                {
-                    "name": "idx_set",
-                    "definition": {
-                        "column": "UNKNOWN",
-                        "apiSupport": {
-                            "createIndex": false,
-                            "filter": false,
-                            "cqlDefinition": "CREATE CUSTOM INDEX idx_set ON \\"%s\\".%s (values(\\"setColumn\\"))\\nUSING 'StorageAttachedIndex'"
-                        }
-                    },
-                    "indexType": "UNKNOWN"
-               }
-              """
-              .formatted(keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
-      var expected_idx_map_values =
-              """
-                {
-                    "name": "idx_map_values",
-                    "definition": {
-                        "column": "UNKNOWN",
-                        "apiSupport": {
-                            "createIndex": false,
-                            "filter": false,
-                            "cqlDefinition": "CREATE CUSTOM INDEX idx_map_values ON \\"%s\\".%s (values(\\"mapColumn\\"))\\nUSING 'StorageAttachedIndex'"
-                        }
-                    },
-                    "indexType": "UNKNOWN"
-               }
-              """
-              .formatted(keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
-      var expected_idx_map_keys =
-              """
-                {
-                    "name": "idx_map_keys",
-                    "definition": {
-                        "column": "UNKNOWN",
-                        "apiSupport": {
-                            "createIndex": false,
-                            "filter": false,
-                            "cqlDefinition": "CREATE CUSTOM INDEX idx_map_keys ON \\"%s\\".%s (keys(\\"mapColumn\\"))\\nUSING 'StorageAttachedIndex'"
-                        }
-                    },
-                    "indexType": "UNKNOWN"
-               }
-              """
-              .formatted(keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
-      var expected_idx_map_entries =
-              """
-                {
-                    "name": "idx_map_entries",
-                    "definition": {
-                        "column": "UNKNOWN",
-                        "apiSupport": {
-                            "createIndex": false,
-                            "filter": false,
-                            "cqlDefinition": "CREATE CUSTOM INDEX idx_map_entries ON \\"%s\\".%s (entries(\\"mapColumn\\"))\\nUSING 'StorageAttachedIndex'"
-                        }
-                    },
-                    "indexType": "UNKNOWN"
-               }
-              """
-              .formatted(keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
-      var expected_idx_list =
-              """
-                {
-                    "name": "idx_list",
-                    "definition": {
-                        "column": "UNKNOWN",
-                        "apiSupport": {
-                            "createIndex": false,
-                            "filter": false,
-                            "cqlDefinition": "CREATE CUSTOM INDEX idx_list ON \\"%s\\".%s (values(\\"listColumn\\"))\\nUSING 'StorageAttachedIndex'"
-                        }
-                    },
-                    "indexType": "UNKNOWN"
-               }
-              """
-              .formatted(keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
       var expected_idx_quotedText =
               """
                      {
@@ -588,7 +485,6 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
                      }
                      """
               .formatted(keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
-
       var expected_idx_quotedInt =
               """
                  {
@@ -605,20 +501,31 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
                  }
                  """
               .formatted(keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
-
+      var expected_full_index_frozen_map =
+              """
+                  {
+                        "name": "idx_full_frozen_map",
+                        "definition": {
+                            "column": "UNKNOWN",
+                            "apiSupport": {
+                                "createIndex": false,
+                                "filter": false,
+                                "cqlDefinition": "CREATE CUSTOM INDEX idx_full_frozen_map ON \\"%s\\".\\"%s\\" (full(\\"frozenMapColumn\\"))\\nUSING 'StorageAttachedIndex'"
+                            }
+                        },
+                        "indexType": "UNKNOWN"
+                    }
+              """
+              .formatted(keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX);
       assertTableCommand(keyspaceName, TABLE_WITH_UNSUPPORTED_INDEX)
           .templated()
           .listIndexes(true)
           .wasSuccessful()
-          .body("status.indexes", hasSize(7))
+          .body("status.indexes", hasSize(3))
           .body(
               "status.indexes",
               containsInAnyOrder( // Validate that the indexes are in any order
-                  jsonEquals(expected_idx_set),
-                  jsonEquals(expected_idx_map_keys),
-                  jsonEquals(expected_idx_map_values),
-                  jsonEquals(expected_idx_map_entries),
-                  jsonEquals(expected_idx_list),
+                  jsonEquals(expected_full_index_frozen_map),
                   jsonEquals(expected_idx_quotedText),
                   jsonEquals(expected_idx_quotedInt)));
     }
