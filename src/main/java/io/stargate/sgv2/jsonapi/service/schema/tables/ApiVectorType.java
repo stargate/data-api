@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import java.util.Objects;
 
-public class ApiVectorType extends CollectionApiDataType {
+public class ApiVectorType extends CollectionApiDataType<VectorType> {
 
   public static final TypeFactoryFromColumnDesc<ApiVectorType, VectorColumnDesc>
       FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
@@ -36,6 +36,11 @@ public class ApiVectorType extends CollectionApiDataType {
         API_SUPPORT);
     this.dimension = dimension;
     this.vectorizeDefinition = vectorizeDefinition;
+  }
+
+  @Override
+  public boolean isFrozen() {
+    return false;
   }
 
   @Override

@@ -694,6 +694,17 @@ request-errors:
       Resend the command using only new columns.
 
   - scope: SCHEMA
+    code: CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS
+    title: Can not create index on map column with index function entries and specify analyze options
+    body: |-
+      Index function `entries` can not apply to map column when analyze options are specified.
+      
+      The command contains analyze options: ${analyzedOptions}.
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      
+      Resend the command without options.
+
+  - scope: SCHEMA
     code: CANNOT_DROP_PRIMARY_KEY_COLUMNS
     title: Primary key columns cannot be dropped from the table schema
     body: |-
@@ -805,9 +816,11 @@ request-errors:
     body: |-
       The command attempted to create a map column that used unsupported types for either the key or value.
       
-      Maps can only use `text` or `ascii` types for the key type, and any primitive type for the value.
+      Maps can only use primitive type for the key and value with following exceptions:
+      1. The key can't be duration, counter, timeuuid.
+      2. The value can't be counter, timeuuid.
       
-      The supported primitive data types are: ${supportedTypes}.
+      The primitive data types are: ${supportedTypes}.
       The command used the key type: ${unsupportedKeyType}.
       The command used the value type: ${unsupportedValueType}.
       
@@ -819,9 +832,9 @@ request-errors:
     body: |-
       The command attempted to create a list column that used an unsupported type for the value.
       
-      List can only use primitive types for the value.
+      Lists can only use primitive type for the value, except for counter and timeuuid.
       
-      The supported primitive data types are: ${supportedTypes}.
+      The primitive data types are: ${supportedTypes}.
       The command used the value type: ${unsupportedValueType}.
       
       Resend the command using a supported value type.
@@ -844,9 +857,9 @@ request-errors:
     body: |-
       The command attempted to create a set column that used an unsupported type for the value.
       
-      Sets can only use primitive types for the value.
+      Sets can only use primitive type for the value, except for counter and timeuuid.
       
-      The supported primitive data types are: ${supportedTypes}.
+      The primitive data types are: ${supportedTypes}.
       The command used the value type: ${unsupportedValueType}.
       
       Resend the command using a supported value type.
@@ -893,7 +906,7 @@ request-errors:
     body: |-
       The command attempted to create an index on a column that uses a data type not supported for indexing.
       
-      Regular indexes can only be created on primitive data types such as `text` and `int`, vector columns can be indexed using the createVectorIndex command.
+      Regular indexes can only be created on primitive data types such as `text` and `int`, collection data types such as 'map', 'set' and 'list', vector columns can be indexed using the createVectorIndex command.
       
       ${SNIPPET.CURRENTLY_UNSUPPORTED}
       
@@ -902,6 +915,17 @@ request-errors:
       The command attempted to index the unsupported columns: ${unsupportedColumns}.
       
       Resend the command using columns of the supported data types.
+
+  - scope: SCHEMA
+    code: UNSUPPORTED_INDEXING_FOR_FROZEN_COLUMN
+    title: Index creation on a frozen column is not supported
+    body: |-
+      The command attempted to create an index on a column that is frozen.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The table has the frozen column: ${targetColumn}.
+      
+      Resend the command using the non-frozen column.
 
   - scope: SCHEMA
     code: UNSUPPORTED_INDEX_TYPE
@@ -922,7 +946,11 @@ request-errors:
     body: |-
       The command attempted to create an index that specified text analysis on a column that uses a data type not supported for text analysis.
       
-      Text analysis options `ascii`, `caseSensitive`, and `normalize` can only be used on columns of type `text` or `ascii`. 
+      Text analysis options `ascii`, `caseSensitive`, and `normalize` can be used on:
+      1. primitive columns of type `text` or `ascii`
+      2. list, set columns with value type `text` or `ascii`
+      3. map columns with key type `text` or `ascii` when indexing on keys
+      4. map columns with value type `text` or `ascii` when indexing on values
   
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The command attempted to index the unsupported columns: ${unsupportedColumns}.
@@ -1064,6 +1092,23 @@ request-errors:
     title: Unable to parse configuration, schema invalid.
     body: |-
       Unable to parse configuration, schema invalid.
+
+  - scope: SCHEMA
+    code: INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN
+    title: Unable to create index, format for index creation column is invalid.
+    body: |-
+      Command has an invalid format for index creation column.
+      
+      The column string can have different formats:
+      - Primitive column: {"column": "primitiveColumn"}
+      - List column: {"column": "listColumn"}
+      - Set column: {"column": "setColumn"}
+      - Map column:
+        - Default to index on map entries: {"column": "mapColumn"}
+        - Index on map keys: {"column": {"mapColumn" : "$keys"}}
+        - Index on map values: {"column": {"mapColumn" : "$values"}}
+      
+      Resend the command using a valid format for index creation column.
 
   - scope: SCHEMA
     code: INVALID_VECTORIZE_CONFIGURATION
