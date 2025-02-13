@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.projection;
 
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -13,15 +13,41 @@ import java.util.Objects;
  * segments are separated by dots ('.') and the escape character ('&amp;') allows literal dots or
  * ampersands within segments.
  *
- * <p>Use {@link #from(String)} to create an instance, {@link #getSegments()} to access the
- * segments, and {@link #encode()} to get the dot-separated path string.
+ * <p>Use {@link #from(String)} to create an instance, {@link #getSegment(int)} to access the
+ * segments, and {@link #encodeNoEscaping()} to get the dot-separated path string.
  */
 public final class ProjectionPath {
   private final List<String> segments;
 
+  /** projection path for document id */
+  private static final ProjectionPath DOC_ID = ProjectionPath.from(DocumentConstants.Fields.DOC_ID);
+
+  /** projection path for vector embedding field */
+  private static final ProjectionPath VECTOR_EMBEDDING_FIELD =
+      ProjectionPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+
+  /** projection path for vector embedding text field */
+  private static final ProjectionPath VECTOR_EMBEDDING_TEXT_FIELD =
+      ProjectionPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+
   private ProjectionPath(List<String> segments) {
     // Make a defensive copy to preserve immutability.
-    this.segments = Collections.unmodifiableList(new ArrayList<>(segments));
+    this.segments = segments;
+  }
+
+  /** Accessor method to get the projection path for document id */
+  public static ProjectionPath forDocId() {
+    return DOC_ID;
+  }
+
+  /** Accessor method to get the projection path for vector embedding field */
+  public static ProjectionPath forVectorEmbeddingField() {
+    return VECTOR_EMBEDDING_FIELD;
+  }
+
+  /** Accessor method to get the projection path for vector embedding text field */
+  public static ProjectionPath forVectorEmbeddingTextField() {
+    return VECTOR_EMBEDDING_TEXT_FIELD;
   }
 
   /**
@@ -37,13 +63,14 @@ public final class ProjectionPath {
     return new ProjectionPath(decode(path));
   }
 
-  /**
-   * Returns the list of decoded segments.
-   *
-   * @return an unmodifiable list of segments
-   */
-  public List<String> getSegments() {
-    return segments;
+  /** Returns the number of segments in this projection path. */
+  public int getSegmentsSize() {
+    return segments.size();
+  }
+
+  /** Returns the segment at the specified index. */
+  public String getSegment(int index) {
+    return segments.get(index);
   }
 
   /**
@@ -52,7 +79,7 @@ public final class ProjectionPath {
    *
    * @return the encoded path string (e.g., "pricing.price.usd")
    */
-  public String encode() {
+  public String encodeNoEscaping() {
     return String.join(".", segments);
   }
 
@@ -147,6 +174,6 @@ public final class ProjectionPath {
    */
   @Override
   public String toString() {
-    return encode();
+    return encodeNoEscaping();
   }
 }

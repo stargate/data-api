@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.ProjectionException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,8 +17,12 @@ public class ProjectionPathTest {
   @ParameterizedTest
   @MethodSource("pathSegmentTestCases")
   public void pathSegmentTest(String path, List<String> expectedResult, String description) {
-
-    assertThat(ProjectionPath.from(path).getSegments()).as(description).isEqualTo(expectedResult);
+    List<String> segments = new ArrayList<>();
+    ProjectionPath projectionPath = ProjectionPath.from(path);
+    for (int i = 0; i < projectionPath.getSegmentsSize(); i++) {
+      segments.add(projectionPath.getSegment(i));
+    }
+    assertThat(segments).as(description).isEqualTo(expectedResult);
   }
 
   private static Stream<Arguments> pathSegmentTestCases() {

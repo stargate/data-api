@@ -2054,30 +2054,17 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void byIdWithProjection() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                           {
                             "find": {
                               "filter" : {"_id" : "doc1"},
                               "projection": { "_id":0, "username":1 }
                             }
                           }
-                          """;
-
-      String expected =
-          """
-                  {"username":"user1"}
-                  """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                          """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected))
+          .body("data.documents[0]", jsonEquals("{\"username\":\"user1\"}"))
           .body("data.documents", hasSize(1));
     }
 
@@ -2085,10 +2072,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     // that is, include everything
     @Test
     public void byIdEmptyProjection() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                               {
                                 "find": {
@@ -2097,10 +2081,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                 }
                               }
                               """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body(
@@ -2120,10 +2100,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void byIdIncludeAllProjection() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                                       {
                                         "find": {
@@ -2132,10 +2109,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                         }
                                       }
                                       """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body(
@@ -2152,10 +2125,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void byIdExcludeAllProjection() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                                       {
                                         "find": {
@@ -2164,10 +2134,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                         }
                                       }
                                       """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body("data.documents[0]", jsonEquals("{}"));
@@ -2175,10 +2141,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void withAmpersandEscape() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                   {
                     "find": {
@@ -2189,10 +2152,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                     }
                   }
                   """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body(
@@ -2208,10 +2167,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void failWithAmpersandEscapeAtTheEnd() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                     {
                         "find": {
@@ -2221,10 +2177,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                         }
                     }
                     """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -2237,10 +2189,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void failWithAmpersandEscapeNotFollowedByAmpersandOrDot() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                         {
                             "find": {
@@ -2250,10 +2199,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                             }
                         }
                         """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -2267,10 +2212,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void failWithEmptySegment() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                         {
                             "find": {
@@ -2280,10 +2222,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                             }
                         }
                         """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body(
               "errors[0].message",

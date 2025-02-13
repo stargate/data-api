@@ -77,55 +77,49 @@ class ProjectionLayer {
 
     // May need to add doc-id inclusion/exclusion as well
     if (addDocId) {
-      buildPath(
-          failOnOverlap,
-          DocumentConstants.Fields.DOC_ID,
-          root,
-          ProjectionPath.from(DocumentConstants.Fields.DOC_ID));
+      buildPath(failOnOverlap, DocumentConstants.Fields.DOC_ID, root, ProjectionPath.forDocId());
     }
     if (add$vector) {
       buildPath(
           failOnOverlap,
           DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
           root,
-          ProjectionPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD));
+          ProjectionPath.forVectorEmbeddingField());
     }
     if (add$vectorize) {
       buildPath(
           failOnOverlap,
           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
           root,
-          ProjectionPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD));
+          ProjectionPath.forVectorEmbeddingTextField());
     }
     return root;
   }
 
   static void buildPath(
       boolean failOnOverlap, String fullPath, ProjectionLayer layer, ProjectionPath path) {
-    List<String> segments = path.getSegments();
     // First create branches
-    final int last = segments.size() - 1;
+    final int last = path.getSegmentsSize() - 1;
     for (int i = 0; i < last; ++i) {
       // Try to find or create branch
-      layer = layer.findOrCreateBranch(failOnOverlap, fullPath, segments.get(i));
+      layer = layer.findOrCreateBranch(failOnOverlap, fullPath, path.getSegment(i));
       // May be null if terminal layer found (shorter existing path); if so, we are done
       if (layer == null) {
         return;
       }
     }
     // And then attach terminal (leaf)
-    layer.addTerminal(failOnOverlap, fullPath, segments.get(last));
+    layer.addTerminal(failOnOverlap, fullPath, path.getSegment(last));
   }
 
   static void buildSlicer(boolean failOnOverlap, SliceDef slice, ProjectionLayer layer) {
     final String fullPath = slice.path;
     ProjectionPath path = ProjectionPath.from(fullPath);
-    List<String> segments = path.getSegments();
-    final int last = segments.size() - 1;
+    final int last = path.getSegmentsSize() - 1;
     for (int i = 0; i < last; ++i) {
-      layer = layer.findOrCreateBranch(failOnOverlap, fullPath, segments.get(i));
+      layer = layer.findOrCreateBranch(failOnOverlap, fullPath, path.getSegment(i));
     }
-    layer.addSlicer(failOnOverlap, fullPath, segments.get(last), slice.slicer());
+    layer.addSlicer(failOnOverlap, fullPath, path.getSegment(last), slice.slicer());
   }
 
   ProjectionLayer findOrCreateBranch(boolean failOnOverlap, String fullPath, String segment) {
@@ -190,25 +184,24 @@ class ProjectionLayer {
    */
   public boolean isPathIncluded(String path) {
     ProjectionPath p = ProjectionPath.from(path);
-    final List<String> segments = p.getSegments();
-    return isPathIncluded(segments, 0);
+    return isPathIncluded(p, 0);
   }
 
-  private boolean isPathIncluded(List<String> segments, int index) {
+  private boolean isPathIncluded(ProjectionPath path, int index) {
     // If we are at a terminal layer, we are done
     if (isTerminal) {
       return true;
     }
     // Otherwise if we are at the end of path, we are not included
-    if (index == segments.size()) {
+    if (index == path.getSegmentsSize()) {
       return false;
     }
     // Otherwise we need to traverse further
-    ProjectionLayer next = nextLayers.get(segments.get(index));
+    ProjectionLayer next = nextLayers.get(path.getSegment(index));
     if (next == null) {
       return false;
     }
-    return next.isPathIncluded(segments, index + 1);
+    return next.isPathIncluded(path, index + 1);
   }
 
   /**
