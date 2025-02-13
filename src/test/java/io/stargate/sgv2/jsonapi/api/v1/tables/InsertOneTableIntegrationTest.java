@@ -1321,5 +1321,148 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "Error trying to convert to targetCQLType `Vector(FLOAT",
               "expected vector of length 3, got one with 2 elements");
     }
+
+    @Test
+    void failOnDifferentVectorizeDimensions() {
+      // Two vector columns with same provider and model, but different dimension, not allowed for
+      // now
+      final String tableName = "insertOneMultipleVectorizeDiffDimensionsTable";
+
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .createTable(
+              tableName,
+              Map.of(
+                  "id",
+                  "text",
+                  "vector1",
+                  Map.of(
+                      "type",
+                      "vector",
+                      "dimension",
+                      "5",
+                      "service",
+                      Map.of("provider", "openai", "modelName", "text-embedding-3-small")),
+                  "vector2",
+                  Map.of(
+                      "type",
+                      "vector",
+                      "dimension",
+                      "10",
+                      "service",
+                      Map.of("provider", "openai", "modelName", "text-embedding-3-small"))),
+              "id")
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, tableName)
+          .templated()
+          .insertOne(
+              """
+                                  { "id": "1",
+                                    "vector1": "1234",
+                                    "vector2": "5678"
+                                  }
+                                  """)
+          .hasSingleApiError(
+              DocumentException.Code.UNSUPPORTED_VECTORIZE_CONFIGURATIONS,
+              DocumentException.class,
+              "A request can include only one unique combination of provider, model, and dimension for vectorization.",
+              "The following combinations were included in your request: [[provider=openai, modelName=text-embedding-3-small, dimension=5], [provider=openai, modelName=text-embedding-3-small, dimension=10]]");
+    }
+
+    @Test
+    void failOnDifferentVectorizeModels() {
+      // Two vector columns with same provider, different models, different dimensions - not allowed
+      // for now
+      String tableName = "insertOneMultipleVectorizeDiffModelsTable";
+
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .createTable(
+              tableName,
+              Map.of(
+                  "id",
+                  "text",
+                  "vector1",
+                  Map.of(
+                      "type",
+                      "vector",
+                      "dimension",
+                      "5",
+                      "service",
+                      Map.of("provider", "openai", "modelName", "text-embedding-3-small")),
+                  "vector2",
+                  Map.of(
+                      "type",
+                      "vector",
+                      "dimension",
+                      "256",
+                      "service",
+                      Map.of("provider", "openai", "modelName", "text-embedding-3-large"))),
+              "id")
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, tableName)
+          .templated()
+          .insertOne(
+              """
+                                    { "id": "1",
+                                        "vector1": "1234",
+                                        "vector2": "5678"
+                                    }
+                                    """)
+          .hasSingleApiError(
+              DocumentException.Code.UNSUPPORTED_VECTORIZE_CONFIGURATIONS,
+              DocumentException.class,
+              "A request can include only one unique combination of provider, model, and dimension for vectorization.",
+              "The following combinations were included in your request: [[provider=openai, modelName=text-embedding-3-small, dimension=5], [provider=openai, modelName=text-embedding-3-large, dimension=256]]");
+    }
+
+    @Test
+    void failOnDifferentVectorizeProviders() {
+      // Two columns with different providers, not allowed for now
+      String tableName = "insertOneMultipleVectorizeDiffProvidersTable";
+
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .createTable(
+              tableName,
+              Map.of(
+                  "id",
+                  "text",
+                  "vector1",
+                  Map.of(
+                      "type",
+                      "vector",
+                      "dimension",
+                      "5",
+                      "service",
+                      Map.of("provider", "openai", "modelName", "text-embedding-3-small")),
+                  "vector2",
+                  Map.of(
+                      "type",
+                      "vector",
+                      "dimension",
+                      "768",
+                      "service",
+                      Map.of("provider", "jinaAI", "modelName", "jina-embeddings-v2-base-en"))),
+              "id")
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, tableName)
+          .templated()
+          .insertOne(
+              """
+                                  { "id": "1",
+                                    "vector1": "1234",
+                                    "vector2": "5678"
+                                  }
+                                  """)
+          .hasSingleApiError(
+              DocumentException.Code.UNSUPPORTED_VECTORIZE_CONFIGURATIONS,
+              DocumentException.class,
+              "A request can include only one unique combination of provider, model, and dimension for vectorization.",
+              "The following combinations were included in your request: [[provider=openai, modelName=text-embedding-3-small, dimension=5], [provider=jinaAI, modelName=jina-embeddings-v2-base-en, dimension=768]]");
+    }
   }
 }
