@@ -204,6 +204,18 @@ request-errors:
       Resend the command using only supported column values.
 
   - scope: DOCUMENT
+    code: UNSUPPORTED_VECTORIZE_CONFIGURATIONS
+    title: Unsupported combination of vectorize configurations
+    body: |-
+      A request can include only one unique combination of provider, model, and dimension for vectorization.
+      
+      The following combinations were included in your request: ${vectorizeIdentities}.
+      
+      Resend the command using only one unique combination of provider, model, and dimension for vectorization.
+      
+      Support for these features will be expanded in future releases.
+
+  - scope: DOCUMENT
     code: UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION
     title: Vectorize not supported on column with missing vectorize configuration
     body: |-
@@ -611,6 +623,31 @@ request-errors:
       The command included the following columns cannot be read: ${unsupportedColumns}.
       
       Resend the command using only supported column types.
+
+  - scope: PROJECTION
+    code: UNSUPPORTED_AMPERSAND_ESCAPE_USAGE
+    title: The usage of ampersand escape is not supported
+    body: |-
+      The usage of ampersand escape is not supported.
+      
+      Ampersand & can only be used as an escape character and must be followed by a & or . character.
+      
+      The command used the unsupported ampersand escape path: '${unsupportedAmpersandEscape}'.
+      
+      Resend the command using supported ampersand escape.
+
+  - scope: PROJECTION
+    code: UNSUPPORTED_PROJECTION_PATH
+    title: The path in the projection is not supported
+    body: |-
+      The path in the projection is not supported.
+      
+      The segments from the path in the projection cannot be empty.
+      
+      The command used the unsupported projection path: '${unsupportedProjectionPath}'.
+      
+      Resend the command using supported projection path.
+
 
   - scope: PROJECTION
     code: UNKNOWN_TABLE_COLUMNS
