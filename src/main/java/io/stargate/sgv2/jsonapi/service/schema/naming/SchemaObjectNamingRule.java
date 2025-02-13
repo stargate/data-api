@@ -44,7 +44,7 @@ public abstract class SchemaObjectNamingRule extends NamingRule {
   public boolean apply(String name) {
     return name != null
         && !name.isEmpty()
-        && name.length() <= MAX_NAME_LENGTH
+        && name.length() <= getMaxLength()
         && PATTERN_WORD_CHARS.matcher(name).matches();
   }
 
