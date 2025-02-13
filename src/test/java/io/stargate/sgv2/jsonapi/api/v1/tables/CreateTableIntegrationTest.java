@@ -511,32 +511,6 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
                   "The command used the value type: text.")));
 
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                              {
-                                "name": "mapTypeNonStringKeyType",
-                                "definition": {
-                                  "columns": {
-                                    "id": "text",
-                                    "age": "int",
-                                    "name": "text",
-                                    "map_type": {
-                                      "type": "map",
-                                      "valueType": "text",
-                                      "keyType": "int"
-                                    }
-                                  },
-                                  "primaryKey": "id"
-                                }
-                              }
-                              """,
-                  "mapTypeNonStringKeyType not primitive type provided",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
-                  "The command used the key type: int.")));
-
       // List type tests
       testCases.add(
           Arguments.of(

@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateIndex;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexOnTable;
 import com.datastax.oss.driver.internal.querybuilder.schema.DefaultCreateIndex;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedCreateIndex;
@@ -28,7 +30,7 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
   protected CreateIndexAttempt(
       int position,
       TableSchemaObject schemaObject,
-      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy,
+      SchemaRetryPolicy schemaRetryPolicy,
       ApiIndexDef indexDef,
       CQLOptions.CreateIndexStartCQLOptions cqlOptions) {
     super(position, schemaObject, schemaRetryPolicy);
@@ -50,7 +52,7 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
         createIndexStart.onTable(
             schemaObject.tableMetadata().getKeyspace(), schemaObject.tableMetadata().getName());
 
-    var createIndex = createIndexOnTable.andColumn(indexDef.targetColumn());
+    var createIndex = createIndexWithIndexFunction(indexDef, createIndexOnTable);
 
     // options are things like vector function, or text case sensitivity
     var indexOptions = indexDef.indexOptions();
@@ -61,5 +63,27 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
     // Hack code to fix the issue with respect to quoted columns, see class
     var extendedCreateIndex = new ExtendedCreateIndex((DefaultCreateIndex) createIndex);
     return extendedCreateIndex.build();
+  }
+
+  /**
+   * Index Function keys/values/entries on map/set/list collection columns needs special handling to
+   * create the driver CreateIndex. <br>
+   * If indexFunction is null, then it is a regular index on a scalar column.
+   */
+  private CreateIndex createIndexWithIndexFunction(
+      ApiIndexDef apiIndexDef, CreateIndexOnTable createIndexOnTable) {
+
+    var apiIndexFunction = apiIndexDef.indexFunction();
+    var indexColumn = apiIndexDef.targetColumn();
+
+    if (apiIndexFunction == null) {
+      return createIndexOnTable.andColumn(indexColumn);
+    }
+
+    return switch (apiIndexFunction) {
+      case KEYS -> createIndexOnTable.andColumnKeys(indexColumn);
+      case VALUES -> createIndexOnTable.andColumnValues(indexColumn);
+      case ENTRIES -> createIndexOnTable.andColumnEntries(indexColumn);
+    };
   }
 }
