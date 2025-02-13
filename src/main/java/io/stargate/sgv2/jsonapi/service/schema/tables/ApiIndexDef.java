@@ -29,8 +29,9 @@ public interface ApiIndexDef extends PrettyPrintable {
   ApiIndexType indexType();
 
   /**
-   * The index function from the API perspective. <br>
-   * This is nullable for indexes on primitive and vector types.
+   * The index function from the API perspective.
+   *
+   * <p>This is nullable for indexes on primitive and vector types.
    */
   ApiIndexFunction indexFunction();
 

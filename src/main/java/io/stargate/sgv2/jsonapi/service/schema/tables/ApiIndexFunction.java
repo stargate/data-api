@@ -6,10 +6,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * ApiIndexFunction is a function that is applied in indexes on CQL collection type. <br>
- * Data API createIndex table command has defaults indexFunction for map/set/list, defaults are
- * entries(map), values(set), values(list). Data API does not support frozen map/set/list, so FULL
- * index creation on frozen column will also not be supported.
+ * ApiIndexFunction is a function that is applied in indexes on CQL collection type.
+ *
+ * <p>Data API createIndex table command has defaults indexFunction for <code>map</code>/<code>set
+ * </code>/<code>list</code>, defaults are <code>entries(map)</code>, <code>values(set)</code>,
+ * <code>values(list)</code>. Data API does not support frozen <code>map</code>/<code>set</code>/
+ * <code>list</code>, so FULL index creation on frozen column will also not be supported.
  */
 public enum ApiIndexFunction {
   KEYS("keys"),

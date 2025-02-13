@@ -13,20 +13,24 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Deserializes the RegularIndexColumn from json node of column. <br>
- * Primitive column: {"column": "age"}, indexFunction is null <br>
- * List column: {"column": "listColumn"} <br>
- * Set column: {"column": "setColumn"} <br>
- * Map column:
+ * Deserializes the RegularIndexColumn from json node of column.
  *
- * <pre>
- *   - Default to index on map entries: {"column": "mapColumn"}
- *   - Index on map keys: {"column": {"mapColumn" : "$keys"}}
- *   - Index on map values: {"column": {"mapColumn" : "$values"}}
- *   </pre>
+ * <p>Primitive column: <code>{"column": "age"}</code>, indexFunction is null
  *
- * NOTE, this is just index function from user input, validation and default values are in {@link
- * ApiRegularIndex} since we need the ColumnMetaData
+ * <p>List column: <code>{"column": "listColumn"}</code>
+ *
+ * <p>Set column: <code>{"column": "setColumn"}</code>
+ *
+ * <p>Map column:
+ *
+ * <ul>
+ *   <li>Default to index on map entries: <code>{"column": "mapColumn"}</code>
+ *   <li>Index on map keys: <code>{"column": {"mapColumn": "$keys"}}</code>
+ *   <li>Index on map values: <code>{"column": {"mapColumn": "$values"}}</code>
+ * </ul>
+ *
+ * <p>NOTE, this is just index function from user input, validation and default values are in {@link
+ * ApiRegularIndex} since we need the ColumnMetaData.
  */
 public class RegularIndexColumnDeserializer
     extends StdDeserializer<RegularIndexDefinitionDesc.RegularIndexColumn> {

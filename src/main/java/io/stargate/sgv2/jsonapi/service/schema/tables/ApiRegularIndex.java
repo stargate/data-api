@@ -176,15 +176,15 @@ public class ApiRegularIndex extends ApiSupportedIndex {
      * following:
      *
      * <ul>
-     *   <li>Index on map keys: {"column": {"mapColumn" : "$keys"}}
-     *   <li>Index on map values: {"column": {"mapColumn" : "$values"}}
-     *   <li>Index on map entries(default): {"column": "mapColumn"}
+     *   <li>Index on map keys: <code>{"column": {"mapColumn" : "$keys"}}</code>
+     *   <li>Index on map values: <code>{"column": {"mapColumn" : "$values"}}</code>
+     *   <li>Index on map entries(default): <code>{"column": "mapColumn"}</code>
      * </ul>
      *
-     * Rules for collection indexes:
+     * <p>Rules for collection indexes:
      *
      * <ul>
-     *   <li>NOT support create index for frozen map/set/list columns
+     *   <li>NO support create index for frozen map/set/list columns
      *   <li>Only text and ascii datatypes can be analyzed, including text and ascii on
      *       map/set/list.
      *   <li>text analyse can only be keys and values for a map , not entries.
