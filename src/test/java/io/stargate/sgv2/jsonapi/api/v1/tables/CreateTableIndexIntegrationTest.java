@@ -406,6 +406,89 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   @Order(3)
   class CreateIndexFailure {
     @Test
+    public void createIndexWithEmptyName() {
+
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                      {
+                        "name": "",
+                        "definition": {
+                          "column": "vehicle_id_7"
+                        }
+                      }
+                      """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: ''.");
+    }
+
+    @Test
+    public void createIndexWithBlankName() {
+
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                      {
+                        "name": " ",
+                        "definition": {
+                          "column": "vehicle_id_7"
+                        },
+                        "indexType": "vector"
+                      }
+                      """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: ' '.");
+    }
+
+    @Test
+    public void createIndexWithNameTooLong() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                        {
+                            "name": "this_is_a_string_that_is_designed_to_be_more_than_one_hundred_characters_long_so_we_can_demonstrate_a_valid_example_with_extra_text_here",
+                            "definition": {
+                            "column": "vehicle_id_7"
+                            }
+                        }
+                        """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: 'this_is_a_string_that_is_designed_to_be_more_than_one_hundred_characters_long_so_we_can_demonstrate_a_valid_example_with_extra_text_here'.");
+    }
+
+    @Test
+    public void createIndexWithSpecialCharacterInName() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                        {
+                            "name": "vehicle id_7@idx",
+                            "definition": {
+                            "column": "vehicle_id_7"
+                            }
+                        }
+                        """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: 'vehicle id_7@idx'.");
+    }
+
+    @Test
     public void tryCreateIndexMissingColumn() {
 
       assertTableCommand(keyspaceName, testTableName)
@@ -515,6 +598,88 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   @Nested
   @Order(4)
   class CreateVectorIndexFailure {
+    @Test
+    public void createIndexWithEmptyName() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                              {
+                                "name": "",
+                                "definition": {
+                                  "column": "vehicle_id_7"
+                                }
+                              }
+                              """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: ''.");
+    }
+
+    @Test
+    public void createIndexWithBlankName() {
+
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateVectorIndex(
+              """
+                              {
+                                "name": " ",
+                                "definition": {
+                                  "column": "vehicle_id_7"
+                                },
+                                "indexType": "vector"
+                              }
+                              """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: ' '.");
+    }
+
+    @Test
+    public void createIndexWithNameTooLong() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                              {
+                                  "name": "this_is_a_string_that_is_designed_to_be_more_than_one_hundred_characters_long_so_we_can_demonstrate_a_valid_example_with_extra_text_here",
+                                  "definition": {
+                                  "column": "vehicle_id_7"
+                                  }
+                              }
+                              """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: 'this_is_a_string_that_is_designed_to_be_more_than_one_hundred_characters_long_so_we_can_demonstrate_a_valid_example_with_extra_text_here'.");
+    }
+
+    @Test
+    public void createIndexWithSpecialCharacterInName() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                              {
+                                  "name": "vehicle id_7@idx",
+                                  "definition": {
+                                  "column": "vehicle_id_7"
+                                  }
+                              }
+                              """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: 'vehicle id_7@idx'.");
+    }
+
     @Test
     public void tryCreateIndexMissingColumn() {
       assertTableCommand(keyspaceName, testTableName)

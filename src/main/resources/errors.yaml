@@ -827,6 +827,18 @@ request-errors:
       Resend the command using a supported value type.
 
   - scope: SCHEMA
+    code: UNSUPPORTED_SCHEMA_NAME
+    title: The used schema name is not supported
+    body: |-
+      The command attempted to create a ${schemaType} with a name that is not supported.
+      
+      The supported ${schemaType} names must not be empty, more than ${maxNameLength} characters long, or contain non-alphanumeric-underscore characters.
+      The command used the unsupported ${schemaType} name: '${unsupportedSchemaName}'.
+      
+      Resend the command using a supported ${schemaType} name.
+
+
+  - scope: SCHEMA
     code: UNSUPPORTED_SET_DEFINITION
     title: Set definition contains unsupported data types
     body: |-
