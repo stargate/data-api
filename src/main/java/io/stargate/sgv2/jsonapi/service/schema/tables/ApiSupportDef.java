@@ -25,6 +25,15 @@ public interface ApiSupportDef {
   boolean createTable();
 
   /**
+   * The type can be used as component for collection
+   *
+   * <p>E.G. list values, set values, map keys, map values.
+   *
+   * @return <code>true</code> if the type can be used in a createTable statement.
+   */
+  Collection collection();
+
+  /**
    * The type can be used in an insert command
    *
    * @return <code>true</code> if the type can be used in an insert command
@@ -50,6 +59,7 @@ public interface ApiSupportDef {
   }
 
   default boolean isUnsupportedDDL() {
+    // TODO, should we call collectionSupport as part of DDL
     return !createTable();
   }
 
@@ -58,14 +68,30 @@ public interface ApiSupportDef {
   }
 
   /**
+   * Record to represent if a dataType is supported as component for map/set/list
+   *
+   * <p>
+   *
+   * @param asListValue If the type can be created as value on a List.
+   * @param asSetValue If the type can be created as value on a Set.
+   * @param asMapKey If the type can be created as map key.
+   * @param asMapValue If the type can be created as map value.
+   */
+  record Collection(boolean asListValue, boolean asSetValue, boolean asMapKey, boolean asMapValue) {
+    public static final Collection FULL = new Collection(true, true, true, true);
+    public static final Collection NONE = new Collection(false, false, false, false);
+  }
+
+  /**
    * Helper record to be used when the support can be determined at compile time, or easily cached.
    */
-  record Support(boolean createTable, boolean insert, boolean read, boolean filter)
+  record Support(
+      boolean createTable, Collection collection, boolean insert, boolean read, boolean filter)
       implements ApiSupportDef {
 
-    public static final Support FULL = new Support(true, true, true, true);
+    public static final Support FULL = new Support(true, Collection.FULL, true, true, true);
 
-    public static final Support NONE = new Support(false, false, false, false);
+    public static final Support NONE = new Support(false, Collection.NONE, false, false, false);
   }
 
   /** Predicate to match for full support. */
@@ -86,17 +112,22 @@ public interface ApiSupportDef {
    * @param read If non-null, will match objects where the read value is the same.
    * @param filter If non-null, will match objects where the filter value is the same.
    */
-  record Matcher(Boolean createTable, Boolean insert, Boolean read, Boolean filter)
+  record Matcher(
+      Boolean createTable,
+      Collection collectionSupport,
+      Boolean insert,
+      Boolean read,
+      Boolean filter)
       implements Predicate<ApiSupportDef> {
 
-    public static final Matcher NO_MATCHES = new Matcher(null, null, null, null);
+    public static final Matcher NO_MATCHES = new Matcher(null, null, null, null, null);
 
     /**
      * Returns a new matcher with the same values as this object, and the createTable value set to
      * the given value.
      */
     public Matcher withCreateTable(boolean createTable) {
-      return new Matcher(createTable, insert, read, filter);
+      return new Matcher(createTable, collectionSupport, insert, read, filter);
     }
 
     /**
@@ -104,7 +135,7 @@ public interface ApiSupportDef {
      * given value.
      */
     public Matcher withInsert(boolean insert) {
-      return new Matcher(createTable, insert, read, filter);
+      return new Matcher(createTable, collectionSupport, insert, read, filter);
     }
 
     /**
@@ -112,7 +143,7 @@ public interface ApiSupportDef {
      * given value.
      */
     public Matcher withRead(boolean read) {
-      return new Matcher(createTable, insert, read, filter);
+      return new Matcher(createTable, collectionSupport, insert, read, filter);
     }
 
     /**
@@ -120,13 +151,18 @@ public interface ApiSupportDef {
      * given value.
      */
     public Matcher withFilter(boolean filter) {
-      return new Matcher(createTable, insert, read, filter);
+      return new Matcher(createTable, collectionSupport, insert, read, filter);
     }
 
     @Override
     public boolean test(ApiSupportDef apiSupportDef) {
       Objects.requireNonNull(apiSupportDef, "apiSupportDef must not be null");
       return (createTable == null || createTable == apiSupportDef.createTable())
+          && (collectionSupport == null
+              || (collectionSupport.asListValue == apiSupportDef.collection().asListValue
+                  && collectionSupport.asSetValue == apiSupportDef.collection().asSetValue
+                  && collectionSupport.asMapKey == apiSupportDef.collection().asMapKey
+                  && collectionSupport.asMapValue == apiSupportDef.collection().asMapValue))
           && (insert == null || insert == apiSupportDef.insert())
           && (read == null || read == apiSupportDef.read())
           && (filter == null || filter == apiSupportDef.filter());
