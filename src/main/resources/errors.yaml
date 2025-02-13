@@ -204,6 +204,18 @@ request-errors:
       Resend the command using only supported column values.
 
   - scope: DOCUMENT
+    code: UNSUPPORTED_VECTORIZE_CONFIGURATIONS
+    title: Unsupported combination of vectorize configurations
+    body: |-
+      A request can include only one unique combination of provider, model, and dimension for vectorization.
+      
+      The following combinations were included in your request: ${vectorizeIdentities}.
+      
+      Resend the command using only one unique combination of provider, model, and dimension for vectorization.
+      
+      Support for these features will be expanded in future releases.
+
+  - scope: DOCUMENT
     code: UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION
     title: Vectorize not supported on column with missing vectorize configuration
     body: |-
