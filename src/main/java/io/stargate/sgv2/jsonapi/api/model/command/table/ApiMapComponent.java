@@ -24,15 +24,8 @@ public enum ApiMapComponent {
     }
   }
 
-  public static Optional<ApiMapComponent> fromUserInput(String userInput) {
-    if (userInput == null) {
-      return Optional.empty();
-    }
-    var lowerCaseInput = userInput.toLowerCase();
-    if (!COMPONENT_MAP.containsKey(lowerCaseInput)) {
-      return Optional.empty();
-    }
-    return Optional.of(COMPONENT_MAP.get(lowerCaseInput));
+  public static Optional<ApiMapComponent> fromApiName(String userInput) {
+    return Optional.ofNullable(userInput).map(String::toLowerCase).map(COMPONENT_MAP::get);
   }
 
   ApiMapComponent(String value) {

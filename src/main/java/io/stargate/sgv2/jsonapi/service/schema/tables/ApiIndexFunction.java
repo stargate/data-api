@@ -16,7 +16,7 @@ public enum ApiIndexFunction {
   VALUES("values"),
   ENTRIES("entries");
 
-  public final String cqlFunction;
+  private final String cqlFunction;
 
   private static final Map<String, ApiIndexFunction> FUNCTION_MAP;
 

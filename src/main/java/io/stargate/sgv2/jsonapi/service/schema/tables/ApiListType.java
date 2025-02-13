@@ -43,13 +43,17 @@ public class ApiListType extends CollectionApiDataType<ListType> {
    */
   static ApiListType from(ApiDataType valueType, boolean isFrozen) {
     Objects.requireNonNull(valueType, "valueType must not be null");
-    return new ApiListType(
-        (PrimitiveApiDataTypeDef) valueType, defaultApiSupport(isFrozen), isFrozen);
+    if (isValueTypeSupported(valueType)) {
+      return new ApiListType(
+          (PrimitiveApiDataTypeDef) valueType, defaultApiSupport(isFrozen), isFrozen);
+    }
+    throw new IllegalArgumentException(
+        "valueType is not supported, valueType%s".formatted(valueType));
   }
 
   public static boolean isValueTypeSupported(ApiDataType valueType) {
     Objects.requireNonNull(valueType, "valueType must not be null");
-    return valueType.apiSupport().collectionSupport().asListValue();
+    return valueType.apiSupport().collection().asListValue();
   }
 
   private static class ColumnDescFactory

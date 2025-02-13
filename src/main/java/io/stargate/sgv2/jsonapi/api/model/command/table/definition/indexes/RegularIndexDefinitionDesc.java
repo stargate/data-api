@@ -51,7 +51,8 @@ public record RegularIndexDefinitionDesc(
   public record RegularIndexColumn(
       @NotNull @Schema(description = "Required name of the column to index.", required = true)
           String columnName,
-      @Nullable @Schema(description = "Optional component of a map column to index, keys or values")
+      @Nullable
+          @Schema(description = "Optional component of a map column to index, $keys or $values")
           // Note, user can only specify $keys and $values, default will be resolved in entries
           // later.
           ApiMapComponent mapComponent) {}
@@ -99,5 +100,11 @@ public record RegularIndexDefinitionDesc(
               implementation = Boolean.class)
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @JsonProperty(TableDescConstants.RegularIndexDefinitionDescOptions.NORMALIZE)
-          Boolean normalize) {}
+          Boolean normalize) {
+
+    @Override
+    public String toString() {
+      return "ascii=" + ascii + ", caseSensitive=" + caseSensitive + ", normalize=" + normalize;
+    }
+  }
 }

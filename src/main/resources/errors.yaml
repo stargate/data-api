@@ -699,6 +699,7 @@ request-errors:
     body: |-
       Index function `entries` can not apply to map column when analyze options are specified.
       
+      The command contains analyze options: ${analyzedOptions}.
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       
       Resend the command without options.
@@ -922,7 +923,7 @@ request-errors:
       The command attempted to create an index on a column that is frozen.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      '${targetColumn}` is frozen on the table.
+      The table has the frozen column: ${targetColumn}.
       
       Resend the command using the non-frozen column.
 

@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiRegularIndex;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Deserializes the RegularIndexColumn from json node of column. <br>
@@ -48,13 +47,10 @@ public class RegularIndexColumnDeserializer
       if (entry.getValue().isTextual()) {
         // E.G. {"column": {"mapColumn" : "$keys"}}
         // E.G. {"column": {"mapColumn" : "$values"}}
-        Optional<ApiMapComponent> apiMapComponent =
-            ApiMapComponent.fromUserInput(entry.getValue().textValue());
-        if (apiMapComponent.isEmpty()) {
-          throw SchemaException.Code.INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN.get();
-        }
-        return new RegularIndexDefinitionDesc.RegularIndexColumn(
-            entry.getKey(), apiMapComponent.get());
+        var apiMapComponent =
+            ApiMapComponent.fromApiName(entry.getValue().textValue())
+                .orElseThrow(SchemaException.Code.INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN::get);
+        return new RegularIndexDefinitionDesc.RegularIndexColumn(entry.getKey(), apiMapComponent);
       }
     }
     // E.G. {"column": {"mapColumn" : 123}}

@@ -6,7 +6,6 @@ import static io.stargate.sgv2.jsonapi.util.CqlOptionUtils.*;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.table.ApiMapComponent;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
@@ -88,8 +87,6 @@ public class ApiRegularIndex extends ApiSupportedIndex {
   private static class UserDescFactory
       extends IndexFactoryFromIndexDesc<ApiRegularIndex, RegularIndexDefinitionDesc> {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
-
     /**
      * /** ApiRegularIndex could be used for indexes on primitive or collection(map/set/list)
      * datatypes.
@@ -139,6 +136,9 @@ public class ApiRegularIndex extends ApiSupportedIndex {
       // we could check if there is an existing index but that is a race condition, we will need to
       // catch it if it fails.
 
+      // This won't happen for now, since above checking cover primitive and collection types.
+      // However, any primitive type that is not allow to create index should fall into this error.
+      // Ticket. https://github.com/stargate/data-api/issues/1872
       throw SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES.get(
           errVars(
               tableSchemaObject,
@@ -157,12 +157,11 @@ public class ApiRegularIndex extends ApiSupportedIndex {
         CqlIdentifier indexIdentifier,
         CqlIdentifier targetIdentifier,
         RegularIndexDefinitionDesc indexDesc) {
-      Map<String, String> indexOptions = new HashMap<>();
       var optionsDesc = indexDesc.options();
 
       resolveAnalyzerProperty(tableSchemaObject, apiColumnDef, optionsDesc, null);
       // After the validation, populate the indexOptions map
-      populateIndexOptions(optionsDesc, indexOptions);
+      var indexOptions = populateIndexOptions(optionsDesc);
 
       // indexFunction is null for primitive dataTypes
       return new ApiRegularIndex(indexIdentifier, targetIdentifier, indexOptions, null);
@@ -197,7 +196,6 @@ public class ApiRegularIndex extends ApiSupportedIndex {
         CqlIdentifier targetIdentifier,
         ApiMapComponent apiMapComponent,
         RegularIndexDefinitionDesc indexDesc) {
-      Map<String, String> indexOptions = new HashMap<>();
       var optionsDesc = indexDesc.options();
 
       // do NOT support create index for frozen map/set/list columns
@@ -215,17 +213,15 @@ public class ApiRegularIndex extends ApiSupportedIndex {
       }
 
       // validate user specified index function
-      ApiIndexFunction indexFunction = null;
-      if (apiColumnDef.type() instanceof ApiMapType) {
-        indexFunction = ApiIndexFunction.fromApiMapComponent(apiMapComponent);
-      } else {
-        // Default index function for set and list is values
-        indexFunction = ApiIndexFunction.VALUES;
-      }
+      // Default index function for set and list is values
+      var indexFunction =
+          apiColumnDef.type().typeName() == ApiTypeName.MAP
+              ? ApiIndexFunction.fromApiMapComponent(apiMapComponent)
+              : ApiIndexFunction.VALUES;
 
       resolveAnalyzerProperty(tableSchemaObject, apiColumnDef, optionsDesc, indexFunction);
       // After the validation, populate the indexOptions map
-      populateIndexOptions(optionsDesc, indexOptions);
+      var indexOptions = populateIndexOptions(optionsDesc);
 
       return new ApiRegularIndex(indexIdentifier, targetIdentifier, indexOptions, indexFunction);
     }
@@ -262,28 +258,26 @@ public class ApiRegularIndex extends ApiSupportedIndex {
 
       ApiTypeName targetTypeName =
           switch (apiColumnDef.type()) {
-            case ApiMapType apiMapType -> {
-              if (indexFunction == ApiIndexFunction.KEYS) {
-                yield apiMapType.getKeyType().typeName();
-              } else if (indexFunction == ApiIndexFunction.VALUES) {
-                yield apiMapType.getValueType().typeName();
-              } else if (indexFunction == ApiIndexFunction.ENTRIES) {
-                // Map index on entries is not supported for analyzer options.
-                throw SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS.get(
-                    errVars(
-                        tableSchemaObject,
-                        map -> {
-                          map.put(
-                              "allColumns",
-                              errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
-                          map.put("targetColumn", errFmt(apiColumnDef.name()));
-                        }));
-              } else {
-                // indexFunction == null for ApiMapType, this won't happen
-                throw new IllegalStateException(
-                    "Unexpected indexFunction for ApiMapType: " + indexFunction);
-              }
-            }
+            case ApiMapType apiMapType ->
+                switch (indexFunction) {
+                  case KEYS -> apiMapType.getKeyType().typeName();
+                  case VALUES -> apiMapType.getValueType().typeName();
+                  case ENTRIES ->
+                      throw SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS.get(
+                          errVars(
+                              tableSchemaObject,
+                              map -> {
+                                map.put(
+                                    "allColumns",
+                                    errFmtApiColumnDef(
+                                        tableSchemaObject.apiTableDef().allColumns()));
+                                map.put("targetColumn", errFmt(apiColumnDef.name()));
+                                map.put("analyzedOptions", optionsDesc.toString());
+                              }));
+                  case null ->
+                      throw new IllegalStateException(
+                          "Unexpected indexFunction for ApiMapType: " + indexFunction);
+                };
             case ApiSetType apiSetType -> apiSetType.valueType.typeName();
             case ApiListType apiListType -> apiListType.valueType.typeName();
               // Primitive type
@@ -316,9 +310,9 @@ public class ApiRegularIndex extends ApiSupportedIndex {
      *
      * <p>Note, this method should be called after the options are being validated.
      */
-    private void populateIndexOptions(
-        RegularIndexDefinitionDesc.RegularIndexDescOptions optionsDesc,
-        Map<String, String> indexOptions) {
+    private Map<String, String> populateIndexOptions(
+        RegularIndexDefinitionDesc.RegularIndexDescOptions optionsDesc) {
+      Map<String, String> indexOptions = new HashMap<>();
       var ascii =
           ApiPropertyUtils.getOrDefault(
               optionsDesc,
@@ -338,6 +332,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
               RegularIndexDefinitionDesc.RegularIndexDescOptions::normalize,
               TableDescDefaults.RegularIndexDescDefaults.NORMALIZE);
       put(indexOptions, CQLOptions.NORMALIZE, normalize);
+      return indexOptions;
     }
   }
 

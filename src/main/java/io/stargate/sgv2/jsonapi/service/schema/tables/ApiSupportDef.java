@@ -31,7 +31,7 @@ public interface ApiSupportDef {
    *
    * @return <code>true</code> if the type can be used in a createTable statement.
    */
-  CollectionSupport collectionSupport();
+  Collection collection();
 
   /**
    * The type can be used in an insert command
@@ -77,27 +77,21 @@ public interface ApiSupportDef {
    * @param asMapKey If the type can be created as map key.
    * @param asMapValue If the type can be created as map value.
    */
-  record CollectionSupport(
-      boolean asListValue, boolean asSetValue, boolean asMapKey, boolean asMapValue) {
-    public static final CollectionSupport FULL = new CollectionSupport(true, true, true, true);
-    public static final CollectionSupport NONE = new CollectionSupport(false, false, false, false);
+  record Collection(boolean asListValue, boolean asSetValue, boolean asMapKey, boolean asMapValue) {
+    public static final Collection FULL = new Collection(true, true, true, true);
+    public static final Collection NONE = new Collection(false, false, false, false);
   }
 
   /**
    * Helper record to be used when the support can be determined at compile time, or easily cached.
    */
   record Support(
-      boolean createTable,
-      CollectionSupport collectionSupport,
-      boolean insert,
-      boolean read,
-      boolean filter)
+      boolean createTable, Collection collection, boolean insert, boolean read, boolean filter)
       implements ApiSupportDef {
 
-    public static final Support FULL = new Support(true, CollectionSupport.FULL, true, true, true);
+    public static final Support FULL = new Support(true, Collection.FULL, true, true, true);
 
-    public static final Support NONE =
-        new Support(false, CollectionSupport.NONE, false, false, false);
+    public static final Support NONE = new Support(false, Collection.NONE, false, false, false);
   }
 
   /** Predicate to match for full support. */
@@ -120,7 +114,7 @@ public interface ApiSupportDef {
    */
   record Matcher(
       Boolean createTable,
-      CollectionSupport collectionSupport,
+      Collection collectionSupport,
       Boolean insert,
       Boolean read,
       Boolean filter)
@@ -165,10 +159,10 @@ public interface ApiSupportDef {
       Objects.requireNonNull(apiSupportDef, "apiSupportDef must not be null");
       return (createTable == null || createTable == apiSupportDef.createTable())
           && (collectionSupport == null
-              || (collectionSupport.asListValue == apiSupportDef.collectionSupport().asListValue
-                  && collectionSupport.asSetValue == apiSupportDef.collectionSupport().asSetValue
-                  && collectionSupport.asMapKey == apiSupportDef.collectionSupport().asMapKey
-                  && collectionSupport.asMapValue == apiSupportDef.collectionSupport().asMapValue))
+              || (collectionSupport.asListValue == apiSupportDef.collection().asListValue
+                  && collectionSupport.asSetValue == apiSupportDef.collection().asSetValue
+                  && collectionSupport.asMapKey == apiSupportDef.collection().asMapKey
+                  && collectionSupport.asMapValue == apiSupportDef.collection().asMapValue))
           && (insert == null || insert == apiSupportDef.insert())
           && (read == null || read == apiSupportDef.read())
           && (filter == null || filter == apiSupportDef.filter());

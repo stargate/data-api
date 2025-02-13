@@ -67,21 +67,26 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
     Objects.requireNonNull(keyType, "keyType must not be null");
     Objects.requireNonNull(valueType, "valueType must not be null");
 
-    return new ApiMapType(
-        (PrimitiveApiDataTypeDef) keyType,
-        (PrimitiveApiDataTypeDef) valueType,
-        defaultApiSupport(isFrozen),
-        isFrozen);
+    if (isKeyTypeSupported(keyType) && isValueTypeSupported(valueType)) {
+      return new ApiMapType(
+          (PrimitiveApiDataTypeDef) keyType,
+          (PrimitiveApiDataTypeDef) valueType,
+          defaultApiSupport(isFrozen),
+          isFrozen);
+    }
+    throw new IllegalArgumentException(
+        "keyType or valueType is not supported, keyType: %s valueType: %s"
+            .formatted(keyType, valueType));
   }
 
   public static boolean isKeyTypeSupported(ApiDataType keyType) {
     Objects.requireNonNull(keyType, "keyType must not be null");
-    return keyType.apiSupport().collectionSupport().asMapKey();
+    return keyType.apiSupport().collection().asMapKey();
   }
 
   public static boolean isValueTypeSupported(ApiDataType valueType) {
     Objects.requireNonNull(valueType, "valueType must not be null");
-    return valueType.apiSupport().collectionSupport().asMapValue();
+    return valueType.apiSupport().collection().asMapValue();
   }
 
   public PrimitiveApiDataTypeDef getKeyType() {
