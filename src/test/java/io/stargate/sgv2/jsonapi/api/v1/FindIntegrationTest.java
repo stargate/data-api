@@ -1277,9 +1277,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body(
-              "errors[0].message",
-              endsWith("sort clause path ('$gt') contains character(s) not allowed"))
+          .body("errors[0].message", endsWith("path ('$gt') cannot start with `$`"))
           .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -1299,9 +1297,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].message", containsString("filter clause path ('$gt')"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].message", containsString("filter clause path ('$gt')"));
     }
 
     @Test
