@@ -1060,21 +1060,13 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     @Test
     void insertValidMapValues() {
       // First with values for all fields (note: harder to use helper methods)
-
-      //      "doubleToFloatMap",
-      //              Map.of("type", "map", "keyType", "double", "valueType", "float"),
-      //              "uuidToDurationMap",
-      //              Map.of("type", "map", "keyType", "uuid", "valueType", "duration"),
-      //              "blobToAsciiMap",
-      //              Map.of("type", "map", "keyType", "blob", "valueType", "ascii")
-
       String docJSON =
           """
               { "id": "mapValidFull",
                 "doubleMap": {"a": 0.0,  "b":-0.5},
                 "intMap": {"i1": 1, "i2": 2, "i3": -42},
                 "stringMap": {"abc": "xyz"},
-                "doubleToFloatMap": [[1.5,1.5], [2.0,2.0]},
+                "doubleToFloatMap": [[1.5,1.5], [2.0,2.0]],
                 "uuidToDurationMap": {"123e4567-e89b-12d3-a456-426614174000": "PT2H45M"},
                 "blob_ascii_map": [
                         [
@@ -1094,7 +1086,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                     "doubleMap": {"a": 0.0,  "b":-0.5},
                     "intMap": {"i1": 1, "i2": 2, "i3": -42},
                     "stringMap": {"abc": "xyz"},
-                    "doubleToFloatMap": [[1.5,1.5], [2.0,2.0]},
+                    "doubleToFloatMap": [[1.5,1.5], [2.0,2.0]],
                     "uuidToDurationMap": [["123e4567-e89b-12d3-a456-426614174000", "PT2H45M"]],
                      "blob_ascii_map": [
                         [
