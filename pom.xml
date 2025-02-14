@@ -5,7 +5,7 @@
   <artifactId>sgv2-jsonapi</artifactId>
   <version>1.0.22-SNAPSHOT</version>
   <properties>
-    <stargate.version>2.1.0-BETA-19</stargate.version>
+    <stargate.version>2.1.0-BETA-21</stargate.version>
     <!-- 16-Aug-2024, tatu: Quarkus depends on 2.17 already, but keep explicit -->
     <!-- 23-Oct-2024, tatu: For latest FP optimizations let's get 2.18 -->
     <jackson.version>2.18.2</jackson.version>
