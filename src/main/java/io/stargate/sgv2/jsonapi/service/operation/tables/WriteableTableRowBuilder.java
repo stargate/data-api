@@ -82,6 +82,7 @@ public class WriteableTableRowBuilder {
     checkAllPrimaryKeys(cqlIdentifierToJsonValue);
     checkUnknownColumns(cqlIdentifierToJsonValue.keySet());
     checkApiSupport(cqlIdentifierToJsonValue.keySet());
+    // TODO should do validation for map/set/list first before decode
     var decoded = encodeJsonToCql(cqlIdentifierToJsonValue);
 
     // now need to split the columns into key and non key columns

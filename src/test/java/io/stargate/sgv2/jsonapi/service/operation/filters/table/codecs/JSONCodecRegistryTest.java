@@ -430,7 +430,29 @@ public class JSONCodecRegistryTest {
                 numberLiteral(new BigDecimal(0.25)),
                 "fp2",
                 numberLiteral(new BigDecimal(-7.5))),
-            Map.of("fp1", 0.25, "fp2", -7.5)));
+            Map.of("fp1", 0.25, "fp2", -7.5)),
+
+        // Non-string key map
+        Arguments.of(
+            DataTypes.mapOf(DataTypes.DOUBLE, DataTypes.DOUBLE),
+            Map.of(
+                numberLiteral(new BigDecimal(0.25)),
+                numberLiteral(new BigDecimal(0.25)),
+                numberLiteral(new BigDecimal(-7.5)),
+                numberLiteral(new BigDecimal(-7.5))),
+            Map.of(0.25, 0.25, -7.5, -7.5)),
+        Arguments.of(
+            DataTypes.mapOf(DataTypes.UUID, DataTypes.INT),
+            Map.of(
+                TEST_DATA.UUID_VALID_STR_LC,
+                numberLiteral(123L),
+                TEST_DATA.UUID_VALID_STR_UC,
+                numberLiteral(-456L)),
+            Map.of(
+                UUID.fromString(TEST_DATA.UUID_VALID_STR_LC),
+                123,
+                UUID.fromString(TEST_DATA.UUID_VALID_STR_UC),
+                -456)));
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesFrozenMaps() {
@@ -454,7 +476,29 @@ public class JSONCodecRegistryTest {
                 numberLiteral(new BigDecimal(0.25)),
                 "fp2",
                 numberLiteral(new BigDecimal(-7.5))),
-            Map.of("fp1", 0.25, "fp2", -7.5)));
+            Map.of("fp1", 0.25, "fp2", -7.5)),
+
+        // Non-string key map
+        Arguments.of(
+            DataTypes.mapOf(DataTypes.DOUBLE, DataTypes.DOUBLE, true),
+            Map.of(
+                numberLiteral(new BigDecimal(0.25)),
+                numberLiteral(new BigDecimal(0.25)),
+                numberLiteral(new BigDecimal(-7.5)),
+                numberLiteral(new BigDecimal(-7.5))),
+            Map.of(0.25, 0.25, -7.5, -7.5)),
+        Arguments.of(
+            DataTypes.mapOf(DataTypes.UUID, DataTypes.INT, true),
+            Map.of(
+                TEST_DATA.UUID_VALID_STR_LC,
+                numberLiteral(123L),
+                TEST_DATA.UUID_VALID_STR_UC,
+                numberLiteral(-456L)),
+            Map.of(
+                UUID.fromString(TEST_DATA.UUID_VALID_STR_LC),
+                123,
+                UUID.fromString(TEST_DATA.UUID_VALID_STR_UC),
+                -456)));
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesVectors() {
@@ -771,7 +815,27 @@ public class JSONCodecRegistryTest {
             Map.of("value", ByteBuffer.wrap(TEST_DATA.BASE64_PADDED_DECODED_BYTES)),
             OBJECT_MAPPER
                 .createObjectNode()
-                .set("value", binaryWrapper(TEST_DATA.BASE64_PADDED_ENCODED_STR).asJsonNode())));
+                .set("value", binaryWrapper(TEST_DATA.BASE64_PADDED_ENCODED_STR).asJsonNode())),
+
+        // Non-string key map
+        Arguments.of(
+            DataTypes.mapOf(DataTypes.DOUBLE, DataTypes.DOUBLE),
+            Map.of(0.25, 0.25, 4.5, -4.5),
+            OBJECT_MAPPER.readTree("[[0.25,0.25],[4.5,-4.5]]")),
+        Arguments.of(
+            DataTypes.mapOf(DataTypes.UUID, DataTypes.DOUBLE),
+            Map.of(UUID.fromString(TEST_DATA.UUID_VALID_STR_LC), 0.25),
+            OBJECT_MAPPER.readTree("[[\"%s\",0.25]]".formatted(TEST_DATA.UUID_VALID_STR_LC))),
+        Arguments.of(
+            DataTypes.mapOf(DataTypes.BLOB, DataTypes.TEXT),
+            Map.of(ByteBuffer.wrap(TEST_DATA.BASE64_PADDED_DECODED_BYTES), "text"),
+            OBJECT_MAPPER
+                .createArrayNode()
+                .add(
+                    OBJECT_MAPPER
+                        .createArrayNode()
+                        .add(binaryWrapper(TEST_DATA.BASE64_PADDED_ENCODED_STR).asJsonNode())
+                        .add("text"))));
   }
 
   private static Stream<Arguments> validCodecToJSONTestCasesVectors() throws IOException {

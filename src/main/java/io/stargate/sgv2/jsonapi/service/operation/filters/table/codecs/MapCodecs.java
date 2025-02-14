@@ -5,6 +5,7 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
@@ -12,44 +13,70 @@ import io.stargate.sgv2.jsonapi.exception.checked.ToJSONCodecException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public class MapCodecs {
   private static final GenericType<Map<String, Object>> GENERIC_MAP =
       GenericType.mapOf(String.class, Object.class);
 
   /**
-   * Factory method to build a codec for a CQL Map type: codec will be given set of possible value
-   * codecs (since we have one per input JSON type) and will dynamically select the right one based
-   * on the actual element values. Keys are always strings.
+   * Factory method to build a codec for a CQL Map type: codec will be given set of possible key and
+   * value codecs (since we have one per input JSON type) and will dynamically select the right one
+   * based on the actual element keys and values.
    */
   public static JSONCodec<?, ?> buildToCqlMapCodec(
-      List<JSONCodec<?, ?>> valueCodecs, DataType keyType, DataType elementType) {
+      List<JSONCodec<?, ?>> keyCodecs,
+      List<JSONCodec<?, ?>> valueCodecs,
+      DataType keyType,
+      DataType elementType) {
     return new JSONCodec<>(
         GENERIC_MAP,
         DataTypes.mapOf(keyType, elementType),
-        (cqlType, value) -> toCqlMap(valueCodecs, elementType, value),
+        (cqlType, value) -> toCqlMap(keyCodecs, valueCodecs, keyType, elementType, value),
         // This code only for to-cql case, not to-json, so we don't need this
         null);
   }
 
-  public static JSONCodec<?, ?> buildToJsonMapCodec(JSONCodec<?, ?> elementCodec) {
+  public static JSONCodec<?, ?> buildToJsonMapCodec(
+      DataType keyType, JSONCodec<?, ?> keyCodec, JSONCodec<?, ?> elementCodec) {
     return new JSONCodec<>(
         GENERIC_MAP,
         elementCodec.targetCQLType(),
         // This code only for to-json case, not to-cql, so we don't need this
         null,
-        (objectMapper, cqlType, value) -> cqlMapToJsonNode(elementCodec, objectMapper, value));
+        (objectMapper, cqlType, value) ->
+            cqlMapToJsonNode(keyType, keyCodec, elementCodec, objectMapper, value));
   }
 
-  private static Map<String, Object> toCqlMap(
-      List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Map<String, ?> rawMapValue)
+  /**
+   * Method that will convert from user-provided raw Map into Cql Map.
+   *
+   * <p>Map key can be string or non-string type. String key of the raw map will be String,
+   * non-string key will be JsonLiteral.
+   *
+   * @param keyCodecs List of codecs that can handle the keys of the map
+   * @param valueCodecs List of codecs that can handle the values of the map
+   * @param keyType Map column CQL type of the key
+   * @param elementType Map column CQL type of the value
+   * @param rawMapValue User-provided raw map value
+   */
+  private static Map<Object, Object> toCqlMap(
+      List<JSONCodec<?, ?>> keyCodecs,
+      List<JSONCodec<?, ?>> valueCodecs,
+      DataType keyType,
+      DataType elementType,
+      Map<?, ?> rawMapValue)
       throws ToCQLCodecException {
-    Map<String, JsonLiteral<?>> mapValue = (Map<String, JsonLiteral<?>>) rawMapValue;
-    Map<String, Object> result = new LinkedHashMap<>(mapValue.size());
+    Map<?, JsonLiteral<?>> mapValue = (Map<?, JsonLiteral<?>>) rawMapValue;
+    Map<Object, Object> result = new LinkedHashMap<>(mapValue.size());
+    JSONCodec<Object, Object> keyCodec = null;
     JSONCodec<Object, Object> elementCodec = null;
-    for (Map.Entry<String, JsonLiteral<?>> entry : mapValue.entrySet()) {
-      String key = entry.getKey();
+    for (Map.Entry<?, JsonLiteral<?>> entry : mapValue.entrySet()) {
+      // Map key can be string or non-string type. String key of the raw map will be String,
+      // non-string key will be JsonLiteral.
+      Object key =
+          (entry.getKey() instanceof JsonLiteral<?> jsonLiteralKey)
+              ? jsonLiteralKey.value()
+              : entry.getKey();
       Object element = entry.getValue().value();
       if (element == null) {
         result.put(key, null);
@@ -59,55 +86,96 @@ public class MapCodecs {
       // since same CQL value type can have multiple codecs based on JSON value type
       // (like multiple Number representations; or simple Text vs EJSON-wrapper)
       if (elementCodec == null || !elementCodec.handlesJavaValue(element)) {
-        elementCodec = findMapValueCodec(valueCodecs, elementType, element);
+        elementCodec = findMapKeyOrValueCodec(valueCodecs, elementType, element, true);
       }
-      result.put(key, elementCodec.toCQL(element));
+      if (keyCodec == null || !keyCodec.handlesJavaValue(key)) {
+        keyCodec = findMapKeyOrValueCodec(keyCodecs, keyType, key, false);
+      }
+      result.put(keyCodec.toCQL(key), elementCodec.toCQL(element));
     }
     return result;
   }
 
-  private static JSONCodec<Object, Object> findMapValueCodec(
-      List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Object element)
+  /**
+   * Find the codec that can handle the given map key or value.
+   *
+   * @param codecs List of codes that may handle the given map key or value
+   * @param type key type or value type
+   * @param target the user provided raw map key/value
+   * @param isValue true indicating that we are looking for a value codec, false indicating that we
+   *     are looking for a key codec
+   */
+  private static JSONCodec<Object, Object> findMapKeyOrValueCodec(
+      List<JSONCodec<?, ?>> codecs, DataType type, Object target, boolean isValue)
       throws ToCQLCodecException {
-    for (JSONCodec<?, ?> codec : valueCodecs) {
-      if (codec.handlesJavaValue(element)) {
+    for (JSONCodec<?, ?> codec : codecs) {
+      if (codec.handlesJavaValue(target)) {
         return (JSONCodec<Object, Object>) codec;
       }
     }
-    List<String> codecDescs =
-        valueCodecs.stream().map(codec -> codec.javaType().toString()).toList();
+    var keyOrValue = isValue ? "value" : "key";
+    List<String> codecDescs = codecs.stream().map(codec -> codec.javaType().toString()).toList();
     String msg =
         String.format(
-            "no codec matching map declared value type `%s`, actual value type `%s` (checked %d codecs: %s)",
-            elementType, element.getClass().getName(), codecDescs.size(), codecDescs);
-    throw new ToCQLCodecException(element, elementType, msg);
+            "no codec matching map declared %s type `%s`, actual type `%s` (checked %d codecs: %s)",
+            keyOrValue, type, target.getClass().getName(), codecDescs.size(), codecDescs);
+    throw new ToCQLCodecException(target, type, msg);
   }
 
-  /** Method that will convert from driver-provided CQL Map type into JSON output. */
+  /**
+   * Method that will convert from driver-provided CQL Map type into JSON output.
+   *
+   * <p>On map read path, it wil in object format when map column is on text/ascii keys, return in
+   * tuple format for other key types. E.G. <ui>
+   * <li>Map<Double,Double> cql->json [[1.0, 1.0], [2.0, 2.0]]
+   * <li>Map<UUID, TEXT> cql-json [["d3b07384-d113-4c5a-9d3d-92b3a4d1f5a3", "apple"],
+   *     [[d3b07384-d113-4c5a-9d3d-92b3a4d1f5a4", "banana"]]
+   * <li>Map<TEXT, TEXT> cql-json {"apple": "apple", "banana": "banana"}
+   * <li>Map<ASCII, ASCII> cql-json {"apple": "apple", "banana": "banana"} </ui>
+   *
+   * @param keyType Cql map key type
+   * @param keyCodec0 Codec that can handle the keys of the map
+   * @param valueCodec0 Codec that can handle the values of the map
+   * @param objectMapper Jackson object mapper
+   * @param mapValue Cql map value
+   * @return JsonNode representation of the Cql map
+   */
   private static JsonNode cqlMapToJsonNode(
-      JSONCodec<?, ?> valueCodec0, ObjectMapper objectMapper, Object mapValue)
+      DataType keyType,
+      JSONCodec<?, ?> keyCodec0,
+      JSONCodec<?, ?> valueCodec0,
+      ObjectMapper objectMapper,
+      Object mapValue)
       throws ToJSONCodecException {
+    JSONCodec<?, Object> keyCodec = (JSONCodec<?, Object>) keyCodec0;
     JSONCodec<?, Object> valueCodec = (JSONCodec<?, Object>) valueCodec0;
-    final ObjectNode result = objectMapper.createObjectNode();
-    for (Map.Entry<Object, Object> entry : ((Map<Object, Object>) mapValue).entrySet()) {
-      Object key = entry.getKey();
-      if (key instanceof String strKey) {
+
+    if (keyType.equals(DataTypes.TEXT) || keyType.equals(DataTypes.ASCII)) {
+      final ObjectNode result = objectMapper.createObjectNode();
+      for (Map.Entry<String, Object> entry : ((Map<String, Object>) mapValue).entrySet()) {
+        String key = entry.getKey();
         Object value = entry.getValue();
         if (value == null) {
-          result.putNull(strKey);
+          result.putNull(key);
         } else {
-          result.put(strKey, valueCodec.toJSON(objectMapper, value));
+          result.putPOJO(key, valueCodec.toJSON(objectMapper, value));
         }
-      } else {
-        throw new ToJSONCodecException(
-            mapValue,
-            valueCodec.targetCQLType(),
-            String.format(
-                "expected String key, got: (%s) %s",
-                Optional.ofNullable(key).map(Object::getClass).map(Class::getName).orElse("null"),
-                String.valueOf(key)));
       }
+      return result;
+    } else {
+      final ArrayNode result = objectMapper.createArrayNode();
+      for (Map.Entry<Object, Object> entry : ((Map<Object, Object>) mapValue).entrySet()) {
+        var tupleEntry =
+            objectMapper
+                .createArrayNode()
+                .add(keyCodec.toJSON(objectMapper, entry.getKey()))
+                .add(
+                    entry.getValue() == null
+                        ? null
+                        : valueCodec.toJSON(objectMapper, entry.getValue()));
+        result.add(tupleEntry);
+      }
+      return result;
     }
-    return result;
   }
 }

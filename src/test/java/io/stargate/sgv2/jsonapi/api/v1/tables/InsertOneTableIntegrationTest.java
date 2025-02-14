@@ -160,7 +160,14 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                 "doubleMap",
                 Map.of("type", "map", "keyType", "ascii", "valueType", "double"),
                 "stringMap",
-                Map.of("type", "map", "keyType", "text", "valueType", "text")),
+                Map.of("type", "map", "keyType", "text", "valueType", "text"),
+                // Non-string key map
+                "doubleToFloatMap",
+                Map.of("type", "map", "keyType", "double", "valueType", "float"),
+                "uuidToDurationMap",
+                Map.of("type", "map", "keyType", "uuid", "valueType", "duration"),
+                "blobToAsciiMap",
+                Map.of("type", "map", "keyType", "blob", "valueType", "ascii")),
             "id")
         .wasSuccessful();
 
@@ -1053,14 +1060,52 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     @Test
     void insertValidMapValues() {
       // First with values for all fields (note: harder to use helper methods)
+
+      //      "doubleToFloatMap",
+      //              Map.of("type", "map", "keyType", "double", "valueType", "float"),
+      //              "uuidToDurationMap",
+      //              Map.of("type", "map", "keyType", "uuid", "valueType", "duration"),
+      //              "blobToAsciiMap",
+      //              Map.of("type", "map", "keyType", "blob", "valueType", "ascii")
+
       String docJSON =
           """
-                          { "id": "mapValidFull",
-                            "doubleMap": {"a": 0.0,  "b":-0.5},
-                            "intMap": {"i1": 1, "i2": 2, "i3": -42},
-                            "stringMap": {"abc": "xyz"}
-                          }
-                          """;
+              { "id": "mapValidFull",
+                "doubleMap": {"a": 0.0,  "b":-0.5},
+                "intMap": {"i1": 1, "i2": 2, "i3": -42},
+                "stringMap": {"abc": "xyz"},
+                "doubleToFloatMap": [[1.5,1.5], [2.0,2.0]},
+                "uuidToDurationMap": {"123e4567-e89b-12d3-a456-426614174000": "PT2H45M"},
+                "blob_ascii_map": [
+                        [
+                            {
+                                "$binary": "SGVsbG8gV29ybGQ="
+                            },
+                            "abc"
+                        ]
+                    ]
+              }
+              """;
+      // Only TEXT/ASCII key map are returned as object format
+      // Other key type maps are returned as tuple format
+      String expectedJson =
+          """
+                  { "id": "mapValidFull",
+                    "doubleMap": {"a": 0.0,  "b":-0.5},
+                    "intMap": {"i1": 1, "i2": 2, "i3": -42},
+                    "stringMap": {"abc": "xyz"},
+                    "doubleToFloatMap": [[1.5,1.5], [2.0,2.0]},
+                    "uuidToDurationMap": [["123e4567-e89b-12d3-a456-426614174000", "PT2H45M"]],
+                     "blob_ascii_map": [
+                        [
+                            {
+                                "$binary": "SGVsbG8gV29ybGQ="
+                            },
+                            "abc"
+                        ]
+                    ]
+                  }
+                  """;
       assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
           .templated()
           .insertOne(docJSON)
@@ -1070,7 +1115,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"mapValidFull\" } }")
           .wasSuccessful()
-          .hasJSONField("data.document", docJSON);
+          .hasJSONField("data.document", expectedJson);
 
       // And then just for int-Map; null for string, missing double
       assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
@@ -1110,10 +1155,34 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasJSONField(
               "data.document",
               """
-                                      {
-                                        "intMap": {"a": 3, "b": -999, "c": 42}
-                                      }
-                                      """);
+                        {
+                          "intMap": {"a": 3, "b": -999, "c": 42}
+                        }
+                        """);
+
+      // Project a non-string key map column
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .postFindOne(
+              """
+                            { "filter": { "id": "mapValidFull" },
+                              "projection": { "blob_ascii_map": 1 }
+                            }
+                        """)
+          .wasSuccessful()
+          .hasJSONField(
+              "data.document",
+              """
+                        {
+                            "blob_ascii_map": [
+                                [
+                                    {
+                                        "$binary": "SGVsbG8gV29ybGQ="
+                                    },
+                                    "abc"
+                                ]
+                            ]
+                        }
+                        """);
     }
 
     @Test
