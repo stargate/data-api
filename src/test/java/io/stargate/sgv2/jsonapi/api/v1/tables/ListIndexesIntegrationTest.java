@@ -160,8 +160,8 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
 
   // ==================================================================================================================
   // This subClass is to test some index corner cases.
-  // 1. Currently, Data API does not support create index on set/list/map column, so we need to
-  // create these indexes in CQL, and then test ListIndexes command
+  // 1. Currently, Data API does not support create index on frozen collection, also does not
+  // support create FULL index on frozen map.
   // 2. Data API resolves index target from IndexMetaData, detail in {@link CQLSAIINDEX}, test
   // columns with doubleQuote
   // ==================================================================================================================
@@ -246,8 +246,8 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
     @Test
     @Order(2)
     public void listIndexesWithDefinition() {
-      // TODO, currently ApiIndexType treats index on map/set/list as unsupported, so the index on
-      // these columns have UNKNOWN column in the definition
+      // full index on frozen map is unsupported, so the index will have UNKNOWN column in the
+      // definition
       var expected_idx_set =
           """
                 {
