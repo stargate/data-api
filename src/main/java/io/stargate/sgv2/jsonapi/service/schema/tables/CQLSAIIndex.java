@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.lang3.StringUtils;
 
 /** Shared methods / constants for CQL SAI indexes. */
 public abstract class CQLSAIIndex {
@@ -155,7 +154,7 @@ public abstract class CQLSAIIndex {
     // abc"def -> abc""def, then we need to un-escape as abc"def -> abc"def
     // to get the actual column name
     if (columnName.startsWith(QUOTE)) {
-      columnName = StringUtils.substring(StringUtils.substring(columnName, 1), 0, -1);
+      columnName = columnName.substring(1, columnName.length() - 1);
       columnName = TWO_QUOTES.matcher(columnName).replaceAll(QUOTE);
     }
     return new IndexTarget(CqlIdentifier.fromInternal(columnName), apiIndexFunction);

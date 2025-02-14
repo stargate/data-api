@@ -414,7 +414,7 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
 
     @Test
     @Order(1)
-    public final void createPerExistedCqlTable() {
+    public final void createPreExistedCqlTable() {
       // Build the CREATE TABLE statement
       CreateTable createTable =
           SchemaBuilder.createTable(

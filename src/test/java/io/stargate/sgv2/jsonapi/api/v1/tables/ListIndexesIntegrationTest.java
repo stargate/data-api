@@ -168,11 +168,11 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
   @Nested
   @Order(2)
   public class CreatedIndexOnPreExistedCqlTable {
-    private static final String PRE_EXISTED_CQL_TABLE = "perExistedCqlTable";
+    private static final String PRE_EXISTED_CQL_TABLE = "preExistedCqlTable";
 
     @Test
     @Order(1)
-    public final void createPerExistedCqlTable() {
+    public final void createPreExistedCqlTable() {
       // Build the CREATE TABLE statement
       CreateTable createTable =
           SchemaBuilder.createTable(
