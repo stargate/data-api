@@ -1285,28 +1285,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
-    void emptyPathExpressionInSort() {
-      String json =
-          """
-              { "find": { "sort" : {"" : 1} } }
-              """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body(
-              "errors[0].message",
-              endsWith("sort clause path must be represented as not-blank string"))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
-    }
-
-    @Test
     void dollarOperatorInFilterPathExpression() {
       String json =
           """

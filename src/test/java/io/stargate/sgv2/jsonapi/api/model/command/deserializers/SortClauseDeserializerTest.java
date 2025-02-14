@@ -45,6 +45,26 @@ class SortClauseDeserializerTest {
     }
 
     @Test
+    public void happyPathWithUnusualChars() throws Exception {
+      String json =
+          """
+              {
+               "app.kubernetes.io/name" : 1,
+               "another.odd$path" : -1
+              }
+              """;
+
+      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions())
+          .hasSize(2)
+          .contains(
+              SortExpression.sort("app.kubernetes.io/name", true),
+              SortExpression.sort("another.odd$path", false));
+    }
+
+    @Test
     public void happyPathVectorSearch() throws Exception {
       String json =
           """
@@ -337,7 +357,8 @@ class SortClauseDeserializerTest {
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable).hasMessageContaining("Invalid sort clause path: path '$gt'");
+      assertThat(throwable)
+          .hasMessageContaining("Invalid sort clause path: path ('$gt') cannot start with `$`");
     }
   }
 }

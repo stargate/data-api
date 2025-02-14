@@ -1,7 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -21,7 +24,7 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
   @Nested
   @Order(1)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class FindOneSortWithDottedPaths {
+  class OkWithDottedPaths {
     private final String DOC1 =
         """
         {
@@ -109,6 +112,35 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                       """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC1));
+    }
+  }
+
+  @Nested
+  @Order(2)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class FailDueToInvalidPaths {
+    @Test
+    void failOnEmptySortPath() {
+      givenHeadersPostJsonThenOk(
+              """
+                  { "find": { "sort" : {"" : 1} } }
+                  """)
+          .body("$", responseIsError())
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
+          .body("errors[0].message", endsWith("path must be represented as a non-empty string"));
+    }
+
+    @Test
+    void failOnLeadingDollarInSortPath() {
+      givenHeadersPostJsonThenOk(
+              """
+                  { "find": { "sort" : {"$gt" : 1} } }
+                  """)
+          .body("$", responseIsError())
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
+          .body("errors[0].message", endsWith("path ('$gt') cannot start with `$`"));
     }
   }
 }
