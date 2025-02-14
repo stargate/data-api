@@ -11,7 +11,6 @@
 - Updates to DriverExceptionHandler & Driver Error Object V2 definitions [\#1745](https://github.com/stargate/data-api/issues/1745)
 - Integration Test ability to create table with supported CQL dataTypes. [\#1731](https://github.com/stargate/data-api/issues/1731)
 - Consider adding an "index type" field next to the index definitions in listIndexes response [\#1696](https://github.com/stargate/data-api/issues/1696)
-- Discussion: unordered  / ordered insertMany for tables [\#1687](https://github.com/stargate/data-api/issues/1687)
 - Change "unparseable JSON" error to HTTP 400 \(follow-up to \#1200 / \#1212\) [\#1216](https://github.com/stargate/data-api/issues/1216)
 
 **Fixed bugs:**
