@@ -158,7 +158,7 @@ public class MapCodecs {
         if (value == null) {
           result.putNull(key);
         } else {
-          result.putPOJO(key, valueCodec.toJSON(objectMapper, value));
+          result.put(key, valueCodec.toJSON(objectMapper, value));
         }
       }
       return result;

@@ -1068,7 +1068,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                 "stringMap": {"abc": "xyz"},
                 "doubleToFloatMap": [[1.5,1.5], [2.0,2.0]],
                 "uuidToDurationMap": {"123e4567-e89b-12d3-a456-426614174000": "PT2H45M"},
-                "blob_ascii_map": [
+                "blobToAsciiMap": [
                         [
                             {
                                 "$binary": "SGVsbG8gV29ybGQ="
@@ -1088,7 +1088,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                     "stringMap": {"abc": "xyz"},
                     "doubleToFloatMap": [[1.5,1.5], [2.0,2.0]],
                     "uuidToDurationMap": [["123e4567-e89b-12d3-a456-426614174000", "PT2H45M"]],
-                     "blob_ascii_map": [
+                     "blobToAsciiMap": [
                         [
                             {
                                 "$binary": "SGVsbG8gV29ybGQ="
@@ -1157,7 +1157,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .postFindOne(
               """
                             { "filter": { "id": "mapValidFull" },
-                              "projection": { "blob_ascii_map": 1 }
+                              "projection": { "blobToAsciiMap": 1 }
                             }
                         """)
           .wasSuccessful()
@@ -1165,7 +1165,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "data.document",
               """
                         {
-                            "blob_ascii_map": [
+                            "blobToAsciiMap": [
                                 [
                                     {
                                         "$binary": "SGVsbG8gV29ybGQ="
@@ -1212,7 +1212,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               DocumentException.class,
               "Only values that are supported by",
               "Error trying to convert to targetCQLType `INT`",
-              "actual value type `java.lang.String`");
+              "actual type `java.lang.String`");
     }
   }
 

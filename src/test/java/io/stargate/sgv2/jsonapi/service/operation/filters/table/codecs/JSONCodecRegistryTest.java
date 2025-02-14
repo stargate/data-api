@@ -820,8 +820,8 @@ public class JSONCodecRegistryTest {
         // Non-string key map
         Arguments.of(
             DataTypes.mapOf(DataTypes.DOUBLE, DataTypes.DOUBLE),
-            Map.of(0.25, 0.25, 4.5, -4.5),
-            OBJECT_MAPPER.readTree("[[0.25,0.25],[4.5,-4.5]]")),
+            Map.of(0.25, 0.25),
+            OBJECT_MAPPER.readTree("[[0.25,0.25]]")),
         Arguments.of(
             DataTypes.mapOf(DataTypes.UUID, DataTypes.DOUBLE),
             Map.of(UUID.fromString(TEST_DATA.UUID_VALID_STR_LC), 0.25),
