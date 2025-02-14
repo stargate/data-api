@@ -95,8 +95,8 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                         }
                       }
                       """)
-              .body("$", responseIsFindSuccess())
-              .body("data.document", jsonEquals(DOC3));
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC3));
 
       givenHeadersPostJsonThenOkNoErrors(
               """
@@ -107,9 +107,8 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                         }
                       }
                       """)
-              .body("$", responseIsFindSuccess())
-              .body("data.document", jsonEquals(DOC1));
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
     }
-
   }
 }

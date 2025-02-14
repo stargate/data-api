@@ -337,6 +337,7 @@ class SortClauseDeserializerTest {
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable).hasMessageContaining("Invalid sort clause path: path '$gt'");
     }
   }
 }

@@ -44,7 +44,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
 
     ObjectNode sortNode = (ObjectNode) node;
 
-    // safe iterate, we know it's array
+    // safe to iterate, we know it's an Object
     Iterator<Map.Entry<String, JsonNode>> fieldIter = sortNode.fields();
     int totalFields = sortNode.size();
     List<SortExpression> sortExpressions = new ArrayList<>(sortNode.size());
@@ -152,14 +152,14 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         // this is also why we do not break the look here
         sortExpressions.add(SortExpression.tableVectorizeSort(path, inner.getValue().textValue()));
       } else {
-        if (path.isBlank()) {
+        if (path.isEmpty()) {
           throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-              "sort clause path must be represented as not-blank string");
+              "path must be represented as a non-empty string");
         }
 
         if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(path).matches()) {
           throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-              "sort clause path ('%s') contains character(s) not allowed", path);
+              "path '%s' contains character(s) not allowed", path);
         }
 
         if (!inner.getValue().isInt()
