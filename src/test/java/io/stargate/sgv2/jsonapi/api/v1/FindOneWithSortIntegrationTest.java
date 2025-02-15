@@ -30,7 +30,7 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
         {
           "_id": "dottedSort1",
           "type": "sorted",
-          "app.kubernetes.io/name": "dottedZ"
+          "app.kubernetes.io/name": "dottedZ",
           "metadata": {
             "shape": "square"
           }
@@ -42,7 +42,7 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
         {
           "_id": "dottedSort2",
           "type": "sorted",
-          "app.kubernetes.io/name": "dottedY"
+          "app.kubernetes.io/name": "dottedY",
           "metadata": {
             "shape": "triangle"
           }
@@ -53,7 +53,7 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
         {
           "_id": "dottedSort3",
           "type": "sorted",
-          "app.kubernetes.io/name": "dottedX"
+          "app.kubernetes.io/name": "dottedX",
           "metadata": {
             "shape": "ellipse"
           }
@@ -123,6 +123,7 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
           .body("data.document", jsonEquals(DOC1));
     }
 
+    // Ordering of shape different
     @Test
     public void sortByNestedField() {
       givenHeadersPostJsonThenOkNoErrors(
@@ -147,7 +148,7 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          .body("data.document", jsonEquals(DOC1));
+          .body("data.document", jsonEquals(DOC2));
     }
   }
 
