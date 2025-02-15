@@ -123,9 +123,9 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
           .body("data.document", jsonEquals(DOC1));
     }
 
-    // Ordering of shape different
     @Test
     public void sortByNestedField() {
+      // Ordering by nested shape yet different from other orders
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
