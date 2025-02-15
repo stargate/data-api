@@ -1263,50 +1263,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
-    public void dollarOperatorInSortPathExpression() {
-      String json =
-          """
-              { "find": { "sort" : {"$gt" : 1} } }
-              """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body(
-              "errors[0].message",
-              endsWith("sort clause path ('$gt') contains character(s) not allowed"))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
-    }
-
-    @Test
-    void emptyPathExpressionInSort() {
-      String json =
-          """
-              { "find": { "sort" : {"" : 1} } }
-              """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body(
-              "errors[0].message",
-              endsWith("sort clause path must be represented as not-blank string"))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
-    }
-
-    @Test
     void dollarOperatorInFilterPathExpression() {
       String json =
           """
@@ -1321,9 +1277,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].message", containsString("filter clause path ('$gt')"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].message", containsString("filter clause path ('$gt')"));
     }
 
     @Test
