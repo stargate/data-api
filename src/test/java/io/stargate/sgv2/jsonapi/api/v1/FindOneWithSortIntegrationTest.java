@@ -31,6 +31,9 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
           "_id": "dottedSort1",
           "type": "sorted",
           "app.kubernetes.io/name": "dottedZ"
+          "metadata": {
+            "shape": "square"
+          }
         }
         """;
 
@@ -40,6 +43,9 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
           "_id": "dottedSort2",
           "type": "sorted",
           "app.kubernetes.io/name": "dottedY"
+          "metadata": {
+            "shape": "triangle"
+          }
         }
         """;
     private final String DOC3 =
@@ -48,6 +54,9 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
           "_id": "dottedSort3",
           "type": "sorted",
           "app.kubernetes.io/name": "dottedX"
+          "metadata": {
+            "shape": "ellipse"
+          }
         }
         """;
 
@@ -107,6 +116,33 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                         "findOne": {
                           "filter" : {"type": "sorted"},
                           "sort" : {"app.kubernetes.io/name": -1}
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+    }
+
+    @Test
+    public void sortByNestedField() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "findOne": {
+                          "filter" : {"type": "sorted"},
+                          "sort" : {"metadata.shape": 1}
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC3));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "findOne": {
+                          "filter" : {"type": "sorted"},
+                          "sort" : {"metadata.shape": -1}
                         }
                       }
                       """)
