@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.data.CqlDuration;
 import com.datastax.oss.driver.api.core.data.CqlVector;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -1105,31 +1104,6 @@ public class JSONCodecRegistryTest {
   }
 
   @Test
-  public void invalidMapKeyToCQL() {
-    DataType cqlTypeToTest = DataTypes.mapOf(DataTypes.INT, DataTypes.TEXT);
-    Map<Integer, JsonLiteral<?>> valueToTest = Map.of(123, stringLiteral("xyz"));
-
-    // Unsupported key type exception caught at lookup, not use; but since we do have some Map
-    // codecs, exception will be "toCQLCodecException" and not "MissingJSONCodecException"
-    var error =
-        assertThrowsExactly(
-            ToCQLCodecException.class,
-            () ->
-                JSONCodecRegistries.DEFAULT_REGISTRY.codecToCQL(
-                    TEST_DATA.mockTableMetadata(cqlTypeToTest), TEST_DATA.COLUMN_NAME, valueToTest),
-            String.format("Get codec for unsupported CQL map type %s", cqlTypeToTest));
-
-    assertThat(error)
-        .satisfies(
-            e -> {
-              assertThat(e.targetCQLType).isEqualTo(cqlTypeToTest);
-              assertThat(e.value).isEqualTo(valueToTest);
-
-              assertThat(e.getMessage()).contains("unsupported map key type");
-            });
-  }
-
-  @Test
   public void invalidMapValueToCQL() {
     DataType cqlTypeToTest = DataTypes.mapOf(DataTypes.TEXT, DataTypes.BIGINT);
     Map<String, JsonLiteral<?>> valueToTest = Map.of("value", stringLiteral("xyz"));
@@ -1203,25 +1177,6 @@ public class JSONCodecRegistryTest {
               for (String expectedMessage : expectedMessages) {
                 assertThat(e.getMessage()).contains(expectedMessage);
               }
-            });
-  }
-
-  @Test
-  void invalidMapKeyToJSON() {
-    DataType cqlTypeToTest = DataTypes.mapOf(DataTypes.INT, DataTypes.TEXT);
-    TableMetadata testTable = TEST_DATA.mockTableMetadata(cqlTypeToTest);
-
-    var error =
-        assertThrowsExactly(
-            MissingJSONCodecException.class,
-            () ->
-                JSONCodecRegistries.DEFAULT_REGISTRY.codecToJSON(testTable, TEST_DATA.COLUMN_NAME),
-            String.format("Get toJSON codec for unsupported CQL map type %s", cqlTypeToTest));
-
-    assertThat(error)
-        .satisfies(
-            e -> {
-              assertThat(e.getMessage()).contains("column type Map(INT => TEXT, not frozen");
             });
   }
 }

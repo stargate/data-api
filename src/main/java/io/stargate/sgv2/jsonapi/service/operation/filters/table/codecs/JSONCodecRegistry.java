@@ -123,8 +123,6 @@ public class JSONCodecRegistry {
         List<JSONCodec<?, ?>> keyCodecCandidates = codecsByCQLType.get(mt.getKeyType());
         List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(mt.getValueType());
         if (keyCodecCandidates != null && valueCodecCandidates != null) {
-          // We don't validate the key/value types are supported or not here, it is validated in
-          // WriteableTableRowBuilder
           // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
           if (!(value instanceof Map<?, ?>)) {
             throw new ToCQLCodecException(value, columnType, "no codec matching value type");
@@ -222,8 +220,6 @@ public class JSONCodecRegistry {
     }
     if (fromCQLType instanceof MapType mt) {
       final DataType keyType = mt.getKeyType();
-      // We don't need to validate the key/value types are supported or not here, it is validated in
-      // TableProjection
       List<JSONCodec<?, ?>> keyCodecCandidates = codecsByCQLType.get(mt.getKeyType());
       List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(mt.getValueType());
       if (keyCodecCandidates == null || valueCodecCandidates == null) {
