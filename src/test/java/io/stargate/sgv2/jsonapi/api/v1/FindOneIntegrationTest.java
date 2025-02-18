@@ -642,7 +642,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
   @Nested
   @Order(3)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class FindOneWithDottedPaths {
+  class FindOneFilterWithDottedPaths {
     private final String DOC1 =
         """
                     {
@@ -688,7 +688,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     }
 
     @Test
-    @Order(2)
+    @Order(3)
     public void byDottedFieldTwoEqs() {
       givenHeadersPostJsonThenOkNoErrors(
               """
