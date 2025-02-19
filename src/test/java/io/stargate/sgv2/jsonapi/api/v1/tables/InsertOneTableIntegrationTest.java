@@ -152,22 +152,52 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
         .templated()
         .createTable(
             TABLE_WITH_MAP_COLUMNS,
-            Map.of(
-                "id",
-                "text",
-                "intMap",
-                Map.of("type", "map", "keyType", "text", "valueType", "int"),
-                "doubleMap",
-                Map.of("type", "map", "keyType", "ascii", "valueType", "double"),
-                "stringMap",
-                Map.of("type", "map", "keyType", "text", "valueType", "text"),
-                // Non-string key map
-                "doubleToFloatMap",
-                Map.of("type", "map", "keyType", "double", "valueType", "float"),
-                "uuidToDurationMap",
-                Map.of("type", "map", "keyType", "uuid", "valueType", "duration"),
-                "blobToAsciiMap",
-                Map.of("type", "map", "keyType", "blob", "valueType", "ascii")),
+            Map.ofEntries(
+                Map.entry("id", "text"),
+                // **************** map can be inserted in object/tuple format ****************
+                Map.entry("textMap", Map.of("type", "map", "keyType", "text", "valueType", "text")),
+                Map.entry(
+                    "asciiMap", Map.of("type", "map", "keyType", "ascii", "valueType", "ascii")),
+                Map.entry("inetMap", Map.of("type", "map", "keyType", "inet", "valueType", "inet")),
+                Map.entry("dateMap", Map.of("type", "map", "keyType", "date", "valueType", "date")),
+                Map.entry("timeMap", Map.of("type", "map", "keyType", "time", "valueType", "time")),
+                Map.entry(
+                    "timestampMap",
+                    Map.of("type", "map", "keyType", "timestamp", "valueType", "timestamp")),
+                Map.entry("uuidMap", Map.of("type", "map", "keyType", "uuid", "valueType", "uuid")),
+                // timeUuid as key/value is excluded, since we deliberately restrain timeUuid on API
+                // side, may change in the future.
+                // counter as key/value is excluded, since counters are not allowed within
+                // collections in cql.
+                // duration as key is excluded, since duration types are not supported within
+                // non-frozen map keys, and API does not support frozen.
+                Map.entry(
+                    "durationMap",
+                    Map.of("type", "map", "keyType", "text", "valueType", "duration")),
+                // **************** map must be inserted as tuple format ****************
+                Map.entry("intMap", Map.of("type", "map", "keyType", "int", "valueType", "int")),
+                Map.entry(
+                    "tinyintMap",
+                    Map.of("type", "map", "keyType", "tinyint", "valueType", "tinyint")),
+                Map.entry(
+                    "varintMap", Map.of("type", "map", "keyType", "varint", "valueType", "varint")),
+                Map.entry(
+                    "floatMap", Map.of("type", "map", "keyType", "float", "valueType", "float")),
+                Map.entry(
+                    "bigintMap", Map.of("type", "map", "keyType", "bigint", "valueType", "bigint")),
+                Map.entry(
+                    "smallintMap",
+                    Map.of("type", "map", "keyType", "smallint", "valueType", "smallint")),
+                Map.entry(
+                    "decimalMap",
+                    Map.of("type", "map", "keyType", "decimal", "valueType", "decimal")),
+                Map.entry(
+                    "doubleMap", Map.of("type", "map", "keyType", "double", "valueType", "double")),
+                Map.entry(
+                    "booleanMap",
+                    Map.of("type", "map", "keyType", "boolean", "valueType", "boolean")),
+                Map.entry(
+                    "blobMap", Map.of("type", "map", "keyType", "blob", "valueType", "blob"))),
             "id")
         .wasSuccessful();
 
@@ -1062,41 +1092,69 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       // First with values for all fields (note: harder to use helper methods)
       String docJSON =
           """
-              { "id": "mapValidFull",
-                "doubleMap": {"a": 0.0,  "b":-0.5},
-                "intMap": {"i1": 1, "i2": 2, "i3": -42},
-                "stringMap": {"abc": "xyz"},
-                "doubleToFloatMap": [[1.5,1.5], [2.0,2.0]],
-                "uuidToDurationMap": {"123e4567-e89b-12d3-a456-426614174000": "PT2H45M"},
-                "blobToAsciiMap": [
-                        [
-                            {
-                                "$binary": "SGVsbG8gV29ybGQ="
-                            },
-                            "abc"
-                        ]
+                { "id": "mapValidFull",
+                  "textMap": {"key1": "value1"},
+                  "asciiMap": {"key1": "value1"},
+                  "inetMap": {"192.168.1.1": "192.168.1.2"},
+                  "dateMap": {"2024-09-24": "2024-09-25"},
+                  "timeMap": {"12:00:01": "13:00:01"},
+                  "timestampMap": {"2024-09-24T14:06:59Z": "2024-09-25T14:06:59Z"},
+                  "uuidMap": {"123e4567-e89b-12d3-a456-426614174000": "123e4567-e89b-12d3-a456-426614174001"},
+                  "durationMap": {"key1": "PT2H45M"},
+                  "intMap": [[1, 2]],
+                  "tinyintMap": [[1, 2]],
+                  "varintMap": [[1, 2]],
+                  "floatMap": [[1.0, 2.0]],
+                  "bigintMap": [[1, 2]],
+                  "smallintMap": [[1, 2]],
+                  "decimalMap": [[1.5, 2.75]],
+                  "doubleMap": [[1.0, 2.0]],
+                  "booleanMap": [[true, false]],
+                  "blobMap": [
+                    [
+                      {
+                        "$binary": "SGVsbG8gV29ybGQ="
+                      },
+                      {
+                        "$binary": "SGVsbG8gV29ybGQ="
+                      }
                     ]
-              }
+                  ]
+                }
               """;
       // Only TEXT/ASCII key map are returned as object format
       // Other key type maps are returned as tuple format
       String expectedJson =
           """
-                  { "id": "mapValidFull",
-                    "doubleMap": {"a": 0.0,  "b":-0.5},
-                    "intMap": {"i1": 1, "i2": 2, "i3": -42},
-                    "stringMap": {"abc": "xyz"},
-                    "doubleToFloatMap": [[1.5,1.5], [2.0,2.0]],
-                    "uuidToDurationMap": [["123e4567-e89b-12d3-a456-426614174000", "PT2H45M"]],
-                     "blobToAsciiMap": [
+                    { "id": "mapValidFull",
+                      "textMap": {"key1": "value1"},
+                      "asciiMap": {"key1": "value1"},
+                      "inetMap": [[ "192.168.1.1", "192.168.1.2"]],
+                      "dateMap": [["2024-09-24", "2024-09-25"]],
+                      "timeMap": [["12:00:01", "13:00:01"]],
+                      "timestampMap": [["2024-09-24T14:06:59Z", "2024-09-25T14:06:59Z"]],
+                      "uuidMap": [["123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001"]],
+                      "durationMap": {"key1": "PT2H45M"},
+                      "intMap": [[1, 2]],
+                      "tinyintMap": [[1, 2]],
+                      "varintMap": [[1, 2]],
+                      "floatMap": [[1.0, 2.0]],
+                      "bigintMap": [[1, 2]],
+                      "smallintMap": [[1, 2]],
+                      "decimalMap": [[1.5, 2.75]],
+                      "doubleMap": [[1.0, 2.0]],
+                      "booleanMap": [[true, false]],
+                      "blobMap": [
                         [
-                            {
-                                "$binary": "SGVsbG8gV29ybGQ="
-                            },
-                            "abc"
+                          {
+                            "$binary": "SGVsbG8gV29ybGQ="
+                          },
+                          {
+                            "$binary": "SGVsbG8gV29ybGQ="
+                          }
                         ]
-                    ]
-                  }
+                      ]
+                    }
                   """;
       assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
           .templated()
@@ -1109,14 +1167,15 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .wasSuccessful()
           .hasJSONField("data.document", expectedJson);
 
-      // And then just for int-Map; null for string, missing double
+      // And then test some null values
       assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
           .templated()
           .insertOne(
               """
                               { "id": "mapValidPartial",
-                                "stringMap": null,
-                                "intMap": {"a": 3, "b": -999, "c": 42}
+                                "asciiMap": null,
+                                "booleanMap": null,
+                                "textMap": {"a": "b"}
                               }
                               """)
           .wasSuccessful()
@@ -1130,17 +1189,17 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "data.document",
               """
                                       { "id": "mapValidPartial",
-                                        "intMap": {"a": 3, "b": -999, "c": 42}
+                                        "textMap": {"a": "b"}
                                       }
                                       """);
 
-      // But if specifically just for intMap, get just that
+      // But if specifically just for textMap, get just that
       // NOTE: id column(s) not auto-included unlike with Collections and "_id"
       assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
           .postFindOne(
               """
                                           { "filter": { "id": "mapValidPartial" },
-                                            "projection": { "intMap": 1 }
+                                            "projection": { "textMap": 1 }
                                           }
                                       """)
           .wasSuccessful()
@@ -1148,7 +1207,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "data.document",
               """
                         {
-                          "intMap": {"a": 3, "b": -999, "c": 42}
+                          "textMap": {"a": "b"}
                         }
                         """);
 
@@ -1157,7 +1216,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .postFindOne(
               """
                             { "filter": { "id": "mapValidFull" },
-                              "projection": { "blobToAsciiMap": 1 }
+                              "projection": { "blobMap": 1 }
                             }
                         """)
           .wasSuccessful()
@@ -1165,16 +1224,98 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "data.document",
               """
                         {
-                            "blobToAsciiMap": [
+                            "blobMap": [
                                 [
-                                    {
+                                      {
                                         "$binary": "SGVsbG8gV29ybGQ="
-                                    },
-                                    "abc"
+                                      },
+                                      {
+                                        "$binary": "SGVsbG8gV29ybGQ="
+                                      }
                                 ]
                             ]
                         }
                         """);
+    }
+
+    @Test
+    void insertMapAllTupleFormat() {
+      String docJSON =
+          """
+                    { "id": "mapValidFullTuple",
+                      "textMap": [["key1", "value1"]],
+                      "asciiMap": [["key1", "value1"]],
+                      "inetMap": [["192.168.1.1", "192.168.1.2"]],
+                      "dateMap": [["2024-09-24", "2024-09-25"]],
+                      "timeMap": [["12:00:01", "13:00:01"]],
+                      "timestampMap": [["2024-09-24T14:06:59Z", "2024-09-25T14:06:59Z"]],
+                      "uuidMap": [["123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001"]],
+                      "durationMap": [["key1", "PT2H45M"]],
+                      "intMap": [[1, 2]],
+                      "tinyintMap": [[1, 2]],
+                      "varintMap": [[1, 2]],
+                      "floatMap": [[1.0, 2.0]],
+                      "bigintMap": [[1, 2]],
+                      "smallintMap": [[1, 2]],
+                      "decimalMap": [[1.5, 2.75]],
+                      "doubleMap": [[1.0, 2.0]],
+                      "booleanMap": [[true, false]],
+                      "blobMap": [
+                        [
+                          {
+                            "$binary": "SGVsbG8gV29ybGQ="
+                          },
+                          {
+                            "$binary": "SGVsbG8gV29ybGQ="
+                          }
+                        ]
+                      ]
+                    }
+                  """;
+      // Only TEXT/ASCII key map are returned as object format
+      // Other key type maps are returned as tuple format
+      String expectedJson =
+          """
+                        { "id": "mapValidFullTuple",
+                          "textMap": {"key1": "value1"},
+                          "asciiMap": {"key1": "value1"},
+                          "inetMap": [[ "192.168.1.1", "192.168.1.2"]],
+                          "dateMap": [["2024-09-24", "2024-09-25"]],
+                          "timeMap": [["12:00:01", "13:00:01"]],
+                          "timestampMap": [["2024-09-24T14:06:59Z", "2024-09-25T14:06:59Z"]],
+                          "uuidMap": [["123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001"]],
+                          "durationMap": {"key1": "PT2H45M"},
+                          "intMap": [[1, 2]],
+                          "tinyintMap": [[1, 2]],
+                          "varintMap": [[1, 2]],
+                          "floatMap": [[1.0, 2.0]],
+                          "bigintMap": [[1, 2]],
+                          "smallintMap": [[1, 2]],
+                          "decimalMap": [[1.5, 2.75]],
+                          "doubleMap": [[1.0, 2.0]],
+                          "booleanMap": [[true, false]],
+                          "blobMap": [
+                            [
+                              {
+                                "$binary": "SGVsbG8gV29ybGQ="
+                              },
+                              {
+                                "$binary": "SGVsbG8gV29ybGQ="
+                              }
+                            ]
+                          ]
+                        }
+                      """;
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful()
+          .hasInsertedIds(List.of("mapValidFullTuple"));
+
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"mapValidFullTuple\" } }")
+          .wasSuccessful()
+          .hasJSONField("data.document", expectedJson);
     }
 
     @Test
@@ -1192,7 +1333,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
               "Only values that are supported by",
-              "Error trying to convert to targetCQLType `Map(TEXT => INT",
+              "Error trying to convert to targetCQLType `Map(INT => INT",
               "no codec matching value type");
     }
 
@@ -1204,9 +1345,28 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               """
                       {
                         "id":"mapInvalid",
-                        "intMap":{"i1": "abc"}
+                        "intMap":[[1, "abc"]]
                       }
                       """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `INT`",
+              "actual type `java.lang.String`");
+    }
+
+    @Test
+    void failOnWrongMapKeyType() {
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(
+              """
+                              {
+                                "id":"mapInvalid",
+                                "intMap":[["abc",1]]
+                              }
+                              """)
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
