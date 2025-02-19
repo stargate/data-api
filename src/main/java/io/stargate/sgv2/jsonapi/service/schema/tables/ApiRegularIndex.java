@@ -159,9 +159,9 @@ public class ApiRegularIndex extends ApiSupportedIndex {
         RegularIndexDefinitionDesc indexDesc) {
       var optionsDesc = indexDesc.options();
 
-      resolveAnalyzerProperty(tableSchemaObject, apiColumnDef, optionsDesc, null);
-      // After the validation, populate the indexOptions map
-      var indexOptions = populateIndexOptions(optionsDesc);
+      // resolve the analyzer options
+      var indexOptions =
+          resolveAnalyzerProperty(tableSchemaObject, apiColumnDef, optionsDesc, null);
 
       // indexFunction is null for primitive dataTypes
       return new ApiRegularIndex(indexIdentifier, targetIdentifier, indexOptions, null);
@@ -219,9 +219,9 @@ public class ApiRegularIndex extends ApiSupportedIndex {
               ? ApiIndexFunction.fromApiMapComponent(apiMapComponent)
               : ApiIndexFunction.VALUES;
 
-      resolveAnalyzerProperty(tableSchemaObject, apiColumnDef, optionsDesc, indexFunction);
-      // After the validation, populate the indexOptions map
-      var indexOptions = populateIndexOptions(optionsDesc);
+      // resolve the analyzer options
+      var indexOptions =
+          resolveAnalyzerProperty(tableSchemaObject, apiColumnDef, optionsDesc, indexFunction);
 
       return new ApiRegularIndex(indexIdentifier, targetIdentifier, indexOptions, indexFunction);
     }
@@ -244,8 +244,9 @@ public class ApiRegularIndex extends ApiSupportedIndex {
      * </ul>
      *
      * The method will error out as UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES if rules are violated.
+     * The method will return the indexOptions map if the rules are followed.
      */
-    private void resolveAnalyzerProperty(
+    private Map<String, String> resolveAnalyzerProperty(
         TableSchemaObject tableSchemaObject,
         ApiColumnDef apiColumnDef,
         RegularIndexDefinitionDesc.RegularIndexDescOptions optionsDesc,
@@ -253,7 +254,7 @@ public class ApiRegularIndex extends ApiSupportedIndex {
 
       // Nothing to validate if user does not specify the options.
       if (optionsDesc == null) {
-        return;
+        return new HashMap<>();
       }
 
       ApiTypeName targetTypeName =
@@ -302,6 +303,10 @@ public class ApiRegularIndex extends ApiSupportedIndex {
                     map.put("unsupportedColumns", errFmt(apiColumnDef));
                   }));
         }
+        // If the target column is not text or ascii, and the user has not specified any options.
+        return new HashMap<>();
+      } else {
+        return populateIndexOptions(optionsDesc);
       }
     }
 
