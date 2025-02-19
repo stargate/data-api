@@ -254,6 +254,11 @@ public class ApiRegularIndex extends ApiSupportedIndex {
 
       // Nothing to validate if user does not specify the options.
       if (optionsDesc == null) {
+        // Text and ascii fields will default options, this is to align with the previous behavior.
+        if (apiColumnDef.type().typeName() == ApiTypeName.TEXT
+            || apiColumnDef.type().typeName() == ApiTypeName.ASCII) {
+          return populateIndexOptions(null);
+        }
         return new HashMap<>();
       }
 
