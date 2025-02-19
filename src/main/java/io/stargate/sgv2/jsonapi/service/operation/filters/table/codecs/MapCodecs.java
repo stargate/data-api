@@ -15,8 +15,8 @@ import java.util.List;
 import java.util.Map;
 
 public class MapCodecs {
-  private static final GenericType<Map<String, Object>> GENERIC_MAP =
-      GenericType.mapOf(String.class, Object.class);
+  private static final GenericType<Map<Object, Object>> GENERIC_MAP =
+      GenericType.mapOf(Object.class, Object.class);
 
   /**
    * Factory method to build a codec for a CQL Map type: codec will be given set of possible key and
@@ -134,21 +134,21 @@ public class MapCodecs {
    * <li>Map<ASCII, ASCII> cql-json {"apple": "apple", "banana": "banana"} </ui>
    *
    * @param keyType Cql map key type
-   * @param keyCodec0 Codec that can handle the keys of the map
-   * @param valueCodec0 Codec that can handle the values of the map
+   * @param keyCodec Codec that can handle the keys of the map
+   * @param valueCodec Codec that can handle the values of the map
    * @param objectMapper Jackson object mapper
    * @param mapValue Cql map value
    * @return JsonNode representation of the Cql map
    */
   private static JsonNode cqlMapToJsonNode(
       DataType keyType,
-      JSONCodec<?, ?> keyCodec0,
-      JSONCodec<?, ?> valueCodec0,
+      JSONCodec<?, ?> keyCodec,
+      JSONCodec<?, ?> valueCodec,
       ObjectMapper objectMapper,
       Object mapValue)
       throws ToJSONCodecException {
-    JSONCodec<?, Object> keyCodec = (JSONCodec<?, Object>) keyCodec0;
-    JSONCodec<?, Object> valueCodec = (JSONCodec<?, Object>) valueCodec0;
+    JSONCodec<?, Object> keyCodecCasted = (JSONCodec<?, Object>) keyCodec;
+    JSONCodec<?, Object> valueCodecCasted = (JSONCodec<?, Object>) valueCodec;
 
     if (keyType.equals(DataTypes.TEXT) || keyType.equals(DataTypes.ASCII)) {
       final ObjectNode result = objectMapper.createObjectNode();
@@ -158,24 +158,22 @@ public class MapCodecs {
         if (value == null) {
           result.putNull(key);
         } else {
-          result.put(key, valueCodec.toJSON(objectMapper, value));
+          result.set(key, valueCodecCasted.toJSON(objectMapper, value));
         }
       }
       return result;
-    } else {
-      final ArrayNode result = objectMapper.createArrayNode();
-      for (Map.Entry<Object, Object> entry : ((Map<Object, Object>) mapValue).entrySet()) {
-        var tupleEntry =
-            objectMapper
-                .createArrayNode()
-                .add(keyCodec.toJSON(objectMapper, entry.getKey()))
-                .add(
-                    entry.getValue() == null
-                        ? null
-                        : valueCodec.toJSON(objectMapper, entry.getValue()));
-        result.add(tupleEntry);
-      }
-      return result;
     }
+    final ArrayNode result = objectMapper.createArrayNode();
+    for (Map.Entry<Object, Object> entry : ((Map<Object, Object>) mapValue).entrySet()) {
+      final ArrayNode tupleEntry = objectMapper.createArrayNode();
+      tupleEntry.add(keyCodecCasted.toJSON(objectMapper, entry.getKey()));
+      if (entry.getValue() == null) {
+        tupleEntry.addNull();
+      } else {
+        tupleEntry.add(valueCodecCasted.toJSON(objectMapper, entry.getValue()));
+      }
+      result.add(tupleEntry);
+    }
+    return result;
   }
 }
