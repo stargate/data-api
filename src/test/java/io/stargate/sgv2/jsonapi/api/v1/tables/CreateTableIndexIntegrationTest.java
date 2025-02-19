@@ -11,7 +11,11 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import jakarta.ws.rs.core.Response;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -46,9 +50,17 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 Map.entry("invalid_text", Map.of("type", "int")),
                 Map.entry("physicalAddress", Map.of("type", "text")),
                 Map.entry("list_type", Map.of("type", "list", "valueType", "text")),
+                Map.entry("list_type_int_value", Map.of("type", "list", "valueType", "int")),
                 Map.entry("set_type", Map.of("type", "set", "valueType", "text")),
+                Map.entry("set_type_float_value", Map.of("type", "set", "valueType", "float")),
                 Map.entry(
                     "map_type", Map.of("type", "map", "keyType", "text", "valueType", "text")),
+                Map.entry(
+                    "map_type_int_key",
+                    Map.of("type", "map", "keyType", "int", "valueType", "text")),
+                Map.entry(
+                    "map_type_float_value",
+                    Map.of("type", "map", "keyType", "text", "valueType", "float")),
                 Map.entry("vector_type_1", Map.of("type", "vector", "dimension", 1024)),
                 Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1536)),
                 Map.entry("vector_type_3", Map.of("type", "vector", "dimension", 1024)),
@@ -192,10 +204,13 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                     }
                                   }
                                   """)
-          .hasSingleApiError(
-              SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES,
-              SchemaException.class,
-              "The command attempted to index the unsupported columns: list_type(UNSUPPORTED CQL type: list<text>).");
+          .wasSuccessful();
+
+      verifyCreatedIndex("list_type_idx");
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .dropIndex("list_type_idx", false)
+          .wasSuccessful();
     }
 
     @Test
@@ -210,28 +225,166 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                     }
                                   }
                                   """)
-          .hasSingleApiError(
-              SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES,
-              SchemaException.class,
-              "The command attempted to index the unsupported columns: set_type(UNSUPPORTED CQL type: set<text>).");
+          .wasSuccessful();
+
+      verifyCreatedIndex("set_type_idx");
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .dropIndex("set_type_idx", false)
+          .wasSuccessful();
     }
 
-    @Test
-    public void createMapIndex() {
-      assertTableCommand(keyspaceName, testTableName)
-          .postCreateIndex(
-              """
-                                  {
-                                    "name": "map_type_idx",
-                                    "definition": {
-                                      "column": "map_type"
+    private static Stream<Arguments> listSetColumnsWithAnalyzerOptions() {
+      return Stream.of(
+          Arguments.of("list_type", true),
+          Arguments.of("set_type", true),
+          Arguments.of("list_type_int_value", false),
+          Arguments.of("set_type_float_value", false));
+    }
+
+    /*
+    set/list with value types that are text or ascii can have analyzer options
+    */
+    @ParameterizedTest
+    @MethodSource("listSetColumnsWithAnalyzerOptions")
+    public void listSetIndexWithAnalyzerOption(String listColumn, boolean valid) {
+      if (valid) {
+        assertTableCommand(keyspaceName, testTableName)
+            .postCreateIndex(
+                    """
+                                {
+                                  "name": "list_type_idx_analyzer_option",
+                                  "definition": {
+                                    "column": "%s",
+                                    "options": {
+                                        "caseSensitive": true,
+                                        "normalize": true,
+                                        "ascii": true
                                     }
                                   }
-                                  """)
-          .hasSingleApiError(
-              SchemaException.Code.UNSUPPORTED_INDEXING_FOR_DATA_TYPES,
-              SchemaException.class,
-              "The command attempted to index the unsupported columns: map_type(UNSUPPORTED CQL type: map<text, text>).");
+                                }
+                                """
+                    .formatted(listColumn))
+            .wasSuccessful();
+        verifyCreatedIndex("list_type_idx_analyzer_option");
+        assertNamespaceCommand(keyspaceName)
+            .templated()
+            .dropIndex("list_type_idx_analyzer_option", false)
+            .wasSuccessful();
+      } else {
+        assertTableCommand(keyspaceName, testTableName)
+            .postCreateIndex(
+                    """
+                                {
+                                  "name": "list_type_idx",
+                                  "definition": {
+                                    "column": "%s",
+                                    "options": {
+                                        "caseSensitive": true,
+                                        "normalize": true,
+                                        "ascii": true
+                                    }
+                                  }
+                                }
+                                """
+                    .formatted(listColumn))
+            .hasSingleApiError(
+                SchemaException.Code.UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES,
+                SchemaException.class,
+                "column that uses a data type not supported for text analysis");
+      }
+    }
+
+    private static Stream<Arguments> indexFunctionOnMap() {
+      return Stream.of(
+          // default to entries
+          Arguments.of("\"map_type\""),
+          Arguments.of("{\"map_type\": \"$keys\"}"),
+          Arguments.of("{\"map_type\": \"$values\"}"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("indexFunctionOnMap")
+    public void createMapIndex(String columnValue) {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+                  """
+                                          {
+                                            "name": "map_type_idx",
+                                            "definition": {
+                                              "column": %s
+                                            }
+                                          }
+                                          """
+                  .formatted(columnValue))
+          .wasSuccessful();
+
+      verifyCreatedIndex("map_type_idx");
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .dropIndex("map_type_idx", false)
+          .wasSuccessful();
+    }
+
+    private static Stream<Arguments> mapColumnWithAnalyzerOptions() {
+      return Stream.of(
+          Arguments.of("map_type", "$keys", true),
+          Arguments.of("map_type", "$values", true),
+          Arguments.of("map_type_int_key", "$keys", false),
+          Arguments.of("map_type_float_value", "$values", false));
+    }
+
+    /*
+    set/list with value types that are text or ascii can have analyzer options
+    */
+    @ParameterizedTest
+    @MethodSource("mapColumnWithAnalyzerOptions")
+    public void mapIndexWithAnalyzerOption(String column, String indexFunction, boolean valid) {
+      if (valid) {
+        assertTableCommand(keyspaceName, testTableName)
+            .postCreateIndex(
+                    """
+                                {
+                                  "name": "map_type_idx_analyzer_option",
+                                  "definition": {
+                                    "column": {"%s":"%s"},
+                                    "options": {
+                                        "caseSensitive": true,
+                                        "normalize": true,
+                                        "ascii": true
+                                    }
+                                  }
+                                }
+                                """
+                    .formatted(column, indexFunction))
+            .wasSuccessful();
+        verifyCreatedIndex("map_type_idx_analyzer_option");
+        assertNamespaceCommand(keyspaceName)
+            .templated()
+            .dropIndex("map_type_idx_analyzer_option", false)
+            .wasSuccessful();
+      } else {
+        assertTableCommand(keyspaceName, testTableName)
+            .postCreateIndex(
+                    """
+                                {
+                                  "name": "map_type_idx_analyzer_option",
+                                  "definition": {
+                                    "column": {"%s":"%s"},
+                                    "options": {
+                                        "caseSensitive": true,
+                                        "normalize": true,
+                                        "ascii": true
+                                    }
+                                  }
+                                }
+                                """
+                    .formatted(column, indexFunction))
+            .hasSingleApiError(
+                SchemaException.Code.UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES,
+                SchemaException.class,
+                "column that uses a data type not supported for text analysis");
+      }
     }
 
     @Test
@@ -406,6 +559,89 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   @Order(3)
   class CreateIndexFailure {
     @Test
+    public void createIndexWithEmptyName() {
+
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                      {
+                        "name": "",
+                        "definition": {
+                          "column": "vehicle_id_7"
+                        }
+                      }
+                      """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: ''.");
+    }
+
+    @Test
+    public void createIndexWithBlankName() {
+
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                      {
+                        "name": " ",
+                        "definition": {
+                          "column": "vehicle_id_7"
+                        },
+                        "indexType": "vector"
+                      }
+                      """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: ' '.");
+    }
+
+    @Test
+    public void createIndexWithNameTooLong() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                        {
+                            "name": "this_is_a_string_that_is_designed_to_be_more_than_one_hundred_characters_long_so_we_can_demonstrate_a_valid_example_with_extra_text_here",
+                            "definition": {
+                            "column": "vehicle_id_7"
+                            }
+                        }
+                        """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: 'this_is_a_string_that_is_designed_to_be_more_than_one_hundred_characters_long_so_we_can_demonstrate_a_valid_example_with_extra_text_here'.");
+    }
+
+    @Test
+    public void createIndexWithSpecialCharacterInName() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                        {
+                            "name": "vehicle id_7@idx",
+                            "definition": {
+                            "column": "vehicle_id_7"
+                            }
+                        }
+                        """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: 'vehicle id_7@idx'.");
+    }
+
+    @Test
     public void tryCreateIndexMissingColumn() {
 
       assertTableCommand(keyspaceName, testTableName)
@@ -435,7 +671,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                       "definition": {
                                         "column": "invalid_text",
                                         "options": {
-                                          "caseSensitive": true
+                                          "normalize": true
                                         }
                                       }
                               }
@@ -482,7 +718,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNKNOWN_INDEX_TYPE,
               SchemaException.class,
-              "The known index types are: [collection, regular, text-analysed, vector].",
+              "The known index types are: regular, text, vector.",
               "The command used the unknown index type: unknown.");
     }
 
@@ -510,11 +746,157 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH,
               "Request invalid, mismatching JSON structure: underlying problem");
     }
+
+    private static Stream<Arguments> invalidIndexFunction() {
+      return Stream.of(
+          Arguments.of("\"$keyss\""),
+          Arguments.of("\"monkey\""),
+          Arguments.of("\"keys\""),
+          Arguments.of("\"values\""),
+          Arguments.of("\"entries\""),
+          Arguments.of(123));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidIndexFunction")
+    public void invalidCommandForIndexFunction(Object indexFunction) {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+                  """
+                                          {
+                                            "name": "invalidIndexFunction",
+                                            "definition": {
+                                              "column": {"map_type" : %s},
+                                              "options": {
+                                                  "caseSensitive": true,
+                                                  "normalize": true,
+                                                  "ascii": true
+                                              }
+                                            }
+                                          }
+                                          """
+                  .formatted(indexFunction))
+          .hasSingleApiError(
+              SchemaException.Code.INVALID_FORMAT_FOR_INDEX_CREATION_COLUMN,
+              SchemaException.class,
+              "Command has an invalid format for index creation column.");
+    }
+
+    private static Stream<Arguments> entriesIndexOnMap() {
+      return Stream.of(Arguments.of("\"map_type\""));
+    }
+
+    @ParameterizedTest
+    @MethodSource("entriesIndexOnMap")
+    public void analyzeOptionsForEntriesIndexOnMap(String columnValue) {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+                  """
+                                  {
+                                    "name": "invalid",
+                                    "definition": {
+                                      "column": %s,
+                                      "options": {
+                                          "caseSensitive": true,
+                                          "normalize": true,
+                                          "ascii": true
+                                      }
+                                    }
+                                  }
+                                  """
+                  .formatted(columnValue))
+          .hasSingleApiError(
+              SchemaException.Code.CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS,
+              SchemaException.class,
+              "Index function `entries` can not apply to map column when analyze options are specified.");
+    }
   }
 
   @Nested
   @Order(4)
   class CreateVectorIndexFailure {
+    @Test
+    public void createIndexWithEmptyName() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                              {
+                                "name": "",
+                                "definition": {
+                                  "column": "vehicle_id_7"
+                                }
+                              }
+                              """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: ''.");
+    }
+
+    @Test
+    public void createIndexWithBlankName() {
+
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateVectorIndex(
+              """
+                              {
+                                "name": " ",
+                                "definition": {
+                                  "column": "vehicle_id_7"
+                                },
+                                "indexType": "vector"
+                              }
+                              """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: ' '.");
+    }
+
+    @Test
+    public void createIndexWithNameTooLong() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                              {
+                                  "name": "this_is_a_string_that_is_designed_to_be_more_than_one_hundred_characters_long_so_we_can_demonstrate_a_valid_example_with_extra_text_here",
+                                  "definition": {
+                                  "column": "vehicle_id_7"
+                                  }
+                              }
+                              """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: 'this_is_a_string_that_is_designed_to_be_more_than_one_hundred_characters_long_so_we_can_demonstrate_a_valid_example_with_extra_text_here'.");
+    }
+
+    @Test
+    public void createIndexWithSpecialCharacterInName() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateIndex(
+              """
+                              {
+                                  "name": "vehicle id_7@idx",
+                                  "definition": {
+                                  "column": "vehicle_id_7"
+                                  }
+                              }
+                              """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SCHEMA_NAME,
+              SchemaException.class,
+              "The command attempted to create a Index with a name that is not supported.",
+              "The supported Index names must not be empty, more than 100 characters long, or contain non-alphanumeric-underscore characters.",
+              "The command used the unsupported Index name: 'vehicle id_7@idx'.");
+    }
+
     @Test
     public void tryCreateIndexMissingColumn() {
       assertTableCommand(keyspaceName, testTableName)
@@ -591,7 +973,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasSingleApiError(
               SchemaException.Code.UNKNOWN_INDEX_TYPE,
               SchemaException.class,
-              "The known index types are: [collection, regular, text-analysed, vector].",
+              "The known index types are: regular, text, vector.",
               "The command used the unknown index type: unknown.");
     }
   }

@@ -37,6 +37,11 @@ public class UnsupportedIndex implements ApiIndexDef {
   }
 
   @Override
+  public ApiIndexFunction indexFunction() {
+    throw new UnsupportedOperationException("UnsupportedIndex does not have indexFunction");
+  }
+
+  @Override
   public Map<String, String> indexOptions() {
     return indexMetadata.getOptions();
   }

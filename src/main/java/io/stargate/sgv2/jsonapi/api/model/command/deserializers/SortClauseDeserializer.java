@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -44,14 +45,14 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
 
     ObjectNode sortNode = (ObjectNode) node;
 
-    // safe iterate, we know it's array
+    // safe to iterate, we know it's an Object
     Iterator<Map.Entry<String, JsonNode>> fieldIter = sortNode.fields();
     int totalFields = sortNode.size();
     List<SortExpression> sortExpressions = new ArrayList<>(sortNode.size());
 
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> inner = fieldIter.next();
-      String path = inner.getKey().trim();
+      final String path = inner.getKey().trim();
       float[] vectorFloats = null;
       if (inner.getValue().isObject()) {
         var ejsonWrapped = EJSONWrapper.maybeFrom((ObjectNode) inner.getValue());
@@ -152,15 +153,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         // this is also why we do not break the look here
         sortExpressions.add(SortExpression.tableVectorizeSort(path, inner.getValue().textValue()));
       } else {
-        if (path.isBlank()) {
-          throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-              "sort clause path must be represented as not-blank string");
-        }
-
-        if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(path).matches()) {
-          throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-              "sort clause path ('%s') contains character(s) not allowed", path);
-        }
+        validateSortClausePath(path);
 
         if (!inner.getValue().isInt()
             || !(inner.getValue().intValue() == 1 || inner.getValue().intValue() == -1)) {
@@ -196,5 +189,16 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       arrayVals[i] = element.floatValue();
     }
     return arrayVals;
+  }
+
+  private void validateSortClausePath(String path) {
+    if (!NamingRules.FIELD.apply(path)) {
+      if (path.isEmpty()) {
+        throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
+            "path must be represented as a non-empty string");
+      }
+      throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
+          "path ('%s') cannot start with `$`", path);
+    }
   }
 }

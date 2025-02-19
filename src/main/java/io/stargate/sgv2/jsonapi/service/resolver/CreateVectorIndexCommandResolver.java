@@ -1,18 +1,22 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
+import static io.stargate.sgv2.jsonapi.util.ApiPropertyUtils.getOrDefault;
+
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorIndex;
-import io.stargate.sgv2.jsonapi.util.defaults.DefaultBoolean;
-import io.stargate.sgv2.jsonapi.util.defaults.Defaults;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.util.Map;
@@ -20,9 +24,6 @@ import java.util.Map;
 /** Resolver for the {@link CreateVectorIndexCommand}. */
 @ApplicationScoped
 public class CreateVectorIndexCommandResolver implements CommandResolver<CreateVectorIndexCommand> {
-
-  // Command option
-  public static final DefaultBoolean IF_NOT_EXISTS_DEFAULT = Defaults.of(false);
 
   @Override
   public Class<CreateVectorIndexCommand> getCommandClass() {
@@ -33,16 +34,18 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, CreateVectorIndexCommand command) {
 
-    ApiIndexType indexType =
+    final var name = validateSchemaName(command.name(), NamingRules.INDEX);
+
+    var indexType =
         command.indexType() == null
             ? ApiIndexType.VECTOR
-            : ApiIndexType.fromTypeName(command.indexType());
+            : ApiIndexType.fromApiName(command.indexType());
 
     if (indexType == null) {
       throw SchemaException.Code.UNKNOWN_INDEX_TYPE.get(
           Map.of(
               "knownTypes",
-              ApiIndexType.allTypeNames().toString(),
+              errFmtJoin(ApiIndexType.values(), ApiIndexType::apiName),
               "unknownType",
               command.indexType()));
     }
@@ -51,7 +54,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
       throw SchemaException.Code.UNSUPPORTED_INDEX_TYPE.get(
           Map.of(
               "supportedTypes",
-              ApiIndexType.VECTOR.indexTypeName(),
+              ApiIndexType.VECTOR.apiName(),
               "unsupportedType",
               command.indexType()));
     }
@@ -60,9 +63,10 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
 
     attemptBuilder =
         attemptBuilder.withIfNotExists(
-            IF_NOT_EXISTS_DEFAULT.apply(
+            getOrDefault(
                 command.options(),
-                CreateVectorIndexCommand.CreateVectorIndexCommandOptions::ifNotExists));
+                CreateVectorIndexCommand.CreateVectorIndexCommandOptions::ifNotExists,
+                TableDescDefaults.CreateVectorIndexOptionsDefaults.IF_NOT_EXISTS));
 
     // TODO: we need a centralised way of creating retry attempt.
     attemptBuilder =
@@ -74,8 +78,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
 
     // this will throw APIException if the index is not supported
     var apiIndex =
-        ApiVectorIndex.FROM_DESC_FACTORY.create(
-            ctx.schemaObject(), command.name(), command.definition());
+        ApiVectorIndex.FROM_DESC_FACTORY.create(ctx.schemaObject(), name, command.definition());
     var attempt = attemptBuilder.build(apiIndex);
 
     var pageBuilder =
@@ -86,6 +89,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     return new GenericOperation<>(
         new OperationAttemptContainer<>(attempt),
         pageBuilder,
-        new CreateIndexExceptionHandler(apiIndex.indexName()));
+        DefaultDriverExceptionHandler.Factory.withIdentifier(
+            CreateIndexExceptionHandler::new, apiIndex.indexName()));
   }
 }

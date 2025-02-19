@@ -23,6 +23,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
@@ -38,9 +39,8 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFac
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -67,7 +67,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 @Tag(ref = "Documents")
 public class CollectionResource {
 
-  public static final String BASE_PATH = "/v1/{keyspace}/{collection}";
+  public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}/{collection}";
 
   private final MeteredCommandProcessor meteredCommandProcessor;
 
@@ -77,7 +77,9 @@ public class CollectionResource {
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
 
-  @Inject FeaturesConfig apiFeatureConfig;
+  @Inject private FeaturesConfig apiFeatureConfig;
+
+  @Inject private OperationsConfig operationsConfig;
 
   @Inject private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
 
@@ -178,16 +180,8 @@ public class CollectionResource {
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
       @NotNull @Valid CollectionCommand command,
-      @PathParam("keyspace")
-          @NotNull
-          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-          @Size(min = 1, max = 48)
-          String keyspace,
-      @PathParam("collection")
-          @NotNull
-          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-          @Size(min = 1, max = 48)
-          String collection) {
+      @PathParam("keyspace") @NotEmpty String keyspace,
+      @PathParam("collection") @NotEmpty String collection) {
     return schemaCache
         .getSchemaObject(
             dataApiRequestInfo,
@@ -259,7 +253,8 @@ public class CollectionResource {
                         embeddingProvider,
                         command.getClass().getSimpleName(),
                         jsonProcessingMetricsReporter,
-                        apiFeatures);
+                        apiFeatures,
+                        operationsConfig);
 
                 return meteredCommandProcessor.processCommand(
                     dataApiRequestInfo, commandContext, command);

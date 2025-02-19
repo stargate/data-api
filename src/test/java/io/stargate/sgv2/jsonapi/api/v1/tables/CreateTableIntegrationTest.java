@@ -511,32 +511,6 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
                   "The command used the value type: text.")));
 
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                              {
-                                "name": "mapTypeNonStringKeyType",
-                                "definition": {
-                                  "columns": {
-                                    "id": "text",
-                                    "age": "int",
-                                    "name": "text",
-                                    "map_type": {
-                                      "type": "map",
-                                      "valueType": "text",
-                                      "keyType": "int"
-                                    }
-                                  },
-                                  "primaryKey": "id"
-                                }
-                              }
-                              """,
-                  "mapTypeNonStringKeyType not primitive type provided",
-                  true,
-                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
-                  "The command used the key type: int.")));
-
       // List type tests
       testCases.add(
           Arguments.of(
@@ -923,6 +897,128 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   true,
                   SchemaException.Code.MISSING_DIMENSION_IN_VECTOR_COLUMN.name(),
                   "The dimension is required for vector columns if the embedding service is not specified.")));
+
+      // Two vector columns with the one has vectorizeDefinition and the other one doesn't.
+      // This should be allowed.
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                  {
+                                     "name": "twoVectorColumnsWithOneVectorizeDefinition",
+                                     "definition": {
+                                        "columns": {
+                                            "t": "text",
+                                            "v1": {
+                                                "type": "vector",
+                                                "dimension": "5",
+                                                "service": {
+                                                    "provider": "openai",
+                                                    "modelName": "text-embedding-3-small"
+                                                }
+                                            },
+                                            "v2":{
+                                                "type": "vector",
+                                                "dimension": "1024"
+                                            }
+                                        },
+                                        "primaryKey": "t"
+                                     }
+                                  }
+                                  """,
+                  "twoVectorColumnsWithOneVectorizeDefinition",
+                  false,
+                  null,
+                  null)));
+
+      // table name is empty
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                        {
+                            "name": "",
+                            "definition": {
+                                "columns": {
+                                    "id": "text",
+                                    "age": "int",
+                                    "name": "text"
+                                },
+                                "primaryKey": "id"
+                            }
+                        }
+                        """,
+                  "",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
+                  "The command used the unsupported Table name: ''.")));
+
+      // table name is black
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                        {
+                            "name": " ",
+                            "definition": {
+                                "columns": {
+                                    "id": "text",
+                                    "age": "int",
+                                    "name": "text"
+                                },
+                                "primaryKey": "id"
+                            }
+                        }
+                        """,
+                  " ",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
+                  "The command used the unsupported Table name: ' '.")));
+
+      // table name too long
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                            {
+                                "name": "this_is_a_very_long_table_name_that_is_longer_than_48_characters",
+                                "definition": {
+                                    "columns": {
+                                        "id": "text",
+                                        "age": "int",
+                                        "name": "text"
+                                    },
+                                    "primaryKey": "id"
+                                }
+                            }
+                            """,
+                  "this_is_a_very_long_table_name_that_is_longer_than_48_characters",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
+                  "The command used the unsupported Table name: 'this_is_a_very_long_table_name_that_is_longer_than_48_characters'.")));
+
+      // table name with special characters
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                {
+                                    "name": " !@#",
+                                    "definition": {
+                                        "columns": {
+                                            "id": "text",
+                                            "age": "int",
+                                            "name": "text"
+                                        },
+                                        "primaryKey": "id"
+                                    }
+                                }
+                                """,
+                  " !@#",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.name(),
+                  "The command used the unsupported Table name: ' !@#'.")));
+
       return testCases.stream();
     }
   }

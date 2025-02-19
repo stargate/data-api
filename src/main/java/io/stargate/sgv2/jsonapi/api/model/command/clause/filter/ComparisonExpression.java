@@ -137,11 +137,14 @@ public class ComparisonExpression implements Invertible {
     if (value instanceof List) {
       return new JsonLiteral<>((List<Object>) value, JsonType.ARRAY);
     }
-    if (value instanceof Map) {
-      return new JsonLiteral<>((Map<String, Object>) value, JsonType.SUB_DOC);
+    if (value instanceof Map map) {
+      return new JsonLiteral<>(map, JsonType.SUB_DOC);
     }
     if (value instanceof UUID || value instanceof ObjectId) {
       return new JsonLiteral<>(value.toString(), JsonType.STRING);
+    }
+    if (value instanceof byte[] bytes) {
+      return new JsonLiteral<>(bytes, JsonType.EJSON_WRAPPER);
     }
     throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "Unsupported filter value type `%s`", value.getClass().getName());

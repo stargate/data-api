@@ -43,7 +43,11 @@ public abstract class ApiDataTypeDefs {
 
   public static final PrimitiveApiDataTypeDef DURATION =
       new PrimitiveApiDataTypeDef(
-          ApiTypeName.DURATION, DataTypes.DURATION, ApiSupportDef.Support.FULL);
+          // Does not support duration as map key. But, duration can be map/list/set value
+          ApiTypeName.DURATION,
+          DataTypes.DURATION,
+          new ApiSupportDef.Support(
+              true, new ApiSupportDef.Collection(true, true, false, true), true, true, true));
 
   public static final PrimitiveApiDataTypeDef TIME =
       new PrimitiveApiDataTypeDef(ApiTypeName.TIME, DataTypes.TIME, ApiSupportDef.Support.FULL);
@@ -64,7 +68,8 @@ public abstract class ApiDataTypeDefs {
       new PrimitiveApiDataTypeDef(
           ApiTypeName.COUNTER,
           DataTypes.COUNTER,
-          new ApiSupportDef.Support(false, false, true, true));
+          // Does not support counter as primitive column, list/set value or map key/value.
+          new ApiSupportDef.Support(false, ApiSupportDef.Collection.NONE, false, true, true));
 
   public static final PrimitiveApiDataTypeDef INET =
       new PrimitiveApiDataTypeDef(ApiTypeName.INET, DataTypes.INET, ApiSupportDef.Support.FULL);
@@ -73,7 +78,8 @@ public abstract class ApiDataTypeDefs {
       new PrimitiveApiDataTypeDef(
           ApiTypeName.TIMEUUID,
           DataTypes.TIMEUUID,
-          new ApiSupportDef.Support(false, true, true, true));
+          // Does not support counter as primitive column, list/set value or map key/value.
+          new ApiSupportDef.Support(false, ApiSupportDef.Collection.NONE, true, true, true));
 
   public static final PrimitiveApiDataTypeDef UUID =
       new PrimitiveApiDataTypeDef(ApiTypeName.UUID, DataTypes.UUID, ApiSupportDef.Support.FULL);

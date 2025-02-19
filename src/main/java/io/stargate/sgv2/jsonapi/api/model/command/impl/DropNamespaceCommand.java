@@ -5,9 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotEmpty;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(
@@ -16,12 +14,10 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     deprecated = true)
 @JsonTypeName(CommandName.Names.DROP_NAMESPACE)
 public record DropNamespaceCommand(
-    @NotNull
-        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-        @Size(min = 1, max = 48)
+    @NotEmpty
         @Schema(
             description =
-                "Name of the namespace. This dropNamespace has been deprecated and will be removed in future releases, use dropKeyspace instead.",
+                "Required name of the Namespace to remove. This dropNamespace has been deprecated and will be removed in future releases, use dropKeyspace instead.",
             deprecated = true)
         String name)
     implements GeneralCommand, NoOptionsCommand, DeprecatedCommand {
