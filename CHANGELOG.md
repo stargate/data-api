@@ -1,5 +1,19 @@
 # Changelog
 
+## [v1.0.22](https://github.com/stargate/data-api/tree/v1.0.22) (2025-02-19)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.21...v1.0.22)
+
+**Closed issues:**
+
+- Dots in Field names: Projection; use new Path expression codec [\#1854](https://github.com/stargate/data-api/issues/1854)
+
+**Merged pull requests:**
+
+- fix index analyze options default for non-text and non-ascii index [\#1881](https://github.com/stargate/data-api/pull/1881) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Bumping version for next data-api release [\#1875](https://github.com/stargate/data-api/pull/1875) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Fix \#1851: allow use of dotted paths for Sort, test \(no escaping yet\) [\#1874](https://github.com/stargate/data-api/pull/1874) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+
 ## [v1.0.21](https://github.com/stargate/data-api/tree/v1.0.21) (2025-02-14)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.20-ct1...v1.0.21)
