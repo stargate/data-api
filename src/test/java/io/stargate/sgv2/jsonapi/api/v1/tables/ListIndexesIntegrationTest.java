@@ -4,7 +4,6 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertN
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 
@@ -46,7 +45,7 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
               }
               """;
 
-  String createWithoutOptions =
+  String createWithoutOptionsOnText =
       """
                   {
                     "name": "city_idx",
@@ -56,7 +55,17 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                   }
                   """;
 
-  String createWithoutOptionsExpected =
+  String createWithoutOptionsOnInt =
+      """
+                  {
+                    "name": "age_idx",
+                    "definition": {
+                      "column": "age"
+                    }
+                  }
+                  """;
+
+  String createWithoutOptionsOnTextExpected =
       """
                   {
                     "name": "city_idx",
@@ -71,6 +80,19 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                     "indexType": "regular"
                   }
                   """;
+
+  String createWithoutOptionsOnIntExpected =
+      """
+                      {
+                        "name": "age_idx",
+                        "definition": {
+                          "column": "age",
+                          "options": {
+                          }
+                        },
+                        "indexType": "regular"
+                      }
+                      """;
 
   String createVectorIndex =
       """
@@ -115,8 +137,14 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
     // index1, name_idx
     assertTableCommand(keyspaceName, TABLE).postCreateIndex(createIndex).wasSuccessful();
     // index2, city_idx
-    assertTableCommand(keyspaceName, TABLE).postCreateIndex(createWithoutOptions).wasSuccessful();
-    // index3, content_idx
+    assertTableCommand(keyspaceName, TABLE)
+        .postCreateIndex(createWithoutOptionsOnText)
+        .wasSuccessful();
+    // index3, age_idx
+    assertTableCommand(keyspaceName, TABLE)
+        .postCreateIndex(createWithoutOptionsOnInt)
+        .wasSuccessful();
+    // index4, content_idx
     assertTableCommand(keyspaceName, TABLE)
         .postCreateVectorIndex(createVectorIndex)
         .wasSuccessful();
@@ -135,7 +163,7 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
           .templated()
           .listIndexes(false)
           .wasSuccessful()
-          .hasIndexes("city_idx", "name_idx", "content_idx");
+          .hasIndexes("city_idx", "name_idx", "age_idx", "content_idx");
     }
 
     @Test
@@ -147,13 +175,14 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
           .listIndexes(true)
           .wasSuccessful()
           // Validate that status.indexes has all indexes for the table
-          .body("status.indexes", hasSize(3))
+          .body("status.indexes", hasSize(4))
           // Validate index without options
           .body(
               "status.indexes",
               containsInAnyOrder( // Validate that the indexes are in any order
                   jsonEquals(createIndex),
-                  jsonEquals(createWithoutOptionsExpected),
+                  jsonEquals(createWithoutOptionsOnTextExpected),
+                  jsonEquals(createWithoutOptionsOnIntExpected),
                   jsonEquals(createVectorIndex)));
     }
   }
