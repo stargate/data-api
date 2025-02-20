@@ -48,8 +48,8 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
   }
 
   @Override
-  protected ApiColumnDef bindToColumn() {
-    var apiColumnDef = schemaObject().apiTableDef().allColumns().get(name());
+  protected ApiColumnDef bindToColumn(TableSchemaObject tableSchemaObject) {
+    var apiColumnDef = tableSchemaObject.apiTableDef().allColumns().get(name());
     if (apiColumnDef == null) {
       setErrorCode(NamedValueState.BIND_ERROR, errorStrategy.codeForUnknownColumn());
     }
@@ -127,16 +127,16 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
     setDecodedValue(decoded.value());
   }
 
-  @Override
-  public String toString() {
-    return new StringBuilder(getClass().getSimpleName())
-        .append("{columnName=")
-        .append(name().asCql(true))
-        .append(", value=")
-        .append(value())
-        .append("}")
-        .toString();
-  }
+//  @Override
+//  public String toString() {
+//    return new StringBuilder(getClass().getSimpleName())
+//        .append("{columnName=")
+//        .append(name().asCql(true))
+//        .append(", value=")
+//        .append(value())
+//        .append("}")
+//        .toString();
+//  }
 
   public interface ErrorStrategy<T extends RequestException> {
 

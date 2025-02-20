@@ -9,8 +9,6 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOp
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTaskBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -51,19 +49,30 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
       CommandContext<TableSchemaObject> commandContext, InsertOneCommand command) {
 
     TableInsertDBTaskBuilder taskBuilder =
-        TableInsertDBTask.builder(commandContext.schemaObject())
+        TableInsertDBTask.builder(commandContext)
+            .withOrdered(false)
+            .withReturnDocumentResponses(false) // never for insertOne
             .withJsonNamedValueFactory(
                 new JsonNamedValueFactory(commandContext.schemaObject(), JsonNodeDecoder.DEFAULT))
             .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
-    var taskGroup =
-        new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(
-            taskBuilder.build(command.document()));
+    return taskBuilder.build(List.of(command.document()));
 
-    var accumulator =
-        InsertDBTaskPage.accumulator(commandContext)
-            .returnDocumentResponses(false); // never for insertOne
-
-    return new TaskOperation<>(taskGroup, accumulator);
+    //    TableInsertDBTaskBuilder taskBuilder =
+    //        TableInsertDBTask.builder(commandContext.schemaObject())
+    //            .withJsonNamedValueFactory(
+    //                new JsonNamedValueFactory(commandContext.schemaObject(),
+    // JsonNodeDecoder.DEFAULT))
+    //            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+    //
+    //    var taskGroup =
+    //        new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(
+    //            taskBuilder.build(command.document()));
+    //
+    //    var accumulator =
+    //        InsertDBTaskPage.accumulator(commandContext)
+    //            .returnDocumentResponses(false); // never for insertOne
+    //
+    //    return new TaskOperation<>(taskGroup, accumulator);
   }
 }

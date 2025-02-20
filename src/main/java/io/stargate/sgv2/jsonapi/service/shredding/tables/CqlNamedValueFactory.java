@@ -51,6 +51,7 @@ public class CqlNamedValueFactory {
           if (cqlNamedValue.bind(tableSchemaObject)) {
             cqlNamedValue.prepare(value);
           }
+          allColumns.put(cqlNamedValue);
         });
 
     return allColumns;

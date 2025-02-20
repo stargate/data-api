@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.COLUMN_METADATA_CO
 
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -14,6 +15,9 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -24,6 +28,8 @@ import java.util.function.Predicate;
  * enforces the rules that {@link WriteableTableRow} has to be valid.
  */
 public class WriteableTableRowBuilder {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(WriteableTableRowBuilder.class);
 
   /** Match if a column does not support insert. */
   private static final Predicate<ApiSupportDef> MATCH_INSERT_UNSUPPORTED =
@@ -79,9 +85,13 @@ public class WriteableTableRowBuilder {
    */
   public WriteableTableRow build(JsonNamedValueContainer source) {
 
+    LOGGER.warn("XXX: source={}", source.toString(true));
+
     // Map everything from the JSON source into a CQL Value, we can check their state after.
     var allColumns =
         new CqlNamedValueFactory(tableSchemaObject, codecRegistry, ERROR_STRATEGY).create(source);
+
+    LOGGER.warn("XXX: allColumns={}", allColumns.toString(true));
 
     // the validation steps
     ERROR_STRATEGY.checkUnknownColumns(tableSchemaObject, allColumns);
@@ -175,7 +185,7 @@ public class WriteableTableRowBuilder {
 
     // dont worry about set, there is normally only 1 to 3 primary key columns in a table
 
-    Predicate<ColumnMetadata> isMissing =
+    Predicate<ColumnMetadata> isMissingPredicate =
         columMetadata -> {
           var cqlNamedValue = allColumns.get(columMetadata.getName());
           // missing is not present or present and null
@@ -184,13 +194,13 @@ public class WriteableTableRowBuilder {
 
     var missingPrimaryKeys =
         tableMetadata.getPrimaryKey().stream()
-            .filter(isMissing)
+            .filter(isMissingPredicate)
             .sorted(COLUMN_METADATA_COMPARATOR)
             .toList();
 
     if (!missingPrimaryKeys.isEmpty()) {
       var suppliedPrimaryKeys =
-          tableMetadata.getPrimaryKey().stream().filter(isMissing.negate()).toList();
+          tableMetadata.getPrimaryKey().stream().filter(isMissingPredicate.negate()).toList();
 
       throw DocumentException.Code.MISSING_PRIMARY_KEY_COLUMNS.get(
           errVars(

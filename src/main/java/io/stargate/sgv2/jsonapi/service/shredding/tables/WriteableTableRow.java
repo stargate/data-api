@@ -4,6 +4,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -74,6 +75,13 @@ public class WriteableTableRow implements PrettyPrintable {
    */
   public CqlNamedValueContainer allColumns() {
     return allColumns;
+  }
+
+  public Collection<CqlNamedValue> deferredColumns() {
+    // TODO: cache or better calculate this
+    return allColumns.values().stream()
+        .filter(namedValue -> namedValue.state().equals(NamedValue.NamedValueState.DEFERRED))
+        .toList();
   }
 
   public RowId rowId() {

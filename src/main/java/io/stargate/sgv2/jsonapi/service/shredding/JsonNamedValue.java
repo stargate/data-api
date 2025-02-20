@@ -4,6 +4,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromU
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
 import java.util.Objects;
@@ -25,9 +26,9 @@ public class JsonNamedValue extends NamedValue<JsonPath, JsonLiteral<?>, JsonNod
   }
 
   @Override
-  protected ApiColumnDef bindToColumn() {
+  protected ApiColumnDef bindToColumn(TableSchemaObject tableSchemaObject) {
     var apiColumnDef =
-        schemaObject()
+        tableSchemaObject
             .apiTableDef()
             .allColumns()
             .get(cqlIdentifierFromUserInput(name().toString()));
@@ -53,14 +54,14 @@ public class JsonNamedValue extends NamedValue<JsonPath, JsonLiteral<?>, JsonNod
     return new DecodeResult<>(jsonNodeDecoder.apply(rawValue), null);
   }
 
-  @Override
-  public String toString() {
-    return new StringBuilder(getClass().getSimpleName())
-        .append("{name=")
-        .append(name())
-        .append(", value=")
-        .append(value())
-        .append("}")
-        .toString();
-  }
+//  @Override
+//  public String toString() {
+//    return new StringBuilder(getClass().getSimpleName())
+//        .append("{name=")
+//        .append(name())
+//        .append(", value=")
+//        .append(value())
+//        .append("}")
+//        .toString();
+//  }
 }

@@ -9,8 +9,6 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOp
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTaskBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -54,25 +52,33 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, InsertManyCommand command) {
 
+    // TODO: move the default for ordered to a constant and use in the API
     TableInsertDBTaskBuilder taskBuilder =
-        TableInsertDBTask.builder(commandContext.schemaObject())
+        TableInsertDBTask.builder(commandContext)
+            .withOrdered(
+                ApiOptionUtils.getOrDefault(
+                    command.options(), InsertManyCommand.Options::ordered, false))
+            .withReturnDocumentResponses(
+                ApiOptionUtils.getOrDefault(
+                    command.options(), InsertManyCommand.Options::returnDocumentResponses, false))
             .withJsonNamedValueFactory(
                 new JsonNamedValueFactory(commandContext.schemaObject(), JsonNodeDecoder.DEFAULT))
             .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
+    return taskBuilder.build(command.documents());
     // TODO: move the default for ordered to a constant and use in the API
-    var taskGroup =
-        new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(
-            ApiOptionUtils.getOrDefault(
-                command.options(), InsertManyCommand.Options::ordered, false));
-    taskGroup.addAll(command.documents().stream().map(taskBuilder::build).toList());
-
-    var accumulator =
-        InsertDBTaskPage.accumulator(commandContext)
-            .returnDocumentResponses(
-                ApiOptionUtils.getOrDefault(
-                    command.options(), InsertManyCommand.Options::returnDocumentResponses, false));
-
-    return new TaskOperation<>(taskGroup, accumulator);
+    //    var taskGroup =
+    //        new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(
+    //            );
+    //    taskGroup.addAll(command.documents().stream().map(taskBuilder::build).toList());
+    //
+    //    var accumulator =
+    //        InsertDBTaskPage.accumulator(commandContext)
+    //            .returnDocumentResponses(
+    //                ApiOptionUtils.getOrDefault(
+    //                    command.options(), InsertManyCommand.Options::returnDocumentResponses,
+    // false));
+    //
+    //    return new TaskOperation<>(taskGroup, accumulator);
   }
 }
