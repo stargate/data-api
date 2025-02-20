@@ -21,20 +21,21 @@ import java.util.Objects;
 public class TableInsertDBTaskBuilder
     extends TaskBuilder<InsertDBTask<TableSchemaObject>, TableSchemaObject> {
 
-  private JsonNamedValueFactory rowShredder = null;
+  private JsonNamedValueFactory jsonNamedValueFactory = null;
 
   public TableInsertDBTaskBuilder(TableSchemaObject tableSchemaObject) {
     super(tableSchemaObject);
   }
 
-  public TableInsertDBTaskBuilder withRowShredder(JsonNamedValueFactory rowShredder) {
-    this.rowShredder = rowShredder;
+  public TableInsertDBTaskBuilder withJsonNamedValueFactory(
+      JsonNamedValueFactory jsonNamedValueFactory) {
+    this.jsonNamedValueFactory = jsonNamedValueFactory;
     return this;
   }
 
   public TableInsertDBTask build(JsonNode jsonNode) {
     Objects.requireNonNull(jsonNode, "jsonNode cannot be null");
-    Objects.requireNonNull(rowShredder, "rowShredder cannot be null");
+    Objects.requireNonNull(jsonNamedValueFactory, "rowShredder cannot be null");
 
     var writeableTableRowBuilder =
         new WriteableTableRowBuilder(schemaObject, JSONCodecRegistries.DEFAULT_REGISTRY);
@@ -42,7 +43,7 @@ public class TableInsertDBTaskBuilder
     WriteableTableRow writeableRow = null;
     Exception exception = null;
     try {
-      var jsonContainer = rowShredder.create(jsonNode);
+      var jsonContainer = jsonNamedValueFactory.create(jsonNode);
       writeableRow = writeableTableRowBuilder.build(jsonContainer);
     } catch (RuntimeException e) {
       exception = e;

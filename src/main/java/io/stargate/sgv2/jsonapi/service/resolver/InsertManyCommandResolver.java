@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTaskBuilde
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
 import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
@@ -23,13 +24,10 @@ import jakarta.inject.Inject;
 public class InsertManyCommandResolver implements CommandResolver<InsertManyCommand> {
 
   private final DocumentShredder documentShredder;
-  private final JsonNamedValueFactory rowShredder;
 
   @Inject
-  public InsertManyCommandResolver(
-      DocumentShredder documentShredder, JsonNamedValueFactory rowShredder) {
+  public InsertManyCommandResolver(DocumentShredder documentShredder) {
     this.documentShredder = documentShredder;
-    this.rowShredder = rowShredder;
   }
 
   @Override
@@ -58,7 +56,8 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
 
     TableInsertDBTaskBuilder taskBuilder =
         TableInsertDBTask.builder(commandContext.schemaObject())
-            .withRowShredder(rowShredder)
+            .withJsonNamedValueFactory(
+                new JsonNamedValueFactory(commandContext.schemaObject(), JsonNodeDecoder.DEFAULT))
             .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
     // TODO: move the default for ordered to a constant and use in the API
