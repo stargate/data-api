@@ -120,20 +120,16 @@ public class JSONCodecRegistry {
         }
         // fall through
       } else if (columnType instanceof MapType mt) {
+        List<JSONCodec<?, ?>> keyCodecCandidates = codecsByCQLType.get(mt.getKeyType());
         List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(mt.getValueType());
-        if (valueCodecCandidates != null) {
-          // Must check key type: only text/ascii supported
-          if (!isSupportedMapKeyType(mt.getKeyType())) {
-            throw new ToCQLCodecException(value, columnType, "unsupported map key type");
-          }
-
+        if (keyCodecCandidates != null && valueCodecCandidates != null) {
           // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
           if (!(value instanceof Map<?, ?>)) {
             throw new ToCQLCodecException(value, columnType, "no codec matching value type");
           }
           return (JSONCodec<JavaT, CqlT>)
               MapCodecs.buildToCqlMapCodec(
-                  valueCodecCandidates, mt.getKeyType(), mt.getValueType());
+                  keyCodecCandidates, valueCodecCandidates, mt.getKeyType(), mt.getValueType());
         }
         // fall through
       } else if (columnType instanceof VectorType vt) {
@@ -224,14 +220,14 @@ public class JSONCodecRegistry {
     }
     if (fromCQLType instanceof MapType mt) {
       final DataType keyType = mt.getKeyType();
-      if (!isSupportedMapKeyType(keyType)) {
-        return null; // so caller reports problem
-      }
+      List<JSONCodec<?, ?>> keyCodecCandidates = codecsByCQLType.get(mt.getKeyType());
       List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(mt.getValueType());
-      if (valueCodecCandidates == null) {
+      if (keyCodecCandidates == null || valueCodecCandidates == null) {
         return null; // so caller reports problem
       }
-      return (JSONCodec<JavaT, CqlT>) MapCodecs.buildToJsonMapCodec(valueCodecCandidates.get(0));
+      return (JSONCodec<JavaT, CqlT>)
+          MapCodecs.buildToJsonMapCodec(
+              keyType, keyCodecCandidates.get(0), valueCodecCandidates.get(0));
     }
 
     if (fromCQLType instanceof VectorType vt) {
@@ -243,9 +239,5 @@ public class JSONCodecRegistry {
     }
 
     return null;
-  }
-
-  private boolean isSupportedMapKeyType(DataType keyType) {
-    return keyType.equals(DataTypes.TEXT) || keyType.equals(DataTypes.ASCII);
   }
 }
