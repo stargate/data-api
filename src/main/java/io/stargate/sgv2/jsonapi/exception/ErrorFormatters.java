@@ -11,6 +11,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -68,6 +70,10 @@ public abstract class ErrorFormatters {
     return errFmtJoin(columnDescs, ErrorFormatters::errFmt);
   }
 
+  public static String errFmtCqlNamedValue(Collection<CqlNamedValue> cqlNamedValues) {
+    return errFmtJoin(cqlNamedValues, ErrorFormatters::errFmt);
+  }
+
   public static String errFmt(ColumnMetadata column) {
     return String.format("%s(%s)", errFmt(column.getName()), errFmt(column.getType()));
   }
@@ -78,6 +84,13 @@ public abstract class ErrorFormatters {
 
   public static String errFmt(ApiColumnDef apiColumnDef) {
     return String.format("%s(%s)", errFmt(apiColumnDef.name()), errFmt(apiColumnDef.type()));
+  }
+
+  public static String errFmt(CqlNamedValue cqlNamedValue) {
+    // If there is a bind error we did not have the ApiColumnDef
+    return cqlNamedValue.state().equals(CqlNamedValue.NamedValueState.BIND_ERROR)
+        ? errFmt(cqlNamedValue.name())
+        : errFmt(cqlNamedValue.apiColumnDef());
   }
 
   public static String errFmt(ColumnDesc columnDesc) {

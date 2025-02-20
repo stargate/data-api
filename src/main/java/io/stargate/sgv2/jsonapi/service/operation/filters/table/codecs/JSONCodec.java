@@ -9,7 +9,7 @@ import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToJSONCodecException;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -29,7 +29,7 @@ import java.util.function.Function;
  *
  * <ul>
  *   <li>JSON Document parsed by Jackson into a {@link JsonNode}
- *   <li>{@link RowShredder} converts the Jackson {@JsonNode}s values into Java Objects (from {@code
+ *   <li>{@link JsonNamedValueFactory} converts the Jackson {@JsonNode}s values into Java Objects (from {@code
  *       TextNode} into {@code String}, {@code BooleanNode} into {@code Boolean}, etc.)
  *   <li>JSONCodec (this class) turns Java Object into the Java type the C* driver expects (e.g.
  *       Short
@@ -43,7 +43,7 @@ import java.util.function.Function;
  *
  * <p>Note on Jackson conversion of JSON Numbers: Jackson is used to first read JSON content as
  * {@link JsonNode}s, and then values are converted to "natural" Java types: conversion is done in
- * {@link RowShredder#shredValue} and results in one of the following types:
+ * {@link JsonNamedValueFactory#shredValue} and results in one of the following types:
  *
  * <ul>
  *   <li>{@link java.math.BigDecimal} for numbers that are not integers in JSON

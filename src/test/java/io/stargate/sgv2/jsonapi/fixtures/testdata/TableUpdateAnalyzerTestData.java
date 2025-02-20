@@ -31,7 +31,7 @@ public class TableUpdateAnalyzerTestData extends TestDataSuplier {
 
     private final String message;
     private final TableMetadata tableMetadata;
-    private final TableSchemaObject tableSchemaObject;
+    public final TableSchemaObject tableSchemaObject;
     private final TableUpdateAnalyzer analyzer;
     private final UpdateClauseTestData.ColumnAssignmentsBuilder<TableUpdateAnalyzerFixture>
         columnAssignments;

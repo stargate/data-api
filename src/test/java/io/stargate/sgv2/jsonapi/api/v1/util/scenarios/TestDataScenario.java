@@ -68,12 +68,14 @@ public abstract class TestDataScenario {
   }
 
   public Object columnValue(ApiColumnDef apiColumnDef) {
-    var jsonLiteral = dataSource.fromJSON(apiColumnDef);
-    if (jsonLiteral.type() == JsonType.ARRAY) {
-      List<JsonLiteral<?>> literals = (List<JsonLiteral<?>>) jsonLiteral.value();
-      return literals.stream().map(JsonLiteral::value).toArray();
-    }
-    return jsonLiteral.value();
+    return dataSource.fromJSON(apiColumnDef);
+
+    // todo: aaron feb 20 2025 - old code leaving incase changes dont work
+//    if (jsonLiteral.type() == JsonType.ARRAY) {
+//      List<JsonLiteral<?>> literals = (List<JsonLiteral<?>>) jsonLiteral.value();
+//      return literals.stream().map(JsonLiteral::value).toArray();
+//    }
+//    return jsonLiteral.value();
   }
 
   protected void createTable() {

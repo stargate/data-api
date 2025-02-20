@@ -23,7 +23,7 @@ public class TableUpdateAnalyzerTest {
   public void updateOnKnownColumn() {
     var fixture =
         TEST_DATA.tableUpdateAnalyzer().table2PK3Clustering1Index("updateOnKnownColumn()");
-    fixture.columnAssignments().setOnKnownColumn().analyze().assertNoUpdateException();
+    fixture.columnAssignments().setOnKnownColumn(fixture.tableSchemaObject).analyze().assertNoUpdateException();
   }
 
   @Test
@@ -31,7 +31,7 @@ public class TableUpdateAnalyzerTest {
     var fixture = TEST_DATA.tableUpdateAnalyzer().table2PK3Clustering1Index("updateOnPrimaryKey()");
     fixture
         .columnAssignments()
-        .setOnPrimaryKeys()
+        .setOnPrimaryKeys(fixture.tableSchemaObject)
         .analyzeThrows(UpdateException.class)
         .assertUpdateExceptionCode(UpdateException.Code.UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS);
   }
@@ -44,7 +44,7 @@ public class TableUpdateAnalyzerTest {
         CqlIdentifierUtil.cqlIdentifierFromUserInput("column" + System.currentTimeMillis());
     fixture
         .columnAssignments()
-        .setOnUnknownColumn(unknownColumnIdentifier)
+        .setOnUnknownColumn(fixture.tableSchemaObject, unknownColumnIdentifier)
         .analyzeThrows(UpdateException.class)
         .assertUpdateExceptionCode(UpdateException.Code.UNKNOWN_TABLE_COLUMNS);
   }

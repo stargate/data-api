@@ -7,7 +7,7 @@ import java.util.List;
 
 /** A container for {@link CqlNamedValue}'s that maintains the order the named values were added. */
 public class CqlNamedValueContainer
-    extends NamedValueContainer<ColumnMetadata, Object, CqlNamedValue> {
+    extends NamedValueContainer<CqlIdentifier, Object, CqlNamedValue> {
 
   public CqlNamedValueContainer() {
     super();
@@ -22,11 +22,7 @@ public class CqlNamedValueContainer
   }
 
   public CqlNamedValueContainer(Collection<CqlNamedValue> values) {
-    super();
+    super(values.size());
     putAll(values);
-  }
-
-  public List<CqlIdentifier> getIdentifiers() {
-    return keySet().stream().map(ColumnMetadata::getName).toList();
   }
 }

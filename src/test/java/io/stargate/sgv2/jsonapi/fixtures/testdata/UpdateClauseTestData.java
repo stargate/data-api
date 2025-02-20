@@ -1,19 +1,56 @@
 package io.stargate.sgv2.jsonapi.fixtures.testdata;
 
 import static io.stargate.sgv2.jsonapi.fixtures.testdata.LogicalExpressionTestData.ExpressionBuilder.jsonNodeValue;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
+import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueFactory;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class UpdateClauseTestData extends TestDataSuplier {
+
+  private static final CqlNamedValue.ErrorStrategy<? extends RequestException> THROW_ALL_ERROR_STRATEGY =
+      new CqlNamedValue.ErrorStrategy<>(){
+
+        @Override
+        public ErrorCode<RequestException> codeForNoApiSupport() {
+          throw new UnsupportedOperationException("codeForNoApiSupport Not implemented");
+        }
+
+        @Override
+        public ErrorCode<RequestException> codeForUnknownColumn() {
+          throw new UnsupportedOperationException("codeForUnknownColumn Not implemented");
+        }
+
+        @Override
+        public ErrorCode<RequestException> codeForMissingCodec() {
+          throw new UnsupportedOperationException("codeForMissingCodec Not implemented");
+        }
+
+        @Override
+        public ErrorCode<RequestException> codeForCodecError() {
+          throw new UnsupportedOperationException("codeForCodecError Not implemented");
+        }
+      };
 
   public UpdateClauseTestData(TestData testData) {
     super(testData);
@@ -34,69 +71,70 @@ public class UpdateClauseTestData extends TestDataSuplier {
       this.tableMetadata = tableMetadata;
     }
 
-    public FixtureT setOnKnownColumn(CqlIdentifier column) {
+    private ColumnAssignment buildColumnAssignment(TableSchemaObject tableSchemaObject, CqlIdentifier column){
       var columnMetadata = tableMetadata.getColumn(column);
       if (columnMetadata.isEmpty()) {
         throw new IllegalArgumentException("Column " + column + " does not exist");
       }
+      return buildColumnAssignment(tableSchemaObject, column,  jsonNodeValue(columnMetadata.get().getType()));
+    }
 
-      var columnAssignment =
-          new ColumnAssignment(
-              tableMetadata,
-              column,
-              RowShredder.shredValue(jsonNodeValue(columnMetadata.get().getType())));
-      columnAssignments.add(columnAssignment);
+    private ColumnAssignment buildColumnAssignment(TableSchemaObject tableSchemaObject, CqlIdentifier column, JsonNode value){
+
+      var objectMapper = new ObjectMapper();
+      var node = objectMapper.createObjectNode()
+          .set(cqlIdentifierToJsonKey(column), value);
+
+      var jsonNamedValues = new JsonNamedValueFactory(tableSchemaObject, JsonNodeDecoder.DEFAULT).create(node);
+      var cqlNamedValues = new CqlNamedValueFactory(tableSchemaObject, JSONCodecRegistries.DEFAULT_REGISTRY, THROW_ALL_ERROR_STRATEGY).create(jsonNamedValues);
+      assert cqlNamedValues.size() == 1;
+
+      return new ColumnAssignment(cqlNamedValues.values().iterator().next());
+    }
+
+    public FixtureT setOnKnownColumn(TableSchemaObject tableSchemaObject, CqlIdentifier column) {
+      columnAssignments.add(buildColumnAssignment(tableSchemaObject, column));
       return fixture;
     }
 
-    public FixtureT setOnUnknownColumn(CqlIdentifier unknownColumn) {
-      var defaultDataType = DataTypes.TEXT;
-      var columnAssignment =
-          new ColumnAssignment(
-              tableMetadata, unknownColumn, RowShredder.shredValue(jsonNodeValue(defaultDataType)));
-      columnAssignments.add(columnAssignment);
+    public FixtureT setOnUnknownColumn(TableSchemaObject tableSchemaObject, CqlIdentifier unknownColumn) {
+      // data type does not matter, ok to always use text
+      columnAssignments.add(buildColumnAssignment(tableSchemaObject, unknownColumn, jsonNodeValue(DataTypes.TEXT)));
       return fixture;
     }
 
-    public FixtureT setOnPrimaryKeys() {
+    public FixtureT setOnPrimaryKeys(TableSchemaObject tableSchemaObject) {
       var assignments =
           tableMetadata.getPrimaryKey().stream()
               // Map each primary key column to a new ColumnAssignment
-              .map(
-                  pk ->
-                      new ColumnAssignment(
-                          tableMetadata,
+              .map(pk ->
+                      buildColumnAssignment(
+                          tableSchemaObject,
                           pk.getName(),
-                          RowShredder.shredValue(
-                              jsonNodeValue(pk.getType())) // Shred the value based on its type
-                          ))
+                          jsonNodeValue(pk.getType())))
               .toList();
 
       columnAssignments.addAll(assignments);
       return fixture;
     }
 
-    public FixtureT setOnKnownColumn() {
+    public FixtureT setOnKnownColumn(TableSchemaObject tableSchemaObject) {
+
       var primaryKeyColumnNames =
           tableMetadata.getPrimaryKey().stream()
-              .map(ColumnMetadata::getName) // Extract column names
-              .collect(Collectors.toSet()); // Store in a set for fast lookup
+              .map(ColumnMetadata::getName)
+              .collect(Collectors.toSet());
 
       var assignments =
           tableMetadata.getColumns().entrySet().stream()
               // Filter out primary key columns by comparing their names
-              .filter(column -> !primaryKeyColumnNames.contains(column.getKey()))
+              .filter(entry -> !primaryKeyColumnNames.contains(entry.getKey()))
               .map(
-                  column ->
-                      new ColumnAssignment(
-                          tableMetadata,
-                          column.getKey(),
-                          RowShredder.shredValue( // Process the value based on its type
-                              jsonNodeValue(
-                                  column
-                                      .getValue()
-                                      .getType()) // Retrieve value for the column's type
-                              )))
+                  entry ->
+                      buildColumnAssignment(
+                          tableSchemaObject,
+                          entry.getKey(),
+                          jsonNodeValue(entry.getValue().getType())))
               .toList(); // Collect the results into a list
       columnAssignments.addAll(assignments);
       return fixture;

@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
 import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -23,10 +23,10 @@ import jakarta.inject.Inject;
 public class InsertManyCommandResolver implements CommandResolver<InsertManyCommand> {
 
   private final DocumentShredder documentShredder;
-  private final RowShredder rowShredder;
+  private final JsonNamedValueFactory rowShredder;
 
   @Inject
-  public InsertManyCommandResolver(DocumentShredder documentShredder, RowShredder rowShredder) {
+  public InsertManyCommandResolver(DocumentShredder documentShredder, JsonNamedValueFactory rowShredder) {
     this.documentShredder = documentShredder;
     this.rowShredder = rowShredder;
   }

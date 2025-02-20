@@ -427,6 +427,18 @@ request-errors:
       
       Resend the command vector columns with vectorize enabled.
 
+  - scope: UPDATE
+    code: UNSUPPORTED_COLUMN_TYPES
+    title: Column types in update clause are not supported
+    body: |-
+      Only supported column types can be included when updating columns in a table.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command included the following columns that have unsupported data types: ${unsupportedColumns}.
+      
+      Resend the command using only supported column types.
+
+
   # ================================================================================================================
   # Family: REQUEST         Scope: WARNING
   # ================================================================================================================

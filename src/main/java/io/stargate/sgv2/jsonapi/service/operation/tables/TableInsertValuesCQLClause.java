@@ -43,8 +43,8 @@ public record TableInsertValuesCQLClause(TableSchemaObject tableSchemaObject, Wr
       positionalValues.add(cqlNamedValue.value());
       regularInsert =
           regularInsert == null
-              ? ongoingValues.value(cqlNamedValue.name().getName(), bindMarker())
-              : regularInsert.value(cqlNamedValue.name().getName(), bindMarker());
+              ? ongoingValues.value(cqlNamedValue.name(), bindMarker())
+              : regularInsert.value(cqlNamedValue.name(), bindMarker());
     }
 
     return regularInsert;
