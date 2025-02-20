@@ -14,9 +14,9 @@ import java.util.Objects;
  *
  * <p>Create an instance and then call {@link #build(JsonNode)} for each task you want to create.
  *
- * <p>NOTE: Uses the {@link JsonNamedValueFactory} and {@link WriteableTableRowBuilder} which both check the
- * data is valid, the first that the document does not exceed the limits, and the second that the
- * data is valid for the table.
+ * <p>NOTE: Uses the {@link JsonNamedValueFactory} and {@link WriteableTableRowBuilder} which both
+ * check the data is valid, the first that the document does not exceed the limits, and the second
+ * that the data is valid for the table.
  */
 public class TableInsertDBTaskBuilder
     extends TaskBuilder<InsertDBTask<TableSchemaObject>, TableSchemaObject> {

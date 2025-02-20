@@ -12,7 +12,6 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;

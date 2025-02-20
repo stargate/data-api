@@ -26,7 +26,8 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
   private final JsonNamedValueFactory rowShredder;
 
   @Inject
-  public InsertOneCommandResolver(DocumentShredder documentShredder, JsonNamedValueFactory rowShredder) {
+  public InsertOneCommandResolver(
+      DocumentShredder documentShredder, JsonNamedValueFactory rowShredder) {
     this.documentShredder = documentShredder;
     this.rowShredder = rowShredder;
   }

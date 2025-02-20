@@ -26,7 +26,8 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
   private final JsonNamedValueFactory rowShredder;
 
   @Inject
-  public InsertManyCommandResolver(DocumentShredder documentShredder, JsonNamedValueFactory rowShredder) {
+  public InsertManyCommandResolver(
+      DocumentShredder documentShredder, JsonNamedValueFactory rowShredder) {
     this.documentShredder = documentShredder;
     this.rowShredder = rowShredder;
   }

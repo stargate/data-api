@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.shredding;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.CQL_IDENTIFIER_COMPARATOR;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
@@ -15,13 +18,9 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
-
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Predicate;
-
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.CQL_IDENTIFIER_COMPARATOR;
 
 /**
  * A value that can be sent to the CQL Driver or has come from it.
@@ -38,7 +37,10 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
   private final JSONCodecRegistry codecRegistry;
   private final ErrorStrategy<? extends RequestException> errorStrategy;
 
-  public CqlNamedValue(CqlIdentifier name, JSONCodecRegistry codecRegistry, ErrorStrategy<? extends RequestException> errorStrategy) {
+  public CqlNamedValue(
+      CqlIdentifier name,
+      JSONCodecRegistry codecRegistry,
+      ErrorStrategy<? extends RequestException> errorStrategy) {
     super(name);
 
     this.codecRegistry = Objects.requireNonNull(codecRegistry, "codecRegistry must not be null");
@@ -47,7 +49,7 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
 
   @Override
   protected ApiColumnDef bindToColumn() {
-    var apiColumnDef =  schemaObject().apiTableDef().allColumns().get(name());
+    var apiColumnDef = schemaObject().apiTableDef().allColumns().get(name());
     if (apiColumnDef == null) {
       setErrorCode(NamedValueState.BIND_ERROR, errorStrategy.codeForUnknownColumn());
     }
@@ -59,9 +61,9 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
 
     // First - check if we want to defer the decode because we need to generate a vector
     // need a vector column, with vectorize def, and the raw value to be a string
-    if ( (apiColumnDef().type() instanceof ApiVectorType vectorType) &&
-        (vectorType.getVectorizeDefinition() != null) &&
-        (rawValue.value().type().equals(JsonType.STRING)) ) {
+    if ((apiColumnDef().type() instanceof ApiVectorType vectorType)
+        && (vectorType.getVectorizeDefinition() != null)
+        && (rawValue.value().type().equals(JsonType.STRING))) {
 
       return maybeVectorize(rawValue);
     }
@@ -70,7 +72,7 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
     return decodeToCQL(rawValue.value().value());
   }
 
-  private DecodeResult<Object> decodeToCQL(Object rawValue){
+  private DecodeResult<Object> decodeToCQL(Object rawValue) {
 
     try {
       var codec = codecRegistry.codecToCQL(schemaObject().tableMetadata(), name(), rawValue);
@@ -90,30 +92,34 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
     return null;
   }
 
-  private DecodeResult<Object> maybeVectorize(JsonNamedValue rawValue){
+  private DecodeResult<Object> maybeVectorize(JsonNamedValue rawValue) {
 
     var vectorizeText = rawValue.value().value().toString();
-    // we have a vectorize text, if the text is empty we simply set the value of the vector to be null
-    if (vectorizeText.isBlank()){
+    // we have a vectorize text, if the text is empty we simply set the value of the vector to be
+    // null
+    if (vectorizeText.isBlank()) {
       return new DecodeResult<>(null, null);
     }
 
     // vectorize this sucker
     // we give the value generator a consumer so we can prepare the value when we get it back.
-    return new  DecodeResult<>(null, new VectorizeValueGenerator(vectorizeText, apiColumnDef(), this::consumerVectorizeValue));
+    return new DecodeResult<>(
+        null,
+        new VectorizeValueGenerator(vectorizeText, apiColumnDef(), this::consumerVectorizeValue));
   }
 
   /**
    * Consumer for when we get the vector we needed to generate.
-   * <p>
-   * The generator will have checked we got what the column needs, we need to run it through the codec
-   * to get the value to send to CQL.
+   *
+   * <p>The generator will have checked we got what the column needs, we need to run it through the
+   * codec to get the value to send to CQL.
+   *
    * @param vector
    */
-  private void consumerVectorizeValue(float[] vector){
+  private void consumerVectorizeValue(float[] vector) {
 
     var decoded = decodeToCQL(vector);
-    if (decoded == null){
+    if (decoded == null) {
       throw new IllegalStateException("VectorizeValueGenerator: decodeToCQL returned null");
     }
 
@@ -142,88 +148,118 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
 
     ErrorCode<T> codeForCodecError();
 
-    default void allChecks(TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns){
+    default void allChecks(TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
       throw new UnsupportedOperationException("Not implemented, implement in subclass");
     }
 
-    default void checkApiSupport(TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns, Predicate<ApiSupportDef> unsupportedPredicate) {
+    default void checkApiSupport(
+        TableSchemaObject tableSchemaObject,
+        CqlNamedValueContainer allColumns,
+        Predicate<ApiSupportDef> unsupportedPredicate) {
 
-      var unsupportedColumns = allColumns.values().stream()
-          .filter(namedValue -> unsupportedPredicate.test(namedValue.apiColumnDef().type().apiSupport()))
-          .sorted(CqlNamedValue.NAME_COMPARATOR)
-          .toList();
+      var unsupportedColumns =
+          allColumns.values().stream()
+              .filter(
+                  namedValue ->
+                      unsupportedPredicate.test(namedValue.apiColumnDef().type().apiSupport()))
+              .sorted(CqlNamedValue.NAME_COMPARATOR)
+              .toList();
 
       if (!unsupportedColumns.isEmpty()) {
-        throw codeForNoApiSupport().get(
-            errVars(
-                tableSchemaObject,
-                map -> {
-                  map.put("allColumns", errFmtColumnMetadata(tableSchemaObject.tableMetadata().getColumns().values()));
-                  map.put("unsupportedColumns", errFmtCqlNamedValue(unsupportedColumns));
-                }));
+        throw codeForNoApiSupport()
+            .get(
+                errVars(
+                    tableSchemaObject,
+                    map -> {
+                      map.put(
+                          "allColumns",
+                          errFmtColumnMetadata(
+                              tableSchemaObject.tableMetadata().getColumns().values()));
+                      map.put("unsupportedColumns", errFmtCqlNamedValue(unsupportedColumns));
+                    }));
       }
     }
 
-    default void checkUnknownColumns(TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
+    default void checkUnknownColumns(
+        TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
 
       var unknownColumns =
           allColumns.values().stream()
-              .filter(cqlNamedValue -> cqlNamedValue.state().equals(NamedValue.NamedValueState.BIND_ERROR))
+              .filter(
+                  cqlNamedValue ->
+                      cqlNamedValue.state().equals(NamedValue.NamedValueState.BIND_ERROR))
               .filter(cqlNamedValue -> cqlNamedValue.errorCode().equals(codeForUnknownColumn()))
               .sorted(CqlNamedValue.NAME_COMPARATOR)
               .toList();
 
       if (!unknownColumns.isEmpty()) {
-        throw codeForUnknownColumn().get(
-            errVars(
-                tableSchemaObject,
-                map -> {
-                  map.put("allColumns", errFmtColumnMetadata(tableSchemaObject.tableMetadata().getColumns().values()));
-                  map.put("unknownColumns", errFmtCqlNamedValue(unknownColumns));
-                }));
+        throw codeForUnknownColumn()
+            .get(
+                errVars(
+                    tableSchemaObject,
+                    map -> {
+                      map.put(
+                          "allColumns",
+                          errFmtColumnMetadata(
+                              tableSchemaObject.tableMetadata().getColumns().values()));
+                      map.put("unknownColumns", errFmtCqlNamedValue(unknownColumns));
+                    }));
       }
     }
 
-
-    default void checkMissingCodec(TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
+    default void checkMissingCodec(
+        TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
 
       var missingCodecs =
           allColumns.values().stream()
-              .filter(cqlNamedValue -> cqlNamedValue.state().equals(NamedValue.NamedValueState.PREPARE_ERROR))
+              .filter(
+                  cqlNamedValue ->
+                      cqlNamedValue.state().equals(NamedValue.NamedValueState.PREPARE_ERROR))
               .filter(cqlNamedValue -> cqlNamedValue.errorCode().equals(codeForMissingCodec()))
               .sorted(CqlNamedValue.NAME_COMPARATOR)
               .toList();
 
       if (!missingCodecs.isEmpty()) {
         // NOTE: SAME ERROR IS THROWN  in checkApiSupport -OK until we re-factor
-        throw codeForMissingCodec().get(
-            errVars(
-                tableSchemaObject,
-                map -> {
-                  map.put("allColumns", errFmtColumnMetadata(tableSchemaObject.tableMetadata().getColumns().values()));
-                  map.put("unsupportedColumns", errFmtCqlNamedValue(missingCodecs));
-                }));
+        throw codeForMissingCodec()
+            .get(
+                errVars(
+                    tableSchemaObject,
+                    map -> {
+                      map.put(
+                          "allColumns",
+                          errFmtColumnMetadata(
+                              tableSchemaObject.tableMetadata().getColumns().values()));
+                      map.put("unsupportedColumns", errFmtCqlNamedValue(missingCodecs));
+                    }));
       }
     }
 
-    default void checkCodecError(TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
+    default void checkCodecError(
+        TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
 
       var codecErrors =
           allColumns.values().stream()
-              .filter(cqlNamedValue -> cqlNamedValue.state().equals(NamedValue.NamedValueState.PREPARE_ERROR))
+              .filter(
+                  cqlNamedValue ->
+                      cqlNamedValue.state().equals(NamedValue.NamedValueState.PREPARE_ERROR))
               .filter(cqlNamedValue -> cqlNamedValue.errorCode().equals(codeForCodecError()))
               .sorted(CqlNamedValue.NAME_COMPARATOR)
               .toList();
 
       if (!codecErrors.isEmpty()) {
-        throw codeForCodecError().get(
-            errVars(
-                tableSchemaObject,
-                map -> {
-                  map.put("allColumns", errFmtColumnMetadata(tableSchemaObject.tableMetadata().getColumns().values()));
-                  map.put("invalidColumns", errFmtCqlNamedValue(codecErrors));
-                }));
-      }}
+        throw codeForCodecError()
+            .get(
+                errVars(
+                    tableSchemaObject,
+                    map -> {
+                      map.put(
+                          "allColumns",
+                          errFmtColumnMetadata(
+                              tableSchemaObject.tableMetadata().getColumns().values()));
+                      map.put("invalidColumns", errFmtCqlNamedValue(codecErrors));
+                    }));
+      }
+    }
   }
-
 }

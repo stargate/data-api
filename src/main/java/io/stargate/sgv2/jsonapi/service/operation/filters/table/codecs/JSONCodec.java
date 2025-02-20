@@ -29,8 +29,8 @@ import java.util.function.Function;
  *
  * <ul>
  *   <li>JSON Document parsed by Jackson into a {@link JsonNode}
- *   <li>{@link JsonNamedValueFactory} converts the Jackson {@JsonNode}s values into Java Objects (from {@code
- *       TextNode} into {@code String}, {@code BooleanNode} into {@code Boolean}, etc.)
+ *   <li>{@link JsonNamedValueFactory} converts the Jackson {@JsonNode}s values into Java Objects
+ *       (from {@code TextNode} into {@code String}, {@code BooleanNode} into {@code Boolean}, etc.)
  *   <li>JSONCodec (this class) turns Java Object into the Java type the C* driver expects (e.g.
  *       Short
  *   <li>C* driver codec turns Java type into C* type

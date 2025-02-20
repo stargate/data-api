@@ -6,7 +6,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
-
 import java.util.Objects;
 
 /**
@@ -26,7 +25,7 @@ import java.util.Objects;
  */
 public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrintable {
 
-  public enum NamedValueState{
+  public enum NamedValueState {
     INITIAL(false, false),
     BOUND(false, false),
     DEFERRED(false, false),
@@ -66,10 +65,12 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
 
   /**
    * Use the name given for the NV to bind to the schema
+   *
    * @param tableSchemaObject
    */
   public boolean bind(TableSchemaObject tableSchemaObject) {
-    this.tableSchemaObject = Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
+    this.tableSchemaObject =
+        Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
 
     // can only bind once
     checkIsState(NamedValueState.INITIAL, "bind()");
@@ -77,10 +78,11 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
     // subclass needs to know how to use the NameT to get a column
     columnDef = bindToColumn();
 
-    // if we do not get a column that is OK, the subclass must has set the state to BIND_ERROR because it
+    // if we do not get a column that is OK, the subclass must has set the state to BIND_ERROR
+    // because it
     // could not find the column and it may be setting other sublcass specific info
     if (columnDef == null) {
-      checkIsState(NamedValueState.BIND_ERROR, "bindToColumn() returned null" );
+      checkIsState(NamedValueState.BIND_ERROR, "bindToColumn() returned null");
       return false;
     }
     setState(NamedValueState.BOUND);
@@ -92,7 +94,7 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
    *
    * @param rawValue
    */
-  public boolean prepare(RawValueT rawValue){
+  public boolean prepare(RawValueT rawValue) {
 
     checkIsState(NamedValueState.BOUND, "prepare()");
     var decodeResult = decodeValue(rawValue);
@@ -108,8 +110,7 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
     if (decodeResult.valueGenerator() != null) {
       valueGenerator = decodeResult.valueGenerator();
       setState(NamedValueState.DEFERRED);
-    }
-    else {
+    } else {
       setDecodedValue(decodeResult.value());
     }
     return true;
@@ -121,22 +122,24 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
 
   /**
    * Called to get a reference to the column the value is bound to.
+   *
    * @return
    */
   protected abstract ApiColumnDef bindToColumn();
 
   /**
-   * Called to take the raw value and decode into what we need for this context.
-   * e.g. from JSON to Java or from Java to CQL
+   * Called to take the raw value and decode into what we need for this context. e.g. from JSON to
+   * Java or from Java to CQL
+   *
    * @param rawValue
    * @return
    */
   protected abstract DecodeResult<ValueT> decodeValue(RawValueT rawValue);
 
-
   /**
-   * Called to store the decoded value in the named value, is a seperate method so that
-   * generated values can call this directly without going through the prepare() method
+   * Called to store the decoded value in the named value, is a seperate method so that generated
+   * values can call this directly without going through the prepare() method
+   *
    * @param value
    */
   protected void setDecodedValue(ValueT value) {
@@ -186,13 +189,19 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
 
   protected void checkIsState(NamedValueState expectedState, String context) {
     if (!state().equals(expectedState)) {
-      throw new IllegalStateException(String.format("NamedValue: not in expected state for %s, name: %s, expected: %s, actual: %s", context, name, expectedState, state()));
+      throw new IllegalStateException(
+          String.format(
+              "NamedValue: not in expected state for %s, name: %s, expected: %s, actual: %s",
+              context, name, expectedState, state()));
     }
   }
 
   protected void checkNotErrorState(String context) {
     if (state().isError) {
-      throw new IllegalStateException(String.format("NamedValue: should not be in error state for %s, name: %s, state: %s", context, name, state()));
+      throw new IllegalStateException(
+          String.format(
+              "NamedValue: should not be in error state for %s, name: %s, state: %s",
+              context, name, state()));
     }
   }
 
@@ -200,13 +209,13 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
     return errorCode;
   }
 
-  protected void setErrorCode(NamedValueState errorState, ErrorCode<? extends RequestException> errorCode) {
+  protected void setErrorCode(
+      NamedValueState errorState, ErrorCode<? extends RequestException> errorCode) {
     checkNotErrorState("setError()");
 
     this.errorCode = errorCode;
     setState(errorState);
   }
-
 
   protected record DecodeResult<ValueT>(ValueT value, ValueGenerator valueGenerator) {}
 

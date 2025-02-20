@@ -23,7 +23,11 @@ public class TableUpdateAnalyzerTest {
   public void updateOnKnownColumn() {
     var fixture =
         TEST_DATA.tableUpdateAnalyzer().table2PK3Clustering1Index("updateOnKnownColumn()");
-    fixture.columnAssignments().setOnKnownColumn(fixture.tableSchemaObject).analyze().assertNoUpdateException();
+    fixture
+        .columnAssignments()
+        .setOnKnownColumn(fixture.tableSchemaObject)
+        .analyze()
+        .assertNoUpdateException();
   }
 
   @Test

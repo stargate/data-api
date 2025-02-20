@@ -23,10 +23,9 @@ import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
+import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
-import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
-
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -48,42 +47,46 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
 
   /**
    * Error strategy to use with {@link CqlNamedValueFactory} for updates.
-   * <p>
-   * used for both Set and Unset operations
+   *
+   * <p>used for both Set and Unset operations
    */
-  public static final CqlNamedValue.ErrorStrategy<UpdateException> ERROR_STRATEGY = new CqlNamedValue.ErrorStrategy<>() {
+  public static final CqlNamedValue.ErrorStrategy<UpdateException> ERROR_STRATEGY =
+      new CqlNamedValue.ErrorStrategy<>() {
 
-    private static final Predicate<ApiSupportDef> MATCH_INSERT_UNSUPPORTED = (apiSupportDef) -> !apiSupportDef.insert();
+        private static final Predicate<ApiSupportDef> MATCH_INSERT_UNSUPPORTED =
+            (apiSupportDef) -> !apiSupportDef.insert();
 
-    @Override
-    public ErrorCode<UpdateException> codeForNoApiSupport() {
-      // the WritableTableRowBuilder did the same thing - re-using the unsupported column types error
-      return UpdateException.Code.UNSUPPORTED_COLUMN_TYPES;
-    }
+        @Override
+        public ErrorCode<UpdateException> codeForNoApiSupport() {
+          // the WritableTableRowBuilder did the same thing - re-using the unsupported column types
+          // error
+          return UpdateException.Code.UNSUPPORTED_COLUMN_TYPES;
+        }
 
-    @Override
-    public ErrorCode<UpdateException> codeForUnknownColumn() {
-      return UpdateException.Code.UNKNOWN_TABLE_COLUMNS;
-    }
+        @Override
+        public ErrorCode<UpdateException> codeForUnknownColumn() {
+          return UpdateException.Code.UNKNOWN_TABLE_COLUMNS;
+        }
 
-    @Override
-    public ErrorCode<UpdateException> codeForMissingCodec() {
-      return UpdateException.Code.UNSUPPORTED_COLUMN_TYPES;
-    }
+        @Override
+        public ErrorCode<UpdateException> codeForMissingCodec() {
+          return UpdateException.Code.UNSUPPORTED_COLUMN_TYPES;
+        }
 
-    @Override
-    public ErrorCode<UpdateException> codeForCodecError() {
-      return UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES;
-    }
+        @Override
+        public ErrorCode<UpdateException> codeForCodecError() {
+          return UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES;
+        }
 
-    @Override
-    public void allChecks(TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
-      checkUnknownColumns(tableSchemaObject, allColumns);
-      checkApiSupport(tableSchemaObject, allColumns, MATCH_INSERT_UNSUPPORTED);
-      checkMissingCodec(tableSchemaObject, allColumns);
-      checkCodecError(tableSchemaObject, allColumns);
-    }
-  };
+        @Override
+        public void allChecks(
+            TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
+          checkUnknownColumns(tableSchemaObject, allColumns);
+          checkApiSupport(tableSchemaObject, allColumns, MATCH_INSERT_UNSUPPORTED);
+          checkMissingCodec(tableSchemaObject, allColumns);
+          checkCodecError(tableSchemaObject, allColumns);
+        }
+      };
 
   // Operations we support on a table, and the function to resolve them
   private static final Map<
@@ -94,13 +97,15 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
               UpdateOperator.UNSET, TableUpdateResolver::resolveUnset);
 
   // String name sof the operators we support, used for error messages
-  private static final List<String> SUPPORTED_OPERATION_NAMES = OPERATION_RESOLVERS.keySet().stream()
-      .map(UpdateOperator::operator)
-      .sorted(String::compareTo)
-      .toList();
+  private static final List<String> SUPPORTED_OPERATION_NAMES =
+      OPERATION_RESOLVERS.keySet().stream()
+          .map(UpdateOperator::operator)
+          .sorted(String::compareTo)
+          .toList();
 
   /**
    * Creates a new resolver that will use the given config.
+   *
    * @param operationsConfig the config to use
    */
   public TableUpdateResolver(OperationsConfig operationsConfig) {
@@ -163,8 +168,9 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
     // Duplicate column assignments is invalid
     // e.g. {"update": {"$set": {"description": "123"},"$unset": {"description": "456"}}}
     Set<CqlIdentifier> allItems = new HashSet<>();
-    Set<CqlIdentifier> duplicates = assignments.stream()
-        .map(ColumnAssignment::name)
+    Set<CqlIdentifier> duplicates =
+        assignments.stream()
+            .map(ColumnAssignment::name)
             .filter(column -> !allItems.add(column))
             .collect(Collectors.toSet());
 
@@ -176,9 +182,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
                 map.put(
                     "duplicateAssignmentColumns",
                     errFmtCqlIdentifier(
-                        duplicates.stream()
-                            .sorted(CQL_IDENTIFIER_COMPARATOR)
-                            .toList()));
+                        duplicates.stream().sorted(CQL_IDENTIFIER_COMPARATOR).toList()));
               }));
     }
 
@@ -201,19 +205,23 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
    * @param arguments the value of the `$set` in the example above.
    * @return
    */
-  private static List<ColumnAssignment> resolveSet(TableSchemaObject tableSchemaObject, ObjectNode arguments) {
+  private static List<ColumnAssignment> resolveSet(
+      TableSchemaObject tableSchemaObject, ObjectNode arguments) {
 
     // decode the JSON objects into our Java objects
-    var jsonNamedValues = new JsonNamedValueFactory(tableSchemaObject, JsonNodeDecoder.DEFAULT).create(arguments);
+    var jsonNamedValues =
+        new JsonNamedValueFactory(tableSchemaObject, JsonNodeDecoder.DEFAULT).create(arguments);
 
-    // now create the CQL values, this will include running codex to convert the values into the correct CQL types
-    var allColumns = new CqlNamedValueFactory(tableSchemaObject, JSONCodecRegistries.DEFAULT_REGISTRY, ERROR_STRATEGY).create(jsonNamedValues);
+    // now create the CQL values, this will include running codex to convert the values into the
+    // correct CQL types
+    var allColumns =
+        new CqlNamedValueFactory(
+                tableSchemaObject, JSONCodecRegistries.DEFAULT_REGISTRY, ERROR_STRATEGY)
+            .create(jsonNamedValues);
 
     ERROR_STRATEGY.allChecks(tableSchemaObject, allColumns);
     // TODO: AARON - what about deferred values ?
-    return allColumns.values().stream()
-        .map(ColumnAssignment::new)
-        .toList();
+    return allColumns.values().stream().map(ColumnAssignment::new).toList();
   }
 
   /**
@@ -234,16 +242,21 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
 
     // decode the JSON objects into our Java objects
     // but this time, every value will be a JSON NULL this is how we do the UNSET
-    var jsonNamedValues = new JsonNamedValueFactory(tableSchemaObject, (jsonNode) ->  new JsonLiteral<>(null, JsonType.NULL)).create(arguments);
+    var jsonNamedValues =
+        new JsonNamedValueFactory(
+                tableSchemaObject, (jsonNode) -> new JsonLiteral<>(null, JsonType.NULL))
+            .create(arguments);
 
-    // now create the CQL values, this will include running codex to convert the values into the correct CQL types
-    var allColumns = new CqlNamedValueFactory(tableSchemaObject, JSONCodecRegistries.DEFAULT_REGISTRY, ERROR_STRATEGY).create(jsonNamedValues);
+    // now create the CQL values, this will include running codex to convert the values into the
+    // correct CQL types
+    var allColumns =
+        new CqlNamedValueFactory(
+                tableSchemaObject, JSONCodecRegistries.DEFAULT_REGISTRY, ERROR_STRATEGY)
+            .create(jsonNamedValues);
 
     ERROR_STRATEGY.allChecks(tableSchemaObject, allColumns);
     // TODO: AARON - what about deferred values ?
 
-    return allColumns.values().stream()
-        .map(ColumnAssignment::new)
-        .toList();
+    return allColumns.values().stream().map(ColumnAssignment::new).toList();
   }
 }

@@ -9,13 +9,13 @@ import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
-
 import java.util.Objects;
 
 /**
  * Builds a {@link CqlNamedValueContainer} from a {@link JsonNamedValueContainer}.
- * <p>
- * The caller is responsible for checking the state of the values in the returned {@link CqlNamedValueContainer}.
+ *
+ * <p>The caller is responsible for checking the state of the values in the returned {@link
+ * CqlNamedValueContainer}.
  */
 public class CqlNamedValueFactory {
 
@@ -28,7 +28,8 @@ public class CqlNamedValueFactory {
       JSONCodecRegistry codecRegistry,
       CqlNamedValue.ErrorStrategy<? extends RequestException> errorStrategy) {
 
-    this.tableSchemaObject = Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
+    this.tableSchemaObject =
+        Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     this.codecRegistry = Objects.requireNonNull(codecRegistry, "codecRegistry cannot be null");
     this.errorStrategy = Objects.requireNonNull(errorStrategy, "errorStrategy cannot be null");
   }
@@ -58,9 +59,9 @@ public class CqlNamedValueFactory {
   /**
    * Uses similar logic to the {@link CqlIdentifier#fromCql(String)} and double quotes the string if
    * it is not already quoted.
-   * <p>
-   * aaron - Feb 19th 2025 - this was oroginally in the WriteableTableRowBuilder, kept as is until we know
-   * if we need to change it.
+   *
+   * <p>aaron - Feb 19th 2025 - this was oroginally in the WriteableTableRowBuilder, kept as is
+   * until we know if we need to change it.
    */
   private static CqlIdentifier createCqlIdentifier(JsonPath name) {
     if (Strings.isDoubleQuoted(name.toString())) {

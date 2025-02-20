@@ -1,13 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.shredding;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
-
 import java.util.Objects;
-
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 /**
  * A value that has come from Jackson or can be used to create a Jackson object.
@@ -21,24 +20,30 @@ public class JsonNamedValue extends NamedValue<JsonPath, JsonLiteral<?>, JsonNod
 
   public JsonNamedValue(JsonPath name, JsonNodeDecoder jsonNodeDecoder) {
     super(name);
-    this.jsonNodeDecoder = Objects.requireNonNull(jsonNodeDecoder, "jsonNodeDecoder must not be null");
+    this.jsonNodeDecoder =
+        Objects.requireNonNull(jsonNodeDecoder, "jsonNodeDecoder must not be null");
   }
 
   @Override
   protected ApiColumnDef bindToColumn() {
-    var apiColumnDef = schemaObject().apiTableDef().allColumns().get(cqlIdentifierFromUserInput(name().toString()));
+    var apiColumnDef =
+        schemaObject()
+            .apiTableDef()
+            .allColumns()
+            .get(cqlIdentifierFromUserInput(name().toString()));
     if (apiColumnDef == null) {
       setState(NamedValueState.BIND_ERROR);
     }
     return apiColumnDef;
   }
 
-
   @Override
   protected DecodeResult<JsonLiteral<?>> decodeValue(JsonNode rawValue) {
 
-    // First we need to check if the name can be found in the target table, we need to do this because we need to
-    // know for e.g. that the column is a vector with vectorize so we can defer the value until later.
+    // First we need to check if the name can be found in the target table, we need to do this
+    // because we need to
+    // know for e.g. that the column is a vector with vectorize so we can defer the value until
+    // later.
     // we can do this by checking we are bound
     checkIsState(NamedValueState.BOUND, "decodeValue");
 

@@ -1,8 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnMetadata;
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
@@ -11,16 +9,8 @@ import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.FilterException;
-import io.stargate.sgv2.jsonapi.exception.UpdateException;
-import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 import java.util.Objects;
 
@@ -89,38 +79,42 @@ public class ColumnAssignment implements CQLAssignment {
    */
   protected void addPositionalValues(List<Object> positionalValues) {
 
-      positionalValues.add(namedValue.value());
-//    var rawValue = value.value();
-//    try {
-//      positionalValues.add(
-//          JSONCodecRegistries.DEFAULT_REGISTRY
-//              .codecToCQL(tableMetadata, column, rawValue)
-//              .toCQL(rawValue));
-//    } catch (MissingJSONCodecException e) {
-//      throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
-//          errVars(
-//              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
-//              map -> {
-//                map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
-//                map.put("unsupportedColumns", column.asInternal());
-//              }));
-//    } catch (UnknownColumnException e) {
-//      throw FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
-//          errVars(
-//              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
-//              map -> {
-//                map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
-//                map.put("unknownColumns", CqlIdentifierUtil.cqlIdentifierToJsonKey(column));
-//              }));
-//    } catch (ToCQLCodecException e) {
-//      throw UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES.get(
-//          errVars(
-//              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
-//              map -> {
-//                map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
-//                map.put("invalidColumn", CqlIdentifierUtil.cqlIdentifierToJsonKey(column));
-//                map.put("columnType", tableMetadata.getColumn(column).get().getType().toString());
-//              }));
-//    }
+    positionalValues.add(namedValue.value());
+    //    var rawValue = value.value();
+    //    try {
+    //      positionalValues.add(
+    //          JSONCodecRegistries.DEFAULT_REGISTRY
+    //              .codecToCQL(tableMetadata, column, rawValue)
+    //              .toCQL(rawValue));
+    //    } catch (MissingJSONCodecException e) {
+    //      throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
+    //          errVars(
+    //              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
+    //              map -> {
+    //                map.put("allColumns",
+    // errFmtColumnMetadata(tableMetadata.getColumns().values()));
+    //                map.put("unsupportedColumns", column.asInternal());
+    //              }));
+    //    } catch (UnknownColumnException e) {
+    //      throw FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
+    //          errVars(
+    //              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
+    //              map -> {
+    //                map.put("allColumns",
+    // errFmtColumnMetadata(tableMetadata.getColumns().values()));
+    //                map.put("unknownColumns", CqlIdentifierUtil.cqlIdentifierToJsonKey(column));
+    //              }));
+    //    } catch (ToCQLCodecException e) {
+    //      throw UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES.get(
+    //          errVars(
+    //              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
+    //              map -> {
+    //                map.put("allColumns",
+    // errFmtColumnMetadata(tableMetadata.getColumns().values()));
+    //                map.put("invalidColumn", CqlIdentifierUtil.cqlIdentifierToJsonKey(column));
+    //                map.put("columnType",
+    // tableMetadata.getColumn(column).get().getType().toString());
+    //              }));
+    //    }
   }
 }

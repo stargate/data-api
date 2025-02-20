@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.fixtures.data;
 
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;

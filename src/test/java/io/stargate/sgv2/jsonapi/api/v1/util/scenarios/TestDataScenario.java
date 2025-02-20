@@ -5,8 +5,6 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.fixtures.data.FixtureData;
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
 import java.util.*;
@@ -71,11 +69,11 @@ public abstract class TestDataScenario {
     return dataSource.fromJSON(apiColumnDef);
 
     // todo: aaron feb 20 2025 - old code leaving incase changes dont work
-//    if (jsonLiteral.type() == JsonType.ARRAY) {
-//      List<JsonLiteral<?>> literals = (List<JsonLiteral<?>>) jsonLiteral.value();
-//      return literals.stream().map(JsonLiteral::value).toArray();
-//    }
-//    return jsonLiteral.value();
+    //    if (jsonLiteral.type() == JsonType.ARRAY) {
+    //      List<JsonLiteral<?>> literals = (List<JsonLiteral<?>>) jsonLiteral.value();
+    //      return literals.stream().map(JsonLiteral::value).toArray();
+    //    }
+    //    return jsonLiteral.value();
   }
 
   protected void createTable() {

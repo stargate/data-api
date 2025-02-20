@@ -9,13 +9,9 @@ import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
 import io.stargate.sgv2.jsonapi.fixtures.data.AllNullValues;
 import io.stargate.sgv2.jsonapi.fixtures.data.DefaultData;
 import io.stargate.sgv2.jsonapi.fixtures.types.CqlTypesForTesting;
-import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
-import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
-
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -91,14 +87,15 @@ public abstract class JsonContainerFixtureBuilder implements Supplier<List<JsonC
               && primaryKeyColumns.contains(metadata)) {
             jsonDoc.set(
                 cqlIdentifierToJsonKey(metadata.getName()),
-                    new DefaultData().fromJSON(metadata.getType()));
+                new DefaultData().fromJSON(metadata.getType()));
           } else {
             jsonDoc.set(
                 cqlIdentifierToJsonKey(metadata.getName()),
                 cqlFixture.data().fromJSON(metadata.getType()));
           }
         });
-    return new JsonNamedValueFactory(cqlFixture.tableSchemaObject(), JsonNodeDecoder.DEFAULT).create(jsonDoc);
+    return new JsonNamedValueFactory(cqlFixture.tableSchemaObject(), JsonNodeDecoder.DEFAULT)
+        .create(jsonDoc);
   }
 
   /**
