@@ -418,6 +418,125 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
           Arguments.of(
               new CreateTableTestData(
                   """
+                                      {
+                                        "name": "apiSupportedMap",
+                                        "definition": {
+                                          "columns": {
+                                            "id": "text",
+                                            "text2int": {
+                                              "type": "map",
+                                              "keyType": "text",
+                                              "valueType": "int"
+                                            },
+                                           "int2text": {
+                                              "type": "map",
+                                              "keyType": "int",
+                                              "valueType": "text"
+                                            },
+                                            "double2float": {
+                                              "type": "map",
+                                              "keyType": "double",
+                                              "valueType": "float"
+                                            },
+                                            "blob2ascii": {
+                                              "type": "map",
+                                              "keyType": "blob",
+                                              "valueType": "ascii"
+                                            },
+                                            "uuid2boolean": {
+                                              "type": "map",
+                                              "keyType": "uuid",
+                                              "valueType": "boolean"
+                                            },
+                                            "decimal2duration": {
+                                              "type": "map",
+                                              "keyType": "decimal",
+                                              "valueType": "duration"
+                                            }
+                                          },
+                                          "primaryKey": "id"
+                                        }
+                                      }""",
+                  "apiSupportedMap",
+                  false,
+                  null,
+                  null)));
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                      {
+                                        "name": "unsupported",
+                                        "definition": {
+                                          "columns": {
+                                            "id": "text",
+                                            "age": "int",
+                                            "name": "text",
+                                            "map_type": {
+                                              "type": "map",
+                                              "keyType": "counter",
+                                              "valueType": "text"
+                                            }
+                                          },
+                                          "primaryKey": "id"
+                                        }
+                                      }""",
+                  "unsupported map counter as key type",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  "The command used the key type: counter.")));
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                      {
+                                        "name": "unsupported",
+                                        "definition": {
+                                          "columns": {
+                                            "id": "text",
+                                            "age": "int",
+                                            "name": "text",
+                                            "map_type": {
+                                              "type": "map",
+                                              "keyType": "duration",
+                                              "valueType": "text"
+                                            }
+                                          },
+                                          "primaryKey": "id"
+                                        }
+                                      }""",
+                  "unsupported map duration as key type",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  "The command used the key type: duration.")));
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                      {
+                                        "name": "unsupported",
+                                        "definition": {
+                                          "columns": {
+                                            "id": "text",
+                                            "age": "int",
+                                            "name": "text",
+                                            "map_type": {
+                                              "type": "map",
+                                              "keyType": "timeuuid",
+                                              "valueType": "text"
+                                            }
+                                          },
+                                          "primaryKey": "id"
+                                        }
+                                      }""",
+                  "unsupported map timeuuid as key type",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_MAP_DEFINITION.name(),
+                  "The command used the key type: timeuuid.")));
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                           {
                             "name": "mapTypeMissingValue",
                             "definition": {
