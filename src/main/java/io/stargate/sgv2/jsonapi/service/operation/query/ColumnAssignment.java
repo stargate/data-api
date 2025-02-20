@@ -1,8 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnMetadata;
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
@@ -11,15 +9,8 @@ import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.FilterException;
-import io.stargate.sgv2.jsonapi.exception.UpdateException;
-import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import java.util.List;
 import java.util.Objects;
 
@@ -35,9 +26,7 @@ import java.util.Objects;
  */
 public class ColumnAssignment implements CQLAssignment {
 
-  private final TableMetadata tableMetadata;
-  public final CqlIdentifier column;
-  private final JsonLiteral<?> value;
+  private final CqlNamedValue namedValue;
 
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -50,11 +39,16 @@ public class ColumnAssignment implements CQLAssignment {
    * @param value the {@link JsonLiteral} value created by shredding the value from the update
    *     clause in the request.
    */
-  public ColumnAssignment(TableMetadata tableMetadata, CqlIdentifier column, JsonLiteral<?> value) {
-    this.tableMetadata = Objects.requireNonNull(tableMetadata, "tableMetadata cannot be null");
-    this.column = Objects.requireNonNull(column, "column cannot be null");
-    // Value may be null, this is how to clear a column in CQL
-    this.value = value;
+  public ColumnAssignment(CqlNamedValue namedValue) {
+    this.namedValue = Objects.requireNonNull(namedValue, "namedValue cannot be null");
+  }
+
+  public CqlIdentifier name() {
+    return namedValue.name();
+  }
+
+  public CqlNamedValue namedValue() {
+    return namedValue;
   }
 
   @Override
@@ -73,7 +67,7 @@ public class ColumnAssignment implements CQLAssignment {
    * @return
    */
   protected Assignment getAssignment() {
-    return Assignment.setColumn(column, bindMarker());
+    return Assignment.setColumn(namedValue.name(), bindMarker());
   }
 
   /**
@@ -85,37 +79,42 @@ public class ColumnAssignment implements CQLAssignment {
    */
   protected void addPositionalValues(List<Object> positionalValues) {
 
-    var rawValue = value.value();
-    try {
-      positionalValues.add(
-          JSONCodecRegistries.DEFAULT_REGISTRY
-              .codecToCQL(tableMetadata, column, rawValue)
-              .toCQL(rawValue));
-    } catch (MissingJSONCodecException e) {
-      throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
-          errVars(
-              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
-              map -> {
-                map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
-                map.put("unsupportedColumns", column.asInternal());
-              }));
-    } catch (UnknownColumnException e) {
-      throw FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
-          errVars(
-              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
-              map -> {
-                map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
-                map.put("unknownColumns", CqlIdentifierUtil.cqlIdentifierToJsonKey(column));
-              }));
-    } catch (ToCQLCodecException e) {
-      throw UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES.get(
-          errVars(
-              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
-              map -> {
-                map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
-                map.put("invalidColumn", CqlIdentifierUtil.cqlIdentifierToJsonKey(column));
-                map.put("columnType", tableMetadata.getColumn(column).get().getType().toString());
-              }));
-    }
+    positionalValues.add(namedValue.value());
+    //    var rawValue = value.value();
+    //    try {
+    //      positionalValues.add(
+    //          JSONCodecRegistries.DEFAULT_REGISTRY
+    //              .codecToCQL(tableMetadata, column, rawValue)
+    //              .toCQL(rawValue));
+    //    } catch (MissingJSONCodecException e) {
+    //      throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
+    //          errVars(
+    //              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
+    //              map -> {
+    //                map.put("allColumns",
+    // errFmtColumnMetadata(tableMetadata.getColumns().values()));
+    //                map.put("unsupportedColumns", column.asInternal());
+    //              }));
+    //    } catch (UnknownColumnException e) {
+    //      throw FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
+    //          errVars(
+    //              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
+    //              map -> {
+    //                map.put("allColumns",
+    // errFmtColumnMetadata(tableMetadata.getColumns().values()));
+    //                map.put("unknownColumns", CqlIdentifierUtil.cqlIdentifierToJsonKey(column));
+    //              }));
+    //    } catch (ToCQLCodecException e) {
+    //      throw UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES.get(
+    //          errVars(
+    //              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
+    //              map -> {
+    //                map.put("allColumns",
+    // errFmtColumnMetadata(tableMetadata.getColumns().values()));
+    //                map.put("invalidColumn", CqlIdentifierUtil.cqlIdentifierToJsonKey(column));
+    //                map.put("columnType",
+    // tableMetadata.getColumn(column).get().getType().toString());
+    //              }));
+    //    }
   }
 }

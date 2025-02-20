@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.InsertDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.Objects;
 
@@ -14,27 +14,28 @@ import java.util.Objects;
  *
  * <p>Create an instance and then call {@link #build(JsonNode)} for each task you want to create.
  *
- * <p>NOTE: Uses the {@link RowShredder} and {@link WriteableTableRowBuilder} which both check the
- * data is valid, the first that the document does not exceed the limits, and the second that the
- * data is valid for the table.
+ * <p>NOTE: Uses the {@link JsonNamedValueFactory} and {@link WriteableTableRowBuilder} which both
+ * check the data is valid, the first that the document does not exceed the limits, and the second
+ * that the data is valid for the table.
  */
 public class TableInsertDBTaskBuilder
     extends TaskBuilder<InsertDBTask<TableSchemaObject>, TableSchemaObject> {
 
-  private RowShredder rowShredder = null;
+  private JsonNamedValueFactory jsonNamedValueFactory = null;
 
   public TableInsertDBTaskBuilder(TableSchemaObject tableSchemaObject) {
     super(tableSchemaObject);
   }
 
-  public TableInsertDBTaskBuilder withRowShredder(RowShredder rowShredder) {
-    this.rowShredder = rowShredder;
+  public TableInsertDBTaskBuilder withJsonNamedValueFactory(
+      JsonNamedValueFactory jsonNamedValueFactory) {
+    this.jsonNamedValueFactory = jsonNamedValueFactory;
     return this;
   }
 
   public TableInsertDBTask build(JsonNode jsonNode) {
     Objects.requireNonNull(jsonNode, "jsonNode cannot be null");
-    Objects.requireNonNull(rowShredder, "rowShredder cannot be null");
+    Objects.requireNonNull(jsonNamedValueFactory, "rowShredder cannot be null");
 
     var writeableTableRowBuilder =
         new WriteableTableRowBuilder(schemaObject, JSONCodecRegistries.DEFAULT_REGISTRY);
@@ -42,7 +43,7 @@ public class TableInsertDBTaskBuilder
     WriteableTableRow writeableRow = null;
     Exception exception = null;
     try {
-      var jsonContainer = rowShredder.shred(jsonNode);
+      var jsonContainer = jsonNamedValueFactory.create(jsonNode);
       writeableRow = writeableTableRowBuilder.build(jsonContainer);
     } catch (RuntimeException e) {
       exception = e;

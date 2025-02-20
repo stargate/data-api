@@ -19,7 +19,7 @@ import java.util.Objects;
  * @param <ValueT> The type of the value stored in the {@link NamedValue}
  * @param <NvT> The type of the {@link NamedValue} stored in the map
  */
-public abstract class NamedValueContainer<NameT, ValueT, NvT extends NamedValue<NameT, ValueT>>
+public abstract class NamedValueContainer<NameT, ValueT, NvT extends NamedValue<NameT, ValueT, ?>>
     extends LinkedHashMap<NameT, NvT> implements PrettyPrintable {
 
   public NamedValueContainer() {
@@ -46,13 +46,21 @@ public abstract class NamedValueContainer<NameT, ValueT, NvT extends NamedValue<
    * @return The previous value associated with the name, or null if there was no mapping for the
    *     name
    */
-  public NamedValue<NameT, ValueT> put(NvT namedValue) {
+  public NamedValue<NameT, ValueT, ?> put(NvT namedValue) {
     return put(namedValue.name(), namedValue);
   }
 
   public void putAll(Collection<NvT> namedValues) {
     Objects.requireNonNull(namedValues, "namedValues must not be null");
     namedValues.forEach(this::put);
+  }
+
+  public NvT getNamedValue(NvT namedValue) {
+    return get(namedValue.name());
+  }
+
+  public boolean containsNamedValue(NvT namedValue) {
+    return containsKey(namedValue.name());
   }
 
   /** Helper that returns an immutable list of the {@link NamedValue#value()}s in the container. */

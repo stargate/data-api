@@ -12,8 +12,9 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTaskBuilde
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -23,12 +24,10 @@ import java.util.List;
 public class InsertOneCommandResolver implements CommandResolver<InsertOneCommand> {
 
   private final DocumentShredder documentShredder;
-  private final RowShredder rowShredder;
 
   @Inject
-  public InsertOneCommandResolver(DocumentShredder documentShredder, RowShredder rowShredder) {
+  public InsertOneCommandResolver(DocumentShredder documentShredder) {
     this.documentShredder = documentShredder;
-    this.rowShredder = rowShredder;
   }
 
   @Override
@@ -53,7 +52,8 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
 
     TableInsertDBTaskBuilder taskBuilder =
         TableInsertDBTask.builder(commandContext.schemaObject())
-            .withRowShredder(rowShredder)
+            .withJsonNamedValueFactory(
+                new JsonNamedValueFactory(commandContext.schemaObject(), JsonNodeDecoder.DEFAULT))
             .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
     var taskGroup =
