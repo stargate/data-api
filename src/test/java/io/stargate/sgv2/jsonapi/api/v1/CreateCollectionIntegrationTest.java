@@ -294,7 +294,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               "function" : "cosine"
                             },
                             "indexing" : {
-                              "allow" : ["field1", "field2", "address.city", "_id", "$vector"]
+                              "allow" : ["field1", "field2", "address.city", "_id", "$vector", "pricing.price&.usd", "app&.kubernetes&.io/name"]
                             }
                           }
                         }
@@ -527,39 +527,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     }
 
     @Test
-    public void failWithInvalidNameInIndexingAllows() {
-      // create a vector collection
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          // Brackets not allowed in field names
-          .body(
-              """
-                    {
-                      "createCollection": {
-                        "name": "collection_with_bad_allows",
-                        "options" : {
-                          "indexing" : {
-                            "allow" : ["valid-field", "address[1].street"]
-                          }
-                        }
-                      }
-                    }
-                    """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Invalid indexing definition: `allow` contains invalid path: 'address[1].street'"))
-          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
-    }
-
-    @Test
     public void failWithInvalidNameInIndexingDeny() {
       // create a vector collection
       given()
@@ -586,7 +553,31 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body("$", responseIsError())
           .body(
               "errors[0].message",
-              startsWith("Invalid indexing definition: `deny` contains invalid path: '$in'"))
+              startsWith("Invalid indexing definition: path must not start with '$'"))
+          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failWithEmptyNameInIndexingDeny() {
+      givenHeadersPostJsonThenOk(
+              """
+                    {
+                      "createCollection": {
+                        "name": "collection_with_bad_deny",
+                        "options" : {
+                          "indexing" : {
+                            "deny" : ["field", ""]
+                          }
+                        }
+                      }
+                    }
+                    """)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Invalid indexing definition: path must be represented as a non-empty string"))
           .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
