@@ -165,6 +165,11 @@ public interface CollectionReadOperation extends CollectionOperation {
                   // picking the last page state
                   tempPageState = response.pageState();
                 }
+                // when $in apply to _id, the limit need to restricted to all the documents returned
+                // by multiple queries
+                if (documents.size() > limit) {
+                  documents = documents.subList(0, limit);
+                }
               }
               return new FindResponse(documents, tempPageState);
             });
