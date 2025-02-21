@@ -9,8 +9,6 @@ import com.google.common.collect.ImmutableList;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
@@ -19,10 +17,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.DefaultUpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -41,13 +37,12 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
 
   // Using map here, so we can expose the list of supported operators for validation to check.
   // Keep this immutable, we return the key set in a property below.
-  private static final Map<
-          UpdateOperator, BiFunction<TableSchemaObject, ObjectNode, List<ColumnAssignment>>>
-      supportedOperatorsMap =
-          Map.of(
-              UpdateOperator.SET, TableUpdateResolver::resolveSet,
-              UpdateOperator.UNSET, TableUpdateResolver::resolveUnset,
-                  UpdateOperator.PUSH,TableUpdateResolver::resolvePush);
+  private static final Map<UpdateOperator, TableUpdateOperatorResolver> supportedOperatorsMap =
+      Map.of(
+          UpdateOperator.SET, new TableUpdateSetResolver(),
+          UpdateOperator.UNSET, new TableUpdateUnsetResolver(),
+          UpdateOperator.PUSH, new TableUpdatePushResolver(),
+          UpdateOperator.PULL_ALL, new TableUpdatePullAllResolver());
 
   private static final List<String> supportedOperatorsStringList =
       ImmutableList.of(UpdateOperator.SET.operator(), UpdateOperator.UNSET.operator());
@@ -74,13 +69,13 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
       UpdateOperator updateOperator = updateOperationDef.getKey();
       ObjectNode arguments = updateOperationDef.getValue();
 
-      var resolverFunction = supportedOperatorsMap.get(updateOperator);
-      if (resolverFunction == null) {
+      var operatorResolver = supportedOperatorsMap.get(updateOperator);
+      if (operatorResolver == null) {
         usedUnsupportedOperators.add(updateOperator.operator());
       } else if (!arguments.isEmpty()) {
         // For empty assignment operator, we won't add it to assignments result list
         // e.g. "$set": {}, "$unset": {}
-        assignments.addAll(resolverFunction.apply(commandContext.schemaObject(), arguments));
+        assignments.addAll(operatorResolver.resolve(commandContext.schemaObject(), arguments));
       }
     }
     // Collect all used unsupported operator and throw Update exception
@@ -134,89 +129,4 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
 
     return WithWarnings.of(new DefaultUpdateValuesCQLClause(assignments));
   }
-
-  /**
-   * Resolve the {@link UpdateOperator#SET} operation
-   *
-   * <p>Example:
-   *
-   * <pre>
-   *    {"$set" : { "age" : 51 , "human" : false}}
-   * </pre>
-   *
-   * @param table
-   * @param arguments
-   * @return
-   */
-  private static List<ColumnAssignment> resolveSet(TableSchemaObject table, ObjectNode arguments) {
-    // Checking if the columns exist in the table should be validated in the clause validation
-    return arguments.properties().stream()
-        .map(
-            entry ->
-                new ColumnAssignment(
-                        UpdateOperator.SET,
-                    table.tableMetadata(),
-                    CqlIdentifierUtil.cqlIdentifierFromUserInput(entry.getKey()),
-                    RowShredder.shredValue(entry.getValue())))
-        .toList();
-  }
-
-  /**
-   * Resolve the {@link UpdateOperator#UNSET} operation
-   *
-   * <p>Example:
-   *
-   * <pre>
-   *    {"$unset" : { "country" : ""}}
-   * </pre>
-   *
-   * @param table
-   * @param arguments
-   * @return
-   */
-  private static List<ColumnAssignment> resolveUnset(
-      TableSchemaObject table, ObjectNode arguments) {
-    // Checking if the columns exist in the table should be validated in the clause validation
-    // we ignore the value, API spec says it should be empty string and we should validate that in
-    // the API tier
-    return arguments.properties().stream()
-        .map(
-            entry ->
-                new ColumnAssignment(
-                        UpdateOperator.UNSET,
-                    table.tableMetadata(),
-                    CqlIdentifierUtil.cqlIdentifierFromUserInput(entry.getKey()),
-                    new JsonLiteral<>(null, JsonType.NULL)))
-        .toList();
-  }
-
-  /**
-   * Resolve the {@link UpdateOperator#PUSH} operation
-   * <p>Example:
-   * <pre>
-   *    Table column type: list
-   *    {"$push" : {"listColumn1" : "textValue", "listColumn2" : 111}}
-   *    Table column type: set
-   *    {"$push" : { "age" : 51 , "human" : false}}
-   *    Table column type: map
-   *    {"$push" : { "age" : 51 , "human" : false}}
-   * </pre>
-   *
-   * @param table TableSchemaObject
-   * @param arguments ObjectNode value for $push entry
-   * @return list of columnAssignment for $push ????
-   */
-  private static List<ColumnAssignment> resolvePush(TableSchemaObject table, ObjectNode arguments) {
-    // Checking if the columns exist in the table should be validated in the clause validation
-    return arguments.properties().stream()
-            .map(
-                    entry ->
-                            new ColumnAssignment(
-                                    UpdateOperator.PUSH,
-                                    table.tableMetadata(),
-                                    CqlIdentifierUtil.cqlIdentifierFromUserInput(entry.getKey()),
-                                    RowShredder.shredValue(entry.getValue())))
-            .toList();
-  }
-
 }

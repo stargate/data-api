@@ -382,6 +382,35 @@ request-errors:
       Resend the command using only supported column values.
 
   - scope: UPDATE
+    code: INVALID_USAGE_FOR_COLLECTION_ONLY_UPDATE_OPERATORS
+    title: $push and $pullAll are only supported against map, set, list columns
+    body: |-
+      The command included update operator ${operator} that are not supported by ${targetColumn}.
+      $push and $pullAll are only supported against map, set, list columns.
+      
+      Resend the command using only supported update operators.
+
+  - scope: UPDATE
+    code: INVALID_USAGE_OF_PUSH_OPERATOR
+    title: The command has invalid usage of $push operator
+    body: |-
+      The command has invalid usage of $push operator, ${reason}.
+      
+      Update operator $push works for adding single element, combine $push with $each for adding multiple elements.
+      
+      E.G.
+      Push single element to set/list. 
+      {"$push": {"listColumn": "value"}}
+      Push multiple elements to set/list. 
+      {"$push": {"listColumn": {"$each": ["value1","value2"]}}}
+      Push single entry to map.
+      {"$push": {"mapColumn": ["key1", "value1"]}} or {"$push": {"mapColumn": {"key1":"value1"}}}
+      Push multiple entries to map.
+      {"$push": {"mapColumn": {"$each": [["key1","value1"],["key2", "value2"]]}}} or {"$push": {"mapColumn": {"$each": [{"key1":"value1"},{"key2":"value2"}]}}}
+
+      Resend the command with valid usage of $push operator.
+
+  - scope: UPDATE
     code: UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS
     title: Primary key columns cannot be updated
     body: |-
@@ -393,6 +422,22 @@ request-errors:
       The update included the following primary keys: ${updateOnPrimaryKeyColumns}.
       
       Resend the command without updating primary key columns.
+
+  - scope: UPDATE
+    code: UPDATE_OPERATOR_PULL_ALL_REQUIRES_ARRAY_VALUE
+    title: Update operator $pullAll requires array value to update the map, set, list column
+    body: |-
+      Update operator $pullAll requires array value to remove elements from the map, set, list column.
+      E.G. 
+      {"$pullAll": {"listColumn": [value1, value2]}
+      {"$pullAll": {"setColumn": [value1, value2]}
+      {"$pullAll": {"mapColumn": [key1, key2]}
+      
+      The command uses $pullAll with value ${providedValue}.
+      
+      Resend the command using array value for $pullAll operator.
+
+
 
   - scope: UPDATE
     code: MISSING_UPDATE_OPERATIONS

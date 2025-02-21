@@ -98,7 +98,7 @@ public class JSONCodecRegistry {
     if (candidates == null) { // No scalar codec for this CQL type
       // But maybe structured type?
       if (columnType instanceof ListType lt) {
-        Log.error("pass1 "  + columnType + "   " + lt.getElementType());
+        Log.error("pass1 " + columnType + "   " + lt.getElementType());
         List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(lt.getElementType());
         Log.error("pass2");
 
