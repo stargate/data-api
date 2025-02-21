@@ -40,8 +40,8 @@ public interface DocumentConstants {
     // for replacement
     @Deprecated Pattern VALID_NAME_PATTERN = Pattern.compile("[a-zA-Z0-9_\\-]*");
 
-    /** Field name pattern in sort and filter clause. */
-    Pattern VALID_PATH_PATTERN = Pattern.compile("[a-zA-Z0-9_.\\-]*");
+    /** Field name pattern in sort and filter clause. NOTE: no longer used. */
+    @Deprecated Pattern VALID_PATH_PATTERN = Pattern.compile("[a-zA-Z0-9_.\\-]*");
   }
 
   interface KeyTypeId {

@@ -56,9 +56,17 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                   "email": "123@gmail.com"
                 },
                 "use phone please"
-              ]
+              ],
+              "pricing": {
+                "price.usd": 1,
+                "pricing.price&jpy": 1,
+                "pricing.price&.aud": 1
+              },
+              "metadata": {
+                "app.kubernetes.io/name": "test"
+              }
             }
-                      """;
+            """;
       String denyOneIndexingCollectionSetting =
               """
               {
@@ -133,7 +141,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                     "function" : "cosine"
                   },
                   "indexing" : {
-                    "allow" : ["name", "address.city"]
+                    "allow" : ["name", "address.city", "pricing.price&.usd", "metadata.app&.kubernetes&.io/name"]
                   }
                 }
               }
@@ -844,5 +852,34 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("errors[0].errorCode", is("UNINDEXED_SORT_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
+
+    //    @Test
+    //    public void fieldNameWithDot() {
+    //      givenHeadersPostJsonThenOkNoErrors(
+    //              """
+    //                  {
+    //                    "find": {
+    //                      "filter": {
+    //                        "pricing.price&.usd": 1
+    //                      }
+    //                    }
+    //                  }
+    //                  """)
+    //          .body("$", responseIsFindSuccess())
+    //          .body("data.documents", hasSize(1));
+    //
+    //      givenHeadersPostJsonThenOk(
+    //              """
+    //                  {
+    //                    "find": {
+    //                      "filter": {
+    //                        "pricing.price&&&.aud": 1
+    //                      }
+    //                    }
+    //                  }
+    //                  """)
+    //          .body("$", responseIsFindSuccess())
+    //          .body("data.documents", hasSize(1));
+    //    }
   }
 }
