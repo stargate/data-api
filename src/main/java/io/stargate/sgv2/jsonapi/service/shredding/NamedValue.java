@@ -26,10 +26,10 @@ import java.util.Objects;
 public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrintable {
 
   public enum NamedValueState implements PrettyPrintable {
-    INITIAL( false,false, false),
+    INITIAL(false, false, false),
     BOUND(true, false, false),
     DEFERRED(true, false, false),
-    PREPARED(true,true, false),
+    PREPARED(true, true, false),
     BIND_ERROR(false, true, true),
     PREPARE_ERROR(true, true, true),
     GENERATOR_ERROR(true, true, true);
@@ -48,7 +48,6 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
     public String toString() {
       return toString(false);
     }
-
 
     @Override
     public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
@@ -69,7 +68,7 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
 
   protected final NameT name;
   protected ValueT value;
-  protected ValueGenerator valueGenerator;
+  protected ValueAction valueAction;
 
   protected NamedValue(NameT name) {
     this.name = name;
@@ -124,8 +123,8 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
       throw new IllegalStateException("NamedValue: decodeResult returned null for name: " + name);
     }
 
-    if (decodeResult.valueGenerator() != null) {
-      valueGenerator = decodeResult.valueGenerator();
+    if (decodeResult.valueAction() != null) {
+      valueAction = decodeResult.valueAction();
       setState(NamedValueState.DEFERRED);
     } else {
       setDecodedValue(decodeResult.value());
@@ -191,9 +190,9 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
     return value;
   }
 
-  public ValueGenerator valueGenerator() {
-    checkIsState(NamedValueState.DEFERRED, "valueGenerator()");
-    return valueGenerator;
+  public ValueAction valueAction() {
+    checkIsState(NamedValueState.DEFERRED, "valueAction()");
+    return valueAction;
   }
 
   public NamedValueState state() {
@@ -243,7 +242,7 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
     setState(errorState);
   }
 
-  protected record DecodeResult<ValueT>(ValueT value, ValueGenerator valueGenerator) {}
+  protected record DecodeResult<ValueT>(ValueT value, ValueAction valueAction) {}
 
   @Override
   public String toString() {
@@ -257,6 +256,7 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
         .append("state", state)
         .append("errorCode", errorCode)
         .append("columnDef", columnDef)
+        .append("value.class", value == null ? Objects.toString(null) : value.getClass().getSimpleName())
         .append("value", value);
     return prettyToStringBuilder;
   }

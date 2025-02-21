@@ -12,6 +12,8 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
+import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+
 import java.util.Objects;
 
 public class ApiVectorType extends CollectionApiDataType {
@@ -78,6 +80,14 @@ public class ApiVectorType extends CollectionApiDataType {
   private static boolean isValueTypeSupported(ApiDataType valueType) {
     Objects.requireNonNull(valueType, "valueType must not be null");
     return valueType == ApiDataTypeDefs.FLOAT;
+  }
+
+  @Override
+  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+    var builder = super.toString(prettyToStringBuilder);
+    builder.append("dimension", dimension);
+    builder.append("vectorizeDefinition", vectorizeDefinition);
+    return builder;
   }
 
   private static class ColumnDescFactory

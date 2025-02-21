@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.DataType;
+import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 
 /** Interface defining the api data type for collection types */
 public abstract class CollectionApiDataType implements ApiDataType {
@@ -63,5 +64,12 @@ public abstract class CollectionApiDataType implements ApiDataType {
 
   public PrimitiveApiDataTypeDef getValueType() {
     return valueType;
+  }
+
+  @Override
+  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+    var builder = ApiDataType.super.toString(prettyToStringBuilder);
+    builder.append("valueType", valueType);
+    return builder;
   }
 }

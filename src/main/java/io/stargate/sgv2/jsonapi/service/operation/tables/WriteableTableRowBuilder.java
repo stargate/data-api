@@ -5,7 +5,6 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.COLUMN_METADATA_CO
 
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -15,11 +14,10 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.*;
 import java.util.function.Predicate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Builds a {@link WriteableTableRow} from a {@link JsonNamedValueContainer}.

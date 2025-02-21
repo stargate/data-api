@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 
 /** TODO WORDS */
 @JsonSerialize(using = ApiDataTypeDefSerializer.class)
-public interface ApiDataType  extends PrettyPrintable {
+public interface ApiDataType extends PrettyPrintable {
 
   ApiTypeName typeName();
 
@@ -45,9 +45,9 @@ public interface ApiDataType  extends PrettyPrintable {
 
   @Override
   default PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    prettyToStringBuilder
-        .append("apiName", apiName())
-        .append("apiSupport", apiSupport());
+    prettyToStringBuilder.append("apiName", apiName())
+        .append("apiSupport", apiSupport())
+        .append("cqlType", cqlType());
     return prettyToStringBuilder;
   }
 }

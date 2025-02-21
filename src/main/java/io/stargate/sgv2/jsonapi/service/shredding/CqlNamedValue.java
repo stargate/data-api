@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingAction;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
@@ -104,8 +105,7 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
     // vectorize this sucker
     // we give the value generator a consumer so we can prepare the value when we get it back.
     return new DecodeResult<>(
-        null,
-        new VectorizeValueGenerator(vectorizeText, apiColumnDef(), this::consumerVectorizeValue));
+        null, new EmbeddingAction(vectorizeText, apiColumnDef(), this::consumerVectorizeValue));
   }
 
   /**
@@ -120,23 +120,23 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
 
     var decoded = decodeToCQL(vector);
     if (decoded == null) {
-      throw new IllegalStateException("VectorizeValueGenerator: decodeToCQL returned null");
+      throw new IllegalStateException("EmbeddingAction: decodeToCQL returned null");
     }
 
     // use the super class so state is set correctly
     setDecodedValue(decoded.value());
   }
 
-//  @Override
-//  public String toString() {
-//    return new StringBuilder(getClass().getSimpleName())
-//        .append("{columnName=")
-//        .append(name().asCql(true))
-//        .append(", value=")
-//        .append(value())
-//        .append("}")
-//        .toString();
-//  }
+  //  @Override
+  //  public String toString() {
+  //    return new StringBuilder(getClass().getSimpleName())
+  //        .append("{columnName=")
+  //        .append(name().asCql(true))
+  //        .append(", value=")
+  //        .append(value())
+  //        .append("}")
+  //        .toString();
+  //  }
 
   public interface ErrorStrategy<T extends RequestException> {
 

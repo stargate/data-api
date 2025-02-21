@@ -54,14 +54,14 @@ public class JsonNamedValue extends NamedValue<JsonPath, JsonLiteral<?>, JsonNod
     return new DecodeResult<>(jsonNodeDecoder.apply(rawValue), null);
   }
 
-//  @Override
-//  public String toString() {
-//    return new StringBuilder(getClass().getSimpleName())
-//        .append("{name=")
-//        .append(name())
-//        .append(", value=")
-//        .append(value())
-//        .append("}")
-//        .toString();
-//  }
+  //  @Override
+  //  public String toString() {
+  //    return new StringBuilder(getClass().getSimpleName())
+  //        .append("{name=")
+  //        .append(name())
+  //        .append(", value=")
+  //        .append(value())
+  //        .append("}")
+  //        .toString();
+  //  }
 }
