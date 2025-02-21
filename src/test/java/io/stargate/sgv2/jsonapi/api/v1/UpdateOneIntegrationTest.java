@@ -442,6 +442,49 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           }
           """));
     }
+
+    @Test
+    public void withDotInPathName() {
+      insertDoc(
+          """
+            {
+              "_id": "doc_with_dot",
+              "price.usd": 5
+            }
+          """);
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+          {
+            "updateOne": {
+              "filter" : {"_id" : "doc_with_dot"},
+              "update" : {"$set" : {"price&.usd": 6}}
+            }
+          }
+          """)
+          .body("$", responseIsStatusOnly())
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+              {
+                "find": {
+                  "filter" : {"_id" : "doc_with_dot"}
+                }
+              }
+            """)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                              {
+                                "_id": "doc_with_dot",
+                                "price.usd": 6
+                              }
+                              """));
+    }
   }
 
   @Nested
