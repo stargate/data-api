@@ -650,6 +650,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
                       "app.kubernetes.io/name": "dotted1",
                       "pricing": {
                         "price.usd": 25.5,
+                        "price&.aud": 10.5,
                         "currency": "USD"
                       }
                     }
@@ -673,7 +674,6 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     }
 
     @Test
-    @Order(2)
     public void byDottedFieldSimpleEq() {
       givenHeadersPostJsonThenOkNoErrors(
               """
@@ -688,7 +688,20 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     }
 
     @Test
-    @Order(3)
+    public void byDottedFieldSimpleEqWithEscape() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+          {
+            "findOne": {
+              "filter" : {"pricing.price&.usd" : 25.5}
+            }
+          }
+          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+    }
+
+    @Test
     public void byDottedFieldTwoEqs() {
       givenHeadersPostJsonThenOkNoErrors(
               """
@@ -703,6 +716,37 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC2));
+    }
+
+    @Test
+    public void byDottedFieldTwoEqsWithEscape() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+          {
+            "findOne": {
+              "filter": {
+                "pricing&.currency": {"$eq": "USD"},
+                "app&.kubernetes&.io/name": {"$eq": "dotted2"}
+              }
+            }
+          }
+          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC2));
+    }
+
+    @Test
+    public void byDottedFieldComplexEscapeEq() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+          {
+            "findOne": {
+              "filter" : {"pricing.price&&&.aud" : 10.5}
+            }
+          }
+          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
     }
   }
 

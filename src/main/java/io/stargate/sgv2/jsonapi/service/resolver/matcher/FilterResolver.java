@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -62,7 +61,6 @@ public abstract class FilterResolver<
       CommandContext<SchemaT> commandContext, CmdT command) {
     Preconditions.checkNotNull(commandContext, "commandContext is required");
     Preconditions.checkNotNull(command, "command is required");
-    final FilterClause filterClause = command.filterClause(commandContext);
 
     final DBLogicalExpression dbLogicalExpression = matchRules.apply(commandContext, command);
     return WithWarnings.of(dbLogicalExpression);
