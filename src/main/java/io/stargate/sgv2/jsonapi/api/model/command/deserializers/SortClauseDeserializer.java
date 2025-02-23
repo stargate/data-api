@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.projection.ProjectionPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -153,7 +154,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         // this is also why we do not break the look here
         sortExpressions.add(SortExpression.tableVectorizeSort(path, inner.getValue().textValue()));
       } else {
-        validateSortClausePath(path);
+        String validatedPath = validateSortClausePath(path);
 
         if (!inner.getValue().isInt()
             || !(inner.getValue().intValue() == 1 || inner.getValue().intValue() == -1)) {
@@ -163,7 +164,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         }
 
         boolean ascending = inner.getValue().intValue() == 1;
-        SortExpression exp = SortExpression.sort(path, ascending);
+        SortExpression exp = SortExpression.sort(validatedPath, ascending);
         sortExpressions.add(exp);
       }
     }
@@ -191,14 +192,16 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
     return arrayVals;
   }
 
-  private void validateSortClausePath(String path) {
-    if (!NamingRules.FIELD.apply(path)) {
-      if (path.isEmpty()) {
+  private String validateSortClausePath(String path) {
+    String normalizePath = ProjectionPath.from(path).encodeNoEscaping();
+    if (!NamingRules.FIELD.apply(normalizePath)) {
+      if (normalizePath.isEmpty()) {
         throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
             "path must be represented as a non-empty string");
       }
       throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
           "path ('%s') cannot start with `$`", path);
     }
+    return normalizePath;
   }
 }

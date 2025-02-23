@@ -65,6 +65,26 @@ class SortClauseDeserializerTest {
     }
 
     @Test
+    public void happyPathWithEscapedChars() throws Exception {
+      String json =
+          """
+              {
+               "app&.kubernetes&.io/name" : 1,
+               "another&.odd&&path" : -1
+              }
+              """;
+
+      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions())
+          .hasSize(2)
+          .contains(
+              SortExpression.sort("app.kubernetes.io/name", true),
+              SortExpression.sort("another.odd&path", false));
+    }
+
+    @Test
     public void happyPathVectorSearch() throws Exception {
       String json =
           """

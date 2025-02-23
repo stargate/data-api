@@ -3,8 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -124,6 +123,34 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
     }
 
     @Test
+    public void sortByDottedFieldWithEscape() {
+      // the result should be the same as the above
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "findOne": {
+                          "filter" : {"type": "sorted"},
+                          "sort" : {"app&.kubernetes&.io/name": 1}
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC3));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "findOne": {
+                          "filter" : {"type": "sorted"},
+                          "sort" : {"app&.kubernetes&.io/name": -1}
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+    }
+
+    @Test
     public void sortByNestedField() {
       // Ordering by nested shape yet different from other orders
       givenHeadersPostJsonThenOkNoErrors(
@@ -144,6 +171,34 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                         "findOne": {
                           "filter" : {"type": "sorted"},
                           "sort" : {"metadata.shape": -1}
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC2));
+    }
+
+    @Test
+    public void sortByNestedFieldWithEscape() {
+      // the result will be the same as the above
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "findOne": {
+                          "filter" : {"type": "sorted"},
+                          "sort" : {"metadata&.shape": 1}
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC3));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "findOne": {
+                          "filter" : {"type": "sorted"},
+                          "sort" : {"metadata&.shape": -1}
                         }
                       }
                       """)
