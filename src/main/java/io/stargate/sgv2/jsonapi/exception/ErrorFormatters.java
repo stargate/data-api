@@ -102,9 +102,8 @@ public abstract class ErrorFormatters {
    * the ApDataType
    */
   public static String errFmt(ApiDataType apiDataType) {
-    return apiDataType.apiSupport().isUnsupportedAny()
-        ? "UNSUPPORTED CQL type: " + apiDataType.cqlType().asCql(true, true)
-        : apiDataType.apiName();
+    // the save way to get the  name when the type may be unsupported
+    return apiDataType.apiName();
   }
 
   public static String errFmt(DataType dataType) {

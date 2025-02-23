@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
@@ -28,6 +29,12 @@ public class UpdateClauseTestData extends TestDataSuplier {
   private static final CqlNamedValue.ErrorStrategy<? extends RequestException>
       THROW_ALL_ERROR_STRATEGY =
           new CqlNamedValue.ErrorStrategy<>() {
+
+            @Override
+            public void allChecks(
+                TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
+              throw new UnsupportedOperationException("allChecks Not implemented");
+            }
 
             @Override
             public ErrorCode<RequestException> codeForNoApiSupport() {

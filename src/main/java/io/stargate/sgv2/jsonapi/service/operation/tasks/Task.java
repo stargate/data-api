@@ -65,7 +65,7 @@ public interface Task<SchemaT extends SchemaObject>
    * exception thrown from the method will be passed through a {@link
    * io.stargate.sgv2.jsonapi.exception.ExceptionHandler} to where it can be re-mapped into
    * something we want to return to a user, and then set as the failure via {@link
-   * #maybeAddFailure(Throwable)} so the accumulator can see it.
+   * #maybeAddFailure(RuntimeException)} so the accumulator can see it.
    *
    * <p>
    *
@@ -104,7 +104,7 @@ public interface Task<SchemaT extends SchemaObject>
    * Set the status to {@link TaskStatus#SKIPPED} if the status is {@link TaskStatus#READY}.
    *
    * <p>If not in the {@link TaskStatus#READY} the task must add a {@link IllegalStateException} via
-   * {@link #maybeAddFailure(Throwable)}.
+   * {@link #maybeAddFailure(RuntimeException)}.
    *
    * <p>This is a small method, but is here and public to make it clear what the intention is for
    * external callers. We use this when skipping tasks in a sequential task group.
@@ -126,12 +126,13 @@ public interface Task<SchemaT extends SchemaObject>
    * interface: the task may add a failure during processing, or other classes may add one before
    * calling execute.
    *
-   * @param throwable An error that happened when trying to process the attempt, ok to pass <code>
-   *     null</code> it will be ignored. If a non-null failure has already been added this call will
-   *     be ignored.
+   * @param runtimeException An error that happened when trying to process the attempt, ok to pass
+   *     <code>
+   *                         null</code> it will be ignored. If a non-null failure has already been
+   *     added this call will be ignored.
    * @return This task
    */
-  Task<SchemaT> maybeAddFailure(Throwable throwable);
+  Task<SchemaT> maybeAddFailure(Throwable runtimeException);
 
   /**
    * The <b>first</b> error that happened when trying to process the task.

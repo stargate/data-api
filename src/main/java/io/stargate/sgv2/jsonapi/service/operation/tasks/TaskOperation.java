@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,10 +57,29 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
    */
   @Override
   public Uni<Supplier<CommandResult>> execute(CommandContext<SchemaT> commandContext) {
+    return executeInternal(commandContext, TaskAccumulator::getResults);
+    //    Objects.requireNonNull(commandContext, "commandContext cannot be null");
+    //
+    //    LOGGER.debug("execute() - starting to process tasks={}", taskGroup);
+    //
+    //    return startMulti(commandContext)
+    //        .collect()
+    //        .in(() -> taskAccumulator, TaskAccumulator::accumulate)
+    //        .onItem()
+    //        .invoke(() -> LOGGER.debug("execute() - finished processing tasks={}", taskGroup))
+    //        .onItem()
+    //        .invoke(taskGroup::throwIfNotAllTerminal)
+    //        .onItem()
+    //        .transform(TaskAccumulator::getResults);
+  }
+
+  <T> Uni<Supplier<T>> executeInternal(
+      CommandContext<SchemaT> commandContext,
+      Function<TaskAccumulator<TaskT, SchemaT>, Supplier<T>> resultSupplier) {
 
     Objects.requireNonNull(commandContext, "commandContext cannot be null");
 
-    LOGGER.debug("execute() - starting to process tasks={}", taskGroup);
+    LOGGER.debug("executeInternal() - starting to process tasks={}", taskGroup);
 
     return startMulti(commandContext)
         .collect()
@@ -69,7 +89,7 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
         .onItem()
         .invoke(taskGroup::throwIfNotAllTerminal)
         .onItem()
-        .transform(TaskAccumulator::getResults);
+        .transform(resultSupplier);
   }
 
   /**

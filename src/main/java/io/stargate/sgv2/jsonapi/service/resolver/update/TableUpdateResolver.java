@@ -219,7 +219,6 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
                 tableSchemaObject, JSONCodecRegistries.DEFAULT_REGISTRY, ERROR_STRATEGY)
             .create(jsonNamedValues);
 
-    ERROR_STRATEGY.allChecks(tableSchemaObject, allColumns);
     // TODO: AARON - what about deferred values ?
     return allColumns.values().stream().map(ColumnAssignment::new).toList();
   }
@@ -254,7 +253,6 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
                 tableSchemaObject, JSONCodecRegistries.DEFAULT_REGISTRY, ERROR_STRATEGY)
             .create(jsonNamedValues);
 
-    ERROR_STRATEGY.allChecks(tableSchemaObject, allColumns);
     // TODO: AARON - what about deferred values ?
 
     return allColumns.values().stream().map(ColumnAssignment::new).toList();

@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -105,7 +106,12 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
     // vectorize this sucker
     // we give the value generator a consumer so we can prepare the value when we get it back.
     return new DecodeResult<>(
-        null, new EmbeddingAction(vectorizeText, apiColumnDef(), this::consumerVectorizeValue));
+        null,
+        new EmbeddingAction(
+            vectorizeText,
+            apiColumnDef(),
+            this::consumeEmbeddingSuccess,
+            this::consumeEmbeddingFailure));
   }
 
   /**
@@ -116,27 +122,32 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
    *
    * @param vector
    */
-  private void consumerVectorizeValue(float[] vector) {
+  private void consumeEmbeddingSuccess(float[] vector) {
 
     var decoded = decodeToCQL(vector);
     if (decoded == null) {
-      throw new IllegalStateException("EmbeddingAction: decodeToCQL returned null");
+      // when the NamedValues is build by the CqlNamedValue factory it will run the checks from the
+      // error strategy, so we need to run them here because this is post factory generation
+      // Not easy to collect all the NamedValues that could be receiving a vector so need to it in
+      // each
+      errorStrategy.allChecks(schemaObject(), new CqlNamedValueContainer(List.of(this)));
+
+      // Sanity check
+      throw new IllegalStateException(
+          "NamedValue: decodeToCQL returned null, and the error strategy did not throw for name: "
+              + name());
     }
 
     // use the super class so state is set correctly
     setDecodedValue(decoded.value());
   }
 
-  //  @Override
-  //  public String toString() {
-  //    return new StringBuilder(getClass().getSimpleName())
-  //        .append("{columnName=")
-  //        .append(name().asCql(true))
-  //        .append(", value=")
-  //        .append(value())
-  //        .append("}")
-  //        .toString();
-  //  }
+  private void consumeEmbeddingFailure(RuntimeException exception) {
+    // todo: it would be good to capture the code, need to track and expose the raw errorInstance to
+    // get that.
+    // and change the generic base from Request to Server fo
+    setErrorCode(NamedValueState.GENERATOR_ERROR, null);
+  }
 
   public interface ErrorStrategy<T extends RequestException> {
 
@@ -148,9 +159,7 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
 
     ErrorCode<T> codeForCodecError();
 
-    default void allChecks(TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
-      throw new UnsupportedOperationException("Not implemented, implement in subclass");
-    }
+    void allChecks(TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns);
 
     default void checkApiSupport(
         TableSchemaObject tableSchemaObject,

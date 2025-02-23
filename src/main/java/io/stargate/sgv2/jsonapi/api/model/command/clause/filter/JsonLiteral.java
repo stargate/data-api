@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 // Literal value to use as RHS operand in the query
 
-
 import java.util.List;
 
 /**
@@ -21,9 +20,9 @@ public record JsonLiteral<T>(T value, JsonType type) {
     if (value == null) {
       sb.append("=null");
     } else if (type == JsonType.ARRAY) {
-        // vectors are long arrays, do not need the full array printed
+      // vectors are long arrays, do not need the full array printed
       sb.append("(").append(value.getClass().getSimpleName()).append(")=");
-      var subList = ((List)value).subList(0, Math.min(5, ((List)value).size()));
+      var subList = ((List) value).subList(0, Math.min(5, ((List) value).size()));
       sb.append(subList);
     } else {
       sb.append("(").append(value.getClass().getSimpleName()).append(")=");

@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import java.util.Objects;
 
@@ -32,6 +33,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
   private final JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
   private final CQLSessionCache cqlSessionCache;
   private final CommandConfig commandConfig;
+  private final EmbeddingProviderFactory embeddingProviderFactory;
 
   // Request specific
   private final SchemaT schemaObject;
@@ -49,7 +51,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
       RequestContext requestContext,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CQLSessionCache cqlSessionCache,
-      CommandConfig commandConfig) {
+      CommandConfig commandConfig,
+      EmbeddingProviderFactory embeddingProviderFactory) {
 
     this.schemaObject = schemaObject;
     this.embeddingProvider = embeddingProvider;
@@ -59,6 +62,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
     this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
     this.cqlSessionCache = cqlSessionCache;
     this.commandConfig = commandConfig;
+    this.embeddingProviderFactory = embeddingProviderFactory;
   }
 
   public static BuilderSupplier builderSupplier() {
@@ -110,6 +114,10 @@ public class CommandContext<SchemaT extends SchemaObject> {
     return commandConfig;
   }
 
+  public EmbeddingProviderFactory embeddingProviderFactory() {
+    return embeddingProviderFactory;
+  }
+
   @SuppressWarnings("unchecked")
   public CommandContext<CollectionSchemaObject> asCollectionContext() {
     checkSchemaObjectType(CollectionSchemaObject.TYPE);
@@ -153,6 +161,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
     private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
     private CQLSessionCache cqlSessionCache;
     private CommandConfig commandConfig;
+    private EmbeddingProviderFactory embeddingProviderFactory;
 
     BuilderSupplier() {}
 
@@ -172,12 +181,19 @@ public class CommandContext<SchemaT extends SchemaObject> {
       return this;
     }
 
+    public BuilderSupplier withEmbeddingProviderFactory(
+        EmbeddingProviderFactory embeddingProviderFactory) {
+      this.embeddingProviderFactory = embeddingProviderFactory;
+      return this;
+    }
+
     public <SchemaT extends SchemaObject> Builder<SchemaT> getBuilder(SchemaT schemaObject) {
 
       Objects.requireNonNull(
           jsonProcessingMetricsReporter, "jsonProcessingMetricsReporter must not be null");
       Objects.requireNonNull(cqlSessionCache, "cqlSessionCache must not be null");
       Objects.requireNonNull(commandConfig, "commandConfig must not be null");
+      Objects.requireNonNull(embeddingProviderFactory, "embeddingProviderFactory must not be null");
 
       // SchemaObject is passed here so the generics gets locked here, makes call chaining easier
       Objects.requireNonNull(schemaObject, "schemaObject must not be null");
@@ -228,7 +244,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
             requestContext,
             jsonProcessingMetricsReporter,
             cqlSessionCache,
-            commandConfig);
+            commandConfig,
+            embeddingProviderFactory);
       }
     }
   }

@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
-
 import java.util.Objects;
 
 public class ApiVectorType extends CollectionApiDataType {

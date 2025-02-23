@@ -80,8 +80,10 @@ public class EmbeddingProviderFactory {
       Map<String, Object> vectorizeServiceParameters,
       Map<String, String> authentication,
       String commandName) {
+
     final EmbeddingProviderConfigStore.ServiceConfig configuration =
         embeddingProviderConfigStore.get().getConfiguration(tenant, serviceName);
+
     if (config.enableEmbeddingGateway()) {
       return new EmbeddingGatewayClient(
           configuration.requestConfiguration(),

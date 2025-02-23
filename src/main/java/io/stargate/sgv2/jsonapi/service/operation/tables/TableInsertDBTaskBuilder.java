@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.InsertDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.InsertDBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -66,7 +66,6 @@ public class TableInsertDBTaskBuilder
     Objects.requireNonNull(returnDocumentResponses, "returnDocumentResponses cannot be null");
 
     var insertTasksAndRows = createInsertTasks(jsonNodes);
-    var insertTaskOperation = createInsertTaskOperation(insertTasksAndRows);
 
     // we have all the inserts, and the rows they are going to insert
     // if there are no deferred values in any of the rows we can return a single level task group
@@ -80,8 +79,16 @@ public class TableInsertDBTaskBuilder
             .flatMap(Collection::stream)
             .toList();
 
+    var insertTaskGroup =
+        new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(ordered);
+    insertTasksAndRows.forEach(insertTaskAndRow -> insertTaskGroup.add(insertTaskAndRow.task()));
+
+    TaskAccumulator<InsertDBTask<TableSchemaObject>, TableSchemaObject> insertAccumulator =
+        InsertDBTaskPage.accumulator(commandContext)
+            .returnDocumentResponses(returnDocumentResponses);
+
     if (allDeferredValues.isEmpty()) {
-      return insertTaskOperation;
+      return new TaskOperation<>(insertTaskGroup, insertAccumulator);
     }
 
     // we have some deferred values, e.g. we need to do vectorizing, so we need  to build a
@@ -95,8 +102,8 @@ public class TableInsertDBTaskBuilder
     }
     var embeddingActions = allActions.stream().map(action -> (EmbeddingAction) action).toList();
 
-    var embeddingTasks = createEmbeddingTasks(embeddingActions);
-    var embeddingOperation = createEmbeddingOperation(embeddingTasks);
+    TaskGroup<EmbeddingTask<TableSchemaObject>, TableSchemaObject> embeddingTasks =
+        createEmbeddingTasks(embeddingActions);
 
     // we now have an insert operation, with multiple insert tasks,
     // and an embedding operation with multiple embedding tasks
@@ -105,20 +112,26 @@ public class TableInsertDBTaskBuilder
 
     // the composite group is sequential, we want to do the embedding first then the inserts.
     var compositeTaskGroup =
-        new TaskGroup<CompositeTask<TableSchemaObject>, TableSchemaObject>(true);
+        new TaskGroup<CompositeTask<?, TableSchemaObject>, TableSchemaObject>(true);
 
-    // wrap up the inner tasks and add them to the composite group
-    compositeTaskGroup.add(
-        new CompositeTask<>(
-            nextPosition(), schemaObject, TaskRetryPolicy.NO_RETRY, embeddingOperation));
-    compositeTaskGroup.add(
-        new CompositeTask<>(
-            nextPosition(), schemaObject, TaskRetryPolicy.NO_RETRY, insertTaskOperation));
+    CompositeTask<EmbeddingTask<TableSchemaObject>, TableSchemaObject> embeddingCompositeTask =
+        CompositeTask.<EmbeddingTask<TableSchemaObject>, TableSchemaObject>intermediaTask(
+            nextPosition(), schemaObject, TaskRetryPolicy.NO_RETRY, embeddingTasks);
+
+    compositeTaskGroup.add(embeddingCompositeTask);
+
+    CompositeTask<InsertDBTask<TableSchemaObject>, TableSchemaObject> insertCompositeTask =
+        CompositeTask.<InsertDBTask<TableSchemaObject>, TableSchemaObject>lastTask(
+            nextPosition(),
+            schemaObject,
+            TaskRetryPolicy.NO_RETRY,
+            insertTaskGroup,
+            insertAccumulator);
+    compositeTaskGroup.add(insertCompositeTask);
 
     // now we need an operation that will run the composite group
     var compositeTaskOperation =
-        new TaskOperation<CompositeTask<TableSchemaObject>, TableSchemaObject>(
-            compositeTaskGroup, CompositeTask.accumulator(CompositeTask.class, commandContext));
+        new TaskOperation<>(compositeTaskGroup, CompositeTaskOuterPage.accumulator(commandContext));
 
     return compositeTaskOperation;
   }
@@ -153,21 +166,22 @@ public class TableInsertDBTaskBuilder
     return insertTaskAndRows;
   }
 
-  private TaskOperation<InsertDBTask<TableSchemaObject>, TableSchemaObject>
-      createInsertTaskOperation(List<InsertTaskAndRow> insertTaskAndRows) {
+  //  private TaskOperation<InsertDBTask<TableSchemaObject>, TableSchemaObject>
+  //      createInsertTaskOperation(List<InsertTaskAndRow> insertTaskAndRows) {
+  //
+  //    var taskGroup = new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(ordered);
+  //    insertTaskAndRows.forEach(insertTaskAndRow -> taskGroup.add(insertTaskAndRow.task()));
+  //
+  //    var accumulator =
+  //        InsertDBTaskPage.accumulator(commandContext)
+  //            .returnDocumentResponses(returnDocumentResponses);
+  //
+  //    return new TaskOperation<>(taskGroup, accumulator);
+  //  }
 
-    var taskGroup = new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(ordered);
-    insertTaskAndRows.forEach(insertTaskAndRow -> taskGroup.add(insertTaskAndRow.task()));
-
-    var accumulator =
-        InsertDBTaskPage.accumulator(commandContext)
-            .returnDocumentResponses(returnDocumentResponses);
-
-    return new TaskOperation<>(taskGroup, accumulator);
-  }
-
-  private List<EmbeddingTask<TableSchemaObject>> createEmbeddingTasks(
+  private TaskGroup<EmbeddingTask<TableSchemaObject>, TableSchemaObject> createEmbeddingTasks(
       List<EmbeddingAction> embeddingActions) {
+
     if (embeddingActions.isEmpty()) {
       throw new RuntimeException("No deferred vectorizing to do - TODO Handle better");
     }
@@ -175,28 +189,33 @@ public class TableInsertDBTaskBuilder
     var actionGroups = groupByVectorizeDefinition(embeddingActions);
 
     // each group of embedding actions is a single Embedding Task
-    List<EmbeddingTask<TableSchemaObject>> embeddingTasks = new ArrayList<>(actionGroups.size());
+    TaskGroup<EmbeddingTask<TableSchemaObject>, TableSchemaObject> taskGroup =
+        new TaskGroup<>(false);
+
     actionGroups.forEach(
-        (vectorizeDefinition, actions) -> {
+        (embeddingActionGroupKey, actions) -> {
           var embeddingTask =
               EmbeddingTask.builder(commandContext)
-                  .withVectorizeDefinition(vectorizeDefinition)
+                  .withApiVectorType(embeddingActionGroupKey.vectorType())
                   .withEmbeddingActions(actions)
+                  .withRetryPolicy(TaskRetryPolicy.NO_RETRY)
+                  .withOriginalCommandName(commandContext.commandName())
+                  .withRequestType(EmbeddingProvider.EmbeddingRequestType.INDEX)
                   .build();
-          embeddingTasks.add(embeddingTask);
+          taskGroup.add(embeddingTask);
         });
-    return embeddingTasks;
+    return taskGroup;
   }
 
-  private TaskOperation<EmbeddingTask<TableSchemaObject>, TableSchemaObject>
-      createEmbeddingOperation(List<EmbeddingTask<TableSchemaObject>> embeddingTasks) {
-
-    var taskGroup = new TaskGroup<>(embeddingTasks);
-
-    var accumulator = EmbeddingTask.accumulator(commandContext);
-
-    return new TaskOperation<>(taskGroup, accumulator);
-  }
+  //  private TaskOperation<EmbeddingTask<TableSchemaObject>, TableSchemaObject>
+  //      createEmbeddingOperation(List<EmbeddingTask<TableSchemaObject>> embeddingTasks) {
+  //
+  //    var taskGroup = new TaskGroup<>(embeddingTasks);
+  //
+  //    var accumulator = EmbeddingTask.accumulator(commandContext);
+  //
+  //    return new TaskOperation<>(taskGroup, accumulator);
+  //  }
 
   /**
    * We have embedding generation from potentially providers etc, we need to group all the deferred
@@ -206,10 +225,9 @@ public class TableInsertDBTaskBuilder
    * @param deferredEmbeddings
    * @return
    */
-  private Map<VectorizeDefinition, List<EmbeddingAction>> groupByVectorizeDefinition(
-      List<EmbeddingAction> embeddingActions) {
-    return embeddingActions.stream()
-        .collect(Collectors.groupingBy(EmbeddingAction::vectorizeDefinition));
+  private Map<EmbeddingAction.EmbeddingActionGroupKey, List<EmbeddingAction>>
+      groupByVectorizeDefinition(List<EmbeddingAction> embeddingActions) {
+    return embeddingActions.stream().collect(Collectors.groupingBy(EmbeddingAction::groupKey));
   }
 
   /**

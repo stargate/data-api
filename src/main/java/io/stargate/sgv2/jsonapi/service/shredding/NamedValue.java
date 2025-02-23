@@ -256,7 +256,10 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
         .append("state", state)
         .append("errorCode", errorCode)
         .append("columnDef", columnDef)
-        .append("value.class", value == null ? Objects.toString(null) : value.getClass().getSimpleName())
+        .append("valueAction", valueAction)
+        .append(
+            "value.class",
+            value == null ? Objects.toString(null) : value.getClass().getSimpleName())
         .append("value", value);
     return prettyToStringBuilder;
   }

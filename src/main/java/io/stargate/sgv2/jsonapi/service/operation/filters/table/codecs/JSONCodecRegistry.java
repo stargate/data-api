@@ -147,7 +147,9 @@ public class JSONCodecRegistry {
         if (value instanceof EJSONWrapper) {
           return VectorCodecs.binaryToCQLFloatArrayCodec(vt);
         }
-
+        if (value instanceof float[]) {
+          return VectorCodecs.floatArrayToCQLFloatArrayCodec(vt);
+        }
         throw new ToCQLCodecException(value, columnType, "no codec matching value type");
       }
 

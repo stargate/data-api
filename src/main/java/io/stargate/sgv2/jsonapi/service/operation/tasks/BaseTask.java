@@ -228,8 +228,8 @@ public abstract class BaseTask<
    * io.stargate.sgv2.jsonapi.exception.ExceptionHandler}.
    *
    * <p>Called after we have completed processing a task, on the first error passed to {@link
-   * #maybeAddFailure(Throwable)}. Note that any errors that resulted in a retry will not be
-   * tracked, only the final error.
+   * Task#maybeAddFailure(RuntimeException)}. Note that any errors that resulted in a retry will not
+   * be tracked, only the final error.
    *
    * @param resultSupplier The {@link ResultSupplierT} returned by the subclass from {@link
    *     #buildResultSupplier(CommandContext)}. Note: this may be <b>null</b> if the task either did
@@ -442,13 +442,13 @@ public abstract class BaseTask<
 
   /**
    * Check the status of the task, if it is the expected status then return this object, otherwise
-   * set a {@link IllegalStateException} via {@link #maybeAddFailure(Throwable)} to change the
-   * status to {@link TaskStatus#ERROR}.
+   * set a {@link IllegalStateException} via {@link Task#maybeAddFailure(RuntimeException)} to
+   * change the status to {@link TaskStatus#ERROR}.
    *
    * @param context short descriptive text about what is being checked, used in the exception
    * @param expectedStatus The status that is expected
    * @return True if the task is in the expected state, otherwise a {@link IllegalStateException} is
-   *     added to the task via {@link #maybeAddFailure(Throwable)} and false is returned.
+   *     added to the task via {@link Task#maybeAddFailure(RuntimeException)} and false is returned.
    */
   protected boolean checkStatus(String context, TaskStatus expectedStatus) {
 

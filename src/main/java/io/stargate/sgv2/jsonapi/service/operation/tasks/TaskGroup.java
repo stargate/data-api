@@ -101,6 +101,8 @@ public class TaskGroup<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject
     return new StringBuilder("TaskGroup{")
         .append("groupId=")
         .append(groupId)
+        .append(", taskType=")
+        .append(size() > 0 ? get(0).getClass().getSimpleName() : "<TaskListEmpty>")
         .append(", sequentialProcessing=")
         .append(sequentialProcessing)
         .append(", count=")

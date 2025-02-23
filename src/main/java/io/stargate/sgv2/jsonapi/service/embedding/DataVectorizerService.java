@@ -65,7 +65,7 @@ public class DataVectorizerService {
       if (commandContext.schemaObject() instanceof TableSchemaObject) {
         // TODO: AARON: HACK: skipping the vectorizing here so we can do it in the pipeline
         return Uni.createFrom().item(command);
-        //return vectorizeTableCommand(dataVectorizer, commandContext.asTableContext(), command);
+        // return vectorizeTableCommand(dataVectorizer, commandContext.asTableContext(), command);
       }
     } catch (Exception e) {
       return Uni.createFrom().failure(e);

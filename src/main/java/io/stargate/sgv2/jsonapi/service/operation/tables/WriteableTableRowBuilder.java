@@ -35,6 +35,16 @@ public class WriteableTableRowBuilder {
 
   public static final CqlNamedValue.ErrorStrategy<DocumentException> ERROR_STRATEGY =
       new CqlNamedValue.ErrorStrategy<>() {
+
+        @Override
+        public void allChecks(
+            TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
+          checkUnknownColumns(tableSchemaObject, allColumns);
+          checkApiSupport(tableSchemaObject, allColumns, MATCH_INSERT_UNSUPPORTED);
+          checkMissingCodec(tableSchemaObject, allColumns);
+          checkCodecError(tableSchemaObject, allColumns);
+        }
+
         @Override
         public ErrorCode<DocumentException> codeForNoApiSupport() {
           return DocumentException.Code.UNSUPPORTED_COLUMN_TYPES;
@@ -86,17 +96,11 @@ public class WriteableTableRowBuilder {
     LOGGER.warn("XXX: source={}", source.toString(true));
 
     // Map everything from the JSON source into a CQL Value, we can check their state after.
+    // the checks on the error strategy will run, we have some extra ones below
     var allColumns =
         new CqlNamedValueFactory(tableSchemaObject, codecRegistry, ERROR_STRATEGY).create(source);
 
     LOGGER.warn("XXX: allColumns={}", allColumns.toString(true));
-
-    // the validation steps
-    ERROR_STRATEGY.checkUnknownColumns(tableSchemaObject, allColumns);
-    ERROR_STRATEGY.checkApiSupport(tableSchemaObject, allColumns, MATCH_INSERT_UNSUPPORTED);
-    ERROR_STRATEGY.checkMissingCodec(tableSchemaObject, allColumns);
-    ERROR_STRATEGY.checkCodecError(tableSchemaObject, allColumns);
-
     checkAllPrimaryKeys(allColumns);
 
     // now need to split the columns into key and non-key columns

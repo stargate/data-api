@@ -54,6 +54,7 @@ public class CqlNamedValueFactory {
           allColumns.put(cqlNamedValue);
         });
 
+    errorStrategy.allChecks(tableSchemaObject, allColumns);
     return allColumns;
   }
 

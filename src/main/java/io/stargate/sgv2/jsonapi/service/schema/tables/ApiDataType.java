@@ -45,7 +45,8 @@ public interface ApiDataType extends PrettyPrintable {
 
   @Override
   default PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    prettyToStringBuilder.append("apiName", apiName())
+    prettyToStringBuilder
+        .append("apiName", apiName())
         .append("apiSupport", apiSupport())
         .append("cqlType", cqlType());
     return prettyToStringBuilder;

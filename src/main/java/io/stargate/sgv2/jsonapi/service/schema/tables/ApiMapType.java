@@ -10,9 +10,8 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
-import java.util.Objects;
-
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
