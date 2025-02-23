@@ -91,6 +91,14 @@ public class CompositeTaskIntermediatePage<
     }
 
     @Override
+    public void accumulate(InnerTaskT task) {
+      if (lastTaskAccumulator != null){
+        lastTaskAccumulator.accumulate(task);
+      }
+      super.accumulate(task);
+    }
+
+    @Override
     public Supplier<CommandResult> getResults() {
       throw new IllegalStateException(
           "Supplier<CommandResult> getResults() should not be called on CompositeTaskIntermediatePage.Accumulator");

@@ -61,12 +61,12 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
   protected CompositeTaskResultSupplier<InnerTaskT, SchemaT> buildResultSupplier(
       CommandContext<SchemaT> commandContext) {
 
-    // if we have a lastTask accumulator we are the last task, otherwise we need an intermedia
-    // accumulator.
-    var intermediateAccumulator =
-        lastTaskAccumulator != null
-            ? null
-            : CompositeTaskIntermediatePage.<InnerTaskT, SchemaT>accumulator(commandContext);
+    // We always need the intermediate accumulator
+    // If this is an intermedia (i.e. not last) task then it will be used to surface errors from the inner tasks
+    // if this is the last task, it will be used to pass through to the lastTaskAccumulator
+    // which is the accumilator to make the results of the entire pipeline
+    var intermediateAccumulator = CompositeTaskIntermediatePage.<InnerTaskT, SchemaT>accumulator(commandContext)
+        .withLastTaskAccumulator(lastTaskAccumulator);
 
     // we give the Operation either the lastTaskAccumulator if we have one, or the intermedia one
     // the result supplier below will call the correct accumulator when done
