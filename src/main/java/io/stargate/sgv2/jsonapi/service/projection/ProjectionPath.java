@@ -16,7 +16,7 @@ import java.util.Objects;
  * <p>Use {@link #from(String)} to create an instance, {@link #getSegment(int)} to access the
  * segments, and {@link #encodeNoEscaping()} to get the dot-separated path string.
  */
-public final class ProjectionPath {
+public final class ProjectionPath implements Comparable<ProjectionPath> {
   private final List<String> segments;
 
   /** projection path for document id */
@@ -175,5 +175,24 @@ public final class ProjectionPath {
   @Override
   public String toString() {
     return encodeNoEscaping();
+  }
+
+  /**
+   * Instead of simple alphabetic sorting of dotPath, do segment-aware to ensure parent/children are
+   * sorted next to each other.
+   */
+  @Override
+  public int compareTo(ProjectionPath other) {
+    final List<String> thisSegments = this.segments;
+    final List<String> otherSegments = other.segments;
+
+    for (int i = 0; i < Math.min(thisSegments.size(), otherSegments.size()); i++) {
+      int diff = thisSegments.get(i).compareTo(otherSegments.get(i));
+      if (diff != 0) {
+        return diff;
+      }
+    }
+    // If same prefix sort longer one after shorter one
+    return Integer.compare(thisSegments.size(), otherSegments.size());
   }
 }
