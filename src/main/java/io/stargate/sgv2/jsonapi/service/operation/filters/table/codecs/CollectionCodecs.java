@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToJSONCodecException;
 import java.util.*;
@@ -80,8 +81,7 @@ public abstract class CollectionCodecs {
     for (JsonLiteral<?> literalElement : listValue) {
       Object element = literalElement.value();
       if (element == null) {
-        result.add(null);
-        continue;
+        throw DocumentException.Code.NULL_IS_NOT_ALLOWED_FOR_MAP_SET_LIST.get();
       }
       if (elementCodec == null || !elementCodec.handlesJavaValue(element)) {
         elementCodec = findCollectionElementCodec(valueCodecs, elementType, element);
@@ -101,8 +101,7 @@ public abstract class CollectionCodecs {
     for (JsonLiteral<?> literalElement : setValue) {
       Object element = literalElement.value();
       if (element == null) {
-        result.add(null);
-        continue;
+        throw DocumentException.Code.NULL_IS_NOT_ALLOWED_FOR_MAP_SET_LIST.get();
       }
       if (elementCodec == null || !elementCodec.handlesJavaValue(element)) {
         elementCodec = findCollectionElementCodec(valueCodecs, elementType, element);
@@ -115,6 +114,9 @@ public abstract class CollectionCodecs {
   private static JSONCodec<Object, Object> findCollectionElementCodec(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Object element)
       throws ToCQLCodecException {
+    if (element == null) {
+      throw DocumentException.Code.NULL_IS_NOT_ALLOWED_FOR_MAP_SET_LIST.get();
+    }
     for (JSONCodec<?, ?> codec : valueCodecs) {
       if (codec.handlesJavaValue(element)) {
         return (JSONCodec<Object, Object>) codec;

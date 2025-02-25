@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
@@ -89,7 +88,6 @@ public class RowShredder {
    */
   public static JsonLiteral<?> shredValue(JsonNode value) {
 
-    Log.error("begin to shred value JsonNode " + value);
     return switch (value.getNodeType()) {
       case NUMBER -> shredNumber(value);
       case STRING -> new JsonLiteral<>(value.textValue(), JsonType.STRING);
@@ -180,44 +178,5 @@ public class RowShredder {
       map.put(key, value);
     }
     return Optional.of(new JsonLiteral<>(map, JsonType.SUB_DOC));
-  }
-
-  //  /** { "$push": { "listColumn": 1 } } shred to JsonLiteral with JsonType as Array */
-  //  public static JsonLiteral<?> `shredTablePushValue`(JsonNode value) {
-  //    Log.error("begin to shred value JsonNode " + value);
-  //    return switch (value.getNodeType()) {
-  //      case NUMBER, STRING, BOOLEAN, NULL -> wrapAsArrayJsonLiteral(shredValue(value));
-  //      case ARRAY -> {
-  //        ArrayNode arrayNode = (ArrayNode) value;
-  //        List<JsonLiteral<?>> list = new ArrayList<>();
-  //        for (JsonNode node : arrayNode) {
-  //          // Leave JsonLiteral wrapping as-is; removed by JsonCodec
-  //          list.add(shredValue(node));
-  //        }
-  //        yield new JsonLiteral<>(list, JsonType.ARRAY);
-  //      }
-  //      case OBJECT -> {
-  //        ObjectNode objectNode = (ObjectNode) value;
-  //        EJSONWrapper wrapper = EJSONWrapper.maybeFrom(objectNode);
-  //        if (wrapper != null) {
-  //          yield new JsonLiteral<>(wrapper, JsonType.EJSON_WRAPPER);
-  //        }
-  //        // If not, treat as a regular sub-document
-  //        Map<String, JsonLiteral<?>> map = new HashMap<>();
-  //        for (var entry : objectNode.properties()) {
-  //          map.put(entry.getKey(), shredValue(entry.getValue()));
-  //        }
-  //        yield new JsonLiteral<>(map, JsonType.SUB_DOC);
-  //      }
-  //      default ->
-  //          throw new IllegalArgumentException("Unsupported JsonNode type " +
-  // value.getNodeType());
-  //    };
-  //  }
-
-  private static JsonLiteral<?> wrapAsArrayJsonLiteral(JsonLiteral<?> jsonLiteral) {
-    List<JsonLiteral<?>> list = new ArrayList<>();
-    list.add(jsonLiteral);
-    return new JsonLiteral<>(list, JsonType.ARRAY);
   }
 }

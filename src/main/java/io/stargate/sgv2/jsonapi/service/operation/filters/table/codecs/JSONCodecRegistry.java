@@ -10,8 +10,8 @@ import com.datastax.oss.driver.api.core.type.MapType;
 import com.datastax.oss.driver.api.core.type.SetType;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
@@ -98,14 +98,11 @@ public class JSONCodecRegistry {
     if (candidates == null) { // No scalar codec for this CQL type
       // But maybe structured type?
       if (columnType instanceof ListType lt) {
-        Log.error("pass1 " + columnType + "   " + lt.getElementType());
         List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(lt.getElementType());
-        Log.error("pass2");
 
         if (valueCodecCandidates != null) {
           // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
           if (!(value instanceof Collection<?>)) {
-            Log.error("oh no");
             throw new ToCQLCodecException(value, columnType, "no codec matching value type");
           }
           return (JSONCodec<JavaT, CqlT>)
@@ -166,6 +163,62 @@ public class JSONCodecRegistry {
       // Different exception for this case: CQL type supported but not from given Java type
       // (f.ex, CQL Boolean from Java/JSON number)
       throw new ToCQLCodecException(value, columnType, "no codec matching value type");
+    }
+    return match;
+  }
+
+  /**
+   * Returns a codec for the key or value of the map column.
+   *
+   * @param table {@link TableMetadata} to find the column definition in.
+   * @param column {@link CqlIdentifier} target map column.
+   * @param value The value to be written to the key or value.
+   * @param <JavaT> Type of the Java object we want to convert.
+   * @param <CqlT> Type fo the Java object the CQL driver expects.
+   * @throws UnknownColumnException
+   * @throws MissingJSONCodecException
+   * @throws ToCQLCodecException
+   */
+  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> getKeyOrValueCodecForMap(
+      TableMetadata table, CqlIdentifier column, Object value, boolean isKey)
+      throws UnknownColumnException, MissingJSONCodecException, ToCQLCodecException {
+    Objects.requireNonNull(table, "table must not be null");
+    Objects.requireNonNull(column, "column must not be null");
+
+    var columnMetadata =
+        table.getColumn(column).orElseThrow(() -> new UnknownColumnException(table, column));
+
+    var mapType = columnMetadata.getType();
+    if (!(mapType instanceof MapType)) {
+      throw new ToCQLCodecException(value, mapType, "column is not a map column");
+    }
+
+    if (value == null) {
+      throw DocumentException.Code.NULL_IS_NOT_ALLOWED_FOR_MAP_SET_LIST.get();
+    }
+
+    var keyOrValueType =
+        isKey ? ((MapType) mapType).getKeyType() : ((MapType) mapType).getValueType();
+
+    // First find candidates for CQL target type in question (if any)
+    List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(keyOrValueType);
+    if (candidates == null) { // No scalar codec for this CQL type
+      throw new MissingJSONCodecException(table, columnMetadata, value.getClass(), value);
+    }
+
+    // And if any found try to match with the incoming Java value
+    JSONCodec<JavaT, CqlT> match =
+        JSONCodec.unchecked(
+            candidates.stream()
+                .filter(codec -> codec.handlesJavaValue(value))
+                .findFirst()
+                .orElse(null));
+    if (match == null) {
+      // Different exception for this case: CQL type supported but not from given Java type
+      throw new ToCQLCodecException(
+          value,
+          keyOrValueType,
+          "no codec matching for map %s type".formatted(isKey ? "key" : "value"));
     }
     return match;
   }

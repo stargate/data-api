@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.service.operation.InsertAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
@@ -39,7 +38,6 @@ public class TableInsertAttemptBuilder implements InsertAttemptBuilder<TableInse
     Exception exception = null;
     try {
       var jsonContainer = rowShredder.shred(jsonNode);
-      Log.error("jsonContainer is " + jsonContainer);
       writeableRow = writeableTableRowBuilder.build(jsonContainer);
     } catch (RuntimeException e) {
       exception = e;

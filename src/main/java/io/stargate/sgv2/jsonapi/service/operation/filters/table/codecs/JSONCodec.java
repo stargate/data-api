@@ -6,7 +6,6 @@ import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToJSONCodecException;
@@ -105,7 +104,6 @@ public record JSONCodec<JavaT, CqlT>(
     if (value == null) {
       return null;
     }
-    Log.error("hahah toCql " + value);
     return toCQL.apply(targetCQLType, value);
   }
 

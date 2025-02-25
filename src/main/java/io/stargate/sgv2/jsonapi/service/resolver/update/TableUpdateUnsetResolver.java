@@ -13,12 +13,14 @@ public class TableUpdateUnsetResolver implements TableUpdateOperatorResolver {
 
   /**
    * Resolve the {@link UpdateOperator#UNSET} operation.
+   *
    * <p>Example: (Note, it does not matter what the unset value is, NULL will be set)
+   *
    * <ul>
-   *   <li>primitive column<code>{"$unset" : { "age" : 1 , "human" : false}}</code></li>
-   *   <li>list column<code>{"$unset" : { "listColumn" : "abc"}}</code></li>
-   *   <li>set column<code>{"$unset" : { "setColumn" : {"random":"random}}}</code></li>
-   *   <li>map column<code>{"$unset" : { "mapColumn" : []}</code></li>
+   *   <li>primitive column<code>{"$unset" : { "age" : 1 , "human" : false}}</code>
+   *   <li>list column<code>{"$unset" : { "listColumn" : "abc"}}</code>
+   *   <li>set column<code>{"$unset" : { "setColumn" : {"random":"random}}}</code>
+   *   <li>map column<code>{"$unset" : { "mapColumn" : []}</code>
    * </ul>
    *
    * @param table tableSchemaObject

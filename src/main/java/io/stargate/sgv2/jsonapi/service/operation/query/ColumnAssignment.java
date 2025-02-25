@@ -6,13 +6,12 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.type.MapType;
 import com.datastax.oss.driver.api.querybuilder.update.Assignment;
 import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
@@ -22,6 +21,7 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,8 +46,7 @@ public class ColumnAssignment implements CQLAssignment {
               UpdateOperator.SET, ColumnAssignment::resolveSetUnsetToAssignment,
               UpdateOperator.UNSET, ColumnAssignment::resolveSetUnsetToAssignment,
               UpdateOperator.PUSH, ColumnAssignment::resolvePushToAssignment,
-              UpdateOperator.PULL_ALL, ColumnAssignment::resolvePullAllToAssignment
-          );
+              UpdateOperator.PULL_ALL, ColumnAssignment::resolvePullAllToAssignment);
 
   private final UpdateOperator updateOperator;
   private final TableMetadata tableMetadata;
@@ -107,13 +106,29 @@ public class ColumnAssignment implements CQLAssignment {
   protected void addPositionalValues(List<Object> positionalValues) {
 
     var rawValue = value.value();
-    Log.error("position value 123 " + rawValue);
     try {
+
+      // special case for $pullAll against a map column.
+      // We only need to get the keyCodec
+      if (updateOperator == UpdateOperator.PULL_ALL
+          && tableMetadata.getColumn(column).get().getType() instanceof MapType) {
+        List<JsonLiteral<?>> jsonValues = (List<JsonLiteral<?>>) rawValue;
+        List<Object> cqlValues = new ArrayList<>();
+        for (JsonLiteral<?> jsonValue : jsonValues) {
+          JSONCodec<Object, Object> keyCodec =
+              JSONCodecRegistries.DEFAULT_REGISTRY.getKeyOrValueCodecForMap(
+                  tableMetadata, column, jsonValue.value(), true);
+          cqlValues.add(keyCodec.toCQL(jsonValue.value()));
+        }
+        positionalValues.add(cqlValues);
+        return;
+      }
 
       positionalValues.add(
           JSONCodecRegistries.DEFAULT_REGISTRY
               .codecToCQL(tableMetadata, column, rawValue)
               .toCQL(rawValue));
+
     } catch (MissingJSONCodecException e) {
       throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
           errVars(
@@ -152,9 +167,13 @@ public class ColumnAssignment implements CQLAssignment {
     return ongoingAssignment.append(column, bindMarker());
   }
 
-    private static UpdateWithAssignments resolvePullAllToAssignment(
-        OngoingAssignment ongoingAssignment, CqlIdentifier column) {
-        return ongoingAssignment.remove(column, bindMarker());
-    }
+  private static UpdateWithAssignments resolvePullAllToAssignment(
+      OngoingAssignment ongoingAssignment, CqlIdentifier column) {
+    return ongoingAssignment.remove(column, bindMarker());
+  }
 
+  /** This method is used for unit test in TableUpdateOperatorTest */
+  public boolean testEquals(UpdateOperator updateOperator, JsonLiteral<?> value) {
+    return this.updateOperator == updateOperator && this.value.equals(value);
+  }
 }

@@ -24,31 +24,35 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
 
   /**
    * Resolve the {@link UpdateOperator#PUSH} operation.
+   *
    * <p>Push operator can only be used for collection columns (list, set, map).
+   *
    * <p>Example(Push single element to the collection):
+   *
    * <ul>
-   *   <li>list. <code>{"$push" : {"textList" : "textValue", "intList" : 111}}</code></li>
-   *   <li>set. <code>{"$push" : {"textSet" : "textValue", "intSet" : 111}}</code></li>
-   *   <li>map.(object format) <code>{"$push" : {"textToTextMap" : {"key1": "value1"}}}</code></li>
-   *   <li>map.(tuple format) <code>{"$push" : {"textToTextMap" : ["key1", "value1"]}}</code></li>
-   *   <li>map.(tuple format) <code>{"$push" : {"intToTextMap" : [1, "value1"]}}</code></li>
+   *   <li>list. <code>{"$push" : {"textList" : "textValue", "intList" : 111}}</code>
+   *   <li>set. <code>{"$push" : {"textSet" : "textValue", "intSet" : 111}}</code>
+   *   <li>map.(object format) <code>{"$push" : {"textToTextMap" : {"key1": "value1"}}}</code>
+   *   <li>map.(tuple format) <code>{"$push" : {"textToTextMap" : ["key1", "value1"]}}</code>
+   *   <li>map.(tuple format) <code>{"$push" : {"intToTextMap" : [1, "value1"]}}</code>
    * </ul>
    *
    * <p>Example(Push multiple elements to the collection):
+   *
    * <ul>
    *   <li>list. <code>
    *       {"$push" : {"textList" : {"$each": ["textValue1", "textValue2"]}, "intList" : {"$each": [1,2]}}}
-   *       </code></li>
+   *       </code>
    *   <li>set. <code>
    *       {"$push" : {"textSet" : {"$each": ["textValue1", "textValue2"]}, "intSet" : {"$each": [1,2]}}}
-   *       </code></li>
+   *       </code>
    *   <li>map. (object format)<code>
    *       {"$push" : { "textToTextMap" : {"$each": [{"key1": "value1"}, {"key2": "value2"}]}}
-   *       </code></li>
+   *       </code>
    *   <li>map. (tuple format)<code>
-   *       {"$push" : { "textToTextMap" : {"$each": [["key1","value1"], ["key2","value2"]]}}</code></li>
+   *       {"$push" : { "textToTextMap" : {"$each": [["key1","value1"], ["key2","value2"]]}}</code>
    *   <li>map. (tuple format)<code>
-   *       {"$push" : { "intToTextMap" : {"$each": [[1,"value1"], [2,"value2"]]}}</code></li>
+   *       {"$push" : { "intToTextMap" : {"$each": [[1,"value1"], [2,"value2"]]}}</code>
    * </ul>
    *
    * @param table TableSchemaObject
@@ -103,8 +107,8 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
    * <p>Example(Push single element to the list/set):
    *
    * <ul>
-   *   <li>list. <code>{"$push" : {"textList" : "textValue", "intList" : 111}}</code></li>
-   *   <li>set. <code>{"$push" : {"textSet" : "textValue", "intSet" : 111}}</code></li>
+   *   <li>list. <code>{"$push" : {"textList" : "textValue", "intList" : 111}}</code>
+   *   <li>set. <code>{"$push" : {"textSet" : "textValue", "intSet" : 111}}</code>
    * </ul>
    *
    * <p>Example(Push multiple elements to the list/set):
@@ -112,10 +116,10 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
    * <ul>
    *   <li>list. <code>
    *       {"$push" : {"textList" : {"$each": ["textValue1", "textValue2"]}, "intList" : {"$each": [1,2]}}}
-   *       </code></li>
+   *       </code>
    *   <li>set. <code>
    *       {"$push" : {"textSet" : {"$each": ["textValue1", "textValue2"]}, "intSet" : {"$each": [1,2]}}}
-   *       </code></li>
+   *       </code>
    * </ul>
    *
    * *TODO *
@@ -167,9 +171,9 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
    * <p>Example(Push single element to the map):
    *
    * <ul>
-   *   <li>map.(object format) <code>{"$push" : {"textToTextMap" : {"key1": "value1"}}}</code></li>
-   *   <li>map.(tuple format) <code>{"$push" : {"textToTextMap" : ["key1", "value1"]}}</code></li>
-   *   <li>map.(tuple format) <code>{"$push" : {"intToTextMap" : [1, "value1"]}}</code></li>
+   *   <li>map.(object format) <code>{"$push" : {"textToTextMap" : {"key1": "value1"}}}</code>
+   *   <li>map.(tuple format) <code>{"$push" : {"textToTextMap" : ["key1", "value1"]}}</code>
+   *   <li>map.(tuple format) <code>{"$push" : {"intToTextMap" : [1, "value1"]}}</code>
    * </ul>
    *
    * <p>Example(Push multiple elements to the map):
@@ -177,11 +181,11 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
    * <ul>
    *   <li>map. (object format)<code>
    *       {"$push" : { "textToTextMap" : {"$each": [{"key1": "value1"}, {"key2": "value2"}]}}
-   *       </code></li>
+   *       </code>
    *   <li>map. (tuple format)<code>
-   *       {"$push" : { "textToTextMap" : {"$each": [["key1","value1"], ["key2","value2"]]}}</code></li>
+   *       {"$push" : { "textToTextMap" : {"$each": [["key1","value1"], ["key2","value2"]]}}</code>
    *   <li>map. (tuple format)<code>
-   *       {"$push" : { "intToTextMap" : {"$each": [[1,"value1"], [2,"value2"]]}}</code></li>
+   *       {"$push" : { "intToTextMap" : {"$each": [[1,"value1"], [2,"value2"]]}}</code>
    * </ul>
    *
    * @param table TableSchemaObject
@@ -252,11 +256,24 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
     return shreddedValue;
   }
 
-  /** Helper method to resolve a map entry from tuple format. */
+  /** Helper method to resolve single map entry from tuple format. */
   private Map<JsonLiteral<?>, JsonLiteral<?>> resolveMapEntryFromTupleFormat(
-      TableSchemaObject table, ArrayNode entryNodeTupleFormat) {
+      TableSchemaObject table, ArrayNode singleEntryNodeTupleFormat) {
+    // the arrayNode must be for a single entry
+    singleEntryNodeTupleFormat.forEach(
+        entryNode -> {
+          if (entryNode.isObject() || entryNode.isArray()) {
+            throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
+                errVars(
+                    table,
+                    map -> {
+                      map.put("reason", "combine $push and $each for adding multiple elements");
+                    }));
+          }
+        });
+
     // As the tuple format to indicate a map entry, array size must be 2
-    if (entryNodeTupleFormat.size() != 2) {
+    if (singleEntryNodeTupleFormat.size() != 2) {
       throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
           errVars(
               table,
@@ -266,10 +283,11 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
                     "To use tuple format for indicating a map entry, provided array must be size of 2");
               }));
     }
+
     Map<JsonLiteral<?>, JsonLiteral<?>> entryMap = new HashMap<>();
     entryMap.put(
-        RowShredder.shredValue(entryNodeTupleFormat.get(0)),
-        RowShredder.shredValue(entryNodeTupleFormat.get(1)));
+        RowShredder.shredValue(singleEntryNodeTupleFormat.get(0)),
+        RowShredder.shredValue(singleEntryNodeTupleFormat.get(1)));
     return entryMap;
   }
 
@@ -283,7 +301,7 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
           errVars(
               table,
               map -> {
-                map.put("reason", "use $push and $each together for adding multiple elements");
+                map.put("reason", "combine $push and $each for adding multiple elements");
               }));
     }
     Map<JsonLiteral<?>, JsonLiteral<?>> entryMap = new HashMap<>();

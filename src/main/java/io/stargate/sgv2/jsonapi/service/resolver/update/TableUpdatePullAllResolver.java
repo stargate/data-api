@@ -11,26 +11,31 @@ import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 
 public class TableUpdatePullAllResolver implements TableUpdateOperatorResolver {
 
-    /**
-     * Resolve the {@link UpdateOperator#PULL_ALL} operation for a table update
-     * <p>Push operator can only be used for collection columns (list, set, map).
-     * <p>Example:
-     * <ul>
-     *   <li>list column<code>{"$pullAll" : { "listColumn1" : [1,2], "listColumn2" : ["a","b"]}}</code></li>
-     *   <li>set column<code>{"$pullAll" : { "setColumn2" : [1,2], "setColumn2" : ["a","b"]}}</code></li>
-     *   <li>map column, pull from map key<code>
-     *       {"$pullAll" : { "mapColumn" : [1,2], "mapColumn" : ["abc","def"]}}</code> </li>
-     * </ul>
-     *
-     * @param table tableSchemaObject
-     * @param arguments arguments objectNode for the $pullAll
-     * @return list of columnAssignments for all the $pullAll column updates
-     */
+  /**
+   * Resolve the {@link UpdateOperator#PULL_ALL} operation for a table update
+   *
+   * <p>Push operator can only be used for collection columns (list, set, map).
+   *
+   * <p>Example:
+   *
+   * <ul>
+   *   <li>list column<code>{"$pullAll" : { "listColumn1" : [1,2], "listColumn2" : ["a","b"]}}
+   *       </code>
+   *   <li>set column<code>{"$pullAll" : { "setColumn2" : [1,2], "setColumn2" : ["a","b"]}}</code>
+   *   <li>map column, pull from map key<code>
+   *       {"$pullAll" : { "mapColumn" : [1,2], "mapColumn" : ["abc","def"]}}</code>
+   * </ul>
+   *
+   * @param table tableSchemaObject
+   * @param arguments arguments objectNode for the $pullAll
+   * @return list of columnAssignments for all the $pullAll column updates
+   */
   @Override
   public List<ColumnAssignment> resolve(TableSchemaObject table, ObjectNode arguments) {
     return arguments.properties().stream()
@@ -63,9 +68,7 @@ public class TableUpdatePullAllResolver implements TableUpdateOperatorResolver {
                         }));
               }
 
-              JsonLiteral<?> shreddedValue = null;
-
-
+              shreddedValue = RowShredder.shredValue(inputValue);
 
               return new ColumnAssignment(
                   UpdateOperator.PULL_ALL,

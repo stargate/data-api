@@ -12,18 +12,19 @@ public class TableUpdateSetResolver implements TableUpdateOperatorResolver {
 
   /**
    * Resolve the {@link UpdateOperator#SET} operation for a table update
+   *
    * <p>Example:
    *
    * <ul>
-   *   <li>primitive column<code>{"$set" : { "age" : 51 , "human" : false}}</code></li>
-   *   <li>list column<code>{"$set" : { "listColumn" : [1,2]}}</code></li>
-   *   <li>set column<code>{"$set" : { "setColumn" : { "key1": "value1", "key2": "value2"}}</code></li>
+   *   <li>primitive column<code>{"$set" : { "age" : 51 , "human" : false}}</code>
+   *   <li>list column<code>{"$set" : { "listColumn" : [1,2]}}</code>
+   *   <li>set column<code>{"$set" : { "setColumn" : { "key1": "value1", "key2": "value2"}}</code>
    *   <li>map column with string key(object format)<code>
-   *       {"$set" : { "mapColumn" : { "key1": "value1", "key2": "value2"}}</code></li>
+   *       {"$set" : { "mapColumn" : { "key1": "value1", "key2": "value2"}}</code>
    *   <li>map column with string key(object format)<code>
-   *       {"$set" : { "mapColumn" : [["key1","value1"], ["key2","value2"]]}}</code></li>
+   *       {"$set" : { "mapColumn" : [["key1","value1"], ["key2","value2"]]}}</code>
    *   <li>map column with non-string key(tuple format)<code>
-   *       {"$set" : { "mapColumn" : [[123,"value1"], [456,"value2"]]}}</code></li>
+   *       {"$set" : { "mapColumn" : [[123,"value1"], [456,"value2"]]}}</code>
    * </ul>
    *
    * @param table tableSchemaObject

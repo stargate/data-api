@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToJSONCodecException;
 import java.util.LinkedHashMap;
@@ -77,10 +78,10 @@ public class MapCodecs {
           (entry.getKey() instanceof JsonLiteral<?> jsonLiteralKey)
               ? jsonLiteralKey.value()
               : entry.getKey();
+      // If the raw map key or value is JsonLiteral<>(null, JsonType.NULL);
       Object element = entry.getValue().value();
-      if (element == null) {
-        result.put(key, null);
-        continue;
+      if (key == null || element == null) {
+        throw DocumentException.Code.NULL_IS_NOT_ALLOWED_FOR_MAP_SET_LIST.get();
       }
       // In most cases same codec can be used for all elements, but we still need to check
       // since same CQL value type can have multiple codecs based on JSON value type

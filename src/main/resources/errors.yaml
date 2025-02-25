@@ -228,7 +228,14 @@ request-errors:
       
       Resend the command using only vector columns with a vectorize definition.
       
-
+  - scope: DOCUMENT
+    code: NULL_IS_NOT_ALLOWED_FOR_MAP_SET_LIST
+    title: Null is not allowed for map, set, list columns.
+    body: |-
+      Null value is not allowed for set, list column.
+      Null key and null value are not allowed for map column.
+      
+      Resend the command with non-null values.
 # ================================================================================================================
 # Family: REQUEST         Scope: FILTER
 # ================================================================================================================
