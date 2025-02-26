@@ -38,7 +38,7 @@ public interface EmbeddingProviderConfigStore {
     public String getBaseUrl(String modelName) {
       if (modelUrlOverrides != null && modelUrlOverrides.get(modelName) == null) {
         throw ErrorCodeV1.VECTORIZE_MODEL_DEPRECATED.toApiException(
-            "Mode %s is deprecated, supported models for provider %s are %s",
+            "Model %s is deprecated, supported models for provider '%s' are %s",
             modelName, serviceName, modelUrlOverrides.keySet());
       }
       return modelUrlOverrides != null ? modelUrlOverrides.get(modelName).orElse(baseUrl) : baseUrl;
