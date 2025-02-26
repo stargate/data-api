@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.ProjectionException;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -12,16 +13,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class ProjectionPathTest {
+public class DocumentPathTest {
 
   @ParameterizedTest
   @MethodSource("decodePathToSegmentsTestCases")
   public void decodePathToSegmentsTest(
       String path, List<String> expectedResult, String description) {
     List<String> segments = new ArrayList<>();
-    ProjectionPath projectionPath = ProjectionPath.from(path);
-    for (int i = 0; i < projectionPath.getSegmentsSize(); i++) {
-      segments.add(projectionPath.getSegment(i));
+    DocumentPath documentPath = DocumentPath.from(path);
+    for (int i = 0; i < documentPath.getSegmentsSize(); i++) {
+      segments.add(documentPath.getSegment(i));
     }
     assertThat(segments).as(description).isEqualTo(expectedResult);
   }
@@ -54,7 +55,7 @@ public class ProjectionPathTest {
   @MethodSource("invalidDecodePathToSegmentsTestCases")
   public <T extends APIException> void encodeSegmentPathTest(
       String path, String code, Class<T> errorClass, String message, String description) {
-    T error = assertThrows(errorClass, () -> ProjectionPath.from(path), description);
+    T error = assertThrows(errorClass, () -> DocumentPath.from(path), description);
     assertThat(error).as(description).isInstanceOf(errorClass);
     assertThat(error.code).isEqualTo(code);
     assertThat(error.getMessage()).contains(message);
@@ -97,7 +98,7 @@ public class ProjectionPathTest {
   @ParameterizedTest
   @MethodSource("encodeSegmentPathTestCases")
   public void encodeSegmentPathTest(String path, String expectedResult, String description) {
-    assertThat(ProjectionPath.encodeSegment(path)).as(description).isEqualTo(expectedResult);
+    assertThat(DocumentPath.encodeSegment(path)).as(description).isEqualTo(expectedResult);
   }
 
   private static Stream<Arguments> encodeSegmentPathTestCases() {

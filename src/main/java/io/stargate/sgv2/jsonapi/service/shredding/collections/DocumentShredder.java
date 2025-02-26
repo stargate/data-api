@@ -16,9 +16,9 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
-import io.stargate.sgv2.jsonapi.service.projection.ProjectionPath;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIdType;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -472,7 +472,7 @@ public class DocumentShredder {
       Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
       while (it.hasNext()) {
         Map.Entry<String, JsonNode> entry = it.next();
-        pathBuilder.property(ProjectionPath.encodeSegment(entry.getKey()));
+        pathBuilder.property(DocumentPath.encodeSegment(entry.getKey()));
         traverseValue(entry.getValue(), pathBuilder);
       }
     }

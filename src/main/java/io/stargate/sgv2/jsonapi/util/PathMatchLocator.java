@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.projection.ProjectionPath;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import java.util.regex.Pattern;
 
 /**
@@ -28,9 +28,9 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
 
   private final String dotPath;
 
-  private final ProjectionPath segments;
+  private final DocumentPath segments;
 
-  private PathMatchLocator(String dotPath, ProjectionPath segments) {
+  private PathMatchLocator(String dotPath, DocumentPath segments) {
     this.dotPath = dotPath;
     this.segments = segments;
   }
@@ -132,7 +132,7 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
    * @param document Document that is to contain target path
    */
   public PathMatch findOrCreate(JsonNode document) {
-    ProjectionPath segments = splitAndVerify(dotPath);
+    DocumentPath segments = splitAndVerify(dotPath);
     JsonNode context = document;
     final int lastSegmentIndex = segments.getSegmentsSize() - 1;
 
@@ -221,8 +221,8 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
     return context;
   }
 
-  private static ProjectionPath splitAndVerify(String dotPath) throws JsonApiException {
-    return ProjectionPath.from(dotPath);
+  private static DocumentPath splitAndVerify(String dotPath) throws JsonApiException {
+    return DocumentPath.from(dotPath);
   }
 
   private int findIndexFromSegment(String segment) {
