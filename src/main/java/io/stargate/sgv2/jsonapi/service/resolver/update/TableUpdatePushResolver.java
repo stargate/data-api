@@ -57,7 +57,7 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
    *
    * @param table TableSchemaObject
    * @param arguments ObjectNode value for $push entry
-   * @return list of columnAssignment for $push ????
+   * @return list of columnAssignment for all the $push column updates
    */
   @Override
   public List<ColumnAssignment> resolve(TableSchemaObject table, ObjectNode arguments) {
@@ -122,9 +122,7 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
    *       </code>
    * </ul>
    *
-   * *TODO *
-   *
-   * <p>For list column, append is by default, use $position -1 for
+   * TODO $position for list column
    *
    * @param table TableSchemaObject
    * @param inputValue jsonNode value for the $push column

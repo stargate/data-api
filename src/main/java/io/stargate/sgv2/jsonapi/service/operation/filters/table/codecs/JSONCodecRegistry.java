@@ -99,7 +99,6 @@ public class JSONCodecRegistry {
       // But maybe structured type?
       if (columnType instanceof ListType lt) {
         List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(lt.getElementType());
-
         if (valueCodecCandidates != null) {
           // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
           if (!(value instanceof Collection<?>)) {

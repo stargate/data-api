@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 public class TableUpdateResolver<CmdT extends Command & Updatable>
     extends UpdateResolver<CmdT, TableSchemaObject> {
 
-  // Using map here, so we can expose the list of supported operators for validation to check.
+  // Using map here so we can expose the list of supported operators for validation to check.
   // Keep this immutable, we return the key set in a property below.
   private static final Map<UpdateOperator, TableUpdateOperatorResolver> supportedOperatorsMap =
       Map.of(

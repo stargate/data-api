@@ -128,7 +128,6 @@ public class ColumnAssignment implements CQLAssignment {
           JSONCodecRegistries.DEFAULT_REGISTRY
               .codecToCQL(tableMetadata, column, rawValue)
               .toCQL(rawValue));
-
     } catch (MissingJSONCodecException e) {
       throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
           errVars(
