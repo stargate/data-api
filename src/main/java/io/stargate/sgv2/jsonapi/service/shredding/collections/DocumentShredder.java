@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.OptionalInt;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -184,12 +183,6 @@ public class DocumentShredder {
 
     // And finally let's traverse the document to actually "shred" (build index properties)
     new ShreddingTraverser(b).traverse(indexableDocument);
-
-    // Any document overlap conflicts? If so, fail
-    Set<JsonPath> conflicts = b.duplicateExistKeys();
-    if (!conflicts.isEmpty()) {
-      throw ErrorCodeV1.SHRED_BAD_DOCUMENT_PATH_CONFLICTS.toApiException("%s", conflicts);
-    }
 
     return b.build();
   }
