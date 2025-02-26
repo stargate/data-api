@@ -218,7 +218,7 @@ public class DocumentShredderTest {
     }
 
     @Test
-    public void shredConflictingPaths() throws JsonProcessingException {
+    public void shredOverlappingPaths() throws JsonProcessingException {
       final String inputJson =
           """
               {

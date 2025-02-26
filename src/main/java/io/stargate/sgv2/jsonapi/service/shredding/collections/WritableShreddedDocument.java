@@ -98,7 +98,6 @@ public record WritableShreddedDocument(
     private final JsonNode docJsonNode;
 
     private final Set<JsonPath> existKeys;
-    private Set<JsonPath> duplicateExistKeys;
 
     private Map<JsonPath, Integer> arraySize;
     private Set<String> arrayContains;

@@ -984,9 +984,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
   @Nested
   @Order(4)
-  class InsertOneWithPathConflict {
+  class InsertOneWithOverlappingPaths {
     @Test
-    void successForPathConflict() {
+    void successForPathOverlapping() {
       String doc =
           """
                   {

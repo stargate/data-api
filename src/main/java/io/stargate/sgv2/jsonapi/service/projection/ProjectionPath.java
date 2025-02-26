@@ -17,7 +17,10 @@ import java.util.Objects;
  * segments, and {@link #encodeSegment(String)} to get the dot-separated path string.
  */
 public final class ProjectionPath implements Comparable<ProjectionPath> {
-  private final String path;
+  /** The full encoded path string - with escape character. */
+  private final String encodedPath;
+
+  /** The segments from the encoded path - without escape character. */
   private final List<String> segments;
 
   /** projection path for document id */
@@ -32,7 +35,7 @@ public final class ProjectionPath implements Comparable<ProjectionPath> {
       ProjectionPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
 
   private ProjectionPath(String originalPath, List<String> segments) {
-    this.path = originalPath;
+    this.encodedPath = originalPath;
     this.segments = segments;
   }
 
@@ -75,13 +78,13 @@ public final class ProjectionPath implements Comparable<ProjectionPath> {
   }
 
   /**
-   * Encodes a path string by escaping special characters.
+   * Encodes a path segment by escaping special characters.
    *
    * <p>The encoding process follows these steps:
    *
    * <ol>
    *   <li>
-   *       <p>Scan the path string character-by-character.
+   *       <p>Scan the path segment character-by-character.
    *   <li>
    *       <p>If the character is {@code '.'}, escape it as {@code '&.'}.
    *   <li>
@@ -92,27 +95,22 @@ public final class ProjectionPath implements Comparable<ProjectionPath> {
    *
    * <p>For example, the input {@code "item.weight"} results in: {@code "item&.weight"}.
    *
-   * @param path the raw path string to encode.
+   * @param segment the raw path segment to encode.
    * @return the encoded path string.
    */
-  public static String encodeSegment(String path) {
-    Objects.requireNonNull(path, "Path cannot be null");
+  public static String encodeSegment(String segment) {
+    Objects.requireNonNull(segment, "Segment cannot be null");
 
     StringBuilder result = new StringBuilder();
 
-    for (int i = 0; i < path.length(); i++) {
-      char ch = path.charAt(i);
+    for (int i = 0; i < segment.length(); i++) {
+      char ch = segment.charAt(i);
 
-      if (ch == '&') {
-        // Escape '&' as '&&'
-        result.append("&&");
-      } else if (ch == '.') {
-        // Escape '.' as '&.'
-        result.append("&.");
-      } else {
-        // Regular character
-        result.append(ch);
+      // Escape '&' or '.' as '&&' or '&.'
+      if (ch == '&' || ch == '.') {
+        result.append('&');
       }
+      result.append(ch);
     }
 
     return result.toString();
@@ -209,7 +207,7 @@ public final class ProjectionPath implements Comparable<ProjectionPath> {
    */
   @Override
   public String toString() {
-    return path;
+    return encodedPath;
   }
 
   /**
