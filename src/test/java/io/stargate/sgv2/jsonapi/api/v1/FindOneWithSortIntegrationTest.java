@@ -125,7 +125,7 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
 
     @Test
     public void sortByDottedFieldWithoutEscape() {
-      // without correct escape, the order should be the same as _id
+      // without correct escape, the order will be the first _id
       givenHeadersPostJsonThenOkNoErrors(
               """
                         {
@@ -148,7 +148,7 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                         }
                         """)
           .body("$", responseIsFindSuccess())
-          .body("data.document", jsonEquals(DOC3));
+          .body("data.document", jsonEquals(DOC1));
     }
 
     @Test
