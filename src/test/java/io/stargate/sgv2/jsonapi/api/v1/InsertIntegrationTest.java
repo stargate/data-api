@@ -1309,9 +1309,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
   @Nested
   @Order(4)
-  class InsertOneFails {
+  class InsertOneWithPathConflict {
     @Test
-    void failForPathConflict() {
+    void successForPathConflict() {
       String doc =
           """
                   {
@@ -1324,22 +1324,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                     }
                   }
               """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsWritePartialSuccess())
-          .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_DOCUMENT_PATH_CONFLICTS"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Bad document to shred, contains conflicting Field path(s): [price.total.usd]"));
+      givenHeadersPostJsonThenOkNoErrors("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("doc-with-path-overlap"));
     }
   }
 
