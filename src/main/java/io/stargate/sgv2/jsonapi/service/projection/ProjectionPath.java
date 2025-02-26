@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * An immutable representation of a projection path composed of segments.
@@ -14,7 +15,7 @@ import java.util.Objects;
  * ampersands within segments.
  *
  * <p>Use {@link #from(String)} to create an instance, {@link #getSegment(int)} to access the
- * segments, and {@link #encodeNoEscaping()} to get the dot-separated path string.
+ * segments, and {@link #encode(String)} to get the dot-separated path string.
  */
 public final class ProjectionPath implements Comparable<ProjectionPath> {
   private final List<String> segments;
@@ -74,13 +75,47 @@ public final class ProjectionPath implements Comparable<ProjectionPath> {
   }
 
   /**
-   * Encodes the ProjectionPath back into a string by joining segments with a dot. This encoding is
-   * used for filter and sort use cases, where escapes are not allowed.
+   * Encodes a path string by escaping special characters.
    *
-   * @return the encoded path string (e.g., "pricing.price.usd")
+   * <p>The encoding process follows these steps:
+   *
+   * <ol>
+   *   <li>
+   *       <p>Scan the path string character-by-character.
+   *   <li>
+   *       <p>If the character is {@code '.'}, escape it as {@code '&.'}.
+   *   <li>
+   *       <p>If the character is {@code '&'}, escape it as {@code '&&'}.
+   *   <li>
+   *       <p>All other characters remain unchanged.
+   * </ol>
+   *
+   * <p>For example, the input {@code "item.weight"} results in: {@code "item&.weight"}.
+   *
+   * @param path the raw path string to encode.
+   * @return the encoded path string.
    */
-  public String encodeNoEscaping() {
-    return String.join(".", segments);
+  public static String encode(String path) {
+    Objects.requireNonNull(path, "Path cannot be null");
+
+    StringBuilder result = new StringBuilder();
+
+    for (int i = 0; i < path.length(); i++) {
+      char ch = path.charAt(i);
+
+      if (ch == '&') {
+        // Escape '&' as '&&'
+        result.append("&&");
+      } else if (ch == '.') {
+        // Escape '.' as '&.'
+        result.append("&.");
+      } else {
+        // Regular character
+        result.append(ch);
+      }
+    }
+
+    return result.toString();
   }
 
   /**
@@ -174,7 +209,7 @@ public final class ProjectionPath implements Comparable<ProjectionPath> {
    */
   @Override
   public String toString() {
-    return encodeNoEscaping();
+    return segments.stream().map(ProjectionPath::encode).collect(Collectors.joining("."));
   }
 
   /**
