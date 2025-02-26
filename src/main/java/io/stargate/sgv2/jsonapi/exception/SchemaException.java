@@ -53,8 +53,7 @@ public class SchemaException extends RequestException {
     // older below - seperated because they need to be confirmed
     INVALID_CONFIGURATION,
     INVALID_KEYSPACE,
-    INVALID_VECTORIZE_CONFIGURATION,
-    VECTORIZE_MODEL_DEPRECATED;
+    INVALID_VECTORIZE_CONFIGURATION;
 
     private final ErrorTemplate<SchemaException> template;
 
