@@ -52,7 +52,7 @@ public class ProjectionPathTest {
 
   @ParameterizedTest
   @MethodSource("invalidDecodePathToSegmentsTestCases")
-  public <T extends APIException> void encodePathTest(
+  public <T extends APIException> void encodeSegmentPathTest(
       String path, String code, Class<T> errorClass, String message, String description) {
     T error = assertThrows(errorClass, () -> ProjectionPath.from(path), description);
     assertThat(error).as(description).isInstanceOf(errorClass);
@@ -95,12 +95,12 @@ public class ProjectionPathTest {
   }
 
   @ParameterizedTest
-  @MethodSource("encodePathTestCases")
-  public void encodePathTest(String path, String expectedResult, String description) {
-    assertThat(ProjectionPath.encode(path)).as(description).isEqualTo(expectedResult);
+  @MethodSource("encodeSegmentPathTestCases")
+  public void encodeSegmentPathTest(String path, String expectedResult, String description) {
+    assertThat(ProjectionPath.encodeSegment(path)).as(description).isEqualTo(expectedResult);
   }
 
-  private static Stream<Arguments> encodePathTestCases() {
+  private static Stream<Arguments> encodeSegmentPathTestCases() {
     return Stream.of(
         Arguments.of("price.usd", "price&.usd", "escape single dot"),
         Arguments.of("price&usd", "price&&usd", "escape single ampersand"),

@@ -472,7 +472,7 @@ public class DocumentShredder {
       Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
       while (it.hasNext()) {
         Map.Entry<String, JsonNode> entry = it.next();
-        pathBuilder.property(ProjectionPath.encode(entry.getKey()));
+        pathBuilder.property(ProjectionPath.encodeSegment(entry.getKey()));
         traverseValue(entry.getValue(), pathBuilder);
       }
     }

@@ -5,7 +5,6 @@ import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * An immutable representation of a projection path composed of segments.
@@ -15,9 +14,10 @@ import java.util.stream.Collectors;
  * ampersands within segments.
  *
  * <p>Use {@link #from(String)} to create an instance, {@link #getSegment(int)} to access the
- * segments, and {@link #encode(String)} to get the dot-separated path string.
+ * segments, and {@link #encodeSegment(String)} to get the dot-separated path string.
  */
 public final class ProjectionPath implements Comparable<ProjectionPath> {
+  private final String path;
   private final List<String> segments;
 
   /** projection path for document id */
@@ -31,8 +31,8 @@ public final class ProjectionPath implements Comparable<ProjectionPath> {
   private static final ProjectionPath VECTOR_EMBEDDING_TEXT_FIELD =
       ProjectionPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
 
-  private ProjectionPath(List<String> segments) {
-    // Make a defensive copy to preserve immutability.
+  private ProjectionPath(String originalPath, List<String> segments) {
+    this.path = originalPath;
     this.segments = segments;
   }
 
@@ -61,7 +61,7 @@ public final class ProjectionPath implements Comparable<ProjectionPath> {
    */
   public static ProjectionPath from(String path) {
     Objects.requireNonNull(path, "path cannot be null");
-    return new ProjectionPath(decode(path));
+    return new ProjectionPath(path, decode(path));
   }
 
   /** Returns the number of segments in this projection path. */
@@ -95,7 +95,7 @@ public final class ProjectionPath implements Comparable<ProjectionPath> {
    * @param path the raw path string to encode.
    * @return the encoded path string.
    */
-  public static String encode(String path) {
+  public static String encodeSegment(String path) {
     Objects.requireNonNull(path, "Path cannot be null");
 
     StringBuilder result = new StringBuilder();
@@ -209,7 +209,7 @@ public final class ProjectionPath implements Comparable<ProjectionPath> {
    */
   @Override
   public String toString() {
-    return segments.stream().map(ProjectionPath::encode).collect(Collectors.joining("."));
+    return path;
   }
 
   /**
