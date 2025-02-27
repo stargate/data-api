@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.projection.ProjectionPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -193,15 +192,14 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
   }
 
   private String validateSortClausePath(String path) {
-    String normalizePath = ProjectionPath.from(path).encodeNoEscaping();
-    if (!NamingRules.FIELD.apply(normalizePath)) {
-      if (normalizePath.isEmpty()) {
+    if (!NamingRules.FIELD.apply(path)) {
+      if (path.isEmpty()) {
         throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
             "path must be represented as a non-empty string");
       }
       throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
           "path ('%s') cannot start with `$`", path);
     }
-    return normalizePath;
+    return path;
   }
 }
