@@ -737,19 +737,19 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body("data.document", is(nullValue()));
     }
 
-      @Test
-      public void byDottedFieldComplexEscapeEq() {
-          givenHeadersPostJsonThenOkNoErrors(
-                  """
+    @Test
+    public void byDottedFieldComplexEscapeEq() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
               {
                 "findOne": {
                   "filter" : {"pricing.price&&&.aud" : 10.5}
                 }
               }
               """)
-                  .body("$", responseIsFindSuccess())
-                  .body("data.document", jsonEquals(DOC1));
-      }
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+    }
   }
 
   @Nested

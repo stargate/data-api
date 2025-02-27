@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.projection.ProjectionPath;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
@@ -543,15 +542,14 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
   }
 
   private String validateFilterClausePath(String path) {
-    String normalizePath = ProjectionPath.from(path).encodeNoEscaping();
-    if (!NamingRules.FIELD.apply(normalizePath)) {
-      if (normalizePath.isEmpty()) {
+    if (!NamingRules.FIELD.apply(path)) {
+      if (path.isEmpty()) {
         throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
             "filter clause path cannot be empty String");
       }
       throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
           "filter clause path ('%s') cannot start with `$`", path);
     }
-    return normalizePath;
+    return path;
   }
 }
