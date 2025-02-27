@@ -53,6 +53,7 @@ Other Quarkus properties that are specifically relevant for the service:
 | `stargate.jsonapi.operations.database-config.ddl-retry-delay-millis`    | `int`     | `1000`   | Delay time in seconds for DDL timeout.                                                                                                                                                             |
 | `stargate.jsonapi.operations.database-config.ddl-delay-millis`          | `int`     | `2000`   | Delay between create table and create index to get the schema sync.                                                                                                                                |
 | `stargate.jsonapi.operations.vectorize-enabled`                         | `boolean` | `false`  | Flag to enable server side vectorization.                                                                                                                                              |
+| `stargate.jsonapi.operations.return-deprecated-models`                  | `boolean` | `false`  | Flag to indicate whether to return deprecated models in the FindEmbeddingProvidersCommand's response or not.                                                                                  |
 
 
 ## Jsonapi metering configuration

@@ -296,6 +296,13 @@ public interface OperationsConfig {
   @WithDefault("false")
   boolean vectorizeEnabled();
 
+  /**
+   * @return Flag to indicate whether to return deprecated models in the
+   *     FindEmbeddingProvidersCommand's response.
+   */
+  @WithDefault("false")
+  boolean returnDeprecatedModels();
+
   /** Offline mode configuration. */
   @NotNull
   @Valid
