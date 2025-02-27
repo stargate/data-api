@@ -56,8 +56,7 @@ public class DropIndexCommandResolver implements CommandResolver<DropIndexComman
 
     var pageBuilder =
         SchemaAttemptPage.<KeyspaceSchemaObject>builder()
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled());
 
     return new GenericOperation<>(
         attempts,
