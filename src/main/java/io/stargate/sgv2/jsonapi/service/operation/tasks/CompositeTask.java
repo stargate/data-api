@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.util.function.Supplier;
 
 /** Task that runs an operation */
@@ -97,8 +96,8 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
   }
 
   @Override
-  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    return super.toString(prettyToStringBuilder)
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return super.recordTo(dataRecorder)
         .append("innerTaskGroup", innerTaskGroup)
         .append("lastTaskAccumulator", lastTaskAccumulator);
   }

@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.util.Recordable;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -175,9 +176,15 @@ public abstract class EmbeddingProvider {
    * @param batchId - Sequence number for the batch to order the vectors.
    * @param embeddings - Embedding vectors for the given text inputs.
    */
-  public record Response(int batchId, List<float[]> embeddings) {
+  public record Response(int batchId, List<float[]> embeddings) implements Recordable {
+
     public static Response of(int batchId, List<float[]> embeddings) {
       return new Response(batchId, embeddings);
+    }
+
+    @Override
+    public DataRecorder recordTo(DataRecorder dataRecorder) {
+      return dataRecorder.append("batchId", batchId).append("embeddings", embeddings);
     }
   }
 

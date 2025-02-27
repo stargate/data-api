@@ -4,8 +4,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.Recordable;
 import java.util.Objects;
 
 /**
@@ -23,9 +22,9 @@ import java.util.Objects;
  * @param <NameT> The type of the name of the value
  * @param <ValueT> The type of the value
  */
-public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrintable {
+public abstract class NamedValue<NameT, ValueT, RawValueT> implements Recordable {
 
-  public enum NamedValueState implements PrettyPrintable {
+  public enum NamedValueState implements Recordable {
     INITIAL(false, false, false),
     BOUND(true, false, false),
     DEFERRED(true, false, false),
@@ -45,13 +44,8 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
     }
 
     @Override
-    public String toString() {
-      return toString(false);
-    }
-
-    @Override
-    public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-      return prettyToStringBuilder
+    public DataRecorder recordTo(DataRecorder dataRecorder) {
+      return dataRecorder
           .append("name", name())
           .append("wasBound", wasBound)
           .append("isTerminal", isTerminal)
@@ -245,13 +239,8 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
   protected record DecodeResult<ValueT>(ValueT value, ValueAction valueAction) {}
 
   @Override
-  public String toString() {
-    return toString(false);
-  }
-
-  @Override
-  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    prettyToStringBuilder
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return dataRecorder
         .append("name", name)
         .append("state", state)
         .append("errorCode", errorCode)
@@ -261,6 +250,5 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements PrettyPrin
             "value.class",
             value == null ? Objects.toString(null) : value.getClass().getSimpleName())
         .append("value", value);
-    return prettyToStringBuilder;
   }
 }

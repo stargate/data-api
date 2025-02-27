@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,10 +88,8 @@ public class ApiMapType extends CollectionApiDataType {
   }
 
   @Override
-  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    var builder = super.toString(prettyToStringBuilder);
-    builder.append("keyType", keyType);
-    return builder;
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return super.recordTo(dataRecorder).append("keyType", keyType);
   }
 
   private static class ColumnDescFactory

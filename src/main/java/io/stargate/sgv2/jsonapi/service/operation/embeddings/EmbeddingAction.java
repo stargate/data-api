@@ -5,12 +5,11 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import io.stargate.sgv2.jsonapi.service.shredding.ValueAction;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.Recordable;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public class EmbeddingAction implements ValueAction, PrettyPrintable {
+public class EmbeddingAction implements ValueAction, Recordable {
 
   private final String vectorizeText;
   private final ApiColumnDef columnDef;
@@ -102,17 +101,12 @@ public class EmbeddingAction implements ValueAction, PrettyPrintable {
   }
 
   @Override
-  public String toString() {
-    return toString(false);
-  }
-
-  @Override
-  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    prettyToStringBuilder
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    dataRecorder
         .append("vectorizeDefinition.provider", vectorType.getVectorizeDefinition().provider())
         .append("vectorizeDefinition.modelName", vectorType.getVectorizeDefinition().modelName())
         .append("vectorType.dimension", vectorType.getDimension());
-    return prettyToStringBuilder;
+    return dataRecorder;
   }
 
   public static class EmbeddingActionGroupKey {

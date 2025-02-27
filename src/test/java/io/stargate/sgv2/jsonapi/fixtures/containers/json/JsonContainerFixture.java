@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
 import io.stargate.sgv2.jsonapi.fixtures.TestListUtil;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import java.util.Arrays;
 import java.util.List;
 
@@ -62,7 +62,7 @@ public record JsonContainerFixture(
   public String toString(boolean pretty) {
 
     // avoid needing to keep this up to date with the fields on the record
-    var sb = new PrettyToStringBuilder(supplier, pretty);
+    var sb = new PrettyPrintable.PrettyPrintableRecorder(supplier, pretty);
 
     sb.append("table", cqlFixture.table().toString());
     sb.append("identifiers", cqlFixture.identifiers().toString());

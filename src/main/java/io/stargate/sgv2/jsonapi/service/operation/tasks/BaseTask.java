@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.Recordable;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -511,18 +511,13 @@ public abstract class BaseTask<
     return String.format("position=%d, taskId=%s, status=%s", position, taskId, status());
   }
 
-  @Override
-  public String toString() {
-    return toString(false);
-  }
-
   /**
    * Pretty printing to help with logging and tests to better format the details of a task, see
-   * {@link PrettyPrintable#toString(PrettyToStringBuilder)}
+   * {@link PrettyPrintable#toString(PrettyPrintableRecorder)}
    */
   @Override
-  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    return prettyToStringBuilder
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return dataRecorder
         .append("position", position)
         .append("status", status)
         .append("taskId", taskId)

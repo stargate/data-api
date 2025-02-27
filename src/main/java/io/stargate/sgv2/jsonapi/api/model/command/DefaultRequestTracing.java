@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.uuid.Generators;
@@ -95,7 +96,7 @@ public class DefaultRequestTracing implements RequestTracing {
               new Date(),
               elapsedMicroseconds(),
               traceMessage.message(),
-              null));
+              traceMessage.data()));
     }
 
     public String getRequestId() {
@@ -120,6 +121,6 @@ public class DefaultRequestTracing implements RequestTracing {
   }
 
   private record TraceEvent(
-      UUID eventId, Date timestamp, int elapsedUs, String message, String data) {}
+      UUID eventId, Date timestamp, int elapsedUs, String message, JsonNode data) {}
   ;
 }

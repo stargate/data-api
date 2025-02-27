@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.resolver.UnvalidatedClauseException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
+import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import java.util.List;
 import java.util.Objects;
 import org.slf4j.Logger;
@@ -48,7 +49,7 @@ public record TableInsertValuesCQLClause(TableSchemaObject tableSchemaObject, Wr
           "apply() - building insert keyspace={} table={} row.allColumns={}",
           tableSchemaObject.keyspaceName().asCql(true),
           tableSchemaObject.keyspaceName().asCql(true),
-          row.allColumns().toString(true));
+          PrettyPrintable.pprint(row.allColumns()));
     }
     for (var cqlNamedValue : row.allColumns().values()) {
       positionalValues.add(cqlNamedValue.value());

@@ -4,7 +4,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.Recordable;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,7 +19,7 @@ import java.util.UUID;
  * @param <SchemaT> The type of the schema object that the task works on
  */
 public interface Task<SchemaT extends SchemaObject>
-    extends Comparable<Task<SchemaT>>, WithWarnings.WarningsSink, PrettyPrintable {
+    extends Comparable<Task<SchemaT>>, WithWarnings.WarningsSink, Recordable {
 
   enum TaskStatus {
     /** Initial state, the task is not configured and will not run. */

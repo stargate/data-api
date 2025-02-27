@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.shredding;
 
 import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.Recordable;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Objects;
@@ -20,7 +20,7 @@ import java.util.Objects;
  * @param <NvT> The type of the {@link NamedValue} stored in the map
  */
 public abstract class NamedValueContainer<NameT, ValueT, NvT extends NamedValue<NameT, ValueT, ?>>
-    extends LinkedHashMap<NameT, NvT> implements PrettyPrintable {
+    extends LinkedHashMap<NameT, NvT> implements Recordable {
 
   public NamedValueContainer() {
     super();
@@ -69,22 +69,11 @@ public abstract class NamedValueContainer<NameT, ValueT, NvT extends NamedValue<
   }
 
   @Override
-  public String toString() {
-    return toString(false);
-  }
-
-  public String toString(boolean pretty) {
-    return toString(new PrettyToStringBuilder(getClass(), pretty)).toString();
-  }
-
-  @Override
-  public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
-    var sb = prettyToStringBuilder.beginSubRecorder(getClass());
-    return toString(sb).endSubBuilder();
-  }
-
-  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    forEach((key, value) -> prettyToStringBuilder.append(key.toString(), value));
-    return prettyToStringBuilder;
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    DataRecorder recorder = dataRecorder;
+    for (NvT namedValue : values()) {
+      recorder = namedValue.recordTo(recorder);
+    }
+    return recorder;
   }
 }

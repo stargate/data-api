@@ -4,8 +4,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMes
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.Recordable;
 import java.util.Map;
 
 /**
@@ -13,7 +12,7 @@ import java.util.Map;
  *
  * <p>Is an interface so the unsupported indexes can be represented as easily.
  */
-public interface ApiIndexDef extends PrettyPrintable {
+public interface ApiIndexDef extends Recordable {
 
   /** The name of the index in the database. */
   CqlIdentifier indexName();
@@ -48,9 +47,9 @@ public interface ApiIndexDef extends PrettyPrintable {
   }
 
   @Override
-  default PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+  default Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
     // Does not include the indexDesc because it is built on demand
-    return prettyToStringBuilder
+    return dataRecorder
         .append("indexName", cqlIdentifierToMessageString(indexName()))
         .append("targetColumn", cqlIdentifierToMessageString(targetColumn()))
         .append("indexType", indexType())

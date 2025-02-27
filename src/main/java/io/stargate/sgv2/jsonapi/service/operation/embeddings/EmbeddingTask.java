@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,15 +144,14 @@ public class EmbeddingTask<SchemaT extends SchemaObject>
               () ->
                   new RequestTracing.TraceMessage(
                       "EmbeddingTaskResult.create() Received embedding provider response",
-                      PrettyPrintable.toString(providerResponse)));
+                      providerResponse));
 
       commandContext
           .requestTracing()
           .maybeTrace(
               () ->
                   new RequestTracing.TraceMessage(
-                      "EmbeddingTaskResult.create() Processing Embedding Actions",
-                      PrettyPrintable.toString(actions)));
+                      "EmbeddingTaskResult.create() Processing Embedding Actions", null));
 
       // defensive to make sure the order cannot change
       var vectors = List.copyOf(providerResponse.embeddings());

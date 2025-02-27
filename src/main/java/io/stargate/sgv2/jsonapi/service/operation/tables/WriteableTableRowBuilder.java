@@ -16,7 +16,6 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import java.util.*;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
@@ -102,8 +101,7 @@ public class WriteableTableRowBuilder {
         .maybeTrace(
             () ->
                 new RequestTracing.TraceMessage(
-                    "WriteableTableRow.build() building row using JSON values",
-                    PrettyPrintable.toString(source)));
+                    "WriteableTableRow.build() building row using JSON values", source));
 
     // Map everything from the JSON source into a CQL Value, we can check their state after.
     // the checks on the error strategy will run, we have some extra ones below
@@ -115,8 +113,7 @@ public class WriteableTableRowBuilder {
         .maybeTrace(
             () ->
                 new RequestTracing.TraceMessage(
-                    "WriteableTableRow.build() built CQL values",
-                    PrettyPrintable.toString(allColumns)));
+                    "WriteableTableRow.build() built CQL values", allColumns));
     checkAllPrimaryKeys(allColumns);
 
     // now need to split the columns into key and non-key columns

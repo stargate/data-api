@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.Recordable;
 import java.time.Duration;
 import java.util.Objects;
 
@@ -14,7 +13,7 @@ import java.util.Objects;
  * <p>To implement a custom retry policy, subclass this class and override {@link
  * #shouldRetry(Throwable)}.
  */
-public class TaskRetryPolicy implements PrettyPrintable {
+public class TaskRetryPolicy implements Recordable {
 
   /** Re-usable policy to not retry. */
   public static final TaskRetryPolicy NO_RETRY = new TaskRetryPolicy();
@@ -65,14 +64,9 @@ public class TaskRetryPolicy implements PrettyPrintable {
     return false;
   }
 
-  @Override
-  public String toString() {
-    return toString(false);
-  }
-
   /** {@inheritDoc} */
   @Override
-  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    return prettyToStringBuilder.append("maxRetries", maxRetries).append("delay", delay);
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return dataRecorder.append("maxRetries", maxRetries).append("delay", delay);
   }
 }

@@ -1,8 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.Recordable;
 import java.util.*;
 
 /**
@@ -17,7 +16,7 @@ import java.util.*;
  * @param <SchemaT> Schema object type
  */
 public class TaskGroup<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject>
-    extends ArrayList<TaskT> implements PrettyPrintable {
+    extends ArrayList<TaskT> implements Recordable {
 
   private boolean sequentialProcessing = false;
   private final UUID groupId = UUID.randomUUID();
@@ -116,15 +115,11 @@ public class TaskGroup<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject
   //  }
 
   @Override
-  public String toString() {
-    return toString(false);
-  }
-
-  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
     Map<BaseTask.TaskStatus, Integer> statusCount = new HashMap<>(size());
     forEach(task -> statusCount.merge(task.status(), 1, Math::addExact));
 
-    return prettyToStringBuilder
+    return dataRecorder
         .append("groupId", groupId)
         .append("taskType", size() > 0 ? get(0).getClass().getSimpleName() : "<TaskListEmpty>")
         .append("sequentialProcessing", sequentialProcessing)

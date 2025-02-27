@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,13 +50,13 @@ public class BaseTaskAssertions<
 
   public BaseTaskAssertions<TaskT, SchemaT, ResultSupplierT, ResultT> assertCompleted() {
 
-    LOGGER.warn("assertCompleted() starting \ntask={}", task.toString(true));
+    LOGGER.warn("assertCompleted() starting \ntask={}", PrettyPrintable.pprint(task));
     task.execute(commandContext)
         .subscribe()
         .withSubscriber(UniAssertSubscriber.create())
         .awaitItem(Duration.ofSeconds(1)) // wait up to 1 second, so retries can be handled
         .assertCompleted();
-    LOGGER.warn("assertCompleted() finished \ntask={}", task.toString(true));
+    LOGGER.warn("assertCompleted() finished \ntask={}", PrettyPrintable.pprint(task));
     return this;
   }
 

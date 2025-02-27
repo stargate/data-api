@@ -12,8 +12,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptio
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.Recordable;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Supplier;
@@ -43,7 +42,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class OperationAttempt<
         SubT extends OperationAttempt<SubT, SchemaT>, SchemaT extends SchemaObject>
-    implements Comparable<SubT>, PrettyPrintable, WithWarnings.WarningsSink {
+    implements Comparable<SubT>, Recordable, WithWarnings.WarningsSink {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OperationAttempt.class);
 
@@ -603,13 +602,8 @@ public abstract class OperationAttempt<
   }
 
   @Override
-  public String toString() {
-    return toString(false);
-  }
-
-  @Override
-  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    return prettyToStringBuilder
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return dataRecorder
         .append("position", position)
         .append("status", status)
         .append("attemptId", attemptId)
@@ -644,7 +638,7 @@ public abstract class OperationAttempt<
    * <p>To implement a custom retry policy, subclass this class and override {@link
    * #shouldRetry(Throwable)}.
    */
-  public static class RetryPolicy implements PrettyPrintable {
+  public static class RetryPolicy implements Recordable {
 
     public static final RetryPolicy NO_RETRY = new RetryPolicy();
 
@@ -693,13 +687,8 @@ public abstract class OperationAttempt<
     }
 
     @Override
-    public String toString() {
-      return toString(false);
-    }
-
-    @Override
-    public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-      return prettyToStringBuilder.append("maxRetries", maxRetries).append("delay", delay);
+    public DataRecorder recordTo(DataRecorder dataRecorder) {
+      return dataRecorder.append("maxRetries", maxRetries).append("delay", delay);
     }
   }
 }

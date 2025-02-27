@@ -3,12 +3,11 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.Recordable;
 
 /** TODO WORDS */
 @JsonSerialize(using = ApiDataTypeDefSerializer.class)
-public interface ApiDataType extends PrettyPrintable {
+public interface ApiDataType extends Recordable {
 
   ApiTypeName typeName();
 
@@ -44,11 +43,10 @@ public interface ApiDataType extends PrettyPrintable {
   ColumnDesc columnDesc();
 
   @Override
-  default PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    prettyToStringBuilder
+  default Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return dataRecorder
         .append("apiName", apiName())
         .append("apiSupport", apiSupport())
         .append("cqlType", cqlType());
-    return prettyToStringBuilder;
   }
 }

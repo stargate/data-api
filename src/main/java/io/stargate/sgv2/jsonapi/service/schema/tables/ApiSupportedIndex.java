@@ -46,9 +46,4 @@ abstract class ApiSupportedIndex implements ApiIndexDef {
   public Map<String, String> indexOptions() {
     return indexOptions;
   }
-
-  @Override
-  public String toString() {
-    return toString(false);
-  }
 }

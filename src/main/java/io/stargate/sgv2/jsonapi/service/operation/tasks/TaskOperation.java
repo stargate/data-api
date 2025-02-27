@@ -64,8 +64,7 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
         .maybeTrace(
             () ->
                 new RequestTracing.TraceMessage(
-                    "TaskOperation.execute() - starting to process task group",
-                    PrettyPrintable.toString(taskGroup)));
+                    "TaskOperation.execute() - starting to process task group", taskGroup));
 
     return executeInternal(commandContext, TaskAccumulator::getResults);
     //    Objects.requireNonNull(commandContext, "commandContext cannot be null");
@@ -90,7 +89,8 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
     Objects.requireNonNull(commandContext, "commandContext cannot be null");
 
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("executeInternal() - starting to process tasks={}", taskGroup.toString(true));
+      LOGGER.debug(
+          "executeInternal() - starting to process tasks={}", PrettyPrintable.pprint(taskGroup));
     }
 
     return startMulti(commandContext)

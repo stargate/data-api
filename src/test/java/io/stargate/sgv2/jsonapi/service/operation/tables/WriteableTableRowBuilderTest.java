@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.fixtures.tables.AllUnsupportedTypes;
 import io.stargate.sgv2.jsonapi.fixtures.types.CqlTypesForTesting;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
+import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -38,7 +39,7 @@ public class WriteableTableRowBuilderTest {
         "{}: \nfixture={} \ncontainer={} \ntable={}",
         testName,
         fixture.toString(true),
-        fixture.container().toString(true),
+        PrettyPrintable.pprint(fixture.container()),
         fixture.cqlFixture().tableMetadata().describe(true));
   }
 
@@ -46,7 +47,7 @@ public class WriteableTableRowBuilderTest {
     // TODO: AARON: BUG fix this fixture.cqlFixture().tableSchemaObject()
     var builder = new WriteableTableRowBuilder(null, JSONCodecRegistries.DEFAULT_REGISTRY);
     var row = builder.build(fixture.container());
-    LOGGER.info("buildRow: row={}", row.toString(true));
+    LOGGER.info("buildRow: row={}", PrettyPrintable.pprint(row));
     return row;
   }
 
@@ -270,7 +271,7 @@ public class WriteableTableRowBuilderTest {
               String.format(
                   "Throw not exception when row has outOfRange infinite type \nfixture=%s \ncontainer=%s \ntable=%s",
                   fixture.toString(true),
-                  fixture.container().toString(true),
+                  PrettyPrintable.pprint(fixture.container()),
                   fixture.cqlFixture().tableMetadata().describe(true)));
 
       var infinityValue =
@@ -299,7 +300,7 @@ public class WriteableTableRowBuilderTest {
               String.format(
                   "Throw exception when row has outOfRange \nfixture=%s \ncontainer=%s \ntable=%s",
                   fixture.toString(true),
-                  fixture.container().toString(true),
+                  PrettyPrintable.pprint(fixture.container()),
                   fixture.cqlFixture().tableMetadata().describe(true)));
       assertThat(e.code)
           .as("Using correct error code")
