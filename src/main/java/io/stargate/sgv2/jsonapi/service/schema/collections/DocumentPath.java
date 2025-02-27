@@ -88,29 +88,26 @@ public final class DocumentPath implements Comparable<DocumentPath> {
   public static String verifyEncodedPath(String path) {
     Objects.requireNonNull(path, "path cannot be null");
 
-    for (int i = 0; i < path.length(); i++) {
-      char ch = path.charAt(i);
+    for (int i = 0; i < path.length(); ) {
+      char ch = path.charAt(i++);
       // Check if this ampersand is part of a valid escape sequence
       if (ch == '&') {
         // Ampersand at the end of the string without anything to escape
-        if (i + 1 >= path.length()) {
+        if (i >= path.length()) {
           throw new IllegalArgumentException(
               "The ampersand character '&' at position "
-                  + i
+                  + (i - 1)
                   + " must be followed by either '&' or '.' to form a valid escape sequence. In path strings, '&' is used to escape '.' or '&' characters.");
         }
 
         // Ampersand not followed by '&' or '.'
-        char nextChar = path.charAt(i + 1);
+        char nextChar = path.charAt(i++);
         if (nextChar != '&' && nextChar != '.') {
           throw new IllegalArgumentException(
               "The ampersand character '&' at position "
-                  + i
+                  + (i - 2)
                   + " must be followed by either '&' or '.' to form a valid escape sequence. In path strings, '&' is used to escape '.' or '&' characters.");
         }
-
-        // Skip the next character as it's part of the escape sequence
-        i++;
       }
     }
 
