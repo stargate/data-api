@@ -152,7 +152,7 @@ quarkus:
     path: /api/json/openapi
     info-title: ${quarkus.application.name}
     info-version: ${quarkus.application.version:}
-    info-description:
+    info-description: 123
     info-terms-of-service:
     info-contact-name: Stargate
     info-contact-url: https://stargate.io
