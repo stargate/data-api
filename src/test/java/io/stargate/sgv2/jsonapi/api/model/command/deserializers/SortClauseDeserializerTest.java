@@ -66,6 +66,7 @@ class SortClauseDeserializerTest {
 
     @Test
     public void happyPathWithEscapedChars() throws Exception {
+      // should have the escape character in the expression
       String json =
           """
               {
@@ -79,7 +80,10 @@ class SortClauseDeserializerTest {
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions())
           .hasSize(2)
-          .contains(
+          .containsExactlyInAnyOrder(
+              SortExpression.sort("app&.kubernetes&.io/name", true),
+              SortExpression.sort("another&.odd&&path", false))
+          .doesNotContainSequence(
               SortExpression.sort("app.kubernetes.io/name", true),
               SortExpression.sort("another.odd&path", false));
     }
