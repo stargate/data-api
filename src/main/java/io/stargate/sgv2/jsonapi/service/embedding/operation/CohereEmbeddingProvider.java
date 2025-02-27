@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseEr
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -47,11 +48,12 @@ public class CohereEmbeddingProvider extends EmbeddingProvider {
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
+  @RegisterProvider(NetworkUsageInterceptor.class)
   public interface CohereEmbeddingProviderClient {
     @POST
     @Path("/embed")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
-    Uni<EmbeddingResponse> embed(
+    Uni<jakarta.ws.rs.core.Response> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 
     @ClientExceptionMapper
@@ -108,12 +110,36 @@ public class CohereEmbeddingProvider extends EmbeddingProvider {
 
     private List<float[]> embeddings;
 
+    private BilledUnits billed_units;
+
     public List<float[]> getEmbeddings() {
       return embeddings;
     }
 
     public void setEmbeddings(List<float[]> embeddings) {
       this.embeddings = embeddings;
+    }
+
+    public BilledUnits getBilled_units() {
+      return billed_units;
+    }
+
+    public void setBilled_units(BilledUnits billed_units) {
+      this.billed_units = billed_units;
+    }
+
+    private static class BilledUnits {
+      public int input_tokens;
+
+      public BilledUnits() {}
+
+      public int getInput_tokens() {
+        return input_tokens;
+      }
+
+      public void setInput_tokens(int input_tokens) {
+        this.input_tokens = input_tokens;
+      }
     }
   }
 
@@ -135,7 +161,7 @@ public class CohereEmbeddingProvider extends EmbeddingProvider {
     EmbeddingRequest request =
         new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
 
-    Uni<EmbeddingResponse> response =
+    Uni<jakarta.ws.rs.core.Response> response =
         applyRetry(
             cohereEmbeddingProviderClient.embed(
                 "Bearer " + embeddingCredentials.apiKey().get(), request));
@@ -144,10 +170,23 @@ public class CohereEmbeddingProvider extends EmbeddingProvider {
         .onItem()
         .transform(
             resp -> {
-              if (resp.getEmbeddings() == null) {
-                return Response.of(batchId, Collections.emptyList());
+              EmbeddingResponse embeddingResponse = resp.readEntity(EmbeddingResponse.class);
+              if (embeddingResponse.getEmbeddings() == null) {
+                return new Response(
+                    batchId,
+                    Collections.emptyList(),
+                    new VectorizeUsage(ProviderConstants.COHERE, modelName));
               }
-              return Response.of(batchId, resp.getEmbeddings());
+              int sentBytes = Integer.parseInt(resp.getHeaderString("sent-bytes"));
+              int receivedBytes = Integer.parseInt(resp.getHeaderString("received-bytes"));
+              VectorizeUsage vectorizeUsage =
+                  new VectorizeUsage(
+                      sentBytes,
+                      receivedBytes,
+                      embeddingResponse.getBilled_units().getInput_tokens(),
+                      ProviderConstants.COHERE,
+                      modelName);
+              return new Response(batchId, embeddingResponse.getEmbeddings(), vectorizeUsage);
             });
   }
 
