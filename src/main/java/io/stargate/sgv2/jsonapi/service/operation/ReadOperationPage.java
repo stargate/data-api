@@ -34,8 +34,8 @@ public record ReadOperationPage(
 
     var builder =
         singleResponse
-            ? CommandResult.singleDocumentBuilder(false, false)
-            : CommandResult.multiDocumentBuilder(false, false);
+            ? CommandResult.singleDocumentBuilder(false, false, null)
+            : CommandResult.multiDocumentBuilder(false, false, null);
 
     if (includeSortVector) {
       builder.addStatus(CommandStatus.SORT_VECTOR, vector);

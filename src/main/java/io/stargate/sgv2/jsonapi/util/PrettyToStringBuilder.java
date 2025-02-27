@@ -30,14 +30,12 @@ import java.util.List;
  * }
  * </pre>
  */
-public class PrettyToStringBuilder {
+public class PrettyToStringBuilder extends DataRecorder {
 
   private static final String NEWLINE = System.lineSeparator();
 
   private final StringBuilder sb;
   private final int indent;
-  private final boolean pretty;
-  private final PrettyToStringBuilder parent;
 
   private boolean firstAppend = true;
 
@@ -47,22 +45,22 @@ public class PrettyToStringBuilder {
 
   private PrettyToStringBuilder(
       Class<?> clazz, int indent, boolean pretty, PrettyToStringBuilder parent) {
-    this.pretty = pretty;
+    super(clazz, pretty, parent);
     this.indent = indent;
-    this.parent = parent;
+
     this.sb = parent == null ? new StringBuilder() : parent.sb;
-    // See getSimpleName() may be an empty string at times, use th full name in these cases
-    var simpleName = clazz.getSimpleName();
-    var className = simpleName.isEmpty() ? clazz.getName() : simpleName;
-    this.sb.append(className).append("{");
+
+    this.sb.append(className(clazz)).append("{");
     newLine();
   }
 
-  public PrettyToStringBuilder beginSubBuilder(Class<?> clazz) {
+  @Override
+  public DataRecorder beginSubRecorder(Class<?> clazz) {
     return new PrettyToStringBuilder(clazz, indent + 1, pretty, this);
   }
 
-  public PrettyToStringBuilder endSubBuilder() {
+  @Override
+  public DataRecorder endSubRecorder() {
     if (parent != null) {
       indent();
     }
@@ -71,7 +69,8 @@ public class PrettyToStringBuilder {
     return parent;
   }
 
-  public PrettyToStringBuilder append(String key, Object value) {
+  @Override
+  public DataRecorder append(String key, Object value) {
     if (!firstAppend) {
       popIfEndsWithNewline();
       sb.append(", ");

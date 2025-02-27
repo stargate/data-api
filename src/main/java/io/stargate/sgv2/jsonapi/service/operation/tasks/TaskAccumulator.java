@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.RequestTracing;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -21,6 +22,7 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
   // TODO: remove all of error obj v2 flags, we use it all now
   protected boolean useErrorObjectV2 = false;
   protected boolean debugMode = false;
+  protected RequestTracing requestTracing = null;
 
   protected final TaskGroup<TaskT, SchemaT> tasks = new TaskGroup<>();
 
@@ -36,7 +38,8 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
 
     accumulator
         .debugMode(commandContext.config().get(DebugModeConfig.class).enabled())
-        .useErrorObjectV2(commandContext.config().get(OperationsConfig.class).extendError());
+        .useErrorObjectV2(commandContext.config().get(OperationsConfig.class).extendError())
+        .requestTracing(commandContext.requestTracing());
     return accumulator;
   }
 
@@ -74,6 +77,18 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
   @SuppressWarnings("unchecked")
   public <SubT extends TaskAccumulator<TaskT, SchemaT>> SubT debugMode(boolean debugMode) {
     this.debugMode = debugMode;
+    return (SubT) this;
+  }
+
+  /**
+   * Set the {@link RequestTracing} object for the request. This will be passed to the {@link
+   * io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder} which will add the tracing if
+   * the object is not null and {@link RequestTracing#getTrace()} returns a trace.
+   */
+  @SuppressWarnings("unchecked")
+  public <SubT extends TaskAccumulator<TaskT, SchemaT>> SubT requestTracing(
+      RequestTracing requestTracing) {
+    this.requestTracing = requestTracing;
     return (SubT) this;
   }
 }

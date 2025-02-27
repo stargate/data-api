@@ -21,7 +21,8 @@ public enum ApiFeature {
    * commands, and support commands on Tables. If disabled, those operations will fail with {@link
    * ErrorCodeV1#TABLE_FEATURE_NOT_ENABLED}.
    */
-  TABLES("tables");
+  TABLES("tables"),
+  REQUEST_TRACING("request-tracing");
 
   /**
    * Prefix for HTTP headers used to override feature flags for specific requests: prepended before

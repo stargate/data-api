@@ -97,7 +97,8 @@ public class CommandProcessor {
                     // yet more mucking about with suppliers everywhere :(
                     yield (Supplier<CommandResult>)
                         () ->
-                            CommandResult.statusOnlyBuilder(errorObjectV2, debugMode)
+                            CommandResult.statusOnlyBuilder(
+                                    errorObjectV2, debugMode, commandContext.requestTracing())
                                 .addCommandResultError(
                                     errorBuilder.buildLegacyCommandResultError(apiException))
                                 .build();

@@ -183,7 +183,7 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
 
       return new InsertDBTaskPage<>(
           tasks,
-          CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode),
+          CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode, requestTracing),
           returnDocumentResponses);
     }
   }

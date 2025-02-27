@@ -139,7 +139,7 @@ public class TableInsertDBTaskBuilder
   private List<InsertTaskAndRow> createInsertTasks(List<JsonNode> jsonNodes) {
 
     var writeableTableRowBuilder =
-        new WriteableTableRowBuilder(schemaObject, JSONCodecRegistries.DEFAULT_REGISTRY);
+        new WriteableTableRowBuilder(commandContext, JSONCodecRegistries.DEFAULT_REGISTRY);
 
     List<InsertTaskAndRow> insertTaskAndRows = new ArrayList<>(jsonNodes.size());
     for (var jsonNode : jsonNodes) {

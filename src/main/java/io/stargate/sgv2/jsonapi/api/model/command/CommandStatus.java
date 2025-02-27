@@ -130,6 +130,10 @@ public enum CommandStatus {
    */
   @JsonProperty(Names.SORTED_ROW_COUNT)
   SORTED_ROW_COUNT(Names.SORTED_ROW_COUNT),
+
+  /** The internal tracing for processing the request. */
+  @JsonProperty(Names.TRACE)
+  TRACE(Names.TRACE),
   ;
 
   private final String apiName;
@@ -171,5 +175,6 @@ public enum CommandStatus {
     String PRIMARY_KEY_SCHEMA = "primaryKeySchema";
     String PROJECTION_SCHEMA = "projectionSchema";
     String SORTED_ROW_COUNT = "sortedRowCount";
+    String TRACE = "trace";
   }
 }

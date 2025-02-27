@@ -40,6 +40,7 @@ public class CommandResultBuilder {
   // Flagged true to include the new error object v2
   private final boolean useErrorObjectV2;
 
+  private final RequestTracing requestTracing;
   // Created in the Ctor
   private final APIExceptionCommandErrorBuilder apiExceptionToError;
 
@@ -47,10 +48,16 @@ public class CommandResultBuilder {
   // but may not be returning V2 errors in the result
   private final APIExceptionCommandErrorBuilder apiWarningToError;
 
-  CommandResultBuilder(ResponseType responseType, boolean useErrorObjectV2, boolean debugMode) {
+  CommandResultBuilder(
+      ResponseType responseType,
+      boolean useErrorObjectV2,
+      boolean debugMode,
+      RequestTracing requestTracing) {
     this.responseType = responseType;
     this.useErrorObjectV2 = useErrorObjectV2;
     this.debugMode = debugMode;
+    // null allowed, as is the tracing returning a null
+    this.requestTracing = requestTracing;
 
     this.apiExceptionToError = new APIExceptionCommandErrorBuilder(debugMode, useErrorObjectV2);
     this.apiWarningToError = new APIExceptionCommandErrorBuilder(debugMode, true);
@@ -145,6 +152,9 @@ public class CommandResultBuilder {
       cmdStatus.put(CommandStatus.WARNINGS, warnings);
     }
 
+    if (requestTracing != null) {
+      requestTracing.getTrace().ifPresent(trace -> cmdStatus.put(CommandStatus.TRACE, trace));
+    }
     // null out values that are empty, the CommandResult serializer will ignore them when the JSON
     // is built
     var finalStatus = cmdStatus.isEmpty() ? null : cmdStatus;

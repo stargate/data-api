@@ -92,7 +92,7 @@ public class CompositeTaskIntermediatePage<
 
     @Override
     public void accumulate(InnerTaskT task) {
-      if (lastTaskAccumulator != null){
+      if (lastTaskAccumulator != null) {
         lastTaskAccumulator.accumulate(task);
       }
       super.accumulate(task);

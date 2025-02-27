@@ -43,9 +43,8 @@ public class WriteableTableRowBuilderTest {
   }
 
   private static WriteableTableRow buildRow(JsonContainerFixture fixture) {
-    var builder =
-        new WriteableTableRowBuilder(
-            fixture.cqlFixture().tableSchemaObject(), JSONCodecRegistries.DEFAULT_REGISTRY);
+    // TODO: AARON: BUG fix this fixture.cqlFixture().tableSchemaObject()
+    var builder = new WriteableTableRowBuilder(null, JSONCodecRegistries.DEFAULT_REGISTRY);
     var row = builder.build(fixture.container());
     LOGGER.info("buildRow: row={}", row.toString(true));
     return row;

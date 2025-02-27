@@ -10,6 +10,8 @@ import io.stargate.sgv2.jsonapi.service.resolver.UnvalidatedClauseException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.List;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link InsertValuesCQLClause} that builds the VALUES part of the CQL Insert statement when
@@ -23,6 +25,8 @@ import java.util.Objects;
  */
 public record TableInsertValuesCQLClause(TableSchemaObject tableSchemaObject, WriteableTableRow row)
     implements InsertValuesCQLClause {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(TableInsertValuesCQLClause.class);
 
   public TableInsertValuesCQLClause {
     Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
@@ -39,6 +43,13 @@ public record TableInsertValuesCQLClause(TableSchemaObject tableSchemaObject, Wr
 
     RegularInsert regularInsert = null;
 
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug(
+          "apply() - building insert keyspace={} table={} row.allColumns={}",
+          tableSchemaObject.keyspaceName().asCql(true),
+          tableSchemaObject.keyspaceName().asCql(true),
+          row.allColumns().toString(true));
+    }
     for (var cqlNamedValue : row.allColumns().values()) {
       positionalValues.add(cqlNamedValue.value());
       regularInsert =

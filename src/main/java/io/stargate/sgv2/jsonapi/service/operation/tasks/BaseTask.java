@@ -38,7 +38,7 @@ public abstract class BaseTask<
         SchemaT extends SchemaObject,
         ResultSupplierT extends BaseTask.UniSupplier<ResultT>,
         ResultT>
-    implements Task<SchemaT>, PrettyPrintable {
+    implements Task<SchemaT> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BaseTask.class);
 

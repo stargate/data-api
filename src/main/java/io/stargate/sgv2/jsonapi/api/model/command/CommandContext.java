@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -41,7 +42,10 @@ public class CommandContext<SchemaT extends SchemaObject> {
       embeddingProvider; // to be removed later, this is a single provider
   private final String commandName; // TODO: remove the command name, but it is used in 14 places
   private final RequestContext requestContext;
+  private RequestTracing requestTracing;
+
   // created on demand, otherwise we need to read from config too early when running tests
+  // access via {@link CommandContext#apiFeatures()}
   private ApiFeatures apiFeatures;
 
   private CommandContext(
@@ -63,6 +67,12 @@ public class CommandContext<SchemaT extends SchemaObject> {
     this.cqlSessionCache = cqlSessionCache;
     this.commandConfig = commandConfig;
     this.embeddingProviderFactory = embeddingProviderFactory;
+
+    this.requestTracing =
+        apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING)
+            ? new DefaultRequestTracing(
+                requestContext.getRequestId(), requestContext.getTenantId().orElse(""))
+            : RequestTracing.NO_TRACING;
   }
 
   public static BuilderSupplier builderSupplier() {
@@ -79,6 +89,10 @@ public class CommandContext<SchemaT extends SchemaObject> {
 
   public String commandName() {
     return commandName;
+  }
+
+  public RequestTracing requestTracing() {
+    return requestTracing;
   }
 
   public RequestContext requestContext() {

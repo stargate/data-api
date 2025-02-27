@@ -44,7 +44,7 @@ public class WebApplicationExceptionMapper {
           new APIExceptionCommandErrorBuilder(
               debugModeConfig.enabled(), operationsConfig.extendError());
       return RestResponse.ok(
-          CommandResult.statusOnlyBuilder(false, false)
+          CommandResult.statusOnlyBuilder(false, false, null)
               .addCommandResultError(errorBuilder.buildLegacyCommandResultError(ae))
               .build());
     }

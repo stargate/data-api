@@ -135,7 +135,7 @@ public class DBLogicalExpression implements PrettyPrintable {
 
   @Override
   public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
-    var sb = prettyToStringBuilder.beginSubBuilder(getClass());
+    var sb = prettyToStringBuilder.beginSubRecorder(getClass());
     return toString(sb).endSubBuilder();
   }
 }

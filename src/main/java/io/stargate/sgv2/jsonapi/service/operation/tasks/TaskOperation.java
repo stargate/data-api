@@ -4,8 +4,10 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.RequestTracing;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -57,6 +59,14 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
    */
   @Override
   public Uni<Supplier<CommandResult>> execute(CommandContext<SchemaT> commandContext) {
+    commandContext
+        .requestTracing()
+        .maybeTrace(
+            () ->
+                new RequestTracing.TraceMessage(
+                    "TaskOperation.execute() - starting to process task group",
+                    PrettyPrintable.toString(taskGroup)));
+
     return executeInternal(commandContext, TaskAccumulator::getResults);
     //    Objects.requireNonNull(commandContext, "commandContext cannot be null");
     //
@@ -79,7 +89,9 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
 
     Objects.requireNonNull(commandContext, "commandContext cannot be null");
 
-    LOGGER.debug("executeInternal() - starting to process tasks={}", taskGroup);
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("executeInternal() - starting to process tasks={}", taskGroup.toString(true));
+    }
 
     return startMulti(commandContext)
         .collect()

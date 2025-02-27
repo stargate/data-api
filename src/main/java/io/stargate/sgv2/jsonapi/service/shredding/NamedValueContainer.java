@@ -79,7 +79,7 @@ public abstract class NamedValueContainer<NameT, ValueT, NvT extends NamedValue<
 
   @Override
   public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
-    var sb = prettyToStringBuilder.beginSubBuilder(getClass());
+    var sb = prettyToStringBuilder.beginSubRecorder(getClass());
     return toString(sb).endSubBuilder();
   }
 

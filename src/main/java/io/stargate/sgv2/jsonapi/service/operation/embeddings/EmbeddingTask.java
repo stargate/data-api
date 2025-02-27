@@ -3,11 +3,13 @@ package io.stargate.sgv2.jsonapi.service.operation.embeddings;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.RequestTracing;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
+import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,13 +55,14 @@ public class EmbeddingTask<SchemaT extends SchemaObject>
 
     var vectorizeTexts = embeddingActions.stream().map(EmbeddingAction::startEmbedding).toList();
     return new EmbeddingResultSupplier(
-        embeddingActions,
+        commandContext,
         () ->
             embeddingProvider.vectorize(
                 1, // not sure why but we always pass 1 here
                 vectorizeTexts,
                 commandContext.requestContext().getEmbeddingCredentials(),
-                requestType));
+                requestType),
+        embeddingActions);
   }
 
   @Override
@@ -85,13 +88,17 @@ public class EmbeddingTask<SchemaT extends SchemaObject>
   // Implementation and internals
   // =================================================================================================
 
-  static class EmbeddingResultSupplier implements BaseTask.UniSupplier<EmbeddingTaskResult> {
+  public static class EmbeddingResultSupplier implements BaseTask.UniSupplier<EmbeddingTaskResult> {
 
+    protected final CommandContext<?> commandContext;
     protected final BaseTask.UniSupplier<EmbeddingProvider.Response> supplier;
     protected final List<EmbeddingAction> actions;
 
-    public EmbeddingResultSupplier(
-        List<EmbeddingAction> actions, BaseTask.UniSupplier<EmbeddingProvider.Response> supplier) {
+    EmbeddingResultSupplier(
+        CommandContext<?> commandContext,
+        BaseTask.UniSupplier<EmbeddingProvider.Response> supplier,
+        List<EmbeddingAction> actions) {
+      this.commandContext = commandContext;
       this.supplier = supplier;
       this.actions = actions;
     }
@@ -102,11 +109,11 @@ public class EmbeddingTask<SchemaT extends SchemaObject>
       return supplier
           .get()
           .onItem()
-          .transform(rawResult -> EmbeddingTaskResult.create(rawResult, actions));
+          .transform(rawResult -> EmbeddingTaskResult.create(commandContext, rawResult, actions));
     }
   }
 
-  static class EmbeddingTaskResult {
+  public static class EmbeddingTaskResult {
 
     protected final List<float[]> rawVectors;
     protected final List<EmbeddingAction> actions;
@@ -128,13 +135,30 @@ public class EmbeddingTask<SchemaT extends SchemaObject>
      * @return
      */
     static EmbeddingTaskResult create(
-        EmbeddingProvider.Response providerResponse, List<EmbeddingAction> actions) {
+        CommandContext<?> commandContext,
+        EmbeddingProvider.Response providerResponse,
+        List<EmbeddingAction> actions) {
 
-      LOGGER.warn("XXXX EmbeddingTaskResult.create() - providerResponse={}", providerResponse);
-      LOGGER.warn("XXXX EmbeddingTaskResult.create() - actions={}", actions);
+      commandContext
+          .requestTracing()
+          .maybeTrace(
+              () ->
+                  new RequestTracing.TraceMessage(
+                      "EmbeddingTaskResult.create() Received embedding provider response",
+                      PrettyPrintable.toString(providerResponse)));
+
+      commandContext
+          .requestTracing()
+          .maybeTrace(
+              () ->
+                  new RequestTracing.TraceMessage(
+                      "EmbeddingTaskResult.create() Processing Embedding Actions",
+                      PrettyPrintable.toString(actions)));
+
       // defensive to make sure the order cannot change
       var vectors = List.copyOf(providerResponse.embeddings());
 
+      // TODO: what to do about the failures in the response?
       // we rely on the response vectors having the same order we passed them in
       // if an error bubbles out of there the task pipeline will attach it to the task
       for (int i = 0; i < actions.size(); i++) {

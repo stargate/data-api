@@ -55,7 +55,7 @@ public class UpdateAttemptPage<SchemaT extends TableSchemaObject>
       // returning a document
       // e.g. for findOneAndDelete, for now it is always status only
       return new UpdateAttemptPage<>(
-          tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode));
+          tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode, requestTracing));
     }
   }
 }

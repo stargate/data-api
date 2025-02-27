@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
@@ -47,6 +48,8 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   // Flagged true to include the new error object v2
   private final boolean useErrorObjectV2;
 
+  private final RequestTracing requestTracing;
+
   // Created in the Ctor
   private final APIExceptionCommandErrorBuilder apiExceptionToError;
 
@@ -54,7 +57,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   public InsertOperationPage(
       List<? extends InsertAttempt<SchemaT>> allAttemptedInsertions,
       boolean returnDocumentResponses) {
-    this(allAttemptedInsertions, returnDocumentResponses, false, false);
+    this(allAttemptedInsertions, returnDocumentResponses, false, false, null);
   }
 
   /**
@@ -71,7 +74,8 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
       List<? extends InsertAttempt<SchemaT>> allAttemptedInsertions,
       boolean returnDocumentResponses,
       boolean debugMode,
-      boolean useErrorObjectV2) {
+      boolean useErrorObjectV2,
+      RequestTracing requestTracing) {
 
     Objects.requireNonNull(allAttemptedInsertions, "allAttemptedInsertions cannot be null");
     this.allInsertions =
@@ -82,6 +86,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
     this.failedInsertions = new ArrayList<>(allAttemptedInsertions.size());
     this.debugMode = debugMode;
     this.useErrorObjectV2 = useErrorObjectV2;
+    this.requestTracing = requestTracing;
     this.apiExceptionToError = new APIExceptionCommandErrorBuilder(debugMode, useErrorObjectV2);
   }
 
@@ -105,7 +110,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
     // TODO AARON used to only sort the success list when not returning detailed responses, check OK
     Collections.sort(successfulInsertions);
 
-    var builder = CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode);
+    var builder = CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode, requestTracing);
     return returnDocumentResponses ? perDocumentResult(builder) : nonPerDocumentResult(builder);
   }
 

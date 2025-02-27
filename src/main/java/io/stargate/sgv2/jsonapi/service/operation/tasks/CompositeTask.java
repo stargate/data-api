@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.util.function.Supplier;
 
 /** Task that runs an operation */
@@ -13,7 +14,7 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
         CompositeTaskIntermediatePage<InnerTaskT, SchemaT>> {
 
   //  private final Class<InnerTaskT> taskClass;
-  private final TaskGroup<InnerTaskT, SchemaT> taskGroup;
+  private final TaskGroup<InnerTaskT, SchemaT> innerTaskGroup;
 
   /**
    * Accumulator set if this is the task CompositeTask, this is the regular accumulator we would use
@@ -27,11 +28,11 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
       int position,
       SchemaT schemaObject,
       TaskRetryPolicy retryPolicy,
-      TaskGroup<InnerTaskT, SchemaT> taskGroup,
+      TaskGroup<InnerTaskT, SchemaT> innerTaskGroup,
       TaskAccumulator<InnerTaskT, SchemaT> lastTaskAccumulator) {
     super(position, schemaObject, retryPolicy);
 
-    this.taskGroup = taskGroup;
+    this.innerTaskGroup = innerTaskGroup;
     this.lastTaskAccumulator = lastTaskAccumulator;
     setStatus(TaskStatus.READY);
   }
@@ -62,11 +63,13 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
       CommandContext<SchemaT> commandContext) {
 
     // We always need the intermediate accumulator
-    // If this is an intermedia (i.e. not last) task then it will be used to surface errors from the inner tasks
+    // If this is an intermedia (i.e. not last) task then it will be used to surface errors from the
+    // inner tasks
     // if this is the last task, it will be used to pass through to the lastTaskAccumulator
     // which is the accumilator to make the results of the entire pipeline
-    var intermediateAccumulator = CompositeTaskIntermediatePage.<InnerTaskT, SchemaT>accumulator(commandContext)
-        .withLastTaskAccumulator(lastTaskAccumulator);
+    var intermediateAccumulator =
+        CompositeTaskIntermediatePage.<InnerTaskT, SchemaT>accumulator(commandContext)
+            .withLastTaskAccumulator(lastTaskAccumulator);
 
     // we give the Operation either the lastTaskAccumulator if we have one, or the intermedia one
     // the result supplier below will call the correct accumulator when done
@@ -74,7 +77,7 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
         lastTaskAccumulator != null ? lastTaskAccumulator : intermediateAccumulator;
 
     TaskOperation<InnerTaskT, SchemaT> innerOperation =
-        new TaskOperation<>(taskGroup, operationAccumulator);
+        new TaskOperation<>(innerTaskGroup, operationAccumulator);
 
     return new CompositeTaskResultSupplier<InnerTaskT, SchemaT>(
         commandContext, innerOperation, intermediateAccumulator, lastTaskAccumulator);
@@ -91,6 +94,13 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
   protected void onSuccess(CompositeTaskIntermediatePage<InnerTaskT, SchemaT> result) {
     innerPage = result;
     super.onSuccess(result);
+  }
+
+  @Override
+  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+    return super.toString(prettyToStringBuilder)
+        .append("innerTaskGroup", innerTaskGroup)
+        .append("lastTaskAccumulator", lastTaskAccumulator);
   }
 
   CompositeTaskIntermediatePage<InnerTaskT, SchemaT> innerPage() {

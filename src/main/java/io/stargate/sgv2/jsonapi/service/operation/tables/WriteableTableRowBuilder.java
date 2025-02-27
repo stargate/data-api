@@ -5,6 +5,8 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.COLUMN_METADATA_CO
 
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -14,6 +16,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
+import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import java.util.*;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
@@ -66,6 +69,7 @@ public class WriteableTableRowBuilder {
         }
       };
 
+  private final CommandContext<TableSchemaObject> commandContext;
   private final TableSchemaObject tableSchemaObject;
   private final JSONCodecRegistry codecRegistry;
 
@@ -73,10 +77,10 @@ public class WriteableTableRowBuilder {
   private final TableMetadata tableMetadata;
 
   public WriteableTableRowBuilder(
-      TableSchemaObject tableSchemaObject, JSONCodecRegistry codecRegistry) {
+      CommandContext<TableSchemaObject> commandContext, JSONCodecRegistry codecRegistry) {
 
-    this.tableSchemaObject =
-        Objects.requireNonNull(tableSchemaObject, "schemaObject cannot be null");
+    this.commandContext = Objects.requireNonNull(commandContext, "commandContext cannot be null");
+    this.tableSchemaObject = commandContext.schemaObject();
     this.codecRegistry = Objects.requireNonNull(codecRegistry, "codecRegistry cannot be null");
 
     apiTableDef = tableSchemaObject.apiTableDef();
@@ -93,14 +97,26 @@ public class WriteableTableRowBuilder {
    */
   public WriteableTableRow build(JsonNamedValueContainer source) {
 
-    LOGGER.warn("XXX: source={}", source.toString(true));
+    commandContext
+        .requestTracing()
+        .maybeTrace(
+            () ->
+                new RequestTracing.TraceMessage(
+                    "WriteableTableRow.build() building row using JSON values",
+                    PrettyPrintable.toString(source)));
 
     // Map everything from the JSON source into a CQL Value, we can check their state after.
     // the checks on the error strategy will run, we have some extra ones below
     var allColumns =
         new CqlNamedValueFactory(tableSchemaObject, codecRegistry, ERROR_STRATEGY).create(source);
 
-    LOGGER.warn("XXX: allColumns={}", allColumns.toString(true));
+    commandContext
+        .requestTracing()
+        .maybeTrace(
+            () ->
+                new RequestTracing.TraceMessage(
+                    "WriteableTableRow.build() built CQL values",
+                    PrettyPrintable.toString(allColumns)));
     checkAllPrimaryKeys(allColumns);
 
     // now need to split the columns into key and non-key columns
