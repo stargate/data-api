@@ -3,7 +3,8 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -95,36 +96,8 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
     }
 
     @Test
-    public void sortByDottedField() {
-      // Reversed order compared to _id
-      givenHeadersPostJsonThenOkNoErrors(
-              """
-                      {
-                        "findOne": {
-                          "filter" : {"type": "sorted"},
-                          "sort" : {"app.kubernetes.io/name": 1}
-                        }
-                      }
-                      """)
-          .body("$", responseIsFindSuccess())
-          .body("data.document", jsonEquals(DOC3));
-
-      givenHeadersPostJsonThenOkNoErrors(
-              """
-                      {
-                        "findOne": {
-                          "filter" : {"type": "sorted"},
-                          "sort" : {"app.kubernetes.io/name": -1}
-                        }
-                      }
-                      """)
-          .body("$", responseIsFindSuccess())
-          .body("data.document", jsonEquals(DOC1));
-    }
-
-    @Test
     public void sortByDottedFieldWithEscape() {
-      // the result should be the same as the above
+      // Reversed order compared to _id
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
@@ -146,6 +119,34 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                         }
                       }
                       """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+    }
+
+    @Test
+    public void sortByDottedFieldWithoutEscape() {
+      // without correct escape, the order will be the first _id
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                        {
+                            "findOne": {
+                            "filter" : {"type": "sorted"},
+                            "sort" : {"app.kubernetes.io/name": 1}
+                            }
+                        }
+                        """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                        {
+                            "findOne": {
+                            "filter" : {"type": "sorted"},
+                            "sort" : {"app.kubernetes.io/name": -1}
+                            }
+                        }
+                        """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC1));
     }
@@ -180,7 +181,7 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
 
     @Test
     public void sortByNestedFieldWithEscape() {
-      // the result will be the same as the above
+      // cannot find the result, the order will be the first _id
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
@@ -191,7 +192,7 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          .body("data.document", jsonEquals(DOC3));
+          .body("data.document", jsonEquals(DOC1));
 
       givenHeadersPostJsonThenOkNoErrors(
               """
@@ -203,7 +204,7 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          .body("data.document", jsonEquals(DOC2));
+          .body("data.document", jsonEquals(DOC1));
     }
   }
 

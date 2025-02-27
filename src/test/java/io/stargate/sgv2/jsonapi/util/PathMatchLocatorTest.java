@@ -10,6 +10,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.io.IOException;
@@ -146,11 +147,11 @@ public class PathMatchLocatorTest {
           catchException(() -> PathMatchLocator.forPath("a..x").findIfExists(objectFromJson("{}")));
       assertThat(e)
           .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH)
-          .hasMessage(
-              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
-                  + ": empty segment ('') in path 'a..x'");
+          .isInstanceOf(ProjectionException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", ProjectionException.Code.UNSUPPORTED_PROJECTION_PATH.name())
+          .hasMessageContaining("The segments from the path in the projection cannot be empty.")
+          .hasMessageContaining("The command used the unsupported projection path: 'a..x'");
     }
   }
 

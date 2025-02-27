@@ -69,8 +69,6 @@ public enum ErrorCodeV1 {
 
   SHRED_BAD_DOCID_EMPTY_STRING("Bad value for '_id' property: empty String not allowed"),
 
-  SHRED_BAD_DOCUMENT_PATH_CONFLICTS("Bad document to shred, contains conflicting Field path(s)"),
-
   SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
 
   SHRED_BAD_DOCUMENT_VECTOR_TYPE("Bad $vector document type to shred "),
