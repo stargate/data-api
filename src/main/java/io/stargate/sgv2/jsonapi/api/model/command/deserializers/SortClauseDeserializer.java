@@ -153,7 +153,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         // this is also why we do not break the look here
         sortExpressions.add(SortExpression.tableVectorizeSort(path, inner.getValue().textValue()));
       } else {
-        validateSortClausePath(path);
+        String validatedPath = validateSortClausePath(path);
 
         if (!inner.getValue().isInt()
             || !(inner.getValue().intValue() == 1 || inner.getValue().intValue() == -1)) {
@@ -163,7 +163,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         }
 
         boolean ascending = inner.getValue().intValue() == 1;
-        SortExpression exp = SortExpression.sort(path, ascending);
+        SortExpression exp = SortExpression.sort(validatedPath, ascending);
         sortExpressions.add(exp);
       }
     }
@@ -191,7 +191,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
     return arrayVals;
   }
 
-  private void validateSortClausePath(String path) {
+  private String validateSortClausePath(String path) {
     if (!NamingRules.FIELD.apply(path)) {
       if (path.isEmpty()) {
         throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
@@ -200,5 +200,6 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
           "path ('%s') cannot start with `$`", path);
     }
+    return path;
   }
 }
