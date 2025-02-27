@@ -78,6 +78,42 @@ public final class DocumentPath implements Comparable<DocumentPath> {
   }
 
   /**
+   * Verifies that the encoded path does not contain any lone ampersands. A lone ampersand is one
+   * that is not followed by another ampersand or a dot, which are the only valid escape sequences.
+   *
+   * @param path the encoded path string to verify
+   * @return the original path if it passes verification
+   * @throws IllegalArgumentException if the path contains a lone ampersand
+   */
+  public static String verifyEncodedPath(String path) {
+    Objects.requireNonNull(path, "path cannot be null");
+
+    for (int i = 0; i < path.length(); i++) {
+      char ch = path.charAt(i);
+      // Check if this ampersand is part of a valid escape sequence
+      if (ch == '&') {
+        // Ampersand at the end of the string without anything to escape
+        if (i + 1 >= path.length()) {
+          throw ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.get(
+              "unsupportedAmpersandEscape", path);
+        }
+
+        // Ampersand not followed by '&' or '.'
+        char nextChar = path.charAt(i + 1);
+        if (nextChar != '&' && nextChar != '.') {
+          throw ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.get(
+              "unsupportedAmpersandEscape", path);
+        }
+
+        // Skip the next character as it's part of the escape sequence
+        i++;
+      }
+    }
+
+    return path;
+  }
+
+  /**
    * Encodes a path segment by escaping special characters.
    *
    * <p>The encoding process follows these steps:
