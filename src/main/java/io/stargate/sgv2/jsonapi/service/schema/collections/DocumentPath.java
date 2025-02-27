@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.projection;
+package io.stargate.sgv2.jsonapi.service.schema.collections;
 
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ProjectionException;
@@ -7,63 +7,67 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * An immutable representation of a projection path composed of segments.
+ * An immutable representation of a document path composed of segments.
  *
- * <p>A projection path is created from an encoded string (e.g., "pricing.price&amp;.usd"), where
+ * <p>A document path is created from an encoded string (e.g., "pricing.price&amp;.usd"), where
  * segments are separated by dots ('.') and the escape character ('&amp;') allows literal dots or
  * ampersands within segments.
  *
  * <p>Use {@link #from(String)} to create an instance, {@link #getSegment(int)} to access the
- * segments, and {@link #encodeNoEscaping()} to get the dot-separated path string.
+ * segments, and {@link #encodeSegment(String)} to get the dot-separated path string.
  */
-public final class ProjectionPath implements Comparable<ProjectionPath> {
+public final class DocumentPath implements Comparable<DocumentPath> {
+  /** The full encoded path string - with escape character. */
+  private final String encodedPath;
+
+  /** The segments from the encoded path - without escape character. */
   private final List<String> segments;
 
-  /** projection path for document id */
-  private static final ProjectionPath DOC_ID = ProjectionPath.from(DocumentConstants.Fields.DOC_ID);
+  /** document path for document id */
+  private static final DocumentPath DOC_ID = DocumentPath.from(DocumentConstants.Fields.DOC_ID);
 
-  /** projection path for vector embedding field */
-  private static final ProjectionPath VECTOR_EMBEDDING_FIELD =
-      ProjectionPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+  /** document path for vector embedding field */
+  private static final DocumentPath VECTOR_EMBEDDING_FIELD =
+      DocumentPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
 
-  /** projection path for vector embedding text field */
-  private static final ProjectionPath VECTOR_EMBEDDING_TEXT_FIELD =
-      ProjectionPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+  /** document path for vector embedding text field */
+  private static final DocumentPath VECTOR_EMBEDDING_TEXT_FIELD =
+      DocumentPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
 
-  private ProjectionPath(List<String> segments) {
-    // Make a defensive copy to preserve immutability.
+  private DocumentPath(String originalPath, List<String> segments) {
+    this.encodedPath = originalPath;
     this.segments = segments;
   }
 
-  /** Accessor method to get the projection path for document id */
-  public static ProjectionPath forDocId() {
+  /** Accessor method to get the document path for document id */
+  public static DocumentPath forDocId() {
     return DOC_ID;
   }
 
-  /** Accessor method to get the projection path for vector embedding field */
-  public static ProjectionPath forVectorEmbeddingField() {
+  /** Accessor method to get the document path for vector embedding field */
+  public static DocumentPath forVectorEmbeddingField() {
     return VECTOR_EMBEDDING_FIELD;
   }
 
-  /** Accessor method to get the projection path for vector embedding text field */
-  public static ProjectionPath forVectorEmbeddingTextField() {
+  /** Accessor method to get the document path for vector embedding text field */
+  public static DocumentPath forVectorEmbeddingTextField() {
     return VECTOR_EMBEDDING_TEXT_FIELD;
   }
 
   /**
-   * Factory method to create a ProjectionPath from the given encoded path string. Handles escape
+   * Factory method to create a DocumentPath from the given encoded path string. Handles escape
    * sequences where '&' escapes a dot or an ampersand.
    *
    * @param path the encoded path string (e.g., "pricing.price&.usd")
-   * @return a new ProjectionPath instance containing the decoded segments
+   * @return a new DocumentPath instance containing the decoded segments
    * @throws IllegalArgumentException if the escape sequence is invalid
    */
-  public static ProjectionPath from(String path) {
+  public static DocumentPath from(String path) {
     Objects.requireNonNull(path, "path cannot be null");
-    return new ProjectionPath(decode(path));
+    return new DocumentPath(path, decode(path));
   }
 
-  /** Returns the number of segments in this projection path. */
+  /** Returns the number of segments in this document path. */
   public int getSegmentsSize() {
     return segments.size();
   }
@@ -74,13 +78,42 @@ public final class ProjectionPath implements Comparable<ProjectionPath> {
   }
 
   /**
-   * Encodes the ProjectionPath back into a string by joining segments with a dot. This encoding is
-   * used for filter and sort use cases, where escapes are not allowed.
+   * Encodes a path segment by escaping special characters.
    *
-   * @return the encoded path string (e.g., "pricing.price.usd")
+   * <p>The encoding process follows these steps:
+   *
+   * <ol>
+   *   <li>
+   *       <p>Scan the path segment character-by-character.
+   *   <li>
+   *       <p>If the character is {@code '.'}, escape it as {@code '&.'}.
+   *   <li>
+   *       <p>If the character is {@code '&'}, escape it as {@code '&&'}.
+   *   <li>
+   *       <p>All other characters remain unchanged.
+   * </ol>
+   *
+   * <p>For example, the input {@code "item.weight"} results in: {@code "item&.weight"}.
+   *
+   * @param segment the raw path segment to encode.
+   * @return the encoded path string.
    */
-  public String encodeNoEscaping() {
-    return String.join(".", segments);
+  public static String encodeSegment(String segment) {
+    Objects.requireNonNull(segment, "Segment cannot be null");
+
+    StringBuilder result = new StringBuilder();
+
+    for (int i = 0; i < segment.length(); i++) {
+      char ch = segment.charAt(i);
+
+      // Escape '&' or '.' as '&&' or '&.'
+      if (ch == '&' || ch == '.') {
+        result.append('&');
+      }
+      result.append(ch);
+    }
+
+    return result.toString();
   }
 
   /**
@@ -169,12 +202,11 @@ public final class ProjectionPath implements Comparable<ProjectionPath> {
   }
 
   /**
-   * Returns the string representation of the ProjectionPath. By default, it returns the encoded
-   * form
+   * Returns the string representation of the DocumentPath. By default, it returns the encoded form
    */
   @Override
   public String toString() {
-    return encodeNoEscaping();
+    return encodedPath;
   }
 
   /**
@@ -182,7 +214,7 @@ public final class ProjectionPath implements Comparable<ProjectionPath> {
    * sorted next to each other.
    */
   @Override
-  public int compareTo(ProjectionPath other) {
+  public int compareTo(DocumentPath other) {
     final List<String> thisSegments = this.segments;
     final List<String> otherSegments = other.segments;
 
