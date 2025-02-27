@@ -94,15 +94,19 @@ public final class DocumentPath implements Comparable<DocumentPath> {
       if (ch == '&') {
         // Ampersand at the end of the string without anything to escape
         if (i + 1 >= path.length()) {
-          throw ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.get(
-              "unsupportedAmpersandEscape", path);
+          throw new IllegalArgumentException(
+              "The ampersand character '&' at position "
+                  + i
+                  + " must be followed by either '&' or '.' to form a valid escape sequence. In path strings, '&' is used to escape '.' or '&' characters.");
         }
 
         // Ampersand not followed by '&' or '.'
         char nextChar = path.charAt(i + 1);
         if (nextChar != '&' && nextChar != '.') {
-          throw ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.get(
-              "unsupportedAmpersandEscape", path);
+          throw new IllegalArgumentException(
+              "The ampersand character '&' at position "
+                  + i
+                  + " must be followed by either '&' or '.' to form a valid escape sequence. In path strings, '&' is used to escape '.' or '&' characters.");
         }
 
         // Skip the next character as it's part of the escape sequence

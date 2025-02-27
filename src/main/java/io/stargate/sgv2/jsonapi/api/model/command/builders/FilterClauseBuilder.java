@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
@@ -550,6 +551,14 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
           "filter clause path ('%s') cannot start with `$`", path);
     }
+
+    try {
+      path = DocumentPath.verifyEncodedPath(path);
+    } catch (IllegalArgumentException e) {
+      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+          "filter clause path ('%s') is not a valid path." + e.getMessage(), path);
+    }
+
     return path;
   }
 }
