@@ -650,6 +650,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
                       "app.kubernetes.io/name": "dotted1",
                       "pricing": {
                         "price.usd": 25.5,
+                        "price&.aud": 10.5,
                         "currency": "USD"
                       }
                     }
@@ -661,6 +662,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
                       "_id": "dotted2",
                       "app.kubernetes.io/name": "dotted2",
                       "pricing.price.usd": 12.5,
+                      "pricing&price&aud": 25.5,
                       "pricing.currency": "USD"
                     }
                     """;
@@ -673,13 +675,12 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     }
 
     @Test
-    @Order(2)
     public void byDottedFieldSimpleEq() {
       givenHeadersPostJsonThenOkNoErrors(
               """
           {
             "findOne": {
-              "filter" : {"pricing.price.usd" : 25.5}
+              "filter" : {"pricing.price&.usd" : 25.5}
             }
           }
           """)
@@ -688,8 +689,40 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     }
 
     @Test
-    @Order(3)
+    public void byDottedFieldSimpleEqWithoutEscape() {
+      // should find nothing if the document is not correctly escaped
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+            {
+                "findOne": {
+                "filter" : {"pricing.price.usd" : 25.5}
+                }
+            }
+            """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", is(nullValue()));
+    }
+
+    @Test
     public void byDottedFieldTwoEqs() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+          {
+            "findOne": {
+              "filter": {
+                "pricing&.currency": {"$eq": "USD"},
+                "app&.kubernetes&.io/name": {"$eq": "dotted2"}
+              }
+            }
+          }
+          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC2));
+    }
+
+    @Test
+    public void byDottedFieldTwoEqsWithoutEscape() {
+      // should find nothing if the document is not correctly escaped
       givenHeadersPostJsonThenOkNoErrors(
               """
           {
@@ -702,7 +735,42 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           }
           """)
           .body("$", responseIsFindSuccess())
-          .body("data.document", jsonEquals(DOC2));
+          .body("data.document", is(nullValue()));
+    }
+
+    @Test
+    public void byDottedFieldComplexEscapeEq() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+              {
+                "findOne": {
+                  "filter" : {"pricing.price&&&.aud" : 10.5}
+                }
+              }
+              """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+    }
+
+    @Test
+    public void failWithInvalidEscape() {
+      // assume the user forgot to escape the ampersand
+      givenHeadersPostJsonThenOk(
+              """
+              {
+                "findOne": {
+                  "filter" : {"pricing&price&aud" : 25.5}
+                }
+              }
+              """)
+          .body("$", responseIsError())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Invalid filter expression: filter clause path ('pricing&price&aud') is not a valid path."));
     }
   }
 

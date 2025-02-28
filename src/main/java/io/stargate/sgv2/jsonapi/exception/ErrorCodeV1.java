@@ -69,8 +69,6 @@ public enum ErrorCodeV1 {
 
   SHRED_BAD_DOCID_EMPTY_STRING("Bad value for '_id' property: empty String not allowed"),
 
-  SHRED_BAD_DOCUMENT_PATH_CONFLICTS("Bad document to shred, contains conflicting Field path(s)"),
-
   SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
 
   SHRED_BAD_DOCUMENT_VECTOR_TYPE("Bad $vector document type to shred "),
@@ -150,6 +148,7 @@ public enum ErrorCodeV1 {
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
   VECTOR_SIZE_MISMATCH("Length of vector parameter different from declared '$vector' dimension"),
 
+  VECTORIZE_MODEL_DEPRECATED("Vectorize model is deprecated"),
   VECTORIZE_FEATURE_NOT_AVAILABLE("Vectorize feature is not available in the environment"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),

@@ -65,6 +65,30 @@ class SortClauseDeserializerTest {
     }
 
     @Test
+    public void happyPathWithEscapedChars() throws Exception {
+      // should have the escape character in the expression
+      String json =
+          """
+              {
+               "app&.kubernetes&.io/name" : 1,
+               "another&.odd&&path" : -1
+              }
+              """;
+
+      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions())
+          .hasSize(2)
+          .containsExactlyInAnyOrder(
+              SortExpression.sort("app&.kubernetes&.io/name", true),
+              SortExpression.sort("another&.odd&&path", false))
+          .doesNotContainSequence(
+              SortExpression.sort("app.kubernetes.io/name", true),
+              SortExpression.sort("another.odd&path", false));
+    }
+
+    @Test
     public void happyPathVectorSearch() throws Exception {
       String json =
           """
@@ -359,6 +383,20 @@ class SortClauseDeserializerTest {
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable)
           .hasMessageContaining("Invalid sort clause path: path ('$gt') cannot start with `$`");
+    }
+
+    @Test
+    public void invalidEscapeUsage() {
+      String json =
+          """
+          {"a&b": 1}
+          """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable)
+          .hasMessageContaining(
+              "Invalid sort clause path: sort clause path ('a&b') is not a valid path.");
     }
   }
 }

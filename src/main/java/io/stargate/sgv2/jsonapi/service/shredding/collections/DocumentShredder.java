@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIdType;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -26,7 +27,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.OptionalInt;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -183,12 +183,6 @@ public class DocumentShredder {
 
     // And finally let's traverse the document to actually "shred" (build index properties)
     new ShreddingTraverser(b).traverse(indexableDocument);
-
-    // Any document overlap conflicts? If so, fail
-    Set<JsonPath> conflicts = b.duplicateExistKeys();
-    if (!conflicts.isEmpty()) {
-      throw ErrorCodeV1.SHRED_BAD_DOCUMENT_PATH_CONFLICTS.toApiException("%s", conflicts);
-    }
 
     return b.build();
   }
@@ -478,7 +472,7 @@ public class DocumentShredder {
       Iterator<Map.Entry<String, JsonNode>> it = obj.fields();
       while (it.hasNext()) {
         Map.Entry<String, JsonNode> entry = it.next();
-        pathBuilder.property(entry.getKey());
+        pathBuilder.property(DocumentPath.encodeSegment(entry.getKey()));
         traverseValue(entry.getValue(), pathBuilder);
       }
     }

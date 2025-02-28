@@ -3,8 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -96,14 +95,14 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
     }
 
     @Test
-    public void sortByDottedField() {
+    public void sortByDottedFieldWithEscape() {
       // Reversed order compared to _id
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
                         "findOne": {
                           "filter" : {"type": "sorted"},
-                          "sort" : {"app.kubernetes.io/name": 1}
+                          "sort" : {"app&.kubernetes&.io/name": 1}
                         }
                       }
                       """)
@@ -115,10 +114,38 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                       {
                         "findOne": {
                           "filter" : {"type": "sorted"},
-                          "sort" : {"app.kubernetes.io/name": -1}
+                          "sort" : {"app&.kubernetes&.io/name": -1}
                         }
                       }
                       """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+    }
+
+    @Test
+    public void sortByDottedFieldWithoutEscape() {
+      // without correct escape, the order will be the first _id
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                        {
+                            "findOne": {
+                            "filter" : {"type": "sorted"},
+                            "sort" : {"app.kubernetes.io/name": 1}
+                            }
+                        }
+                        """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                        {
+                            "findOne": {
+                            "filter" : {"type": "sorted"},
+                            "sort" : {"app.kubernetes.io/name": -1}
+                            }
+                        }
+                        """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC1));
     }
@@ -150,6 +177,34 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC2));
     }
+
+    @Test
+    public void sortByNestedFieldWithEscape() {
+      // cannot find the result, the order will be the first _id
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "findOne": {
+                          "filter" : {"type": "sorted"},
+                          "sort" : {"metadata&.shape": 1}
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "findOne": {
+                          "filter" : {"type": "sorted"},
+                          "sort" : {"metadata&.shape": -1}
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+    }
   }
 
   @Nested
@@ -178,6 +233,21 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
           .body("errors[0].message", endsWith("path ('$gt') cannot start with `$`"));
+    }
+
+    @Test
+    void failOnInvalidEscapedSortPath() {
+      givenHeadersPostJsonThenOk(
+              """
+                  { "find": { "sort" : {"a&b" : 1} } }
+                  """)
+          .body("$", responseIsError())
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Invalid sort clause path: sort clause path ('a&b') is not a valid path."));
     }
   }
 }
