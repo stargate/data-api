@@ -294,7 +294,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               "function" : "cosine"
                             },
                             "indexing" : {
-                              "allow" : ["field1", "field2", "address.city", "_id", "$vector", "pricing.price&usd"]
+                              "allow" : ["field1", "field2", "address.city", "_id", "$vector", "pricing.price&.usd"]
                             }
                           }
                         }
