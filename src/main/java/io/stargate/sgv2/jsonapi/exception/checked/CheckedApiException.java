@@ -45,7 +45,7 @@ public class CheckedApiException extends Exception {
   }
 
   protected static String className(Object value) {
-    return Optional.of(value).map(Object::getClass).map(Class::getName).orElse("null");
+    return Optional.ofNullable(value).map(Object::getClass).map(Class::getName).orElse("null");
   }
 
   private static String maybeTruncate(String value) {

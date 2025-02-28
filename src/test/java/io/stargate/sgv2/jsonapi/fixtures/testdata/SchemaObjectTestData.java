@@ -12,4 +12,9 @@ public class SchemaObjectTestData extends TestDataSuplier {
   public TableSchemaObject emptyTableSchemaObject() {
     return TableSchemaObject.from(testData.tableMetadata().empty(), new ObjectMapper());
   }
+
+  public TableSchemaObject tableWithMapSetList() {
+    return TableSchemaObject.from(
+        testData.tableMetadata().tableAllDatatypesIndexed(), new ObjectMapper());
+  }
 }
