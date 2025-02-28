@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -61,20 +62,8 @@ public class CompositeTaskIntermediatePage<
     lastTaskResult = lastTaskAccumulator.getResults().get();
   }
 
-  void throwIfErrors() {
-    var failedTask = tasks.errorTasks().stream().findFirst().orElse(null);
-    if (failedTask != null) {
-      var failure =
-          failedTask
-              .failure()
-              .orElse(
-                  new IllegalStateException(
-                      "Failed task does not have failure: " + failedTask.toString()));
-      switch (failure) {
-        case RuntimeException re -> throw re;
-        case Throwable t -> throw new RuntimeException("Throwable from failied task", t);
-      }
-    }
+  Optional<InnerTaskT> firstFailedTask() {
+    return tasks.errorTasks().stream().findFirst();
   }
 
   public static class Accumulator<InnerTaskT extends Task<SchemaT>, SchemaT extends SchemaObject>

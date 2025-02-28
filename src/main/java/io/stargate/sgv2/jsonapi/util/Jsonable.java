@@ -1,12 +1,16 @@
 package io.stargate.sgv2.jsonapi.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.List;
+import java.util.Collection;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface Jsonable {
+  static final Logger LOGGER = LoggerFactory.getLogger(Jsonable.class);
 
   static JsonNode toJson(Recordable recordable) {
     return ((JsonsableRecorder) recordable.recordTo(new JsonsableRecorder(recordable.getClass())))
@@ -17,9 +21,10 @@ public interface Jsonable {
 
     private static final JsonNodeFactory JSON_NODE_FACTORY = JsonNodeFactory.instance;
 
-    private final ObjectNode objectNode;
+    private final JsonNode jsonNode;
 
     private String lastKey = null;
+    private ArrayNode parentArray = null;
 
     public JsonsableRecorder(Class<?> clazz) {
       this(clazz, null);
@@ -28,21 +33,40 @@ public interface Jsonable {
     private JsonsableRecorder(Class<?> clazz, JsonsableRecorder parent) {
       super(clazz, false, parent);
 
-      ObjectNode parentObjectNode = null;
+      if (parent == null) {
+        if (Recordable.Array.class.isAssignableFrom(clazz)) {
+          // if  we are starting with a list / collection then we will start with an array node
+          jsonNode = JSON_NODE_FACTORY.arrayNode();
+        } else if (Recordable.class.isAssignableFrom(clazz)) {
+          jsonNode = JSON_NODE_FACTORY.objectNode().putObject(className(clazz));
+        } else {
+          throw new IllegalArgumentException(
+              "Class must be a Recordable or a Collection, got " + clazz.getName());
+        }
 
-      if (parent == null){
-        parentObjectNode = JSON_NODE_FACTORY.objectNode();
+      } else if (parent.parentArray != null) {
+
+        jsonNode = parent.parentArray.addObject().putObject(className(clazz));
+
       } else if (parent.lastKey != null) {
-        parentObjectNode = parent.objectNode.putObject(parent.lastKey);
+
+        if (parent.jsonNode instanceof ObjectNode on) {
+          jsonNode = on.putObject(parent.lastKey).putObject(className(clazz));
+        } else {
+          throw new IllegalArgumentException("Cannot add object to a non-object node");
+        }
+
+      } else {
+        if (parent.jsonNode instanceof ObjectNode on) {
+          jsonNode = on.putObject(className(clazz));
+        } else {
+          throw new IllegalArgumentException("Cannot add object to a non-object node");
+        }
       }
-      else {
-        parentObjectNode = parent.objectNode;
-      }
-      this.objectNode = parentObjectNode.putObject(className(clazz));
     }
 
     public JsonNode toJsonNode() {
-      return objectNode;
+      return jsonNode;
     }
 
     @Override
@@ -63,11 +87,25 @@ public interface Jsonable {
     @Override
     public Recordable.DataRecorder append(String key, Object value) {
       lastKey = key;
+
+      ArrayNode thisArray = jsonNode instanceof ArrayNode an ? an : null;
+      parentArray = thisArray;
+
+      ObjectNode thisObject = jsonNode instanceof ObjectNode on ? on : null;
+
+      // Order of the switch is important, check recordable before list etc
       switch (value) {
-        case null -> objectNode.putNull(key);
+        case null -> {
+          if (thisArray != null) {
+            thisArray.addNull();
+          } else if (thisObject != null) {
+            thisObject.putNull(key);
+          }
+        }
         case Recordable recordable -> recordable.recordToSubRecorder(this);
-        case List<?> list -> {
-          var arrayNode = objectNode.putArray(key);
+        case Collection<?> list -> {
+          var arrayNode = thisObject == null ? thisArray : thisObject.putArray(key);
+          parentArray = arrayNode;
           for (Object item : list) {
             switch (item) {
               case null -> arrayNode.addNull();
@@ -79,11 +117,37 @@ public interface Jsonable {
             }
           }
         }
-        case Number number -> objectNode.put(key, number.doubleValue());
-        case Boolean bool -> objectNode.put(key, bool);
-        case String string -> objectNode.put(key, string);
-        default -> objectNode.put(key, Objects.toString(value));
+        case Number number -> {
+          if (thisArray != null) {
+            thisArray.add(number.doubleValue());
+          } else if (thisObject != null) {
+            thisObject.put(key, number.doubleValue());
+          }
+        }
+        case Boolean bool -> {
+          if (thisArray != null) {
+            thisArray.add(bool);
+          } else if (thisObject != null) {
+            thisObject.put(key, bool);
+          }
+        }
+        case String string -> {
+          if (thisArray != null) {
+            thisArray.add(string);
+          } else if (thisObject != null) {
+            thisObject.put(key, string);
+          }
+        }
+        default -> {
+          if (thisArray != null) {
+            thisArray.add(Objects.toString(value));
+          } else if (thisObject != null) {
+            thisObject.put(key, Objects.toString(value));
+          }
+        }
       }
+
+      parentArray = null;
       return this;
     }
   }

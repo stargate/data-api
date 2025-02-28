@@ -97,7 +97,14 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
         .collect()
         .in(() -> taskAccumulator, TaskAccumulator::accumulate)
         .onItem()
-        .invoke(() -> LOGGER.debug("execute() - finished processing tasks={}", taskGroup))
+        .invoke(
+            () -> {
+              if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(
+                    "execute() - all task completed, taskGroup={}",
+                    PrettyPrintable.pprint(taskGroup));
+              }
+            })
         .onItem()
         .invoke(taskGroup::throwIfNotAllTerminal)
         .onItem()

@@ -90,13 +90,15 @@ public class DefaultRequestTracing implements RequestTracing {
     private void addMessage(RequestTracing.TraceMessage traceMessage) {
       Objects.requireNonNull(traceMessage, "messageSupplier must not be null");
 
-      events.add(
+      var event =
           new TraceEvent(
               UUID_V7_GENERATOR.generate(),
               new Date(),
               elapsedMicroseconds(),
               traceMessage.message(),
-              traceMessage.data()));
+              traceMessage.data());
+
+      events.add(event);
     }
 
     public String getRequestId() {
@@ -111,7 +113,7 @@ public class DefaultRequestTracing implements RequestTracing {
       return startedAt;
     }
 
-    public int getDurationUs() {
+    public int getDurationMicroseconds() {
       return elapsedMicroseconds();
     }
 
@@ -121,6 +123,5 @@ public class DefaultRequestTracing implements RequestTracing {
   }
 
   private record TraceEvent(
-      UUID eventId, Date timestamp, int elapsedUs, String message, JsonNode data) {}
-  ;
+      UUID eventId, Date timestamp, int elapsedMicroseconds, String message, JsonNode data) {}
 }

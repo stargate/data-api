@@ -6,7 +6,6 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.COLUMN_METADATA_CO
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -96,24 +95,13 @@ public class WriteableTableRowBuilder {
    */
   public WriteableTableRow build(JsonNamedValueContainer source) {
 
-    commandContext
-        .requestTracing()
-        .maybeTrace(
-            () ->
-                new RequestTracing.TraceMessage(
-                    "WriteableTableRow.build() building row using JSON values", source));
-
     // Map everything from the JSON source into a CQL Value, we can check their state after.
     // the checks on the error strategy will run, we have some extra ones below
+
     var allColumns =
         new CqlNamedValueFactory(tableSchemaObject, codecRegistry, ERROR_STRATEGY).create(source);
 
-    commandContext
-        .requestTracing()
-        .maybeTrace(
-            () ->
-                new RequestTracing.TraceMessage(
-                    "WriteableTableRow.build() built CQL values", allColumns));
+    // TODO: move this check all primary keys into the error strategy
     checkAllPrimaryKeys(allColumns);
 
     // now need to split the columns into key and non-key columns

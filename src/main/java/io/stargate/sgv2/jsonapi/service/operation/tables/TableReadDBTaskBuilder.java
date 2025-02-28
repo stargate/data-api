@@ -119,8 +119,7 @@ public class TableReadDBTaskBuilder
       warnings = warnings.andThen(whereWithWarnings);
 
       if (LOGGER.isDebugEnabled() && whereWithWarnings.requiresAllowFiltering()) {
-        LOGGER.debug(
-            "build() - enabled ALLOW FILTERING for attempt {}", task.positionTaskIdStatus());
+        LOGGER.debug("build() - enabled ALLOW FILTERING for attempt {}", task.taskDesc());
       }
     }
 
@@ -129,7 +128,7 @@ public class TableReadDBTaskBuilder
     if (LOGGER.isDebugEnabled() && !task.allWarnings().isEmpty()) {
       LOGGER.debug(
           "build() - adding warnings for task {}, warnings={}",
-          task.positionTaskIdStatus(),
+          task.taskDesc(),
           task.allWarnings());
     }
     return task;

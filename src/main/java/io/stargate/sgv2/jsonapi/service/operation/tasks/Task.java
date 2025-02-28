@@ -143,6 +143,17 @@ public interface Task<SchemaT extends SchemaObject>
    */
   Optional<Throwable> failure();
 
+  /** Helper method to build a string with the position and taskId, used in logging. */
+  default String taskDesc() {
+
+    return String.format(
+        "class=%s, position=%d, taskId=%s, status=%s",
+        getClass().getSimpleName().isBlank() ? getClass().getName() : getClass().getSimpleName(),
+        position(),
+        taskId(),
+        status());
+  }
+
   /**
    * Compares tasks based on their {@link #position()}, lower values are first.
    *

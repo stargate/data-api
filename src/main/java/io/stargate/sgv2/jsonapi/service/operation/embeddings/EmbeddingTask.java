@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.embeddings;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.RequestTracing;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -141,17 +140,12 @@ public class EmbeddingTask<SchemaT extends SchemaObject>
       commandContext
           .requestTracing()
           .maybeTrace(
-              () ->
-                  new RequestTracing.TraceMessage(
-                      "EmbeddingTaskResult.create() Received embedding provider response",
-                      providerResponse));
+              "EmbeddingTaskResult.create() Received embedding provider response",
+              providerResponse);
 
       commandContext
           .requestTracing()
-          .maybeTrace(
-              () ->
-                  new RequestTracing.TraceMessage(
-                      "EmbeddingTaskResult.create() Processing Embedding Actions", null));
+          .maybeTrace("EmbeddingTaskResult.create() Processing Embedding Actions");
 
       // defensive to make sure the order cannot change
       var vectors = List.copyOf(providerResponse.embeddings());

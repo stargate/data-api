@@ -172,7 +172,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
       logger.debug(
           "{} - {}, cql={}, values={}",
           prefix,
-          positionTaskIdStatus(),
+          taskDesc(),
           CqlPrintUtil.trimmedCql(statement),
           CqlPrintUtil.trimmedPositionalValues(statement));
     }
@@ -181,7 +181,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
       logger.trace(
           "{} - {}, cql={}, values={}",
           prefix,
-          positionTaskIdStatus(),
+          taskDesc(),
           statement.getQuery(),
           statement.getPositionalValues());
     }

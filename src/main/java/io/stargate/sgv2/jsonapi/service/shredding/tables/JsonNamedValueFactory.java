@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
+import io.stargate.sgv2.jsonapi.util.Recordable;
 import java.util.*;
 
 /**
@@ -70,6 +71,39 @@ public class JsonNamedValueFactory {
             });
     return container;
   }
+
+  public List<ParsedJsonDocument> create(List<JsonNode> documents) {
+
+    List<ParsedJsonDocument> result = new ArrayList<>(documents.size());
+    for (int i = 0; i < documents.size(); i++) {
+      result.add(new ParsedJsonDocument(i, create(documents.get(i))));
+    }
+    return result;
+  }
+
+  public record ParsedJsonDocument(int offset, JsonNamedValueContainer namedValues)
+      implements Recordable {
+
+    @Override
+    public DataRecorder recordTo(DataRecorder dataRecorder) {
+      return dataRecorder.append("offset", offset).append("namedValues", namedValues);
+    }
+  }
+
+  //  public static class ParsedJsonDocuments extends ArrayList<ParsedJsonDocument>
+  //      implements Recordable {
+  //
+  //    public ParsedJsonDocuments(int initialCapacity) {
+  //      super(initialCapacity);
+  //    }
+  //
+  //    @Override
+  //    public DataRecorder recordTo(DataRecorder dataRecorder) {
+  //      // if we pass this, it will recursive call into this method
+  //      return dataRecorder.append("items", List.copyOf(this));
+  //    }
+  //  }
+
   //
   //  /**
   //   * Function that will convert a JSONNode value, e.g. '1.25' into plain Java type expected when

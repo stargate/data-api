@@ -6,9 +6,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskPage;
 import java.util.function.Supplier;
 
 /**
@@ -17,7 +17,7 @@ import java.util.function.Supplier;
  */
 public class TruncateDBTaskPage<
         TaskT extends TruncateDBTask<SchemaT>, SchemaT extends TableBasedSchemaObject>
-    extends DBTaskPage<TaskT, SchemaT> {
+    extends TaskPage<TaskT, SchemaT> {
 
   private TruncateDBTaskPage(TaskGroup<TaskT, SchemaT> tasks, CommandResultBuilder resultBuilder) {
     super(tasks, resultBuilder);

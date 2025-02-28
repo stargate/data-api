@@ -5,16 +5,16 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskPage;
 
 /**
  * A page of results from a delete command, use {@link #builder()} to get a builder to pass to
  * {@link GenericOperation}.
  */
 public class DeleteDBTaskPage<SchemaT extends TableBasedSchemaObject>
-    extends DBTaskPage<DeleteDBTask<SchemaT>, SchemaT> {
+    extends TaskPage<DeleteDBTask<SchemaT>, SchemaT> {
 
   private DeleteDBTaskPage(
       TaskGroup<DeleteDBTask<SchemaT>, SchemaT> tasks, CommandResultBuilder resultBuilder) {

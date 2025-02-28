@@ -9,13 +9,28 @@ import java.util.function.Supplier;
 
 public interface RequestTracing {
 
-  RequestTracing NO_TRACING = new RequestTracing() {};
+  RequestTracing NO_TRACING =
+      new RequestTracing() {
+        @Override
+        public void maybeTrace(Supplier<TraceMessage> messageSupplier) {}
 
-  default void maybeTrace(Supplier<TraceMessage> messageSupplier) {}
+        @Override
+        public Optional<ObjectNode> getTrace() {
+          return Optional.empty();
+        }
+      };
 
-  default Optional<ObjectNode> getTrace() {
-    return Optional.empty();
+  default void maybeTrace(String message) {
+    maybeTrace(() -> new TraceMessage(message, null));
   }
+
+  default void maybeTrace(String message, Recordable recordable) {
+    maybeTrace(() -> new TraceMessage(message, recordable));
+  }
+
+  void maybeTrace(Supplier<TraceMessage> messageSupplier);
+
+  Optional<ObjectNode> getTrace();
 
   record TraceMessage(String message, Recordable recordable, JsonNode data) {
 

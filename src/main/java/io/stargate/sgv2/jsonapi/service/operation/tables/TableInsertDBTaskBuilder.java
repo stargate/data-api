@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
 import io.stargate.sgv2.jsonapi.service.shredding.NamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
+import io.stargate.sgv2.jsonapi.util.Recordable;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -130,10 +131,10 @@ public class TableInsertDBTaskBuilder
     compositeTaskGroup.add(insertCompositeTask);
 
     // now we need an operation that will run the composite group
-    var compositeTaskOperation =
-        new TaskOperation<>(compositeTaskGroup, CompositeTaskOuterPage.accumulator(commandContext));
+    CompositeTaskOuterPage.Accumulator<TableSchemaObject> outerAccumulator =
+        CompositeTaskOuterPage.accumulator(commandContext);
 
-    return compositeTaskOperation;
+    return new TaskOperation<>(compositeTaskGroup, outerAccumulator);
   }
 
   private List<InsertTaskAndRow> createInsertTasks(List<JsonNode> jsonNodes) {
@@ -141,15 +142,21 @@ public class TableInsertDBTaskBuilder
     var writeableTableRowBuilder =
         new WriteableTableRowBuilder(commandContext, JSONCodecRegistries.DEFAULT_REGISTRY);
 
+    List<JsonNamedValueFactory.ParsedJsonDocument> parsedDocuments =
+        jsonNamedValueFactory.create(jsonNodes);
+
+    commandContext
+        .requestTracing()
+        .maybeTrace("Parsed JSON Documents", Recordable.copyOf(parsedDocuments));
+
     List<InsertTaskAndRow> insertTaskAndRows = new ArrayList<>(jsonNodes.size());
-    for (var jsonNode : jsonNodes) {
+    for (var parsedDocument : parsedDocuments) {
 
       WriteableTableRow writeableRow = null;
       Exception exception = null;
       // build the named values can result in errors like unknown columns or codec errors
       try {
-        var jsonContainer = jsonNamedValueFactory.create(jsonNode);
-        writeableRow = writeableTableRowBuilder.build(jsonContainer);
+        writeableRow = writeableTableRowBuilder.build(parsedDocument.namedValues());
       } catch (RuntimeException e) {
         exception = e;
       }
@@ -163,6 +170,7 @@ public class TableInsertDBTaskBuilder
 
       insertTaskAndRows.add(new InsertTaskAndRow(task, Optional.ofNullable(writeableRow)));
     }
+
     return insertTaskAndRows;
   }
 

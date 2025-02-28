@@ -266,7 +266,7 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
         if (LOGGER.isWarnEnabled()) {
           LOGGER.warn(
               "Retrying read attempt with added ALLOW FILTERING for {}, original query cql={} , values={}",
-              currentRetryContext.task.positionTaskIdStatus(),
+              currentRetryContext.task.taskDesc(),
               currentRetryContext.lastStatement.getQuery(),
               currentRetryContext.lastStatement.getPositionalValues());
         }

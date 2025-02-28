@@ -15,7 +15,7 @@ import java.util.function.Supplier;
  *
  * <p>This base class provides the basic accumulate / getResults pattern. Subclasses can also be
  * used to "smuggle" state such as options for the response docs into the building of the results
- * via a subclass. the subclasses are used often called a PageBuilder see {@link DBTaskPage}
+ * via a subclass. the subclasses are used often called a PageBuilder see {@link TaskPage}
  */
 public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject> {
 
@@ -56,7 +56,7 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
    * Called to turn the accumulated attempts into a {@link CommandResult}.
    *
    * @return A supplier that will provide the {@link CommandResult} when called, such as a subclass
-   *     of {@link DBTaskPage}
+   *     of {@link TaskPage}
    */
   public abstract Supplier<CommandResult> getResults();
 
