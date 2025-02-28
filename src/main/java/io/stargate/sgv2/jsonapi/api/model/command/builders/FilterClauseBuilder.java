@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
@@ -128,23 +129,19 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       }
       // inside of this entry, only implicit and, no explicit $and/$or
     } else if (entry.getValue().isArray()) {
-      LogicalExpression innerLogicalExpression = null;
-      switch (entry.getKey()) {
-        case "$and":
-          innerLogicalExpression = LogicalExpression.and();
-          break;
-        case "$or":
-          innerLogicalExpression = LogicalExpression.or();
-          break;
-        case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD:
-        case DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD:
-          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-              "Cannot filter on '%s' field using operator '$eq': only '$exists' is supported",
-              entry.getKey());
-        default:
-          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-              "Cannot filter on '%s' by array type", entry.getKey());
-      }
+      LogicalExpression innerLogicalExpression =
+          switch (entry.getKey()) {
+            case "$and" -> LogicalExpression.and();
+            case "$or" -> LogicalExpression.or();
+            case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
+                    DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD ->
+                throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+                    "Cannot filter on '%s' field using operator '$eq': only '$exists' is supported",
+                    entry.getKey());
+            default ->
+                throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+                    "Cannot filter on '%s' by array type", entry.getKey());
+          };
       ArrayNode arrayNode = (ArrayNode) entry.getValue();
       for (JsonNode next : arrayNode) {
         populateExpression(innerLogicalExpression, next);
@@ -550,6 +547,14 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
           "filter clause path ('%s') cannot start with `$`", path);
     }
+
+    try {
+      path = DocumentPath.verifyEncodedPath(path);
+    } catch (IllegalArgumentException e) {
+      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+          "filter clause path ('%s') is not a valid path. " + e.getMessage(), path);
+    }
+
     return path;
   }
 }

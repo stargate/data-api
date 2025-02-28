@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -112,5 +113,81 @@ public class DocumentPathTest {
             "price&.value&&.unit",
             "price&&&.value&&&&&.unit",
             "escape multiple dots and ampersands"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidEncodedPathTestCases")
+  public <T extends Exception> void invalidEncodeSegmentPathTest(
+      String path, Class<T> errorClass, String message, String description) {
+    T error = assertThrows(errorClass, () -> DocumentPath.verifyEncodedPath(path), description);
+    assertThat(error.getMessage()).contains(message);
+  }
+
+  private static Stream<Arguments> invalidEncodedPathTestCases() {
+    return Stream.of(
+        Arguments.of(
+            "price&.usd&",
+            IllegalArgumentException.class,
+            "The ampersand character '&' at position 10 must be followed by either '&' or '.'",
+            "The encoded path ends with `&` which is not allowed."),
+        Arguments.of(
+            "&price",
+            IllegalArgumentException.class,
+            "The ampersand character '&' at position 0 must be followed by either '&' or '.'",
+            "The encoded path starts with `&` which is not allowed."),
+        Arguments.of(
+            "price&usd",
+            IllegalArgumentException.class,
+            "The ampersand character '&' at position 5 must be followed by either '&' or '.'",
+            "The encoded path contains a lone `&` which is not allowed."),
+        Arguments.of(
+            "price&.usd&&&",
+            IllegalArgumentException.class,
+            "The ampersand character '&' at position 12 must be followed by either '&' or '.'",
+            "The encoded path contains a lone `&` at the end which is not allowed."),
+        Arguments.of(
+            "price&\tusd",
+            IllegalArgumentException.class,
+            "The ampersand character '&' at position 5 must be followed by either '&' or '.'",
+            "The encoded path contains an ampersand followed by a tab character which is not allowed."),
+        Arguments.of(
+            "price& usd",
+            IllegalArgumentException.class,
+            "The ampersand character '&' at position 5 must be followed by either '&' or '.'",
+            "The encoded path contains an ampersand followed by a space which is not allowed."),
+        Arguments.of(
+            "price&usd&value&weight",
+            IllegalArgumentException.class,
+            "The ampersand character '&' at position 5 must be followed by either '&' or '.'",
+            "The encoded path contains multiple lone ampersands which are not allowed."),
+        Arguments.of(
+            "p&rice&.usd",
+            IllegalArgumentException.class,
+            "The ampersand character '&' at position 1 must be followed by either '&' or '.'",
+            "The encoded path contains a lone ampersand at the beginning of a segment."));
+  }
+
+  @ParameterizedTest
+  @MethodSource("validEncodedPathTestCases")
+  public void validEncodeSegmentPathTest(String path, String description) {
+    // The method should return the path unchanged for valid paths
+    Assertions.assertEquals(path, DocumentPath.verifyEncodedPath(path), description);
+  }
+
+  private static Stream<Arguments> validEncodedPathTestCases() {
+    return Stream.of(
+        Arguments.of("pricing.price.usd", "Simple path with no escape characters"),
+        Arguments.of("r&&d", "Path with properly escaped ampersand (representing 'r&d')"),
+        Arguments.of(
+            "item&.price",
+            "Path with properly escaped dot (representing 'item.price' as a single segment)"),
+        Arguments.of(
+            "product.name&&value.price&.per&.unit",
+            "Complex path with properly escaped ampersands and dots"),
+        Arguments.of("a&&.b&.c&&d", "Path with consecutive escape sequences"),
+        Arguments.of("&&&&&&", "Path consisting only of escaped ampersands (representing '&&&')"),
+        Arguments.of("&.&.&.", "Path consisting only of escaped dots"),
+        Arguments.of("a", "Single segment path with no escape characters"),
+        Arguments.of("a&&", "Path ending with a properly escaped ampersand"));
   }
 }
