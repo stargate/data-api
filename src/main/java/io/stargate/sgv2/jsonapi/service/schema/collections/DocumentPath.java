@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.collections;
 
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -197,32 +196,37 @@ public final class DocumentPath implements Comparable<DocumentPath> {
     List<String> decodedSegments = new ArrayList<>();
     StringBuilder segment = new StringBuilder();
 
-    for (int i = 0; i < path.length(); i++) {
-      char ch = path.charAt(i);
+    for (int i = 0; i < path.length(); ) {
+      char ch = path.charAt(i++);
       if (ch == '.') {
         // If the dot is encountered, the current segment is complete.
         // If the current segment is empty, error out.
         if (segment.isEmpty()) {
-          throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PATH.get(
-              "unsupportedProjectionPath", path);
+          throw new IllegalArgumentException(
+              "The path cannot contain an empty segment. The dot at position "
+                  + (i - 1)
+                  + " must be preceded by a non-empty segment.");
         }
         decodedSegments.add(segment.toString());
         segment.setLength(0); // reset the segment
       } else if (ch == '&') {
         // Escape character encountered
-        if (i + 1 >= path.length()) {
-          throw ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.get(
-              "unsupportedAmpersandEscape", path);
+        if (i >= path.length()) {
+          throw new IllegalArgumentException(
+              "The ampersand character '&' at position "
+                  + (i - 1)
+                  + " must be followed by either '&' or '.' to form a valid escape sequence. In path strings, '&' is used to escape '.' or '&' characters.");
         }
-        char next = path.charAt(i + 1);
+        char next = path.charAt(i++);
         if (next == '.' || next == '&') {
           // Valid escape: append the next character and skip it
           segment.append(next);
-          i++;
         } else {
           // Invalid escape: the next character is not either '.' or '&'
-          throw ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.get(
-              "unsupportedAmpersandEscape", path);
+          throw new IllegalArgumentException(
+              "The ampersand character '&' at position "
+                  + (i - 2)
+                  + " must be followed by either '&' or '.' to form a valid escape sequence. In path strings, '&' is used to escape '.' or '&' characters.");
         }
       } else {
         // Regular character: add to the current segment
@@ -231,8 +235,8 @@ public final class DocumentPath implements Comparable<DocumentPath> {
     }
     // Add the last segment and check if it's empty
     if (segment.isEmpty()) {
-      throw ProjectionException.Code.UNSUPPORTED_PROJECTION_PATH.get(
-          "unsupportedProjectionPath", path);
+      throw new IllegalArgumentException(
+          "Path cannot end with a dot. Each segment must be a non-empty segment.");
     }
     decodedSegments.add(segment.toString());
     return decodedSegments;

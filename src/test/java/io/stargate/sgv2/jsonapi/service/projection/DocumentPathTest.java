@@ -3,8 +3,6 @@ package io.stargate.sgv2.jsonapi.service.projection;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,11 +52,10 @@ public class DocumentPathTest {
 
   @ParameterizedTest
   @MethodSource("invalidDecodePathToSegmentsTestCases")
-  public <T extends APIException> void encodeSegmentPathTest(
-      String path, String code, Class<T> errorClass, String message, String description) {
+  public <T extends Exception> void encodeSegmentPathTest(
+      String path, Class<T> errorClass, String message, String description) {
     T error = assertThrows(errorClass, () -> DocumentPath.from(path), description);
     assertThat(error).as(description).isInstanceOf(errorClass);
-    assertThat(error.code).isEqualTo(code);
     assertThat(error.getMessage()).contains(message);
   }
 
@@ -66,33 +63,28 @@ public class DocumentPathTest {
     return Stream.of(
         Arguments.of(
             ".path",
-            ProjectionException.Code.UNSUPPORTED_PROJECTION_PATH.name(),
-            ProjectionException.class,
-            "The segments from the path in the projection cannot be empty.",
+            IllegalArgumentException.class,
+            "The path cannot contain an empty segment.",
             "The path starts with `.` which will result in an empty segment, which is not allowed."),
         Arguments.of(
             "foo..bar",
-            ProjectionException.Code.UNSUPPORTED_PROJECTION_PATH.name(),
-            ProjectionException.class,
-            "The segments from the path in the projection cannot be empty.",
+            IllegalArgumentException.class,
+            "The path cannot contain an empty segment.",
             "The path contains two consecutive `.` which will result in an empty segment, which is not allowed."),
         Arguments.of(
             "path.",
-            ProjectionException.Code.UNSUPPORTED_PROJECTION_PATH.name(),
-            ProjectionException.class,
-            "The segments from the path in the projection cannot be empty.",
+            IllegalArgumentException.class,
+            "Path cannot end with a dot. Each segment must be a non-empty segment.",
             "The path ends with `.` which will result in an empty segment, which is not allowed."),
         Arguments.of(
             "path&",
-            ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.name(),
-            ProjectionException.class,
-            "The usage of ampersand escape is not supported.",
+            IllegalArgumentException.class,
+            "The ampersand character '&' at position 4 must be followed by either '&' or '.'",
             "& is not followed by a valid escape character."),
         Arguments.of(
             "price&usd",
-            ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.name(),
-            ProjectionException.class,
-            "The usage of ampersand escape is not supported.",
+            IllegalArgumentException.class,
+            "The ampersand character '&' at position 5 must be followed by either '&' or '.'",
             "& is not followed by a valid escape character."));
   }
 

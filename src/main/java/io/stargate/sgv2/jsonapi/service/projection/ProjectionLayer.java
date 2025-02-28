@@ -65,7 +65,13 @@ class ProjectionLayer {
     // Root is always branch (not terminal):
     ProjectionLayer root = new ProjectionLayer("", false);
     for (String fullPath : dotPaths) {
-      DocumentPath path = DocumentPath.from(fullPath);
+      DocumentPath path;
+      try {
+        path = DocumentPath.from(fullPath);
+      } catch (IllegalArgumentException e) {
+        throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+            "projection path ('%s') is not a valid path. " + e.getMessage(), fullPath);
+      }
       buildPath(failOnOverlap, fullPath, root, path);
     }
     // Slices similar to path but processed differently (and while "exclusions"
@@ -115,7 +121,13 @@ class ProjectionLayer {
 
   static void buildSlicer(boolean failOnOverlap, SliceDef slice, ProjectionLayer layer) {
     final String fullPath = slice.path;
-    DocumentPath path = DocumentPath.from(fullPath);
+    DocumentPath path;
+    try {
+      path = DocumentPath.from(fullPath);
+    } catch (IllegalArgumentException e) {
+      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+          "projection path ('%s') is not a valid path. " + e.getMessage(), fullPath);
+    }
     final int last = path.getSegmentsSize() - 1;
     for (int i = 0; i < last; ++i) {
       layer = layer.findOrCreateBranch(failOnOverlap, fullPath, path.getSegment(i));
@@ -184,7 +196,13 @@ class ProjectionLayer {
    * @return {@code true} if path is included; {@code false} if not.
    */
   public boolean isPathIncluded(String path) {
-    DocumentPath p = DocumentPath.from(path);
+    DocumentPath p;
+    try {
+      p = DocumentPath.from(path);
+    } catch (IllegalArgumentException e) {
+      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+          "projection path ('%s') is not a valid path. " + e.getMessage(), path);
+    }
     return isPathIncluded(p, 0);
   }
 
