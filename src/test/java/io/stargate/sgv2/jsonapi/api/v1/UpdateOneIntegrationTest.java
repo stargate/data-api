@@ -485,6 +485,66 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
                               }
                               """));
     }
+
+    @Test
+    public void withEscapeInPathName() {
+      insertDoc(
+          """
+                {
+                "_id": "doc_with_escape",
+                "price&usd": 5
+                }
+            """);
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+            {
+                "updateOne": {
+                "filter" : {"_id" : "doc_with_escape"},
+                "update" : {"$set" : {"price&&usd": 6}}
+                }
+            }
+            """)
+          .body("$", responseIsStatusOnly())
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                {
+                    "find": {
+                    "filter" : {"_id" : "doc_with_escape"}
+                    }
+                }
+                """)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                                {
+                                    "_id": "doc_with_escape",
+                                    "price&usd": 6
+                                }
+                                """));
+
+      // fail if the path is not correctly escaped
+      givenHeadersPostJsonThenOk(
+              """
+            {
+                "updateOne": {
+                "filter" : {"_id" : "doc_with_escape"},
+                "update" : {"$set" : {"price&usd": 7}}
+                }
+            }
+            """)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_PATH"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Invalid update operation path: update path ('price&usd') is not a valid path."));
+    }
   }
 
   @Nested

@@ -384,5 +384,19 @@ class SortClauseDeserializerTest {
       assertThat(throwable)
           .hasMessageContaining("Invalid sort clause path: path ('$gt') cannot start with `$`");
     }
+
+    @Test
+    public void invalidEscapeUsage() {
+      String json =
+          """
+          {"a&b": 1}
+          """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable)
+          .hasMessageContaining(
+              "Invalid sort clause path: sort clause path ('a&b') is not a valid path.");
+    }
   }
 }
