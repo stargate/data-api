@@ -294,7 +294,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               "function" : "cosine"
                             },
                             "indexing" : {
-                              "allow" : ["field1", "field2", "address.city", "_id", "$vector", "pricing.price&.usd", "app&.kubernetes&.io/name"]
+                              "allow" : ["field1", "field2", "address.city", "_id", "$vector", "pricing.price&usd"]
                             }
                           }
                         }
@@ -578,6 +578,30 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
               "errors[0].message",
               startsWith(
                   "Invalid indexing definition: path must be represented as a non-empty string"))
+          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failWithInvalidEscapeCharacterInIndexingDeny() {
+      givenHeadersPostJsonThenOk(
+              """
+                    {
+                      "createCollection": {
+                        "name": "collection_with_bad_deny",
+                        "options" : {
+                          "indexing" : {
+                            "deny" : ["field", "pricing.price&usd"]
+                          }
+                        }
+                      }
+                    }
+                    """)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Invalid indexing definition: indexing path ('pricing.price&usd') is not a valid path."))
           .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }

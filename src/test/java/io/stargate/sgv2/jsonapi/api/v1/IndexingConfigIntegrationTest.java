@@ -141,7 +141,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                     "function" : "cosine"
                   },
                   "indexing" : {
-                    "allow" : ["name", "address.city", "pricing.price&.usd", "metadata.app&.kubernetes&.io/name"]
+                    "allow" : ["name", "address.city", "pricing.price&.usd", "pricing.price&&jpy", "metadata.app&.kubernetes&.io/name"]
                   }
                 }
               }
@@ -853,33 +853,96 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
-    //    @Test
-    //    public void fieldNameWithDot() {
-    //      givenHeadersPostJsonThenOkNoErrors(
-    //              """
-    //                  {
-    //                    "find": {
-    //                      "filter": {
-    //                        "pricing.price&.usd": 1
-    //                      }
-    //                    }
-    //                  }
-    //                  """)
-    //          .body("$", responseIsFindSuccess())
-    //          .body("data.documents", hasSize(1));
-    //
-    //      givenHeadersPostJsonThenOk(
-    //              """
-    //                  {
-    //                    "find": {
-    //                      "filter": {
-    //                        "pricing.price&&&.aud": 1
-    //                      }
-    //                    }
-    //                  }
-    //                  """)
-    //          .body("$", responseIsFindSuccess())
-    //          .body("data.documents", hasSize(1));
-    //    }
+    @Test
+    public void fieldNameWithDot() {
+      // allow "pricing.price&.usd", so one document is returned
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                        "find": {
+                          "filter": {
+                            "pricing.price&.usd": 1
+                          }
+                        }
+                      }
+                      """)
+          .post(CollectionResource.BASE_PATH, keyspaceName, allowManyIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1));
+
+      // allow "pricing.price&&jpy", but the path is not escaped, so no document is returned
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                        {
+                            "find": {
+                            "filter": {
+                                "pricing.price&jpy": 1
+                            }
+                            }
+                        }
+                        """)
+          .post(CollectionResource.BASE_PATH, keyspaceName, allowManyIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].message",
+              containsString("filter clause path ('pricing.price&jpy') is not a valid path."))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+
+      // allow "metadata.app&.kubernetes&.io/name", so one document is returned
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                        {
+                            "find": {
+                            "filter": {
+                                "metadata.app&.kubernetes&.io/name": "test"
+                            }
+                            }
+                        }
+                        """)
+          .post(CollectionResource.BASE_PATH, keyspaceName, allowManyIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1));
+
+      // did not allow "pricing.price&.aud", even though the path is escaped, no document is
+      // returned
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                        "find": {
+                          "filter": {
+                            "pricing.price&&&.aud": 1
+                          }
+                        }
+                      }
+                      """)
+          .post(CollectionResource.BASE_PATH, keyspaceName, allowManyIndexingCollection)
+          .then()
+          .body("$", responseIsError())
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Unindexed filter path: filter path 'pricing.price&&&.aud' is not indexed"))
+          .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
   }
 }

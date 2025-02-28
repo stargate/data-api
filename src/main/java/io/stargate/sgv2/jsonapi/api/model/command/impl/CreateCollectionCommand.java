@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -205,6 +206,13 @@ public record CreateCollectionCommand(
                     "path must not start with '$'");
               }
             }
+          }
+
+          try {
+            DocumentPath.verifyEncodedPath(path);
+          } catch (IllegalArgumentException e) {
+            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
+                "indexing path ('%s') is not a valid path. " + e.getMessage(), path);
           }
         }
       }
