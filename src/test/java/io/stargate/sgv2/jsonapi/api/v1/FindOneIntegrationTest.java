@@ -662,6 +662,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
                       "_id": "dotted2",
                       "app.kubernetes.io/name": "dotted2",
                       "pricing.price.usd": 12.5,
+                      "pricing&price&aud": 25.5,
                       "pricing.currency": "USD"
                     }
                     """;
@@ -749,6 +750,27 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
               """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC1));
+    }
+
+    @Test
+    public void failWithInvalidEscape() {
+      // assume the user forgot to escape the ampersand
+      givenHeadersPostJsonThenOk(
+              """
+              {
+                "findOne": {
+                  "filter" : {"pricing&price&aud" : 25.5}
+                }
+              }
+              """)
+          .body("$", responseIsError())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Invalid filter expression: filter clause path ('pricing&price&aud') is not a valid path."));
     }
   }
 
