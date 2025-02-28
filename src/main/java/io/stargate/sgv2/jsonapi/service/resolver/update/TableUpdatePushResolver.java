@@ -47,9 +47,8 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
               var inputValue = entry.getValue();
 
               // $push only works for map/set/list column
-              if (apiColumnDef.type().isPrimitive()
-                  || apiColumnDef.type().typeName() == ApiTypeName.VECTOR) {
-                throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATORS_FOR_PRIMITIVE_COLUMNS.get(
+              if (!apiColumnDef.type().apiSupport().update().push()) {
+                throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR.get(
                     errVars(
                         table,
                         map -> {
@@ -123,7 +122,7 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
       case OBJECT:
         // $push + $each for adding multiple elements
         ObjectNode objectNode = (ObjectNode) inputValue;
-        if (objectNode.size() == 1 // TODO position
+        if (objectNode.size() == 1
             && objectNode.get(UpdateOperatorModifier.EACH.getModifier()) != null
             && objectNode.get(UpdateOperatorModifier.EACH.getModifier()).getNodeType()
                 == JsonNodeType.ARRAY) {
@@ -180,66 +179,74 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
    */
   private JsonLiteral<?> resolvePushForMap(TableSchemaObject table, JsonNode inputValue) {
     JsonLiteral<?> shreddedValue = null;
-    if (inputValue.getNodeType() == JsonNodeType.ARRAY) {
-      // $push single entry to the map, entry as tuple format
-      // E.G. {"$push": {"mapColumn": [5, "value5"]}}
-      ArrayNode entryNodeTupleFormat = (ArrayNode) inputValue;
-      shreddedValue =
-          new JsonLiteral<>(
-              resolveMapEntryFromTupleFormat(table, entryNodeTupleFormat), JsonType.SUB_DOC);
-
-    } else if (inputValue.getNodeType() == JsonNodeType.OBJECT) {
-      var modifier$eachValue = inputValue.get("$each");
-      if (modifier$eachValue != null) {
-        // With $each
-        if (modifier$eachValue.getNodeType() == JsonNodeType.ARRAY) {
-          ArrayNode arrayNodeForMultipleEntries = (ArrayNode) modifier$eachValue;
-          Map<JsonLiteral<?>, JsonLiteral<?>> pushForMultipleMapEntries = new HashMap<>();
-          arrayNodeForMultipleEntries.forEach(
-              entryNode -> {
-                if (entryNode.getNodeType() == JsonNodeType.ARRAY) {
-                  // E.G. {"$push": {"mapColumn": {$each: [[1,"value1"],[2, "value2"]]}}}
-                  pushForMultipleMapEntries.putAll(
-                      resolveMapEntryFromTupleFormat(table, (ArrayNode) entryNode));
-                } else if (entryNode.getNodeType() == JsonNodeType.OBJECT) {
-                  // E.G. {"$push": {"mapColumn": {$each: [{"key1":"value1"},[{"key2":"value2"}]}}}
-                  pushForMultipleMapEntries.putAll(
-                      resolveMapEntryFromObjectFormat(table, (ObjectNode) entryNode));
-                } else {
-                  throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
-                      errVars(
-                          table,
-                          map -> {
-                            map.put("reason", "please use correct map entry format");
-                          }));
-                }
-              });
-          return new JsonLiteral<>(pushForMultipleMapEntries, JsonType.SUB_DOC);
+    switch (inputValue.getNodeType()) {
+      case ARRAY -> {
+        // $push single entry to the map, entry as tuple format
+        // E.G. {"$push": {"mapColumn": [5, "value5"]}}
+        ArrayNode entryNodeTupleFormat = (ArrayNode) inputValue;
+        shreddedValue =
+            new JsonLiteral<>(
+                resolveMapEntryFromTupleFormat(table, entryNodeTupleFormat), JsonType.SUB_DOC);
+      }
+      case OBJECT -> {
+        var modifier$eachValue = inputValue.get(UpdateOperatorModifier.EACH.getModifier());
+        if (modifier$eachValue != null) {
+          // With $each
+          if (modifier$eachValue.getNodeType() == JsonNodeType.ARRAY) {
+            return resolvePushForMapWithEach(table, (ArrayNode) modifier$eachValue);
+          } else {
+            // invalid usage of $push + $each
+            throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
+                errVars(
+                    table,
+                    map -> {
+                      map.put("reason", "invalid usage of $each, $each value needs to be an array");
+                    }));
+          }
         } else {
-          // invalid usage of $push + $each
+          // $push single entry to the map, entry as map format
+          // E.G. {"$push": {"mapColumn": {"key1" : "value1"}}}
+          shreddedValue =
+              new JsonLiteral<>(
+                  resolveMapEntryFromObjectFormat(table, (ObjectNode) inputValue),
+                  JsonType.SUB_DOC);
+        }
+      }
+      default ->
           throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
               errVars(
                   table,
                   map -> {
-                    map.put("reason", "invalid usage of $each, $each value needs to be an array");
+                    map.put("reason", "use correct $push format to update target map column");
                   }));
-        }
-      } else {
-        // $push single entry to the map, entry as map format
-        // E.G. {"$push": {"mapColumn": {"key1" : "value1"}}}
-        shreddedValue =
-            new JsonLiteral<>(
-                resolveMapEntryFromObjectFormat(table, (ObjectNode) inputValue), JsonType.SUB_DOC);
-      }
-    } else {
-      throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
-          errVars(
-              table,
-              map -> {
-                map.put("reason", "use correct $push format to update target map column");
-              }));
     }
     return shreddedValue;
+  }
+
+  /** Resolve $push operator value for map column with $each modifier. */
+  private JsonLiteral<?> resolvePushForMapWithEach(
+      TableSchemaObject table, ArrayNode arrayNodeForMultipleEntries) {
+    Map<JsonLiteral<?>, JsonLiteral<?>> pushForMultipleMapEntries = new HashMap<>();
+    arrayNodeForMultipleEntries.forEach(
+        entryNode -> {
+          if (entryNode.getNodeType() == JsonNodeType.ARRAY) {
+            // E.G. {"$push": {"mapColumn": {$each: [[1,"value1"],[2, "value2"]]}}}
+            pushForMultipleMapEntries.putAll(
+                resolveMapEntryFromTupleFormat(table, (ArrayNode) entryNode));
+          } else if (entryNode.getNodeType() == JsonNodeType.OBJECT) {
+            // E.G. {"$push": {"mapColumn": {$each: [{"key1":"value1"},[{"key2":"value2"}]}}}
+            pushForMultipleMapEntries.putAll(
+                resolveMapEntryFromObjectFormat(table, (ObjectNode) entryNode));
+          } else {
+            throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
+                errVars(
+                    table,
+                    map -> {
+                      map.put("reason", "please use correct map entry format");
+                    }));
+          }
+        });
+    return new JsonLiteral<>(pushForMultipleMapEntries, JsonType.SUB_DOC);
   }
 
   /** Helper method to resolve single map entry from tuple format. */

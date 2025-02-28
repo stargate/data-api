@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnRemoveToAssignment;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
@@ -49,9 +48,8 @@ public class TableUpdatePullAllResolver implements TableUpdateOperatorResolver {
               JsonLiteral<?> shreddedValue = null;
 
               // $pullAll only works for map/set/list columns
-              if (apiColumnDef.type().isPrimitive()
-                  || apiColumnDef.type().typeName() == ApiTypeName.VECTOR) {
-                throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATORS_FOR_PRIMITIVE_COLUMNS.get(
+              if (!apiColumnDef.type().apiSupport().update().pullAll()) {
+                throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR.get(
                     errVars(
                         table,
                         map -> {

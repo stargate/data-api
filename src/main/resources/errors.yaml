@@ -382,11 +382,11 @@ request-errors:
       Resend the command using only supported column values.
 
   - scope: UPDATE
-    code: UNSUPPORTED_UPDATE_OPERATORS_FOR_PRIMITIVE_COLUMNS
-    title: $push and $pullAll are only supported against map, set, list columns
+    code: UNSUPPORTED_UPDATE_OPERATOR
+    title: Update operator is not supported by target column
     body: |-
       The command included update operator ${operator} that are not supported by ${targetColumn}.
-      $push and $pullAll are only supported against map, set, list columns.
+      Note, $push and $pullAll are only supported against map, set, list columns.
       
       Resend the command using only supported update operators.
 

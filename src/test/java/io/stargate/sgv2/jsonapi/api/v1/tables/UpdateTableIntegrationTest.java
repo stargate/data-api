@@ -657,8 +657,7 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
           .templated()
           .updateOne(DEFAULT_ROW, updateJSON)
           .hasSingleApiError(
-              UpdateException.Code.UNSUPPORTED_UPDATE_OPERATORS_FOR_PRIMITIVE_COLUMNS,
-              UpdateException.class)
+              UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR, UpdateException.class)
           .hasNoWarnings();
     }
 
