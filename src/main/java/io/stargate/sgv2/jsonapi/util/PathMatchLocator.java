@@ -222,7 +222,14 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
   }
 
   private static DocumentPath splitAndVerify(String dotPath) throws JsonApiException {
-    return DocumentPath.from(dotPath);
+    DocumentPath path;
+    try {
+      path = DocumentPath.from(dotPath);
+    } catch (IllegalArgumentException e) {
+      throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
+          "update path ('%s') is not a valid path. " + e.getMessage(), dotPath);
+    }
+    return path;
   }
 
   private int findIndexFromSegment(String segment) {
