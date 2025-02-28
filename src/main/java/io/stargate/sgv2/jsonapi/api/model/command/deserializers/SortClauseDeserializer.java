@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -200,6 +201,14 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
           "path ('%s') cannot start with `$`", path);
     }
+
+    try {
+      path = DocumentPath.verifyEncodedPath(path);
+    } catch (IllegalArgumentException e) {
+      throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
+          "sort clause path ('%s') is not a valid path. " + e.getMessage(), path);
+    }
+
     return path;
   }
 }
