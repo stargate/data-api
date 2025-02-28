@@ -96,14 +96,14 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
     }
 
     @Test
-    public void sortByDottedField() {
+    public void sortByDottedFieldWithEscape() {
       // Reversed order compared to _id
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
                         "findOne": {
                           "filter" : {"type": "sorted"},
-                          "sort" : {"app.kubernetes.io/name": 1}
+                          "sort" : {"app&.kubernetes&.io/name": 1}
                         }
                       }
                       """)
@@ -115,10 +115,38 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                       {
                         "findOne": {
                           "filter" : {"type": "sorted"},
-                          "sort" : {"app.kubernetes.io/name": -1}
+                          "sort" : {"app&.kubernetes&.io/name": -1}
                         }
                       }
                       """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+    }
+
+    @Test
+    public void sortByDottedFieldWithoutEscape() {
+      // without correct escape, the order will be the first _id
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                        {
+                            "findOne": {
+                            "filter" : {"type": "sorted"},
+                            "sort" : {"app.kubernetes.io/name": 1}
+                            }
+                        }
+                        """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                        {
+                            "findOne": {
+                            "filter" : {"type": "sorted"},
+                            "sort" : {"app.kubernetes.io/name": -1}
+                            }
+                        }
+                        """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC1));
     }
@@ -149,6 +177,34 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
                       """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC2));
+    }
+
+    @Test
+    public void sortByNestedFieldWithEscape() {
+      // cannot find the result, the order will be the first _id
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "findOne": {
+                          "filter" : {"type": "sorted"},
+                          "sort" : {"metadata&.shape": 1}
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "findOne": {
+                          "filter" : {"type": "sorted"},
+                          "sort" : {"metadata&.shape": -1}
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
     }
   }
 

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import java.util.*;
 
 /**
@@ -64,7 +65,7 @@ class ProjectionLayer {
     // Root is always branch (not terminal):
     ProjectionLayer root = new ProjectionLayer("", false);
     for (String fullPath : dotPaths) {
-      ProjectionPath path = ProjectionPath.from(fullPath);
+      DocumentPath path = DocumentPath.from(fullPath);
       buildPath(failOnOverlap, fullPath, root, path);
     }
     // Slices similar to path but processed differently (and while "exclusions"
@@ -77,27 +78,27 @@ class ProjectionLayer {
 
     // May need to add doc-id inclusion/exclusion as well
     if (addDocId) {
-      buildPath(failOnOverlap, DocumentConstants.Fields.DOC_ID, root, ProjectionPath.forDocId());
+      buildPath(failOnOverlap, DocumentConstants.Fields.DOC_ID, root, DocumentPath.forDocId());
     }
     if (add$vector) {
       buildPath(
           failOnOverlap,
           DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
           root,
-          ProjectionPath.forVectorEmbeddingField());
+          DocumentPath.forVectorEmbeddingField());
     }
     if (add$vectorize) {
       buildPath(
           failOnOverlap,
           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
           root,
-          ProjectionPath.forVectorEmbeddingTextField());
+          DocumentPath.forVectorEmbeddingTextField());
     }
     return root;
   }
 
   static void buildPath(
-      boolean failOnOverlap, String fullPath, ProjectionLayer layer, ProjectionPath path) {
+      boolean failOnOverlap, String fullPath, ProjectionLayer layer, DocumentPath path) {
     // First create branches
     final int last = path.getSegmentsSize() - 1;
     for (int i = 0; i < last; ++i) {
@@ -114,7 +115,7 @@ class ProjectionLayer {
 
   static void buildSlicer(boolean failOnOverlap, SliceDef slice, ProjectionLayer layer) {
     final String fullPath = slice.path;
-    ProjectionPath path = ProjectionPath.from(fullPath);
+    DocumentPath path = DocumentPath.from(fullPath);
     final int last = path.getSegmentsSize() - 1;
     for (int i = 0; i < last; ++i) {
       layer = layer.findOrCreateBranch(failOnOverlap, fullPath, path.getSegment(i));
@@ -183,11 +184,11 @@ class ProjectionLayer {
    * @return {@code true} if path is included; {@code false} if not.
    */
   public boolean isPathIncluded(String path) {
-    ProjectionPath p = ProjectionPath.from(path);
+    DocumentPath p = DocumentPath.from(path);
     return isPathIncluded(p, 0);
   }
 
-  private boolean isPathIncluded(ProjectionPath path, int index) {
+  private boolean isPathIncluded(DocumentPath path, int index) {
     // If we are at a terminal layer, we are done
     if (isTerminal) {
       return true;

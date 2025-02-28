@@ -98,7 +98,6 @@ public record WritableShreddedDocument(
     private final JsonNode docJsonNode;
 
     private final Set<JsonPath> existKeys;
-    private Set<JsonPath> duplicateExistKeys;
 
     private Map<JsonPath, Integer> arraySize;
     private Set<String> arrayContains;
@@ -149,10 +148,6 @@ public record WritableShreddedDocument(
 
     private <T> Set<T> _nonNull(Set<T> set) {
       return (set == null) ? Collections.emptySet() : set;
-    }
-
-    public Set<JsonPath> duplicateExistKeys() {
-      return duplicateExistKeys == null ? Collections.emptySet() : duplicateExistKeys;
     }
 
     /*
@@ -343,12 +338,7 @@ public record WritableShreddedDocument(
      * <p>Method will add path to {@link #existKeys}.
      */
     private void addKey(JsonPath key) {
-      if (!existKeys.add(key)) {
-        if (duplicateExistKeys == null) {
-          duplicateExistKeys = new LinkedHashSet<>();
-        }
-        duplicateExistKeys.add(key);
-      }
+      existKeys.add(key);
     }
 
     /**

@@ -650,6 +650,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
                       "app.kubernetes.io/name": "dotted1",
                       "pricing": {
                         "price.usd": 25.5,
+                        "price&.aud": 10.5,
                         "currency": "USD"
                       }
                     }
@@ -673,13 +674,12 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     }
 
     @Test
-    @Order(2)
     public void byDottedFieldSimpleEq() {
       givenHeadersPostJsonThenOkNoErrors(
               """
           {
             "findOne": {
-              "filter" : {"pricing.price.usd" : 25.5}
+              "filter" : {"pricing.price&.usd" : 25.5}
             }
           }
           """)
@@ -688,8 +688,40 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     }
 
     @Test
-    @Order(3)
+    public void byDottedFieldSimpleEqWithoutEscape() {
+      // should find nothing if the document is not correctly escaped
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+            {
+                "findOne": {
+                "filter" : {"pricing.price.usd" : 25.5}
+                }
+            }
+            """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", is(nullValue()));
+    }
+
+    @Test
     public void byDottedFieldTwoEqs() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+          {
+            "findOne": {
+              "filter": {
+                "pricing&.currency": {"$eq": "USD"},
+                "app&.kubernetes&.io/name": {"$eq": "dotted2"}
+              }
+            }
+          }
+          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC2));
+    }
+
+    @Test
+    public void byDottedFieldTwoEqsWithoutEscape() {
+      // should find nothing if the document is not correctly escaped
       givenHeadersPostJsonThenOkNoErrors(
               """
           {
@@ -702,7 +734,21 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           }
           """)
           .body("$", responseIsFindSuccess())
-          .body("data.document", jsonEquals(DOC2));
+          .body("data.document", is(nullValue()));
+    }
+
+    @Test
+    public void byDottedFieldComplexEscapeEq() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+              {
+                "findOne": {
+                  "filter" : {"pricing.price&&&.aud" : 10.5}
+                }
+              }
+              """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
     }
   }
 
