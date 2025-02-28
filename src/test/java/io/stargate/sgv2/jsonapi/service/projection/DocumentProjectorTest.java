@@ -9,7 +9,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -266,13 +265,11 @@ public class DocumentProjectorTest {
               () ->
                   DocumentProjector.createFromDefinition(objectMapper.readTree(projectionString)));
       assertThat(t)
-          .isInstanceOf(ProjectionException.class)
-          .hasFieldOrPropertyWithValue(
-              "code", ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.name())
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessageContaining(
-              "Ampersand & can only be used as an escape character and must be followed by a & or . character.")
-          .hasMessageContaining(
-              "The command used the unsupported ampersand escape path: 'pricing.price&.usd&'.");
+              ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.getMessage()
+                  + ": projection path ('pricing.price&.usd&') is not a valid path.");
     }
 
     @Test
@@ -289,13 +286,11 @@ public class DocumentProjectorTest {
               () ->
                   DocumentProjector.createFromDefinition(objectMapper.readTree(projectionString)));
       assertThat(t)
-          .isInstanceOf(ProjectionException.class)
-          .hasFieldOrPropertyWithValue(
-              "code", ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.name())
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessageContaining(
-              "Ampersand & can only be used as an escape character and must be followed by a & or . character.")
-          .hasMessageContaining(
-              "The command used the unsupported ampersand escape path: 'pricing.price&usd'.");
+              ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.getMessage()
+                  + ": projection path ('pricing.price&usd') is not a valid path.");
     }
   }
 
