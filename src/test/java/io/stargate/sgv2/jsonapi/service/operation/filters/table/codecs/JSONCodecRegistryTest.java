@@ -16,7 +16,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
-import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
@@ -1123,7 +1122,7 @@ public class JSONCodecRegistryTest {
     final MapType mapType = DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT);
     Map<String, JsonLiteral<?>> valueToTest = Map.of("key", new JsonLiteral<>(null, JsonType.NULL));
     assertInvalidNullForMapSetList(
-        mapType, valueToTest, "Null value is not allowed for set, list column");
+        mapType, valueToTest, "null keys/values are not allowed in map column");
   }
 
   @Test
@@ -1131,7 +1130,7 @@ public class JSONCodecRegistryTest {
     DataType listType = DataTypes.listOf(DataTypes.TEXT);
     List<JsonLiteral<?>> valueToTest = List.of(new JsonLiteral<>(null, JsonType.NULL));
     assertInvalidNullForMapSetList(
-        listType, valueToTest, "Null value is not allowed for set, list column");
+        listType, valueToTest, "null values are not allowed in list column");
   }
 
   @Test
@@ -1139,7 +1138,7 @@ public class JSONCodecRegistryTest {
     DataType listType = DataTypes.setOf(DataTypes.TEXT);
     List<JsonLiteral<?>> valueToTest = List.of(new JsonLiteral<>(null, JsonType.NULL));
     assertInvalidNullForMapSetList(
-        listType, valueToTest, "Null value is not allowed for set, list column");
+        listType, valueToTest, "null values are not allowed in set column");
   }
 
   @Test
@@ -1204,9 +1203,9 @@ public class JSONCodecRegistryTest {
       DataType cqlType, Object valueToTest, String... expectedMessages) {
     var codec = assertGetCodecToCQL(cqlType, valueToTest);
 
-    DocumentException error =
+    ToCQLCodecException error =
         assertThrowsExactly(
-            DocumentException.class,
+            ToCQLCodecException.class,
             () -> codec.toCQL(valueToTest),
             String.format(
                 "Throw ToCQLCodecException when attempting to convert `%s` from value of %s",

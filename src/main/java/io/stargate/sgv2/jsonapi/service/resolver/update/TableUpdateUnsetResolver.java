@@ -6,9 +6,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
+import io.stargate.sgv2.jsonapi.service.operation.query.ColumnSetToAssignment;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 
+/** Resolver to resolve $unset argument to List of ColumnAssignment. */
 public class TableUpdateUnsetResolver implements TableUpdateOperatorResolver {
 
   /**
@@ -36,7 +38,7 @@ public class TableUpdateUnsetResolver implements TableUpdateOperatorResolver {
         .map(
             entry ->
                 new ColumnAssignment(
-                    UpdateOperator.UNSET,
+                    new ColumnSetToAssignment(),
                     table.tableMetadata(),
                     CqlIdentifierUtil.cqlIdentifierFromUserInput(entry.getKey()),
                     new JsonLiteral<>(null, JsonType.NULL)))

@@ -10,8 +10,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperatorModifier;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAppendToAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
@@ -20,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/** Resolver to resolve $push argument to List of ColumnAssignment. */
 public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
 
   /**
@@ -27,33 +30,8 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
    *
    * <p>Push operator can only be used for collection columns (list, set, map).
    *
-   * <p>Example(Push single element to the collection):
-   *
-   * <ul>
-   *   <li>list. <code>{"$push" : {"textList" : "textValue", "intList" : 111}}</code>
-   *   <li>set. <code>{"$push" : {"textSet" : "textValue", "intSet" : 111}}</code>
-   *   <li>map.(object format) <code>{"$push" : {"textToTextMap" : {"key1": "value1"}}}</code>
-   *   <li>map.(tuple format) <code>{"$push" : {"textToTextMap" : ["key1", "value1"]}}</code>
-   *   <li>map.(tuple format) <code>{"$push" : {"intToTextMap" : [1, "value1"]}}</code>
-   * </ul>
-   *
-   * <p>Example(Push multiple elements to the collection):
-   *
-   * <ul>
-   *   <li>list. <code>
-   *       {"$push" : {"textList" : {"$each": ["textValue1", "textValue2"]}, "intList" : {"$each": [1,2]}}}
-   *       </code>
-   *   <li>set. <code>
-   *       {"$push" : {"textSet" : {"$each": ["textValue1", "textValue2"]}, "intSet" : {"$each": [1,2]}}}
-   *       </code>
-   *   <li>map. (object format)<code>
-   *       {"$push" : { "textToTextMap" : {"$each": [{"key1": "value1"}, {"key2": "value2"}]}}
-   *       </code>
-   *   <li>map. (tuple format)<code>
-   *       {"$push" : { "textToTextMap" : {"$each": [["key1","value1"], ["key2","value2"]]}}</code>
-   *   <li>map. (tuple format)<code>
-   *       {"$push" : { "intToTextMap" : {"$each": [[1,"value1"], [2,"value2"]]}}</code>
-   * </ul>
+   * <p>See {@link #resolvePushForListSet(TableSchemaObject, JsonNode)} for list/set columns. See
+   * {@link #resolvePushForListSet(TableSchemaObject, JsonNode)} for map columns.
    *
    * @param table TableSchemaObject
    * @param arguments ObjectNode value for $push entry
@@ -71,7 +49,7 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
               // $push only works for map/set/list column
               if (apiColumnDef.type().isPrimitive()
                   || apiColumnDef.type().typeName() == ApiTypeName.VECTOR) {
-                throw UpdateException.Code.INVALID_USAGE_FOR_COLLECTION_ONLY_UPDATE_OPERATORS.get(
+                throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATORS_FOR_PRIMITIVE_COLUMNS.get(
                     errVars(
                         table,
                         map -> {
@@ -93,7 +71,7 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
               }
 
               return new ColumnAssignment(
-                  UpdateOperator.PUSH,
+                  new ColumnAppendToAssignment(),
                   table.tableMetadata(),
                   CqlIdentifierUtil.cqlIdentifierFromUserInput(column),
                   shreddedValue);
@@ -125,40 +103,48 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
    * TODO $position for list column
    *
    * @param table TableSchemaObject
-   * @param inputValue jsonNode value for the $push column
+   * @param inputValue jsonNode value for the $push column, E.G. if the operator is {"$push" :
+   *     {"textList" : {"$each": ["textValue1", "textValue2"]}}, then inputValue is {"$each":
+   *     ["textValue1", "textValue2"]}
    * @return JsonLiteral
    */
   private JsonLiteral<?> resolvePushForListSet(TableSchemaObject table, JsonNode inputValue) {
     JsonLiteral<?> shreddedValue;
 
-    if (inputValue.getNodeType() == JsonNodeType.ARRAY) {
-      // $push without $each, only work for adding single element
-      throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
-          errVars(
-              table,
-              map -> {
-                map.put("reason", "combine $push and $each for adding multiple elements");
-              }));
-    } else if (inputValue.getNodeType() == JsonNodeType.OBJECT) {
-      // $push + $each for adding multiple elements
-      ObjectNode objectNode = (ObjectNode) inputValue;
-      if (objectNode.size() == 1 // TODO position
-          && objectNode.get("$each") != null
-          && objectNode.get("$each").getNodeType() == JsonNodeType.ARRAY) {
-        shreddedValue = RowShredder.shredValue(objectNode.get("$each"));
-      } else {
-        // invalid usage of $push + $each
+    switch (inputValue.getNodeType()) {
+      case ARRAY:
+        // $push without $each, only work for adding single element
         throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
             errVars(
                 table,
                 map -> {
-                  map.put("reason", "invalid usage of $each");
+                  map.put("reason", "combine $push and $each for adding multiple elements");
                 }));
-      }
-    } else {
-      // $push with single element
-      shreddedValue =
-          new JsonLiteral<>(List.of(RowShredder.shredValue(inputValue)), JsonType.ARRAY);
+      case OBJECT:
+        // $push + $each for adding multiple elements
+        ObjectNode objectNode = (ObjectNode) inputValue;
+        if (objectNode.size() == 1 // TODO position
+            && objectNode.get(UpdateOperatorModifier.EACH.getModifier()) != null
+            && objectNode.get(UpdateOperatorModifier.EACH.getModifier()).getNodeType()
+                == JsonNodeType.ARRAY) {
+          shreddedValue =
+              RowShredder.shredValue(objectNode.get(UpdateOperatorModifier.EACH.getModifier()));
+        } else {
+          // invalid usage of $push + $each
+          throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
+              errVars(
+                  table,
+                  map -> {
+                    map.put("reason", "invalid usage of $each");
+                  }));
+        }
+        break;
+      default:
+        // $push with single element, normalize to List values.
+        // this is helpful for further update assignment resolve.
+        shreddedValue =
+            new JsonLiteral<>(List.of(RowShredder.shredValue(inputValue)), JsonType.ARRAY);
+        break;
     }
     return shreddedValue;
   }
@@ -187,7 +173,9 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
    * </ul>
    *
    * @param table TableSchemaObject
-   * @param inputValue jsonNode value for the $push column
+   * @param inputValue jsonNode value for the $push column, E.G. if the operator is {"$push" : {
+   *     "textToTextMap" : {"$each": [{"key1": "value1"}, {"key2": "value2"}]}}, then inputValue is
+   *     {"$each": [{"key1": "value1"}, {"key2": "value2"}]}
    * @return JsonLiteral
    */
   private JsonLiteral<?> resolvePushForMap(TableSchemaObject table, JsonNode inputValue) {

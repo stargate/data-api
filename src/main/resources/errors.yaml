@@ -227,15 +227,7 @@ request-errors:
       The command included the following vector columns without vectorize definition: ${invalidVectorizeColumns}.
       
       Resend the command using only vector columns with a vectorize definition.
-      
-  - scope: DOCUMENT
-    code: NULL_IS_NOT_ALLOWED_FOR_MAP_SET_LIST
-    title: Null is not allowed for map, set, list columns.
-    body: |-
-      Null value is not allowed for set, list column.
-      Null key and null value are not allowed for map column.
-      
-      Resend the command with non-null values.
+
 # ================================================================================================================
 # Family: REQUEST         Scope: FILTER
 # ================================================================================================================
@@ -385,11 +377,12 @@ request-errors:
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The command included the column ${invalidColumn} that has ${columnType} type defined.
+      ${embeddedCodecMessage}
       
       Resend the command using only supported column values.
 
   - scope: UPDATE
-    code: INVALID_USAGE_FOR_COLLECTION_ONLY_UPDATE_OPERATORS
+    code: UNSUPPORTED_UPDATE_OPERATORS_FOR_PRIMITIVE_COLUMNS
     title: $push and $pullAll are only supported against map, set, list columns
     body: |-
       The command included update operator ${operator} that are not supported by ${targetColumn}.

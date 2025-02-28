@@ -976,9 +976,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                       }
                       """)
           .hasSingleApiError(
-              DocumentException.Code.NULL_IS_NOT_ALLOWED_FOR_MAP_SET_LIST,
+              DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Null value is not allowed for set, list column.");
+              "null values are not allowed in list column");
     }
   }
 
@@ -1112,9 +1112,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                       }
                       """)
           .hasSingleApiError(
-              DocumentException.Code.NULL_IS_NOT_ALLOWED_FOR_MAP_SET_LIST,
+              DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Null value is not allowed for set, list column.");
+              "null values are not allowed in set column");
     }
   }
 
@@ -1421,9 +1421,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                       }
                       """)
           .hasSingleApiError(
-              DocumentException.Code.NULL_IS_NOT_ALLOWED_FOR_MAP_SET_LIST,
+              DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Null value is not allowed for set, list column.");
+              "null keys/values are not allowed in map column");
     }
 
     @Test
@@ -1438,9 +1438,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                       }
                       """)
           .hasSingleApiError(
-              DocumentException.Code.NULL_IS_NOT_ALLOWED_FOR_MAP_SET_LIST,
+              DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Null value is not allowed for set, list column.");
+              "null keys/values are not allowed in map column");
 
       assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
           .templated()
@@ -1452,9 +1452,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                       }
                       """)
           .hasSingleApiError(
-              DocumentException.Code.NULL_IS_NOT_ALLOWED_FOR_MAP_SET_LIST,
+              DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Null value is not allowed for set, list column.");
+              "null keys/values are not allowed in map column");
     }
   }
 

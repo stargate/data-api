@@ -11,7 +11,6 @@ import com.datastax.oss.driver.api.core.type.SetType;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
-import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
@@ -167,59 +166,42 @@ public class JSONCodecRegistry {
   }
 
   /**
-   * Returns a codec for the key or value of the map column.
+   * Returns a codec for the key of the map column.
    *
    * @param table {@link TableMetadata} to find the column definition in.
    * @param column {@link CqlIdentifier} target map column.
-   * @param value The value to be written to the key or value.
+   * @param key The json map key to be used to find the cql codec.
    * @param <JavaT> Type of the Java object we want to convert.
    * @param <CqlT> Type fo the Java object the CQL driver expects.
    * @throws UnknownColumnException
    * @throws MissingJSONCodecException
    * @throws ToCQLCodecException
    */
-  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> getKeyOrValueCodecForMap(
-      TableMetadata table, CqlIdentifier column, Object value, boolean isKey)
+  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> getKeyCodecForMap(
+      TableMetadata table, CqlIdentifier column, Object key)
       throws UnknownColumnException, MissingJSONCodecException, ToCQLCodecException {
     Objects.requireNonNull(table, "table must not be null");
     Objects.requireNonNull(column, "column must not be null");
-
     var columnMetadata =
         table.getColumn(column).orElseThrow(() -> new UnknownColumnException(table, column));
 
     var mapType = columnMetadata.getType();
     if (!(mapType instanceof MapType)) {
-      throw new ToCQLCodecException(value, mapType, "column is not a map column");
+      throw new ToCQLCodecException(key, mapType, "column is not a map column");
     }
-
-    if (value == null) {
-      throw DocumentException.Code.NULL_IS_NOT_ALLOWED_FOR_MAP_SET_LIST.get();
-    }
-
-    var keyOrValueType =
-        isKey ? ((MapType) mapType).getKeyType() : ((MapType) mapType).getValueType();
-
-    // First find candidates for CQL target type in question (if any)
-    List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(keyOrValueType);
-    if (candidates == null) { // No scalar codec for this CQL type
-      throw new MissingJSONCodecException(table, columnMetadata, value.getClass(), value);
-    }
-
-    // And if any found try to match with the incoming Java value
-    JSONCodec<JavaT, CqlT> match =
-        JSONCodec.unchecked(
-            candidates.stream()
-                .filter(codec -> codec.handlesJavaValue(value))
-                .findFirst()
-                .orElse(null));
-    if (match == null) {
-      // Different exception for this case: CQL type supported but not from given Java type
+    if (key == null) {
       throw new ToCQLCodecException(
-          value,
-          keyOrValueType,
-          "no codec matching for map %s type".formatted(isKey ? "key" : "value"));
+          null, mapType, "null keys/values are not allowed in map column");
     }
-    return match;
+    var keyType = ((MapType) mapType).getKeyType();
+    // First find candidates for CQL target type in question (if any)
+    List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(keyType);
+    if (candidates == null) { // No scalar codec for this CQL type
+      throw new MissingJSONCodecException(table, columnMetadata, key.getClass(), key);
+    }
+
+    return (JSONCodec<JavaT, CqlT>)
+        MapCodecs.findMapKeyOrValueCodec(candidates, keyType, key, false);
   }
 
   public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(

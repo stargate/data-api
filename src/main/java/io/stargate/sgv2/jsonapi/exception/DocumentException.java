@@ -17,7 +17,6 @@ public class DocumentException extends RequestException {
   public enum Code implements ErrorCode<DocumentException> {
     INVALID_COLUMN_VALUES,
     MISSING_PRIMARY_KEY_COLUMNS,
-    NULL_IS_NOT_ALLOWED_FOR_MAP_SET_LIST,
     UNKNOWN_TABLE_COLUMNS,
     UNSUPPORTED_COLUMN_TYPES,
     UNSUPPORTED_VECTORIZE_CONFIGURATIONS,

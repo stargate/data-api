@@ -6,7 +6,6 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
-import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -658,7 +657,7 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
           .templated()
           .updateOne(DEFAULT_ROW, updateJSON)
           .hasSingleApiError(
-              UpdateException.Code.INVALID_USAGE_FOR_COLLECTION_ONLY_UPDATE_OPERATORS,
+              UpdateException.Code.UNSUPPORTED_UPDATE_OPERATORS_FOR_PRIMITIVE_COLUMNS,
               UpdateException.class)
           .hasNoWarnings();
     }
@@ -673,8 +672,11 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
       DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
           .templated()
           .updateOne(DEFAULT_ROW, updateClauseJSON)
-          .mayHaveSingleApiError(
-              DocumentException.Code.NULL_IS_NOT_ALLOWED_FOR_MAP_SET_LIST, DocumentException.class)
+          .hasSingleApiError(
+              UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES,
+              UpdateException.class,
+              "null",
+              "are not allowed in")
           .hasNoWarnings();
     }
 

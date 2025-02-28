@@ -23,7 +23,6 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
@@ -39,16 +38,17 @@ import java.util.function.BiFunction;
  */
 public class ColumnAssignment implements CQLAssignment {
 
-  private static final Map<
-          UpdateOperator, BiFunction<OngoingAssignment, CqlIdentifier, UpdateWithAssignments>>
-      supportedOperatorsMap =
-          Map.of(
-              UpdateOperator.SET, ColumnAssignment::resolveSetUnsetToAssignment,
-              UpdateOperator.UNSET, ColumnAssignment::resolveSetUnsetToAssignment,
-              UpdateOperator.PUSH, ColumnAssignment::resolvePushToAssignment,
-              UpdateOperator.PULL_ALL, ColumnAssignment::resolvePullAllToAssignment);
+  //  private static final Map<
+  //          UpdateOperator, BiFunction<OngoingAssignment, CqlIdentifier, UpdateWithAssignments>>
+  //          SUPPORTED_UPDATE_OPERATOR_MAP =
+  //          Map.of(
+  //              UpdateOperator.SET, ColumnAssignment::resolveSetUnsetToAssignment,
+  //              UpdateOperator.UNSET, ColumnAssignment::resolveSetUnsetToAssignment,
+  //              UpdateOperator.PUSH, ColumnAssignment::resolvePushToAssignment,
+  //              UpdateOperator.PULL_ALL, ColumnAssignment::resolvePullAllToAssignment);
 
-  private final UpdateOperator updateOperator;
+  private final BiFunction<OngoingAssignment, CqlIdentifier, UpdateWithAssignments>
+      updateToAssignment;
   private final TableMetadata tableMetadata;
   public final CqlIdentifier column;
   private final JsonLiteral<?> value;
@@ -59,18 +59,18 @@ public class ColumnAssignment implements CQLAssignment {
    * Create a new instance of the class to set the {@code column} to the {@code value} in the
    * specified {@code tableMetadata}.
    *
-   * @param updateOperator The {@link UpdateOperator} for current column assignment operation
+   * @param updateToAssignment The BiFunction to add update to the ongoing assignment.
    * @param tableMetadata The {@link TableMetadata} for the target table.
    * @param column The name of the column to set.
    * @param value the {@link JsonLiteral} value created by shredding the value from the update
    *     clause in the request.
    */
   public ColumnAssignment(
-      UpdateOperator updateOperator,
+      BiFunction<OngoingAssignment, CqlIdentifier, UpdateWithAssignments> updateToAssignment,
       TableMetadata tableMetadata,
       CqlIdentifier column,
       JsonLiteral<?> value) {
-    this.updateOperator = updateOperator;
+    this.updateToAssignment = updateToAssignment;
     this.tableMetadata = Objects.requireNonNull(tableMetadata, "tableMetadata cannot be null");
     this.column = Objects.requireNonNull(column, "column cannot be null");
     // Value may be null, this is how to clear a column in CQL
@@ -82,7 +82,7 @@ public class ColumnAssignment implements CQLAssignment {
       OngoingAssignment ongoingAssignment, List<Object> positionalValues) {
 
     addPositionalValues(positionalValues);
-    return supportedOperatorsMap.get(updateOperator).apply(ongoingAssignment, column);
+    return updateToAssignment.apply(ongoingAssignment, column);
   }
 
   /**
@@ -110,14 +110,14 @@ public class ColumnAssignment implements CQLAssignment {
 
       // special case for $pullAll against a map column.
       // We only need to get the keyCodec
-      if (updateOperator == UpdateOperator.PULL_ALL
+      if (updateToAssignment instanceof ColumnRemoveToAssignment
           && tableMetadata.getColumn(column).get().getType() instanceof MapType) {
         List<JsonLiteral<?>> jsonValues = (List<JsonLiteral<?>>) rawValue;
         List<Object> cqlValues = new ArrayList<>();
         for (JsonLiteral<?> jsonValue : jsonValues) {
           JSONCodec<Object, Object> keyCodec =
-              JSONCodecRegistries.DEFAULT_REGISTRY.getKeyOrValueCodecForMap(
-                  tableMetadata, column, jsonValue.value(), true);
+              JSONCodecRegistries.DEFAULT_REGISTRY.getKeyCodecForMap(
+                  tableMetadata, column, jsonValue.value());
           cqlValues.add(keyCodec.toCQL(jsonValue.value()));
         }
         positionalValues.add(cqlValues);
@@ -152,27 +152,23 @@ public class ColumnAssignment implements CQLAssignment {
                 map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
                 map.put("invalidColumn", CqlIdentifierUtil.cqlIdentifierToJsonKey(column));
                 map.put("columnType", tableMetadata.getColumn(column).get().getType().toString());
+                map.put("embeddedCodecMessage", e.getMessage());
               }));
     }
   }
 
-  private static UpdateWithAssignments resolveSetUnsetToAssignment(
-      OngoingAssignment ongoingAssignment, CqlIdentifier column) {
-    return ongoingAssignment.set(Assignment.setColumn(column, bindMarker()));
-  }
-
-  private static UpdateWithAssignments resolvePushToAssignment(
-      OngoingAssignment ongoingAssignment, CqlIdentifier column) {
-    return ongoingAssignment.append(column, bindMarker());
-  }
-
-  private static UpdateWithAssignments resolvePullAllToAssignment(
-      OngoingAssignment ongoingAssignment, CqlIdentifier column) {
-    return ongoingAssignment.remove(column, bindMarker());
-  }
-
   /** This method is used for unit test in TableUpdateOperatorTest */
   public boolean testEquals(UpdateOperator updateOperator, JsonLiteral<?> value) {
-    return this.updateOperator == updateOperator && this.value.equals(value);
+    if (updateToAssignment instanceof ColumnAppendToAssignment
+        && updateOperator == UpdateOperator.PUSH) {
+      return this.value.equals(value);
+    } else if (updateToAssignment instanceof ColumnRemoveToAssignment
+        && updateOperator == UpdateOperator.PULL_ALL) {
+      return this.value.equals(value);
+    } else if (updateToAssignment instanceof ColumnSetToAssignment
+        && (updateOperator == UpdateOperator.SET || updateOperator == UpdateOperator.UNSET)) {
+      return this.value.equals(value);
+    }
+    return false;
   }
 }

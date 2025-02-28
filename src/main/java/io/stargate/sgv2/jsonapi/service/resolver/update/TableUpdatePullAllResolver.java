@@ -10,11 +10,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
+import io.stargate.sgv2.jsonapi.service.operation.query.ColumnRemoveToAssignment;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 
+/** Resolver to resolve $pullAll argument to List of ColumnAssignment. */
 public class TableUpdatePullAllResolver implements TableUpdateOperatorResolver {
 
   /**
@@ -49,7 +51,7 @@ public class TableUpdatePullAllResolver implements TableUpdateOperatorResolver {
               // $pullAll only works for map/set/list columns
               if (apiColumnDef.type().isPrimitive()
                   || apiColumnDef.type().typeName() == ApiTypeName.VECTOR) {
-                throw UpdateException.Code.INVALID_USAGE_FOR_COLLECTION_ONLY_UPDATE_OPERATORS.get(
+                throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATORS_FOR_PRIMITIVE_COLUMNS.get(
                     errVars(
                         table,
                         map -> {
@@ -71,7 +73,7 @@ public class TableUpdatePullAllResolver implements TableUpdateOperatorResolver {
               shreddedValue = RowShredder.shredValue(inputValue);
 
               return new ColumnAssignment(
-                  UpdateOperator.PULL_ALL,
+                  new ColumnRemoveToAssignment(),
                   table.tableMetadata(),
                   CqlIdentifierUtil.cqlIdentifierFromUserInput(column),
                   shreddedValue);

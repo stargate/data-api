@@ -181,7 +181,7 @@ public class TableUpdateOperatorTest {
         Arguments.of(
             "{\"%s\": \"abc\"}}".formatted(names().CQL_TEXT_COLUMN),
             null,
-            UpdateException.Code.INVALID_USAGE_FOR_COLLECTION_ONLY_UPDATE_OPERATORS,
+            UpdateException.Code.UNSUPPORTED_UPDATE_OPERATORS_FOR_PRIMITIVE_COLUMNS,
             "$push and $pullAll are only supported against map, set, list columns."));
   }
 
@@ -248,7 +248,7 @@ public class TableUpdateOperatorTest {
         Arguments.of(
             "{\"%s\": \"abc\"}}".formatted(names().CQL_TEXT_COLUMN),
             null,
-            UpdateException.Code.INVALID_USAGE_FOR_COLLECTION_ONLY_UPDATE_OPERATORS,
+            UpdateException.Code.UNSUPPORTED_UPDATE_OPERATORS_FOR_PRIMITIVE_COLUMNS,
             "$push and $pullAll are only supported against map, set, list columns."));
   }
 
