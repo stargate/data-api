@@ -625,16 +625,15 @@ request-errors:
       Resend the command using only supported column types.
 
   - scope: PROJECTION
-    code: UNSUPPORTED_AMPERSAND_ESCAPE_USAGE
-    title: The usage of ampersand escape is not supported
+    code: UNKNOWN_TABLE_COLUMNS
+    title: Columns in the projection are not defined in the table schema
     body: |-
-      The usage of ampersand escape is not supported.
+      Only columns defined in the table schema can be included in the projection.
       
-      Ampersand & can only be used as an escape character and must be followed by a & or . character.
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The projection included the following unknown columns: ${unknownColumns}.
       
-      The command used the unsupported ampersand escape path: '${unsupportedAmpersandEscape}'.
-      
-      Resend the command using supported ampersand escape.
+      ${SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
 
   # ================================================================================================================
   # Family: REQUEST         Scope: SCHEMA
