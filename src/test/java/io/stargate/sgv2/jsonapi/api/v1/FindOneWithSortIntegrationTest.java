@@ -178,6 +178,34 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC2));
     }
+
+    @Test
+    public void sortByNestedFieldWithEscape() {
+      // cannot find the result, the order will be the first _id
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "findOne": {
+                          "filter" : {"type": "sorted"},
+                          "sort" : {"metadata&.shape": 1}
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "findOne": {
+                          "filter" : {"type": "sorted"},
+                          "sort" : {"metadata&.shape": -1}
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+    }
   }
 
   @Nested
