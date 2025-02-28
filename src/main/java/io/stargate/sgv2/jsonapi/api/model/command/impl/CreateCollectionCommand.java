@@ -8,6 +8,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.util.*;
@@ -158,11 +160,7 @@ public record CreateCollectionCommand(
             throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
                 "`allow` cannot contain duplicates");
           }
-          String invalid = findInvalidPath(allow());
-          if (invalid != null) {
-            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-                "`allow` contains invalid path: '%s'", invalid);
-          }
+          validateIndexingPath(allow());
         }
 
         if (deny() != null) {
@@ -171,11 +169,7 @@ public record CreateCollectionCommand(
             throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
                 "`deny` cannot contain duplicates");
           }
-          String invalid = findInvalidPath(deny());
-          if (invalid != null) {
-            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-                "`deny` contains invalid path: '%s'", invalid);
-          }
+          validateIndexingPath(deny());
         }
       }
 
@@ -188,20 +182,39 @@ public record CreateCollectionCommand(
         return deny() != null && deny().contains("*");
       }
 
-      public String findInvalidPath(List<String> paths) {
+      /**
+       * Validates the given paths name. A path name must not be empty and must not start with a $
+       * except for $vector.
+       *
+       * @param paths the paths to validate
+       */
+      public void validateIndexingPath(List<String> paths) {
         // Special case: single "*" is accepted
         if (paths.size() == 1 && "*".equals(paths.get(0))) {
-          return null;
+          return;
         }
         for (String path : paths) {
-          if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(path).matches()) {
-            // One exception: $vector is allowed
-            if (!DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
-              return path;
+          if (!NamingRules.FIELD.apply(path)) {
+            if (path.isEmpty()) {
+              throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
+                  "path must be represented as a non-empty string");
+            }
+            if (path.startsWith("$")) {
+              // $vector is allowed, otherwise throw error
+              if (!DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
+                throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
+                    "path must not start with '$'");
+              }
             }
           }
+
+          try {
+            DocumentPath.verifyEncodedPath(path);
+          } catch (IllegalArgumentException e) {
+            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
+                "indexing path ('%s') is not a valid path. " + e.getMessage(), path);
+          }
         }
-        return null;
       }
     }
 
