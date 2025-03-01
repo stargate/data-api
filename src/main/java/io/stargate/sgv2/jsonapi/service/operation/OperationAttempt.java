@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptio
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
-import io.stargate.sgv2.jsonapi.util.Recordable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Supplier;

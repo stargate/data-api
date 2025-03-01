@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
-import io.stargate.sgv2.jsonapi.util.Recordable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Comparator;
 import java.util.Objects;
 

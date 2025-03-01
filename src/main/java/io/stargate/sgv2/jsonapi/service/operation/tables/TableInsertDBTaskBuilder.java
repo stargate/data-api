@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
 import io.stargate.sgv2.jsonapi.service.shredding.NamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
-import io.stargate.sgv2.jsonapi.util.Recordable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;

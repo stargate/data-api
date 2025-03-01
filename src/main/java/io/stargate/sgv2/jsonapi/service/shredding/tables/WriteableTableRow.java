@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.shredding.tables;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
-import io.stargate.sgv2.jsonapi.util.Recordable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Collection;
 import java.util.Objects;
 

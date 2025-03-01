@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
-import io.stargate.sgv2.jsonapi.util.Recordable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 
 /** TODO WORDS */
 @JsonSerialize(using = ApiDataTypeDefSerializer.class)

@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.query;
 
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.util.Recordable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

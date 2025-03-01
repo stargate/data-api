@@ -10,8 +10,8 @@ import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdateAnalyzer;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.Recordable;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

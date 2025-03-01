@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
-import io.stargate.sgv2.jsonapi.util.Recordable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 
 /**

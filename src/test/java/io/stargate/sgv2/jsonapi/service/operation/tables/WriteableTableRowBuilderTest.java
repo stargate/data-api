@@ -18,7 +18,7 @@ import io.stargate.sgv2.jsonapi.fixtures.tables.AllUnsupportedTypes;
 import io.stargate.sgv2.jsonapi.fixtures.types.CqlTypesForTesting;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;

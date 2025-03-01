@@ -1,16 +1,20 @@
 package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
+import static io.stargate.sgv2.jsonapi.util.CqlPrintUtil.trimmedCql;
+import static io.stargate.sgv2.jsonapi.util.CqlPrintUtil.trimmedPositionalValues;
+
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +70,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
    */
   public static class AsyncResultSetSupplier implements BaseTask.UniSupplier<AsyncResultSet> {
 
+    protected final CommandContext<?> commandContext;
     protected final SimpleStatement statement;
     protected final BaseTask.UniSupplier<AsyncResultSet> supplier;
 
@@ -77,13 +82,30 @@ public abstract class DBTask<SchemaT extends SchemaObject>
      * @param supplier The supplier that will provide the {@link AsyncResultSet} when called.
      */
     public AsyncResultSetSupplier(
-        SimpleStatement statement, BaseTask.UniSupplier<AsyncResultSet> supplier) {
+        CommandContext<?> commandContext,
+        SimpleStatement statement,
+        BaseTask.UniSupplier<AsyncResultSet> supplier) {
+      this.commandContext = commandContext;
       this.statement = statement;
       this.supplier = Objects.requireNonNull(supplier, "supplier must not be null");
     }
 
     @Override
     public Uni<AsyncResultSet> get() {
+
+      // statement can null for metadata tasks
+      commandContext
+          .requestTracing()
+          .maybeTrace(
+              () ->
+                  new RequestTracing.TraceMessage(
+                      "Executing statement for task %s".formatted(getClass().getSimpleName()),
+                      Recordable.copyOf(
+                          Map.of(
+                              "cql",
+                              statement == null ? "null" : trimmedCql(statement),
+                              "params",
+                              statement == null ? "null" : trimmedPositionalValues(statement)))));
       return supplier.get();
     }
   }
@@ -91,7 +113,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
   /** {@inheritDoc} */
   @Override
   protected AsyncResultSetSupplier buildResultSupplier(CommandContext<SchemaT> commandContext) {
-    return buildDBResultSupplier(getCommandQueryExecutor(commandContext));
+    return buildDBResultSupplier(commandContext, getCommandQueryExecutor(commandContext));
   }
 
   /** {@inheritDoc} */
@@ -117,6 +139,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
    * Subclasses must implement this method to build the query and provide a supplier that executes
    * query and returns results. They should not do anything with Uni for retry etc..
    *
+   * @param commandContext
    * @param queryExecutor The {@link CommandQueryExecutor} for subclasses to access the database
    *     with.
    * @return A {@link AsyncResultSetSupplier} that has the statement (if any) and supplier to get
@@ -124,7 +147,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
    *     not happen until the supplier is called, otherwise this will block.
    */
   protected abstract AsyncResultSetSupplier buildDBResultSupplier(
-      CommandQueryExecutor queryExecutor);
+      CommandContext<SchemaT> commandContext, CommandQueryExecutor queryExecutor);
 
   /**
    * Called to get the description of the schema to use when building the response.
@@ -173,8 +196,8 @@ public abstract class DBTask<SchemaT extends SchemaObject>
           "{} - {}, cql={}, values={}",
           prefix,
           taskDesc(),
-          CqlPrintUtil.trimmedCql(statement),
-          CqlPrintUtil.trimmedPositionalValues(statement));
+          trimmedCql(statement),
+          trimmedPositionalValues(statement));
     }
 
     if (logger.isTraceEnabled()) {

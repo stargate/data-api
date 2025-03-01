@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.shredding;
 
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.Recordable;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Objects;

@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.DefaultRequestTracing;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;

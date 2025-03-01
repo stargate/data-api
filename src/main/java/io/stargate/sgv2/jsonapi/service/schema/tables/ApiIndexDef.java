@@ -4,7 +4,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMes
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
-import io.stargate.sgv2.jsonapi.util.Recordable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Map;
 
 /**

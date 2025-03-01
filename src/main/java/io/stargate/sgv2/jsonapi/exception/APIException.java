@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-import io.stargate.sgv2.jsonapi.util.Recordable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.ws.rs.core.Response;
 import java.util.Objects;
 import java.util.Optional;

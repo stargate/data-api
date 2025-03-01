@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.util;
+package io.stargate.sgv2.jsonapi.util.recordable;
 
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
 import java.util.List;
@@ -112,7 +112,7 @@ public interface PrettyPrintable {
 
     private final StringBuilder sb;
     private final int indent;
-
+    private final boolean pretty;
     private boolean firstAppend = true;
 
     public PrettyPrintableRecorder(Class<?> clazz, boolean pretty) {
@@ -121,7 +121,8 @@ public interface PrettyPrintable {
 
     private PrettyPrintableRecorder(
         Class<?> clazz, int indent, boolean pretty, PrettyPrintableRecorder parent) {
-      super(clazz, pretty, parent);
+      super(clazz, parent);
+      this.pretty = pretty;
       this.indent = indent;
 
       this.sb = parent == null ? new StringBuilder() : parent.sb;

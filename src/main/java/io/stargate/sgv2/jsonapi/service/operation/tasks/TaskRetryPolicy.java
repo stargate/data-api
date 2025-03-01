@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
-import io.stargate.sgv2.jsonapi.util.Recordable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.time.Duration;
 import java.util.Objects;
 

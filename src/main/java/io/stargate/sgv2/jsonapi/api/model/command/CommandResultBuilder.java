@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;

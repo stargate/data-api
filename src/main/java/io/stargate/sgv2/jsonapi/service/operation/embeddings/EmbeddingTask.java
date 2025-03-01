@@ -3,11 +3,13 @@ package io.stargate.sgv2.jsonapi.service.operation.embeddings;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +55,7 @@ public class EmbeddingTask<SchemaT extends SchemaObject>
 
     var vectorizeTexts = embeddingActions.stream().map(EmbeddingAction::startEmbedding).toList();
     return new EmbeddingResultSupplier(
+        this,
         commandContext,
         () ->
             embeddingProvider.vectorize(
@@ -60,7 +63,8 @@ public class EmbeddingTask<SchemaT extends SchemaObject>
                 vectorizeTexts,
                 commandContext.requestContext().getEmbeddingCredentials(),
                 requestType),
-        embeddingActions);
+        embeddingActions,
+        vectorizeTexts);
   }
 
   @Override
@@ -88,26 +92,47 @@ public class EmbeddingTask<SchemaT extends SchemaObject>
 
   public static class EmbeddingResultSupplier implements BaseTask.UniSupplier<EmbeddingTaskResult> {
 
+    protected final EmbeddingTask<?> embeddingTask;
     protected final CommandContext<?> commandContext;
     protected final BaseTask.UniSupplier<EmbeddingProvider.Response> supplier;
     protected final List<EmbeddingAction> actions;
+    private final List<String> vectorizeTexts;
 
     EmbeddingResultSupplier(
+        EmbeddingTask<?> embeddingTask,
         CommandContext<?> commandContext,
         BaseTask.UniSupplier<EmbeddingProvider.Response> supplier,
-        List<EmbeddingAction> actions) {
+        List<EmbeddingAction> actions,
+        List<String> vectorizeTexts) {
+      this.embeddingTask = embeddingTask;
       this.commandContext = commandContext;
       this.supplier = supplier;
       this.actions = actions;
+      this.vectorizeTexts = vectorizeTexts;
     }
 
     @Override
     public Uni<EmbeddingTaskResult> get() {
+
+      commandContext
+          .requestTracing()
+          .maybeTrace(
+              () ->
+                  new RequestTracing.TraceMessage(
+                      "Requesting %s vectors from Embedding Provider %s for task %s"
+                          .formatted(
+                              vectorizeTexts.size(),
+                              embeddingTask.embeddingProvider.getClass().getSimpleName(),
+                              embeddingTask.taskDesc()),
+                      Recordable.copyOf(vectorizeTexts)));
+
       // todo: handle errors from the providers
       return supplier
           .get()
           .onItem()
-          .transform(rawResult -> EmbeddingTaskResult.create(commandContext, rawResult, actions));
+          .transform(
+              rawResult ->
+                  EmbeddingTaskResult.create(embeddingTask, commandContext, rawResult, actions));
     }
   }
 
@@ -133,6 +158,7 @@ public class EmbeddingTask<SchemaT extends SchemaObject>
      * @return
      */
     static EmbeddingTaskResult create(
+        EmbeddingTask<?> embeddingTask,
         CommandContext<?> commandContext,
         EmbeddingProvider.Response providerResponse,
         List<EmbeddingAction> actions) {
@@ -140,12 +166,13 @@ public class EmbeddingTask<SchemaT extends SchemaObject>
       commandContext
           .requestTracing()
           .maybeTrace(
-              "EmbeddingTaskResult.create() Received embedding provider response",
-              providerResponse);
-
-      commandContext
-          .requestTracing()
-          .maybeTrace("EmbeddingTaskResult.create() Processing Embedding Actions");
+              () ->
+                  new RequestTracing.TraceMessage(
+                      "Received %s vectors from Embedding Provider %s for task %s"
+                          .formatted(
+                              providerResponse.embeddings().size(),
+                              embeddingTask.embeddingProvider.getClass().getSimpleName(),
+                              embeddingTask.taskDesc())));
 
       // defensive to make sure the order cannot change
       var vectors = List.copyOf(providerResponse.embeddings());

@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.ws.rs.core.Response;
 import java.util.*;

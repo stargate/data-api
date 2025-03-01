@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import io.stargate.sgv2.jsonapi.util.Recordable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Objects;
 
 /** A Collection or Table the command works on */

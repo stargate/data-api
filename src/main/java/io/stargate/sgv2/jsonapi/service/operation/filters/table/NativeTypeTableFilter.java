@@ -17,7 +17,7 @@ import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicat
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.FilterBehaviour;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
-import io.stargate.sgv2.jsonapi.util.Recordable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
 
 /**

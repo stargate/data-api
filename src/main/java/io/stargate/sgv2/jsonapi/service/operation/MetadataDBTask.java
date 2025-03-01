@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.EmptyAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
@@ -47,12 +48,14 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
   protected abstract Object getSchema();
 
   @Override
-  protected AsyncResultSetSupplier buildDBResultSupplier(CommandQueryExecutor queryExecutor) {
+  protected AsyncResultSetSupplier buildDBResultSupplier(
+      CommandContext<SchemaT> commandContext, CommandQueryExecutor queryExecutor) {
 
     this.keyspaceMetadata = queryExecutor.getKeyspaceMetadata(schemaObject.name().keyspace());
 
     // TODO: BETTER ERROR
     return new AsyncResultSetSupplier(
+        commandContext,
         null,
         () ->
             keyspaceMetadata.isEmpty()

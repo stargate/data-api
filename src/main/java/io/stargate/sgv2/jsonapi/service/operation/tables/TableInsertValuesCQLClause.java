@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.resolver.UnvalidatedClauseException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.List;
 import java.util.Objects;
 import org.slf4j.Logger;

@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
 import io.stargate.sgv2.jsonapi.fixtures.TestListUtil;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.Arrays;
 import java.util.List;
 
