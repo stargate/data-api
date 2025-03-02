@@ -12,7 +12,8 @@ import java.util.function.Supplier;
  *
  * <p>This is the page responsible for getting final result of the command out from one of the inner
  * operations.
- *
+ * <p>
+ *   Create via the  {@link #accumulator(CommandContext)} method.
  * @param <SchemaT>
  */
 public class CompositeTaskOuterPage<SchemaT extends SchemaObject>
@@ -33,7 +34,7 @@ public class CompositeTaskOuterPage<SchemaT extends SchemaObject>
   public CommandResult get() {
 
     if (!tasks.errorTasks().isEmpty()) {
-      // we have some failed tasks, there are failed CompositeTasks's that have lifted errors
+      // we have some failed tasks, they are failed CompositeTask's that have lifted errors
       // from their inner tasks
       // the superclass will build a basic response with errors and warnings, that is what we need
       return super.get();
@@ -41,9 +42,14 @@ public class CompositeTaskOuterPage<SchemaT extends SchemaObject>
 
     // the last composite task is the one that will build the results of running all the composite
     // tasks.
+    // TODO: AARON - need better guarantee the last task is the last task according to it's position etc
     return tasks.getLast().lastTaskAccumulator().getResults().get();
   }
 
+  /**
+   * Accumulates the completed {@link CompositeTask}s so the final result can be built from the last task.
+   * @param <SchemaT>
+   */
   public static class Accumulator<SchemaT extends SchemaObject>
       extends TaskAccumulator<CompositeTask<?, SchemaT>, SchemaT> {
 
@@ -52,11 +58,10 @@ public class CompositeTaskOuterPage<SchemaT extends SchemaObject>
     @Override
     public Supplier<CommandResult> getResults() {
 
-      // See the outer Page class, if there is a failure, then we add the errors and warnings the
-      // Composite
-      // tasks have lifted from their internal tasks. This is a status only result.
+      // See the CompositeTaskOuterPage, if there is a failure, then we add the errors and warnings the
+      // CompositeTask's have lifted from their internal tasks. This is a status only result.
 
-      // If not failure, we get the result from the lastAccumulator so this command builder is
+      // If not failure, we get the result from the lastTaskAccumulator so this command builder is
       // ignored
       return new CompositeTaskOuterPage<>(
           tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode, requestTracing));

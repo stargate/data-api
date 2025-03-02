@@ -16,7 +16,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
  *   <li>The Composite Tasks created by the builder will run in a sequential task group.
  *   <li>Create task groups for the intermediate Composite Tasks, these are any composite task that
  *       is not the last. For each of these call {@link #withIntermediateTasks} with the retry
- *       policy. These tasks all use a {@link CompositeTaskIntermediatePage} which lifts erors and
+ *       policy. These tasks all use a {@link CompositeTaskInnerPage} which lifts erors and
  *       warnings, so you do not provide an accumulator.
  *   <li>Create the last group of tasks, it's retry policy, and a {@link TaskAccumulator} that will
  *       build the page of results from the last group of tasks. Pass these to {@link

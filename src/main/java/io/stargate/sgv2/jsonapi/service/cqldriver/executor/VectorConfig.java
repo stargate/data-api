@@ -12,7 +12,6 @@ import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
-
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;

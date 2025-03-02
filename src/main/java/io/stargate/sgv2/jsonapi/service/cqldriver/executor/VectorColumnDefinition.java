@@ -22,7 +22,8 @@ public record VectorColumnDefinition(
     int vectorSize,
     SimilarityFunction similarityFunction,
     EmbeddingSourceModel sourceModel,
-    VectorizeDefinition vectorizeDefinition) implements Recordable {
+    VectorizeDefinition vectorizeDefinition)
+    implements Recordable {
 
   /**
    * Convert from JSON.
@@ -87,6 +88,5 @@ public record VectorColumnDefinition(
         .append("similarityFunction", similarityFunction)
         .append("sourceModel", sourceModel)
         .append("vectorizeDefinition", vectorizeDefinition);
-
   }
 }
