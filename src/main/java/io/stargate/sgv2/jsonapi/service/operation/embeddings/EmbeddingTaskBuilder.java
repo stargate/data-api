@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.embeddings;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
@@ -9,10 +9,10 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import java.util.List;
 import java.util.Objects;
 
-public class EmbeddingTaskBuilder
-    extends TaskBuilder<EmbeddingTask<TableSchemaObject>, TableSchemaObject> {
+public class EmbeddingTaskBuilder<SchemaT extends TableBasedSchemaObject>
+    extends TaskBuilder<EmbeddingTask<SchemaT>, SchemaT> {
 
-  private CommandContext<TableSchemaObject> commandContext;
+  private final CommandContext<SchemaT> commandContext;
   // aaron 22 feb 2025 - for unknown we need the command name when we create the embedding provider
   private String originalCommandName;
   private ApiVectorType apiVectorType;
@@ -20,38 +20,40 @@ public class EmbeddingTaskBuilder
   private TaskRetryPolicy retryPolicy = null;
   private EmbeddingProvider.EmbeddingRequestType requestType;
 
-  public EmbeddingTaskBuilder(CommandContext<TableSchemaObject> commandContext) {
+  public EmbeddingTaskBuilder(CommandContext<SchemaT> commandContext) {
     super(commandContext.schemaObject());
 
     this.commandContext = commandContext;
   }
 
-  public EmbeddingTaskBuilder withApiVectorType(ApiVectorType apiVectorType) {
+  public EmbeddingTaskBuilder<SchemaT> withApiVectorType(ApiVectorType apiVectorType) {
     this.apiVectorType = apiVectorType;
     return this;
   }
 
-  public EmbeddingTaskBuilder withEmbeddingActions(List<EmbeddingAction> embeddingActions) {
+  public EmbeddingTaskBuilder<SchemaT> withEmbeddingActions(
+      List<EmbeddingAction> embeddingActions) {
     this.embeddingActions = embeddingActions;
     return this;
   }
 
-  public EmbeddingTaskBuilder withRetryPolicy(TaskRetryPolicy retryPolicy) {
+  public EmbeddingTaskBuilder<SchemaT> withRetryPolicy(TaskRetryPolicy retryPolicy) {
     this.retryPolicy = retryPolicy;
     return this;
   }
 
-  public EmbeddingTaskBuilder withOriginalCommandName(String originalCommandName) {
+  public EmbeddingTaskBuilder<SchemaT> withOriginalCommandName(String originalCommandName) {
     this.originalCommandName = originalCommandName;
     return this;
   }
 
-  public EmbeddingTaskBuilder withRequestType(EmbeddingProvider.EmbeddingRequestType requestType) {
+  public EmbeddingTaskBuilder<SchemaT> withRequestType(
+      EmbeddingProvider.EmbeddingRequestType requestType) {
     this.requestType = requestType;
     return this;
   }
 
-  public EmbeddingTask<TableSchemaObject> build() {
+  public EmbeddingTask<SchemaT> build() {
     Objects.requireNonNull(apiVectorType, "apiVectorType cannot be null");
     Objects.requireNonNull(
         apiVectorType.getVectorizeDefinition(),

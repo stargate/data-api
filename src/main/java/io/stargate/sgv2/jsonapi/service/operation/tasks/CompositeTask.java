@@ -44,7 +44,7 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
   }
 
   public static <InnerTaskT extends Task<SchemaT>, SchemaT extends SchemaObject>
-      CompositeTask<InnerTaskT, SchemaT> intermediaTask(
+      CompositeTask<InnerTaskT, SchemaT> intermediateTask(
           int position,
           SchemaT schemaObject,
           TaskRetryPolicy retryPolicy,

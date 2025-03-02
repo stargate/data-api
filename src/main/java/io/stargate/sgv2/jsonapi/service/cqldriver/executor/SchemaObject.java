@@ -72,8 +72,6 @@ public abstract class SchemaObject implements Recordable {
     return dataRecorder
         .append("type", type)
         .append("name.keyspace", name.keyspace())
-        .append("name.table", name.table())
-        .append("vectorConfig", vectorConfig())
-        .append("indexUsage", newIndexUsage());
+        .append("name.table", name.table());
   }
 }

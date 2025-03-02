@@ -60,7 +60,7 @@ public interface Recordable {
     return new RecordableCollection(values);
   }
 
-  static Recordable copyOf(Map<String, ?> values) {
+  static Recordable copyOf(Map<?, ?> values) {
     return new RecordableMap(values);
   }
 
@@ -130,17 +130,16 @@ public interface Recordable {
     }
   }
 
-  class RecordableMap extends HashMap<String, Object> implements Recordable {
-    RecordableMap(Map<String, ?> values) {
+  class RecordableMap extends HashMap<Object, Object> implements Recordable {
+    RecordableMap(Map<?, ?> values) {
       super(values);
     }
 
     @Override
     public DataRecorder recordTo(DataRecorder dataRecorder) {
-      // create a new list to avoid recursive calls
       var recorder = dataRecorder;
       for (var entry : entrySet()) {
-        recorder = recorder.append(entry.getKey(), entry.getValue());
+        recorder = recorder.append(entry.getKey().toString(), entry.getValue());
       }
       return recorder;
     }

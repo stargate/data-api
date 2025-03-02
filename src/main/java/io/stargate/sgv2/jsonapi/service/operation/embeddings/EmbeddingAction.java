@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import io.stargate.sgv2.jsonapi.service.shredding.ValueAction;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -105,11 +106,15 @@ public class EmbeddingAction implements ValueAction, Recordable {
     dataRecorder
         .append("vectorizeDefinition.provider", vectorType.getVectorizeDefinition().provider())
         .append("vectorizeDefinition.modelName", vectorType.getVectorizeDefinition().modelName())
+        .append("vectorizeDefinition.parameters", vectorType.getVectorizeDefinition().parameters())
+        .append(
+            "vectorizeDefinition.authentication",
+            vectorType.getVectorizeDefinition().authentication())
         .append("vectorType.dimension", vectorType.getDimension());
     return dataRecorder;
   }
 
-  public static class EmbeddingActionGroupKey {
+  public static class EmbeddingActionGroupKey implements Recordable {
 
     private final ApiVectorType vectorType;
 
@@ -119,6 +124,23 @@ public class EmbeddingAction implements ValueAction, Recordable {
 
     public ApiVectorType vectorType() {
       return vectorType;
+    }
+
+    @Override
+    public DataRecorder recordTo(DataRecorder dataRecorder) {
+      return dataRecorder
+          .append("vectorizeDefinition", vectorType.getVectorizeDefinition())
+          .append("dimension", vectorType.getDimension());
+    }
+
+    @Override
+    public String toString() {
+      return PrettyPrintable.pprint(this, false);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(vectorType.getDimension(), vectorType.getVectorizeDefinition());
     }
 
     @Override

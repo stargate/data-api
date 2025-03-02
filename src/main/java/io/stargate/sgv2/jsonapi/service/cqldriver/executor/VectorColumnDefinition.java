@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 
 /**
  * Configuration vector column with the extra info we need for vectors
@@ -21,7 +22,7 @@ public record VectorColumnDefinition(
     int vectorSize,
     SimilarityFunction similarityFunction,
     EmbeddingSourceModel sourceModel,
-    VectorizeDefinition vectorizeDefinition) {
+    VectorizeDefinition vectorizeDefinition) implements Recordable {
 
   /**
    * Convert from JSON.
@@ -76,5 +77,16 @@ public record VectorColumnDefinition(
 
     return new VectorColumnDefinition(
         fieldName, dimension, similarityFunction, sourceModel, vectorizeDefinition);
+  }
+
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return dataRecorder
+        .append("fieldName", fieldName)
+        .append("vectorSize", vectorSize)
+        .append("similarityFunction", similarityFunction)
+        .append("sourceModel", sourceModel)
+        .append("vectorizeDefinition", vectorizeDefinition);
+
   }
 }

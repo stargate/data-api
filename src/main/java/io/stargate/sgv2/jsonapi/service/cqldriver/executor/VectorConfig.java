@@ -11,12 +11,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
+
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** Definition of vector config for a collection or table */
-public class VectorConfig {
+public class VectorConfig implements Recordable {
   public static final VectorConfig NOT_ENABLED_CONFIG = new VectorConfig(List.of());
 
   private final Map<String, VectorColumnDefinition> columnVectorDefinitions;
@@ -164,5 +166,12 @@ public class VectorConfig {
   @Override
   public int hashCode() {
     return Objects.hash(columnVectorDefinitions, vectorEnabled);
+  }
+
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return dataRecorder
+        .append("vectorEnabled", vectorEnabled)
+        .append("columnVectorDefinitions", Recordable.copyOf(columnVectorDefinitions));
   }
 }

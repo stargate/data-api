@@ -25,7 +25,13 @@ public class DefaultRequestTracing implements RequestTracing {
   }
 
   @Override
+  public boolean enabled() {
+    return true;
+  }
+
+  @Override
   public void maybeTrace(Supplier<RequestTracing.TraceMessage> messageSupplier) {
+    // TODO: Aaron move this to be in the interface, and have addEvent be the abstract
     Objects.requireNonNull(messageSupplier, "messageSupplier must not be null");
 
     var message = messageSupplier.get();

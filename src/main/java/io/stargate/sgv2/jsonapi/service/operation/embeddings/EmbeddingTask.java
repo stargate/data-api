@@ -4,8 +4,7 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
@@ -14,7 +13,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EmbeddingTask<SchemaT extends SchemaObject>
+public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
     extends BaseTask<
         SchemaT, EmbeddingTask.EmbeddingResultSupplier, EmbeddingTask.EmbeddingTaskResult> {
 
@@ -41,8 +40,9 @@ public class EmbeddingTask<SchemaT extends SchemaObject>
     setStatus(TaskStatus.READY);
   }
 
-  public static EmbeddingTaskBuilder builder(CommandContext<TableSchemaObject> commandContext) {
-    return new EmbeddingTaskBuilder(commandContext);
+  public static <SchemaT extends TableBasedSchemaObject> EmbeddingTaskBuilder<SchemaT> builder(
+      CommandContext<SchemaT> commandContext) {
+    return new EmbeddingTaskBuilder<>(commandContext);
   }
 
   // =================================================================================================
@@ -70,7 +70,7 @@ public class EmbeddingTask<SchemaT extends SchemaObject>
   @Override
   protected RuntimeException maybeHandleException(
       EmbeddingResultSupplier resultSupplier, RuntimeException runtimeException) {
-    return null;
+    return runtimeException;
   }
 
   /**
@@ -126,7 +126,11 @@ public class EmbeddingTask<SchemaT extends SchemaObject>
                               embeddingTask.taskDesc()),
                       Recordable.copyOf(vectorizeTexts)));
 
-      // todo: handle errors from the providers
+      // The EmbeddingProviders use EmbeddingProviderErrorMapper and turn errors from the providers
+      // into
+      // Error V1 JsonApiException structure, this will be attached to the task if we let it bubble
+      // out
+      // of here.
       return supplier
           .get()
           .onItem()

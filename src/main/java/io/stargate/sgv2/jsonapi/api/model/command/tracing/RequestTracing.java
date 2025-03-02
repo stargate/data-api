@@ -25,6 +25,12 @@ public interface RequestTracing {
    */
   RequestTracing NO_TRACING =
       new RequestTracing() {
+
+        @Override
+        public boolean enabled() {
+          return false;
+        }
+
         @Override
         public void maybeTrace(Supplier<TraceMessage> messageSupplier) {}
 
@@ -33,6 +39,14 @@ public interface RequestTracing {
           return Optional.empty();
         }
       };
+
+  boolean enabled();
+
+  /**
+   * Call to add a {@link TraceMessage} to the trace, the implementation will only call the
+   * messageSupplier if tracing is enabled.
+   */
+  void maybeTrace(Supplier<TraceMessage> messageSupplier);
 
   /** Convenience method for {@link #maybeTrace(Supplier)} */
   default void maybeTrace(String message) {
@@ -43,12 +57,6 @@ public interface RequestTracing {
   default void maybeTrace(String message, Recordable recordable) {
     maybeTrace(() -> new TraceMessage(message, recordable));
   }
-
-  /**
-   * Call to add a {@link TraceMessage} to the trace, the implementation will only call the
-   * messageSupplier if tracing is enabled.
-   */
-  void maybeTrace(Supplier<TraceMessage> messageSupplier);
 
   /**
    * Called to get the complete request trace to be included in the response.
