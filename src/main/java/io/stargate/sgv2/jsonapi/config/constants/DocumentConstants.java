@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.config.constants;
 
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
-import java.util.regex.Pattern;
 
 public interface DocumentConstants {
   /** Names of "special" fields in Documents */
@@ -32,16 +31,6 @@ public interface DocumentConstants {
 
     /** Field name used in projection clause to get similarity score in response. */
     String VECTOR_FUNCTION_SIMILARITY_FIELD = "$similarity";
-
-    // Current definition of valid JSON API Field names: note that this only validates
-    // characters, not length limits.
-    // NOTE: no longer used, see {@link
-    // io.stargate.sgv2.jsonapi.service.schema.naming.FieldNamingRule}
-    // for replacement
-    @Deprecated Pattern VALID_NAME_PATTERN = Pattern.compile("[a-zA-Z0-9_\\-]*");
-
-    /** Field name pattern in sort and filter clause. */
-    Pattern VALID_PATH_PATTERN = Pattern.compile("[a-zA-Z0-9_.\\-]*");
   }
 
   interface KeyTypeId {
