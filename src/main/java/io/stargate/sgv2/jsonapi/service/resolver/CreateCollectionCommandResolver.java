@@ -152,7 +152,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     final ObjectNode collectionNode = objectMapper.createObjectNode();
     ObjectNode optionsNode = objectMapper.createObjectNode(); // For storing collection options.
 
-    // TODO: move this out of the command resolver, it is not a responsbility for this class
+    // TODO: move this out of the command resolver, it is not a responsibility for this class
     if (hasIndexing) {
       optionsNode.putPOJO(TableCommentConstants.COLLECTION_INDEXING_KEY, indexing);
     }

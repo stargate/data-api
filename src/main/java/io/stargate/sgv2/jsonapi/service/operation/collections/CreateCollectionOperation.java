@@ -156,7 +156,7 @@ public record CreateCollectionOperation(
             embeddingSourceModel,
             comment,
             objectMapper);
-    // if table exists we have to choices:
+    // if table exists we have two choices:
     // (1) trying to create with same options -> ok, proceed
     // (2) trying to create with different options -> error out
     if (existedCollectionSettings.equals(newCollectionSettings)) {
@@ -399,7 +399,7 @@ public record CreateCollectionOperation(
   }
 
   public SimpleStatement getCreateTable(String keyspace, String table) {
-    // The keyspace and table name are quoted to make it case sensitive
+    // The keyspace and table name are quoted to make it case-sensitive
     if (vectorSearch) {
       String createTableWithVector =
           "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
