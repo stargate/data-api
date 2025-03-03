@@ -963,6 +963,23 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "Error trying to convert to targetCQLType `INT`",
               "no codec matching (list/set) declared element type");
     }
+
+    @Test
+    void failOnInsertNullValue() {
+      assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .templated()
+          .insertOne(
+              """
+                      {
+                        "id":"listInvalid",
+                        "intList":[null]
+                      }
+                      """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "null values are not allowed in list column");
+    }
   }
 
   @Nested
@@ -1081,6 +1098,23 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "Error trying to convert to targetCQLType `DOUBLE`",
               // Double is special since there are NaNs represented by Constants
               "Unsupported String value: only");
+    }
+
+    @Test
+    void failOnInsertNullValue() {
+      assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .templated()
+          .insertOne(
+              """
+                      {
+                        "id":"setInvalid",
+                        "doubleSet":[null]
+                      }
+                      """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "null values are not allowed in set column");
     }
   }
 
@@ -1373,6 +1407,54 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "Only values that are supported by",
               "Error trying to convert to targetCQLType `INT`",
               "actual type `java.lang.String`");
+    }
+
+    @Test
+    void failOnInsertNullKey() {
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(
+              """
+                      {
+                        "id":"mapInvalid",
+                        "intMap":[[null,1]]
+                      }
+                      """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "null keys/values are not allowed in map column");
+    }
+
+    @Test
+    void failOnInsertNullValue() {
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(
+              """
+                      {
+                        "id":"mapInvalid",
+                        "intMap":[[1, null]]
+                      }
+                      """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "null keys/values are not allowed in map column");
+
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(
+              """
+                      {
+                        "id":"mapInvalid",
+                        "textMap":{"abc": null}
+                      }
+                      """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "null keys/values are not allowed in map column");
     }
   }
 
