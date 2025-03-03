@@ -4,6 +4,7 @@ import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -66,6 +67,13 @@ public abstract class NamedValueContainer<NameT, ValueT, NvT extends NamedValue<
   /** Helper that returns an immutable list of the {@link NamedValue#value()}s in the container. */
   public Collection<ValueT> valuesValue() {
     return values().stream().map(NamedValue::value).toList();
+  }
+
+  public List<NvT> deferredValues() {
+    // TODO: cache or better calculate this
+    return values().stream()
+        .filter(namedValue -> namedValue.state().equals(NamedValue.NamedValueState.DEFERRED))
+        .toList();
   }
 
   @Override

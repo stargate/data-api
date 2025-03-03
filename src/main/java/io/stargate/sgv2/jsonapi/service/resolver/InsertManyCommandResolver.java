@@ -66,19 +66,5 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
             .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
     return taskBuilder.build(command.documents());
-    // TODO: move the default for ordered to a constant and use in the API
-    //    var taskGroup =
-    //        new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(
-    //            );
-    //    taskGroup.addAll(command.documents().stream().map(taskBuilder::build).toList());
-    //
-    //    var accumulator =
-    //        InsertDBTaskPage.accumulator(commandContext)
-    //            .returnDocumentResponses(
-    //                ApiOptionUtils.getOrDefault(
-    //                    command.options(), InsertManyCommand.Options::returnDocumentResponses,
-    // false));
-    //
-    //    return new TaskOperation<>(taskGroup, accumulator);
   }
 }

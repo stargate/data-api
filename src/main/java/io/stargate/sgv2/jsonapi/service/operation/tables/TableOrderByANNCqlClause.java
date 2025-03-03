@@ -5,6 +5,8 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
+
 import java.util.Objects;
 
 /**
@@ -15,25 +17,30 @@ import java.util.Objects;
  */
 public class TableOrderByANNCqlClause implements OrderByCqlClause {
 
-  private final ApiColumnDef apiColumnDef;
-  private final CqlVector<Float> vector;
+  private final CqlNamedValue sortVector;
   private final Integer defaultLimit;
 
   public TableOrderByANNCqlClause(
-      ApiColumnDef apiColumnDef, CqlVector<Float> vector, Integer defaultLimit) {
-    this.apiColumnDef = Objects.requireNonNull(apiColumnDef, "apiColumnDef must not be null");
-    this.vector = Objects.requireNonNull(vector, "vector must not be null");
+      CqlNamedValue sortVector, Integer defaultLimit) {
+
+    this.sortVector = Objects.requireNonNull(sortVector, "sortVector must not be null");
     this.defaultLimit = Objects.requireNonNull(defaultLimit, "defaultLimit must not be null");
+
     // sanity check
-    if (apiColumnDef.type().typeName() != ApiTypeName.VECTOR) {
+    if (sortVector.apiColumnDef().type().typeName() != ApiTypeName.VECTOR) {
       throw new IllegalArgumentException(
-          "ApiColumnDef must be a vector type, got: %s".formatted(apiColumnDef));
+          "Sort vector column is not a vector, got: %s".formatted(sortVector.apiColumnDef().name().asCql(true)));
     }
   }
 
   @Override
   public Select apply(Select select) {
-    return select.orderByAnnOf(apiColumnDef.name(), vector);
+
+    // the named value will have run the codec and converted into the CqlVector, but it is untyped
+    // (most values passed on the driver are untyped)
+    // this will error if the value is deferred still, i.e. the vectorizing has not finished.
+    CqlVector cqlVector = (CqlVector) sortVector.value();
+    return select.orderByAnnOf(sortVector.name(), cqlVector);
   }
 
   @Override

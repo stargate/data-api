@@ -11,7 +11,10 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingAction;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
+import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import io.stargate.sgv2.jsonapi.service.shredding.NamedValue;
+import io.stargate.sgv2.jsonapi.service.shredding.ValueAction;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
@@ -69,7 +72,7 @@ public class TableInsertDBTaskBuilder
     var insertTasksAndRows = createInsertTasks(jsonNodes);
     TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject> insertTaskGroup =
         new TaskGroup<>(ordered);
-    insertTasksAndRows.forEach(insertTaskAndRow -> insertTaskGroup.add(insertTaskAndRow.task()));
+    insertTaskGroup.addAll(insertTasksAndRows.tasks());
     var insertAccumulator =
         InsertDBTaskPage.accumulator(commandContext)
             .returnDocumentResponses(returnDocumentResponses);
@@ -77,13 +80,7 @@ public class TableInsertDBTaskBuilder
     // we have all the inserts, and the rows they are going to insert
     // if there are no deferred values in any of the rows we can return a single level task group
     // that just does the inserts
-    var allDeferredValues =
-        insertTasksAndRows.stream()
-            .map(insertTaskAndRow -> insertTaskAndRow.row().map(WriteableTableRow::deferredColumns))
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .flatMap(Collection::stream)
-            .toList();
+    var allDeferredValues = Deferrable.deferredValues(insertTasksAndRows.rows());
 
     if (allDeferredValues.isEmpty()) {
       if (LOGGER.isDebugEnabled()) {
@@ -96,8 +93,10 @@ public class TableInsertDBTaskBuilder
 
     // we have some deferred values, e.g. we need to do vectorizing, so we need  to build a
     // hierarchy of task groups
-    // for now we only have vectorize generators so quick sanity check
-    var allActions = allDeferredValues.stream().map(NamedValue::valueAction).toList();
+    // for now we only have vectorize actions so quick sanity check
+
+    var allActions = ValueAction.filteredActions(ValueAction.class, allDeferredValues);
+    var embeddingActions = ValueAction.filteredActions(EmbeddingAction.class, allDeferredValues);
     var nonEmbeddingActions =
         allActions.stream().filter(action -> !(action instanceof EmbeddingAction)).toList();
     if (!nonEmbeddingActions.isEmpty()) {
@@ -128,35 +127,9 @@ public class TableInsertDBTaskBuilder
     return new CompositeTaskOperationBuilder<>(commandContext)
         .withIntermediateTasks(embeddingTaskGroup, TaskRetryPolicy.NO_RETRY)
         .build(insertTaskGroup, TaskRetryPolicy.NO_RETRY, insertAccumulator);
-
-    // the composite group is sequential, we want to do the embedding first then the inserts.
-    //    var compositeTaskGroup =
-    //        new TaskGroup<CompositeTask<?, TableSchemaObject>, TableSchemaObject>(true);
-    //
-    //    CompositeTask<EmbeddingTask<TableSchemaObject>, TableSchemaObject> embeddingCompositeTask
-    // =
-    //        CompositeTask.intermediateTask(
-    //            nextPosition(), schemaObject, TaskRetryPolicy.NO_RETRY, embeddingTaskGroup);
-    //
-    //    compositeTaskGroup.add(embeddingCompositeTask);
-    //
-    //    CompositeTask<InsertDBTask<TableSchemaObject>, TableSchemaObject> insertCompositeTask =
-    //        CompositeTask.lastTask(
-    //            nextPosition(),
-    //            schemaObject,
-    //            TaskRetryPolicy.NO_RETRY,
-    //            insertTaskGroup,
-    //            insertAccumulator);
-    //    compositeTaskGroup.add(insertCompositeTask);
-    //
-    //    // now we need an operation that will run the composite group
-    //    CompositeTaskOuterPage.Accumulator<TableSchemaObject> outerAccumulator =
-    //        CompositeTaskOuterPage.accumulator(commandContext);
-    //
-    //    return new TaskOperation<>(compositeTaskGroup, outerAccumulator);
   }
 
-  private List<InsertTaskAndRow> createInsertTasks(List<JsonNode> jsonNodes) {
+  private TasksAndRows createInsertTasks(List<JsonNode> jsonNodes) {
 
     List<JsonNamedValueFactory.ParsedJsonDocument> parsedDocuments =
         jsonNamedValueFactory.create(jsonNodes);
@@ -168,7 +141,7 @@ public class TableInsertDBTaskBuilder
     var writeableTableRowBuilder =
         new WriteableTableRowBuilder(commandContext, JSONCodecRegistries.DEFAULT_REGISTRY);
 
-    List<InsertTaskAndRow> insertTaskAndRows = new ArrayList<>(jsonNodes.size());
+    TasksAndRows tasksAndRows = new TasksAndRows(jsonNodes.size());
     for (var parsedDocument : parsedDocuments) {
 
       WriteableTableRow writeableRow = null;
@@ -187,45 +160,25 @@ public class TableInsertDBTaskBuilder
       // ok to always add the failure, if it is null it will be ignored
       task.maybeAddFailure(exception);
 
-      insertTaskAndRows.add(new InsertTaskAndRow(task, Optional.ofNullable(writeableRow)));
+      tasksAndRows.tasks.add(task);
+      if (writeableRow != null) {
+        tasksAndRows.rows.add(writeableRow);
+      }
     }
 
-    return insertTaskAndRows;
+    return tasksAndRows;
   }
-
-  //  private TaskGroup<EmbeddingTask<TableSchemaObject>, TableSchemaObject> createEmbeddingTasks(
-  //      List<EmbeddingAction> embeddingActions) {
-  //
-  //    if (embeddingActions.isEmpty()) {
-  //      throw new RuntimeException("No deferred vectorizing to do - TODO Handle better");
-  //    }
-  //
-  //    Map<EmbeddingAction.EmbeddingActionGroupKey, List<EmbeddingAction>> actionGroups =
-  // embeddingActions.stream().collect(Collectors.groupingBy(EmbeddingAction::groupKey));
-  //
-  //    // each group of embedding actions is a single Embedding Task
-  //    TaskGroup<EmbeddingTask<TableSchemaObject>, TableSchemaObject> taskGroup =
-  //        new TaskGroup<>(false);
-  //
-  //    actionGroups.forEach(
-  //        (embeddingActionGroupKey, actions) -> {
-  //          var embeddingTask =
-  //              EmbeddingTask.builder(commandContext)
-  //                  .withApiVectorType(embeddingActionGroupKey.vectorType())
-  //                  .withEmbeddingActions(actions)
-  //                  .withRetryPolicy(TaskRetryPolicy.NO_RETRY)
-  //                  .withOriginalCommandName(commandContext.commandName())
-  //                  .withRequestType(EmbeddingProvider.EmbeddingRequestType.INDEX)
-  //                  .build();
-  //          taskGroup.add(embeddingTask);
-  //        });
-  //    return taskGroup;
-  //  }
 
   /**
    * The row can be null if there was an error making it, the task is still there to transport the
-   * error for the row
+   * error for the row.
+   * <p>
+   * We are going to test for the rows for deferrable values, so put them on that interface now.
    */
-  private record InsertTaskAndRow(
-      InsertDBTask<TableSchemaObject> task, Optional<WriteableTableRow> row) {}
+  private record TasksAndRows(
+      List<InsertDBTask<TableSchemaObject>> tasks, List<Deferrable> rows) {
+    TasksAndRows(int initialCapacity) {
+      this(new ArrayList<>(initialCapacity), new ArrayList<>(initialCapacity));
+    }
+  }
 }

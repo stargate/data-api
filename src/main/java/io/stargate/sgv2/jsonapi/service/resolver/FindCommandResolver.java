@@ -32,7 +32,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver;
-  private final ReadCommandResolver<FindCommand> readCommandResolver;
+  private final TableReadDBOperationBuilder<FindCommand> readCommandResolver;
 
   @Inject
   public FindCommandResolver(
@@ -41,7 +41,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
 
-    this.readCommandResolver = new ReadCommandResolver<>(objectMapper, operationsConfig);
+    this.readCommandResolver = new TableReadDBOperationBuilder<>(objectMapper, operationsConfig);
     this.objectMapper = objectMapper;
     this.operationsConfig = operationsConfig;
     this.meterRegistry = meterRegistry;

@@ -57,22 +57,5 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
             .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
 
     return taskBuilder.build(List.of(command.document()));
-
-    //    TableInsertDBTaskBuilder taskBuilder =
-    //        TableInsertDBTask.builder(commandContext.schemaObject())
-    //            .withJsonNamedValueFactory(
-    //                new JsonNamedValueFactory(commandContext.schemaObject(),
-    // JsonNodeDecoder.DEFAULT))
-    //            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
-    //
-    //    var taskGroup =
-    //        new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(
-    //            taskBuilder.build(command.document()));
-    //
-    //    var accumulator =
-    //        InsertDBTaskPage.accumulator(commandContext)
-    //            .returnDocumentResponses(false); // never for insertOne
-    //
-    //    return new TaskOperation<>(taskGroup, accumulator);
   }
 }

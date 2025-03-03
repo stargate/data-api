@@ -32,6 +32,7 @@ public record TableInsertValuesCQLClause(TableSchemaObject tableSchemaObject, Wr
   public TableInsertValuesCQLClause {
     Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     Objects.requireNonNull(row, "row cannot be null");
+
     if (row.allColumns().isEmpty()) {
       throw new UnvalidatedClauseException("Row must have at least one column to insert");
     }
@@ -48,9 +49,10 @@ public record TableInsertValuesCQLClause(TableSchemaObject tableSchemaObject, Wr
       LOGGER.debug(
           "apply() - building insert keyspace={} table={} row.allColumns={}",
           tableSchemaObject.keyspaceName().asCql(true),
-          tableSchemaObject.keyspaceName().asCql(true),
+          tableSchemaObject.tableName().asCql(true),
           PrettyPrintable.pprint(row.allColumns()));
     }
+
     for (var cqlNamedValue : row.allColumns().values()) {
       positionalValues.add(cqlNamedValue.value());
       regularInsert =

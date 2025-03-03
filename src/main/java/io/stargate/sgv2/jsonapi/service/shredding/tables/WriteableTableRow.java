@@ -4,6 +4,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -22,7 +23,7 @@ import java.util.Objects;
  *   <li>All types have been converted to what he driver expects.
  * </ul>
  */
-public class WriteableTableRow implements Recordable {
+public class WriteableTableRow implements Deferrable<CqlNamedValue>, Recordable {
 
   private final TableSchemaObject tableSchemaObject;
   private final CqlNamedValueContainer keyColumns;
@@ -76,11 +77,9 @@ public class WriteableTableRow implements Recordable {
     return allColumns;
   }
 
-  public Collection<CqlNamedValue> deferredColumns() {
-    // TODO: cache or better calculate this
-    return allColumns.values().stream()
-        .filter(namedValue -> namedValue.state().equals(NamedValue.NamedValueState.DEFERRED))
-        .toList();
+  @Override
+  public List<CqlNamedValue> deferredValues() {
+    return allColumns.deferredValues();
   }
 
   public RowId rowId() {
