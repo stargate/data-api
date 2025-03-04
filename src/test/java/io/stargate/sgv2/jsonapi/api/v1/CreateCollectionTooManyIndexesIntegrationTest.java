@@ -38,7 +38,8 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractKeyspaceInte
 
     @Override
     public int getIndexesPerDBOverride() {
-      return COLLECTIONS_TO_CREATE * 9;
+      // Default per-Collection index count is now 10 without vector but with Lexical
+      return COLLECTIONS_TO_CREATE * 10;
     }
   }
 
