@@ -312,7 +312,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       CollectionSchemaObject collectionSetting) {
 
     // TODO: move the vector and vectorize parts to be methods on those schema objects
-    CreateCollectionCommand.Options options = null;
+    CreateCollectionCommand.Options options;
     CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig = null;
     CreateCollectionCommand.Options.IndexingConfig indexingConfig = null;
 
@@ -361,7 +361,10 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             ? null
             : new CreateCollectionCommand.Options.IdConfig(idType.toString());
 
-    options = new CreateCollectionCommand.Options(idConfig, vectorSearchConfig, indexingConfig);
+    // !!! TODO: LexicalConfigDefinition is not yet implemented
+    CreateCollectionCommand.Options.LexicalConfigDefinition lexical = null;
+    options =
+        new CreateCollectionCommand.Options(idConfig, vectorSearchConfig, indexingConfig, lexical);
 
     // CreateCollectionCommand object is created for convenience to generate json
     // response. The code is not creating a collection here.
