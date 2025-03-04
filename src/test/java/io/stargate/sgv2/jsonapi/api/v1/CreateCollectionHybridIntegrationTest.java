@@ -23,23 +23,17 @@ class CreateCollectionHybridIntegrationTest extends AbstractKeyspaceIntegrationT
   @Order(1)
   class CreateLexicalHappyPath {
     @Test
-    void createLexicalOk() {
+    void createLexicalSimple() {
       final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
       String json =
+          createRequestWithLexical(
+              collectionName,
               """
-                            {
-                              "createCollection": {
-                                "name": "%s",
-                                "options": {
-                                  "lexical": {
-                                    "enabled": "true",
-                                    "analyzer": "standard"
-                                  }
-                                }
-                              }
-                            }
-                            """
-              .formatted(collectionName);
+                {
+                  "enabled": "true",
+                  "analyzer": "standard"
+                }
+          """);
 
       given()
           .headers(getHeaders())
@@ -53,6 +47,21 @@ class CreateCollectionHybridIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("status.ok", is(1));
       deleteCollection(collectionName);
     }
+  }
+
+  private String createRequestWithLexical(String collectionName, String lexicalDef) {
+    return
+        """
+                  {
+                    "createCollection": {
+                      "name": "%s",
+                      "options": {
+                        "lexical": %s
+                      }
+                    }
+                  }
+                  """
+        .formatted(collectionName, lexicalDef);
   }
 
   private void deleteCollection(String collectionName) {

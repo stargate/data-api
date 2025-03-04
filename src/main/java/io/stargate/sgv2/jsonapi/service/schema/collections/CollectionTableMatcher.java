@@ -75,6 +75,10 @@ public class CollectionTableMatcher implements Predicate<TableMetadata> {
             .or(
                 new CqlColumnMatcher.Set(
                     CqlIdentifier.fromInternal("query_null_values"),
+                    new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
+            .or(
+                new CqlColumnMatcher.BasicType(
+                    CqlIdentifier.fromInternal("query_lexical_value"),
                     new PrimitiveType(ProtocolConstants.DataType.VARCHAR)));
 
     // TODO: do not duplicate all of the code above below here, just add one extra predicate if we
@@ -130,6 +134,10 @@ public class CollectionTableMatcher implements Predicate<TableMetadata> {
                     CqlIdentifier.fromInternal("query_null_values"),
                     new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
             .or(
+                new CqlColumnMatcher.BasicType(
+                    CqlIdentifier.fromInternal("query_lexical_value"),
+                    new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
+            .or(
                 new CqlColumnMatcher.Vector(
                     CqlIdentifier.fromInternal("query_vector_value"),
                     new PrimitiveType(ProtocolConstants.DataType.FLOAT)));
@@ -139,7 +147,7 @@ public class CollectionTableMatcher implements Predicate<TableMetadata> {
    * Tests if the given table is a valid jsonapi table.
    *
    * @param cqlTable the table
-   * @return Returns true only if all the columns in the table are corresponding the jsonapi table
+   * @return Returns true only if all the columns in the table correspond to the data-api table
    *     schema.
    */
   @Override
