@@ -71,6 +71,8 @@ public class GenericOperation<
 
     LOGGER.debug("execute() - starting to process attempts={}", attempts);
 
+    // TODO(Hazel): start another multi to go through all the attempts, group vectorize tasks?
+
     return startMulti(dataApiRequestInfo, queryExecutor)
         .collect()
         .in(() -> pageBuilder, OperationAttemptAccumulator::accumulate)
