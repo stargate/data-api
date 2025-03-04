@@ -5,12 +5,12 @@ description: >2
 
 scenarios:
   default:
-    schema-namespace:   run driver=http tags==block:schema-namespace threads==1 cycles==UNDEF
-    schema-collection:   run driver=http tags==block:schema-collection threads==1 cycles==UNDEF
-    ramp-up-insert-one:    run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
-    find-one:    run driver=http tags==name:"find-one.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
-    find-one-update: run driver=http tags==name:"find-one-update.*" cycles===TEMPLATE(update-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
-    find-one-delete:    run driver=http tags==name:"find-one-delete.*" cycles===TEMPLATE(delete-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
+    #schema-namespace:   run driver=http tags==block:schema-namespace threads==1 cycles==UNDEF
+    #schema_collection:   run driver=http tags==block:schema_collection threads==1 cycles==UNDEF
+    ramp_up_insert_one:  run driver=http tags==block:ramp_up_insert_one cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
+    find_one:    run driver=http tags==block:find_one cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
+    #find-one-update: run driver=http tags==name:"find-one-update.*" cycles===TEMPLATE(update-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
+    #find-one-delete:    run driver=http tags==name:"find-one-delete.*" cycles===TEMPLATE(delete-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
 
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer
@@ -31,50 +31,48 @@ bindings:
 
 
 blocks:
-  schema:
+  schema_collection:
     ops:
-      delete-collection:
+#      delete_collection:
+#        method: POST
+#        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>
+#        Accept: "application/json"
+#        X-Cassandra-Request-Id: "{request_id}"
+#        Token: "{token}"
+#        Content-Type: "application/json"
+#        ok-body: ".*\"ok\": 1.*"
+#        body: >2
+#          {
+#            "deleteCollection": {
+#              "name": "<<collection:TEMPLATE(table,keyvalue)>>"
+#            }
+#          }
+      create_collection:
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
         Content-Type: "application/json"
-        ok-body: ".*\"ok\":1.*"
-        body: >2
-          {
-            "deleteCollection": {
-              "name": "<<collection:TEMPLATE(table,keyvalue)>>"
-            }
-          }
-      create-collection:
-        method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>
-        Accept: "application/json"
-        X-Cassandra-Request-Id: "{request_id}"
-        Token: "{token}"
-        Content-Type: "application/json"
-        ok-body: ".*\"ok\":1.*"
+        ok-body: ".*\"ok\": 1.*"
         body: >2
           {
             "createCollection": {
               "name" : "<<collection:TEMPLATE(table,keyvalue)>>",
               "options": {
                 "vector": {
-                  "dimension": 1024 ,
-                  "metric": "cosine"
-                },
-                "vectorize": {
-                  "service" : "nvidia",
-                  "options" : {
-                    "modelName": "query"
+                  "dimension": 2048 ,
+                  "metric": "cosine",
+                  "service": {
+                    "provider": "nvidia",
+                    "modelName": "nvidia/llama-3.2-nv-embedqa-1b-v2"
                   }
                 }
               }
             }
           }
 
-  ramp-up-insert-one:
+  ramp_up_insert_one:
     ops:
       insert-one-vectorize:
         method: POST
@@ -88,14 +86,14 @@ blocks:
             {
                "insertOne": {
                   "document": {
-                      "user_id":      "{user_id}",
+                      "movie_id":      "{movie_id}",
                       "description": "{movie_short_description}",
                       "$vectorize": "{movie_short_description}"
                   }
                }
             }
 
-  find-one:
+  find_one:
     ops:
       find-one-vectorize:
         method: POST
@@ -108,7 +106,7 @@ blocks:
         body: >2
             {
               "findOne": {
-                "sort" : {"$vectorize" : "{movie_short_description}"},
+                "sort" : {"$vectorize" : "{movie_short_description}"}
               }
             }
 
