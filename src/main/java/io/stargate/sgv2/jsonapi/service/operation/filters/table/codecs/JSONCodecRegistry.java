@@ -165,6 +165,46 @@ public class JSONCodecRegistry {
     return match;
   }
 
+  /**
+   * Returns a codec for the key of the map column.
+   *
+   * @param table {@link TableMetadata} to find the column definition in.
+   * @param column {@link CqlIdentifier} target map column.
+   * @param key The json map key to be used to find the cql codec.
+   * @param <JavaT> Type of the Java object we want to convert.
+   * @param <CqlT> Type fo the Java object the CQL driver expects.
+   * @throws UnknownColumnException
+   * @throws MissingJSONCodecException
+   * @throws ToCQLCodecException
+   */
+  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> getKeyCodecForMap(
+      TableMetadata table, CqlIdentifier column, Object key)
+      throws UnknownColumnException, MissingJSONCodecException, ToCQLCodecException {
+    Objects.requireNonNull(table, "table must not be null");
+    Objects.requireNonNull(column, "column must not be null");
+    var columnMetadata =
+        table.getColumn(column).orElseThrow(() -> new UnknownColumnException(table, column));
+
+    var mapType = columnMetadata.getType();
+    if (!(mapType instanceof MapType castedMapType)) {
+      throw new ToCQLCodecException(key, mapType, "column is not a map column");
+    }
+    var keyType = castedMapType.getKeyType();
+
+    if (key == null) {
+      throw new ToCQLCodecException(
+          null, mapType, "null keys/values are not allowed in map column");
+    }
+    // First find candidates for CQL target type in question (if any)
+    List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(keyType);
+    if (candidates == null) { // No scalar codec for this CQL type
+      throw new MissingJSONCodecException(table, columnMetadata, key.getClass(), key);
+    }
+
+    return (JSONCodec<JavaT, CqlT>)
+        MapCodecs.findMapKeyOrValueCodec(candidates, keyType, key, false);
+  }
+
   public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(
       TableMetadata table, CqlIdentifier columnId)
       throws UnknownColumnException, MissingJSONCodecException {
