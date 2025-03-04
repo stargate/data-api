@@ -78,4 +78,8 @@ public class TestData {
   public TableUpdateAnalyzerTestData tableUpdateAnalyzer() {
     return getOrCache(TableUpdateAnalyzerTestData.class);
   }
+
+  public TableUpdateOperatorTestData tableUpdateOperator() {
+    return getOrCache(TableUpdateOperatorTestData.class);
+  }
 }

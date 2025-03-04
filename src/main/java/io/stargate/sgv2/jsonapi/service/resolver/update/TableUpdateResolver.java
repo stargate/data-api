@@ -5,12 +5,9 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.CQL_IDENTIFIER_COM
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.ImmutableList;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
@@ -19,10 +16,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.DefaultUpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -41,15 +36,15 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
 
   // Using map here so we can expose the list of supported operators for validation to check.
   // Keep this immutable, we return the key set in a property below.
-  private static final Map<
-          UpdateOperator, BiFunction<TableSchemaObject, ObjectNode, List<ColumnAssignment>>>
-      supportedOperatorsMap =
-          Map.of(
-              UpdateOperator.SET, TableUpdateResolver::resolveSet,
-              UpdateOperator.UNSET, TableUpdateResolver::resolveUnset);
+  private static final Map<UpdateOperator, TableUpdateOperatorResolver> SUPPORTED_OPERATORS_MAP =
+      Map.of(
+          UpdateOperator.SET, new TableUpdateSetResolver(),
+          UpdateOperator.UNSET, new TableUpdateUnsetResolver(),
+          UpdateOperator.PUSH, new TableUpdatePushResolver(),
+          UpdateOperator.PULL_ALL, new TableUpdatePullAllResolver());
 
-  private static final List<String> supportedOperatorsStringList =
-      ImmutableList.of(UpdateOperator.SET.operator(), UpdateOperator.UNSET.operator());
+  private static final List<String> SUPPORTED_OPERATORS_STRING_LIST =
+      SUPPORTED_OPERATORS_MAP.keySet().stream().map(UpdateOperator::operator).toList();
 
   public TableUpdateResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
@@ -70,18 +65,16 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
             : new EnumMap<>(UpdateOperator.class);
 
     for (var updateOperationDef : updateOperationDefs.entrySet()) {
-
       UpdateOperator updateOperator = updateOperationDef.getKey();
       ObjectNode arguments = updateOperationDef.getValue();
 
-      var resolverFunction = supportedOperatorsMap.get(updateOperator);
-      if (resolverFunction == null) {
+      var operatorResolver = SUPPORTED_OPERATORS_MAP.get(updateOperator);
+      if (operatorResolver == null) {
         usedUnsupportedOperators.add(updateOperator.operator());
       } else if (!arguments.isEmpty()) {
-        // For empty assignment operator, we won't add it to assignments result list, e.g. "$set":
-        // {}
-        // / "$unset": {}
-        assignments.addAll(resolverFunction.apply(commandContext.schemaObject(), arguments));
+        // For empty assignment operator, we won't add it to assignments result list
+        // e.g. "$set": {}, "$unset": {}
+        assignments.addAll(operatorResolver.resolve(commandContext.schemaObject(), arguments));
       }
     }
     // Collect all used unsupported operator and throw Update exception
@@ -91,7 +84,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
               commandContext.schemaObject(),
               map -> {
                 map.put("usedUnsupportedUpdateOperations", errFmtJoin(usedUnsupportedOperators));
-                map.put("supportedUpdateOperations", errFmtJoin(supportedOperatorsStringList));
+                map.put("supportedUpdateOperations", errFmtJoin(SUPPORTED_OPERATORS_STRING_LIST));
               }));
     }
 
@@ -102,7 +95,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
           errVars(
               commandContext.schemaObject(),
               map -> {
-                map.put("supportedUpdateOperations", errFmtJoin(supportedOperatorsStringList));
+                map.put("supportedUpdateOperations", errFmtJoin(SUPPORTED_OPERATORS_STRING_LIST));
               }));
     }
 
@@ -134,58 +127,5 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
     new TableUpdateAnalyzer(commandContext.schemaObject()).analyze(assignments);
 
     return WithWarnings.of(new DefaultUpdateValuesCQLClause(assignments));
-  }
-
-  /**
-   * Resolve the {@link UpdateOperator#SET} operation
-   *
-   * <p>Example:
-   *
-   * <pre>
-   *    {"$set" : { "age" : 51 , "human" : false}}
-   * </pre>
-   *
-   * @param table
-   * @param arguments
-   * @return
-   */
-  private static List<ColumnAssignment> resolveSet(TableSchemaObject table, ObjectNode arguments) {
-    // Checking if the columns exist in the table should be validated in the clause validation
-    return arguments.properties().stream()
-        .map(
-            entry ->
-                new ColumnAssignment(
-                    table.tableMetadata(),
-                    CqlIdentifierUtil.cqlIdentifierFromUserInput(entry.getKey()),
-                    RowShredder.shredValue(entry.getValue())))
-        .toList();
-  }
-
-  /**
-   * Resolve the {@link UpdateOperator#UNSET} operation
-   *
-   * <p>Example:
-   *
-   * <pre>
-   *    {"$unset" : { "country" : ""}}
-   * </pre>
-   *
-   * @param table
-   * @param arguments
-   * @return
-   */
-  private static List<ColumnAssignment> resolveUnset(
-      TableSchemaObject table, ObjectNode arguments) {
-    // Checking if the columns exist in the table should be validated in the clause validation
-    // we ignore the value, API spec says it should be empty string and we should validate that in
-    // the API tier
-    return arguments.properties().stream()
-        .map(
-            entry ->
-                new ColumnAssignment(
-                    table.tableMetadata(),
-                    CqlIdentifierUtil.cqlIdentifierFromUserInput(entry.getKey()),
-                    new JsonLiteral<>(null, JsonType.NULL)))
-        .toList();
   }
 }

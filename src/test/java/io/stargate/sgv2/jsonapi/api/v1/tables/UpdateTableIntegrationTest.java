@@ -10,10 +10,7 @@ import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.ClassOrderer;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -444,5 +441,289 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
     var expectedUpdatedRowWithNull = DOC_JSON_DEFAULT_ROW_TEMPLATE.formatted(null, null);
     checkUpdatedData(
         FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, removeNullValues(expectedUpdatedRowWithNull));
+  }
+
+  @Nested
+  class MapSetListUpdate {
+
+    static final String MAP_SET_LIST_TABLE_NAME = "table_collection_" + System.currentTimeMillis();
+
+    static final String MAP_SET_LIST_TABLE_DEFINITION =
+        """
+                    {
+                        "name": "%s",
+                        "definition": {
+                          "columns": {
+                            "id": "text",
+                            "name": "text",
+                            "mapTextToText": {
+                                    "type": "map",
+                                    "keyType": "text",
+                                    "valueType": "text"
+                            },
+                            "mapIntToInt": {
+                                    "type": "map",
+                                    "keyType": "int",
+                                    "valueType": "int"
+                            },
+                            "setText": {
+                                    "type": "set",
+                                    "valueType": "text"
+                            },
+                            "listText": {
+                                    "type": "list",
+                                    "valueType": "text"
+                            }
+                          },
+                          "primaryKey": {
+                            "partitionBy": [
+                              "id"
+                            ]
+                          }
+                        }
+                      }
+                    """;
+
+    static final String DEFAULT_ROW =
+        """
+                    {
+                        "id": "default-row"
+                    }
+                    """;
+
+    static final String DEFAULT_ROW_JSON =
+        """
+                        {
+                            "id": "default-row",
+                            "name": "default-row"
+                        }
+                        """;
+
+    static final String EXPECTED_DEFAULT_ROW_MAP_SET_LIST_JSON =
+        """
+                    {
+                        "id": "default-row",
+                        "name": "default-row",
+                        "mapTextToText": {"key1": "value1"},
+                        "mapIntToInt": [[1, 1]],
+                        "setText": ["value1"],
+                        "listText": ["value1"]
+                    }
+                    """;
+
+    @BeforeAll
+    public static void createTable() {
+      assertNamespaceCommand(keyspaceName)
+          .postCreateTable(MAP_SET_LIST_TABLE_DEFINITION.formatted(MAP_SET_LIST_TABLE_NAME))
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .insertOne(DEFAULT_ROW_JSON)
+          .wasSuccessful();
+    }
+
+    @Test
+    @Order(1)
+    public void setAndUnset() {
+      var setJSON =
+          """
+                          {
+                            "$set": {
+                                "mapTextToText": {"key1": "value1"},
+                                "mapIntToInt": [[1, 1]],
+                                "setText": ["value1"],
+                                "listText": ["value1"]
+                            }
+                          }
+                      """;
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, setJSON)
+          .hasNoErrors()
+          .hasNoWarnings();
+      checkUpdatedData(DEFAULT_ROW, EXPECTED_DEFAULT_ROW_MAP_SET_LIST_JSON);
+      // then unset.
+      unsetAllMapSetList();
+    }
+
+    @Test
+    @Order(2)
+    public void pushSingle() {
+      var pushJSON =
+          """
+                          {
+                            "$push": {
+                                "mapTextToText": {"key1": "value1"},
+                                "mapIntToInt": [1, 1],
+                                "setText": "value1",
+                                "listText": "value1"
+                            }
+                          }
+                      """;
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, pushJSON)
+          .hasNoErrors()
+          .hasNoWarnings();
+      checkUpdatedData(DEFAULT_ROW, EXPECTED_DEFAULT_ROW_MAP_SET_LIST_JSON);
+      // then unset.
+      unsetAllMapSetList();
+    }
+
+    @Test
+    @Order(3)
+    public void pushMultiple() {
+      var pushJSON =
+          """
+                          {
+                            "$push": {
+                                "mapTextToText": {"$each": [{"key1": "value1"}]},
+                                "mapIntToInt": {"$each": [[1, 1]]},
+                                "setText": {"$each": ["value1"]},
+                                "listText": {"$each": ["value1"]}
+                            }
+                          }
+                      """;
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, pushJSON)
+          .hasNoErrors()
+          .hasNoWarnings();
+      checkUpdatedData(DEFAULT_ROW, EXPECTED_DEFAULT_ROW_MAP_SET_LIST_JSON);
+
+      // then unset.
+      unsetAllMapSetList();
+    }
+
+    @Test
+    @Order(4)
+    public void pullAll() {
+      // make sure we have the data to pullAll
+      var setJSON =
+          """
+                          {
+                            "$set": {
+                                "mapTextToText": {"key1": "value1"},
+                                "mapIntToInt": [[1, 1]],
+                                "setText": ["value1"],
+                                "listText": ["value1"]
+                            }
+                          }
+                          """;
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, setJSON)
+          .hasNoErrors()
+          .hasNoWarnings();
+      checkUpdatedData(DEFAULT_ROW, EXPECTED_DEFAULT_ROW_MAP_SET_LIST_JSON);
+      // then pullAll
+      var pushJSON =
+          """
+                              {
+                                "$pullAll": {
+                                    "mapTextToText": ["key1"],
+                                    "mapIntToInt": [1],
+                                    "setText": ["value1"],
+                                    "listText": ["value1"]
+                                }
+                              }
+                          """;
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, pushJSON)
+          .hasNoErrors()
+          .hasNoWarnings();
+      checkUpdatedData(DEFAULT_ROW, DEFAULT_ROW_JSON);
+
+      // then unset.
+      unsetAllMapSetList();
+    }
+
+    @ParameterizedTest
+    @MethodSource("providePushPullAllOperations")
+    public void pushOrPullAllOnPrimitive(String operator) {
+      var updateJSON =
+              """
+              {
+                "%s": {
+                  "name": "newValue"
+                }
+              }
+              """
+              .formatted(operator);
+
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, updateJSON)
+          .hasSingleApiError(
+              UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR, UpdateException.class)
+          .hasNoWarnings();
+    }
+
+    private static Stream<Arguments> providePushPullAllOperations() {
+      return Stream.of(Arguments.of("$push"), Arguments.of("$pullAll"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideUpdateMapSetListWithNull")
+    public void collectionUpdateOperations(String updateClauseJSON) {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, updateClauseJSON)
+          .hasSingleApiError(
+              UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES,
+              UpdateException.class,
+              "null",
+              "are not allowed in")
+          .hasNoWarnings();
+    }
+
+    private static Stream<Arguments> provideUpdateMapSetListWithNull() {
+      return Stream.of(
+          Arguments.of("{\"$set\": {\"mapTextToText\": [[null,\"abc\"]]}}"),
+          Arguments.of("{\"$set\": {\"mapIntToInt\": [[123,null]]}}"),
+          Arguments.of("{\"$set\": {\"mapTextToText\": {\"123\":null}}}"),
+          Arguments.of("{\"$set\": {\"setText\": [null]}}"),
+          Arguments.of("{\"$set\": {\"listText\": [null]}}"),
+          Arguments.of("{\"$push\": {\"mapTextToText\": [null,\"abc\"]}}"),
+          Arguments.of("{\"$push\": {\"mapIntToInt\": [123, null]}}"),
+          Arguments.of("{\"$push\": {\"setText\": null}}"),
+          Arguments.of("{\"$push\": {\"listText\": null}}"),
+          Arguments.of("{\"$pullAll\": {\"mapTextToText\": [null]}}"),
+          Arguments.of("{\"$pullAll\": {\"setText\": [null]}}"),
+          Arguments.of("{\"$pullAll\": {\"listText\": [null]}}"));
+    }
+
+    private void unsetAllMapSetList() {
+      var unsetJSON =
+          """
+                          {
+                            "$unset": {
+                                  "mapTextToText": {"123": "455"},
+                                  "mapIntToInt": [],
+                                  "setText": ["random"],
+                                  "listText": "abc"
+                                }
+                          }
+                      """;
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .updateOne(DEFAULT_ROW, unsetJSON)
+          .hasNoErrors()
+          .hasNoWarnings();
+
+      checkUpdatedData(DEFAULT_ROW, DEFAULT_ROW_JSON);
+    }
+
+    private void checkUpdatedData(String filter, String expectedUpdatedRow) {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, MAP_SET_LIST_TABLE_NAME)
+          .templated()
+          .find(filter)
+          .wasSuccessful()
+          .hasNoWarnings()
+          .hasDocuments(1)
+          .hasDocumentInPosition(0, expectedUpdatedRow);
+    }
   }
 }

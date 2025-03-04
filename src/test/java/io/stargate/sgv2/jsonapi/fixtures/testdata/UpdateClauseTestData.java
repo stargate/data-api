@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
+import io.stargate.sgv2.jsonapi.service.operation.query.ColumnSetToAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import java.util.ArrayList;
@@ -42,6 +43,7 @@ public class UpdateClauseTestData extends TestDataSuplier {
 
       var columnAssignment =
           new ColumnAssignment(
+              new ColumnSetToAssignment(),
               tableMetadata,
               column,
               RowShredder.shredValue(jsonNodeValue(columnMetadata.get().getType())));
@@ -53,7 +55,10 @@ public class UpdateClauseTestData extends TestDataSuplier {
       var defaultDataType = DataTypes.TEXT;
       var columnAssignment =
           new ColumnAssignment(
-              tableMetadata, unknownColumn, RowShredder.shredValue(jsonNodeValue(defaultDataType)));
+              new ColumnSetToAssignment(),
+              tableMetadata,
+              unknownColumn,
+              RowShredder.shredValue(jsonNodeValue(defaultDataType)));
       columnAssignments.add(columnAssignment);
       return fixture;
     }
@@ -65,6 +70,7 @@ public class UpdateClauseTestData extends TestDataSuplier {
               .map(
                   pk ->
                       new ColumnAssignment(
+                          new ColumnSetToAssignment(),
                           tableMetadata,
                           pk.getName(),
                           RowShredder.shredValue(
@@ -89,6 +95,7 @@ public class UpdateClauseTestData extends TestDataSuplier {
               .map(
                   column ->
                       new ColumnAssignment(
+                          new ColumnSetToAssignment(),
                           tableMetadata,
                           column.getKey(),
                           RowShredder.shredValue( // Process the value based on its type
