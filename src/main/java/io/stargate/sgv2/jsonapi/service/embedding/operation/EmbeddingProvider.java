@@ -175,11 +175,7 @@ public abstract class EmbeddingProvider {
    * @param batchId - Sequence number for the batch to order the vectors.
    * @param embeddings - Embedding vectors for the given text inputs.
    */
-  public record Response(int batchId, List<float[]> embeddings) {
-    public static Response of(int batchId, List<float[]> embeddings) {
-      return new Response(batchId, embeddings);
-    }
-  }
+  public record Response(int batchId, List<float[]> embeddings, VectorizeUsage vectorizeUsage) {}
 
   public enum EmbeddingRequestType {
     /** This is used when vectorizing data in write operation for indexing */
