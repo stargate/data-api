@@ -238,8 +238,8 @@ public record CreateCollectionCommand(
             Boolean enabled,
         @Schema(
                 description =
-                    "Analyzer to use for '$lexical' field: either the name of pre-defined one, or JSON Object to specify custom one (default: 'STANDARD')",
-                defaultValue = "STANDARD",
+                    "Analyzer to use for '$lexical' field: either String (name of a pre-defined analyzer), or JSON Object to specify custom one. Default: 'standard')",
+                defaultValue = "standard",
                 oneOf = {String.class, Map.class})
             JsonNode analyzer) {}
 
