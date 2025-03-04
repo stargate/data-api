@@ -231,17 +231,17 @@ public class TableUpdateOperatorTest {
         Arguments.of(
             "{\"%s\": {\"key1\": \"value1\"}}".formatted(names().CQL_MAP_COLUMN),
             null,
-            UpdateException.Code.INVALID_UPDATE_OPERATOR_PULL_VALUE,
+            UpdateException.Code.INVALID_UPDATE_OPERATOR_PULL_ALL_VALUE,
             "Update operator $pullAll requires array value to remove elements from the map, set, list column"),
         Arguments.of(
             "{\"%s\": \"abc\"}".formatted(names().CQL_SET_COLUMN),
             null,
-            UpdateException.Code.INVALID_UPDATE_OPERATOR_PULL_VALUE,
+            UpdateException.Code.INVALID_UPDATE_OPERATOR_PULL_ALL_VALUE,
             "Update operator $pullAll requires array value to remove elements from the map, set, list column"),
         Arguments.of(
             "{\"%s\": 123}".formatted(names().CQL_LIST_COLUMN),
             null,
-            UpdateException.Code.INVALID_UPDATE_OPERATOR_PULL_VALUE,
+            UpdateException.Code.INVALID_UPDATE_OPERATOR_PULL_ALL_VALUE,
             "Update operator $pullAll requires array value to remove elements from the map, set, list column"),
 
         // primitive

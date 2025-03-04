@@ -51,7 +51,7 @@ public class TableUpdatePullAllResolver implements TableUpdateOperatorResolver {
 
               // $pullAll value node must be an array
               if (inputValue.getNodeType() != JsonNodeType.ARRAY) {
-                throw UpdateException.Code.INVALID_UPDATE_OPERATOR_PULL_VALUE.get(
+                throw UpdateException.Code.INVALID_UPDATE_OPERATOR_PULL_ALL_VALUE.get(
                     errVars(
                         table,
                         map -> {

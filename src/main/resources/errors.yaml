@@ -391,7 +391,7 @@ request-errors:
       Resend the command using only supported update operators.
 
   - scope: UPDATE
-    code: INVALID_USAGE_OF_PUSH_OPERATOR
+    code: INVALID_PUSH_OPERATOR_USAGE
     title: The command has invalid usage of $push operator
     body: |-
       The command has invalid usage of $push operator, ${reason}.
@@ -424,7 +424,7 @@ request-errors:
       Resend the command without updating primary key columns.
 
   - scope: UPDATE
-    code: UPDATE_OPERATOR_PULL_ALL_REQUIRES_ARRAY_VALUE
+    code: INVALID_UPDATE_OPERATOR_PULL_ALL_VALUE
     title: Update operator $pullAll requires array value to update the map, set, list column
     body: |-
       Update operator $pullAll requires array value to remove elements from the map, set, list column.
