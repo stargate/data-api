@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
@@ -23,29 +25,84 @@ class CreateCollectionHybridIntegrationTest extends AbstractKeyspaceIntegrationT
   @Order(1)
   class CreateLexicalHappyPath {
     @Test
-    void createLexicalSimple() {
+    void createLexicalSimpleEnabledMinimal() {
+      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      String json = createRequestWithLexical(collectionName, "{\"enabled\": true}");
+
+      givenHeadersPostJsonThenOkNoErrors(json)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+      deleteCollection(collectionName);
+    }
+
+    @Test
+    void createLexicalSimpleEnabledStandard() {
       final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
               """
-                {
-                  "enabled": "true",
-                  "analyzer": "standard"
-                }
-          """);
+                        {
+                          "enabled": true,
+                          "analyzer": "standard"
+                        }
+                  """);
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
       deleteCollection(collectionName);
+    }
+
+    @Test
+    void createLexicalSimpleDisabled() {
+      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      String json = createRequestWithLexical(collectionName, "{\"enabled\": false}");
+
+      givenHeadersPostJsonThenOkNoErrors(json)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+      deleteCollection(collectionName);
+    }
+  }
+
+  @Nested
+  @Order(2)
+  class CreateLexicalFail {
+    @Test
+    void failCreateLexicalMissingEnabled() {
+      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      String json = createRequestWithLexical(collectionName, "{ }");
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "The provided options are invalid: 'enabled' is required property for 'lexical'"));
+    }
+
+    @Test
+    void failCreateLexicalUnknownAnalyzer() {
+      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                                {
+                                  "enabled": true,
+                                  "analyzer": "unknown"
+                                }
+                          """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
+          // analyzers
+          .body("errors[0].message", containsString("Invalid analyzer config"))
+          .body("errors[0].message", containsString("token 'unknown'"));
     }
   }
 
