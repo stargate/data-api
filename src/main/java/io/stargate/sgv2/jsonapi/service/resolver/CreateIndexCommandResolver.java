@@ -83,8 +83,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
 
     var pageBuilder =
         SchemaAttemptPage.<TableSchemaObject>builder()
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled());
 
     return new GenericOperation<>(
         new OperationAttemptContainer<>(attempt),

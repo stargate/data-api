@@ -21,7 +21,7 @@ public class CommandResultToRestResponseTest {
     @Test
     public void happyPath() {
       CommandResult result =
-          CommandResult.statusOnlyBuilder(false, false).addStatus(CommandStatus.OK, 1).build();
+          CommandResult.statusOnlyBuilder(false).addStatus(CommandStatus.OK, 1).build();
       final RestResponse mappedResult = result.toRestResponse();
       assertThat(mappedResult.getStatus()).isEqualTo(RestResponse.Status.OK.getStatusCode());
     }
@@ -29,7 +29,7 @@ public class CommandResultToRestResponseTest {
     @Test
     public void errorWithOkStatus() {
       CommandResult result =
-          CommandResult.statusOnlyBuilder(false, false)
+          CommandResult.statusOnlyBuilder(false)
               .addCommandResultError(
                   new CommandResult.Error(
                       "My message.",
@@ -45,7 +45,7 @@ public class CommandResultToRestResponseTest {
     @Test
     public void unauthorized() {
       CommandResult result =
-          CommandResult.statusOnlyBuilder(false, false)
+          CommandResult.statusOnlyBuilder(false)
               .addCommandResultError(
                   new CommandResult.Error(
                       "My message.",
@@ -62,7 +62,7 @@ public class CommandResultToRestResponseTest {
     @Test
     public void badGateway() {
       CommandResult result =
-          CommandResult.statusOnlyBuilder(false, false)
+          CommandResult.statusOnlyBuilder(false)
               .addCommandResultError(
                   new CommandResult.Error(
                       "My message.",
@@ -79,7 +79,7 @@ public class CommandResultToRestResponseTest {
     @Test
     public void internalError() {
       CommandResult result =
-          CommandResult.statusOnlyBuilder(false, false)
+          CommandResult.statusOnlyBuilder(false)
               .addCommandResultError(
                   new CommandResult.Error(
                       "My message.",
@@ -96,7 +96,7 @@ public class CommandResultToRestResponseTest {
     @Test
     public void gatewayError() {
       CommandResult result =
-          CommandResult.statusOnlyBuilder(false, false)
+          CommandResult.statusOnlyBuilder(false)
               .addCommandResultError(
                   new CommandResult.Error(
                       "My message.",

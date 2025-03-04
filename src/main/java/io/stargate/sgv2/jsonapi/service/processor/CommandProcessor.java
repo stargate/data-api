@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -66,7 +65,6 @@ public class CommandProcessor {
       DataApiRequestInfo dataApiRequestInfo, CommandContext<U> commandContext, T command) {
 
     var debugMode = commandContext.getConfig(DebugModeConfig.class).enabled();
-    var errorObjectV2 = commandContext.getConfig(OperationsConfig.class).extendError();
 
     // vectorize the data
     return dataVectorizerService
@@ -100,13 +98,12 @@ public class CommandProcessor {
                     // new error object V2
                     var errorBuilder =
                         new APIExceptionCommandErrorBuilder(
-                            commandContext.getConfig(DebugModeConfig.class).enabled(),
-                            commandContext.getConfig(OperationsConfig.class).extendError());
+                            commandContext.getConfig(DebugModeConfig.class).enabled());
 
                     // yet more mucking about with suppliers everywhere :(
                     yield (Supplier<CommandResult>)
                         () ->
-                            CommandResult.statusOnlyBuilder(errorObjectV2, debugMode)
+                            CommandResult.statusOnlyBuilder(debugMode)
                                 .addCommandResultError(
                                     errorBuilder.buildLegacyCommandResultError(apiException))
                                 .build();
@@ -139,7 +136,7 @@ public class CommandProcessor {
               if (command instanceof DeprecatedCommand deprecatedCommand) {
                 // for the warnings we always want V2 errors and do not want / need debug ?
                 var errorV2 =
-                    new APIExceptionCommandErrorBuilder(false, true)
+                    new APIExceptionCommandErrorBuilder(false)
                         .buildCommandErrorV2(deprecatedCommand.getDeprecationWarning());
                 commandResult.addWarning(errorV2);
               }

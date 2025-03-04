@@ -52,7 +52,7 @@ public class MeteredCommandProcessorTest {
           objectMapper.readValue(json, CountDocumentsCommand.class);
       CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
 
-      CommandResult commandResult = CommandResult.statusOnlyBuilder(false, false).build();
+      CommandResult commandResult = CommandResult.statusOnlyBuilder(false).build();
 
       Mockito.when(
               commandProcessor.processCommand(dataApiRequestInfo, commandContext, countCommand))
@@ -108,7 +108,7 @@ public class MeteredCommandProcessorTest {
       CommandResult.Error error =
           new CommandResult.Error("message", fields, fields, Response.Status.OK);
       CommandResult commandResult =
-          CommandResult.statusOnlyBuilder(false, false).addCommandResultError(error).build();
+          CommandResult.statusOnlyBuilder(false).addCommandResultError(error).build();
 
       Mockito.when(
               commandProcessor.processCommand(dataApiRequestInfo, commandContext, countCommand))
@@ -168,7 +168,7 @@ public class MeteredCommandProcessorTest {
       CommandResult.Error error =
           new CommandResult.Error("message", fields, fields, Response.Status.OK);
       CommandResult commandResult =
-          CommandResult.statusOnlyBuilder(false, false).addCommandResultError(error).build();
+          CommandResult.statusOnlyBuilder(false).addCommandResultError(error).build();
       Mockito.when(
               commandProcessor.processCommand(dataApiRequestInfo, commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));

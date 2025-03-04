@@ -37,9 +37,6 @@ public class CommandResultBuilder {
   // If the debug mode is enabled, errors include the errorclass
   private final boolean debugMode;
 
-  // Flagged true to include the new error object v2
-  private final boolean useErrorObjectV2;
-
   // Created in the Ctor
   private final APIExceptionCommandErrorBuilder apiExceptionToError;
 
@@ -47,13 +44,12 @@ public class CommandResultBuilder {
   // but may not be returning V2 errors in the result
   private final APIExceptionCommandErrorBuilder apiWarningToError;
 
-  CommandResultBuilder(ResponseType responseType, boolean useErrorObjectV2, boolean debugMode) {
+  CommandResultBuilder(ResponseType responseType, boolean debugMode) {
     this.responseType = responseType;
-    this.useErrorObjectV2 = useErrorObjectV2;
     this.debugMode = debugMode;
 
-    this.apiExceptionToError = new APIExceptionCommandErrorBuilder(debugMode, useErrorObjectV2);
-    this.apiWarningToError = new APIExceptionCommandErrorBuilder(debugMode, true);
+    this.apiExceptionToError = new APIExceptionCommandErrorBuilder(debugMode);
+    this.apiWarningToError = new APIExceptionCommandErrorBuilder(debugMode);
   }
 
   public CommandResultBuilder addStatus(CommandStatus status, Object value) {
@@ -103,9 +99,7 @@ public class CommandResultBuilder {
     return this;
   }
 
-  /**
-   * Gets the appropriately formatted error given {@link #useErrorObjectV2} and {@link #debugMode}.
-   */
+  /** Gets the appropriately formatted error given {@link #debugMode}. */
   public CommandResult.Error throwableToCommandError(Throwable throwable) {
 
     if (throwable instanceof APIException apiException) {

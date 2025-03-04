@@ -67,10 +67,7 @@ public abstract class MetadataAttemptPage<SchemaT extends SchemaObject>
 
     public Supplier<CommandResult> getOperationPage() {
       return new MetadataAttemptPage<>(
-          attempts,
-          CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode),
-          showSchema,
-          statusKey) {};
+          attempts, CommandResult.statusOnlyBuilder(debugMode), showSchema, statusKey) {};
     }
   }
 }

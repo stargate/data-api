@@ -44,18 +44,18 @@ public record DeleteOperationPage(
       // aaron - this is a giant hack 21 oct 2024
       if (returnDocument()) {
         if (singleDocument()) {
-          return CommandResult.singleDocumentBuilder(false, false)
+          return CommandResult.singleDocumentBuilder(false)
               .addStatus(CommandStatus.DELETED_COUNT, 0)
               .addDocument(null)
               .build();
         } else {
-          return CommandResult.multiDocumentBuilder(false, false)
+          return CommandResult.multiDocumentBuilder(false)
               .addStatus(CommandStatus.DELETED_COUNT, 0)
               .addDocument(null)
               .build();
         }
       } else {
-        return CommandResult.statusOnlyBuilder(false, false)
+        return CommandResult.statusOnlyBuilder(false)
             .addStatus(CommandStatus.DELETED_COUNT, -1)
             .build();
       }
@@ -107,16 +107,16 @@ public record DeleteOperationPage(
     CommandResultBuilder builder = null;
     if (returnDocument()) {
       if (singleDocument()) {
-        builder = CommandResult.singleDocumentBuilder(false, false);
+        builder = CommandResult.singleDocumentBuilder(false);
       } else {
-        builder = CommandResult.multiDocumentBuilder(false, false);
+        builder = CommandResult.multiDocumentBuilder(false);
       }
       // aaron - ok to add the list to the builder as I assume there will only be one id single doc
       // return.
       // the builder will fail if we created single doc and then added more than one
       builder.addDocuments(deletedDoc);
     } else {
-      builder = CommandResult.statusOnlyBuilder(false, false);
+      builder = CommandResult.statusOnlyBuilder(false);
     }
 
     builder.addStatus(CommandStatus.DELETED_COUNT, deletedCount).addCommandResultError(errors);

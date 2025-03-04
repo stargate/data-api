@@ -41,7 +41,7 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
     @Override
     public CommandResult get() {
 
-      return CommandResult.statusOnlyBuilder(false, false)
+      return CommandResult.statusOnlyBuilder(false)
           .addStatus(CommandStatus.EXISTING_VECTOR_PROVIDERS, embeddingProviders)
           .build();
     }

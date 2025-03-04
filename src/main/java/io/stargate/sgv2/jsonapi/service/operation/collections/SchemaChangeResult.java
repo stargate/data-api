@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 public record SchemaChangeResult(boolean schemaChanged) implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {
-    return CommandResult.statusOnlyBuilder(false, false)
+    return CommandResult.statusOnlyBuilder(false)
         .addStatus(CommandStatus.OK, schemaChanged ? 1 : 0)
         .build();
   }
