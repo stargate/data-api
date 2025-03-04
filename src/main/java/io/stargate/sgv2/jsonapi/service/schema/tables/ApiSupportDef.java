@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -93,6 +94,16 @@ public interface ApiSupportDef {
     public static final Update PRIMITIVE = new Update(true, true, false, false);
     public static final Update FULL = new Update(true, true, true, true);
     public static final Update NONE = new Update(false, false, false, false);
+
+    public boolean supports(UpdateOperator updateOperator) {
+      return switch (updateOperator) {
+        case SET -> set;
+        case UNSET -> unset;
+        case PUSH -> push;
+        case PULL_ALL -> pullAll;
+        default -> false;
+      };
+    }
   }
 
   /**

@@ -1,13 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.resolver.update;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
-
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnSetToAssignment;
@@ -43,15 +39,7 @@ public class TableUpdateUnsetResolver implements TableUpdateOperatorResolver {
             entry -> {
               var column = entry.getKey();
               var apiColumnDef = checkUpdateColumnExists(table, column);
-              if (!apiColumnDef.type().apiSupport().update().set()) {
-                throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR.get(
-                    errVars(
-                        table,
-                        map -> {
-                          map.put("operator", "$set");
-                          map.put("targetColumn", errFmt(apiColumnDef.name()));
-                        }));
-              }
+              checkUpdateOperatorSupportOnColumn(apiColumnDef, table, UpdateOperator.UNSET);
 
               return new ColumnAssignment(
                   new ColumnSetToAssignment(),

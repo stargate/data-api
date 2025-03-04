@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver.update;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.fasterxml.jackson.databind.node.JsonNodeType;
@@ -48,19 +47,11 @@ public class TableUpdatePullAllResolver implements TableUpdateOperatorResolver {
               JsonLiteral<?> shreddedValue = null;
 
               // $pullAll only works for map/set/list columns
-              if (!apiColumnDef.type().apiSupport().update().pullAll()) {
-                throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR.get(
-                    errVars(
-                        table,
-                        map -> {
-                          map.put("operator", "$pullAll");
-                          map.put("targetColumn", errFmt(apiColumnDef.name()));
-                        }));
-              }
+              checkUpdateOperatorSupportOnColumn(apiColumnDef, table, UpdateOperator.PULL_ALL);
 
               // $pullAll value node must be an array
               if (inputValue.getNodeType() != JsonNodeType.ARRAY) {
-                throw UpdateException.Code.UPDATE_OPERATOR_PULL_ALL_REQUIRES_ARRAY_VALUE.get(
+                throw UpdateException.Code.INVALID_UPDATE_OPERATOR_PULL_VALUE.get(
                     errVars(
                         table,
                         map -> {

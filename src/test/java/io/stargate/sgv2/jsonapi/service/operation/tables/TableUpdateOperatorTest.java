@@ -159,23 +159,23 @@ public class TableUpdateOperatorTest {
             "{\"%s\": {\"key1\": \"value1\", \"key2\": \"value2\"}}"
                 .formatted(names().CQL_MAP_COLUMN),
             null,
-            UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR,
+            UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE,
             "combine $push and $each for adding multiple elements"),
         Arguments.of(
             "{\"%s\": [[\"key1\", \"value1\"], [\"key2\", \"value2\"]]}"
                 .formatted(names().CQL_MAP_COLUMN),
             null,
-            UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR,
+            UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE,
             "combine $push and $each for adding multiple elements"),
         Arguments.of(
             "{\"%s\": [\"abc\"]}".formatted(names().CQL_SET_COLUMN),
             null,
-            UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR,
+            UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE,
             "combine $push and $each for adding multiple elements"),
         Arguments.of(
             "{\"%s\": [\"abc\"]}".formatted(names().CQL_LIST_COLUMN),
             null,
-            UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR,
+            UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE,
             "combine $push and $each for adding multiple elements"),
         // primitive
         Arguments.of(
@@ -231,17 +231,17 @@ public class TableUpdateOperatorTest {
         Arguments.of(
             "{\"%s\": {\"key1\": \"value1\"}}".formatted(names().CQL_MAP_COLUMN),
             null,
-            UpdateException.Code.UPDATE_OPERATOR_PULL_ALL_REQUIRES_ARRAY_VALUE,
+            UpdateException.Code.INVALID_UPDATE_OPERATOR_PULL_VALUE,
             "Update operator $pullAll requires array value to remove elements from the map, set, list column"),
         Arguments.of(
             "{\"%s\": \"abc\"}".formatted(names().CQL_SET_COLUMN),
             null,
-            UpdateException.Code.UPDATE_OPERATOR_PULL_ALL_REQUIRES_ARRAY_VALUE,
+            UpdateException.Code.INVALID_UPDATE_OPERATOR_PULL_VALUE,
             "Update operator $pullAll requires array value to remove elements from the map, set, list column"),
         Arguments.of(
             "{\"%s\": 123}".formatted(names().CQL_LIST_COLUMN),
             null,
-            UpdateException.Code.UPDATE_OPERATOR_PULL_ALL_REQUIRES_ARRAY_VALUE,
+            UpdateException.Code.INVALID_UPDATE_OPERATOR_PULL_VALUE,
             "Update operator $pullAll requires array value to remove elements from the map, set, list column"),
 
         // primitive

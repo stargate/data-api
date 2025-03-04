@@ -5,7 +5,6 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.CQL_IDENTIFIER_COM
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.ImmutableList;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
@@ -37,15 +36,15 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
 
   // Using map here so we can expose the list of supported operators for validation to check.
   // Keep this immutable, we return the key set in a property below.
-  private static final Map<UpdateOperator, TableUpdateOperatorResolver> supportedOperatorsMap =
+  private static final Map<UpdateOperator, TableUpdateOperatorResolver> SUPPORTED_OPERATORS_MAP =
       Map.of(
           UpdateOperator.SET, new TableUpdateSetResolver(),
           UpdateOperator.UNSET, new TableUpdateUnsetResolver(),
           UpdateOperator.PUSH, new TableUpdatePushResolver(),
           UpdateOperator.PULL_ALL, new TableUpdatePullAllResolver());
 
-  private static final List<String> supportedOperatorsStringList =
-      ImmutableList.of(UpdateOperator.SET.operator(), UpdateOperator.UNSET.operator());
+  private static final List<String> SUPPORTED_OPERATORS_STRING_LIST =
+      SUPPORTED_OPERATORS_MAP.keySet().stream().map(UpdateOperator::operator).toList();
 
   public TableUpdateResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
@@ -69,7 +68,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
       UpdateOperator updateOperator = updateOperationDef.getKey();
       ObjectNode arguments = updateOperationDef.getValue();
 
-      var operatorResolver = supportedOperatorsMap.get(updateOperator);
+      var operatorResolver = SUPPORTED_OPERATORS_MAP.get(updateOperator);
       if (operatorResolver == null) {
         usedUnsupportedOperators.add(updateOperator.operator());
       } else if (!arguments.isEmpty()) {
@@ -85,7 +84,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
               commandContext.schemaObject(),
               map -> {
                 map.put("usedUnsupportedUpdateOperations", errFmtJoin(usedUnsupportedOperators));
-                map.put("supportedUpdateOperations", errFmtJoin(supportedOperatorsStringList));
+                map.put("supportedUpdateOperations", errFmtJoin(SUPPORTED_OPERATORS_STRING_LIST));
               }));
     }
 
@@ -96,7 +95,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
           errVars(
               commandContext.schemaObject(),
               map -> {
-                map.put("supportedUpdateOperations", errFmtJoin(supportedOperatorsStringList));
+                map.put("supportedUpdateOperations", errFmtJoin(SUPPORTED_OPERATORS_STRING_LIST));
               }));
     }
 

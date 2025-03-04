@@ -4,13 +4,13 @@ public enum UpdateOperatorModifier {
   EACH("$each"),
   POSITION("$position");
 
-  private final String modifier;
+  private final String apiName;
 
-  UpdateOperatorModifier(String modifier) {
-    this.modifier = modifier;
+  UpdateOperatorModifier(String apiName) {
+    this.apiName = apiName;
   }
 
-  public String getModifier() {
-    return modifier;
+  public String apiName() {
+    return apiName;
   }
 }

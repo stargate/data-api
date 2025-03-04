@@ -186,14 +186,15 @@ public class JSONCodecRegistry {
         table.getColumn(column).orElseThrow(() -> new UnknownColumnException(table, column));
 
     var mapType = columnMetadata.getType();
-    if (!(mapType instanceof MapType)) {
+    if (!(mapType instanceof MapType castedMapType)) {
       throw new ToCQLCodecException(key, mapType, "column is not a map column");
     }
+    var keyType = castedMapType.getKeyType();
+
     if (key == null) {
       throw new ToCQLCodecException(
           null, mapType, "null keys/values are not allowed in map column");
     }
-    var keyType = ((MapType) mapType).getKeyType();
     // First find candidates for CQL target type in question (if any)
     List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(keyType);
     if (candidates == null) { // No scalar codec for this CQL type

@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver.update;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,7 +14,6 @@ import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAppendToAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.HashMap;
@@ -47,26 +45,14 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
               var inputValue = entry.getValue();
 
               // $push only works for map/set/list column
-              if (!apiColumnDef.type().apiSupport().update().push()) {
-                throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR.get(
-                    errVars(
-                        table,
-                        map -> {
-                          map.put("operator", "$push");
-                          map.put("targetColumn", errFmt(apiColumnDef.name()));
-                        }));
-              }
+              checkUpdateOperatorSupportOnColumn(apiColumnDef, table, UpdateOperator.PUSH);
 
               JsonLiteral<?> shreddedValue = null;
-              // resolve $push value for set/list column
-              if (apiColumnDef.type().typeName() == ApiTypeName.SET
-                  || apiColumnDef.type().typeName() == ApiTypeName.LIST) {
-                shreddedValue = resolvePushForListSet(table, inputValue);
-              }
-
-              // resolve $push value for map column
-              if (apiColumnDef.type().typeName() == ApiTypeName.MAP) {
-                shreddedValue = resolvePushForMap(table, inputValue);
+              switch (apiColumnDef.type().typeName()) {
+                case SET, LIST -> shreddedValue = resolvePushForListSet(table, inputValue);
+                case MAP -> shreddedValue = resolvePushForMap(table, inputValue);
+                default ->
+                    throw new IllegalStateException("Unsupported column type for $push operation");
               }
 
               return new ColumnAssignment(
@@ -113,7 +99,7 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
     switch (inputValue.getNodeType()) {
       case ARRAY:
         // $push without $each, only work for adding single element
-        throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
+        throw UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE.get(
             errVars(
                 table,
                 map -> {
@@ -123,14 +109,14 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
         // $push + $each for adding multiple elements
         ObjectNode objectNode = (ObjectNode) inputValue;
         if (objectNode.size() == 1
-            && objectNode.get(UpdateOperatorModifier.EACH.getModifier()) != null
-            && objectNode.get(UpdateOperatorModifier.EACH.getModifier()).getNodeType()
+            && objectNode.get(UpdateOperatorModifier.EACH.apiName()) != null
+            && objectNode.get(UpdateOperatorModifier.EACH.apiName()).getNodeType()
                 == JsonNodeType.ARRAY) {
           shreddedValue =
-              RowShredder.shredValue(objectNode.get(UpdateOperatorModifier.EACH.getModifier()));
+              RowShredder.shredValue(objectNode.get(UpdateOperatorModifier.EACH.apiName()));
         } else {
           // invalid usage of $push + $each
-          throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
+          throw UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE.get(
               errVars(
                   table,
                   map -> {
@@ -189,14 +175,14 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
                 resolveMapEntryFromTupleFormat(table, entryNodeTupleFormat), JsonType.SUB_DOC);
       }
       case OBJECT -> {
-        var modifier$eachValue = inputValue.get(UpdateOperatorModifier.EACH.getModifier());
+        var modifier$eachValue = inputValue.get(UpdateOperatorModifier.EACH.apiName());
         if (modifier$eachValue != null) {
           // With $each
           if (modifier$eachValue.getNodeType() == JsonNodeType.ARRAY) {
             return resolvePushForMapWithEach(table, (ArrayNode) modifier$eachValue);
           } else {
             // invalid usage of $push + $each
-            throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
+            throw UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE.get(
                 errVars(
                     table,
                     map -> {
@@ -213,7 +199,7 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
         }
       }
       default ->
-          throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
+          throw UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE.get(
               errVars(
                   table,
                   map -> {
@@ -238,7 +224,7 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
             pushForMultipleMapEntries.putAll(
                 resolveMapEntryFromObjectFormat(table, (ObjectNode) entryNode));
           } else {
-            throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
+            throw UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE.get(
                 errVars(
                     table,
                     map -> {
@@ -256,7 +242,7 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
     singleEntryNodeTupleFormat.forEach(
         entryNode -> {
           if (entryNode.isObject() || entryNode.isArray()) {
-            throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
+            throw UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE.get(
                 errVars(
                     table,
                     map -> {
@@ -267,7 +253,7 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
 
     // As the tuple format to indicate a map entry, array size must be 2
     if (singleEntryNodeTupleFormat.size() != 2) {
-      throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
+      throw UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE.get(
           errVars(
               table,
               map -> {
@@ -290,7 +276,7 @@ public class TableUpdatePushResolver implements TableUpdateOperatorResolver {
     // size for the objectNode must be 1, since it is single map entry
     // It can't be a node with multiple entry, E.G. {"key1" : "value1", "key2" : "value2"}
     if (entryNodeMapFormat.size() != 1) {
-      throw UpdateException.Code.INVALID_USAGE_OF_PUSH_OPERATOR.get(
+      throw UpdateException.Code.INVALID_PUSH_OPERATOR_USAGE.get(
           errVars(
               table,
               map -> {
