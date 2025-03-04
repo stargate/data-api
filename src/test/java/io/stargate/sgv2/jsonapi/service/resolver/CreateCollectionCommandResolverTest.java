@@ -130,7 +130,11 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
                 assertThat(op.comment())
                     .isEqualTo(
-                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":1,\"options\":{\"vector\":{\"dimension\":768,\"metric\":\"cosine\",\"sourceModel\":\"OTHER\",\"service\":{\"provider\":\"azureOpenAI\",\"modelName\":\"text-embedding-3-small\",\"parameters\":{\"resourceName\":\"test\",\"deploymentId\":\"test\"}}},\"defaultId\":{\"type\":\"\"}}}}",
+                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":1,\"options\":{"
+                            + "\"vector\":{\"dimension\":768,\"metric\":\"cosine\",\"sourceModel\":\"OTHER\","
+                            + "\"service\":{\"provider\":\"azureOpenAI\",\"modelName\":\"text-embedding-3-small\","
+                            + "\"parameters\":{\"resourceName\":\"test\",\"deploymentId\":\"test\"}}},\"defaultId\":{\"type\":\"\"},"
+                            + "\"lexical\":{\"enabled\":true,\"analyzer\":\"standard\"}}}}",
                         TableCommentConstants.SCHEMA_VERSION_VALUE);
               });
     }
@@ -169,7 +173,10 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
                 assertThat(op.comment())
                     .isEqualTo(
-                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"indexing\":{\"deny\":[\"comment\"]},\"vector\":{\"dimension\":4,\"metric\":\"cosine\",\"sourceModel\":\"OTHER\"},\"defaultId\":{\"type\":\"\"}}}}",
+                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"indexing\":{\"deny\":[\"comment\"]},"
+                            + "\"vector\":{\"dimension\":4,\"metric\":\"cosine\",\"sourceModel\":\"OTHER\"},\"defaultId\":{\"type\":\"\"},"
+                            + "\"lexical\":{\"enabled\":true,\"analyzer\":\"standard\"}}}"
+                            + "}",
                         TableCommentConstants.SCHEMA_VERSION_VALUE);
               });
     }

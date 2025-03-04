@@ -462,7 +462,7 @@ public record CreateCollectionOperation(
     List<SimpleStatement> statements = new ArrayList<>(10);
     String appender =
         collectionExisted ? "CREATE CUSTOM INDEX IF NOT EXISTS" : "CREATE CUSTOM INDEX";
-    // All the index names are quoted to make it case sensitive.
+    // All index names are quoted to make them case-sensitive.
     if (!indexingDenyAll()) {
       String existKeys =
           appender
