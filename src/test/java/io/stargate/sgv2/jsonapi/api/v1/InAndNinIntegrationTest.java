@@ -9,8 +9,12 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.stream.Stream;
 import net.javacrumbs.jsonunit.ConfigurableJsonMatcher;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -203,6 +207,40 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(2))
           .body("data.documents", containsInAnyOrder(jsonEquals(expected1), jsonEquals(expected2)));
+    }
+
+    private static Stream<Arguments> IN_FOR_ID_WITH_LIMIT() {
+      return Stream.of(
+          // filter, limit, expected
+          Arguments.of("{\"_id\" : {\"$in\": [\"doc1\", \"doc2\", \"doc3\"]}}", 2, 2),
+          Arguments.of("{\"_id\" : {\"$in\": [\"doc1\", \"doc2\", \"doc3\"]}}", 1, 1),
+          Arguments.of("{\"_id\" : {\"$in\": [\"doc1\", \"doc2\", \"doc3\"]}}", 5, 3),
+          Arguments.of("{\"_id\" : {\"$in\": [\"doc1\", \"doc2\", \"doc3\"]}}", 3, 3));
+    }
+
+    @ParameterizedTest
+    @MethodSource("IN_FOR_ID_WITH_LIMIT")
+    public void inForIdWithLimit(String filter, int limit, int expected) {
+      String json =
+              """
+                              {
+                                "find": {
+                                  "filter" : %s,
+                                  "options": {"limit": %s}
+                                }
+                              }
+                              """
+              .formatted(filter, limit);
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(expected));
     }
 
     @Test
