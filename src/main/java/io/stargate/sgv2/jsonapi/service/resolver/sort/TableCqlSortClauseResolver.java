@@ -18,7 +18,6 @@ import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByANNCqlClause;
@@ -29,12 +28,8 @@ import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
-import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
-import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
-import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValue;
-import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
+import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
-import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -209,7 +204,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
 
     if (limit.isPresent()
         && limit.get()
-        > commandContext.config().get(OperationsConfig.class).maxVectorSearchLimit()) {
+            > commandContext.config().get(OperationsConfig.class).maxVectorSearchLimit()) {
       throw SortException.Code.CANNOT_VECTOR_SORT_WITH_LIMIT_EXCEEDS_MAX.get(
           errVars(
               commandContext.schemaObject(),
@@ -360,37 +355,44 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
         "Vector sorting on column {}", cqlIdentifierToMessageString(vectorSortColumn.name()));
 
     // HACK - Aaron 3 march 2025 - this is a hack to get the sort into the NamedValue model
-    // the better solution would be to parse the sort JSON node through the JsonNamedValueFactory with a
+    // the better solution would be to parse the sort JSON node through the JsonNamedValueFactory
+    // with a
     // decoder that understands sorting, but the sort clause is terrible and needs to be refactored
 
     // we checked above that this column supports vectorize
-    var jsonNamedValue = new JsonNamedValue(JsonPath.from(vectorSortExpression.path()), JsonNodeDecoder.DEFAULT);
-    if (jsonNamedValue.bind(commandContext.schemaObject())){
+    var jsonNamedValue =
+        new JsonNamedValue(JsonPath.from(vectorSortExpression.path()), JsonNodeDecoder.DEFAULT);
+    if (jsonNamedValue.bind(commandContext.schemaObject())) {
       // ok, this is a terrible hack, but it needs a JSON node
       JsonNode jsonNode = null;
-      if (vectorSortExpression.vectorize() != null ){
+      if (vectorSortExpression.vectorize() != null) {
         jsonNode = JsonNodeFactory.instance.textNode(vectorSortExpression.vectorize());
-      } else if (vectorSortExpression.vector() != null){
+      } else if (vectorSortExpression.vector() != null) {
         var arrayNode = JsonNodeFactory.instance.arrayNode();
-        for (var f : vectorSortExpression.vector()){
+        for (var f : vectorSortExpression.vector()) {
           arrayNode.add(f);
         }
         jsonNode = arrayNode;
-      }
-      else {
+      } else {
         throw new IllegalStateException("vectorSortExpression has no vector or vectorize value");
       }
       jsonNamedValue.prepare(jsonNode);
-    }else{
-      throw new IllegalStateException("jsonNamedValue failed to bind for the sorting on column " + vectorSortColumn.name());
+    } else {
+      throw new IllegalStateException(
+          "jsonNamedValue failed to bind for the sorting on column " + vectorSortColumn.name());
     }
 
-    var cqlNamedValue = new CqlNamedValue(vectorSortIdentifier, JSONCodecRegistries.DEFAULT_REGISTRY, SORTING_NAMED_VALUE_ERROR_STRATEGY);
-    if (cqlNamedValue.bind(commandContext.schemaObject())){
+    var cqlNamedValue =
+        new CqlVectorNamedValue(
+            vectorSortIdentifier,
+            JSONCodecRegistries.DEFAULT_REGISTRY,
+            SORTING_NAMED_VALUE_ERROR_STRATEGY);
+    if (cqlNamedValue.bind(commandContext.schemaObject())) {
       cqlNamedValue.prepare(jsonNamedValue);
-    } else{
+    } else {
       // should not happen because we tested the column exists above
-      throw new IllegalStateException("sortNamedValue failed to bind for the sorting on column " + vectorSortColumn.name());
+      throw new IllegalStateException(
+          "sortNamedValue failed to bind for the sorting on column " + vectorSortColumn.name());
     }
     return WithWarnings.of(
         new TableOrderByANNCqlClause(
@@ -426,34 +428,37 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
         .toList();
   }
 
-
   /**
-   * HACK - for now we are not using the error checking in the cql named value, all the checks are in the sort resolver
+   * HACK - for now we are not using the error checking in the cql named value, all the checks are
+   * in the sort resolver
    */
-  private static final CqlNamedValue.ErrorStrategy<SortException> SORTING_NAMED_VALUE_ERROR_STRATEGY = new CqlNamedValue.ErrorStrategy<>(){
-    @Override
-    public ErrorCode<SortException> codeForNoApiSupport() {
-      throw new UnsupportedOperationException();
-    }
+  private static final CqlNamedValue.ErrorStrategy<SortException>
+      SORTING_NAMED_VALUE_ERROR_STRATEGY =
+          new CqlNamedValue.ErrorStrategy<>() {
+            @Override
+            public ErrorCode<SortException> codeForNoApiSupport() {
+              throw new UnsupportedOperationException();
+            }
 
-    @Override
-    public ErrorCode<SortException> codeForUnknownColumn() {
-      throw new UnsupportedOperationException();
-    }
+            @Override
+            public ErrorCode<SortException> codeForUnknownColumn() {
+              throw new UnsupportedOperationException();
+            }
 
-    @Override
-    public ErrorCode<SortException> codeForMissingCodec() {
-      throw new UnsupportedOperationException();
-    }
+            @Override
+            public ErrorCode<SortException> codeForMissingCodec() {
+              throw new UnsupportedOperationException();
+            }
 
-    @Override
-    public ErrorCode<SortException> codeForCodecError() {
-      throw new UnsupportedOperationException();
-    }
+            @Override
+            public ErrorCode<SortException> codeForCodecError() {
+              throw new UnsupportedOperationException();
+            }
 
-    @Override
-    public void allChecks(TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
-      // pass through
-    }
-  };
+            @Override
+            public void allChecks(
+                TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
+              // pass through
+            }
+          };
 }

@@ -11,9 +11,7 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingAction;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
-import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
-import io.stargate.sgv2.jsonapi.service.shredding.NamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.ValueAction;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
@@ -32,7 +30,8 @@ import org.slf4j.LoggerFactory;
  * that the data is valid for the table.
  */
 public class TableInsertDBTaskBuilder
-    extends TaskBuilder<InsertDBTask<TableSchemaObject>, TableSchemaObject> {
+    extends TaskBuilder<
+        InsertDBTask<TableSchemaObject>, TableSchemaObject, TableInsertDBTaskBuilder> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TableInsertDBTaskBuilder.class);
 
@@ -97,11 +96,8 @@ public class TableInsertDBTaskBuilder
 
     var allActions = ValueAction.filteredActions(ValueAction.class, allDeferredValues);
     var embeddingActions = ValueAction.filteredActions(EmbeddingAction.class, allDeferredValues);
-    var nonEmbeddingActions =
-        allActions.stream().filter(action -> !(action instanceof EmbeddingAction)).toList();
-    if (!nonEmbeddingActions.isEmpty()) {
-      throw new IllegalArgumentException(
-          "Unsupported actions in deferred values: " + nonEmbeddingActions);
+    if (allActions.size() != embeddingActions.size()) {
+      throw new IllegalArgumentException("Unsupported actions in deferred values: " + allActions);
     }
 
     // Send the EmbeddingAction's to the builder to get back a list of EmbeddingTasks
@@ -172,11 +168,10 @@ public class TableInsertDBTaskBuilder
   /**
    * The row can be null if there was an error making it, the task is still there to transport the
    * error for the row.
-   * <p>
-   * We are going to test for the rows for deferrable values, so put them on that interface now.
+   *
+   * <p>We are going to test for the rows for deferrable values, so put them on that interface now.
    */
-  private record TasksAndRows(
-      List<InsertDBTask<TableSchemaObject>> tasks, List<Deferrable> rows) {
+  private record TasksAndRows(List<InsertDBTask<TableSchemaObject>> tasks, List<Deferrable> rows) {
     TasksAndRows(int initialCapacity) {
       this(new ArrayList<>(initialCapacity), new ArrayList<>(initialCapacity));
     }

@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
  * {@link #build(WhereCQLClause)} for each different where clause the command creates.
  */
 public class UpdateDBTaskBuilder<SchemaT extends TableSchemaObject>
-    extends TaskBuilder<UpdateDBTask<SchemaT>, SchemaT> {
+    extends TaskBuilder<UpdateDBTask<SchemaT>, SchemaT, UpdateDBTaskBuilder<SchemaT>> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UpdateDBTaskBuilder.class);
 

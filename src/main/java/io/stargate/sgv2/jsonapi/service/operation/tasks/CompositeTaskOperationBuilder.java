@@ -27,7 +27,8 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
  * @param <SchemaT>
  */
 public class CompositeTaskOperationBuilder<SchemaT extends SchemaObject>
-    extends TaskBuilder<CompositeTask<?, SchemaT>, SchemaT> {
+    extends TaskBuilder<
+        CompositeTask<?, SchemaT>, SchemaT, CompositeTaskOperationBuilder<SchemaT>> {
 
   // Always use sequential processing for composite tasks, the idea is the composite tasks can be
   // groups

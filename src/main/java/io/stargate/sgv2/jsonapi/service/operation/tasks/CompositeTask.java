@@ -134,9 +134,11 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
   protected CompositeTaskResultSupplier<InnerTaskT, SchemaT> buildResultSupplier(
       CommandContext<SchemaT> commandContext) {
 
-    // We always need the inner accumulator to collection the results of the inner tasks and build the
+    // We always need the inner accumulator to collection the results of the inner tasks and build
+    // the
     // inner page we use for the result of this composite tasks.
-    // It is used to lift errors and warnings from the inner tasks, so they are associated with this task.
+    // It is used to lift errors and warnings from the inner tasks, so they are associated with this
+    // task.
     // and if this is the last task, it will be used to pass through to the lastTaskAccumulator
     // which is the accumulator to make the results of the entire pipeline
     var innerAccumulator =
@@ -267,34 +269,34 @@ public class CompositeTask<InnerTaskT extends Task<SchemaT>, SchemaT extends Sch
     public Uni<CompositeTaskInnerPage<InnerTaskT, SchemaT>> get() {
 
       // Operations return a CommandResult, but for the CompositeTask we need to use the
-      // CompositeTakeInnerPage as the result of running the operation so we can list errors and results from the
+      // CompositeTakeInnerPage as the result of running the operation so we can list errors and
+      // results from the
       // inner tasks. So use the executeIternal to run the operation but control the result type
       return innerOperation
-          .executeInternal(
-              commandContext, accumulator -> innerAccumulator.innerPage())
+          .executeInternal(commandContext, accumulator -> innerAccumulator.innerPage())
           .onItem()
           .transform(Supplier::get)
           .invoke(
               innerPage -> {
-                  // we could throw an exception here, and the task processing would catch and
-                  // associate with the task. But tasks can fail for Throwable exceptions,
-                  // quarkus just hands them in, and we cannot throw that. So lift the inner task
-                  // error
-                  // up to the composite task, which will set the status to failure.
-                  innerPage
-                      .firstFailedTask()
-                      .ifPresent(
-                          task -> {
-                            var failure = task.failure().orElseThrow();
-                            if (LOGGER.isDebugEnabled()) {
-                              LOGGER.debug(
-                                  "get() - Lifting failure from inner task to composite task, innerTask: {}, compositeTask: {}",
-                                  task.taskDesc(),
-                                  compositeTask.taskDesc(),
-                                  failure);
-                            }
-                            compositeTask.maybeAddFailure(failure);
-                          });
+                // we could throw an exception here, and the task processing would catch and
+                // associate with the task. But tasks can fail for Throwable exceptions,
+                // quarkus just hands them in, and we cannot throw that. So lift the inner task
+                // error
+                // up to the composite task, which will set the status to failure.
+                innerPage
+                    .firstFailedTask()
+                    .ifPresent(
+                        task -> {
+                          var failure = task.failure().orElseThrow();
+                          if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug(
+                                "get() - Lifting failure from inner task to composite task, innerTask: {}, compositeTask: {}",
+                                task.taskDesc(),
+                                compositeTask.taskDesc(),
+                                failure);
+                          }
+                          compositeTask.maybeAddFailure(failure);
+                        });
               });
     }
   }

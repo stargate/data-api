@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class EmbeddingTaskBuilder<SchemaT extends TableBasedSchemaObject>
-    extends TaskBuilder<EmbeddingTask<SchemaT>, SchemaT> {
+    extends TaskBuilder<EmbeddingTask<SchemaT>, SchemaT, EmbeddingTaskBuilder<SchemaT>> {
 
   private final CommandContext<SchemaT> commandContext;
   // aaron 22 feb 2025 - for unknown we need the command name when we create the embedding provider

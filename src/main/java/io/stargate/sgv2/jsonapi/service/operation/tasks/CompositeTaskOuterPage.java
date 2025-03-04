@@ -12,8 +12,9 @@ import java.util.function.Supplier;
  *
  * <p>This is the page responsible for getting final result of the command out from one of the inner
  * operations.
- * <p>
- *   Create via the  {@link #accumulator(CommandContext)} method.
+ *
+ * <p>Create via the {@link #accumulator(CommandContext)} method.
+ *
  * @param <SchemaT>
  */
 public class CompositeTaskOuterPage<SchemaT extends SchemaObject>
@@ -42,12 +43,15 @@ public class CompositeTaskOuterPage<SchemaT extends SchemaObject>
 
     // the last composite task is the one that will build the results of running all the composite
     // tasks.
-    // TODO: AARON - need better guarantee the last task is the last task according to it's position etc
+    // TODO: AARON - need better guarantee the last task is the last task according to it's position
+    // etc
     return tasks.getLast().lastTaskAccumulator().getResults().get();
   }
 
   /**
-   * Accumulates the completed {@link CompositeTask}s so the final result can be built from the last task.
+   * Accumulates the completed {@link CompositeTask}s so the final result can be built from the last
+   * task.
+   *
    * @param <SchemaT>
    */
   public static class Accumulator<SchemaT extends SchemaObject>
@@ -58,7 +62,8 @@ public class CompositeTaskOuterPage<SchemaT extends SchemaObject>
     @Override
     public Supplier<CommandResult> getResults() {
 
-      // See the CompositeTaskOuterPage, if there is a failure, then we add the errors and warnings the
+      // See the CompositeTaskOuterPage, if there is a failure, then we add the errors and warnings
+      // the
       // CompositeTask's have lifted from their internal tasks. This is a status only result.
 
       // If not failure, we get the result from the lastTaskAccumulator so this command builder is

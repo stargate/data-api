@@ -1,12 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
-import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
-
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlVectorNamedValue;
+import io.stargate.sgv2.jsonapi.service.shredding.NamedValue;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -17,11 +17,10 @@ import java.util.Objects;
  */
 public class TableOrderByANNCqlClause implements OrderByCqlClause {
 
-  private final CqlNamedValue sortVector;
+  private final CqlVectorNamedValue sortVector;
   private final Integer defaultLimit;
 
-  public TableOrderByANNCqlClause(
-      CqlNamedValue sortVector, Integer defaultLimit) {
+  public TableOrderByANNCqlClause(CqlVectorNamedValue sortVector, Integer defaultLimit) {
 
     this.sortVector = Objects.requireNonNull(sortVector, "sortVector must not be null");
     this.defaultLimit = Objects.requireNonNull(defaultLimit, "defaultLimit must not be null");
@@ -29,18 +28,14 @@ public class TableOrderByANNCqlClause implements OrderByCqlClause {
     // sanity check
     if (sortVector.apiColumnDef().type().typeName() != ApiTypeName.VECTOR) {
       throw new IllegalArgumentException(
-          "Sort vector column is not a vector, got: %s".formatted(sortVector.apiColumnDef().name().asCql(true)));
+          "Sort vector column is not a vector, got: %s"
+              .formatted(sortVector.apiColumnDef().name().asCql(true)));
     }
   }
 
   @Override
   public Select apply(Select select) {
-
-    // the named value will have run the codec and converted into the CqlVector, but it is untyped
-    // (most values passed on the driver are untyped)
-    // this will error if the value is deferred still, i.e. the vectorizing has not finished.
-    CqlVector cqlVector = (CqlVector) sortVector.value();
-    return select.orderByAnnOf(sortVector.name(), cqlVector);
+    return select.orderByAnnOf(sortVector.name(), sortVector.cqlVector());
   }
 
   @Override
@@ -51,5 +46,10 @@ public class TableOrderByANNCqlClause implements OrderByCqlClause {
   @Override
   public Integer getDefaultLimit() {
     return defaultLimit;
+  }
+
+  @Override
+  public List<? extends NamedValue<?, ?, ?>> deferredValues() {
+    return new CqlNamedValueContainer(List.of(sortVector)).deferredValues();
   }
 }

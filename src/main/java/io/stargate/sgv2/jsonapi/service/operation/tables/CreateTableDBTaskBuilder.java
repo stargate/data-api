@@ -7,7 +7,8 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import java.util.Map;
 
 /** Builds a {@link CreateTableDBTask}. */
-public class CreateTableDBTaskBuilder extends TaskBuilder<CreateTableDBTask, KeyspaceSchemaObject> {
+public class CreateTableDBTaskBuilder
+    extends TaskBuilder<CreateTableDBTask, KeyspaceSchemaObject, CreateTableDBTaskBuilder> {
 
   private SchemaDBTask.SchemaRetryPolicy schemaRetryPolicy;
 

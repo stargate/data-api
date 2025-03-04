@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
  * clause the command creates.
  */
 public class TableReadDBTaskBuilder
-    extends TaskBuilder<ReadDBTask<TableSchemaObject>, TableSchemaObject> {
+    extends TaskBuilder<ReadDBTask<TableSchemaObject>, TableSchemaObject, TableReadDBTaskBuilder> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TableReadDBTaskBuilder.class);
 
@@ -61,7 +61,7 @@ public class TableReadDBTaskBuilder
     return this;
   }
 
-  public TableReadDBTaskBuilder withBuilderOption(CQLOption<Select> option) {
+  public TableReadDBTaskBuilder withCqlBuilderOption(CQLOption<Select> option) {
     cqlOptions.addBuilderOption(option);
     return this;
   }

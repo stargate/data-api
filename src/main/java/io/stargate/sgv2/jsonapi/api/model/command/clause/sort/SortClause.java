@@ -36,7 +36,11 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
   public List<SortExpression> tableVectorSorts() {
     return sortExpressions == null
         ? List.of()
-        : sortExpressions.stream().filter(SortExpression::isTableVectorSort).toList();
+        : sortExpressions.stream()
+            .filter(
+                sortExpression ->
+                    sortExpression.isTableVectorSort() || sortExpression.isTableVectorizeSort())
+            .toList();
   }
 
   /** Get the sort expressions that are not trying to vector sort columns on a table */
@@ -44,7 +48,9 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
     return sortExpressions == null
         ? List.of()
         : sortExpressions.stream()
-            .filter(sortExpression -> !sortExpression.isTableVectorSort())
+            .filter(
+                sortExpression ->
+                    !sortExpression.isTableVectorSort() && !sortExpression.isTableVectorizeSort())
             .toList();
   }
 

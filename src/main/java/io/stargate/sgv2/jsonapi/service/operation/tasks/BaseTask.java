@@ -513,6 +513,7 @@ public abstract class BaseTask<
         .append("schemaObject", schemaObject)
         .append("retryPolicy", retryPolicy)
         .append("warnings", warnings)
+        .append("suppressedWarnings", suppressedWarnings)
         .append("failure", failure);
   }
 

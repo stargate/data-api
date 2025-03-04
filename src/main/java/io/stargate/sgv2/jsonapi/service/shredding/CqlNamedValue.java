@@ -23,6 +23,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A value that can be sent to the CQL Driver or has come from it.
@@ -32,6 +34,8 @@ import java.util.function.Predicate;
  * method.
  */
 public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedValue> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(CqlNamedValue.class);
 
   public static final Comparator<CqlNamedValue> NAME_COMPARATOR =
       Comparator.comparing(CqlNamedValue::name, CQL_IDENTIFIER_COMPARATOR);

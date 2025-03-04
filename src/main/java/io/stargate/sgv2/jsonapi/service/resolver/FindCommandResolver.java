@@ -32,7 +32,6 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver;
-  private final TableReadDBOperationBuilder<FindCommand> readCommandResolver;
 
   @Inject
   public FindCommandResolver(
@@ -41,7 +40,6 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
 
-    this.readCommandResolver = new TableReadDBOperationBuilder<>(objectMapper, operationsConfig);
     this.objectMapper = objectMapper;
     this.operationsConfig = operationsConfig;
     this.meterRegistry = meterRegistry;
@@ -59,18 +57,14 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, FindCommand command) {
 
-    // TODO: if we are doing in memory sorting how do we get a paging state working ?
-    // The in memory sorting will blank out the paging state so we need to handle this
-    var cqlPageState =
-        command.options() == null
-            ? CqlPagingState.EMPTY
-            : CqlPagingState.from(command.options().pageState());
-
-    var accumulator =
-        ReadDBTaskPage.accumulator(commandContext).singleResponse(false).mayReturnVector(command);
-
-    return readCommandResolver.buildReadOperation(
-        commandContext, command, cqlPageState, accumulator);
+    return new TableReadDBOperationBuilder<>(commandContext)
+        .withCommand(command)
+        .withPagingState(
+            command.options() == null
+                ? CqlPagingState.EMPTY
+                : CqlPagingState.from(command.options().pageState()))
+        .withSingleResponse(false)
+        .build();
   }
 
   @Override
