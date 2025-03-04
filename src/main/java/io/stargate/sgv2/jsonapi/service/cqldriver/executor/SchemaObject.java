@@ -69,9 +69,6 @@ public abstract class SchemaObject implements Recordable {
 
   @Override
   public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
-    return dataRecorder
-        .append("type", type)
-        .append("name.keyspace", name.keyspace())
-        .append("name.table", name.table());
+    return dataRecorder.append("type", type).append("name", name);
   }
 }

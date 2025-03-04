@@ -56,6 +56,7 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
     // TODO: BETTER ERROR
     return new AsyncResultSetSupplier(
         commandContext,
+        this,
         null,
         () ->
             keyspaceMetadata.isEmpty()

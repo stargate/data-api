@@ -45,7 +45,7 @@ public class TruncateDBTask<SchemaT extends TableBasedSchemaObject> extends DBTa
 
     logStatement(LOGGER, "buildResultSupplier()", statement);
     return new AsyncResultSetSupplier(
-        commandContext, statement, () -> queryExecutor.executeTruncate(statement));
+        commandContext, this, statement, () -> queryExecutor.executeTruncate(statement));
   }
 
   // =================================================================================================

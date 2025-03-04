@@ -45,7 +45,7 @@ public abstract class SchemaDBTask<SchemaT extends SchemaObject> extends DBTask<
 
     logStatement(LOGGER, "buildResultSupplier()", statement);
     return new AsyncResultSetSupplier(
-        commandContext, statement, () -> queryExecutor.executeCreateSchema(statement));
+        commandContext, this, statement, () -> queryExecutor.executeCreateSchema(statement));
   }
 
   // =================================================================================================

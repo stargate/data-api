@@ -86,6 +86,13 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
     super.onSuccess(result);
   }
 
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return super.recordTo(dataRecorder)
+        .append("requestType",requestType)
+        .append("embeddingAction.groupKey", embeddingActions.getFirst().groupKey());
+  }
+
   // =================================================================================================
   // Implementation and internals
   // =================================================================================================
@@ -119,10 +126,12 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
           .maybeTrace(
               () ->
                   new RequestTracing.TraceMessage(
-                      "Requesting %s vectors from Embedding Provider %s for task %s"
+                      "Requesting %s vectors using %s to vectorize with '%s/%s' for task %s"
                           .formatted(
                               vectorizeTexts.size(),
                               embeddingTask.embeddingProvider.getClass().getSimpleName(),
+                              actions.getFirst().groupKey().vectorType().getVectorizeDefinition().provider(),
+                              actions.getFirst().groupKey().vectorType().getVectorizeDefinition().modelName(),
                               embeddingTask.taskDesc()),
                       Recordable.copyOf(vectorizeTexts)));
 
@@ -172,10 +181,12 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
           .maybeTrace(
               () ->
                   new RequestTracing.TraceMessage(
-                      "Received %s vectors from Embedding Provider %s for task %s"
+                      "Received %s vectors using %s to vectorize with '%s/%s' for task %s"
                           .formatted(
                               providerResponse.embeddings().size(),
                               embeddingTask.embeddingProvider.getClass().getSimpleName(),
+                              actions.getFirst().groupKey().vectorType().getVectorizeDefinition().provider(),
+                              actions.getFirst().groupKey().vectorType().getVectorizeDefinition().modelName(),
                               embeddingTask.taskDesc())));
 
       // defensive to make sure the order cannot change

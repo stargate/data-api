@@ -71,6 +71,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
   public static class AsyncResultSetSupplier implements BaseTask.UniSupplier<AsyncResultSet> {
 
     protected final CommandContext<?> commandContext;
+    protected final Task<?> task;
     protected final SimpleStatement statement;
     protected final BaseTask.UniSupplier<AsyncResultSet> supplier;
 
@@ -83,9 +84,11 @@ public abstract class DBTask<SchemaT extends SchemaObject>
      */
     public AsyncResultSetSupplier(
         CommandContext<?> commandContext,
+        Task<?> task,
         SimpleStatement statement,
         BaseTask.UniSupplier<AsyncResultSet> supplier) {
       this.commandContext = commandContext;
+      this.task = task;
       this.statement = statement;
       this.supplier = Objects.requireNonNull(supplier, "supplier must not be null");
     }
@@ -99,7 +102,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
           .maybeTrace(
               () ->
                   new RequestTracing.TraceMessage(
-                      "Executing statement for task %s".formatted(getClass().getSimpleName()),
+                      "Executing statement for task %s".formatted(task.taskDesc()),
                       Recordable.copyOf(
                           Map.of(
                               "cql",

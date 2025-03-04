@@ -2,9 +2,10 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import org.slf4j.MDC;
 
-public record SchemaObjectName(String keyspace, String table) {
+public record SchemaObjectName(String keyspace, String table) implements Recordable {
 
   // Marker object to use when the name is missing
   public static final String MISSING_NAME = "";
@@ -31,5 +32,10 @@ public record SchemaObjectName(String keyspace, String table) {
 
     // NOTE: MUST stay as collection for logging analysis
     MDC.put("collection", table);
+  }
+
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return dataRecorder.append("keyspace", keyspace).append("table", table);
   }
 }

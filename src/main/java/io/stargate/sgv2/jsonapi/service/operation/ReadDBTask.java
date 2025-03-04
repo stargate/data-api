@@ -97,7 +97,7 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
 
     logStatement(LOGGER, "buildResultSupplier()", statement);
     return new AsyncResultSetSupplier(
-        commandContext, statement, () -> rowSorter.executeRead(queryExecutor, statement));
+        commandContext, this, statement, () -> rowSorter.executeRead(queryExecutor, statement));
   }
 
   /** {@inheritDoc} */

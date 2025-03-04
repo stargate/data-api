@@ -52,6 +52,10 @@ public interface PrettyPrintable {
     return pprint(recordable, true);
   }
 
+  static String print(Recordable recordable) {
+    return pprint(recordable, false);
+  }
+
   static String pprint(Recordable recordable, boolean prettyPrint) {
     return recordable
         .recordTo(new PrettyPrintableRecorder(recordable.getClass(), prettyPrint))

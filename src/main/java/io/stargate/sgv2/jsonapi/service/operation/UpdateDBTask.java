@@ -60,7 +60,7 @@ public class UpdateDBTask<SchemaT extends TableSchemaObject> extends DBTask<Sche
 
     logStatement(LOGGER, "buildResultSupplier()", statement);
     return new AsyncResultSetSupplier(
-        commandContext, statement, () -> queryExecutor.executeWrite(statement));
+        commandContext, this, statement, () -> queryExecutor.executeWrite(statement));
   }
 
   // =================================================================================================
