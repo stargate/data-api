@@ -21,6 +21,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.time.Duration;
@@ -43,7 +44,8 @@ public record CreateCollectionOperation(
     int ddlDelayMillis,
     boolean tooManyIndexesRollbackEnabled,
     // if true, deny all indexing option is set and no indexes will be created
-    boolean indexingDenyAll)
+    boolean indexingDenyAll,
+    CollectionLexicalConfig lexicalConfig)
     implements Operation {
   private static final Logger logger = LoggerFactory.getLogger(CreateCollectionOperation.class);
 
@@ -62,7 +64,8 @@ public record CreateCollectionOperation(
       String comment,
       int ddlDelayMillis,
       boolean tooManyIndexesRollbackEnabled,
-      boolean indexingDenyAll) {
+      boolean indexingDenyAll,
+      CollectionLexicalConfig lexicalConfig) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -76,7 +79,8 @@ public record CreateCollectionOperation(
         comment,
         ddlDelayMillis,
         tooManyIndexesRollbackEnabled,
-        indexingDenyAll);
+        indexingDenyAll,
+        Objects.requireNonNull(lexicalConfig));
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
@@ -88,7 +92,8 @@ public record CreateCollectionOperation(
       String comment,
       int ddlDelayMillis,
       boolean tooManyIndexesRollbackEnabled,
-      boolean indexingDenyAll) {
+      boolean indexingDenyAll,
+      CollectionLexicalConfig lexicalConfig) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -102,7 +107,8 @@ public record CreateCollectionOperation(
         comment,
         ddlDelayMillis,
         tooManyIndexesRollbackEnabled,
-        indexingDenyAll);
+        indexingDenyAll,
+        Objects.requireNonNull(lexicalConfig));
   }
 
   @Override
@@ -156,7 +162,7 @@ public record CreateCollectionOperation(
             embeddingSourceModel,
             comment,
             objectMapper);
-    // if table exists we have to choices:
+    // if table exists we have two choices:
     // (1) trying to create with same options -> ok, proceed
     // (2) trying to create with different options -> error out
     if (existedCollectionSettings.equals(newCollectionSettings)) {
@@ -399,7 +405,8 @@ public record CreateCollectionOperation(
   }
 
   public SimpleStatement getCreateTable(String keyspace, String table) {
-    // The keyspace and table name are quoted to make it case sensitive
+    // The keyspace and table name are quoted to make it case-sensitive
+    final String lexicalField = lexicalConfig().enabled() ? "    query_lexical_value   text, " : "";
     if (vectorSearch) {
       String createTableWithVector =
           "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
@@ -417,6 +424,7 @@ public record CreateCollectionOperation(
               + "    query_vector_value  VECTOR<FLOAT, "
               + vectorSize
               + ">, "
+              + lexicalField
               + "    PRIMARY KEY (key))";
       if (comment != null) {
         createTableWithVector = createTableWithVector + " WITH comment = '" + comment + "'";
@@ -436,6 +444,7 @@ public record CreateCollectionOperation(
               + "    query_text_values   map<text, text>, "
               + "    query_timestamp_values map<text, timestamp>, "
               + "    query_null_values   set<text>, "
+              + lexicalField
               + "    PRIMARY KEY (key))";
       if (comment != null) {
         createTable = createTable + " WITH comment = '" + comment + "'";
@@ -453,7 +462,7 @@ public record CreateCollectionOperation(
     List<SimpleStatement> statements = new ArrayList<>(10);
     String appender =
         collectionExisted ? "CREATE CUSTOM INDEX IF NOT EXISTS" : "CREATE CUSTOM INDEX";
-    // All the index names are quoted to make it case sensitive.
+    // All index names are quoted to make them case-sensitive.
     if (!indexingDenyAll()) {
       String existKeys =
           appender
@@ -509,6 +518,20 @@ public record CreateCollectionOperation(
               + "'}";
       statements.add(
           SimpleStatement.newInstance(String.format(vectorSearch, table, keyspace, table)));
+    }
+
+    if (lexicalConfig.enabled()) {
+      var analyzerDef = lexicalConfig.analyzerDefinition();
+      // Note: needs to be either plain (unquoted) String (NOT quoted JSON String) OR JSON Object
+      final String analyzerString =
+          analyzerDef.isTextual() ? analyzerDef.asText() : analyzerDef.toString();
+      final String lexicalCreateStmt =
+              """
+                    %s "%s_query_lexical_value" ON "%s"."%s" (query_lexical_value)
+                      USING 'StorageAttachedIndex' WITH OPTIONS = { 'index_analyzer': '%s' }
+                    """
+              .formatted(appender, table, keyspace, table, analyzerString);
+      statements.add(SimpleStatement.newInstance(lexicalCreateStmt));
     }
     return statements;
   }

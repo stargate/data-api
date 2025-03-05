@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -61,30 +62,36 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       CommandContext<KeyspaceSchemaObject> ctx, CreateCollectionCommand command) {
 
     final var name = validateSchemaName(command.name(), NamingRules.COLLECTION);
+    final CreateCollectionCommand.Options options = command.options();
 
-    if (command.options() == null) {
+    if (options == null) {
+      final CollectionLexicalConfig lexicalConfig =
+          CollectionLexicalConfig.configForNewCollections();
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
           dbLimitsConfig,
           objectMapper,
           cqlSessionCache,
           name,
-          generateComment(objectMapper, false, false, name, null, null, null),
+          generateComment(objectMapper, false, false, name, null, null, null, lexicalConfig),
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
-          false); // Since the options is null
+          false,
+          lexicalConfig); // Since the options is null
     }
 
-    boolean hasIndexing = command.options().indexing() != null;
-    boolean hasVectorSearch = command.options().vector() != null;
-    CreateCollectionCommand.Options.VectorSearchConfig vector = command.options().vector();
+    boolean hasIndexing = options.indexing() != null;
+    boolean hasVectorSearch = options.vector() != null;
+    CreateCollectionCommand.Options.VectorSearchConfig vector = options.vector();
+    final CollectionLexicalConfig lexicalConfig =
+        CollectionLexicalConfig.validateAndConstruct(objectMapper, options.lexical());
 
     boolean indexingDenyAll = false;
     // handling indexing options
     if (hasIndexing) {
       // validation of configuration
-      command.options().indexing().validate();
-      indexingDenyAll = command.options().indexing().denyAll();
+      options.indexing().validate();
+      indexingDenyAll = options.indexing().denyAll();
       // No need to process if both are null or empty
     }
 
@@ -99,9 +106,10 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             hasIndexing,
             hasVectorSearch,
             name,
-            command.options().indexing(),
+            options.indexing(),
             vector,
-            command.options().idConfig());
+            options.idConfig(),
+            lexicalConfig);
 
     if (hasVectorSearch) {
       return CreateCollectionOperation.withVectorSearch(
@@ -116,7 +124,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           comment,
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
-          indexingDenyAll);
+          indexingDenyAll,
+          lexicalConfig);
     } else {
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
@@ -127,7 +136,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           comment,
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
-          indexingDenyAll);
+          indexingDenyAll,
+          lexicalConfig);
     }
   }
 
@@ -148,11 +158,12 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       String commandName,
       CreateCollectionCommand.Options.IndexingConfig indexing,
       CreateCollectionCommand.Options.VectorSearchConfig vector,
-      CreateCollectionCommand.Options.IdConfig idConfig) {
+      CreateCollectionCommand.Options.IdConfig idConfig,
+      CollectionLexicalConfig lexicalConfig) {
     final ObjectNode collectionNode = objectMapper.createObjectNode();
     ObjectNode optionsNode = objectMapper.createObjectNode(); // For storing collection options.
 
-    // TODO: move this out of the command resolver, it is not a responsbility for this class
+    // TODO: move this out of the command resolver, it is not a responsibility for this class
     if (hasIndexing) {
       optionsNode.putPOJO(TableCommentConstants.COLLECTION_INDEXING_KEY, indexing);
     }
@@ -167,6 +178,9 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           TableCommentConstants.DEFAULT_ID_KEY,
           objectMapper.createObjectNode().putPOJO("type", ""));
     }
+
+    // Store Lexical Config as-is:
+    optionsNode.putPOJO(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY, lexicalConfig);
 
     collectionNode.put(TableCommentConstants.COLLECTION_NAME_KEY, commandName);
     collectionNode.put(

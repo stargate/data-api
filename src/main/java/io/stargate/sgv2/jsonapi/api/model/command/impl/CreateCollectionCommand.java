@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -56,7 +57,16 @@ public record CreateCollectionCommand(
                   "Optional indexing configuration to provide allow/deny list of fields for indexing",
               type = SchemaType.OBJECT,
               implementation = IndexingConfig.class)
-          IndexingConfig indexing) {
+          IndexingConfig indexing,
+      @Valid
+          @JsonInclude(JsonInclude.Include.NON_NULL)
+          @Nullable
+          @Schema(
+              description =
+                  "Optional configuration defining if and how to support use of '$lexical' field",
+              type = SchemaType.OBJECT,
+              implementation = LexicalConfigDefinition.class)
+          LexicalConfigDefinition lexical) {
 
     public record IdConfig(
         @Nullable
@@ -218,11 +228,33 @@ public record CreateCollectionCommand(
       }
     }
 
-    public Options(IdConfig idConfig, VectorSearchConfig vector, IndexingConfig indexing) {
+    public record LexicalConfigDefinition(
+        @Schema(
+                description = "Whether to enable the use of '$lexical' field (default: 'true')",
+                defaultValue = "true",
+                type = SchemaType.BOOLEAN,
+                implementation = Boolean.class,
+                required = true)
+            Boolean enabled,
+        @Schema(
+                description =
+                    "Analyzer to use for '$lexical' field: either String (name of a pre-defined analyzer), or JSON Object to specify custom one. Default: 'standard')",
+                defaultValue = "standard",
+                oneOf = {String.class, Map.class})
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            @JsonProperty("analyzer")
+            JsonNode analyzerDef) {}
+
+    public Options(
+        IdConfig idConfig,
+        VectorSearchConfig vector,
+        IndexingConfig indexing,
+        LexicalConfigDefinition lexical) {
       // idConfig could be null, will resolve idType to empty string in table comment
       this.idConfig = idConfig;
       this.vector = vector;
       this.indexing = indexing;
+      this.lexical = lexical;
     }
   }
 
