@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.collections;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,7 +11,9 @@ import java.util.Objects;
 
 /** Validated configuration Object for Lexical (BM-25) indexing configuration for Collections. */
 public record CollectionLexicalConfig(
-    boolean enabled, @JsonProperty("analyzer") JsonNode analyzerDefinition) {
+    boolean enabled,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @JsonProperty("analyzer")
+        JsonNode analyzerDefinition) {
   public static final String DEFAULT_NAMED_ANALYZER = "standard";
 
   private static final JsonNode DEFAULT_NAMED_ANALYZER_NODE =
@@ -18,10 +21,11 @@ public record CollectionLexicalConfig(
 
   public CollectionLexicalConfig(boolean enabled, JsonNode analyzerDefinition) {
     this.enabled = enabled;
+    // Clear out any analyzer settings if not enabled (but don't fail)
     if (enabled) {
       this.analyzerDefinition = Objects.requireNonNull(analyzerDefinition);
     } else {
-      this.analyzerDefinition = analyzerDefinition;
+      this.analyzerDefinition = null;
     }
   }
 
@@ -67,7 +71,7 @@ public record CollectionLexicalConfig(
    * field and index: needs to be disabled
    */
   public static CollectionLexicalConfig configForLegacyCollections() {
-    return new CollectionLexicalConfig(false, DEFAULT_NAMED_ANALYZER_NODE);
+    return new CollectionLexicalConfig(false, null);
   }
 
   /**
@@ -75,6 +79,6 @@ public record CollectionLexicalConfig(
    * needs to be disabled.
    */
   public static CollectionLexicalConfig configForMissingCollection() {
-    return new CollectionLexicalConfig(false, DEFAULT_NAMED_ANALYZER_NODE);
+    return new CollectionLexicalConfig(false, null);
   }
 }

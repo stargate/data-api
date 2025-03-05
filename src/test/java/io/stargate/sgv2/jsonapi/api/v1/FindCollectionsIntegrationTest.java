@@ -407,8 +407,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                  "defaultId" : {"type" : "objectId"},
                 "indexing":{"deny":["comment"]},
                 "lexical": {
-                  "enabled": false,
-                  "analyzer": "standard"
+                  "enabled": false
                 }
                 }}
               """;

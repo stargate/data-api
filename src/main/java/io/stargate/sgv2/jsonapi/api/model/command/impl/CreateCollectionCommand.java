@@ -241,6 +241,7 @@ public record CreateCollectionCommand(
                     "Analyzer to use for '$lexical' field: either String (name of a pre-defined analyzer), or JSON Object to specify custom one. Default: 'standard')",
                 defaultValue = "standard",
                 oneOf = {String.class, Map.class})
+            @JsonInclude(JsonInclude.Include.NON_NULL)
             @JsonProperty("analyzer")
             JsonNode analyzerDef) {}
 
