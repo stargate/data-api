@@ -4,14 +4,12 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
-import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.embedding.gateway.RerankService;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.rerank.operation.RerankProvider;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /** Grpc client to make rerank Grpc requests to rerank API inside EmbeddingGatewayService */
 public class RerankClient extends RerankProvider {
@@ -39,7 +37,7 @@ public class RerankClient extends RerankProvider {
       Optional<String> authToken,
       String baseUrl,
       String modelName,
-      EmbeddingService embeddingService,
+      RerankService rerankService,
       Map<String, String> authentication,
       String commandName) {
     this.provider = provider;
@@ -99,11 +97,10 @@ public class RerankClient extends RerankProvider {
                     ErrorCodeV1.valueOf(resp.getError().getErrorCode()),
                     resp.getError().getErrorMessage());
               }
-              return Response.of(
-                  batchId,
-                  resp.getRankingsList().stream()
-                      .map(rank -> new Rank(rank.getIndex(), rank.getLogit()))
-                      .collect(Collectors.toList()));
+              return Response.of(batchId, null);
+              //                  resp.getRankingsList().stream()
+              //                      .map(rank -> new Rank(rank.getIndex(), rank.getLogit()))
+              //                      .collect(Collectors.toList()));
             });
   }
 }
