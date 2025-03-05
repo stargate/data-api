@@ -20,11 +20,17 @@ public interface DocumentConstants {
     /** Physical table column name that stores the vector field. */
     String VECTOR_SEARCH_INDEX_COLUMN_NAME = "query_vector_value";
 
+    /** Physical table column name that stores the lexical content. */
+    String LEXICAL_INDEX_COLUMN_NAME = "query_lexical_value";
+
     /** Document field name to which vector data is stored. */
     String VECTOR_EMBEDDING_FIELD = "$vector";
 
     /** Document field name that will have text value for which vectorize method in called */
     String VECTOR_EMBEDDING_TEXT_FIELD = "$vectorize";
+
+    /** Document field name that will have lexical (BM-25) content for analyzed text for search */
+    String LEXICAL_CONTENT_FIELD = "$lexical";
 
     /** Document field name that will have text value for which vectorize method in called */
     String BINARY_VECTOR_TEXT_FIELD = "$binary";
