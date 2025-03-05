@@ -21,8 +21,11 @@ public enum CommandStatus {
   @JsonProperty(Names.EXISTING_KEYSPACES)
   EXISTING_KEYSPACES(Names.EXISTING_KEYSPACES),
   /** Status for reporting existing embedding services. */
-  @JsonProperty(Names.EXISTING_VECTOR_PROVIDERS)
-  EXISTING_VECTOR_PROVIDERS(Names.EXISTING_VECTOR_PROVIDERS),
+  @JsonProperty(Names.EXISTING_EMBEDDING_PROVIDERS)
+  EXISTING_VECTOR_PROVIDERS(Names.EXISTING_EMBEDDING_PROVIDERS),
+  /** Status for reporting existing rerank services. */
+  @JsonProperty(Names.EXISTING_RERANK_PROVIDERS)
+  EXISTING_RERANK_PROVIDERS(Names.EXISTING_RERANK_PROVIDERS),
   /** Status for reporting existing collections. */
   @JsonProperty(Names.EXISTING_COLLECTIONS)
   EXISTING_COLLECTIONS(Names.EXISTING_COLLECTIONS),
@@ -152,7 +155,8 @@ public enum CommandStatus {
     String DELETED_COUNT = "deletedCount";
     String EXISTING_NAMESPACES = "namespaces";
     String EXISTING_KEYSPACES = "keyspaces";
-    String EXISTING_VECTOR_PROVIDERS = "embeddingProviders";
+    String EXISTING_EMBEDDING_PROVIDERS = "embeddingProviders";
+    String EXISTING_RERANK_PROVIDERS = "rerankProviders";
     String EXISTING_COLLECTIONS = "collections";
     String EXISTING_TABLES = "tables";
     String EXISTING_INDEXES = "indexes";
