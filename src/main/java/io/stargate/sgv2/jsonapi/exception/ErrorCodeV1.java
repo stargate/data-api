@@ -152,6 +152,7 @@ public enum ErrorCodeV1 {
   VECTORIZE_FEATURE_NOT_AVAILABLE("Vectorize feature is not available in the environment"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
+  RERANK_SERVICE_TYPE_UNAVAILABLE("Rerank service unavailable : "),
   VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause"),
   VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
 

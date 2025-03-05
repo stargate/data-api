@@ -1,0 +1,14 @@
+stargate:
+  jsonapi:
+    rerank:
+      providers:
+        nvidia:
+          display-name: Nvidia
+          enabled: true
+          supported-authentications:
+            NONE:
+              enabled: true
+          models:
+            - name: nvidia/llama-3.2-nv-rerankqa-1b-v2
+              url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
+
