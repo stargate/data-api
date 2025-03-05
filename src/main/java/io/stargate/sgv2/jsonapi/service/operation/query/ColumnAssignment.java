@@ -11,6 +11,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
+import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
+import io.stargate.sgv2.jsonapi.service.shredding.NamedValue;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -23,8 +27,11 @@ import java.util.Objects;
  * appropriate methods on the {@link OngoingAssignment}.
  *
  * <p>Designed to be used with the {@link UpdateValuesCQLClause} to build the full clause.
+ *
+ * <p>Supports {@link Deferrable} so that the values needed vectorizing can be deferred
+ * until execution time. See {@link #deferredValues()} for docs.
  */
-public class ColumnAssignment implements CQLAssignment {
+public class ColumnAssignment implements CQLAssignment, Deferrable {
 
   private final CqlNamedValue namedValue;
 
@@ -116,5 +123,10 @@ public class ColumnAssignment implements CQLAssignment {
     // tableMetadata.getColumn(column).get().getType().toString());
     //              }));
     //    }
+  }
+
+  @Override
+  public List<? extends NamedValue<?, ?, ?>> deferredValues() {
+    return new CqlNamedValueContainer(List.of(namedValue)).deferredValues();
   }
 }

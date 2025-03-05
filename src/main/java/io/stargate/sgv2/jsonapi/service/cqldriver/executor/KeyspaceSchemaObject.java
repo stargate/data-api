@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 
 public class KeyspaceSchemaObject extends SchemaObject {

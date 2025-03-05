@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 
 /**
  * Interface that describes how a where clause behaves.

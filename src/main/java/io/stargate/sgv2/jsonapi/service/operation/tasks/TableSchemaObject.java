@@ -1,7 +1,10 @@
-package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
+package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.IndexUsage;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import org.slf4j.Logger;

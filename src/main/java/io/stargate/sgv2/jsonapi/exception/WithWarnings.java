@@ -106,6 +106,21 @@ public class WithWarnings<T> implements Consumer<WithWarnings.WarningsSink> {
   }
 
   /**
+   * Construct an instance with the target, and all the state from the source
+   * {@link WithWarnings}.
+   *
+   * @param target the target object that has the warnings
+   * @param source WithWarnings to copy the warnings and supressed warnings from.
+   * @return An instance with the warning
+   * @param <T> Type of the target object the warnings are about.
+   */
+  public static <T> WithWarnings<T> of(T target, WithWarnings<?> source) {
+    Objects.requireNonNull(source, "warning is required");
+
+    return new WithWarnings<>(target, source.warnings, source.suppressedWarnings);
+  }
+
+  /**
    * Adds all the warnings to the warnings sink
    *
    * @param sink the {@link WarningsSink} to add the warnings to

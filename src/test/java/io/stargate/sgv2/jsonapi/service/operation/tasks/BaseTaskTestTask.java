@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 
 /**
  * Test task for testing the core functionality of the {@link BaseTask} - not testing any of the

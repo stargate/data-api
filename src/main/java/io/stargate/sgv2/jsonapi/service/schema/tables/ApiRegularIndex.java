@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.Regul
 import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
 import java.util.HashMap;
 import java.util.Map;

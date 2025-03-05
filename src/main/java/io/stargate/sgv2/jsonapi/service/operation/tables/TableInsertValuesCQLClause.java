@@ -4,7 +4,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
 import com.datastax.oss.driver.api.querybuilder.insert.OngoingValues;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.resolver.UnvalidatedClauseException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;

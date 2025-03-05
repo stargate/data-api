@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingAction;
@@ -26,10 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * NOTE: This was intended to be a base class for the Find and FindOne resolvers, but I could not
- * work out how to get subclassing to work with the dependency injection framework. So, I have left
- * it as a standalone class for now. - aaron 4 nov 2024
- *
  * @param <CmdT>
  */
 class TableReadDBOperationBuilder<
@@ -179,10 +175,10 @@ class TableReadDBOperationBuilder<
     var where =
         TableWhereCQLClause.forSelect(
             commandContext.schemaObject(),
-            tableFilterResolver.resolve(commandContext, command).target());
+            tableFilterResolver.resolve(commandContext, command));
 
     // always parallel processing for the taskgroup
-    var taskGroup = new TaskGroup<>(taskBuilder.build(where));
+    var taskGroup = new TaskGroup<>(taskBuilder.build(where.target()));
 
     return new ReadTaskAndDeferrables(
         taskGroup,

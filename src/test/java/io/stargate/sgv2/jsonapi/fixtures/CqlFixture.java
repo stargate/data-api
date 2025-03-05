@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.fixtures.data.FixtureData;
 import io.stargate.sgv2.jsonapi.fixtures.identifiers.BaseFixtureIdentifiers;
 import io.stargate.sgv2.jsonapi.fixtures.identifiers.FixtureIdentifiers;
 import io.stargate.sgv2.jsonapi.fixtures.tables.TableFixture;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import java.util.ArrayList;
 import java.util.List;
 

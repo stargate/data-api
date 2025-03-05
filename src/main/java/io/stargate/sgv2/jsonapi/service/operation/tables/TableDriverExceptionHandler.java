@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 
 /**
  * Subclass of {@link DefaultDriverExceptionHandler} for working with {@link TableSchemaObject}.

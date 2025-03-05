@@ -4,7 +4,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskPage;
@@ -13,10 +13,10 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskPage;
  * A page of results from a update command, use {@link #builder()} to get a builder to pass to
  * {@link GenericOperation}.
  */
-public class UpdateAttemptPage<SchemaT extends TableSchemaObject>
+public class UpdateDBTaskPage<SchemaT extends TableSchemaObject>
     extends TaskPage<UpdateDBTask<SchemaT>, SchemaT> {
 
-  private UpdateAttemptPage(
+  private UpdateDBTaskPage(
       TaskGroup<UpdateDBTask<SchemaT>, SchemaT> tasks, CommandResultBuilder resultBuilder) {
     super(tasks, resultBuilder);
   }
@@ -49,12 +49,12 @@ public class UpdateAttemptPage<SchemaT extends TableSchemaObject>
     Accumulator() {}
 
     @Override
-    public UpdateAttemptPage<SchemaT> getResults() {
+    public UpdateDBTaskPage<SchemaT> getResults() {
 
       // when we refactor collections to use the OperationAttempt this will need to support
       // returning a document
       // e.g. for findOneAndDelete, for now it is always status only
-      return new UpdateAttemptPage<>(
+      return new UpdateDBTaskPage<>(
           tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode, requestTracing));
     }
   }
