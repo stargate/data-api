@@ -195,11 +195,103 @@ message ValidateCredentialResponse {
   }
 }
 
-
-
 // The embedding gateway gPRC API to generate embeddings
 service EmbeddingService {
   rpc Embed (ProviderEmbedRequest) returns (EmbeddingResponse) {}
   rpc GetSupportedProviders (GetSupportedProvidersRequest) returns (GetSupportedProvidersResponse){}
   rpc ValidateCredential (ValidateCredentialRequest) returns (ValidateCredentialResponse) {}
+}
+
+
+// The rerank request message that is sent to embedding gateway gRPC API
+message ProviderRerankRequest {
+  ProviderContext 			provider_context = 1;
+  RerankRequest			rerank_request = 2;
+  message ProviderContext {
+    string 					          provider_name = 1;
+    string  					        tenant_id = 2;
+    map<string, string>  			auth_tokens = 3;
+  }
+  message RerankRequest {
+    // The model name for the rerank request
+    string 					      model_name = 1;
+    // The query text for the rerank request
+    string 					      query = 2;
+    // The passages texts for the rerank request
+    repeated string 			passages = 3;
+    // TODOs: truncate?
+    // The command contains rerank
+    string                command_name = 4;
+  }
+}
+
+
+// The rerank response message for the embedding gateway gRPC API if successful
+message RerankResponse {
+  Usage 					  usage = 1;
+  repeated Rank		  rankings = 2;
+  ErrorResponse     error = 3;
+
+  // Rerank result for each passage
+  message Rank {
+    // The rank index of the passage
+    int32 	  index = 1;
+    // The logit value of the passage
+    float	    logit = 2;
+  }
+
+  // The usage statistics of rerank for the embedding gateway gRPC API on successful response
+  message Usage {
+    int32 	prompt_tokens = 1;
+    int32 	total_tokens = 2;
+  }
+
+  message ErrorResponse {
+    string error_code = 1;
+    string error_message = 2;
+  }
+}
+
+// The request message for the get supported rerank providers gRPC API
+message GetSupportedRerankProvidersRequest {}
+
+// The response message for the get supported rerank providers gRPC API if successful
+message GetSupportedRerankProvidersResponse {
+  map<string, ProviderConfig>  	supportedProviders = 1;
+  ErrorResponse error = 2;
+
+  // ProviderConfig message represents configuration for an rerank provider.
+  message ProviderConfig {
+    string displayName = 1;
+    bool enabled = 2;
+    map<string, AuthenticationConfig> supported_authentications = 3;
+    repeated ModelConfig models = 4;
+
+    message AuthenticationConfig{
+      bool enabled = 1;
+      repeated TokenConfig tokens = 2;
+
+      message TokenConfig{
+        string accepted = 1;
+        string forwarded = 2;
+      }
+    }
+
+    // ModelConfig message represents configuration for a specific rerank model.
+    message ModelConfig {
+      string name = 1;
+      string url = 2;
+    }
+  }
+
+  message ErrorResponse {
+    string error_code = 1;
+    string error_message = 2;
+  }
+}
+
+// The embedding gateway gPRC API to rerank
+service RerankService {
+  rpc Rerank (ProviderRerankRequest) returns (RerankResponse) {}
+  rpc GetSupportedRerankProviders (GetSupportedRerankProvidersRequest) returns (GetSupportedRerankProvidersResponse){}
 }
