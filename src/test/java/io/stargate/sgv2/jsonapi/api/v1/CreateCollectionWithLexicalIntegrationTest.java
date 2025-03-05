@@ -20,13 +20,13 @@ import org.junit.jupiter.api.TestClassOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class CreateCollectionHybridIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
+class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   @Nested
   @Order(1)
   class CreateLexicalHappyPath {
     @Test
     void createLexicalSimpleEnabledMinimal() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_minimal" + RandomStringUtils.randomNumeric(16);
       String json = createRequestWithLexical(collectionName, "{\"enabled\": true}");
 
       givenHeadersPostJsonThenOkNoErrors(json)
@@ -37,7 +37,7 @@ class CreateCollectionHybridIntegrationTest extends AbstractKeyspaceIntegrationT
 
     @Test
     void createLexicalSimpleEnabledStandard() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_simple" + RandomStringUtils.randomNumeric(16);
       String json =
           createRequestWithLexical(
               collectionName,
@@ -55,8 +55,31 @@ class CreateCollectionHybridIntegrationTest extends AbstractKeyspaceIntegrationT
     }
 
     @Test
+    void createLexicalSimpleEnabledCustom() {
+      final String collectionName = "coll_lexical_cust_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                                {
+                                  "enabled": true,
+                                  "analyzer": {
+                                    "tokenizer": {
+                                       "name": "whitespace"
+                                    }
+                                  }
+                                }
+                          """);
+
+      givenHeadersPostJsonThenOkNoErrors(json)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+      deleteCollection(collectionName);
+    }
+
+    @Test
     void createLexicalSimpleDisabled() {
-      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      final String collectionName = "coll_lexical_disabled" + RandomStringUtils.randomNumeric(16);
       String json = createRequestWithLexical(collectionName, "{\"enabled\": false}");
 
       givenHeadersPostJsonThenOkNoErrors(json)
@@ -103,6 +126,30 @@ class CreateCollectionHybridIntegrationTest extends AbstractKeyspaceIntegrationT
           // analyzers
           .body("errors[0].message", containsString("Invalid analyzer config"))
           .body("errors[0].message", containsString("token 'unknown'"));
+    }
+
+    @Test
+    void failCreateLexicalWrongJsonType() {
+      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                                        {
+                                          "enabled": true,
+                                          "analyzer": [ 1, 2, 3 ]
+                                        }
+                                  """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
+          // analyzers
+          .body(
+              "errors[0].message",
+              containsString(
+                  "'analyzer' property of 'lexical' must be either String or JSON Object, is: ARRAY"));
     }
   }
 
