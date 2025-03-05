@@ -27,7 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Refactored as seperate class that represent a collection property.*
+ * Refactored as seperate class that represent a collection property.
  *
  * <p>TODO: there are a LOT of different ways this is constructed, need to refactor
  */
@@ -41,12 +41,14 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           null,
           IdConfig.defaultIdConfig(),
           VectorConfig.NOT_ENABLED_CONFIG,
-          null);
+          null,
+          CollectionLexicalConfig.configForMissingCollection());
 
   private final IdConfig idConfig;
   private final VectorConfig vectorConfig;
   private final CollectionIndexingConfig indexingConfig;
   private final TableMetadata tableMetadata;
+  private final CollectionLexicalConfig lexicalConfig;
 
   /**
    * @param vectorConfig
@@ -58,13 +60,15 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       TableMetadata tableMetadata,
       IdConfig idConfig,
       VectorConfig vectorConfig,
-      CollectionIndexingConfig indexingConfig) {
+      CollectionIndexingConfig indexingConfig,
+      CollectionLexicalConfig lexicalConfig) {
     this(
         new SchemaObjectName(keypaceName, name),
         tableMetadata,
         idConfig,
         vectorConfig,
-        indexingConfig);
+        indexingConfig,
+        lexicalConfig);
   }
 
   public CollectionSchemaObject(
@@ -72,20 +76,22 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       TableMetadata tableMetadata,
       IdConfig idConfig,
       VectorConfig vectorConfig,
-      CollectionIndexingConfig indexingConfig) {
+      CollectionIndexingConfig indexingConfig,
+      CollectionLexicalConfig lexicalConfig) {
     super(TYPE, name, tableMetadata);
 
     this.idConfig = idConfig;
     this.vectorConfig = vectorConfig;
     this.indexingConfig = indexingConfig;
     this.tableMetadata = tableMetadata;
+    this.lexicalConfig = Objects.requireNonNull(lexicalConfig);
   }
 
   // TODO: remove this, it is just here for testing and can be handled by creating test data
   // effectively
   public CollectionSchemaObject withIdType(CollectionIdType idType) {
     return new CollectionSchemaObject(
-        name(), tableMetadata, new IdConfig(idType), vectorConfig, indexingConfig);
+        name(), tableMetadata, new IdConfig(idType), vectorConfig, indexingConfig, lexicalConfig);
   }
 
   @Override
@@ -148,6 +154,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     final Optional<ColumnMetadata> vectorColumn =
         table.getColumn(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME);
     boolean vectorEnabled = vectorColumn.isPresent();
+    final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
 
     // if vector column exists
     if (vectorEnabled) {
@@ -181,7 +188,6 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
                       () -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModelName));
         }
       }
-      final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
       return createCollectionSettings(
           keyspaceName,
           collectionName,
@@ -193,8 +199,6 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           comment,
           objectMapper);
     } else { // if not vector collection
-      // handling comment so get the indexing config from comment
-      final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
       return createCollectionSettings(
           keyspaceName,
           collectionName,
@@ -242,6 +246,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       ObjectMapper objectMapper) {
 
     if (comment == null || comment.isBlank()) {
+      // If no "comment", must assume Legacy (no Lexical) config
+      CollectionLexicalConfig lexicalConfig = CollectionLexicalConfig.configForLegacyCollections();
       if (vectorEnabled) {
         return new CollectionSchemaObject(
             keyspaceName,
@@ -256,7 +262,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
                         function,
                         sourceModel,
                         null))),
-            null);
+            null,
+            lexicalConfig);
       } else {
         return new CollectionSchemaObject(
             keyspaceName,
@@ -264,7 +271,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             tableMetadata,
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
-            null);
+            null,
+            lexicalConfig);
       }
     } else {
       JsonNode commentConfigNode;
@@ -312,7 +320,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       CollectionSchemaObject collectionSetting) {
 
     // TODO: move the vector and vectorize parts to be methods on those schema objects
-    CreateCollectionCommand.Options options = null;
+    CreateCollectionCommand.Options options;
     CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig = null;
     CreateCollectionCommand.Options.IndexingConfig indexingConfig = null;
 
@@ -361,7 +369,13 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             ? null
             : new CreateCollectionCommand.Options.IdConfig(idType.toString());
 
-    options = new CreateCollectionCommand.Options(idConfig, vectorSearchConfig, indexingConfig);
+    CollectionLexicalConfig lexicalConfig = collectionSetting.lexicalConfig;
+    var lexicalDef =
+        new CreateCollectionCommand.Options.LexicalConfigDefinition(
+            lexicalConfig.enabled(), lexicalConfig.analyzerDefinition());
+    options =
+        new CreateCollectionCommand.Options(
+            idConfig, vectorSearchConfig, indexingConfig, lexicalDef);
 
     // CreateCollectionCommand object is created for convenience to generate json
     // response. The code is not creating a collection here.
@@ -374,6 +388,16 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
   public CollectionIndexingConfig indexingConfig() {
     return indexingConfig;
+  }
+
+  /**
+   * Accessor for checking whether this Collection has support for "$lexical" sort (has analyzed
+   * text column "query_lexical_value")
+   *
+   * @return True if "lexical" sort is supported by this Collection; false if not.
+   */
+  public boolean lexicalEnabled() {
+    return lexicalConfig.enabled();
   }
 
   // TODO: these helper functions break encapsulation for very little benefit
@@ -395,7 +419,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     return Objects.equals(this.name, that.name)
         && Objects.equals(this.idConfig, that.idConfig)
         && Objects.equals(this.vectorConfig, that.vectorConfig)
-        && Objects.equals(this.indexingConfig, that.indexingConfig);
+        && Objects.equals(this.indexingConfig, that.indexingConfig)
+        && Objects.equals(this.lexicalConfig, that.lexicalConfig);
   }
 
   @Override
@@ -417,6 +442,9 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         + ", "
         + "indexingConfig="
         + indexingConfig
+        + ", "
+        + "lexicalConfig="
+        + lexicalConfig
         + ']';
   }
 }

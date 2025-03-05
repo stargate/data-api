@@ -30,6 +30,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
@@ -111,7 +112,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                             SimilarityFunction.COSINE,
                             EmbeddingSourceModel.OTHER,
                             null))),
-                null),
+                null,
+                CollectionLexicalConfig.configForLegacyCollections()),
             jsonProcessingMetricsReporter);
   }
 
