@@ -18,7 +18,11 @@ public record CollectionLexicalConfig(
 
   public CollectionLexicalConfig(boolean enabled, JsonNode analyzerDefinition) {
     this.enabled = enabled;
-    this.analyzerDefinition = Objects.requireNonNull(analyzerDefinition);
+    if (enabled) {
+      this.analyzerDefinition = Objects.requireNonNull(analyzerDefinition);
+    } else {
+      this.analyzerDefinition = analyzerDefinition;
+    }
   }
 
   /**
@@ -63,6 +67,14 @@ public record CollectionLexicalConfig(
    * field and index: needs to be disabled
    */
   public static CollectionLexicalConfig configForLegacyCollections() {
+    return new CollectionLexicalConfig(false, DEFAULT_NAMED_ANALYZER_NODE);
+  }
+
+  /**
+   * Accessor for an instance to use for missing collection: cases where definition does not exist:
+   * needs to be disabled.
+   */
+  public static CollectionLexicalConfig configForMissingCollection() {
     return new CollectionLexicalConfig(false, DEFAULT_NAMED_ANALYZER_NODE);
   }
 }
