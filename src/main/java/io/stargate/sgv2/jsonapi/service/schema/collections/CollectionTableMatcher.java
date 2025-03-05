@@ -65,7 +65,7 @@ public class CollectionTableMatcher implements Predicate<TableMetadata> {
                     new PrimitiveType(ProtocolConstants.DataType.DECIMAL)))
             .or(
                 new CqlColumnMatcher.Map(
-                    CqlIdentifier.fromInternal("query_text_values"),
+                    CqlIdentifier.fromInternal(DocumentConstants.Fields.QUERY_TEXT_MAP_COLUMN_NAME),
                     new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
                     new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
             .or(
@@ -122,7 +122,7 @@ public class CollectionTableMatcher implements Predicate<TableMetadata> {
                     new PrimitiveType(ProtocolConstants.DataType.DECIMAL)))
             .or(
                 new CqlColumnMatcher.Map(
-                    CqlIdentifier.fromInternal("query_text_values"),
+                    CqlIdentifier.fromInternal(DocumentConstants.Fields.QUERY_TEXT_MAP_COLUMN_NAME),
                     new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
                     new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
             .or(
