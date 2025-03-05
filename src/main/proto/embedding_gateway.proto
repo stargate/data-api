@@ -229,7 +229,7 @@ message ProviderRerankRequest {
 // The rerank response message for the embedding gateway gRPC API if successful
 message RerankResponse {
   Usage 					  usage = 1;
-  repeated Rank		  rankings = 2;
+  repeated Rank		  ranks = 2;
   ErrorResponse     error = 3;
 
   // Rerank result for each passage

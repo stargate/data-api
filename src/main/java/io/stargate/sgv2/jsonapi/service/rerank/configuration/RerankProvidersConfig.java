@@ -41,7 +41,7 @@ public interface RerankProvidersConfig {
       String forwarded();
     }
 
-    @Nullable
+    //    @Nullable
     @JsonProperty
     List<ModelConfig> models();
 

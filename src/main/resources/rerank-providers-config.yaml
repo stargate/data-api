@@ -3,12 +3,12 @@ stargate:
     rerank:
       providers:
         nvidia:
-          # see https://docs.api.nvidia.com/nim/reference/nvidia-embedding-2b-infer
           display-name: Nvidia
           enabled: true
           supported-authentications:
             NONE:
               enabled: true
           models:
-            - name: nvidia/nv-rerankqa-mistral-4b-v3
-              url: https://api.nvidia.com/nim/v1/models/nvidia/nv-rerankqa-mistral-4b-v3
+            - name: nvidia/llama-3.2-nv-rerankqa-1b-v2
+              url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
+
