@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.rerank.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.smallrye.config.WithDefault;
-import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 
