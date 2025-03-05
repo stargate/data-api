@@ -1,0 +1,14 @@
+stargate:
+  jsonapi:
+    rerank:
+      providers:
+        nvidia:
+          # see https://docs.api.nvidia.com/nim/reference/nvidia-embedding-2b-infer
+          display-name: Nvidia
+          enabled: true
+          supported-authentications:
+            NONE:
+              enabled: true
+          models:
+            - name: nvidia/nv-rerankqa-mistral-4b-v3
+              url: https://api.nvidia.com/nim/v1/models/nvidia/nv-rerankqa-mistral-4b-v3
