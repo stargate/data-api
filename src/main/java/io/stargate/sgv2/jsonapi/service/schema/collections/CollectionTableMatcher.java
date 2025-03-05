@@ -7,7 +7,6 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.internal.core.type.PrimitiveType;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
