@@ -70,14 +70,13 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
-                  """
+              """
                 {
                   "createCollection": {
-                    "name": "%s"
+                    "name": "collection1"
                   }
                 }
-                """
-                  .formatted("collection1"))
+                """)
           .when()
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
@@ -108,10 +107,10 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
     @Order(3)
     public void happyPathWithExplain() {
       String json =
-              """
+          """
               {
                 "createCollection": {
-                  "name": "%s",
+                  "name": "collection2",
                   "options": {
                     "vector": {
                       "dimension": 5,
@@ -119,12 +118,15 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                     },
                     "indexing": {
                       "deny" : ["comment"]
+                    },
+                    "lexical": {
+                      "enabled": true,
+                      "analyzer": "standard"
                     }
                   }
                 }
               }
-              """
-              .formatted("collection2");
+              """;
 
       given()
           .headers(getHeaders())
@@ -138,29 +140,37 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .body("status.ok", is(1));
 
       String expected1 =
-              """
+          """
                   {
-                    "name": "%s",
-                    "options":{}
+                    "name": "collection1",
+                    "options":{
+                      "lexical": {
+                        "enabled": true,
+                        "analyzer": "standard"
+                      }
+                    }
                   }
-                    """
-              .formatted("collection1");
+                    """;
       String expected2 =
-              """
+          """
               {
-                  "name": "%s",
+                  "name": "collection2",
                   "options": {
                     "vector": {
                       "dimension": 5,
                       "metric": "cosine",
                       "sourceModel": "other"
-                    },"indexing": {
+                    },
+                    "indexing": {
                       "deny" : ["comment"]
+                    },
+                    "lexical": {
+                      "enabled": true,
+                      "analyzer": "standard"
                     }
                   }
                 }
-                """
-              .formatted("collection2");
+                """;
 
       json =
           """
@@ -328,22 +338,24 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
     @Order(7)
     public void happyPathIndexingWithExplain() {
       String json =
-              """
+          """
                   {
                     "createCollection": {
-                      "name": "%s",
+                      "name": "collection4",
                       "options": {
                         "defaultId" : {
                           "type" : "objectId"
                         },
                         "indexing": {
                           "deny" : ["comment"]
+                        },
+                        "lexical": {
+                          "enabled": false
                         }
                       }
                     }
                   }
-                  """
-              .formatted("collection4");
+                  """;
 
       given()
           .headers(getHeaders())
@@ -356,31 +368,49 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
-      json =
-          """
-                  {
-                    "findCollections": {
-                      "options": {
-                        "explain" : true
-                      }
-                    }
-                  }
-                  """;
       String expected1 =
           """
-      {"name":"TableName","options":{}}
+      {"name":"TableName","options":{
+        "lexical": {
+          "enabled": true,
+          "analyzer": "standard"
+        }
+      }}
       """;
       String expected2 =
           """
-              {"name":"collection1", "options":{}}
+                  {
+                    "name": "collection1",
+                    "options": {
+                      "lexical": {
+                        "enabled": true,
+                        "analyzer": "standard"
+                      }
+                    }
+                  }
               """;
       String expected3 =
           """
-      {"name":"collection2", "options": {"vector": {"dimension":5, "metric":"cosine", "sourceModel": "other"}, "indexing":{"deny":["comment"]}}}
+      {"name":"collection2",
+        "options": {"vector": {"dimension":5, "metric":"cosine", "sourceModel": "other"},
+        "indexing":{"deny":["comment"]},
+        "lexical": {
+            "enabled": true,
+            "analyzer": "standard"
+          }
+      }}
       """;
       String expected4 =
           """
-              {"name":"collection4","options":{"defaultId" : {"type" : "objectId"}, "indexing":{"deny":["comment"]}}}
+              {"name":"collection4",
+               "options":{
+                 "defaultId" : {"type" : "objectId"},
+                "indexing":{"deny":["comment"]},
+                "lexical": {
+                  "enabled": false,
+                  "analyzer": "standard"
+                }
+                }}
               """;
       json =
           """
