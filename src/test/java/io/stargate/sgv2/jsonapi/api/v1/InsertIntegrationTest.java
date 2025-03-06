@@ -60,24 +60,14 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       // This used to be a unit test for the InsertOneCommandResolver calld shredderFailure(), but
       // the resolver does not throw this
       // error any more, it is instead handed in the result.
-
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
             {
               "insertOne": {
                 "document" : null
               }
             }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsWritePartialSuccess())
           .body("status.insertedIds", jsonEquals("[]"))
           .body("errors", hasSize(1))
@@ -91,8 +81,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void insertDocument() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "insertOne": {
               "document": {
@@ -101,22 +91,11 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               }
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is("doc3"));
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+
+      givenHeadersPostJsonThenOkNoErrors(
               """
               {
                 "find": {
@@ -124,10 +103,6 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                 }
               }
               """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body(
               "data.documents[0]",
@@ -143,8 +118,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     // [https://github.com/stargate/jsonapi/issues/521]: allow hyphens in Field names
     @Test
     public void insertDocumentWithHyphenatedField() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
               {
                 "insertOne": {
                   "document": {
@@ -153,22 +128,11 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                   }
                 }
               }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+              """)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is("doc-hyphen"));
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+
+      givenHeadersPostJsonThenOkNoErrors(
               """
               {
                 "find": {
@@ -176,10 +140,6 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                 }
               }
               """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body(
               "data.documents[0]",
@@ -205,32 +165,20 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                     }
                   }
                   """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is("doc-with-dots"));
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"find\": { \"filter\" : {\"_id\" : \"doc-with-dots\" }}}")
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+
+      givenHeadersPostJsonThenOkNoErrors(
+              "{ \"find\": { \"filter\" : {\"_id\" : \"doc-with-dots\" }}}")
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(doc));
     }
 
     @Test
     public void insertDocumentWithDateValue() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "insertOne": {
               "document": {
@@ -240,53 +188,35 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               }
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is("doc_date"));
 
-      String expected =
-          """
-          {
-            "_id": "doc_date",
-            "username": "doc_date_user3",
-            "date_created": {"$date": 1672531200000}
-          }
-          """;
-
-      String query_json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "find": {
               "filter" : {"_id" : "doc_date"}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(query_json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+          {
+            "_id": "doc_date",
+            "username": "doc_date_user3",
+            "date_created": {"$date": 1672531200000}
+          }
+          """));
     }
 
     @Test
     public void insertDocumentWithDateDocId() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "insertOne": {
               "document": {
@@ -296,53 +226,35 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               }
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", jsonEquals("{\"$date\":1672539900000}"));
 
-      String expected =
-          """
-          {
-            "_id": {"$date": 1672539900000},
-            "username": "doc_date_user4",
-            "status": false
-          }
-          """;
-
-      String query_json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "find": {
               "filter" : {"_id" : {"$date": 1672539900000}}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(query_json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+          {
+            "_id": {"$date": 1672539900000},
+            "username": "doc_date_user4",
+            "status": false
+          }
+          """));
     }
 
     @Test
     public void insertDocumentWithNumberId() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                       {
                         "insertOne": {
                           "document": {
@@ -351,51 +263,34 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                           }
                         }
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                      """)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is(4));
 
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                       {
                         "find": {
                           "filter" : {"_id" : 4}
                         }
                       }
-                      """;
-      String expected =
-          """
-                      {
-                        "_id": 4,
-                        "username":"user4"
-                      }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                      """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+          {
+            "_id": 4,
+            "username":"user4"
+          }
+          """));
     }
 
     @Test
     public void emptyOptionsAllowed() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                       {
                         "insertOne": {
                           "document": {
@@ -405,24 +300,15 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                           "options": {}
                         }
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                      """)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is("doc3"));
     }
 
     @Test
     public void noOptionsAllowed() {
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
                       {
                         "insertOne": {
                           "document": {
@@ -431,16 +317,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                           "options": {"setting":"abc"}
                         }
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                      """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
@@ -450,8 +327,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void insertDuplicateDocument() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                       {
                         "insertOne": {
                           "document": {
@@ -460,21 +337,12 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                           }
                         }
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                      """)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is("duplicate"));
 
-      json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
                       {
                         "insertOne": {
                           "document": {
@@ -483,90 +351,56 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                           }
                         }
                       }
-                      """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                      """)
           .body("$", responseIsWritePartialSuccess())
           .body("status.insertedIds", jsonEquals("[]"))
           .body("errors[0].message", is("Document already exists with the given _id"))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"));
 
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                       {
                         "find": {
                           "filter" : {"_id" : "duplicate"}
                         }
                       }
-                      """;
-      String expected =
-          """
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
                       {
                         "_id": "duplicate",
                         "username":"user4"
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+                      """));
     }
 
     @Test
     public void emptyDocument() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                       {
                         "insertOne": {
                           "document": {
                           }
                         }
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                      """)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is(notNullValue()));
     }
 
     @Test
     public void notValidDocumentMissing() {
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
                       {
                         "insertOne": {
                         }
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                      """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -612,38 +446,19 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                   }
               """
               .formatted(UUID_KEY);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is(Map.of("$uuid", UUID_KEY)));
 
       // Find by UUID, full $uuid notation
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{\"find\": { \"filter\" : {\"_id\" : {\"$uuid\":\"%s\"}}}}".formatted(UUID_KEY))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(
+              "{\"find\": { \"filter\" : {\"_id\" : {\"$uuid\":\"%s\"}}}}".formatted(UUID_KEY))
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(doc));
 
       // Find by UUID, short-cut (unwrapped)
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(UUID_KEY))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(
+              "{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(UUID_KEY))
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(doc));
     }
@@ -660,39 +475,20 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                   }
               """
               .formatted(OBJECTID_KEY);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is(Map.of("$objectId", OBJECTID_KEY)));
 
       // Find by ObjectId, full $objectId notation
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               "{\"find\": { \"filter\" : {\"_id\": {\"$objectId\":\"%s\"}}}}"
                   .formatted(OBJECTID_KEY))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(doc));
+
       // Find by ObjectId, shortcut notation
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(OBJECTID_KEY))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(
+              "{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(OBJECTID_KEY))
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(doc));
     }
@@ -762,24 +558,11 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       }
                   """
               .formatted(KEY, UUID_VALUE, UUID_VALUE2);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is(KEY));
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{\"find\": { \"filter\" : {\"_id\" : {\"$uuid\": \"%s\"}}}}".formatted(KEY))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(
+              "{\"find\": { \"filter\" : {\"_id\" : {\"$uuid\": \"%s\"}}}}".formatted(KEY))
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(doc));
     }
@@ -801,24 +584,11 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       }
                   """
               .formatted(KEY, OBJECTID_VALUE, OBJECTID_VALUE2);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is(KEY));
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(KEY))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(
+              "{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(KEY))
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(doc));
     }
@@ -835,14 +605,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                             "value": 42
                           }
                       """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -863,14 +626,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                                 "value": 42
                               }
                           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -891,14 +647,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                 "value": 42
               }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -934,23 +683,15 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       for (int i = 0; i < ARRAY_LEN; ++i) {
         arr.add(i);
       }
-      final String json =
-              """
+      givenHeadersPostJsonThenOk(
+                  """
               {
                 "insertOne": {
                   "document": %s
                 }
               }
               """
-              .formatted(doc);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  .formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -987,23 +728,16 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       ObjectNode prop2 = prop1.putObject("b".repeat(250));
       ObjectNode prop3 = prop2.putObject("c".repeat(250));
       prop3.put("d".repeat(250), true);
-      final String json =
-              """
+
+      givenHeadersPostJsonThenOk(
+                  """
                       {
                         "insertOne": {
                           "document": %s
                         }
                       }
                       """
-              .formatted(doc);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  .formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -1038,8 +772,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void tryInsertTooLongNumber() {
       // Max number length: 100; use 110
       String tooLongNumStr = "1234567890".repeat(11);
-      String json =
-              """
+
+      givenHeadersPostJsonThenOk(
+                  """
                     {
                       "insertOne": {
                         "document": {
@@ -1049,15 +784,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       }
                     }
                     """
-              .formatted(tooLongNumStr);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  .formatted(tooLongNumStr))
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -1087,8 +814,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void tryInsertTooLongString() {
       final String tooLongString =
           createBigString(DocumentLimitsConfig.DEFAULT_MAX_STRING_LENGTH_IN_BYTES + 50);
-      String json =
-              """
+
+      givenHeadersPostJsonThenOk(
+                  """
                         {
                           "insertOne": {
                             "document": {
@@ -1098,15 +826,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                           }
                         }
                         """
-              .formatted(tooLongString);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  .formatted(tooLongString))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -1133,10 +853,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       _verifyInsert("bigValidDoc", bigDoc);
 
       // But in this case, let's also verify that we can find it via nested properties
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                           {
                             "find": {
@@ -1144,10 +861,6 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                             }
                           }
                           """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(bigDoc));
     }
@@ -1156,23 +869,16 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void tryInsertTooLongDoc() throws Exception {
       JsonNode bigDoc =
           createBigDoc("bigValidDoc", DocumentLimitsConfig.DEFAULT_MAX_DOCUMENT_SIZE + 100_000);
-      String json =
-              """
+
+      givenHeadersPostJsonThenOk(
+                  """
                         {
                           "insertOne": {
                             "document": %s
                           }
                         }
                         """
-              .formatted(bigDoc);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  .formatted(bigDoc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -1193,23 +899,15 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
         subdoc.put("prop" + i, i);
       }
 
-      String json =
-              """
+      givenHeadersPostJsonThenOk(
+                  """
               {
                 "insertOne": {
                   "document": %s
                 }
               }
               """
-              .formatted(tooManyPropsDoc);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  .formatted(tooManyPropsDoc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -1236,23 +934,15 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
         }
       }
 
-      String json =
-              """
+      givenHeadersPostJsonThenOk(
+                  """
                             {
                               "insertOne": {
                                 "document": %s
                               }
                             }
                             """
-              .formatted(tooManyPropsDoc);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  .formatted(tooManyPropsDoc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -1264,32 +954,21 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     }
 
     private void _verifyInsert(String docId, JsonNode doc) {
-      final String json =
-              """
+      // Insert has to succeed
+      givenHeadersPostJsonThenOkNoErrors(
+                  """
                   {
                     "insertOne": {
                       "document": %s
                     }
                   }
                   """
-              .formatted(doc);
-      // Insert has to succeed
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  .formatted(doc))
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is(docId));
 
       // But let's also verify doc can be fetched and is what we inserted
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
                   """
                       {
                         "find": {
@@ -1298,10 +977,6 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       }
                       """
                   .formatted(docId))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(doc.toString()));
     }
@@ -1309,9 +984,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
   @Nested
   @Order(4)
-  class InsertOneFails {
+  class InsertOneWithOverlappingPaths {
     @Test
-    void failForPathConflict() {
+    void successForPathOverlapping() {
       String doc =
           """
                   {
@@ -1324,22 +999,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                     }
                   }
               """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsWritePartialSuccess())
-          .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_DOCUMENT_PATH_CONFLICTS"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Bad document to shred, contains conflicting Field path(s): [price.total.usd]"));
+      givenHeadersPostJsonThenOkNoErrors("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("doc-with-path-overlap"));
     }
   }
 
@@ -1353,10 +1015,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void insertOneWithMixedCaseField() {
       createSimpleCollection(COLLECTION_MIXED);
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                       {
                         "insertOne": {
@@ -1367,16 +1026,10 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                         }
                       }
                       """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, COLLECTION_MIXED)
-          .then()
-          .statusCode(200)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is("mixed1"));
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+
+      givenHeadersPostJsonThenOkNoErrors(
               """
                               {
                                 "find": {
@@ -1384,10 +1037,6 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                                 }
                               }
                               """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, COLLECTION_MIXED)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body(
@@ -1408,8 +1057,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void ordered() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "insertMany": {
               "documents": [
@@ -1421,16 +1070,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               }
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds", is(Arrays.asList("doc4", "doc5")));
 
@@ -1440,8 +1080,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     @Test
     public void orderedReturnResponses() {
       final String UUID_KEY = UUID.randomUUID().toString();
-      String json =
-              """
+
+      givenHeadersPostJsonThenOkNoErrors(
+                  """
               {
                 "insertMany": {
                   "documents": [
@@ -1454,16 +1095,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                 }
               }
               """
-              .formatted(UUID_KEY);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  .formatted(UUID_KEY))
           .body("$", responseIsWriteSuccess())
           .body(
               "status.documentResponses",
@@ -1477,8 +1109,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void orderedNoDocIdReturnResponses() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                   {
                     "insertMany": {
                       "documents": [
@@ -1490,16 +1122,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       }
                     }
                   }
-                  """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  """)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds", is(nullValue()))
           .body("status.failedDocuments", is(nullValue()))
@@ -1515,8 +1138,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void unordered() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "insertMany": {
               "documents": [
@@ -1525,16 +1148,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               ]
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"));
 
@@ -1543,8 +1157,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void unorderedDuplicateIds() {
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
           {
             "insertMany": {
               "documents": [
@@ -1555,16 +1169,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               "options": { "ordered": false }
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsWritePartialSuccess())
           .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
           .body("errors[0].message", startsWith("Failed to insert document with _id doc4"))
@@ -1575,8 +1180,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void withDifferentTypes() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "insertMany": {
               "documents": [
@@ -1591,78 +1196,53 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               ]
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds", containsInAnyOrder("5", 5));
 
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "find": {
               "filter" : {"_id" : "5"}
             }
           }
-          """;
-      String expected =
-          """
+          """)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
           {
             "_id": "5",
             "username":"user_id_5"
           }
-          """;
+          """));
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
-
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "find": {
               "filter" : {"_id" : 5}
             }
           }
-          """;
-      expected =
-          """
+          """)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
           {
             "_id": 5,
             "username":"user_id_5_number"
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+          """));
     }
 
     @Test
     public void emptyOptionsAllowed() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "insertMany": {
               "documents": [
@@ -1678,24 +1258,15 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               "options": {}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"));
     }
 
     @Test
     public void emptyDocuments() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "insertMany": {
               "documents": [
@@ -1704,16 +1275,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               ]
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds", hasSize(2));
     }
@@ -1727,8 +1289,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       // Max number length: 100; use 110
       String tooLongNumStr = "1234567890".repeat(11);
 
-      String json =
-              """
+      givenHeadersPostJsonThenOk(
+                  """
               {
                 "insertMany": {
                   "documents": [
@@ -1744,16 +1306,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                 }
               }
               """
-              .formatted(tooLongNumStr);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  .formatted(tooLongNumStr))
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -1785,15 +1338,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                   createBigDoc("big3", bigSize).toString(),
                   createBigDoc("big4", bigSize).toString(),
                   createBigDoc("big5", bigSize).toString());
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsWriteSuccess());
+      givenHeadersPostJsonThenOkNoErrors(json).body("$", responseIsWriteSuccess());
     }
 
     // Testing Quarkus max payload (20M); separate from Max Doc Size limit (4M)
@@ -1828,14 +1373,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       // in latter case, it's via "sneaky throw", unfortunately, so catch
       // needs to be for Exception and only then verifying
       try {
-        given()
-            .headers(getHeaders())
-            .contentType(ContentType.JSON)
-            .body(json)
-            .when()
-            .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-            .then()
-            .statusCode(403);
+        givenHeadersPostJsonThen(json).statusCode(403);
       } catch (Exception e) {
         // Sneaky throw, must catch any Exception, verify type separately
         assertThat(e)
@@ -1850,8 +1388,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   class InsertManyFails {
     @Test
     public void orderedFailOnDups() {
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
               {
                 "insertMany": {
                   "documents": [
@@ -1863,16 +1401,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                   "options" : {  "ordered" : true }
                 }
               }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+              """)
           .body("$", responseIsWritePartialSuccess())
           .body("status.insertedIds", is(Arrays.asList("doc4")))
           .body("errors", hasSize(1))
@@ -1885,8 +1414,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void orderedFailOnDupsReturnDocResponses() {
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
                   {
                     "insertMany": {
                       "documents": [
@@ -1898,16 +1427,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       "options" : {  "ordered": true, "returnDocumentResponses": true }
                     }
                   }
-                  """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  """)
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
@@ -1928,8 +1448,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void orderedFailOnBadKeyReturnDocResponses() {
       // First and third are ok; middle one has failure. With ordered, should create first one,
       // indicate error for second, and mark third one as skipped due to failure.
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
                       {
                         "insertMany": {
                           "documents": [
@@ -1941,16 +1461,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                           "options" : {  "ordered": true, "returnDocumentResponses": true }
                         }
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                      """)
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -1971,8 +1482,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void unorderedFailOnDups() {
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
                   {
                     "insertMany": {
                       "documents": [
@@ -1986,16 +1497,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       "options" : { "ordered" : false }
                     }
                   }
-                  """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  """)
           .body("$", responseIsWritePartialSuccess())
           // Insertions can occur in any order, so we can't predict which is first
           // within the input list
@@ -2028,29 +1530,20 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       // First and third are ok; middle one has failure. With unordered, should create 2,
       // indicate error for one. Extended responses should be in order of input documents,
       // regardless of execution order (which is not guaranteed).
-      String json =
-          """
-                          {
-                            "insertMany": {
-                              "documents": [
-                                { "_id": "doc1", "username": "userA"  },
-                                { "_id": "doc2", "$username": "userB" },
-                                { "_id": "doc3", "username": "userC"
-                                }
-                              ],
-                              "options" : {  "ordered": false, "returnDocumentResponses": true }
-                            }
-                          }
-                          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(
+              """
+                  {
+                    "insertMany": {
+                      "documents": [
+                        { "_id": "doc1", "username": "userA"  },
+                        { "_id": "doc2", "$username": "userB" },
+                        { "_id": "doc3", "username": "userC"
+                        }
+                      ],
+                      "options" : {  "ordered": false, "returnDocumentResponses": true }
+                    }
+                  }
+                  """)
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -2119,24 +1612,16 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                 .put("text", TEXT_1K);
         docs.add(doc);
       }
-      String json =
-              """
+
+      givenHeadersPostJsonThenOk(
+                  """
           {
             "insertMany": {
               "documents": %s
             }
           }
           """
-              .formatted(docs.toString());
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  .formatted(docs.toString()))
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
@@ -2169,14 +1654,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   private void verifyDocCount(int expDocs) {
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(" { \"countDocuments\": { } }")
-        .when()
-        .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-        .then()
-        .statusCode(200)
+    givenHeadersPostJsonThenOkNoErrors(" { \"countDocuments\": { } }")
         .body("status.count", is(expDocs))
         .body("errors", is(nullValue()));
   }

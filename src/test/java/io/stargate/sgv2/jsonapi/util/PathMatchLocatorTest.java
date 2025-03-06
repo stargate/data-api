@@ -148,9 +148,9 @@ public class PathMatchLocatorTest {
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH)
-          .hasMessage(
+          .hasMessageContaining(
               ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
-                  + ": empty segment ('') in path 'a..x'");
+                  + ": update path ('a..x') is not a valid path.");
     }
   }
 

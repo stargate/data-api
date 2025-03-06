@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import java.util.Objects;
 
-public class ApiVectorType extends CollectionApiDataType {
+public class ApiVectorType extends CollectionApiDataType<VectorType> {
 
   public static final TypeFactoryFromColumnDesc<ApiVectorType, VectorColumnDesc>
       FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
@@ -23,7 +23,10 @@ public class ApiVectorType extends CollectionApiDataType {
 
   // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
   // NOTE: the vector type cannot be frozen so we do not need different support for frozen
-  public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
+  // Update operators $set and $unset can be used for vector columns, but $push and $pullAll cannot.
+  public static final ApiSupportDef API_SUPPORT =
+      new ApiSupportDef.Support(
+          true, ApiSupportDef.Collection.NONE, true, true, false, ApiSupportDef.Update.PRIMITIVE);
 
   private final int dimension;
   private final VectorizeDefinition vectorizeDefinition;
@@ -36,6 +39,11 @@ public class ApiVectorType extends CollectionApiDataType {
         API_SUPPORT);
     this.dimension = dimension;
     this.vectorizeDefinition = vectorizeDefinition;
+  }
+
+  @Override
+  public boolean isFrozen() {
+    return false;
   }
 
   @Override

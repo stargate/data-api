@@ -5,21 +5,14 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.regex.Pattern;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
+import java.util.*;
 
 /**
  * Helper class that handles projection traversal for one level of nesting. Layers are either
  * non-terminal (branches) or terminal (leaves)
  */
 class ProjectionLayer {
-  private static final Pattern DOT = Pattern.compile(Pattern.quote("."));
-
   /** Whether this layer is terminal (matching) or branch (non-matching) */
   private final boolean isTerminal;
 
@@ -72,8 +65,14 @@ class ProjectionLayer {
     // Root is always branch (not terminal):
     ProjectionLayer root = new ProjectionLayer("", false);
     for (String fullPath : dotPaths) {
-      String[] segments = DOT.split(fullPath);
-      buildPath(failOnOverlap, fullPath, root, segments);
+      DocumentPath path;
+      try {
+        path = DocumentPath.from(fullPath);
+      } catch (IllegalArgumentException e) {
+        throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+            "projection path ('%s') is not a valid path. " + e.getMessage(), fullPath);
+      }
+      buildPath(failOnOverlap, fullPath, root, path);
     }
     // Slices similar to path but processed differently (and while "exclusions"
     // in a way do not count as ones wrt compatibility)
@@ -85,53 +84,55 @@ class ProjectionLayer {
 
     // May need to add doc-id inclusion/exclusion as well
     if (addDocId) {
-      buildPath(
-          failOnOverlap,
-          DocumentConstants.Fields.DOC_ID,
-          root,
-          new String[] {DocumentConstants.Fields.DOC_ID});
+      buildPath(failOnOverlap, DocumentConstants.Fields.DOC_ID, root, DocumentPath.forDocId());
     }
     if (add$vector) {
       buildPath(
           failOnOverlap,
           DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
           root,
-          new String[] {DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD});
+          DocumentPath.forVectorEmbeddingField());
     }
     if (add$vectorize) {
       buildPath(
           failOnOverlap,
           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
           root,
-          new String[] {DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD});
+          DocumentPath.forVectorEmbeddingTextField());
     }
     return root;
   }
 
   static void buildPath(
-      boolean failOnOverlap, String fullPath, ProjectionLayer layer, String[] segments) {
+      boolean failOnOverlap, String fullPath, ProjectionLayer layer, DocumentPath path) {
     // First create branches
-    final int last = segments.length - 1;
+    final int last = path.getSegmentsSize() - 1;
     for (int i = 0; i < last; ++i) {
       // Try to find or create branch
-      layer = layer.findOrCreateBranch(failOnOverlap, fullPath, segments[i]);
+      layer = layer.findOrCreateBranch(failOnOverlap, fullPath, path.getSegment(i));
       // May be null if terminal layer found (shorter existing path); if so, we are done
       if (layer == null) {
         return;
       }
     }
     // And then attach terminal (leaf)
-    layer.addTerminal(failOnOverlap, fullPath, segments[last]);
+    layer.addTerminal(failOnOverlap, fullPath, path.getSegment(last));
   }
 
   static void buildSlicer(boolean failOnOverlap, SliceDef slice, ProjectionLayer layer) {
     final String fullPath = slice.path;
-    String[] segments = DOT.split(fullPath);
-    final int last = segments.length - 1;
-    for (int i = 0; i < last; ++i) {
-      layer = layer.findOrCreateBranch(failOnOverlap, fullPath, segments[i]);
+    DocumentPath path;
+    try {
+      path = DocumentPath.from(fullPath);
+    } catch (IllegalArgumentException e) {
+      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+          "projection path ('%s') is not a valid path. " + e.getMessage(), fullPath);
     }
-    layer.addSlicer(failOnOverlap, fullPath, segments[last], slice.slicer());
+    final int last = path.getSegmentsSize() - 1;
+    for (int i = 0; i < last; ++i) {
+      layer = layer.findOrCreateBranch(failOnOverlap, fullPath, path.getSegment(i));
+    }
+    layer.addSlicer(failOnOverlap, fullPath, path.getSegment(last), slice.slicer());
   }
 
   ProjectionLayer findOrCreateBranch(boolean failOnOverlap, String fullPath, String segment) {
@@ -195,25 +196,31 @@ class ProjectionLayer {
    * @return {@code true} if path is included; {@code false} if not.
    */
   public boolean isPathIncluded(String path) {
-    final String[] segments = DOT.split(path);
-    return isPathIncluded(segments, 0);
+    DocumentPath p;
+    try {
+      p = DocumentPath.from(path);
+    } catch (IllegalArgumentException e) {
+      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+          "projection path ('%s') is not a valid path. " + e.getMessage(), path);
+    }
+    return isPathIncluded(p, 0);
   }
 
-  private boolean isPathIncluded(String[] segments, int index) {
+  private boolean isPathIncluded(DocumentPath path, int index) {
     // If we are at a terminal layer, we are done
     if (isTerminal) {
       return true;
     }
     // Otherwise if we are at the end of path, we are not included
-    if (index == segments.length) {
+    if (index == path.getSegmentsSize()) {
       return false;
     }
     // Otherwise we need to traverse further
-    ProjectionLayer next = nextLayers.get(segments[index]);
+    ProjectionLayer next = nextLayers.get(path.getSegment(index));
     if (next == null) {
       return false;
     }
-    return next.isPathIncluded(segments, index + 1);
+    return next.isPathIncluded(path, index + 1);
   }
 
   /**

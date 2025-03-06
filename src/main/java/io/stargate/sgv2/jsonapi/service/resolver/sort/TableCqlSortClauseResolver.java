@@ -311,9 +311,9 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
               }));
     }
 
-    // HACK - waiting for index support on the APiTableDef
-    var optionalIndexMetadata = findIndexMetadata(commandContext.schemaObject(), vectorSortColumn);
-    if (optionalIndexMetadata.isEmpty()) {
+    // see if Table has vector index on the target sort vector column
+    var optionalVectorIndex = apiTableDef.indexes().firstIndexFor(vectorSortIdentifier);
+    if (optionalVectorIndex.isEmpty()) {
       throw SortException.Code.CANNOT_VECTOR_SORT_NON_INDEXED_VECTOR_COLUMNS.get(
           errVars(
               commandContext.schemaObject(),

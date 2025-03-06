@@ -36,6 +36,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollect
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -96,7 +97,8 @@ public class CommandResolverWithVectorizerTest {
                             SimilarityFunction.COSINE,
                             EmbeddingSourceModel.OTHER,
                             null))),
-                null),
+                null,
+                CollectionLexicalConfig.configForLegacyCollections()),
             null,
             null);
 

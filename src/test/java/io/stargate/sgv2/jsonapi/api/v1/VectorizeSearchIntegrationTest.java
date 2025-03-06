@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
@@ -1329,6 +1330,58 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("data.documents[0].$vector", is(notNullValue()))
           .body("data.documents[0].$vector", contains(0.1f, 0.15f, 0.3f, 0.12f, 0.05f, 0.05f))
           .body("data.documents[0].$vectorize", is(notNullValue()));
+    }
+  }
+
+  @Nested
+  @Order(8)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class DeprecatedModel {
+    @Test
+    @Order(1)
+    public void findOneAndUpdate_sortClause() {
+      var collection = "collectionWithBadModel";
+      var tableWithBadModel =
+          """
+                CREATE TABLE "%s"."%s" (
+                    key frozen<tuple<tinyint, text>> PRIMARY KEY,
+                    array_contains set<text>,
+                    array_size map<text, int>,
+                    doc_json text,
+                    exist_keys set<text>,
+                    query_bool_values map<text, tinyint>,
+                    query_dbl_values map<text, decimal>,
+                    query_null_values set<text>,
+                    query_text_values map<text, text>,
+                    query_timestamp_values map<text, timestamp>,
+                    query_vector_value vector<float, 123>,
+                    tx_id timeuuid
+                ) WITH additional_write_policy = '99p'
+                  AND comment = '{"collection":{"name":"%s","schema_version":1,"options":{"vector":{"dimension":123,"metric":"cosine","service":{"provider":"nvidia","modelName":"random"}},"defaultId":{"type":""}}}}';
+                """;
+      executeCqlStatement(
+          SimpleStatement.newInstance(
+              tableWithBadModel.formatted(keyspaceName, collection, collection)));
+      String json =
+          """
+                        { "findOne": {} }
+                    """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collection)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsError())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("VECTORIZE_MODEL_DEPRECATED"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Model random is deprecated, supported models for provider 'nvidia' are"));
     }
   }
 }

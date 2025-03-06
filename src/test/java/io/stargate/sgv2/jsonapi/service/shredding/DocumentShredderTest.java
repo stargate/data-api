@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -215,6 +216,51 @@ public class DocumentShredderTest {
       // Verify that we do NOT have '{"_id":3E+1}':
       assertThat(doc.docJson()).isEqualTo(inputJson);
     }
+
+    @Test
+    public void shredOverlappingPaths() throws JsonProcessingException {
+      final String inputJson =
+          """
+              {
+                "_id" : "doc1",
+                "price": {
+                  "usd": 5
+                },
+                "price.usd": 8.5
+              }
+              """;
+      WritableShreddedDocument doc = documentShredder.shred(fromJson(inputJson));
+
+      List<JsonPath> expPaths =
+          Arrays.asList(
+              JsonPath.from("_id"),
+              JsonPath.from("price"),
+              JsonPath.from("price.usd"),
+              JsonPath.from("price&.usd"));
+
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+      assertThat(doc.arraySize()).isEmpty();
+      // 2 non-doc-id main-level properties with hashes:
+      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("price.usd N5", "price&.usd N8.5");
+
+      // Then atomic value containers
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryNumberValues())
+          .isEqualTo(
+              Map.of(
+                  JsonPath.from("price&.usd"),
+                  BigDecimal.valueOf(8.5),
+                  JsonPath.from("price.usd"),
+                  BigDecimal.valueOf(5)));
+      assertThat(doc.queryTextValues())
+          .isEqualTo(Map.of(JsonPath.from("_id"), "doc1", JsonPath.from("price"), "O1\nusd\nN5"));
+
+      // the doc_json should not have the escape character
+      final JsonNode inputDoc = fromJson(inputJson);
+      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+    }
   }
 
   @Nested
@@ -408,27 +454,6 @@ public class DocumentShredderTest {
           .isNotNull()
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
           .hasMessage("Document field name invalid: field name '' is empty");
-    }
-
-    @Test
-    public void docFailConflictingPaths() {
-      Throwable t =
-          catchThrowable(
-              () ->
-                  documentShredder.shred(
-                      objectMapper.readTree(
-                          """
-                              {
-                                "price": {
-                                  "usd": 5.0
-                                },
-                                "price.usd": 8.50
-                              }
-                              """)));
-
-      assertThat(t)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCUMENT_PATH_CONFLICTS)
-          .hasMessage("Bad document to shred, contains conflicting Field path(s): [price.usd]");
     }
   }
 

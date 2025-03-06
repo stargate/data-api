@@ -80,8 +80,8 @@ public abstract class CollectionCodecs {
     for (JsonLiteral<?> literalElement : listValue) {
       Object element = literalElement.value();
       if (element == null) {
-        result.add(null);
-        continue;
+        throw new ToCQLCodecException(
+            null, DataTypes.listOf(elementType), "null values are not allowed in list column");
       }
       if (elementCodec == null || !elementCodec.handlesJavaValue(element)) {
         elementCodec = findCollectionElementCodec(valueCodecs, elementType, element);
@@ -101,8 +101,8 @@ public abstract class CollectionCodecs {
     for (JsonLiteral<?> literalElement : setValue) {
       Object element = literalElement.value();
       if (element == null) {
-        result.add(null);
-        continue;
+        throw new ToCQLCodecException(
+            null, DataTypes.setOf(elementType), "null values are not allowed in set column");
       }
       if (elementCodec == null || !elementCodec.handlesJavaValue(element)) {
         elementCodec = findCollectionElementCodec(valueCodecs, elementType, element);
