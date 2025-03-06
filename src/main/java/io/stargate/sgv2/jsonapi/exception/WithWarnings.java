@@ -106,8 +106,7 @@ public class WithWarnings<T> implements Consumer<WithWarnings.WarningsSink> {
   }
 
   /**
-   * Construct an instance with the target, and all the state from the source
-   * {@link WithWarnings}.
+   * Construct an instance with the target, and all the state from the source {@link WithWarnings}.
    *
    * @param target the target object that has the warnings
    * @param source WithWarnings to copy the warnings and supressed warnings from.

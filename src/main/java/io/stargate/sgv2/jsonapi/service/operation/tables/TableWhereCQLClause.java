@@ -6,8 +6,8 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.update.Update;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import java.util.List;
 import java.util.Objects;
 
@@ -47,8 +47,8 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
    */
   public static WithWarnings<TableWhereCQLClause<Select>> forSelect(
       TableSchemaObject table, WithWarnings<DBLogicalExpression> dbLogicalExpression) {
-    return WithWarnings.of(new TableWhereCQLClause<>(table, dbLogicalExpression.target()), dbLogicalExpression);
-
+    return WithWarnings.of(
+        new TableWhereCQLClause<>(table, dbLogicalExpression.target()), dbLogicalExpression);
   }
 
   /**
@@ -62,7 +62,8 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
    */
   public static WithWarnings<TableWhereCQLClause<Update>> forUpdate(
       TableSchemaObject table, WithWarnings<DBLogicalExpression> dbLogicalExpression) {
-    return WithWarnings.of(new TableWhereCQLClause<>(table, dbLogicalExpression.target()), dbLogicalExpression);
+    return WithWarnings.of(
+        new TableWhereCQLClause<>(table, dbLogicalExpression.target()), dbLogicalExpression);
   }
 
   /**

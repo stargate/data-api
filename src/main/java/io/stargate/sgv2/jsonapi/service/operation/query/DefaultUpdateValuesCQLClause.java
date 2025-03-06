@@ -4,7 +4,6 @@ import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import io.stargate.sgv2.jsonapi.service.shredding.NamedValue;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -16,7 +15,6 @@ import java.util.Objects;
  * <p>This class exists for two reasons: want to keep all the {@link CQLClause} immediate subclasses
  * as interfaces, and when we move Collections to the Java driver query builder it may have a more
  * complex implementation.
- *
  */
 public class DefaultUpdateValuesCQLClause implements UpdateValuesCQLClause {
 

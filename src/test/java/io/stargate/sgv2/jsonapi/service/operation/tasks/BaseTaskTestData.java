@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import static org.mockito.Mockito.*;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-
 import java.time.Duration;
 
 public class BaseTaskTestData {

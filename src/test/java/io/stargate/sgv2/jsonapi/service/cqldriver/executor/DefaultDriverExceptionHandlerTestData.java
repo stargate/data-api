@@ -5,7 +5,6 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultTableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
-
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;

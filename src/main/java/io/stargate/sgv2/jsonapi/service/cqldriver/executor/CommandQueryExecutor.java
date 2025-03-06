@@ -171,9 +171,12 @@ public class CommandQueryExecutor {
 
   @VisibleForTesting
   public Uni<AsyncResultSet> executeAndWrap(SimpleStatement statement) {
-    return Uni.createFrom().completionStage(session().executeAsync(statement));
+
+    // changing tracing creates a new object, avoid if not needed
+    var execStatement = dbRequestContext.tracingEnabled() != statement.isTracing() ? statement.setTracing(dbRequestContext.tracingEnabled()) : statement;
+    return Uni.createFrom().completionStage(session().executeAsync(execStatement));
   }
 
   // Aaron - Feb 3 - temp rename while factoring full RequestContext
-  public record DBRequestContext(Optional<String> tenantId, Optional<String> authToken) {}
+  public record DBRequestContext(Optional<String> tenantId, Optional<String> authToken, boolean tracingEnabled) {}
 }

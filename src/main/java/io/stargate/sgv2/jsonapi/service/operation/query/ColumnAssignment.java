@@ -14,7 +14,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import io.stargate.sgv2.jsonapi.service.shredding.NamedValue;
-
 import java.util.List;
 import java.util.Objects;
 
@@ -28,8 +27,8 @@ import java.util.Objects;
  *
  * <p>Designed to be used with the {@link UpdateValuesCQLClause} to build the full clause.
  *
- * <p>Supports {@link Deferrable} so that the values needed vectorizing can be deferred
- * until execution time. See {@link #deferredValues()} for docs.
+ * <p>Supports {@link Deferrable} so that the values needed vectorizing can be deferred until
+ * execution time. See {@link #deferredValues()} for docs.
  */
 public class ColumnAssignment implements CQLAssignment, Deferrable {
 

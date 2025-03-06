@@ -14,10 +14,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Arrays;
@@ -136,7 +136,10 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
       LOGGER.warn("Analyzing: {}\n {}", message, PrettyPrintable.pprint(this));
       // store the result in this fixture for later
       analysisResult =
-          analyzer.analyse(TableWhereCQLClause.forSelect(tableSchemaObject, WithWarnings.of(expression.expression)).target());
+          analyzer.analyse(
+              TableWhereCQLClause.forSelect(
+                      tableSchemaObject, WithWarnings.of(expression.expression))
+                  .target());
       LOGGER.warn("Analysis result: {}", analysisResult);
     }
 

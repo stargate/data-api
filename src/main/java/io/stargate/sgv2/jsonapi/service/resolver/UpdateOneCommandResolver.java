@@ -10,18 +10,17 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SortException;
-import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingOperationFactory;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingOperationFactory;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroupAndDeferrables;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
@@ -46,7 +45,6 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final FilterResolver<UpdateOneCommand, CollectionSchemaObject> collectionFilterResolver;
-
 
   @Inject
   public UpdateOneCommandResolver(
@@ -82,26 +80,30 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
           errVars(commandContext.schemaObject(), map -> {}));
     }
 
-    var filterResolver = new TableFilterResolver<>(commandContext.config().get(OperationsConfig.class));
-    var updateWithWarnings = new TableUpdateResolver<>(commandContext.config().get(OperationsConfig.class))
-        .resolve(commandContext, command);
+    var filterResolver =
+        new TableFilterResolver<>(commandContext.config().get(OperationsConfig.class));
+    var updateWithWarnings =
+        new TableUpdateResolver<>(commandContext.config().get(OperationsConfig.class))
+            .resolve(commandContext, command);
 
-    var taskBuilder = UpdateDBTask.builder(commandContext.schemaObject())
-        .withUpdateOne(true)
-        .withExceptionHandlerFactory(TableDriverExceptionHandler::new)
-        .withWhereCQLClause(TableWhereCQLClause.forUpdate(
-            commandContext.schemaObject(),
-            filterResolver.resolve(commandContext, command)))
-        .withUpdateValuesCQLClause(updateWithWarnings);
+    var taskBuilder =
+        UpdateDBTask.builder(commandContext.schemaObject())
+            .withUpdateOne(true)
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new)
+            .withWhereCQLClause(
+                TableWhereCQLClause.forUpdate(
+                    commandContext.schemaObject(), filterResolver.resolve(commandContext, command)))
+            .withUpdateValuesCQLClause(updateWithWarnings);
 
     // always parallel processing for the taskgroup
     var taskGroup = new TaskGroup<UpdateDBTask<TableSchemaObject>, TableSchemaObject>();
     taskGroup.add(taskBuilder.build());
 
-    var groupAndDeferrables = new TaskGroupAndDeferrables<>(
-        taskGroup,
-        UpdateDBTaskPage.accumulator(commandContext),
-        List.of(updateWithWarnings.target()));
+    var groupAndDeferrables =
+        new TaskGroupAndDeferrables<>(
+            taskGroup,
+            UpdateDBTaskPage.accumulator(commandContext),
+            List.of(updateWithWarnings.target()));
 
     return EmbeddingOperationFactory.maybeEmbedding(commandContext, groupAndDeferrables);
   }

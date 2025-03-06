@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.InsertDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.InsertDBTaskPage;
@@ -11,6 +10,7 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingAction;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import io.stargate.sgv2.jsonapi.service.shredding.ValueAction;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;

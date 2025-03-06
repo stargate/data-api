@@ -16,13 +16,13 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByANNCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByClusteringCqlClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
@@ -76,8 +76,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     var vectorSorts = sortClause.tableVectorSorts();
     var whereCQLClause =
         TableWhereCQLClause.forSelect(
-            commandContext.schemaObject(),
-            tableFilterResolver.resolve(commandContext, command));
+            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command));
 
     return vectorSorts.isEmpty()
         ? resolveNonVectorSort(

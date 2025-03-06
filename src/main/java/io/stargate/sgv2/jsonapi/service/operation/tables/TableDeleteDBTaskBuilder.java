@@ -2,9 +2,9 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.datastax.oss.driver.api.querybuilder.delete.Delete;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.DeleteDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import java.util.Objects;
 import org.slf4j.Logger;

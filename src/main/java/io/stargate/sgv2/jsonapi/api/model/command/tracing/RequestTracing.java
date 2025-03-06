@@ -1,11 +1,13 @@
 package io.stargate.sgv2.jsonapi.api.model.command.tracing;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.util.recordable.Jsonable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -35,6 +37,9 @@ public interface RequestTracing {
         public void maybeTrace(Supplier<TraceMessage> messageSupplier) {}
 
         @Override
+        public void maybeTrace(Function<ObjectMapper, TraceMessage> messageSupplier) {}
+
+        @Override
         public Optional<JsonNode> getTrace() {
           return Optional.empty();
         }
@@ -47,6 +52,15 @@ public interface RequestTracing {
    * messageSupplier if tracing is enabled.
    */
   void maybeTrace(Supplier<TraceMessage> messageSupplier);
+
+  /**
+   * Call to add a {@link TraceMessage} to the trace, the implementation will only call the
+   * messageSupplier if tracing is enabled.
+   *
+   * <p>This overload passed in a {@link ObjectMapper} for the supplier to use to make a JsonNode
+   * for the message.
+   */
+  void maybeTrace(Function<ObjectMapper, TraceMessage> messageSupplier);
 
   /** Convenience method for {@link #maybeTrace(Supplier)} */
   default void maybeTrace(String message) {

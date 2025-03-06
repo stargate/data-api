@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.embeddings;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
@@ -11,20 +10,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Encapsulates repeated logic for creating a composite task group when
- * we have deferred values that need to be vectorized.
- * <p>
- * We do this in the Insert, Read, and Update paths
+ * Encapsulates repeated logic for creating a composite task group when we have deferred values that
+ * need to be vectorized.
+ *
+ * <p>We do this in the Insert, Read, and Update paths
  */
 public abstract class EmbeddingOperationFactory {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(EmbeddingOperationFactory.class);
 
-  private EmbeddingOperationFactory() {
-  }
+  private EmbeddingOperationFactory() {}
 
-  public static <TaskT extends Task<TableSchemaObject>> Operation<TableSchemaObject> maybeEmbedding(CommandContext<TableSchemaObject> commandContext,
-                                                                                                              TaskGroupAndDeferrables<TaskT, TableSchemaObject> tasksAndDeferrables){
+  public static <TaskT extends Task<TableSchemaObject>> Operation<TableSchemaObject> maybeEmbedding(
+      CommandContext<TableSchemaObject> commandContext,
+      TaskGroupAndDeferrables<TaskT, TableSchemaObject> tasksAndDeferrables) {
 
     var allDeferredValues = Deferrable.deferredValues(tasksAndDeferrables.deferrables());
     if (allDeferredValues.isEmpty()) {
@@ -70,9 +69,8 @@ public abstract class EmbeddingOperationFactory {
     // the two groups are linked by the EmbeddingAction objects
     // Because these are tables we only use the driver retry for the inserts, not task level retry
     return compositeBuilder.build(
-            tasksAndDeferrables.taskGroup(),
-            TaskRetryPolicy.NO_RETRY,
-            tasksAndDeferrables.accumulator());
+        tasksAndDeferrables.taskGroup(),
+        TaskRetryPolicy.NO_RETRY,
+        tasksAndDeferrables.accumulator());
   }
-
 }

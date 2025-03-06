@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlPrintUtil.trimmedPositionalValues
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -109,7 +110,32 @@ public abstract class DBTask<SchemaT extends SchemaObject>
                               statement == null ? "null" : trimmedCql(statement),
                               "params",
                               statement == null ? "null" : trimmedPositionalValues(statement)))));
-      return supplier.get();
+
+      return supplier
+          .get()
+          .onItem().call(
+              asyncResultset -> {
+                LOGGER.warn("XXX asyncResultset.getExecutionInfo().getTracingId() {} ", asyncResultset.getExecutionInfo().getTracingId() );
+                if (asyncResultset.getExecutionInfo().getTracingId() == null) {
+                  return Uni.createFrom().voidItem();
+                }
+
+                return Uni.createFrom()
+                    .completionStage(() ->
+                        asyncResultset.getExecutionInfo().getQueryTraceAsync()
+                    )
+                    .onItem().invoke(trace -> {
+                      LOGGER.warn("XXX GOT trace {}", trace);
+
+                      commandContext
+                          .requestTracing()
+                          .maybeTrace(
+                              (objectMapper) ->
+                                  new RequestTracing.TraceMessage(
+                                      "Statement trace for task %s".formatted(task.taskDesc()),
+                                      objectMapper.convertValue(trace, JsonNode.class)));
+                    });
+              });
     }
   }
 
@@ -185,7 +211,8 @@ public abstract class DBTask<SchemaT extends SchemaObject>
         commandContext.cqlSessionCache(),
         new CommandQueryExecutor.DBRequestContext(
             commandContext.requestContext().getTenantId(),
-            commandContext.requestContext().getCassandraToken()),
+            commandContext.requestContext().getCassandraToken(),
+            commandContext.requestTracing().enabled()),
         CommandQueryExecutor.QueryTarget.TABLE);
   }
 

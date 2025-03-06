@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.tracing;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,22 @@ public class DefaultRequestTracing implements RequestTracing {
     Objects.requireNonNull(messageSupplier, "messageSupplier must not be null");
 
     var message = messageSupplier.get();
+    if (message == null) {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(
+            "TraceMessage supplier returned a null message, ignoring: messageSupplier.class:{}",
+            messageSupplier.getClass());
+      }
+      return;
+    }
+    session.addMessage(message);
+  }
+
+  @Override
+  public void maybeTrace(Function<ObjectMapper, TraceMessage> messageSupplier) {
+    Objects.requireNonNull(messageSupplier, "messageSupplier must not be null");
+
+    var message = messageSupplier.apply(OBJECT_MAPPER);
     if (message == null) {
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug(

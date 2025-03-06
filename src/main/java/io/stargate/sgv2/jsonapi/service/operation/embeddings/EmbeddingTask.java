@@ -89,7 +89,7 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
   @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {
     return super.recordTo(dataRecorder)
-        .append("requestType",requestType)
+        .append("requestType", requestType)
         .append("embeddingAction.groupKey", embeddingActions.getFirst().groupKey());
   }
 
@@ -130,8 +130,18 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
                           .formatted(
                               vectorizeTexts.size(),
                               embeddingTask.embeddingProvider.getClass().getSimpleName(),
-                              actions.getFirst().groupKey().vectorType().getVectorizeDefinition().provider(),
-                              actions.getFirst().groupKey().vectorType().getVectorizeDefinition().modelName(),
+                              actions
+                                  .getFirst()
+                                  .groupKey()
+                                  .vectorType()
+                                  .getVectorizeDefinition()
+                                  .provider(),
+                              actions
+                                  .getFirst()
+                                  .groupKey()
+                                  .vectorType()
+                                  .getVectorizeDefinition()
+                                  .modelName(),
                               embeddingTask.taskDesc()),
                       Recordable.copyOf(vectorizeTexts)));
 
@@ -185,8 +195,18 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
                           .formatted(
                               providerResponse.embeddings().size(),
                               embeddingTask.embeddingProvider.getClass().getSimpleName(),
-                              actions.getFirst().groupKey().vectorType().getVectorizeDefinition().provider(),
-                              actions.getFirst().groupKey().vectorType().getVectorizeDefinition().modelName(),
+                              actions
+                                  .getFirst()
+                                  .groupKey()
+                                  .vectorType()
+                                  .getVectorizeDefinition()
+                                  .provider(),
+                              actions
+                                  .getFirst()
+                                  .groupKey()
+                                  .vectorType()
+                                  .getVectorizeDefinition()
+                                  .modelName(),
                               embeddingTask.taskDesc())));
 
       // defensive to make sure the order cannot change

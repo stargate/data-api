@@ -5,7 +5,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingAction;
@@ -14,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.RowSorter;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.TableCqlSortClauseResolver;
@@ -174,8 +174,7 @@ class TableReadDBOperationBuilder<
     // the builder builds on the where clause
     var where =
         TableWhereCQLClause.forSelect(
-            commandContext.schemaObject(),
-            tableFilterResolver.resolve(commandContext, command));
+            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command));
 
     // always parallel processing for the taskgroup
     var taskGroup = new TaskGroup<>(taskBuilder.build(where.target()));
