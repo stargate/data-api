@@ -1,14 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.datastax.oss.driver.api.querybuilder.update.Assignment;
 import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
-import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
@@ -30,40 +26,41 @@ import java.util.Objects;
  * <p>Supports {@link Deferrable} so that the values needed vectorizing can be deferred until
  * execution time. See {@link #deferredValues()} for docs.
  */
-public class ColumnAssignment implements CQLAssignment, Deferrable {
+public abstract class ColumnAssignment implements CQLAssignment, Deferrable {
 
-  private final CqlNamedValue namedValue;
-
-  protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  protected final CqlNamedValue namedValue;
 
   /**
    * Create a new instance of the class to set the {@code column} to the {@code value} in the
    * specified {@code tableMetadata}.
-   *
-   * @param tableMetadata The {@link TableMetadata} for the target table.
-   * @param column The name of the column to set.
-   * @param value the {@link JsonLiteral} value created by shredding the value from the update
-   *     clause in the request.
    */
-  public ColumnAssignment(CqlNamedValue namedValue) {
+  protected ColumnAssignment(CqlNamedValue namedValue) {
     this.namedValue = Objects.requireNonNull(namedValue, "namedValue cannot be null");
   }
 
-  public CqlIdentifier name() {
+  public CqlIdentifier name(){
     return namedValue.name();
   }
 
-  public CqlNamedValue namedValue() {
+  @VisibleForTesting
+  public CqlNamedValue namedValue(){
     return namedValue;
   }
+  //  public CqlIdentifier name() {
+  //    return namedValue.name();
+  //  }
+  //
+  //  public CqlNamedValue namedValue() {
+  //    return namedValue;
+  //  }
 
-  @Override
-  public UpdateWithAssignments apply(
-      OngoingAssignment ongoingAssignment, List<Object> positionalValues) {
-
-    addPositionalValues(positionalValues);
-    return ongoingAssignment.set(getAssignment());
-  }
+  //  @Override
+  //  public UpdateWithAssignments apply(
+  //      OngoingAssignment ongoingAssignment, List<Object> positionalValues) {
+  //
+  //    addPositionalValues(positionalValues);
+  //    return updateToAssignment.apply(ongoingAssignment, column);
+  //  }
 
   /**
    * Get the {@link Assignment} for the column and value.
@@ -72,9 +69,9 @@ public class ColumnAssignment implements CQLAssignment, Deferrable {
    *
    * @return
    */
-  protected Assignment getAssignment() {
-    return Assignment.setColumn(namedValue.name(), bindMarker());
-  }
+  //  protected Assignment getAssignment() {
+  //    return Assignment.setColumn(namedValue.name(), bindMarker());
+  //  }
 
   /**
    * Add the value to the list of positional values to bind to the query.
@@ -84,48 +81,26 @@ public class ColumnAssignment implements CQLAssignment, Deferrable {
    * @param positionalValues
    */
   protected void addPositionalValues(List<Object> positionalValues) {
-
     positionalValues.add(namedValue.value());
-    //    var rawValue = value.value();
-    //    try {
-    //      positionalValues.add(
-    //          JSONCodecRegistries.DEFAULT_REGISTRY
-    //              .codecToCQL(tableMetadata, column, rawValue)
-    //              .toCQL(rawValue));
-    //    } catch (MissingJSONCodecException e) {
-    //      throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
-    //          errVars(
-    //              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
-    //              map -> {
-    //                map.put("allColumns",
-    // errFmtColumnMetadata(tableMetadata.getColumns().values()));
-    //                map.put("unsupportedColumns", column.asInternal());
-    //              }));
-    //    } catch (UnknownColumnException e) {
-    //      throw FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
-    //          errVars(
-    //              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
-    //              map -> {
-    //                map.put("allColumns",
-    // errFmtColumnMetadata(tableMetadata.getColumns().values()));
-    //                map.put("unknownColumns", CqlIdentifierUtil.cqlIdentifierToJsonKey(column));
-    //              }));
-    //    } catch (ToCQLCodecException e) {
-    //      throw UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES.get(
-    //          errVars(
-    //              TableSchemaObject.from(tableMetadata, OBJECT_MAPPER),
-    //              map -> {
-    //                map.put("allColumns",
-    // errFmtColumnMetadata(tableMetadata.getColumns().values()));
-    //                map.put("invalidColumn", CqlIdentifierUtil.cqlIdentifierToJsonKey(column));
-    //                map.put("columnType",
-    // tableMetadata.getColumn(column).get().getType().toString());
-    //              }));
-    //    }
   }
 
   @Override
   public List<? extends NamedValue<?, ?, ?>> deferredValues() {
     return new CqlNamedValueContainer(List.of(namedValue)).deferredValues();
   }
+
+  /** This method is used for unit test in TableUpdateOperatorTest */
+//    public boolean testEquals(UpdateOperator updateOperator, JsonLiteral<?> value) {
+//      if (updateToAssignment instanceof ColumnAppendToAssignment
+//          && updateOperator == UpdateOperator.PUSH) {
+//        return this.value.equals(value);
+//      } else if (updateToAssignment instanceof ColumnRemoveToAssignment
+//          && updateOperator == UpdateOperator.PULL_ALL) {
+//        return this.value.equals(value);
+//      } else if (updateToAssignment instanceof ColumnSetToAssignment
+//          && (updateOperator == UpdateOperator.SET || updateOperator == UpdateOperator.UNSET)) {
+//        return this.value.equals(value);
+//      }
+//      return false;
+//    }
 }

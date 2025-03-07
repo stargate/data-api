@@ -4,10 +4,13 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.util.*;
@@ -54,7 +57,16 @@ public record CreateCollectionCommand(
                   "Optional indexing configuration to provide allow/deny list of fields for indexing",
               type = SchemaType.OBJECT,
               implementation = IndexingConfig.class)
-          IndexingConfig indexing) {
+          IndexingConfig indexing,
+      @Valid
+          @JsonInclude(JsonInclude.Include.NON_NULL)
+          @Nullable
+          @Schema(
+              description =
+                  "Optional configuration defining if and how to support use of '$lexical' field",
+              type = SchemaType.OBJECT,
+              implementation = LexicalConfigDefinition.class)
+          LexicalConfigDefinition lexical) {
 
     public record IdConfig(
         @Nullable
@@ -158,11 +170,7 @@ public record CreateCollectionCommand(
             throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
                 "`allow` cannot contain duplicates");
           }
-          String invalid = findInvalidPath(allow());
-          if (invalid != null) {
-            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-                "`allow` contains invalid path: '%s'", invalid);
-          }
+          validateIndexingPath(allow());
         }
 
         if (deny() != null) {
@@ -171,11 +179,7 @@ public record CreateCollectionCommand(
             throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
                 "`deny` cannot contain duplicates");
           }
-          String invalid = findInvalidPath(deny());
-          if (invalid != null) {
-            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
-                "`deny` contains invalid path: '%s'", invalid);
-          }
+          validateIndexingPath(deny());
         }
       }
 
@@ -188,28 +192,69 @@ public record CreateCollectionCommand(
         return deny() != null && deny().contains("*");
       }
 
-      public String findInvalidPath(List<String> paths) {
+      /**
+       * Validates the given paths name. A path name must not be empty and must not start with a $
+       * except for $vector.
+       *
+       * @param paths the paths to validate
+       */
+      public void validateIndexingPath(List<String> paths) {
         // Special case: single "*" is accepted
         if (paths.size() == 1 && "*".equals(paths.get(0))) {
-          return null;
+          return;
         }
         for (String path : paths) {
-          if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(path).matches()) {
-            // One exception: $vector is allowed
-            if (!DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
-              return path;
+          if (!NamingRules.FIELD.apply(path)) {
+            if (path.isEmpty()) {
+              throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
+                  "path must be represented as a non-empty string");
+            }
+            if (path.startsWith("$")) {
+              // $vector is allowed, otherwise throw error
+              if (!DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
+                throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
+                    "path must not start with '$'");
+              }
             }
           }
+
+          try {
+            DocumentPath.verifyEncodedPath(path);
+          } catch (IllegalArgumentException e) {
+            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
+                "indexing path ('%s') is not a valid path. " + e.getMessage(), path);
+          }
         }
-        return null;
       }
     }
 
-    public Options(IdConfig idConfig, VectorSearchConfig vector, IndexingConfig indexing) {
+    public record LexicalConfigDefinition(
+        @Schema(
+                description = "Whether to enable the use of '$lexical' field (default: 'true')",
+                defaultValue = "true",
+                type = SchemaType.BOOLEAN,
+                implementation = Boolean.class,
+                required = true)
+            Boolean enabled,
+        @Schema(
+                description =
+                    "Analyzer to use for '$lexical' field: either String (name of a pre-defined analyzer), or JSON Object to specify custom one. Default: 'standard')",
+                defaultValue = "standard",
+                oneOf = {String.class, Map.class})
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            @JsonProperty("analyzer")
+            JsonNode analyzerDef) {}
+
+    public Options(
+        IdConfig idConfig,
+        VectorSearchConfig vector,
+        IndexingConfig indexing,
+        LexicalConfigDefinition lexical) {
       // idConfig could be null, will resolve idType to empty string in table comment
       this.idConfig = idConfig;
       this.vector = vector;
       this.indexing = indexing;
+      this.lexical = lexical;
     }
   }
 

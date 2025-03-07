@@ -380,6 +380,23 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
+                  name = "createCollectionLexical",
+                  summary = "`CreateCollection` command with lexical indexing ($lexical) enabled",
+                  value =
+                      """
+                                {
+                                  "createCollection": {
+                                      "name": "events",
+                                      "options": {
+                                          "lexical": {
+                                              "enabled": true,
+                                              "analyzer": "standard"
+                                          }
+                                      }
+                                  }
+                                }
+                                """),
+              @ExampleObject(
                   name = "createCollectionVectorSearch",
                   summary = "`CreateCollection` command with vector search",
                   value =

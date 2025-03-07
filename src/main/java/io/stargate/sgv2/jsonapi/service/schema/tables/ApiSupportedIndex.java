@@ -12,12 +12,14 @@ abstract class ApiSupportedIndex implements ApiIndexDef {
   protected final CqlIdentifier targetColumn;
   protected final Map<String, String> indexOptions;
   protected final ApiIndexType indexType;
+  protected final ApiIndexFunction indexFunction;
 
   ApiSupportedIndex(
       ApiIndexType indexType,
       CqlIdentifier indexName,
       CqlIdentifier targetColumn,
-      Map<String, String> indexOptions) {
+      Map<String, String> indexOptions,
+      ApiIndexFunction indexFunction) {
 
     this.indexType = Objects.requireNonNull(indexType, "indexType must not be null");
     this.indexName = Objects.requireNonNull(indexName, "indexName must not be null");
@@ -25,6 +27,8 @@ abstract class ApiSupportedIndex implements ApiIndexDef {
     this.indexOptions =
         Collections.unmodifiableMap(
             Objects.requireNonNull(indexOptions, "options must not be null"));
+    // indexFunction is nullable for index on primitive types.
+    this.indexFunction = indexFunction;
   }
 
   @Override
@@ -45,5 +49,10 @@ abstract class ApiSupportedIndex implements ApiIndexDef {
   @Override
   public Map<String, String> indexOptions() {
     return indexOptions;
+  }
+
+  @Override
+  public ApiIndexFunction indexFunction() {
+    return indexFunction;
   }
 }

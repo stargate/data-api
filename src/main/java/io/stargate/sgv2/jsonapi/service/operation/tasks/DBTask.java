@@ -113,28 +113,31 @@ public abstract class DBTask<SchemaT extends SchemaObject>
 
       return supplier
           .get()
-          .onItem().call(
+          .onItem()
+          .call(
               asyncResultset -> {
-                LOGGER.warn("XXX asyncResultset.getExecutionInfo().getTracingId() {} ", asyncResultset.getExecutionInfo().getTracingId() );
+                LOGGER.warn(
+                    "XXX asyncResultset.getExecutionInfo().getTracingId() {} ",
+                    asyncResultset.getExecutionInfo().getTracingId());
                 if (asyncResultset.getExecutionInfo().getTracingId() == null) {
                   return Uni.createFrom().voidItem();
                 }
 
                 return Uni.createFrom()
-                    .completionStage(() ->
-                        asyncResultset.getExecutionInfo().getQueryTraceAsync()
-                    )
-                    .onItem().invoke(trace -> {
-                      LOGGER.warn("XXX GOT trace {}", trace);
+                    .completionStage(() -> asyncResultset.getExecutionInfo().getQueryTraceAsync())
+                    .onItem()
+                    .invoke(
+                        trace -> {
+                          LOGGER.warn("XXX GOT trace {}", trace);
 
-                      commandContext
-                          .requestTracing()
-                          .maybeTrace(
-                              (objectMapper) ->
-                                  new RequestTracing.TraceMessage(
-                                      "Statement trace for task %s".formatted(task.taskDesc()),
-                                      objectMapper.convertValue(trace, JsonNode.class)));
-                    });
+                          commandContext
+                              .requestTracing()
+                              .maybeTrace(
+                                  (objectMapper) ->
+                                      new RequestTracing.TraceMessage(
+                                          "Statement trace for task %s".formatted(task.taskDesc()),
+                                          objectMapper.convertValue(trace, JsonNode.class)));
+                        });
               });
     }
   }

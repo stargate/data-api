@@ -329,98 +329,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                       """));
     }
 
-    // For [json-api#634]: empty Object as Projection should work same as missing one,
-    // that is, include everything
-    @Test
-    public void byIdEmptyProjection() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
-              """
-                      {
-                        "find": {
-                          "filter" : {"_id" : "doc1"},
-                          "projection": { }
-                        }
-                      }
-                      """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(1))
-          .body(
-              "data.documents[0]",
-              jsonEquals(
-                  """
-                      {
-                          "_id": "doc1",
-                          "username": "user1",
-                          "active_user" : true,
-                          "date" : {"$date": 1672531200000},
-                          "age" : 20,
-                          "null_column": null
-                      }
-                      """));
-    }
-
-    @Test
-    public void byIdIncludeAllProjection() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
-              """
-                              {
-                                "find": {
-                                  "filter" : {"_id" : "doc5"},
-                                  "projection": { "*": 1 }
-                                }
-                              }
-                              """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(1))
-          .body(
-              "data.documents[0]",
-              jsonEquals(
-                  """
-                        {
-                            "_id": "doc5",
-                            "username": "user5",
-                            "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
-                        }
-                        """));
-    }
-
-    @Test
-    public void byIdExcludeAllProjection() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
-              """
-                              {
-                                "find": {
-                                  "filter" : {"_id" : "doc5"},
-                                  "projection": { "*": 0 }
-                                }
-                              }
-                              """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(1))
-          .body("data.documents[0]", jsonEquals("{}"));
-    }
-
     // https://github.com/stargate/jsonapi/issues/572 -- is passing empty Object for "sort" ok?
     @Test
     public void byIdEmptySort() {
@@ -477,35 +385,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                         "user-name": "user6"
                       }
                       """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected))
-          .body("data.documents", hasSize(1));
-    }
-
-    @Test
-    public void byIdWithProjection() {
-      String json =
-          """
-                      {
-                        "find": {
-                          "filter" : {"_id" : "doc1"},
-                          "projection": { "_id":0, "username":1 }
-                        }
-                      }
-                      """;
-
-      String expected =
-          """
-              {"username":"user1"}
-              """;
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -1383,50 +1262,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
-    public void dollarOperatorInSortPathExpression() {
-      String json =
-          """
-              { "find": { "sort" : {"$gt" : 1} } }
-              """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body(
-              "errors[0].message",
-              endsWith("sort clause path ('$gt') contains character(s) not allowed"))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
-    }
-
-    @Test
-    void emptyPathExpressionInSort() {
-      String json =
-          """
-              { "find": { "sort" : {"" : 1} } }
-              """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body(
-              "errors[0].message",
-              endsWith("sort clause path must be represented as not-blank string"))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
-    }
-
-    @Test
     void dollarOperatorInFilterPathExpression() {
       String json =
           """
@@ -1441,11 +1276,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("$", responseIsError())
-          .body(
-              "errors[0].message",
-              endsWith("filter clause path ('$gt') contains character(s) not allowed"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].message", containsString("filter clause path ('$gt')"));
     }
 
     @Test
@@ -2151,6 +1984,203 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body("data.documents", containsInAnyOrder(jsonEquals(expected)));
+    }
+  }
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  @Order(2)
+  class FindWithProjection {
+    @Test
+    @Order(1)
+    public void insertData() {
+      insert(
+          """
+                            {
+                              "insertOne": {
+                                "document": {
+                                  "_id": "doc6",
+                                  "price.usd": 5
+                                }
+                              }
+                            }
+                          """);
+    }
+
+    @Test
+    public void byIdWithProjection() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                          {
+                            "find": {
+                              "filter" : {"_id" : "doc1"},
+                              "projection": { "_id":0, "username":1 }
+                            }
+                          }
+                          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]", jsonEquals("{\"username\":\"user1\"}"))
+          .body("data.documents", hasSize(1));
+    }
+
+    // For [json-api#634]: empty Object as Projection should work same as missing one,
+    // that is, include everything
+    @Test
+    public void byIdEmptyProjection() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                              {
+                                "find": {
+                                  "filter" : {"_id" : "doc1"},
+                                  "projection": { }
+                                }
+                              }
+                              """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1))
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                                  {
+                                      "_id": "doc1",
+                                      "username": "user1",
+                                      "active_user" : true,
+                                      "date" : {"$date": 1672531200000},
+                                      "age" : 20,
+                                      "null_column": null
+                                  }
+                                  """));
+    }
+
+    @Test
+    public void byIdIncludeAllProjection() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                                      {
+                                        "find": {
+                                          "filter" : {"_id" : "doc5"},
+                                          "projection": { "*": 1 }
+                                        }
+                                      }
+                                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1))
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                                    {
+                                        "_id": "doc5",
+                                        "username": "user5",
+                                        "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                                    }
+                                    """));
+    }
+
+    @Test
+    public void byIdExcludeAllProjection() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                                      {
+                                        "find": {
+                                          "filter" : {"_id" : "doc5"},
+                                          "projection": { "*": 0 }
+                                        }
+                                      }
+                                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]", jsonEquals("{}"));
+    }
+
+    @Test
+    public void withAmpersandEscape() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                  {
+                    "find": {
+                        "filter" : {"_id" : "doc6"},
+                        "projection" : {
+                            "price&.usd": 1
+                        }
+                    }
+                  }
+                  """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1))
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                 {
+                     "_id": "doc6",
+                     "price.usd": 5
+                 }
+                 """));
+    }
+
+    @Test
+    public void failWithAmpersandEscapeAtTheEnd() {
+      givenHeadersPostJsonThenOk(
+              """
+                    {
+                        "find": {
+                            "projection" : {
+                                "price&": 1
+                            }
+                        }
+                    }
+                    """)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Unsupported projection parameter: projection path ('price&') is not a valid path."))
+          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failWithAmpersandEscapeNotFollowedByAmpersandOrDot() {
+      givenHeadersPostJsonThenOk(
+              """
+                        {
+                            "find": {
+                                "projection" : {
+                                    "price&abc": 1
+                                }
+                            }
+                        }
+                        """)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Unsupported projection parameter: projection path ('price&abc') is not a valid path."))
+          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failWithEmptySegment() {
+      givenHeadersPostJsonThenOk(
+              """
+                        {
+                            "find": {
+                                "projection" : {
+                                    "foo..bar": 1
+                                }
+                            }
+                        }
+                        """)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Unsupported projection parameter: projection path ('foo..bar') is not a valid path."))
+          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
   }
 

@@ -6,8 +6,8 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.update.Update;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import java.util.List;
 import java.util.Objects;
 

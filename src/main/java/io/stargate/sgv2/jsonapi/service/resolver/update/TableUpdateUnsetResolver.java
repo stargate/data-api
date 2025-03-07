@@ -1,0 +1,53 @@
+package io.stargate.sgv2.jsonapi.service.resolver.update;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
+import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
+import io.stargate.sgv2.jsonapi.service.operation.query.ColumnSetToAssignment;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
+import java.util.List;
+
+/** Resolver to resolve $unset argument to List of ColumnAssignment. */
+public class TableUpdateUnsetResolver extends TableUpdateOperatorResolver {
+
+  /**
+   * Resolve the {@link UpdateOperator#UNSET} operation.
+   *
+   * <p>Example: (Note, it does not matter what the unset value is, NULL will be set)
+   *
+   * <ul>
+   *   <li>primitive column<code>{"$unset" : { "age" : 1 , "human" : false}}</code>
+   *   <li>list column<code>{"$unset" : { "listColumn" : "abc"}}</code>
+   *   <li>set column<code>{"$unset" : { "setColumn" : {"random":"random}}}</code>
+   *   <li>map column<code>{"$unset" : { "mapColumn" : []}</code>
+   * </ul>
+   *
+   * @param table tableSchemaObject
+   * @param arguments arguments objectNode for the $unset
+   * @return list of columnAssignments for all the $unset column updates
+   */
+  @Override
+  public List<ColumnAssignment> resolve(
+      TableSchemaObject tableSchemaObject,
+      CqlNamedValue.ErrorStrategy<UpdateException> errorStrategy,
+      ObjectNode arguments) {
+
+    // the arguments to the $unset are just an insert document with the values ignored and turned
+    // into a null
+    // no need to normalise the arguments to unset,
+    // we use a Json Decoder that will turn every value into a JSON NULL
+    return createColumnAssignments(
+        tableSchemaObject,
+        arguments,
+        errorStrategy,
+        UpdateOperator.UNSET,
+        ColumnSetToAssignment::new,
+        (jsonNode) -> new JsonLiteral<>(null, JsonType.NULL),
+        JSONCodecRegistries.DEFAULT_REGISTRY);
+  }
+}

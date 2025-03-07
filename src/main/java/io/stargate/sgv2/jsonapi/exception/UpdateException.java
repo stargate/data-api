@@ -14,6 +14,7 @@ public class UpdateException extends RequestException {
   }
 
   public enum Code implements ErrorCode<UpdateException> {
+    INVALID_PUSH_OPERATOR_USAGE,
     INVALID_UPDATE_COLUMN_VALUES,
     MISSING_UPDATE_OPERATIONS,
     UNKNOWN_TABLE_COLUMNS,
@@ -21,6 +22,7 @@ public class UpdateException extends RequestException {
     UNSUPPORTED_OVERLAPPING_UPDATE_OPERATIONS,
     UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS,
     UNSUPPORTED_UPDATE_OPERATIONS_FOR_TABLE,
+    UNSUPPORTED_UPDATE_OPERATOR,
     UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION;
 
     private final ErrorTemplate<UpdateException> template;

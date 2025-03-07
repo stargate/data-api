@@ -27,6 +27,13 @@ public interface ApiIndexDef extends Recordable {
   /** The type of index from the API perspective. */
   ApiIndexType indexType();
 
+  /**
+   * The index function from the API perspective.
+   *
+   * <p>This is nullable for indexes on primitive and vector types.
+   */
+  ApiIndexFunction indexFunction();
+
   /** How to describe this index in the public HTTP API. */
   IndexDesc<?> indexDesc();
 
@@ -53,6 +60,7 @@ public interface ApiIndexDef extends Recordable {
         .append("indexName", cqlIdentifierToMessageString(indexName()))
         .append("targetColumn", cqlIdentifierToMessageString(targetColumn()))
         .append("indexType", indexType())
+        .append("indexFunction", indexFunction())
         .append("indexOptions", indexOptions())
         .append("isUnsupported", isUnsupported());
   }

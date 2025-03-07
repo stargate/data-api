@@ -2,14 +2,12 @@ package io.stargate.sgv2.jsonapi.service.shredding;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 /** TODO: WIP copied from RowShredder */
@@ -55,6 +53,14 @@ public interface JsonNodeDecoder extends Function<JsonNode, JsonLiteral<?>> {
             case NULL -> NULL_LITERAL;
             case ARRAY -> {
               ArrayNode arrayNode = (ArrayNode) value;
+
+              // Check if the array looks like tuple map entries, then shred to object format
+              // JsonLiteral.
+              Optional<JsonLiteral<?>> optionalMapFromTupleFormat = tupleToObject(arrayNode);
+              if (optionalMapFromTupleFormat.isPresent()) {
+                yield optionalMapFromTupleFormat.get();
+              }
+
               List<JsonLiteral<?>> list = new ArrayList<>();
               for (JsonNode node : arrayNode) {
                 // Leave JsonLiteral wrapping as-is; removed by JsonCodec
@@ -95,6 +101,43 @@ public interface JsonNodeDecoder extends Function<JsonNode, JsonLiteral<?>> {
           }
           // But all FPs are returned as BigDecimal
           return new JsonLiteral<>(number.decimalValue(), JsonType.NUMBER);
+        }
+
+        /**
+         * For non-string key maps, public API uses tuple format to represent map entries. This
+         * method will detect if the given array looks like tuple map entries, then then shred to
+         * object format JsonLiteral.
+         *
+         * <p>Tuple map entries are represented as an array of arrays where each inner array has two
+         * elements.
+         *
+         * <p>E.G.
+         *
+         * <ul>
+         *   <li>"intKeyMapColumn": [[1,"value1"],[2,"value2"]]
+         *   <li>"textKeyMapColumn": [["1","value1"],["2","value2"]]
+         * </ul>
+         *
+         * @param arrayNode array jsonNode for which we want to check if it looks like tuple map
+         *     entries, then shred to object format JsonLiteral.
+         */
+        private Optional<JsonLiteral<?>> tupleToObject(ArrayNode arrayNode) {
+
+          // Tuple map entries are represented as an array of arrays where each inner array has two
+          // elements.
+          for (JsonNode entry : arrayNode) {
+            if (entry.getNodeType() != JsonNodeType.ARRAY || entry.size() != 2) {
+              return Optional.empty();
+            }
+          }
+
+          Map<JsonLiteral<?>, JsonLiteral<?>> map = new HashMap<>();
+          for (JsonNode entry : arrayNode) {
+            JsonLiteral<?> key = apply(entry.get(0));
+            JsonLiteral<?> value = apply(entry.get(1));
+            map.put(key, value);
+          }
+          return Optional.of(new JsonLiteral<>(map, JsonType.SUB_DOC));
         }
       };
 }

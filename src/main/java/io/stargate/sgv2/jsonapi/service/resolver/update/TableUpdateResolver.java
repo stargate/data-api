@@ -8,26 +8,20 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.DefaultUpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
-import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueFactory;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -88,20 +82,18 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
         }
       };
 
-  // Operations we support on a table, and the function to resolve them
-  private static final Map<
-          UpdateOperator, BiFunction<TableSchemaObject, ObjectNode, List<ColumnAssignment>>>
-      OPERATION_RESOLVERS =
+  // Using map here so we can expose the list of supported operators for validation to check.
+  // Keep this immutable, we return the key set in a property below.
+  private static final Map<UpdateOperator, TableUpdateOperatorResolver>
+      SUPPORTED_OPERATORS_RESOLVERS =
           Map.of(
-              UpdateOperator.SET, TableUpdateResolver::resolveSet,
-              UpdateOperator.UNSET, TableUpdateResolver::resolveUnset);
+              UpdateOperator.SET, new TableUpdateSetResolver(),
+              UpdateOperator.UNSET, new TableUpdateUnsetResolver(),
+              UpdateOperator.PUSH, new TableUpdatePushResolver(),
+              UpdateOperator.PULL_ALL, new TableUpdatePullAllResolver());
 
-  // String name sof the operators we support, used for error messages
   private static final List<String> SUPPORTED_OPERATION_NAMES =
-      OPERATION_RESOLVERS.keySet().stream()
-          .map(UpdateOperator::operator)
-          .sorted(String::compareTo)
-          .toList();
+      SUPPORTED_OPERATORS_RESOLVERS.keySet().stream().map(UpdateOperator::operator).toList();
 
   /**
    * Creates a new resolver that will use the given config.
@@ -129,17 +121,16 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
             : new EnumMap<>(UpdateOperator.class);
 
     for (var updateOperationDef : updateOperationDefs.entrySet()) {
-
       UpdateOperator updateOperator = updateOperationDef.getKey();
       ObjectNode arguments = updateOperationDef.getValue();
 
-      var resolverFunction = OPERATION_RESOLVERS.get(updateOperator);
-      if (resolverFunction == null) {
+      var operatorResolver = SUPPORTED_OPERATORS_RESOLVERS.get(updateOperator);
+      if (operatorResolver == null) {
         usedUnsupportedOperators.add(updateOperator.operator());
       } else if (!arguments.isEmpty()) {
-        // For empty assignment operator, we won't add it to assignments result list, e.g. "$set":
-        // {} or "$unset": {}
-        assignments.addAll(resolverFunction.apply(commandContext.schemaObject(), arguments));
+        // For empty assignment operator, we won't add it to assignments result list
+        // e.g. "$set": {}, "$unset": {}
+        assignments.addAll(operatorResolver.resolve(commandContext.schemaObject(),ERROR_STRATEGY, arguments));
       }
     }
 
@@ -205,23 +196,23 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
    * @param arguments the value of the `$set` in the example above.
    * @return
    */
-  private static List<ColumnAssignment> resolveSet(
-      TableSchemaObject tableSchemaObject, ObjectNode arguments) {
-
-    // decode the JSON objects into our Java objects
-    var jsonNamedValues =
-        new JsonNamedValueFactory(tableSchemaObject, JsonNodeDecoder.DEFAULT).create(arguments);
-
-    // now create the CQL values, this will include running codex to convert the values into the
-    // correct CQL types
-    var allColumns =
-        new CqlNamedValueFactory(
-                tableSchemaObject, JSONCodecRegistries.DEFAULT_REGISTRY, ERROR_STRATEGY)
-            .create(jsonNamedValues);
-
-    // TODO: AARON - what about deferred values ?
-    return allColumns.values().stream().map(ColumnAssignment::new).toList();
-  }
+  //  private static List<ColumnAssignment> resolveSet(
+  //      TableSchemaObject tableSchemaObject, ObjectNode arguments) {
+  //
+  //    // decode the JSON objects into our Java objects
+  //    var jsonNamedValues =
+  //        new JsonNamedValueFactory(tableSchemaObject, JsonNodeDecoder.DEFAULT).create(arguments);
+  //
+  //    // now create the CQL values, this will include running codex to convert the values into the
+  //    // correct CQL types
+  //    var allColumns =
+  //        new CqlNamedValueFactory(
+  //                tableSchemaObject, JSONCodecRegistries.DEFAULT_REGISTRY, ERROR_STRATEGY)
+  //            .create(jsonNamedValues);
+  //
+  //    // TODO: AARON - what about deferred values ?
+  //    return allColumns.values().stream().map(ColumnSetToAssignment::new).toList();
+  //  }
 
   /**
    * Resolve the {@link UpdateOperator#UNSET} operation
@@ -236,25 +227,25 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
    * @param arguments
    * @return
    */
-  private static List<ColumnAssignment> resolveUnset(
-      TableSchemaObject tableSchemaObject, ObjectNode arguments) {
-
-    // decode the JSON objects into our Java objects
-    // but this time, every value will be a JSON NULL this is how we do the UNSET
-    var jsonNamedValues =
-        new JsonNamedValueFactory(
-                tableSchemaObject, (jsonNode) -> new JsonLiteral<>(null, JsonType.NULL))
-            .create(arguments);
-
-    // now create the CQL values, this will include running codex to convert the values into the
-    // correct CQL types
-    var allColumns =
-        new CqlNamedValueFactory(
-                tableSchemaObject, JSONCodecRegistries.DEFAULT_REGISTRY, ERROR_STRATEGY)
-            .create(jsonNamedValues);
-
-    // TODO: AARON - what about deferred values ?
-
-    return allColumns.values().stream().map(ColumnAssignment::new).toList();
-  }
+  //  private static List<ColumnAssignment> resolveUnset(
+  //      TableSchemaObject tableSchemaObject, ObjectNode arguments) {
+  //
+  //    // decode the JSON objects into our Java objects
+  //    // but this time, every value will be a JSON NULL this is how we do the UNSET
+  //    var jsonNamedValues =
+  //        new JsonNamedValueFactory(
+  //                tableSchemaObject, (jsonNode) -> new JsonLiteral<>(null, JsonType.NULL))
+  //            .create(arguments);
+  //
+  //    // now create the CQL values, this will include running codex to convert the values into the
+  //    // correct CQL types
+  //    var allColumns =
+  //        new CqlNamedValueFactory(
+  //                tableSchemaObject, JSONCodecRegistries.DEFAULT_REGISTRY, ERROR_STRATEGY)
+  //            .create(jsonNamedValues);
+  //
+  //    // TODO: AARON - what about deferred values ?
+  //
+  //    return allColumns.values().stream().map(ColumnAssignment::new).toList();
+  //  }
 }

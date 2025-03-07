@@ -99,6 +99,7 @@ public class KeyspaceResource {
                       }),
               examples = {
                 @ExampleObject(ref = "createCollection"),
+                @ExampleObject(ref = "createCollectionLexical"),
                 @ExampleObject(ref = "createCollectionVectorSearch"),
                 @ExampleObject(ref = "findCollections"),
                 @ExampleObject(ref = "deleteCollection"),

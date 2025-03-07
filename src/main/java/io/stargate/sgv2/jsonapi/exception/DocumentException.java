@@ -19,6 +19,7 @@ public class DocumentException extends RequestException {
     MISSING_PRIMARY_KEY_COLUMNS,
     UNKNOWN_TABLE_COLUMNS,
     UNSUPPORTED_COLUMN_TYPES,
+    UNSUPPORTED_VECTORIZE_CONFIGURATIONS,
     UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION;
 
     private final ErrorTemplate<DocumentException> template;
