@@ -184,7 +184,16 @@ public class DocumentShredder {
     // And finally let's traverse the document to actually "shred" (build index properties)
     new ShreddingTraverser(b).traverse(indexableDocument);
 
-    return b.build();
+    WritableShreddedDocument shreddedDoc = b.build();
+
+    // Verify that "$lexical" field is not present if lexical indexing is disabled
+    if (!collectionSettings.lexicalEnabled() && shreddedDoc.queryLexicalValue() != null) {
+      throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
+          "Document contains lexical content, but lexical indexing is not enabled for collection '%s'",
+          collectionSettings.name().table());
+    }
+
+    return shreddedDoc;
   }
 
   /**
@@ -428,9 +437,14 @@ public class DocumentShredder {
     private void validateStringValue(String referringPropertyName, String value) {
       if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(referringPropertyName)
           || DocumentConstants.Fields.BINARY_VECTOR_TEXT_FIELD.equals(referringPropertyName)) {
-        // `$vectorize` and `$binary` field are not checked for length
+        // `$vectorize`, `$binary` fields are not checked for length
         return;
       }
+      // '$lexical` field may have different max length:
+      if (DocumentConstants.Fields.LEXICAL_CONTENT_FIELD.equals(referringPropertyName)) {
+        // !!! TODO
+      }
+
       OptionalInt encodedLength =
           JsonUtil.lengthInBytesIfAbove(value, limits.maxStringLengthInBytes());
       if (encodedLength.isPresent()) {
@@ -493,6 +507,8 @@ public class DocumentShredder {
         traverseVector(path, value);
       } else if (pathAsString.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
         traverseVectorize(path, value);
+      } else if (pathAsString.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)) {
+        traverseLexical(path, value);
       } else {
         if (value.isObject()) {
           ObjectNode ob = (ObjectNode) value;
@@ -563,6 +579,18 @@ public class DocumentShredder {
       if (!value.isNull()) {
         shredder.shredVectorize(path);
       }
+    }
+
+    private void traverseLexical(JsonPath path, JsonNode value) {
+      if (value.isNull()) {
+        return;
+      }
+      if (!value.isTextual()) {
+        throw ErrorCodeV1.SHRED_BAD_DOCUMENT_LEXICAL_TYPE.toApiException(
+            "the value for field '%s' must be a STRING, was: %s",
+            path.toString(), value.getNodeType());
+      }
+      shredder.shredLexical(path, value.asText());
     }
   }
 }
