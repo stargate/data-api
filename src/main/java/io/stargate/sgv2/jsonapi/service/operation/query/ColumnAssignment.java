@@ -1,9 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
-
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
@@ -38,14 +36,15 @@ public abstract class ColumnAssignment implements CQLAssignment, Deferrable {
     this.namedValue = Objects.requireNonNull(namedValue, "namedValue cannot be null");
   }
 
-  public CqlIdentifier name(){
+  public CqlIdentifier name() {
     return namedValue.name();
   }
 
   @VisibleForTesting
-  public CqlNamedValue namedValue(){
+  public CqlNamedValue namedValue() {
     return namedValue;
   }
+
   //  public CqlIdentifier name() {
   //    return namedValue.name();
   //  }
@@ -90,17 +89,17 @@ public abstract class ColumnAssignment implements CQLAssignment, Deferrable {
   }
 
   /** This method is used for unit test in TableUpdateOperatorTest */
-//    public boolean testEquals(UpdateOperator updateOperator, JsonLiteral<?> value) {
-//      if (updateToAssignment instanceof ColumnAppendToAssignment
-//          && updateOperator == UpdateOperator.PUSH) {
-//        return this.value.equals(value);
-//      } else if (updateToAssignment instanceof ColumnRemoveToAssignment
-//          && updateOperator == UpdateOperator.PULL_ALL) {
-//        return this.value.equals(value);
-//      } else if (updateToAssignment instanceof ColumnSetToAssignment
-//          && (updateOperator == UpdateOperator.SET || updateOperator == UpdateOperator.UNSET)) {
-//        return this.value.equals(value);
-//      }
-//      return false;
-//    }
+  //    public boolean testEquals(UpdateOperator updateOperator, JsonLiteral<?> value) {
+  //      if (updateToAssignment instanceof ColumnAppendToAssignment
+  //          && updateOperator == UpdateOperator.PUSH) {
+  //        return this.value.equals(value);
+  //      } else if (updateToAssignment instanceof ColumnRemoveToAssignment
+  //          && updateOperator == UpdateOperator.PULL_ALL) {
+  //        return this.value.equals(value);
+  //      } else if (updateToAssignment instanceof ColumnSetToAssignment
+  //          && (updateOperator == UpdateOperator.SET || updateOperator == UpdateOperator.UNSET)) {
+  //        return this.value.equals(value);
+  //      }
+  //      return false;
+  //    }
 }

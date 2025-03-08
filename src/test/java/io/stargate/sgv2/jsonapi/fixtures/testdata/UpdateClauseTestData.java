@@ -11,11 +11,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnSetToAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
@@ -79,17 +79,24 @@ public class UpdateClauseTestData extends TestDataSuplier {
     }
 
     private ColumnAssignment buildColumnAssignment(
-        TableSchemaObject tableSchemaObject, CqlIdentifier column, Function<CqlNamedValue, ColumnAssignment> assignmentSupplier) {
+        TableSchemaObject tableSchemaObject,
+        CqlIdentifier column,
+        Function<CqlNamedValue, ColumnAssignment> assignmentSupplier) {
       var columnMetadata = tableMetadata.getColumn(column);
       if (columnMetadata.isEmpty()) {
         throw new IllegalArgumentException("Column " + column + " does not exist");
       }
       return buildColumnAssignment(
-          tableSchemaObject, column, jsonNodeValue(columnMetadata.get().getType()), assignmentSupplier);
+          tableSchemaObject,
+          column,
+          jsonNodeValue(columnMetadata.get().getType()),
+          assignmentSupplier);
     }
 
     private ColumnAssignment buildColumnAssignment(
-        TableSchemaObject tableSchemaObject, CqlIdentifier column, JsonNode value,
+        TableSchemaObject tableSchemaObject,
+        CqlIdentifier column,
+        JsonNode value,
         Function<CqlNamedValue, ColumnAssignment> assignmentSupplier) {
 
       var objectMapper = new ObjectMapper();
@@ -103,11 +110,12 @@ public class UpdateClauseTestData extends TestDataSuplier {
               .create(jsonNamedValues);
       assert cqlNamedValues.size() == 1;
 
-      return  assignmentSupplier.apply(cqlNamedValues.values().iterator().next());
+      return assignmentSupplier.apply(cqlNamedValues.values().iterator().next());
     }
 
     public FixtureT setOnKnownColumn(TableSchemaObject tableSchemaObject, CqlIdentifier column) {
-      columnAssignments.add(buildColumnAssignment(tableSchemaObject, column, ColumnSetToAssignment::new));
+      columnAssignments.add(
+          buildColumnAssignment(tableSchemaObject, column, ColumnSetToAssignment::new));
       return fixture;
     }
 
@@ -115,7 +123,11 @@ public class UpdateClauseTestData extends TestDataSuplier {
         TableSchemaObject tableSchemaObject, CqlIdentifier unknownColumn) {
       // data type does not matter, ok to always use text
       columnAssignments.add(
-          buildColumnAssignment(tableSchemaObject, unknownColumn, jsonNodeValue(DataTypes.TEXT), ColumnSetToAssignment::new));
+          buildColumnAssignment(
+              tableSchemaObject,
+              unknownColumn,
+              jsonNodeValue(DataTypes.TEXT),
+              ColumnSetToAssignment::new));
       return fixture;
     }
 
@@ -126,7 +138,10 @@ public class UpdateClauseTestData extends TestDataSuplier {
               .map(
                   pk ->
                       buildColumnAssignment(
-                          tableSchemaObject, pk.getName(), jsonNodeValue(pk.getType()), ColumnSetToAssignment::new))
+                          tableSchemaObject,
+                          pk.getName(),
+                          jsonNodeValue(pk.getType()),
+                          ColumnSetToAssignment::new))
               .toList();
 
       columnAssignments.addAll(assignments);
@@ -149,7 +164,8 @@ public class UpdateClauseTestData extends TestDataSuplier {
                       buildColumnAssignment(
                           tableSchemaObject,
                           entry.getKey(),
-                          jsonNodeValue(entry.getValue().getType()), ColumnSetToAssignment::new))
+                          jsonNodeValue(entry.getValue().getType()),
+                          ColumnSetToAssignment::new))
               .toList(); // Collect the results into a list
       columnAssignments.addAll(assignments);
       return fixture;

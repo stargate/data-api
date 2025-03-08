@@ -39,11 +39,7 @@ import java.util.stream.Collectors;
 public class TableUpdateResolver<CmdT extends Command & Updatable>
     extends UpdateResolver<CmdT, TableSchemaObject> {
 
-  /**
-   * Error strategy to use with {@link CqlNamedValueFactory} for updates.
-   *
-   * <p>used for both Set and Unset operations
-   */
+  /** Error strategy to use with {@link CqlNamedValueFactory} for updates. */
   public static final CqlNamedValue.ErrorStrategy<UpdateException> ERROR_STRATEGY =
       new CqlNamedValue.ErrorStrategy<>() {
 
@@ -82,18 +78,16 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
         }
       };
 
-  // Using map here so we can expose the list of supported operators for validation to check.
-  // Keep this immutable, we return the key set in a property below.
   private static final Map<UpdateOperator, TableUpdateOperatorResolver>
-      SUPPORTED_OPERATORS_RESOLVERS =
+      SUPPORTED_OPERATION_RESOLVERS =
           Map.of(
               UpdateOperator.SET, new TableUpdateSetResolver(),
               UpdateOperator.UNSET, new TableUpdateUnsetResolver(),
               UpdateOperator.PUSH, new TableUpdatePushResolver(),
               UpdateOperator.PULL_ALL, new TableUpdatePullAllResolver());
 
-  private static final List<String> SUPPORTED_OPERATION_NAMES =
-      SUPPORTED_OPERATORS_RESOLVERS.keySet().stream().map(UpdateOperator::operator).toList();
+  private static final List<String> SUPPORTED_OPERATION_API_NAMES =
+      SUPPORTED_OPERATION_RESOLVERS.keySet().stream().map(UpdateOperator::apiName).toList();
 
   /**
    * Creates a new resolver that will use the given config.
@@ -115,22 +109,24 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
     List<String> usedUnsupportedOperators = new ArrayList<>();
 
     // we check if there are no operations below, so the check also looks at empty operations
-    EnumMap<UpdateOperator, ObjectNode> updateOperationDefs =
+    EnumMap<UpdateOperator, ObjectNode> updateOperations =
         updateClause != null
             ? updateClause.updateOperationDefs()
             : new EnumMap<>(UpdateOperator.class);
 
-    for (var updateOperationDef : updateOperationDefs.entrySet()) {
+    for (var updateOperationDef : updateOperations.entrySet()) {
+
       UpdateOperator updateOperator = updateOperationDef.getKey();
       ObjectNode arguments = updateOperationDef.getValue();
 
-      var operatorResolver = SUPPORTED_OPERATORS_RESOLVERS.get(updateOperator);
+      var operatorResolver = SUPPORTED_OPERATION_RESOLVERS.get(updateOperator);
       if (operatorResolver == null) {
-        usedUnsupportedOperators.add(updateOperator.operator());
+        usedUnsupportedOperators.add(updateOperator.apiName());
       } else if (!arguments.isEmpty()) {
         // For empty assignment operator, we won't add it to assignments result list
         // e.g. "$set": {}, "$unset": {}
-        assignments.addAll(operatorResolver.resolve(commandContext.schemaObject(),ERROR_STRATEGY, arguments));
+        assignments.addAll(
+            operatorResolver.resolve(commandContext.schemaObject(), ERROR_STRATEGY, arguments));
       }
     }
 
@@ -141,7 +137,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
               commandContext.schemaObject(),
               map -> {
                 map.put("usedUnsupportedUpdateOperations", errFmtJoin(usedUnsupportedOperators));
-                map.put("supportedUpdateOperations", errFmtJoin(SUPPORTED_OPERATION_NAMES));
+                map.put("supportedUpdateOperations", errFmtJoin(SUPPORTED_OPERATION_API_NAMES));
               }));
     }
 
@@ -152,17 +148,17 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
           errVars(
               commandContext.schemaObject(),
               map -> {
-                map.put("supportedUpdateOperations", errFmtJoin(SUPPORTED_OPERATION_NAMES));
+                map.put("supportedUpdateOperations", errFmtJoin(SUPPORTED_OPERATION_API_NAMES));
               }));
     }
 
     // Duplicate column assignments is invalid
     // e.g. {"update": {"$set": {"description": "123"},"$unset": {"description": "456"}}}
-    Set<CqlIdentifier> allItems = new HashSet<>();
+    Set<CqlIdentifier> allAssignments = new HashSet<>();
     Set<CqlIdentifier> duplicates =
         assignments.stream()
             .map(ColumnAssignment::name)
-            .filter(column -> !allItems.add(column))
+            .filter(column -> !allAssignments.add(column))
             .collect(Collectors.toSet());
 
     if (!duplicates.isEmpty()) {
@@ -178,74 +174,9 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
     }
 
     // Analyze table update columnAssignments before create CQLClause
+    // this checks if the update is doing things it should not be
     new TableUpdateAnalyzer(commandContext.schemaObject()).analyze(assignments);
 
     return WithWarnings.of(new DefaultUpdateValuesCQLClause(assignments));
   }
-
-  /**
-   * Resolve the {@link UpdateOperator#SET} operation
-   *
-   * <p>Example:
-   *
-   * <pre>
-   *    {"$set" : { "age" : 51 , "human" : false}}
-   * </pre>
-   *
-   * @param tableSchemaObject
-   * @param arguments the value of the `$set` in the example above.
-   * @return
-   */
-  //  private static List<ColumnAssignment> resolveSet(
-  //      TableSchemaObject tableSchemaObject, ObjectNode arguments) {
-  //
-  //    // decode the JSON objects into our Java objects
-  //    var jsonNamedValues =
-  //        new JsonNamedValueFactory(tableSchemaObject, JsonNodeDecoder.DEFAULT).create(arguments);
-  //
-  //    // now create the CQL values, this will include running codex to convert the values into the
-  //    // correct CQL types
-  //    var allColumns =
-  //        new CqlNamedValueFactory(
-  //                tableSchemaObject, JSONCodecRegistries.DEFAULT_REGISTRY, ERROR_STRATEGY)
-  //            .create(jsonNamedValues);
-  //
-  //    // TODO: AARON - what about deferred values ?
-  //    return allColumns.values().stream().map(ColumnSetToAssignment::new).toList();
-  //  }
-
-  /**
-   * Resolve the {@link UpdateOperator#UNSET} operation
-   *
-   * <p>Example:
-   *
-   * <pre>
-   *    {"$unset" : { "country" : ""}}
-   * </pre>
-   *
-   * @param tableSchemaObject
-   * @param arguments
-   * @return
-   */
-  //  private static List<ColumnAssignment> resolveUnset(
-  //      TableSchemaObject tableSchemaObject, ObjectNode arguments) {
-  //
-  //    // decode the JSON objects into our Java objects
-  //    // but this time, every value will be a JSON NULL this is how we do the UNSET
-  //    var jsonNamedValues =
-  //        new JsonNamedValueFactory(
-  //                tableSchemaObject, (jsonNode) -> new JsonLiteral<>(null, JsonType.NULL))
-  //            .create(arguments);
-  //
-  //    // now create the CQL values, this will include running codex to convert the values into the
-  //    // correct CQL types
-  //    var allColumns =
-  //        new CqlNamedValueFactory(
-  //                tableSchemaObject, JSONCodecRegistries.DEFAULT_REGISTRY, ERROR_STRATEGY)
-  //            .create(jsonNamedValues);
-  //
-  //    // TODO: AARON - what about deferred values ?
-  //
-  //    return allColumns.values().stream().map(ColumnAssignment::new).toList();
-  //  }
 }

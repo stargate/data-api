@@ -376,8 +376,7 @@ request-errors:
       Only values that are supported by the column data type can be included when updating.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      The command included the column ${invalidColumn} that has ${columnType} type defined.
-      ${embeddedCodecMessage}
+      The update included invalid values for the columns: ${invalidColumns}.
       
       Resend the command using only supported column values.
 

@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.service.operation.query.ColumnSetToAssignment;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import java.util.List;
 
-/** Resolver to resolve $unset argument to List of ColumnAssignment. */
+/** Resolves the {@link UpdateOperator#UNSET} operation for a table update. */
 public class TableUpdateUnsetResolver extends TableUpdateOperatorResolver {
 
   /**
@@ -20,16 +20,19 @@ public class TableUpdateUnsetResolver extends TableUpdateOperatorResolver {
    *
    * <p>Example: (Note, it does not matter what the unset value is, NULL will be set)
    *
-   * <ul>
-   *   <li>primitive column<code>{"$unset" : { "age" : 1 , "human" : false}}</code>
-   *   <li>list column<code>{"$unset" : { "listColumn" : "abc"}}</code>
-   *   <li>set column<code>{"$unset" : { "setColumn" : {"random":"random}}}</code>
-   *   <li>map column<code>{"$unset" : { "mapColumn" : []}</code>
-   * </ul>
+   * <pre>
+   * // primitive column
+   * {"$unset" : { "age" : 1 , "human" : false}}
    *
-   * @param table tableSchemaObject
-   * @param arguments arguments objectNode for the $unset
-   * @return list of columnAssignments for all the $unset column updates
+   * // list column
+   * {"$unset" : { "listColumn" : "abc"}}
+   *
+   * // set column
+   * {"$unset" : { "setColumn" : {"random":"random"}}}
+   *
+   * // map column
+   * {"$unset" : { "mapColumn" : []}}
+   * </pre>
    */
   @Override
   public List<ColumnAssignment> resolve(
@@ -38,8 +41,7 @@ public class TableUpdateUnsetResolver extends TableUpdateOperatorResolver {
       ObjectNode arguments) {
 
     // the arguments to the $unset are just an insert document with the values ignored and turned
-    // into a null
-    // no need to normalise the arguments to unset,
+    // into a null no need to normalise the arguments to unset,
     // we use a Json Decoder that will turn every value into a JSON NULL
     return createColumnAssignments(
         tableSchemaObject,

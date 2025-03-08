@@ -8,17 +8,15 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
 import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdateOperatorResolver;
-import java.util.List;
-
 import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdateResolver;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +30,7 @@ public class TableUpdateOperatorTestData extends TestDataSuplier {
 
   public TableUpdateOperatorResolverFixture tableWithMapSetList(
       TableUpdateOperatorResolver tableUpdateOperatorResolver, String message) {
+
     var table = testData.schemaObject().tableWithMapSetList();
     return new TableUpdateOperatorResolverFixture(table, tableUpdateOperatorResolver, message);
   }
@@ -94,7 +93,9 @@ public class TableUpdateOperatorTestData extends TestDataSuplier {
 
       columnAssignments =
           tableUpdateOperatorResolver.resolve(
-              tableSchemaObject, TableUpdateResolver.ERROR_STRATEGY ,  (ObjectNode) mapper.readTree(operatorJson));
+              tableSchemaObject,
+              TableUpdateResolver.ERROR_STRATEGY,
+              (ObjectNode) mapper.readTree(operatorJson));
     }
 
     public TableUpdateOperatorResolverFixture assertSingleAssignment() {
@@ -105,8 +106,7 @@ public class TableUpdateOperatorTestData extends TestDataSuplier {
     public TableUpdateOperatorResolverFixture assertFirstAssignmentEqual(
         UpdateOperator operator, Object expectedValue) {
 
-      assertThat(columnAssignments.getFirst().namedValue())
-          .isEqualTo(expectedValue);
+      assertThat(columnAssignments.getFirst().namedValue().value()).isEqualTo(expectedValue);
       return this;
     }
 
@@ -118,6 +118,5 @@ public class TableUpdateOperatorTestData extends TestDataSuplier {
           .append("columnAssignments", columnAssignments)
           .append("exception", exception);
     }
-
   }
 }

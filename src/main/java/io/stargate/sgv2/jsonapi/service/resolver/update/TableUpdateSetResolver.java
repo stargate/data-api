@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.service.operation.query.ColumnSetToAssignment;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import java.util.List;
 
-/** Resolver to resolve $set argument to List of ColumnAssignment. */
+/** Resolves the {@link UpdateOperator#SET} operation for a table update. */
 public class TableUpdateSetResolver extends TableUpdateOperatorResolver {
 
   /**
@@ -17,21 +17,25 @@ public class TableUpdateSetResolver extends TableUpdateOperatorResolver {
    *
    * <p>Example:
    *
-   * <ul>
-   *   <li>primitive column<code>{"$set" : { "age" : 51 , "human" : false}}</code>
-   *   <li>list column<code>{"$set" : { "listColumn" : [1,2]}}</code>
-   *   <li>set column<code>{"$set" : { "setColumn" : { "key1": "value1", "key2": "value2"}}</code>
-   *   <li>map column with string key(object format)<code>
-   *       {"$set" : { "mapColumn" : { "key1": "value1", "key2": "value2"}}</code>
-   *   <li>map column with string key(object format)<code>
-   *       {"$set" : { "mapColumn" : [["key1","value1"], ["key2","value2"]]}}</code>
-   *   <li>map column with non-string key(tuple format)<code>
-   *       {"$set" : { "mapColumn" : [[123,"value1"], [456,"value2"]]}}</code>
-   * </ul>
+   * <pre>
+   * // primitive column
+   * {"$set" : { "age" : 51 , "human" : false}}
    *
-   * @param table tableSchemaObject
-   * @param arguments arguments objectNode for the $set
-   * @return list of columnAssignments for all the $set column updates
+   * // list column
+   * {"$set" : { "listColumn" : [1,2]}}
+   *
+   * // set column
+   * {"$set" : { "setColumn" : { "key1": "value1", "key2": "value2"}}}
+   *
+   * // map column with string key (object format)
+   * {"$set" : { "mapColumn" : { "key1": "value1", "key2": "value2"}}}
+   *
+   * // map column with string key (array-of-arrays format)
+   * {"$set" : { "mapColumn" : [["key1","value1"], ["key2","value2"]]}}
+   *
+   * // map column with non-string key (array-of-arrays format)
+   *  {"$set" : { "mapColumn" : [[123,"value1"], [456,"value2"]]}}
+   * </pre>
    */
   @Override
   public List<ColumnAssignment> resolve(

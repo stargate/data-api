@@ -20,8 +20,7 @@ import java.util.stream.Collectors;
  * Analyzer for table update command.<br>
  * For Table UpdateOne update clause, there are several rules to check as followings:
  *
- * <p>1. rule checkUnknownColumns(). Can not update on unknown columns. <br>
- * 2. rule checkUpdateOnPrimaryKey(). Can not update on PK columns. <br>
+ * <p>2. rule checkUpdateOnPrimaryKey(). Can not update on PK columns. <br>
  */
 public class TableUpdateAnalyzer {
 
@@ -46,27 +45,6 @@ public class TableUpdateAnalyzer {
     // unknown columns.
     checkUpdateOnPrimaryKey(columnAssignments);
   }
-
-  /** Update on unknown column is not allowed * */
-  //  private void checkUnknownColumns(List<ColumnAssignment> columnAssignments) {
-  //    List<CqlIdentifier> unknownColumns =
-  //        columnAssignments.stream()
-  //            .filter(columnAssignment -> !tableAllColumns.containsKey(columnAssignment.column))
-  //            .map(columnAssignment -> columnAssignment.column)
-  //            .sorted(CQL_IDENTIFIER_COMPARATOR)
-  //            .toList();
-  //
-  //    if (!unknownColumns.isEmpty()) {
-  //      throw UpdateException.Code.UNKNOWN_TABLE_COLUMNS.get(
-  //          errVars(
-  //              tableSchemaObject,
-  //              map -> {
-  //                map.put("unknownColumns", errFmtCqlIdentifier(unknownColumns));
-  //                // use tableAllColumns from tableMetadata, preserve the order in tableMetadata
-  //                map.put("allColumns", errFmtColumnMetadata(tableAllColumns.values()));
-  //              }));
-  //    }
-  //  }
 
   /** Update primary key columns is not allowed. */
   private void checkUpdateOnPrimaryKey(List<ColumnAssignment> columnAssignments) {

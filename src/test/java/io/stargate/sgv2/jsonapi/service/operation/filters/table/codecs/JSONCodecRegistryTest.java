@@ -82,7 +82,8 @@ public class JSONCodecRegistryTest {
     return codec;
   }
 
-  private <JavaT, CqlT> JSONCodec<JavaT, CqlT> assertGetCodecToJSON(DataType cqlType) throws MissingJSONCodecException {
+  private <JavaT, CqlT> JSONCodec<JavaT, CqlT> assertGetCodecToJSON(DataType cqlType)
+      throws MissingJSONCodecException {
 
     JSONCodec<JavaT, CqlT> codec = JSONCodecRegistries.DEFAULT_REGISTRY.codecToJSON(cqlType);
     assertThat(codec).isNotNull();
@@ -544,60 +545,69 @@ public class JSONCodecRegistryTest {
 
   @ParameterizedTest
   @MethodSource("validCodecToJSONTestCasesInt")
-  public void codecToJSONInts(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) throws MissingJSONCodecException {
+  public void codecToJSONInts(DataType cqlType, Object fromValue, JsonNode expectedJsonValue)
+      throws MissingJSONCodecException {
     _codecToJSON(cqlType, fromValue, expectedJsonValue);
   }
 
   @ParameterizedTest
   @MethodSource("validCodecToJSONTestCasesFloat")
-  public void codecToJSONFloats(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) throws MissingJSONCodecException {
+  public void codecToJSONFloats(DataType cqlType, Object fromValue, JsonNode expectedJsonValue)
+      throws MissingJSONCodecException {
     _codecToJSON(cqlType, fromValue, expectedJsonValue);
   }
 
   @ParameterizedTest
   @MethodSource("validCodecToJSONTestCasesText")
-  public void codecToJSONText(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) throws MissingJSONCodecException {
+  public void codecToJSONText(DataType cqlType, Object fromValue, JsonNode expectedJsonValue)
+      throws MissingJSONCodecException {
     _codecToJSON(cqlType, fromValue, expectedJsonValue);
   }
 
   @ParameterizedTest
   @MethodSource("validCodecToJSONTestCasesDatetime")
-  public void codecToJSONDatetime(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) throws MissingJSONCodecException {
+  public void codecToJSONDatetime(DataType cqlType, Object fromValue, JsonNode expectedJsonValue)
+      throws MissingJSONCodecException {
     _codecToJSON(cqlType, fromValue, expectedJsonValue);
   }
 
   @ParameterizedTest
   @MethodSource("validCodecToJSONTestCasesUuid")
-  public void codecToJSONUuid(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) throws MissingJSONCodecException {
+  public void codecToJSONUuid(DataType cqlType, Object fromValue, JsonNode expectedJsonValue)
+      throws MissingJSONCodecException {
     _codecToJSON(cqlType, fromValue, expectedJsonValue);
   }
 
   @ParameterizedTest
   @MethodSource("validCodecToJSONTestCasesOther")
-  public void codecToJSONOther(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) throws MissingJSONCodecException {
+  public void codecToJSONOther(DataType cqlType, Object fromValue, JsonNode expectedJsonValue)
+      throws MissingJSONCodecException {
     _codecToJSON(cqlType, fromValue, expectedJsonValue);
   }
 
   @ParameterizedTest
   @MethodSource("validCodecToJSONTestCasesCollections")
-  public void codecToJSONCollections(
-      DataType cqlType, Object fromValue, JsonNode expectedJsonValue) throws MissingJSONCodecException {
+  public void codecToJSONCollections(DataType cqlType, Object fromValue, JsonNode expectedJsonValue)
+      throws MissingJSONCodecException {
     _codecToJSON(cqlType, fromValue, expectedJsonValue);
   }
 
   @ParameterizedTest
   @MethodSource("validCodecToJSONTestCasesMaps")
-  public void codecToJSONMaps(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) throws MissingJSONCodecException {
+  public void codecToJSONMaps(DataType cqlType, Object fromValue, JsonNode expectedJsonValue)
+      throws MissingJSONCodecException {
     _codecToJSON(cqlType, fromValue, expectedJsonValue);
   }
 
   @ParameterizedTest
   @MethodSource("validCodecToJSONTestCasesVectors")
-  public void codecToJSONVectors(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) throws MissingJSONCodecException {
+  public void codecToJSONVectors(DataType cqlType, Object fromValue, JsonNode expectedJsonValue)
+      throws MissingJSONCodecException {
     _codecToJSON(cqlType, fromValue, expectedJsonValue);
   }
 
-  private void _codecToJSON(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) throws MissingJSONCodecException {
+  private void _codecToJSON(DataType cqlType, Object fromValue, JsonNode expectedJsonValue)
+      throws MissingJSONCodecException {
     var codec = assertGetCodecToJSON(cqlType);
 
     JsonNode actualJSONValue =
