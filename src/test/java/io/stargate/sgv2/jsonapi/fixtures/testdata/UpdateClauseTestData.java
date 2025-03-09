@@ -10,7 +10,7 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
@@ -28,36 +28,38 @@ import java.util.stream.Collectors;
 
 public class UpdateClauseTestData extends TestDataSuplier {
 
-  private static final CqlNamedValue.ErrorStrategy<? extends RequestException>
-      THROW_ALL_ERROR_STRATEGY =
-          new CqlNamedValue.ErrorStrategy<>() {
+  private static final CqlNamedValue.ErrorStrategy<UpdateException> THROW_ALL_ERROR_STRATEGY =
+      new CqlNamedValue.ErrorStrategy<>() {
 
-            @Override
-            public void allChecks(
-                TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
-              throw new UnsupportedOperationException("allChecks Not implemented");
-            }
+        @Override
+        public void allChecks(
+            TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
+          // skipping check for support of the operation type because we dont have one here
+          checkCodecError(tableSchemaObject, allColumns);
+          checkMissingCodec(tableSchemaObject, allColumns);
+          checkUnknownColumns(tableSchemaObject, allColumns);
+        }
 
-            @Override
-            public ErrorCode<RequestException> codeForNoApiSupport() {
-              throw new UnsupportedOperationException("codeForNoApiSupport Not implemented");
-            }
+        @Override
+        public ErrorCode<UpdateException> codeForNoApiSupport() {
+          throw new UnsupportedOperationException("codeForNoApiSupport Not implemented");
+        }
 
-            @Override
-            public ErrorCode<RequestException> codeForUnknownColumn() {
-              throw new UnsupportedOperationException("codeForUnknownColumn Not implemented");
-            }
+        @Override
+        public ErrorCode<UpdateException> codeForUnknownColumn() {
+          return UpdateException.Code.UNKNOWN_TABLE_COLUMNS;
+        }
 
-            @Override
-            public ErrorCode<RequestException> codeForMissingCodec() {
-              throw new UnsupportedOperationException("codeForMissingCodec Not implemented");
-            }
+        @Override
+        public ErrorCode<UpdateException> codeForMissingCodec() {
+          throw new UnsupportedOperationException("codeForMissingCodec Not implemented");
+        }
 
-            @Override
-            public ErrorCode<RequestException> codeForCodecError() {
-              throw new UnsupportedOperationException("codeForCodecError Not implemented");
-            }
-          };
+        @Override
+        public ErrorCode<UpdateException> codeForCodecError() {
+          throw new UnsupportedOperationException("codeForCodecError Not implemented");
+        }
+      };
 
   public UpdateClauseTestData(TestData testData) {
     super(testData);
@@ -121,6 +123,7 @@ public class UpdateClauseTestData extends TestDataSuplier {
 
     public FixtureT setOnUnknownColumn(
         TableSchemaObject tableSchemaObject, CqlIdentifier unknownColumn) {
+
       // data type does not matter, ok to always use text
       columnAssignments.add(
           buildColumnAssignment(

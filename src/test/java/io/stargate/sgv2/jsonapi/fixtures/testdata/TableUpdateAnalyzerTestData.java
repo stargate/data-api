@@ -29,7 +29,7 @@ public class TableUpdateAnalyzerTestData extends TestDataSuplier {
 
   public static class TableUpdateAnalyzerFixture implements Recordable {
 
-    private final String message;
+    public final String message;
     private final TableMetadata tableMetadata;
     public final TableSchemaObject tableSchemaObject;
     private final TableUpdateAnalyzer analyzer;
