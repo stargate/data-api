@@ -4,7 +4,13 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.mockito.Mockito.mock;
 
+import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.fixtures.*;
 import io.stargate.sgv2.jsonapi.fixtures.containers.json.*;
@@ -16,11 +22,15 @@ import io.stargate.sgv2.jsonapi.fixtures.tables.AllOverflowTypes;
 import io.stargate.sgv2.jsonapi.fixtures.tables.AllUnderflowTypes;
 import io.stargate.sgv2.jsonapi.fixtures.tables.AllUnsupportedTypes;
 import io.stargate.sgv2.jsonapi.fixtures.types.CqlTypesForTesting;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -44,8 +54,22 @@ public class WriteableTableRowBuilderTest {
   }
 
   private static WriteableTableRow buildRow(JsonContainerFixture fixture) {
-    // TODO: AARON: BUG fix this fixture.cqlFixture().tableSchemaObject()
-    var builder = new WriteableTableRowBuilder(null, JSONCodecRegistries.DEFAULT_REGISTRY);
+
+    var commandContext =
+        CommandContext.builderSupplier()
+            .withJsonProcessingMetricsReporter(mock(JsonProcessingMetricsReporter.class))
+            .withCqlSessionCache(mock(CQLSessionCache.class))
+            .withCommandConfig(new CommandConfig())
+            .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
+            .getBuilder(fixture.cqlFixture().tableSchemaObject())
+            .withEmbeddingProvider(mock(EmbeddingProvider.class))
+            .withCommandName("testCommand")
+            .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+            .withApiFeatures(ApiFeatures.empty())
+            .build();
+
+    var builder =
+        new WriteableTableRowBuilder(commandContext, JSONCodecRegistries.DEFAULT_REGISTRY);
     var row = builder.build(fixture.container());
     LOGGER.info("buildRow: row={}", PrettyPrintable.pprint(row));
     return row;
@@ -275,13 +299,13 @@ public class WriteableTableRowBuilderTest {
                   fixture.cqlFixture().tableMetadata().describe(true)));
 
       var infinityValue =
-          switch (writableRow.allColumns().get(outOfRangeMetadata).value()) {
+          switch (writableRow.allColumns().get(outOfRangeMetadata.getName()).value()) {
             case Float f -> f;
             case Double d -> d;
             default ->
                 throw new IllegalStateException(
                     "Unexpected value: "
-                        + writableRow.allColumns().get(outOfRangeMetadata).value());
+                        + writableRow.allColumns().get(outOfRangeMetadata.getName()).value());
           };
 
       if (isOverflow) {
