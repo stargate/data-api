@@ -59,6 +59,11 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
         }
 
         @Override
+        public ErrorCode<UpdateException> codeForMissingVectorize() {
+          return UpdateException.Code.UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION;
+        }
+
+        @Override
         public ErrorCode<UpdateException> codeForMissingCodec() {
           return UpdateException.Code.UNSUPPORTED_COLUMN_TYPES;
         }
@@ -75,6 +80,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
           checkApiSupport(tableSchemaObject, allColumns, MATCH_INSERT_UNSUPPORTED);
           checkMissingCodec(tableSchemaObject, allColumns);
           checkCodecError(tableSchemaObject, allColumns);
+          checkMissingVectorize(tableSchemaObject, allColumns);
         }
       };
 

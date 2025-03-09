@@ -38,6 +38,7 @@ public class UpdateClauseTestData extends TestDataSuplier {
           checkCodecError(tableSchemaObject, allColumns);
           checkMissingCodec(tableSchemaObject, allColumns);
           checkUnknownColumns(tableSchemaObject, allColumns);
+          checkMissingVectorize(tableSchemaObject, allColumns);
         }
 
         @Override
@@ -48,6 +49,11 @@ public class UpdateClauseTestData extends TestDataSuplier {
         @Override
         public ErrorCode<UpdateException> codeForUnknownColumn() {
           return UpdateException.Code.UNKNOWN_TABLE_COLUMNS;
+        }
+
+        @Override
+        public ErrorCode<UpdateException> codeForMissingVectorize() {
+          throw new UnsupportedOperationException("codeForMissingVectorize Not implemented");
         }
 
         @Override

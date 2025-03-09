@@ -44,6 +44,7 @@ public class WriteableTableRowBuilder {
           checkApiSupport(tableSchemaObject, allColumns, MATCH_INSERT_UNSUPPORTED);
           checkMissingCodec(tableSchemaObject, allColumns);
           checkCodecError(tableSchemaObject, allColumns);
+          checkMissingVectorize(tableSchemaObject, allColumns);
         }
 
         @Override
@@ -54,6 +55,11 @@ public class WriteableTableRowBuilder {
         @Override
         public ErrorCode<DocumentException> codeForUnknownColumn() {
           return DocumentException.Code.UNKNOWN_TABLE_COLUMNS;
+        }
+
+        @Override
+        public ErrorCode<DocumentException> codeForMissingVectorize() {
+          return DocumentException.Code.UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION;
         }
 
         @Override

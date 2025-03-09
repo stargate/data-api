@@ -18,10 +18,9 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,10 +67,15 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
     // First - check if we want to defer the decode because we need to generate a vector
     // need a vector column, with vectorize def, and the raw value to be a string
     if ((apiColumnDef().type() instanceof ApiVectorType vectorType)
-        && (vectorType.getVectorizeDefinition() != null)
         && (rawValue.value().type().equals(JsonType.STRING))) {
 
-      return maybeVectorize(rawValue);
+      if ((vectorType.getVectorizeDefinition() == null)) {
+        setErrorCode(NamedValueState.PREPARE_ERROR, errorStrategy.codeForMissingVectorize());
+        // ok to return null here, we have set the error code
+        return null;
+      } else {
+        return maybeVectorize(rawValue);
+      }
     }
 
     // not deferring, so we need to push the value through the codecs to get what to send to CQL
@@ -159,6 +163,8 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
 
     ErrorCode<T> codeForUnknownColumn();
 
+    ErrorCode<T> codeForMissingVectorize();
+
     ErrorCode<T> codeForMissingCodec();
 
     ErrorCode<T> codeForCodecError();
@@ -233,7 +239,6 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
               .toList();
 
       if (!missingCodecs.isEmpty()) {
-        // NOTE: SAME ERROR IS THROWN  in checkApiSupport -OK until we re-factor
         throw codeForMissingCodec()
             .get(
                 errVars(
@@ -271,6 +276,43 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
                           errFmtColumnMetadata(
                               tableSchemaObject.tableMetadata().getColumns().values()));
                       map.put("invalidColumns", errFmtCqlNamedValue(codecErrors));
+                    }));
+      }
+    }
+
+    default void checkMissingVectorize(
+        TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
+
+      var missingVectorizeColumns =
+          allColumns.values().stream()
+              .filter(
+                  cqlNamedValue ->
+                      cqlNamedValue.state().equals(NamedValue.NamedValueState.PREPARE_ERROR))
+              .filter(cqlNamedValue -> cqlNamedValue.errorCode().equals(codeForMissingVectorize()))
+              .sorted(CqlNamedValue.NAME_COMPARATOR)
+              .toList();
+
+      if (!missingVectorizeColumns.isEmpty()) {
+        var vectorizeColumns =
+            tableSchemaObject
+                .apiTableDef()
+                .allColumns()
+                .filterByApiTypeNameToList(ApiTypeName.VECTOR)
+                .stream()
+                .filter(
+                    columnDef ->
+                        ((ApiVectorType) columnDef.type()).getVectorizeDefinition() != null)
+                .sorted(ApiColumnDef.NAME_COMPARATOR)
+                .toList();
+
+        throw codeForMissingVectorize()
+            .get(
+                errVars(
+                    tableSchemaObject,
+                    map -> {
+                      map.put("validVectorizeColumns", errFmtApiColumnDef(vectorizeColumns));
+                      map.put(
+                          "invalidVectorizeColumns", errFmtCqlNamedValue(missingVectorizeColumns));
                     }));
       }
     }

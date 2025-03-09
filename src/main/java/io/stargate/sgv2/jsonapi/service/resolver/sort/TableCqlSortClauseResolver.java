@@ -30,6 +30,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueFactory;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,16 +74,16 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     var sortColumns = sortClause.sortColumnIdentifiers();
     checkUnknownSortColumns(commandContext.schemaObject(), sortColumns);
 
-    var vectorSorts = sortClause.tableVectorSorts();
+    var vectorAndVectorizeSorts = sortClause.tableVectorSorts();
     var whereCQLClause =
         TableWhereCQLClause.forSelect(
             commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command));
 
-    return vectorSorts.isEmpty()
+    return vectorAndVectorizeSorts.isEmpty()
         ? resolveNonVectorSort(
             commandContext, whereCQLClause.target(), sortClause, sortColumns, command.skip())
         : resolveVectorSort(
-            commandContext, sortClause, vectorSorts, command.skip(), command.limit());
+            commandContext, sortClause, vectorAndVectorizeSorts, command.skip(), command.limit());
   }
 
   /**
@@ -197,9 +198,15 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
   private WithWarnings<OrderByCqlClause> resolveVectorSort(
       CommandContext<TableSchemaObject> commandContext,
       SortClause sortClause,
-      List<SortExpression> vectorSorts,
+      List<SortExpression> vectorAndVectorizeSorts,
       Optional<Integer> skip,
       Optional<Integer> limit) {
+
+    // we are getting both vector and vectorize sorts, when we bind and prepare the value
+    // vectorize will be used if needed, via the Deferrable interface.
+    // work out which here, useful later.
+    boolean isVectorize =
+        vectorAndVectorizeSorts.stream().anyMatch(SortExpression::isTableVectorizeSort);
 
     if (limit.isPresent()
         && limit.get()
@@ -210,7 +217,8 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
               map -> {
                 map.put(
                     "sortColumn",
-                    errFmtJoin(vectorSorts.stream().map(SortExpression::path).toList()));
+                    errFmtJoin(
+                        vectorAndVectorizeSorts.stream().map(SortExpression::path).toList()));
                 map.put("limit", String.valueOf(limit.get()));
                 map.put(
                     "maxLimit",
@@ -228,8 +236,12 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
       throw SortException.Code.CANNOT_VECTOR_SORT_WITH_SKIP_OPTION.get();
     }
 
-    if (vectorSorts.size() > 1) {
-      throw SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORS.get(
+    if (vectorAndVectorizeSorts.size() > 1) {
+      var errorCode =
+          isVectorize
+              ? SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORIZE
+              : SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORS;
+      throw errorCode.get(
           errVars(
               commandContext.schemaObject(),
               map -> {
@@ -251,7 +263,8 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
                             .filterByApiTypeNameToList(ApiTypeName.VECTOR)));
                 map.put(
                     "sortColumns",
-                    errFmtJoin(vectorSorts.stream().map(SortExpression::path).toList()));
+                    errFmtJoin(
+                        vectorAndVectorizeSorts.stream().map(SortExpression::path).toList()));
               }));
     }
 
@@ -280,19 +293,24 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
                             .filterByApiTypeNameToList(ApiTypeName.VECTOR)));
                 map.put(
                     "sortVectorColumns",
-                    errFmtJoin(vectorSorts.stream().map(SortExpression::path).toList()));
+                    errFmtJoin(
+                        vectorAndVectorizeSorts.stream().map(SortExpression::path).toList()));
                 map.put(
                     "sortNonVectorColumns",
                     errFmtJoin(nonVectorSorts.stream().map(SortExpression::path).toList()));
               }));
     }
 
-    var vectorSortExpression = vectorSorts.getFirst();
+    var vectorSortExpression = vectorAndVectorizeSorts.getFirst();
     var vectorSortIdentifier = vectorSortExpression.pathAsCqlIdentifier();
     var vectorSortColumn = apiTableDef.allColumns().get(vectorSortIdentifier);
 
     if (vectorSortColumn.type().typeName() != ApiTypeName.VECTOR) {
-      throw SortException.Code.CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS.get(
+      var errorCode =
+          isVectorize
+              ? SortException.Code.CANNOT_VECTORIZE_SORT_NON_VECTOR_COLUMN
+              : SortException.Code.CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS;
+      throw errorCode.get(
           errVars(
               commandContext.schemaObject(),
               map -> {
@@ -358,7 +376,6 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     // with a
     // decoder that understands sorting, but the sort clause is terrible and needs to be refactored
 
-    // we checked above that this column supports vectorize
     var jsonNamedValue =
         new JsonNamedValue(JsonPath.from(vectorSortExpression.path()), JsonNodeDecoder.DEFAULT);
     if (jsonNamedValue.bind(commandContext.schemaObject())) {
@@ -381,21 +398,22 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
           "jsonNamedValue failed to bind for the sorting on column " + vectorSortColumn.name());
     }
 
-    var cqlNamedValue =
-        new CqlVectorNamedValue(
-            vectorSortIdentifier,
-            JSONCodecRegistries.DEFAULT_REGISTRY,
-            SORTING_NAMED_VALUE_ERROR_STRATEGY);
-    if (cqlNamedValue.bind(commandContext.schemaObject())) {
-      cqlNamedValue.prepare(jsonNamedValue);
-    } else {
-      // should not happen because we tested the column exists above
-      throw new IllegalStateException(
-          "sortNamedValue failed to bind for the sorting on column " + vectorSortColumn.name());
-    }
+    // will throw is there is an error
+    // and we know this is a vector value, we need the CqlVectorNamedValue to get the correct CQL
+    // type
+    var vectorNamedValue =
+        new CqlNamedValueFactory(
+                commandContext.schemaObject(),
+                JSONCodecRegistries.DEFAULT_REGISTRY,
+                SORTING_NAMED_VALUE_ERROR_STRATEGY)
+            .create(new JsonNamedValueContainer(List.of(jsonNamedValue))).values().stream()
+                .findFirst()
+                .map(namedValue -> (CqlVectorNamedValue) namedValue)
+                .get();
+
     return WithWarnings.of(
         new TableOrderByANNCqlClause(
-            cqlNamedValue,
+            vectorNamedValue,
             commandContext.config().get(OperationsConfig.class).maxVectorSearchLimit()),
         List.of(WarningException.Code.ZERO_FILTER_OPERATIONS));
   }
@@ -429,7 +447,8 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
 
   /**
    * HACK - for now we are not using the error checking in the cql named value, all the checks are
-   * in the sort resolver
+   * in the sort resolver. But we need to rely on this for checking if vectorize is enabled on the
+   * column
    */
   private static final CqlNamedValue.ErrorStrategy<SortException>
       SORTING_NAMED_VALUE_ERROR_STRATEGY =
@@ -450,6 +469,11 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
             }
 
             @Override
+            public ErrorCode<SortException> codeForMissingVectorize() {
+              return SortException.Code.CANNOT_VECTORIZE_SORT_WHEN_MISSING_VECTORIZE_DEFINITION;
+            }
+
+            @Override
             public ErrorCode<SortException> codeForCodecError() {
               throw new UnsupportedOperationException();
             }
@@ -457,7 +481,23 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
             @Override
             public void allChecks(
                 TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
-              // pass through
+              checkMissingVectorize(tableSchemaObject, allColumns);
+              checkMultipleSortVectorize(tableSchemaObject, allColumns);
+            }
+
+            private void checkMultipleSortVectorize(
+                TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
+              if (allColumns.size() > 1) {
+                var sorted =
+                    allColumns.values().stream().sorted(CqlNamedValue.NAME_COMPARATOR).toList();
+
+                throw SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORIZE.get(
+                    errVars(
+                        tableSchemaObject,
+                        map -> {
+                          map.put("sortVectorizeColumns", errFmtCqlNamedValue(sorted));
+                        }));
+              }
             }
           };
 }
