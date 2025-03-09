@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -36,6 +37,13 @@ public class MeteredCommandProcessorTest {
   @Inject ObjectMapper objectMapper;
 
   private TestConstants testConstants = new TestConstants();
+
+  CommandContext<CollectionSchemaObject> commandContext;
+
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.collectionContext();
+  }
 
   @Nested
   class CustomMetrics {
@@ -52,7 +60,6 @@ public class MeteredCommandProcessorTest {
 
       CountDocumentsCommand countCommand =
           objectMapper.readValue(json, CountDocumentsCommand.class);
-      CommandContext<CollectionSchemaObject> commandContext = testConstants.collectionContext();
 
       CommandResult commandResult = CommandResult.statusOnlyBuilder(false, false, null).build();
 
@@ -103,7 +110,7 @@ public class MeteredCommandProcessorTest {
         """;
 
       FindCommand countCommand = objectMapper.readValue(json, FindCommand.class);
-      CommandContext<CollectionSchemaObject> commandContext = testConstants.collectionContext();
+
       Map<String, Object> fields = new HashMap<>();
       fields.put("exceptionClass", "TestExceptionClass");
       CommandResult.Error error =
@@ -161,7 +168,6 @@ public class MeteredCommandProcessorTest {
 
       CountDocumentsCommand countCommand =
           objectMapper.readValue(json, CountDocumentsCommand.class);
-      CommandContext<CollectionSchemaObject> commandContext = testConstants.collectionContext();
       Map<String, Object> fields = new HashMap<>();
       fields.put("exceptionClass", "TestExceptionClass");
       fields.put("errorCode", "TestErrorCode");

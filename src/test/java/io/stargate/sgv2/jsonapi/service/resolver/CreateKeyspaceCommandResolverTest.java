@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.service.operation.keyspaces.CreateKeyspaceOperat
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +29,12 @@ class CreateKeyspaceCommandResolverTest {
 
   private TestConstants testConstants = new TestConstants();
 
-  CommandContext<DatabaseSchemaObject> commandContext = testConstants.databaseContext();
+  CommandContext<DatabaseSchemaObject> commandContext;
+
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.databaseContext();
+  }
 
   @Nested
   class CreateKeyspaceSuccess {

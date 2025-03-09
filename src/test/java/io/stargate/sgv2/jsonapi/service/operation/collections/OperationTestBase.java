@@ -52,8 +52,8 @@ public class OperationTestBase {
 
   protected CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
   protected KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
-  protected CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT;
 
+  protected CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT;
   protected CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT;
 
   protected static final TupleType DOC_KEY_TYPE =

@@ -52,8 +52,6 @@ public class UpdateOneCommandResolverTest {
   @Nested
   class Resolve {
 
-    CommandContext<CollectionSchemaObject> commandContext = testConstants.collectionContext();
-
     @Test
     public void idFilterCondition() throws Exception {
       String json =

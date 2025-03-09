@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionCollectionOperation;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -25,10 +26,15 @@ class DeleteCollectionCommandResolverTest {
 
   private TestConstants testConstants = new TestConstants();
 
+  CommandContext<KeyspaceSchemaObject> commandContext;
+
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.keyspaceContext();
+  }
+
   @Nested
   class ResolveCommand {
-
-    CommandContext<KeyspaceSchemaObject> commandContext = testConstants.keyspaceContext();
 
     @Test
     public void happyPath() throws Exception {

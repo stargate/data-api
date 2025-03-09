@@ -29,19 +29,26 @@ import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(PropertyBasedOverrideProfile.class)
 public class DataVectorizerTest {
+
   @Inject ObjectMapper objectMapper;
   private TestEmbeddingProvider testEmbeddingProvider = new TestEmbeddingProvider();
   private final EmbeddingProvider testService = testEmbeddingProvider;
-  private final CollectionSchemaObject collectionSettings =
-      testEmbeddingProvider.commandContextWithVectorize().schemaObject();
   private final EmbeddingCredentials embeddingCredentials =
       new EmbeddingCredentials(Optional.empty(), Optional.empty(), Optional.empty());
+
+  private CollectionSchemaObject collectionSettings = null;
+
+  @BeforeEach
+  public void beforeEach() {
+    collectionSettings = testEmbeddingProvider.commandContextWithVectorize().schemaObject();
+  }
 
   @Nested
   public class TestTextValues {
