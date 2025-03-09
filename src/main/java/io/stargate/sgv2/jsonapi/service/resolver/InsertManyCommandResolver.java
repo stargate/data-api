@@ -6,9 +6,10 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionInsertAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingOperationFactory;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTask;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTaskBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertTasksBuilder;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -16,6 +17,8 @@ import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
 import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
+import java.util.List;
 
 /** Resolves the {@link InsertManyCommand}. */
 @ApplicationScoped
@@ -53,8 +56,7 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
       CommandContext<TableSchemaObject> commandContext, InsertManyCommand command) {
 
     // TODO: move the default for ordered to a constant and use in the API
-    TableInsertDBTaskBuilder taskBuilder =
-        TableInsertDBTask.builder(commandContext)
+    var tasksAndDeferrables = TableInsertDBTask.builder(commandContext)
             .withOrdered(
                 ApiOptionUtils.getOrDefault(
                     command.options(), InsertManyCommand.Options::ordered, false))
@@ -63,8 +65,10 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
                     command.options(), InsertManyCommand.Options::returnDocumentResponses, false))
             .withJsonNamedValueFactory(
                 new JsonNamedValueFactory(commandContext.schemaObject(), JsonNodeDecoder.DEFAULT))
-            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new)
+            .build(command.documents());
 
-    return taskBuilder.build(command.documents());
+    return EmbeddingOperationFactory.maybeEmbedding(commandContext, tasksAndDeferrables);
+
   }
 }

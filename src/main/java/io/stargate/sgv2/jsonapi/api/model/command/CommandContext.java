@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
+import io.quarkus.runtime.LaunchMode;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.DefaultRequestTracing;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
@@ -70,6 +71,9 @@ public class CommandContext<SchemaT extends SchemaObject> {
     this.cqlSessionCache = cqlSessionCache;
     this.commandConfig = commandConfig;
     this.embeddingProviderFactory = embeddingProviderFactory;
+
+
+    boolean isDev = (LaunchMode.current() == LaunchMode.DEVELOPMENT);
 
     this.requestTracing =
         apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING)

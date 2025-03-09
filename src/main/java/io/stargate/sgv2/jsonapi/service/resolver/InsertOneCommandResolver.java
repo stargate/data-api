@@ -6,9 +6,10 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionInsertAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingOperationFactory;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTask;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTaskBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertTasksBuilder;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -48,14 +49,14 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, InsertOneCommand command) {
 
-    TableInsertDBTaskBuilder taskBuilder =
-        TableInsertDBTask.builder(commandContext)
+    var tasksAndDeferrables = TableInsertDBTask.builder(commandContext)
             .withOrdered(false)
             .withReturnDocumentResponses(false) // never for insertOne
             .withJsonNamedValueFactory(
                 new JsonNamedValueFactory(commandContext.schemaObject(), JsonNodeDecoder.DEFAULT))
-            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new)
+        .build(List.of(command.document()));
 
-    return taskBuilder.build(List.of(command.document()));
+    return EmbeddingOperationFactory.maybeEmbedding(commandContext, tasksAndDeferrables);
   }
 }

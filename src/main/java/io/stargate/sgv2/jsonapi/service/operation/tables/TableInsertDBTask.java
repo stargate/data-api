@@ -36,8 +36,8 @@ public class TableInsertDBTask extends InsertDBTask<TableSchemaObject> {
     setStatus(TaskStatus.READY);
   }
 
-  public static TableInsertDBTaskBuilder builder(CommandContext<TableSchemaObject> commandContext) {
-    return new TableInsertDBTaskBuilder(commandContext);
+  public static TableInsertTasksBuilder builder(CommandContext<TableSchemaObject> commandContext) {
+    return new TableInsertTasksBuilder(commandContext);
   }
 
   @Override

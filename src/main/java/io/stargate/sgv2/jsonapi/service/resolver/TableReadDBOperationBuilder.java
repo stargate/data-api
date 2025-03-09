@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
@@ -9,6 +10,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingAction;
+import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingOperationFactory;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.RowSorter;
@@ -26,6 +28,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Encapsulates resolving a read command into a {@link Operation}, which includes building the
+ * taska and any deferrables.
+ * <p>
+ * We use this for the Read commands because they are complex and have a lot more to put together than
+ * other commands like an insert, such as
+ * {@link InsertManyCommandResolver#resolveTableCommand(CommandContext, InsertManyCommand)}
+ *
  * @param <CmdT>
  */
 class TableReadDBOperationBuilder<
@@ -46,9 +55,6 @@ class TableReadDBOperationBuilder<
   private CmdT command;
   private Boolean singleResponse = null;
 
-  //  private JsonNamedValueFactory jsonNamedValueFactory = null;
-  //  private Boolean ordered = null;
-  //  private Boolean returnDocumentResponses = null;
 
   public TableReadDBOperationBuilder(CommandContext<TableSchemaObject> commandContext) {
     this.commandContext = Objects.requireNonNull(commandContext, "commandContext cannot be null");
@@ -74,56 +80,8 @@ class TableReadDBOperationBuilder<
   }
 
   public Operation<TableSchemaObject> build() {
+
     Objects.requireNonNull(command, "command cannot be null");
-
-    // create the read task to see if we need any deferred values
-    var readTaskAndDeferrables = createReadTask();
-
-    var allDeferredValues = Deferrable.deferredValues(readTaskAndDeferrables.deferrables);
-    if (allDeferredValues.isEmpty()) {
-      // basic read, just wrap the tasks in an operation and go
-      return new TaskOperation<>(
-          readTaskAndDeferrables.readTaskGroup, readTaskAndDeferrables.accumulator);
-    }
-
-    // we have some deferred values, e.g. we need to do vectorizing, so we need  to build a
-    // hierarchy of task groups for now we only have vectorize actions so quick sanity check
-    var allActions = ValueAction.filteredActions(ValueAction.class, allDeferredValues);
-    var embeddingActions = ValueAction.filteredActions(EmbeddingAction.class, allDeferredValues);
-    if (allActions.size() != embeddingActions.size()) {
-      throw new IllegalArgumentException("Unsupported actions in deferred values: " + allActions);
-    }
-
-    // Send the EmbeddingAction's to the builder to get back a list of EmbeddingTasks
-    // that are linked to the actions they get vectors for.
-    var embeddingTaskGroup =
-        new EmbeddingTaskGroupBuilder<TableSchemaObject>()
-            .withCommandContext(commandContext)
-            .withEmbeddingActions(
-                allActions.stream().map(action -> (EmbeddingAction) action).toList())
-            .withRequestType(EmbeddingProvider.EmbeddingRequestType.SEARCH)
-            .build();
-
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
-          "build() - deferred values for vectorizing, returning composite task group with embeddingTaskGroup.size={}, readTaskGroup.size={}",
-          embeddingTaskGroup.size(),
-          readTaskAndDeferrables.readTaskGroup.size());
-    }
-
-    // we want to run a group of embedding tasks and then a group of reads,
-    // the two groups are linked by the EmbeddingAction objects
-    // Because these are tables we only use the driver retry for the inserts, not task level retry
-    return new CompositeTaskOperationBuilder<>(commandContext)
-        .withIntermediateTasks(embeddingTaskGroup, TaskRetryPolicy.NO_RETRY)
-        .build(
-            readTaskAndDeferrables.readTaskGroup,
-            TaskRetryPolicy.NO_RETRY,
-            readTaskAndDeferrables.accumulator);
-  }
-
-  private ReadTaskAndDeferrables createReadTask() {
-
     Objects.requireNonNull(cqlPageState, "cqlPageState cannot be null");
     Objects.requireNonNull(singleResponse, "singleResponse cannot be null");
 
@@ -179,16 +137,13 @@ class TableReadDBOperationBuilder<
     // always parallel processing for the taskgroup
     var taskGroup = new TaskGroup<>(taskBuilder.build(where.target()));
 
-    return new ReadTaskAndDeferrables(
+    var tasksAndDeferrables = new TaskGroupAndDeferrables<>(
         taskGroup,
         ReadDBTaskPage.accumulator(commandContext)
             .singleResponse(singleResponse)
             .mayReturnVector(command),
         List.of(orderByWithWarnings.target()));
-  }
 
-  private record ReadTaskAndDeferrables(
-      TaskGroup<ReadDBTask<TableSchemaObject>, TableSchemaObject> readTaskGroup,
-      TaskAccumulator<ReadDBTask<TableSchemaObject>, TableSchemaObject> accumulator,
-      List<Deferrable> deferrables) {}
+    return EmbeddingOperationFactory.maybeEmbedding(commandContext, tasksAndDeferrables);
+  }
 }
