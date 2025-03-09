@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
@@ -91,6 +92,7 @@ public final class TestConstants {
             metricsReporter == null ? mock(JsonProcessingMetricsReporter.class) : metricsReporter)
         .withCqlSessionCache(mock(CQLSessionCache.class))
         .withCommandConfig(new CommandConfig())
+        .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .getBuilder(schema)
         .withEmbeddingProvider(embeddingProvider)
         .withCommandName(commandName)
@@ -113,6 +115,7 @@ public final class TestConstants {
             metricsReporter == null ? mock(JsonProcessingMetricsReporter.class) : metricsReporter)
         .withCqlSessionCache(mock(CQLSessionCache.class))
         .withCommandConfig(new CommandConfig())
+        .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .getBuilder(schema)
         .withCommandName(commandName)
         .withRequestContext(new RequestContext(Optional.of("test-tenant")))
@@ -124,6 +127,7 @@ public final class TestConstants {
           .withJsonProcessingMetricsReporter(mock(JsonProcessingMetricsReporter.class))
           .withCqlSessionCache(mock(CQLSessionCache.class))
           .withCommandConfig(new CommandConfig())
+          .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
           .getBuilder(DATABASE_SCHEMA_OBJECT)
           .withCommandName(TEST_COMMAND_NAME)
           .withRequestContext(new RequestContext(Optional.of("test-tenant")))
