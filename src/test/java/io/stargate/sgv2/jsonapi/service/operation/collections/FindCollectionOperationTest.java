@@ -67,6 +67,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT;
 
   private CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT;
+  private TestConstants testConstants = new TestConstants();
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
@@ -81,7 +82,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
     COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
     VECTOR_COMMAND_CONTEXT =
-        TestConstants.collectionContext(
+        testConstants.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
                 SCHEMA_OBJECT_NAME,

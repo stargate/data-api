@@ -23,10 +23,12 @@ class DeleteCollectionCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject DeleteCollectionCommandResolver resolver;
 
+  private TestConstants testConstants = new TestConstants();
+
   @Nested
   class ResolveCommand {
 
-    CommandContext<KeyspaceSchemaObject> commandContext = TestConstants.keyspaceContext();
+    CommandContext<KeyspaceSchemaObject> commandContext = testConstants.keyspaceContext();
 
     @Test
     public void happyPath() throws Exception {

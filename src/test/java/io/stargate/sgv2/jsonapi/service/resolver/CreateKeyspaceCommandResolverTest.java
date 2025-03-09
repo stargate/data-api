@@ -26,7 +26,9 @@ class CreateKeyspaceCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject CreateNamespaceCommandResolver resolver;
 
-  CommandContext<DatabaseSchemaObject> commandContext = TestConstants.databaseContext();
+  private TestConstants testConstants = new TestConstants();
+
+  CommandContext<DatabaseSchemaObject> commandContext = testConstants.databaseContext();
 
   @Nested
   class CreateKeyspaceSuccess {

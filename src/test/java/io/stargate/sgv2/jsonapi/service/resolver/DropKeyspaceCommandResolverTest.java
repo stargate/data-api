@@ -23,7 +23,8 @@ class DropKeyspaceCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject DropNamespaceCommandResolver resolver;
 
-  CommandContext<DatabaseSchemaObject> commandContext = TestConstants.databaseContext();
+  private TestConstants testConstants = new TestConstants();
+  CommandContext<DatabaseSchemaObject> commandContext = testConstants.databaseContext();
 
   @Nested
   class ResolveCommand {

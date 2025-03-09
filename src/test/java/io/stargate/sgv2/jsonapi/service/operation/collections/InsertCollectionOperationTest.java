@@ -55,6 +55,9 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class InsertCollectionOperationTest extends OperationTestBase {
+
+  private TestConstants testConstants = new TestConstants();
+
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_NON_VECTOR;
 
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_VECTOR;
@@ -98,7 +101,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     COMMAND_CONTEXT_NON_VECTOR = createCommandContextWithCommandName("testCommand");
 
     COMMAND_CONTEXT_VECTOR =
-        TestConstants.collectionContext(
+        testConstants.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
                 SCHEMA_OBJECT_NAME,

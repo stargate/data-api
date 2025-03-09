@@ -22,66 +22,69 @@ import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 
 /**
- * Re-usable values for tests TODO: move this from static to instance so that the keyspace and
- * collections names get generated for each test
+ * Re-usable values for tests.
+ *
+ * <p>THis must be an instance so that quarkus can setup the environment, we need this because of
+ * the use of their config library
  */
-public final class TestConstants {
+public class TestConstants {
 
-  // Random keyspace and collection names, NOTE: these are static for all tests
-  public static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-  public static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  public static final SchemaObjectName SCHEMA_OBJECT_NAME =
-      new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
+  // Names
+  public final String TEST_COMMAND_NAME = "testCommand";
+  public final String KEYSPACE_NAME;
+  public final String COLLECTION_NAME;
+  public final SchemaObjectName SCHEMA_OBJECT_NAME;
 
   // Schema objects for testing
-  public static final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT =
-      new CollectionSchemaObject(
-          SCHEMA_OBJECT_NAME,
-          null,
-          IdConfig.defaultIdConfig(),
-          VectorConfig.NOT_ENABLED_CONFIG,
-          null,
-          CollectionLexicalConfig.configForLegacyCollections());
+  public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
+  public final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT;
+  public final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
+  public final DatabaseSchemaObject DATABASE_SCHEMA_OBJECT;
 
-  public static final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT =
-      new CollectionSchemaObject(
-          SCHEMA_OBJECT_NAME,
-          null,
-          IdConfig.defaultIdConfig(),
-          VectorConfig.fromColumnDefinitions(
-              List.of(
-                  new VectorColumnDefinition(
-                      DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-                      -1,
-                      SimilarityFunction.COSINE,
-                      EmbeddingSourceModel.OTHER,
-                      null))),
-          null,
-          CollectionLexicalConfig.configForLegacyCollections());
+  public final ApiFeatures DEFAULT_API_FEATURES_FOR_TESTS = ApiFeatures.empty();
 
-  public static final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =
-      KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
+  public TestConstants() {
 
-  public static final DatabaseSchemaObject DATABASE_SCHEMA_OBJECT = new DatabaseSchemaObject();
+    KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
+    COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
+    SCHEMA_OBJECT_NAME = new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
 
-  public static final String TEST_COMMAND_NAME = "testCommand";
+    // Schema objects for testing
+    COLLECTION_SCHEMA_OBJECT =
+        new CollectionSchemaObject(
+            SCHEMA_OBJECT_NAME,
+            null,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.NOT_ENABLED_CONFIG,
+            null,
+            CollectionLexicalConfig.configForLegacyCollections());
+
+    VECTOR_COLLECTION_SCHEMA_OBJECT =
+        new CollectionSchemaObject(
+            SCHEMA_OBJECT_NAME,
+            null,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.fromColumnDefinitions(
+                List.of(
+                    new VectorColumnDefinition(
+                        DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                        -1,
+                        SimilarityFunction.COSINE,
+                        EmbeddingSourceModel.OTHER,
+                        null))),
+            null,
+            CollectionLexicalConfig.configForLegacyCollections());
+
+    KEYSPACE_SCHEMA_OBJECT = KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
+    DATABASE_SCHEMA_OBJECT = new DatabaseSchemaObject();
+  }
 
   // CommandContext for working on the schema objects above
-
-  public static final ApiFeatures DEFAULT_API_FEATURES_FOR_TESTS = ApiFeatures.empty();
-
-  public static CommandContext<CollectionSchemaObject> collectionContext() {
+  public CommandContext<CollectionSchemaObject> collectionContext() {
     return collectionContext(TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null, null);
   }
 
-  //  public static CommandContext<CollectionSchemaObject> collectionContext(
-  //      String commandName,
-  //      CollectionSchemaObject schema,
-  //      JsonProcessingMetricsReporter metricsReporter) {
-  //    return collectionContext(commandName, schema, metricsReporter, null);
-  //  }
-
-  public static CommandContext<CollectionSchemaObject> collectionContext(
+  public CommandContext<CollectionSchemaObject> collectionContext(
       String commandName,
       CollectionSchemaObject schema,
       JsonProcessingMetricsReporter metricsReporter,
@@ -100,12 +103,12 @@ public final class TestConstants {
         .build();
   }
 
-  public static CommandContext<KeyspaceSchemaObject> keyspaceContext() {
+  public CommandContext<KeyspaceSchemaObject> keyspaceContext() {
     return keyspaceContext(
         TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, mock(JsonProcessingMetricsReporter.class));
   }
 
-  public static CommandContext<KeyspaceSchemaObject> keyspaceContext(
+  public CommandContext<KeyspaceSchemaObject> keyspaceContext(
       String commandName,
       KeyspaceSchemaObject schema,
       JsonProcessingMetricsReporter metricsReporter) {
@@ -122,18 +125,15 @@ public final class TestConstants {
         .build();
   }
 
-  private static final CommandContext<DatabaseSchemaObject> DATABASE_CONTEXT =
-      CommandContext.builderSupplier()
-          .withJsonProcessingMetricsReporter(mock(JsonProcessingMetricsReporter.class))
-          .withCqlSessionCache(mock(CQLSessionCache.class))
-          .withCommandConfig(new CommandConfig())
-          .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
-          .getBuilder(DATABASE_SCHEMA_OBJECT)
-          .withCommandName(TEST_COMMAND_NAME)
-          .withRequestContext(new RequestContext(Optional.of("test-tenant")))
-          .build();
-
-  public static CommandContext<DatabaseSchemaObject> databaseContext() {
-    return DATABASE_CONTEXT;
+  public CommandContext<DatabaseSchemaObject> databaseContext() {
+    return CommandContext.builderSupplier()
+        .withJsonProcessingMetricsReporter(mock(JsonProcessingMetricsReporter.class))
+        .withCqlSessionCache(mock(CQLSessionCache.class))
+        .withCommandConfig(new CommandConfig())
+        .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
+        .getBuilder(DATABASE_SCHEMA_OBJECT)
+        .withCommandName(TEST_COMMAND_NAME)
+        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+        .build();
   }
 }

@@ -22,11 +22,12 @@ public class FindCollectionCommandResolverTest {
   @Inject ObjectMapper objectMapper;
 
   @Inject FindCollectionsCommandResolver resolver;
+  private TestConstants testConstants = new TestConstants();
 
   @Nested
   class FindCollectionCommandResolveCommand {
 
-    CommandContext<KeyspaceSchemaObject> commandContext = TestConstants.keyspaceContext();
+    CommandContext<KeyspaceSchemaObject> commandContext = testConstants.keyspaceContext();
 
     @Test
     public void findCollection() throws Exception {

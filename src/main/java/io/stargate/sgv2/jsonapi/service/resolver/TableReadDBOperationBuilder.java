@@ -7,11 +7,8 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.*;
-import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingAction;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingOperationFactory;
-import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.RowSorter;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
@@ -20,20 +17,18 @@ import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.TableCqlSortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.TableMemorySortClauseResolver;
-import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
-import io.stargate.sgv2.jsonapi.service.shredding.ValueAction;
 import java.util.List;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Encapsulates resolving a read command into a {@link Operation}, which includes building the
- * taska and any deferrables.
- * <p>
- * We use this for the Read commands because they are complex and have a lot more to put together than
- * other commands like an insert, such as
- * {@link InsertManyCommandResolver#resolveTableCommand(CommandContext, InsertManyCommand)}
+ * Encapsulates resolving a read command into a {@link Operation}, which includes building the taska
+ * and any deferrables.
+ *
+ * <p>We use this for the Read commands because they are complex and have a lot more to put together
+ * than other commands like an insert, such as {@link
+ * InsertManyCommandResolver#resolveTableCommand(CommandContext, InsertManyCommand)}
  *
  * @param <CmdT>
  */
@@ -54,7 +49,6 @@ class TableReadDBOperationBuilder<
   private CqlPagingState cqlPageState = null;
   private CmdT command;
   private Boolean singleResponse = null;
-
 
   public TableReadDBOperationBuilder(CommandContext<TableSchemaObject> commandContext) {
     this.commandContext = Objects.requireNonNull(commandContext, "commandContext cannot be null");
@@ -137,12 +131,13 @@ class TableReadDBOperationBuilder<
     // always parallel processing for the taskgroup
     var taskGroup = new TaskGroup<>(taskBuilder.build(where.target()));
 
-    var tasksAndDeferrables = new TaskGroupAndDeferrables<>(
-        taskGroup,
-        ReadDBTaskPage.accumulator(commandContext)
-            .singleResponse(singleResponse)
-            .mayReturnVector(command),
-        List.of(orderByWithWarnings.target()));
+    var tasksAndDeferrables =
+        new TaskGroupAndDeferrables<>(
+            taskGroup,
+            ReadDBTaskPage.accumulator(commandContext)
+                .singleResponse(singleResponse)
+                .mayReturnVector(command),
+            List.of(orderByWithWarnings.target()));
 
     return EmbeddingOperationFactory.maybeEmbedding(commandContext, tasksAndDeferrables);
   }

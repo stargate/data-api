@@ -28,7 +28,8 @@ class CreateCollectionCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject CreateCollectionCommandResolver resolver;
 
-  CommandContext<KeyspaceSchemaObject> commandContext = TestConstants.keyspaceContext();
+  private TestConstants testConstants = new TestConstants();
+  CommandContext<KeyspaceSchemaObject> commandContext = testConstants.keyspaceContext();
 
   @Nested
   class CreateCollectionSuccess {

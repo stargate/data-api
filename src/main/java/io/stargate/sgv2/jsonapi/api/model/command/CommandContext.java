@@ -72,7 +72,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
     this.commandConfig = commandConfig;
     this.embeddingProviderFactory = embeddingProviderFactory;
 
-
     boolean isDev = (LaunchMode.current() == LaunchMode.DEVELOPMENT);
 
     this.requestTracing =

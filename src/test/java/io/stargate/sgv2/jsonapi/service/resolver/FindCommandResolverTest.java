@@ -26,6 +26,7 @@ import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -37,10 +38,17 @@ public class FindCommandResolverTest {
   @Inject FindCommandResolver resolver;
   @InjectMock protected RequestContext dataApiRequestInfo;
 
+  private TestConstants testConstants = new TestConstants();
+
+  CommandContext<CollectionSchemaObject> commandContext;
+
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.collectionContext();
+  }
+
   @Nested
   class FindCommandResolveCommand {
-
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
 
     @Test
     public void idFilterCondition() throws Exception {
@@ -935,8 +943,6 @@ public class FindCommandResolverTest {
   @Nested
   class FindCommandResolveWithProjection {
 
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
-
     @Test
     public void idFilterConditionAndProjection() throws Exception {
       final String json =
@@ -1039,7 +1045,6 @@ public class FindCommandResolverTest {
 
   @Nested
   class FindCommandResolveWithINOperator {
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
 
     @Test
     public void NonIdIn() throws Exception {
@@ -1345,7 +1350,6 @@ public class FindCommandResolverTest {
 
   @Nested
   class FindCommandResolveWithRangeOperator {
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
 
     @Test
     public void gt() throws Exception {

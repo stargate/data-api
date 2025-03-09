@@ -3,17 +3,10 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.InsertDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.InsertDBTaskPage;
-import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingAction;
-import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingOperationFactory;
-import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
-import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
-import io.stargate.sgv2.jsonapi.service.shredding.ValueAction;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
@@ -62,7 +55,8 @@ public class TableInsertTasksBuilder
     return this;
   }
 
-  public TaskGroupAndDeferrables<InsertDBTask<TableSchemaObject>, TableSchemaObject> build(List<JsonNode> jsonNodes) {
+  public TaskGroupAndDeferrables<InsertDBTask<TableSchemaObject>, TableSchemaObject> build(
+      List<JsonNode> jsonNodes) {
     Objects.requireNonNull(jsonNodes, "jsonNodes cannot be null");
     Objects.requireNonNull(jsonNamedValueFactory, "jsonNamedValueFactory cannot be null");
     Objects.requireNonNull(ordered, "ordered cannot be null");
@@ -78,11 +72,12 @@ public class TableInsertTasksBuilder
     var writeableTableRowBuilder =
         new WriteableTableRowBuilder(commandContext, JSONCodecRegistries.DEFAULT_REGISTRY);
 
-    var tasksAndDeferrables = new TaskGroupAndDeferrables<>(
-        new TaskGroup<>(ordered),
-        InsertDBTaskPage.accumulator(commandContext)
-            .returnDocumentResponses(returnDocumentResponses),
-        new ArrayList<>());
+    var tasksAndDeferrables =
+        new TaskGroupAndDeferrables<>(
+            new TaskGroup<>(ordered),
+            InsertDBTaskPage.accumulator(commandContext)
+                .returnDocumentResponses(returnDocumentResponses),
+            new ArrayList<>());
 
     for (var parsedDocument : parsedDocuments) {
 

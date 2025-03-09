@@ -36,9 +36,10 @@ import org.junit.jupiter.api.Test;
 @TestProfile(PropertyBasedOverrideProfile.class)
 public class DataVectorizerTest {
   @Inject ObjectMapper objectMapper;
-  private final EmbeddingProvider testService = new TestEmbeddingProvider();
+  private TestEmbeddingProvider testEmbeddingProvider = new TestEmbeddingProvider();
+  private final EmbeddingProvider testService = testEmbeddingProvider;
   private final CollectionSchemaObject collectionSettings =
-      TestEmbeddingProvider.commandContextWithVectorize.schemaObject();
+      testEmbeddingProvider.commandContextWithVectorize().schemaObject();
   private final EmbeddingCredentials embeddingCredentials =
       new EmbeddingCredentials(Optional.empty(), Optional.empty(), Optional.empty());
 

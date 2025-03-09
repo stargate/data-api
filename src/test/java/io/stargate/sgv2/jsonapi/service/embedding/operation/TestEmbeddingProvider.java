@@ -18,25 +18,28 @@ import java.util.List;
 
 public class TestEmbeddingProvider extends EmbeddingProvider {
 
-  public static CommandContext<CollectionSchemaObject> commandContextWithVectorize =
-      TestConstants.collectionContext(
-          "testCommand",
-          new CollectionSchemaObject(
-              TestConstants.SCHEMA_OBJECT_NAME,
-              null,
-              IdConfig.defaultIdConfig(),
-              VectorConfig.fromColumnDefinitions(
-                  List.of(
-                      new VectorColumnDefinition(
-                          DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-                          3,
-                          SimilarityFunction.COSINE,
-                          EmbeddingSourceModel.OTHER,
-                          new VectorizeDefinition("custom", "custom", null, null)))),
-              null,
-              CollectionLexicalConfig.configForLegacyCollections()),
-          null,
-          new TestEmbeddingProvider());
+  private TestConstants testConstants = new TestConstants();
+
+  public CommandContext<CollectionSchemaObject> commandContextWithVectorize() {
+    return testConstants.collectionContext(
+        "testCommand",
+        new CollectionSchemaObject(
+            testConstants.SCHEMA_OBJECT_NAME,
+            null,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.fromColumnDefinitions(
+                List.of(
+                    new VectorColumnDefinition(
+                        DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                        3,
+                        SimilarityFunction.COSINE,
+                        EmbeddingSourceModel.OTHER,
+                        new VectorizeDefinition("custom", "custom", null, null)))),
+            null,
+            CollectionLexicalConfig.configForLegacyCollections()),
+        null,
+        this);
+  }
 
   @Override
   public Uni<Response> vectorize(

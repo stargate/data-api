@@ -35,6 +35,8 @@ public class MeteredCommandProcessorTest {
   @InjectMock protected RequestContext dataApiRequestInfo;
   @Inject ObjectMapper objectMapper;
 
+  private TestConstants testConstants = new TestConstants();
+
   @Nested
   class CustomMetrics {
     @Test
@@ -50,7 +52,7 @@ public class MeteredCommandProcessorTest {
 
       CountDocumentsCommand countCommand =
           objectMapper.readValue(json, CountDocumentsCommand.class);
-      CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
+      CommandContext<CollectionSchemaObject> commandContext = testConstants.collectionContext();
 
       CommandResult commandResult = CommandResult.statusOnlyBuilder(false, false, null).build();
 
@@ -101,7 +103,7 @@ public class MeteredCommandProcessorTest {
         """;
 
       FindCommand countCommand = objectMapper.readValue(json, FindCommand.class);
-      CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
+      CommandContext<CollectionSchemaObject> commandContext = testConstants.collectionContext();
       Map<String, Object> fields = new HashMap<>();
       fields.put("exceptionClass", "TestExceptionClass");
       CommandResult.Error error =
@@ -159,7 +161,7 @@ public class MeteredCommandProcessorTest {
 
       CountDocumentsCommand countCommand =
           objectMapper.readValue(json, CountDocumentsCommand.class);
-      CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
+      CommandContext<CollectionSchemaObject> commandContext = testConstants.collectionContext();
       Map<String, Object> fields = new HashMap<>();
       fields.put("exceptionClass", "TestExceptionClass");
       fields.put("errorCode", "TestErrorCode");

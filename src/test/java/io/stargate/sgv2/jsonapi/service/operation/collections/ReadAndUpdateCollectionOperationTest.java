@@ -71,6 +71,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
   @Inject DocumentShredder documentShredder;
   @Inject ObjectMapper objectMapper;
   @Inject DataVectorizerService dataVectorizerService;
+  private TestConstants testConstants = new TestConstants();
 
   private static String UPDATE =
       "UPDATE \"%s\".\"%s\" "
@@ -117,7 +118,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
   public void init() {
     COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
     COMMAND_VECTOR_CONTEXT =
-        TestConstants.collectionContext(
+        testConstants.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
                 SCHEMA_OBJECT_NAME,
