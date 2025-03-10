@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProvidersConfigImpl;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -55,11 +56,21 @@ public record FindRerankProvidersOperation(RerankProvidersConfig config) impleme
       List<RerankProvidersConfig.RerankProviderConfig.ModelConfig> models) {
     private static RerankProviderResponse provider(
         RerankProvidersConfig.RerankProviderConfig rerankProviderConfig) {
-
       return new RerankProviderResponse(
           rerankProviderConfig.displayName(),
           rerankProviderConfig.supportedAuthentications(),
-          rerankProviderConfig.models());
+          excludeProperties(rerankProviderConfig.models()));
+    }
+
+    // exclude internal model properties from findRerankProviders command
+    private static List<RerankProvidersConfig.RerankProviderConfig.ModelConfig> excludeProperties(
+        List<RerankProvidersConfig.RerankProviderConfig.ModelConfig> models) {
+      return models.stream()
+          .map(
+              model ->
+                  new RerankProvidersConfigImpl.RerankProviderConfigImpl.ModelConfigImpl(
+                      model.name(), model.url(), null))
+          .collect(Collectors.toList());
     }
   }
 }

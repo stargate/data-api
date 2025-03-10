@@ -5,34 +5,58 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.request.RerankCredentials;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
+import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProvidersConfig;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
+/**
+ * The Rerank Nvidia Client that sends the request to the Nvidia Rerank Service.
+ *
+ * <p>Sample http request to self-host nvidia nvidia/llama-3.2-nv-rerankqa-1b-v2: { "model":
+ * "nvidia/llama-3.2-nv-rerankqa-1b-v2", "query": { "text": "which way should i go?" }, "passages":
+ * [ { "text": "left turn" }, { "text": "apple" } ], "truncate": "END" }
+ *
+ * <p>Sample response { "rankings": [ { "index": 0, "score": -5.50390625 }, { "index": 1, "score":
+ * -11.8828125 } ], "usage": { "prompt_tokens": 26, "total_tokens": 26 } }
+ */
 public class NvidiaRerankProvider extends RerankProvider {
 
   // TODO, switch?
   private static final String providerId = ProviderConstants.NVIDIA;
   private final NvidiaRerankClient nvidiaRerankClient;
 
-  public NvidiaRerankProvider(String baseUrl, String modelName) {
-    super(baseUrl, modelName);
+  // Nvidia Rerank Service supports truncate or error when the passage is too long.
+  // Data API use truncate as default.
+  // https://docs.nvidia.com/nim/nemo-retriever/text-reranking/latest/using-reranking.html#token-limits-truncation
+  // If errors, Nvidia returns text/plain {"error": "Invalid Request"}
+  private static final String TRUNCATE_PASSAGE = "END";
+
+  public NvidiaRerankProvider(
+      String baseUrl,
+      String modelName,
+      RerankProvidersConfig.RerankProviderConfig.ModelConfig.RequestProperties requestProperties) {
+    super(baseUrl, modelName, requestProperties);
     nvidiaRerankClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            //             .readTimeout(requestProperties.readTimeoutMillis(),
-            // TimeUnit.MILLISECONDS)
+            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(NvidiaRerankProvider.NvidiaRerankClient.class);
   }
 
   @RegisterRestClient
-  //    @RegisterProvider(EmbeddingProviderResponseValidation.class)
+  @RegisterProvider(RerankProviderResponseValidation.class)
   public interface NvidiaRerankClient {
+
     @POST
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<RerankResponse> rerank(
@@ -59,7 +83,10 @@ public class NvidiaRerankProvider extends RerankProvider {
   }
 
   /** Rerank request to the Nvidia Rerank Service */
-  private record RerankRequest(String model, String query, List<String> passages) {}
+  private record RerankRequest(
+      String model, TextWrapper query, List<TextWrapper> passages, String truncate) {
+    private record TextWrapper(String text) {}
+  }
 
   /** Rerank response from the Nvidia Rerank Service */
   @JsonIgnoreProperties(ignoreUnknown = true)
@@ -72,23 +99,32 @@ public class NvidiaRerankProvider extends RerankProvider {
   }
 
   @Override
-  public Uni<Response> rerank(int batchId, String query, List<String> passages) {
+  public Uni<RerankBatchResponse> rerank(
+      int batchId, String query, List<String> passages, RerankCredentials rerankCredentials) {
+
     NvidiaRerankProvider.RerankRequest request =
-        new NvidiaRerankProvider.RerankRequest(modelName, query, passages);
-    // Astra-token
-    Uni<RerankResponse> response = nvidiaRerankClient.rerank("Bearer ", request);
+        new NvidiaRerankProvider.RerankRequest(
+            modelName,
+            new RerankRequest.TextWrapper(query),
+            passages.stream().map(RerankRequest.TextWrapper::new).toList(),
+            TRUNCATE_PASSAGE);
+
+    // Note, Nvidia self-host reranker service use Astra token to authenticate the request.
+    // So we use astraToken in rerankCredentials, not apiKey in rerankCredentials.
+    Uni<RerankResponse> response =
+        applyRetry(
+            nvidiaRerankClient.rerank("Bearer " + rerankCredentials.astraToken().get(), request));
 
     return response
         .onItem()
         .transform(
             resp -> {
-              // Do we need to sort in this level?
-              // resp.ranks.sort(Comparator.comparingInt(RerankResponse.Rank::index));
               List<Rank> ranks =
-                  resp.rankings.stream()
-                      .map(ranking -> new Rank(ranking.index, ranking.logit))
+                  resp.rankings().stream()
+                      .map(rank -> new Rank(rank.index(), rank.logit()))
                       .toList();
-              return RerankProvider.Response.of(batchId, ranks);
+              Usage usage = new Usage(resp.usage().prompt_tokens(), resp.usage().total_tokens());
+              return RerankProvider.RerankBatchResponse.of(batchId, ranks, usage);
             });
   }
 }

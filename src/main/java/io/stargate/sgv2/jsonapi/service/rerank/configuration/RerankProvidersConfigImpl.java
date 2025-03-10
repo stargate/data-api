@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.rerank.configuration;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public record RerankProvidersConfigImpl(Map<String, RerankProviderConfig> providers)
     implements RerankProvidersConfig {
@@ -10,7 +9,6 @@ public record RerankProvidersConfigImpl(Map<String, RerankProviderConfig> provid
   public record RerankProviderConfigImpl(
       String displayName,
       boolean enabled,
-      Optional<String> url,
       Map<AuthenticationType, AuthenticationConfig> supportedAuthentications,
       List<ModelConfig> models)
       implements RerankProviderConfig {
@@ -22,6 +20,16 @@ public record RerankProvidersConfigImpl(Map<String, RerankProviderConfig> provid
     }
 
     public record ModelConfigImpl(String name, String url, RequestProperties properties)
-        implements ModelConfig {}
+        implements ModelConfig {
+
+      public record RequestPropertiesImpl(
+          int atMostRetries,
+          int initialBackOffMillis,
+          int readTimeoutMillis,
+          int maxBackOffMillis,
+          double jitter,
+          int maxBatchSize)
+          implements RerankProvidersConfig.RerankProviderConfig.ModelConfig.RequestProperties {}
+    }
   }
 }

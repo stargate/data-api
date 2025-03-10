@@ -5,53 +5,61 @@ import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.RerankService;
+import io.stargate.sgv2.jsonapi.api.request.RerankCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.rerank.operation.RerankProvider;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /** Grpc client to make rerank Grpc requests to rerank API inside EmbeddingGatewayService */
-public class RerankClient extends RerankProvider {
+public class RerankEGWClient extends RerankProvider {
 
   private static final String DEFAULT_TENANT_ID = "default";
 
   /** Map to the value of `Token` in the header */
   private static final String DATA_API_TOKEN = "DATA_API_TOKEN";
 
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
+  /**
+   * key name of the rerank service provider. Note, the request self-hosted Nvidia reranker service
+   * does not need to specify an auth token in Data API request header. Instead, we use the Astra
+   * token to authenticate the request.
+   */
+  private static final String RERANK_API_KEY = "RERANK_API_KEY";
 
   private String provider;
 
   private Optional<String> tenant;
   private Optional<String> authToken;
   private String modelName;
-  private String baseUrl;
-  private RerankService rerankService;
+  private RerankService rerankGrpcService;
   Map<String, String> authentication;
   private String commandName;
 
-  public RerankClient(
+  public RerankEGWClient(
+      String baseUrl,
+      RerankProvidersConfig.RerankProviderConfig.ModelConfig.RequestProperties requestProperties,
       String provider,
       Optional<String> tenant,
       Optional<String> authToken,
-      String baseUrl,
       String modelName,
-      RerankService rerankService,
+      RerankService rerankGrpcService,
       Map<String, String> authentication,
       String commandName) {
+    super(baseUrl, modelName, requestProperties);
     this.provider = provider;
     this.tenant = tenant;
     this.authToken = authToken;
     this.modelName = modelName;
-    this.baseUrl = baseUrl;
-    this.rerankService = rerankService;
+    this.rerankGrpcService = rerankGrpcService;
     this.authentication = authentication;
     this.commandName = commandName;
   }
 
   @Override
-  public Uni<Response> rerank(int batchId, String query, List<String> passages) {
+  public Uni<RerankBatchResponse> rerank(
+      int batchId, String query, List<String> passages, RerankCredentials rerankCredentials) {
 
     // Build the rerank provider request in grpc request
     final EmbeddingGateway.ProviderRerankRequest.RerankRequest rerankRequest =
@@ -68,6 +76,7 @@ public class RerankClient extends RerankProvider {
             .setProviderName(provider)
             .setTenantId(tenant.orElse(DEFAULT_TENANT_ID))
             .putAuthTokens(DATA_API_TOKEN, authToken.orElse(""))
+            .putAuthTokens(RERANK_API_KEY, authToken.orElse(""))
             .build();
 
     // Built the Grpc request
@@ -79,10 +88,10 @@ public class RerankClient extends RerankProvider {
 
     Uni<EmbeddingGateway.RerankResponse> grpcRerankResponse;
     try {
-      grpcRerankResponse = rerankService.rerank(grpcRerankRequest);
+      grpcRerankResponse = rerankGrpcService.rerank(grpcRerankRequest);
     } catch (StatusRuntimeException e) {
+      // TODO, ???
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
-        // TODO, not embedding provider
         throw ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
       }
       throw e;
@@ -97,10 +106,12 @@ public class RerankClient extends RerankProvider {
                     ErrorCodeV1.valueOf(resp.getError().getErrorCode()),
                     resp.getError().getErrorMessage());
               }
-              return Response.of(batchId, null);
-              //                  resp.getRankingsList().stream()
-              //                      .map(rank -> new Rank(rank.getIndex(), rank.getLogit()))
-              //                      .collect(Collectors.toList()));
+              return RerankBatchResponse.of(
+                  batchId,
+                  resp.getRanksList().stream()
+                      .map(rank -> new Rank(rank.getIndex(), rank.getScore()))
+                      .collect(Collectors.toList()),
+                  new Usage(resp.getUsage().getPromptTokens(), resp.getUsage().getTotalTokens()));
             });
   }
 }

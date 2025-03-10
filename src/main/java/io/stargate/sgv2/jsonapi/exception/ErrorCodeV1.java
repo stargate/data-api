@@ -93,6 +93,9 @@ public enum ErrorCodeV1 {
 
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
 
+  RERANK_SERVICE_TYPE_UNAVAILABLE("Rerank service unavailable : "),
+  RERANK_PROVIDER_UNEXPECTED_RESPONSE("The Rerank Provider returned an unexpected response"),
+
   TOO_MANY_COLLECTIONS("Too many collections"),
 
   TOO_MANY_INDEXES("Too many indexes"),
@@ -152,7 +155,6 @@ public enum ErrorCodeV1 {
   VECTORIZE_FEATURE_NOT_AVAILABLE("Vectorize feature is not available in the environment"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
-  RERANK_SERVICE_TYPE_UNAVAILABLE("Rerank service unavailable : "),
   VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause"),
   VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
 

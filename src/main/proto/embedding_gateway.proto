@@ -236,8 +236,8 @@ message RerankResponse {
   message Rank {
     // The rank index of the passage
     int32 	  index = 1;
-    // The logit value of the passage
-    float	    logit = 2;
+    // The rank score value of the passage
+    float	    score = 2;
   }
 
   // The usage statistics of rerank for the embedding gateway gRPC API on successful response
@@ -281,7 +281,18 @@ message GetSupportedRerankProvidersResponse {
     message ModelConfig {
       string name = 1;
       string url = 2;
+      RequestProperties properties = 3;
+
+      message RequestProperties {
+        int32 at_most_retries = 1;
+        int32 initial_back_off_millis = 2;
+        int32 read_timeout_millis = 3;
+        int32 max_back_off_millis = 4;
+        double jitter = 5;
+        int32 max_batch_size = 6;
+      }
     }
+
   }
 
   message ErrorResponse {
