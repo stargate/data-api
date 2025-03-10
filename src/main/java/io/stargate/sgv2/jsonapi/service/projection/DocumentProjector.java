@@ -77,7 +77,7 @@ public class DocumentProjector {
       JsonNode projectionDefinition, boolean includeSimilarity) {
     // First special case: "simple" default projection
     if (projectionDefinition == null
-            || (projectionDefinition.isObject() && projectionDefinition.isEmpty())) {
+        || (projectionDefinition.isObject() && projectionDefinition.isEmpty())) {
       if (includeSimilarity) {
         return defaultProjectorWithSimilarity();
       }
