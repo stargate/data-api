@@ -294,6 +294,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
               {
                 "_id": "lexical1",
                 "username": "user-lexical",
+                "extra": 123,
                 "$lexical": "monkeys and bananas"
               }
               """;
@@ -325,11 +326,12 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                   """
                       {
                           "_id": "lexical1",
-                          "username": "user-lexical"
+                          "username": "user-lexical",
+                          "extra": 123
                       }
                       """));
 
-      // But can explicitly include:
+      // But can explicitly include: either via "include-it-all"
       givenHeadersPostJsonThenOkNoErrors(
               """
                       {
@@ -340,8 +342,32 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                       }
                       """)
           .body("$", responseIsFindSuccess())
-          // NOTE: "$lexical" is not included in the response by default, ensure
           .body("data.documents[0]", jsonEquals(FULL_DOC));
+
+      // Or just the "$lexical" field (plus always _id)
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "lexical1"},
+                          "projection": {
+                            "$lexical": 1,
+                            "extra": 1
+                          }
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                                {
+                                    "_id": "lexical1",
+                                    "extra": 123,
+                                    "$lexical": "monkeys and bananas"
+                                }
+                                """));
     }
 
     @Test

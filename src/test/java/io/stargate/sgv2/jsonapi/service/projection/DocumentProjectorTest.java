@@ -435,6 +435,7 @@ public class DocumentProjectorTest {
                                       {
                                          "_id" : 1,
                                          "value1": 42,
+                                         "$lexical": "brown fox",
                                          "$vectorize": "Quick brown fox",
                                          "$vector": [0.0, 1.0],
                                          "value2": -3
