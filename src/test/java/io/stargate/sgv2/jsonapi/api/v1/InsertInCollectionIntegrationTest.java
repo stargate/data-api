@@ -40,7 +40,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase {
+public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegrationTestBase {
   private final ObjectMapper MAPPER = new ObjectMapper();
 
   private static final Pattern UUID_REGEX =
@@ -1643,13 +1643,13 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   class Metrics {
     @Test
     public void checkInsertOneMetrics() {
-      InsertIntegrationTest.super.checkMetrics("InsertOneCommand");
-      InsertIntegrationTest.super.checkDriverMetricsTenantId();
+      InsertInCollectionIntegrationTest.super.checkMetrics("InsertOneCommand");
+      InsertInCollectionIntegrationTest.super.checkDriverMetricsTenantId();
     }
 
     @Test
     public void checkInsertManyMetrics() {
-      InsertIntegrationTest.super.checkMetrics("InsertManyCommand");
+      InsertInCollectionIntegrationTest.super.checkMetrics("InsertManyCommand");
     }
   }
 
