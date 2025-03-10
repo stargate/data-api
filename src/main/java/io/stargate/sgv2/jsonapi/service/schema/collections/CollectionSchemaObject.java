@@ -27,7 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Refactored as seperate class that represent a collection property.
+ * Refactored as separate class that represent a collection property.
  *
  * <p>TODO: there are a LOT of different ways this is constructed, need to refactor
  */
@@ -35,6 +35,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
   public static final SchemaObjectType TYPE = SchemaObjectType.COLLECTION;
 
+  // Collection Schema to use if all information missing: Vector not configured,
+  // no Lexical enabled
   public static final CollectionSchemaObject MISSING =
       new CollectionSchemaObject(
           SchemaObjectName.MISSING,

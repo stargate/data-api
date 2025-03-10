@@ -343,7 +343,8 @@ public class DocumentShredder {
         // Special names are accepted in some cases:
         if ((depth == 1)
             && (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
-                || key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD))) {
+                || key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)
+                || key.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD))) {
           ;
         } else {
           throw ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.toApiException(
