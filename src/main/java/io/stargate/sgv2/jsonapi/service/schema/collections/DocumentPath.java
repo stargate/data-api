@@ -33,6 +33,10 @@ public final class DocumentPath implements Comparable<DocumentPath> {
   private static final DocumentPath VECTOR_EMBEDDING_TEXT_FIELD =
       DocumentPath.from(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
 
+  /** document path for lexical content text field */
+  private static final DocumentPath LEXICAL_CONTENT_TEXT_FIELD =
+      DocumentPath.from(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
+
   private DocumentPath(String originalPath, List<String> segments) {
     this.encodedPath = originalPath;
     this.segments = segments;
@@ -51,6 +55,11 @@ public final class DocumentPath implements Comparable<DocumentPath> {
   /** Accessor method to get the document path for vector embedding text field */
   public static DocumentPath forVectorEmbeddingTextField() {
     return VECTOR_EMBEDDING_TEXT_FIELD;
+  }
+
+  /** Accessor method to get the document path for lexical content text field */
+  public static DocumentPath forLexicalContentTextField() {
+    return LEXICAL_CONTENT_TEXT_FIELD;
   }
 
   /**

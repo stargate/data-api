@@ -23,7 +23,7 @@ public class DocumentProjectorTest {
   @Nested
   class ProjectorDefValidation {
     @Test
-    public void verifyProjectionJsonObject() throws Exception {
+    public void verifyProjectionJsonObjectNotArray() throws Exception {
       JsonNode def = objectMapper.readTree(" [ 1, 2, 3 ]");
       Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
       assertThat(t)
@@ -166,7 +166,7 @@ public class DocumentProjectorTest {
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
-              "Unsupported projection parameter: '$vector'/'$vectorize' are the only allowed paths that can start with '$'");
+              "Unsupported projection parameter: '$lexical'/'$vector'/'$vectorize' are the only allowed paths that can start with '$'");
     }
   }
 
@@ -346,7 +346,7 @@ public class DocumentProjectorTest {
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
-              "Unsupported projection parameter: '$vector'/'$vectorize' are the only allowed paths that can start with '$'");
+              "Unsupported projection parameter: '$lexical'/'$vector'/'$vectorize' are the only allowed paths that can start with '$'");
     }
 
     @Test

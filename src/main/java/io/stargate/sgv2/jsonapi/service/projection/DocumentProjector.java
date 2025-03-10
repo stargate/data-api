@@ -213,6 +213,8 @@ public class DocumentProjector {
 
     private Boolean $vectorizeInclusion;
 
+    private Boolean $lexicalInclusion;
+
     /** Whether similarity score is needed. */
     private final boolean includeSimilarityScore;
 
@@ -236,7 +238,9 @@ public class DocumentProjector {
                 // $vector only included if explicitly included
                 Boolean.TRUE.equals($vectorInclusion),
                 // $vectorize only included if explicitly included
-                Boolean.TRUE.equals($vectorizeInclusion)),
+                Boolean.TRUE.equals($vectorizeInclusion),
+                // $lexical only included if explicitly included
+                Boolean.TRUE.equals($lexicalInclusion)),
             true,
             includeSimilarityScore);
       } else { // exclusion-based
@@ -249,7 +253,9 @@ public class DocumentProjector {
                 // $vector excluded unless explicitly included
                 !Boolean.TRUE.equals($vectorInclusion),
                 // $vectorize excluded unless explicitly included
-                !Boolean.TRUE.equals($vectorizeInclusion)),
+                !Boolean.TRUE.equals($vectorizeInclusion),
+                // $lexical excluded unless explicitly included
+                !Boolean.TRUE.equals($lexicalInclusion)),
             false,
             includeSimilarityScore);
       }
@@ -267,11 +273,12 @@ public class DocumentProjector {
         }
         if (path.charAt(0) == '$'
             && !(path.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
-                || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path))) {
+                || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)
+                || DocumentConstants.Fields.LEXICAL_CONTENT_FIELD.equals(path))) {
           // First: no operators allowed at root level
           if (parentPath == null) {
             throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
-                "'$vector'/'$vectorize' are the only allowed paths that can start with '$'");
+                "'$lexical'/'$vector'/'$vectorize' are the only allowed paths that can start with '$'");
           }
 
           // Second: we only support one operator for now
@@ -353,6 +360,8 @@ public class DocumentProjector {
         $vectorInclusion = false;
       } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
         $vectorizeInclusion = false;
+      } else if (DocumentConstants.Fields.LEXICAL_CONTENT_FIELD.equals(path)) {
+        $lexicalInclusion = false;
       } else {
         // Must not mix exclusions and inclusions
         if (inclusions > 0) {
@@ -371,6 +380,8 @@ public class DocumentProjector {
         $vectorInclusion = true;
       } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
         $vectorizeInclusion = true;
+      } else if (DocumentConstants.Fields.LEXICAL_CONTENT_FIELD.equals(path)) {
+        $lexicalInclusion = true;
       } else {
         // Must not mix exclusions and inclusions
         if (exclusions > 0) {

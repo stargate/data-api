@@ -57,9 +57,8 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
 
     @Test
     public void shredFailureOnNullDoc() {
-      // This used to be a unit test for the InsertOneCommandResolver calld shredderFailure(), but
-      // the resolver does not throw this
-      // error any more, it is instead handed in the result.
+      // This used to be a unit test for the InsertOneCommandResolver called shredderFailure(), but
+      // the resolver does not throw this  error anymore, it is instead handed in the result.
       givenHeadersPostJsonThenOk(
               """
             {
@@ -285,6 +284,64 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
             "username":"user4"
           }
           """));
+    }
+
+    // NOTE: Relies on default settings allowing insertion of "$lexical" content
+    @Test
+    public void insertDocumentWithLexicalSimple() {
+      final String FULL_DOC =
+          """
+              {
+                "_id": "lexical1",
+                "username": "user-lexical",
+                "$lexical": "monkeys and bananas"
+              }
+              """;
+      givenHeadersPostJsonThenOkNoErrors(
+                  """
+                      {
+                        "insertOne": {
+                          "document": %s
+                        }
+                      }
+                      """
+                  .formatted(FULL_DOC))
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("lexical1"));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "lexical1"}
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          // NOTE: "$lexical" is not included in the response by default, ensure
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                      {
+                          "_id": "lexical1",
+                          "username": "user-lexical"
+                      }
+                      """));
+
+      // But can explicitly include:
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "lexical1"},
+                          "projection": { "*": 1 }
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          // NOTE: "$lexical" is not included in the response by default, ensure
+          .body("data.documents[0]", jsonEquals(FULL_DOC));
     }
 
     @Test
