@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankingConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import java.util.List;
@@ -34,7 +35,8 @@ public final class TestConstants {
           IdConfig.defaultIdConfig(),
           VectorConfig.NOT_ENABLED_CONFIG,
           null,
-          CollectionLexicalConfig.configForLegacyCollections());
+          CollectionLexicalConfig.configForLegacyCollections(),
+          CollectionRerankingConfig.configForLegacyCollections());
 
   public static final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT =
       new CollectionSchemaObject(
@@ -50,7 +52,8 @@ public final class TestConstants {
                       EmbeddingSourceModel.OTHER,
                       null))),
           null,
-          CollectionLexicalConfig.configForLegacyCollections());
+          CollectionLexicalConfig.configForLegacyCollections(),
+          CollectionRerankingConfig.configForLegacyCollections());
 
   public static final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =
       KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
