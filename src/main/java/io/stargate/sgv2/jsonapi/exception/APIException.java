@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.ws.rs.core.Response;
 import java.util.Objects;
@@ -129,6 +130,11 @@ public abstract class APIException extends RuntimeException implements Recordabl
   @Override
   public String getMessage() {
     return body;
+  }
+
+  @Override
+  public String toString() {
+    return PrettyPrintable.print(this);
   }
 
   @Override
