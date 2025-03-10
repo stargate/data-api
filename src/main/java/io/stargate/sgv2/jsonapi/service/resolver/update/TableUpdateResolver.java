@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.CQL_IDENTIFIER_COM
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
@@ -17,12 +18,10 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.DefaultUpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueContainerFactory;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -38,51 +37,6 @@ import java.util.stream.Collectors;
  */
 public class TableUpdateResolver<CmdT extends Command & Updatable>
     extends UpdateResolver<CmdT, TableSchemaObject> {
-
-  /** Error strategy to use with {@link CqlNamedValueContainerFactory} for updates. */
-  public static final CqlNamedValue.ErrorStrategy<UpdateException> ERROR_STRATEGY =
-      new CqlNamedValue.ErrorStrategy<>() {
-
-        private static final Predicate<ApiSupportDef> MATCH_INSERT_UNSUPPORTED =
-            (apiSupportDef) -> !apiSupportDef.insert();
-
-        @Override
-        public ErrorCode<UpdateException> codeForNoApiSupport() {
-          // the WritableTableRowBuilder did the same thing - re-using the unsupported column types
-          // error
-          return UpdateException.Code.UNSUPPORTED_COLUMN_TYPES;
-        }
-
-        @Override
-        public ErrorCode<UpdateException> codeForUnknownColumn() {
-          return UpdateException.Code.UNKNOWN_TABLE_COLUMNS;
-        }
-
-        @Override
-        public ErrorCode<UpdateException> codeForMissingVectorize() {
-          return UpdateException.Code.UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION;
-        }
-
-        @Override
-        public ErrorCode<UpdateException> codeForMissingCodec() {
-          return UpdateException.Code.UNSUPPORTED_COLUMN_TYPES;
-        }
-
-        @Override
-        public ErrorCode<UpdateException> codeForCodecError() {
-          return UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES;
-        }
-
-        @Override
-        public void allChecks(
-            TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
-          checkUnknownColumns(tableSchemaObject, allColumns);
-          checkApiSupport(tableSchemaObject, allColumns, MATCH_INSERT_UNSUPPORTED);
-          checkMissingCodec(tableSchemaObject, allColumns);
-          checkCodecError(tableSchemaObject, allColumns);
-          checkMissingVectorize(tableSchemaObject, allColumns);
-        }
-      };
 
   private static final Map<UpdateOperator, TableUpdateOperatorResolver>
       SUPPORTED_OPERATION_RESOLVERS =
@@ -132,7 +86,8 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
         // For empty assignment operator, we won't add it to assignments result list
         // e.g. "$set": {}, "$unset": {}
         assignments.addAll(
-            operatorResolver.resolve(commandContext.schemaObject(), ERROR_STRATEGY, arguments));
+            operatorResolver.resolve(
+                commandContext.schemaObject(), new ErrorStrategy(updateOperator), arguments));
       }
     }
 
@@ -185,4 +140,77 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
 
     return WithWarnings.of(new DefaultUpdateValuesCQLClause(assignments));
   }
+
+  /** Error strategy to use with {@link CqlNamedValueContainerFactory} for updates. */
+  @VisibleForTesting
+  static class ErrorStrategy implements CqlNamedValue.ErrorStrategy<UpdateException> {
+
+    private final UpdateOperator updateOperator;
+
+    @VisibleForTesting
+    ErrorStrategy(UpdateOperator updateOperator) {
+      this.updateOperator = updateOperator;
+    }
+
+    @Override
+    public ErrorCode<UpdateException> codeForUnknownColumn() {
+      return UpdateException.Code.UNKNOWN_TABLE_COLUMNS;
+    }
+
+    @Override
+    public ErrorCode<UpdateException> codeForMissingVectorize() {
+      return UpdateException.Code.UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION;
+    }
+
+    @Override
+    public ErrorCode<UpdateException> codeForMissingCodec() {
+      return UpdateException.Code.UNSUPPORTED_COLUMN_TYPES;
+    }
+
+    @Override
+    public ErrorCode<UpdateException> codeForCodecError() {
+      return UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES;
+    }
+
+    @Override
+    public void allChecks(TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
+      checkUnknownColumns(tableSchemaObject, allColumns);
+      checkApiSupport(tableSchemaObject, allColumns);
+      checkMissingCodec(tableSchemaObject, allColumns);
+      checkCodecError(tableSchemaObject, allColumns);
+      checkMissingVectorize(tableSchemaObject, allColumns);
+    }
+
+    private void checkApiSupport(
+        TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
+
+      var unsupportedColumns =
+          allColumns.values().stream()
+              .filter(
+                  namedValue ->
+                      !namedValue
+                          .apiColumnDef()
+                          .type()
+                          .apiSupport()
+                          .update()
+                          .supports(updateOperator))
+              .sorted(CqlNamedValue.NAME_COMPARATOR)
+              .toList();
+
+      if (!unsupportedColumns.isEmpty()) {
+        throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR.get(
+            errVars(
+                tableSchemaObject,
+                map -> {
+                  map.put(
+                      "allColumns",
+                      errFmtColumnMetadata(
+                          tableSchemaObject.tableMetadata().getColumns().values()));
+                  map.put("operator", updateOperator.apiName());
+                  map.put("unsupportedColumns", errFmtCqlNamedValue(unsupportedColumns));
+                }));
+      }
+    }
+  }
+  ;
 }

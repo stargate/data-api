@@ -17,11 +17,9 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingAction;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import java.util.*;
-import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,8 +157,6 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
 
   public interface ErrorStrategy<T extends RequestException> {
 
-    ErrorCode<T> codeForNoApiSupport();
-
     ErrorCode<T> codeForUnknownColumn();
 
     ErrorCode<T> codeForMissingVectorize();
@@ -170,34 +166,6 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
     ErrorCode<T> codeForCodecError();
 
     void allChecks(TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns);
-
-    default void checkApiSupport(
-        TableSchemaObject tableSchemaObject,
-        CqlNamedValueContainer allColumns,
-        Predicate<ApiSupportDef> unsupportedPredicate) {
-
-      var unsupportedColumns =
-          allColumns.values().stream()
-              .filter(
-                  namedValue ->
-                      unsupportedPredicate.test(namedValue.apiColumnDef().type().apiSupport()))
-              .sorted(CqlNamedValue.NAME_COMPARATOR)
-              .toList();
-
-      if (!unsupportedColumns.isEmpty()) {
-        throw codeForNoApiSupport()
-            .get(
-                errVars(
-                    tableSchemaObject,
-                    map -> {
-                      map.put(
-                          "allColumns",
-                          errFmtColumnMetadata(
-                              tableSchemaObject.tableMetadata().getColumns().values()));
-                      map.put("unsupportedColumns", errFmtCqlNamedValue(unsupportedColumns));
-                    }));
-      }
-    }
 
     default void checkUnknownColumns(
         TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {

@@ -10,11 +10,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
-import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
-import io.stargate.sgv2.jsonapi.service.shredding.NamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueContainerFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory;
 import java.util.List;
@@ -109,38 +106,11 @@ public abstract class TableUpdateOperatorResolver {
             .create(normalisedUpdateDoc);
 
     // now create the CQL values, this will include running codec to convert the values into the
-    // correct CQL types
+    // correct CQL types and run the error strategy to check for the operator support
     var allColumns =
         new CqlNamedValueContainerFactory(tableSchemaObject, codecRegistry, errorStrategy)
             .create(jsonNamedValues);
 
-    checkUpdateOperatorSupported(tableSchemaObject, allColumns, updateOperator);
-
     return allColumns.values().stream().map(assignmentSupplier).collect(Collectors.toList());
-  }
-
-  protected void checkUpdateOperatorSupported(
-      TableSchemaObject tableSchemaObject,
-      CqlNamedValueContainer allColumns,
-      UpdateOperator operator) {
-
-    var unsupportedColumns =
-        allColumns.values().stream()
-            .map(NamedValue::apiColumnDef)
-            .filter(columnDef -> !columnDef.type().apiSupport().update().supports(operator))
-            .sorted(ApiColumnDef.NAME_COMPARATOR)
-            .toList();
-
-    if (!unsupportedColumns.isEmpty()) {
-      throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR.get(
-          errVars(
-              tableSchemaObject,
-              map -> {
-                map.put(
-                    "allColumns", errFmtApiColumnDef(tableSchemaObject.apiTableDef().allColumns()));
-                map.put("operator", operator.apiName());
-                map.put("unsupportedColumns", errFmtApiColumnDef(unsupportedColumns));
-              }));
-    }
   }
 }

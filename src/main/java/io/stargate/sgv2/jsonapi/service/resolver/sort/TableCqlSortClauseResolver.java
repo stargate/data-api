@@ -454,10 +454,6 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
   private static final CqlNamedValue.ErrorStrategy<SortException>
       SORTING_NAMED_VALUE_ERROR_STRATEGY =
           new CqlNamedValue.ErrorStrategy<>() {
-            @Override
-            public ErrorCode<SortException> codeForNoApiSupport() {
-              throw new UnsupportedOperationException();
-            }
 
             @Override
             public ErrorCode<SortException> codeForUnknownColumn() {

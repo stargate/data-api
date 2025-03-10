@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueContainerFactory;
@@ -30,10 +29,6 @@ public class WriteableTableRowBuilder {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(WriteableTableRowBuilder.class);
 
-  /** Match if a column does not support insert. */
-  private static final Predicate<ApiSupportDef> MATCH_INSERT_UNSUPPORTED =
-      ApiSupportDef.Matcher.NO_MATCHES.withInsert(false);
-
   public static final CqlNamedValue.ErrorStrategy<DocumentException> ERROR_STRATEGY =
       new CqlNamedValue.ErrorStrategy<>() {
 
@@ -41,15 +36,10 @@ public class WriteableTableRowBuilder {
         public void allChecks(
             TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
           checkUnknownColumns(tableSchemaObject, allColumns);
-          checkApiSupport(tableSchemaObject, allColumns, MATCH_INSERT_UNSUPPORTED);
+          checkApiSupport(tableSchemaObject, allColumns);
           checkMissingCodec(tableSchemaObject, allColumns);
           checkCodecError(tableSchemaObject, allColumns);
           checkMissingVectorize(tableSchemaObject, allColumns);
-        }
-
-        @Override
-        public ErrorCode<DocumentException> codeForNoApiSupport() {
-          return DocumentException.Code.UNSUPPORTED_COLUMN_TYPES;
         }
 
         @Override
@@ -70,6 +60,29 @@ public class WriteableTableRowBuilder {
         @Override
         public ErrorCode<DocumentException> codeForCodecError() {
           return DocumentException.Code.INVALID_COLUMN_VALUES;
+        }
+
+        private void checkApiSupport(
+            TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
+
+          var unsupportedColumns =
+              allColumns.values().stream()
+                  .filter(namedValue -> !namedValue.apiColumnDef().type().apiSupport().insert())
+                  .sorted(CqlNamedValue.NAME_COMPARATOR)
+                  .toList();
+
+          if (!unsupportedColumns.isEmpty()) {
+            throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
+                errVars(
+                    tableSchemaObject,
+                    map -> {
+                      map.put(
+                          "allColumns",
+                          errFmtColumnMetadata(
+                              tableSchemaObject.tableMetadata().getColumns().values()));
+                      map.put("unsupportedColumns", errFmtCqlNamedValue(unsupportedColumns));
+                    }));
+          }
         }
       };
 

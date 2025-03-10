@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.operation.tables;
+package io.stargate.sgv2.jsonapi.service.resolver.update;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 
@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestDataNames;
-import io.stargate.sgv2.jsonapi.service.resolver.update.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -71,7 +70,8 @@ public class TableUpdateOperatorResolverTest {
     var fixture =
         TEST_DATA
             .tableUpdateOperator()
-            .tableWithMapSetList(new TableUpdateSetResolver(), "test $set on columns");
+            .tableWithMapSetList(
+                new TableUpdateSetResolver(), UpdateOperator.SET, "test $set on columns");
 
     fixture
         .resolve(setRhs)
@@ -119,7 +119,8 @@ public class TableUpdateOperatorResolverTest {
     var fixture =
         TEST_DATA
             .tableUpdateOperator()
-            .tableWithMapSetList(new TableUpdateUnsetResolver(), "test $unset on columns");
+            .tableWithMapSetList(
+                new TableUpdateUnsetResolver(), UpdateOperator.UNSET, "test $unset on columns");
 
     fixture
         .resolve(unsetRhs)
@@ -238,7 +239,8 @@ public class TableUpdateOperatorResolverTest {
     var fixture =
         TEST_DATA
             .tableUpdateOperator()
-            .tableWithMapSetList(new TableUpdatePushResolver(), "test $push, $each on columns");
+            .tableWithMapSetList(
+                new TableUpdatePushResolver(), UpdateOperator.PUSH, "test $push, $each on columns");
     if (expectedErrorCode != null) {
       fixture.resolveWithError(json, UpdateException.class, expectedErrorCode, errorSnippet);
       return;
@@ -329,7 +331,10 @@ public class TableUpdateOperatorResolverTest {
     var fixture =
         TEST_DATA
             .tableUpdateOperator()
-            .tableWithMapSetList(new TableUpdatePullAllResolver(), "test $pullAll on columns");
+            .tableWithMapSetList(
+                new TableUpdatePullAllResolver(),
+                UpdateOperator.PULL_ALL,
+                "test $pullAll on columns");
     if (expectedErrorCode != null) {
       fixture.resolveWithError(json, UpdateException.class, expectedErrorCode, errorSnippet);
       return;

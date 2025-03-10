@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.fixtures.testdata;
+package io.stargate.sgv2.jsonapi.service.resolver.update;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -10,10 +10,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
+import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
+import io.stargate.sgv2.jsonapi.fixtures.testdata.TestDataSuplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
-import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdateOperatorResolver;
-import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdateResolver;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
@@ -29,10 +29,13 @@ public class TableUpdateOperatorTestData extends TestDataSuplier {
   }
 
   public TableUpdateOperatorResolverFixture tableWithMapSetList(
-      TableUpdateOperatorResolver tableUpdateOperatorResolver, String message) {
+      TableUpdateOperatorResolver tableUpdateOperatorResolver,
+      UpdateOperator updateOperator,
+      String message) {
 
     var table = testData.schemaObject().tableWithMapSetList();
-    return new TableUpdateOperatorResolverFixture(table, tableUpdateOperatorResolver, message);
+    return new TableUpdateOperatorResolverFixture(
+        table, tableUpdateOperatorResolver, updateOperator, message);
   }
 
   public static class TableUpdateOperatorResolverFixture implements Recordable {
@@ -42,16 +45,19 @@ public class TableUpdateOperatorTestData extends TestDataSuplier {
     private final TableMetadata tableMetadata;
     private final TableSchemaObject tableSchemaObject;
     private final TableUpdateOperatorResolver tableUpdateOperatorResolver;
+    private final UpdateOperator updateOperator;
     private List<ColumnAssignment> columnAssignments = null;
     public Throwable exception = null;
 
     public TableUpdateOperatorResolverFixture(
         TableSchemaObject table,
         TableUpdateOperatorResolver tableUpdateOperatorResolver,
+        UpdateOperator updateOperator,
         String message) {
       this.tableMetadata = table.tableMetadata();
       this.tableSchemaObject = table;
       this.tableUpdateOperatorResolver = tableUpdateOperatorResolver;
+      this.updateOperator = updateOperator;
       this.message = message;
     }
 
@@ -94,7 +100,7 @@ public class TableUpdateOperatorTestData extends TestDataSuplier {
       columnAssignments =
           tableUpdateOperatorResolver.resolve(
               tableSchemaObject,
-              TableUpdateResolver.ERROR_STRATEGY,
+              new TableUpdateResolver.ErrorStrategy(updateOperator),
               (ObjectNode) mapper.readTree(operatorJson));
     }
 

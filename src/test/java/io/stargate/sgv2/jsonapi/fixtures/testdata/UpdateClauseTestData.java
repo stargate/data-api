@@ -42,11 +42,6 @@ public class UpdateClauseTestData extends TestDataSuplier {
         }
 
         @Override
-        public ErrorCode<UpdateException> codeForNoApiSupport() {
-          throw new UnsupportedOperationException("codeForNoApiSupport Not implemented");
-        }
-
-        @Override
         public ErrorCode<UpdateException> codeForUnknownColumn() {
           return UpdateException.Code.UNKNOWN_TABLE_COLUMNS;
         }

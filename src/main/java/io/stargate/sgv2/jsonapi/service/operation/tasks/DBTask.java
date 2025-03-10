@@ -116,10 +116,11 @@ public abstract class DBTask<SchemaT extends SchemaObject>
           .onItem()
           .call(
               asyncResultset -> {
-                LOGGER.warn(
-                    "XXX asyncResultset.getExecutionInfo().getTracingId() {} ",
-                    asyncResultset.getExecutionInfo().getTracingId());
-                if (asyncResultset.getExecutionInfo().getTracingId() == null) {
+                // aaron 10 march 2025 - this is still experimental and I think sometimes it is
+                // called after
+                // the result set has completed and the executionInfo is null
+                if (asyncResultset.getExecutionInfo() == null
+                    || asyncResultset.getExecutionInfo().getTracingId() == null) {
                   return Uni.createFrom().voidItem();
                 }
 
@@ -128,8 +129,6 @@ public abstract class DBTask<SchemaT extends SchemaObject>
                     .onItem()
                     .invoke(
                         trace -> {
-                          LOGGER.warn("XXX GOT trace {}", trace);
-
                           commandContext
                               .requestTracing()
                               .maybeTrace(
