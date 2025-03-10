@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.service.operation.InsertDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.InsertDBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
@@ -19,9 +19,9 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Create an instance and then call {@link #build(JsonNode)} for each task you want to create.
  *
- * <p>NOTE: Uses the {@link JsonNamedValueFactory} and {@link WriteableTableRowBuilder} which both
- * check the data is valid, the first that the document does not exceed the limits, and the second
- * that the data is valid for the table.
+ * <p>NOTE: Uses the {@link JsonNamedValueContainerFactory} and {@link WriteableTableRowBuilder}
+ * which both check the data is valid, the first that the document does not exceed the limits, and
+ * the second that the data is valid for the table.
  */
 public class TableInsertTasksBuilder
     extends TaskBuilder<
@@ -30,7 +30,7 @@ public class TableInsertTasksBuilder
   private static final Logger LOGGER = LoggerFactory.getLogger(TableInsertTasksBuilder.class);
 
   private final CommandContext<TableSchemaObject> commandContext;
-  private JsonNamedValueFactory jsonNamedValueFactory = null;
+  private JsonNamedValueContainerFactory jsonNamedValueFactory = null;
   private Boolean ordered = null;
   private Boolean returnDocumentResponses = null;
 
@@ -50,7 +50,7 @@ public class TableInsertTasksBuilder
   }
 
   public TableInsertTasksBuilder withJsonNamedValueFactory(
-      JsonNamedValueFactory jsonNamedValueFactory) {
+      JsonNamedValueContainerFactory jsonNamedValueFactory) {
     this.jsonNamedValueFactory = jsonNamedValueFactory;
     return this;
   }
@@ -62,7 +62,7 @@ public class TableInsertTasksBuilder
     Objects.requireNonNull(ordered, "ordered cannot be null");
     Objects.requireNonNull(returnDocumentResponses, "returnDocumentResponses cannot be null");
 
-    List<JsonNamedValueFactory.ParsedJsonDocument> parsedDocuments =
+    List<JsonNamedValueContainerFactory.ParsedJsonDocument> parsedDocuments =
         jsonNamedValueFactory.create(jsonNodes);
 
     commandContext

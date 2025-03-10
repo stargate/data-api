@@ -15,8 +15,8 @@ import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.NamedValue;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueFactory;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueContainerFactory;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -42,7 +42,7 @@ public abstract class TableUpdateOperatorResolver {
    * Called to resolve an update operation.
    *
    * @param tableSchemaObject The table schema object
-   * @param errorStrategy Error strategy to use with the {@link CqlNamedValueFactory}
+   * @param errorStrategy Error strategy to use with the {@link CqlNamedValueContainerFactory}
    * @param arguments The right hand side arguments to the update operation, from the request. If
    *     the update clause has <code>{"$set" : { "age" : 51 , "human" : false}}</code> this is
    *     <code>{ "age" : 51 , "human" : false}</code>
@@ -84,13 +84,13 @@ public abstract class TableUpdateOperatorResolver {
    * @param tableSchemaObject The table schema object
    * @param normalisedUpdateDoc Normalised document of key-value pairs that can be procesed by the
    *     decoder and the codecs.
-   * @param errorStrategy Error strategy to use with the {@link CqlNamedValueFactory}
+   * @param errorStrategy Error strategy to use with the {@link CqlNamedValueContainerFactory}
    * @param updateOperator The operators that is being resolved, used to check that all columns
    *     support the operator.
    * @param assignmentSupplier Function to build the assignment from a {@link CqlNamedValue}
-   * @param jsonDecoder Decoder to use with {@link JsonNamedValueFactory} to process the JSON doc in
-   *     Java objects
-   * @param codecRegistry Codec to use with {@link CqlNamedValueFactory} to create the CQL
+   * @param jsonDecoder Decoder to use with {@link JsonNamedValueContainerFactory} to process the
+   *     JSON doc in Java objects
+   * @param codecRegistry Codec to use with {@link CqlNamedValueContainerFactory} to create the CQL
    *     parameters
    * @return List of assignments for the update operation
    */
@@ -105,12 +105,13 @@ public abstract class TableUpdateOperatorResolver {
 
     // decode the JSON objects into our Java objects
     var jsonNamedValues =
-        new JsonNamedValueFactory(tableSchemaObject, jsonDecoder).create(normalisedUpdateDoc);
+        new JsonNamedValueContainerFactory(tableSchemaObject, jsonDecoder)
+            .create(normalisedUpdateDoc);
 
     // now create the CQL values, this will include running codec to convert the values into the
     // correct CQL types
     var allColumns =
-        new CqlNamedValueFactory(tableSchemaObject, codecRegistry, errorStrategy)
+        new CqlNamedValueContainerFactory(tableSchemaObject, codecRegistry, errorStrategy)
             .create(jsonNamedValues);
 
     checkUpdateOperatorSupported(tableSchemaObject, allColumns, updateOperator);

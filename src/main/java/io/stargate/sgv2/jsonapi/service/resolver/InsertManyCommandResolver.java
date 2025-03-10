@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTask;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory;
 import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -62,7 +62,8 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
                 ApiOptionUtils.getOrDefault(
                     command.options(), InsertManyCommand.Options::returnDocumentResponses, false))
             .withJsonNamedValueFactory(
-                new JsonNamedValueFactory(commandContext.schemaObject(), JsonNodeDecoder.DEFAULT))
+                new JsonNamedValueContainerFactory(
+                    commandContext.schemaObject(), JsonNodeDecoder.DEFAULT))
             .withExceptionHandlerFactory(TableDriverExceptionHandler::new)
             .build(command.documents());
 

@@ -19,8 +19,8 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueFactory;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueContainerFactory;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -111,9 +111,10 @@ public class UpdateClauseTestData extends TestDataSuplier {
       var node = objectMapper.createObjectNode().set(cqlIdentifierToJsonKey(column), value);
 
       var jsonNamedValues =
-          new JsonNamedValueFactory(tableSchemaObject, JsonNodeDecoder.DEFAULT).create(node);
+          new JsonNamedValueContainerFactory(tableSchemaObject, JsonNodeDecoder.DEFAULT)
+              .create(node);
       var cqlNamedValues =
-          new CqlNamedValueFactory(
+          new CqlNamedValueContainerFactory(
                   tableSchemaObject, JSONCodecRegistries.DEFAULT_REGISTRY, THROW_ALL_ERROR_STRATEGY)
               .create(jsonNamedValues);
       assert cqlNamedValues.size() == 1;

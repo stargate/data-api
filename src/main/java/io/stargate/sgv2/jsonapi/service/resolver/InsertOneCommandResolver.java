@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTask;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -53,7 +53,8 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
             .withOrdered(false)
             .withReturnDocumentResponses(false) // never for insertOne
             .withJsonNamedValueFactory(
-                new JsonNamedValueFactory(commandContext.schemaObject(), JsonNodeDecoder.DEFAULT))
+                new JsonNamedValueContainerFactory(
+                    commandContext.schemaObject(), JsonNodeDecoder.DEFAULT))
             .withExceptionHandlerFactory(TableDriverExceptionHandler::new)
             .build(List.of(command.document()));
 

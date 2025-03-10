@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueFactory;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueContainerFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.*;
 import java.util.function.Predicate;
@@ -105,7 +105,8 @@ public class WriteableTableRowBuilder {
     // the checks on the error strategy will run, we have some extra ones below
 
     var allColumns =
-        new CqlNamedValueFactory(tableSchemaObject, codecRegistry, ERROR_STRATEGY).create(source);
+        new CqlNamedValueContainerFactory(tableSchemaObject, codecRegistry, ERROR_STRATEGY)
+            .create(source);
 
     // TODO: move this check all primary keys into the error strategy
     checkAllPrimaryKeys(allColumns);

@@ -17,17 +17,36 @@ import java.util.Objects;
  * <p>The caller is responsible for checking the state of the values in the returned {@link
  * CqlNamedValueContainer}.
  */
-public class CqlNamedValueFactory {
+public class CqlNamedValueContainerFactory {
 
+  /** Factory function for creating a {@link CqlNamedValue} or subtype instance. */
+  @FunctionalInterface
+  public interface CqlNamedValueFactory {
+    CqlNamedValue create(
+        CqlIdentifier name,
+        JSONCodecRegistry codecRegistry,
+        CqlNamedValue.ErrorStrategy<? extends RequestException> errorStrategy);
+  }
+
+  private final CqlNamedValueFactory cqlNamedValueFactory;
   private final TableSchemaObject tableSchemaObject;
   private final JSONCodecRegistry codecRegistry;
   private final CqlNamedValue.ErrorStrategy<? extends RequestException> errorStrategy;
 
-  public CqlNamedValueFactory(
+  public CqlNamedValueContainerFactory(
       TableSchemaObject tableSchemaObject,
       JSONCodecRegistry codecRegistry,
       CqlNamedValue.ErrorStrategy<? extends RequestException> errorStrategy) {
+    this(CqlNamedValue::new, tableSchemaObject, codecRegistry, errorStrategy);
+  }
 
+  public CqlNamedValueContainerFactory(
+      CqlNamedValueFactory cqlNamedValueFactory,
+      TableSchemaObject tableSchemaObject,
+      JSONCodecRegistry codecRegistry,
+      CqlNamedValue.ErrorStrategy<? extends RequestException> errorStrategy) {
+    this.cqlNamedValueFactory =
+        Objects.requireNonNull(cqlNamedValueFactory, "cqlNamedValueFactory cannot be null");
     this.tableSchemaObject =
         Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     this.codecRegistry = Objects.requireNonNull(codecRegistry, "codecRegistry cannot be null");
@@ -47,7 +66,8 @@ public class CqlNamedValueFactory {
     source.forEach(
         (key, value) -> {
           var cqlIdentifier = createCqlIdentifier(key);
-          var cqlNamedValue = new CqlNamedValue(cqlIdentifier, codecRegistry, errorStrategy);
+          var cqlNamedValue =
+              cqlNamedValueFactory.create(cqlIdentifier, codecRegistry, errorStrategy);
           if (cqlNamedValue.bind(tableSchemaObject)) {
             cqlNamedValue.prepare(value);
           }

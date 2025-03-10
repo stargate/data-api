@@ -19,7 +19,7 @@ import java.util.*;
  * types shredded here must be supported by the codec.
  */
 // @ApplicationScoped
-public class JsonNamedValueFactory {
+public class JsonNamedValueContainerFactory {
   //  private static final JsonLiteral<Object> NULL_LITERAL = new JsonLiteral<>(null,
   // JsonType.NULL);
   //
@@ -37,7 +37,7 @@ public class JsonNamedValueFactory {
   private final TableSchemaObject tableSchemaObject;
   private final JsonNodeDecoder jsonNodeDecoder;
 
-  public JsonNamedValueFactory(
+  public JsonNamedValueContainerFactory(
       TableSchemaObject tableSchemaObject, JsonNodeDecoder jsonNodeDecoder) {
     this.tableSchemaObject =
         Objects.requireNonNull(tableSchemaObject, "tableSchemaObject must not be null");

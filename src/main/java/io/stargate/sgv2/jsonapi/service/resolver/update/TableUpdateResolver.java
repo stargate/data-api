@@ -20,7 +20,7 @@ import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueFactory;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueContainerFactory;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 public class TableUpdateResolver<CmdT extends Command & Updatable>
     extends UpdateResolver<CmdT, TableSchemaObject> {
 
-  /** Error strategy to use with {@link CqlNamedValueFactory} for updates. */
+  /** Error strategy to use with {@link CqlNamedValueContainerFactory} for updates. */
   public static final CqlNamedValue.ErrorStrategy<UpdateException> ERROR_STRATEGY =
       new CqlNamedValue.ErrorStrategy<>() {
 

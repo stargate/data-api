@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.fixtures.data.DefaultData;
 import io.stargate.sgv2.jsonapi.fixtures.types.CqlTypesForTesting;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueFactory;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -94,7 +94,8 @@ public abstract class JsonContainerFixtureBuilder implements Supplier<List<JsonC
                 cqlFixture.data().fromJSON(metadata.getType()));
           }
         });
-    return new JsonNamedValueFactory(cqlFixture.tableSchemaObject(), JsonNodeDecoder.DEFAULT)
+    return new JsonNamedValueContainerFactory(
+            cqlFixture.tableSchemaObject(), JsonNodeDecoder.DEFAULT)
         .create(jsonDoc);
   }
 

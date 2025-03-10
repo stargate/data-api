@@ -30,7 +30,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueFactory;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueContainerFactory;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -399,10 +399,11 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     }
 
     // will throw is there is an error
-    // and we know this is a vector value, we need the CqlVectorNamedValue to get the correct CQL
-    // type
+    // There will be a single value, and we know it is a vector, so use the overload to
+    // create a CqlVectorNamedValue, see class docs for why
     var vectorNamedValue =
-        new CqlNamedValueFactory(
+        new CqlNamedValueContainerFactory(
+                CqlVectorNamedValue::new,
                 commandContext.schemaObject(),
                 JSONCodecRegistries.DEFAULT_REGISTRY,
                 SORTING_NAMED_VALUE_ERROR_STRATEGY)
