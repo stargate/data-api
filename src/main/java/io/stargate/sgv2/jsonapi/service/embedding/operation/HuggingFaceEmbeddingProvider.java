@@ -1,6 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -13,6 +16,7 @@ import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +29,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
   private static final String providerId = ProviderConstants.HUGGINGFACE;
   private final HuggingFaceEmbeddingProviderClient huggingFaceEmbeddingProviderClient;
+  private static final ObjectMapper objectMapper = new ObjectMapper();
 
   public HuggingFaceEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
@@ -43,11 +48,12 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
+  @RegisterProvider(NetworkUsageInterceptor.class)
   public interface HuggingFaceEmbeddingProviderClient {
     @POST
     @Path("/{modelId}")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
-    Uni<List<float[]>> embed(
+    Uni<jakarta.ws.rs.core.Response> embed(
         @HeaderParam("Authorization") String accessToken,
         @PathParam("modelId") String modelId,
         EmbeddingRequest request);
@@ -76,8 +82,7 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
       logger.info(
-          String.format(
-              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
+          "Error response from embedding provider '{}': {}", providerId, rootNode.toString());
       // Extract the "error" node
       JsonNode errorNode = rootNode.path("error");
       // Return the text of the "message" node, or the whole response body if it is missing
@@ -104,10 +109,25 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
         .onItem()
         .transform(
             resp -> {
-              if (resp == null) {
-                return Response.of(batchId, Collections.emptyList());
+              String json = resp.readEntity(String.class); // Read raw JSON
+              if (json == null) {
+                return new Response(
+                    batchId,
+                    Collections.emptyList(),
+                    new VectorizeUsage(ProviderConstants.HUGGINGFACE, modelName));
               }
-              return Response.of(batchId, resp);
+              List<float[]> embeddings = null;
+              try {
+                embeddings = objectMapper.readValue(json, new TypeReference<List<float[]>>() {});
+              } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+              }
+              int sentBytes = Integer.parseInt(resp.getHeaderString("sent-bytes"));
+              int receivedBytes = Integer.parseInt(resp.getHeaderString("received-bytes"));
+              VectorizeUsage vectorizeUsage =
+                  new VectorizeUsage(
+                      sentBytes, receivedBytes, 0, ProviderConstants.HUGGINGFACE, modelName);
+              return new Response(batchId, embeddings, vectorizeUsage);
             });
   }
 

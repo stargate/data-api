@@ -4,6 +4,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.VectorizeUsage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -74,7 +75,8 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
     List<float[]> response = new ArrayList<>(texts.size());
-    if (texts.size() == 0) return Uni.createFrom().item(Response.of(batchId, response));
+    if (texts.size() == 0)
+      return Uni.createFrom().item(new Response(batchId, response, new VectorizeUsage()));
     if (!embeddingCredentials.apiKey().isPresent()
         || !embeddingCredentials.apiKey().get().equals(TEST_API_KEY))
       return Uni.createFrom().failure(new RuntimeException("Invalid API Key"));
@@ -94,7 +96,7 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
         }
       }
     }
-    return Uni.createFrom().item(Response.of(batchId, response));
+    return Uni.createFrom().item(new Response(batchId, response, new VectorizeUsage()));
   }
 
   @Override

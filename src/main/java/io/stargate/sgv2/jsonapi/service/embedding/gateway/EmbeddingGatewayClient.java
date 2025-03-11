@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.VectorizeUsage;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -189,9 +190,14 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
                     ErrorCodeV1.valueOf(resp.getError().getErrorCode()),
                     resp.getError().getErrorMessage());
               }
+              VectorizeUsage vectorizeUsage = new VectorizeUsage(provider, modelName);
               if (resp.getEmbeddingsList() == null) {
-                return Response.of(batchId, Collections.emptyList());
+                return new Response(batchId, Collections.emptyList(), vectorizeUsage);
               }
+              EmbeddingGateway.EmbeddingResponse.Usage usage = resp.getUsage();
+              vectorizeUsage.setRequestBytes(usage.getInputBytes());
+              vectorizeUsage.setResponseBytes(usage.getOutputBytes());
+              vectorizeUsage.setTotalTokens(usage.getTotalTokens());
               final List<float[]> vectors =
                   resp.getEmbeddingsList().stream()
                       .map(
@@ -203,7 +209,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
                             return embedding;
                           })
                       .toList();
-              return Response.of(batchId, vectors);
+              return new Response(batchId, vectors, vectorizeUsage);
             });
   }
 
