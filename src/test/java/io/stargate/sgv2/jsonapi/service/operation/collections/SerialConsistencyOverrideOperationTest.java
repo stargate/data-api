@@ -172,9 +172,10 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
   class Insert {
     static final String INSERT_CQL =
         "INSERT INTO \"%s\".\"%s\""
-            + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
+            + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,"
+            + " query_dbl_values, query_text_values, query_null_values, query_timestamp_values)"
             + " VALUES"
-            + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+            + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS";
 
     @Test
     public void insert() throws Exception {

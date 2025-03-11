@@ -246,10 +246,8 @@ public record InsertCollectionOperation(
         .append(tableName.table())
         .append("\"")
         .append(
-            """
-(key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values,
- query_text_values, query_null_values, query_timestamp_values
-""");
+            "(key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,"
+                + " query_dbl_values, query_text_values, query_null_values, query_timestamp_values");
     if (vectorEnabled) {
       insertQuery.append(", query_vector_value");
     }
@@ -264,9 +262,7 @@ public record InsertCollectionOperation(
     if (lexicalEnabled) {
       insertQuery.append(", ?");
     }
-    // 11-Mar-2025, tatu: NOTE! "extra" space here is unfortunately needed since our
-    //  Operations unit-tests -- heavily dependent on Mocks -- expects it
-    insertQuery.append(") ");
+    insertQuery.append(")");
     if (!offlineMode) {
       // The offline mode SSTableWriter does not support conditional inserts, so it can not have the
       // IF NOT EXISTS clause
