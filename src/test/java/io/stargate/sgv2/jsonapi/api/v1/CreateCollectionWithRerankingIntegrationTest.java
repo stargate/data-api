@@ -175,7 +175,7 @@ public class CreateCollectionWithRerankingIntegrationTest
 
   @Nested
   @Order(2)
-  class CreateLexicalFail {
+  class CreateRerankingFail {
     @Test
     void failCreateRerankingMissingEnabled() {
       final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
@@ -188,6 +188,52 @@ public class CreateCollectionWithRerankingIntegrationTest
               "errors[0].message",
               containsString(
                   "The provided options are invalid: 'enabled' is required property for 'reranking'"));
+    }
+
+    @Test
+    void failMissingServiceProvider() {
+      final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithReranking(
+              collectionName,
+              """
+                                {
+                                  "enabled": true,
+                                  "service": {}
+                                }
+                          """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "The provided options are invalid: 'provider' is required property for 'reranking.service' Object value"));
+    }
+
+    @Test
+    void failMissingServiceModel() {
+      final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithReranking(
+              collectionName,
+              """
+                                    {
+                                      "enabled": true,
+                                      "service": {
+                                          "provider": "nvidia"
+                                      }
+                                    }
+                            """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "The provided options are invalid: 'modelName' is needed for reranking provider nvidia"));
     }
   }
 

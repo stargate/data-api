@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
@@ -32,6 +33,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   private final DatabaseLimitsConfig dbLimitsConfig;
   private final OperationsConfig operationsConfig;
   private final VectorizeConfigValidator validateVectorize;
+  private final RerankProvidersConfig rerankProvidersConfig;
 
   @Inject
   public CreateCollectionCommandResolver(
@@ -40,17 +42,19 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       DocumentLimitsConfig documentLimitsConfig,
       DatabaseLimitsConfig dbLimitsConfig,
       OperationsConfig operationsConfig,
-      VectorizeConfigValidator validateVectorize) {
+      VectorizeConfigValidator validateVectorize,
+      RerankProvidersConfig rerankProvidersConfig) {
     this.objectMapper = objectMapper;
     this.cqlSessionCache = cqlSessionCache;
     this.documentLimitsConfig = documentLimitsConfig;
     this.dbLimitsConfig = dbLimitsConfig;
     this.operationsConfig = operationsConfig;
     this.validateVectorize = validateVectorize;
+    this.rerankProvidersConfig = rerankProvidersConfig;
   }
 
   public CreateCollectionCommandResolver() {
-    this(null, null, null, null, null, null);
+    this(null, null, null, null, null, null, null);
   }
 
   @Override
@@ -91,7 +95,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     final CollectionLexicalConfig lexicalConfig =
         CollectionLexicalConfig.validateAndConstruct(objectMapper, options.lexical());
     final CollectionRerankingConfig rerankingConfig =
-        CollectionRerankingConfig.validateAndConstruct(options.reranking());
+        CollectionRerankingConfig.validateAndConstruct(options.reranking(), rerankProvidersConfig);
 
     boolean indexingDenyAll = false;
     // handling indexing options
