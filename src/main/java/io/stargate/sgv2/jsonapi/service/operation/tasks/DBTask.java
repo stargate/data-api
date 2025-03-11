@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.service.cqldriver.AccumulatingAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
@@ -119,9 +120,20 @@ public abstract class DBTask<SchemaT extends SchemaObject>
                 // aaron 10 march 2025 - this is still experimental and I think sometimes it is
                 // called after
                 // the result set has completed and the executionInfo is null
-                if (asyncResultset.getExecutionInfo() == null
-                    || asyncResultset.getExecutionInfo().getTracingId() == null) {
-                  return Uni.createFrom().voidItem();
+                // The AccumulatingAsyncResultSet will not have the execution info, and will throw
+                // UnsupportedOperationException - because the interface says the return from
+                // getExecutionInfo
+                // cannot be null
+                try {
+                  if (asyncResultset.getExecutionInfo() == null
+                      || asyncResultset.getExecutionInfo().getTracingId() == null) {
+                    return Uni.createFrom().voidItem();
+                  }
+                } catch (UnsupportedOperationException e) {
+                  if (asyncResultset instanceof AccumulatingAsyncResultSet) {
+                    return Uni.createFrom().voidItem();
+                  }
+                  throw e;
                 }
 
                 return Uni.createFrom()

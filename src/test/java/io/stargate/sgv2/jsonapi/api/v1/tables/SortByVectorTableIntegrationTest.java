@@ -2,13 +2,13 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.v1.util.scenarios.VectorDimension5TableScenario;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -83,7 +83,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
         .hasSingleApiError(
             SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORS,
             SortException.class,
-            "The command attempted to sort on the columns: %s, %s."
+            "The command attempted to vector sort on the columns: %s, %s."
                 .formatted(
                     SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL),
                     SCENARIO.fieldName(VectorDimension5TableScenario.UNINDEXED_VECTOR_COL)));
@@ -300,11 +300,11 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
   public void findRandomBinaryVector(CommandName commandName) {
     // Doing a sort for a vector we do not know if is in the table
 
-    Object[] rawData =
-        (Object[]) SCENARIO.columnValue(VectorDimension5TableScenario.INDEXED_VECTOR_COL);
-    float[] vectorData = new float[rawData.length];
+    ArrayNode rawData =
+        (ArrayNode) SCENARIO.columnValue(VectorDimension5TableScenario.INDEXED_VECTOR_COL);
+    float[] vectorData = new float[rawData.size()];
     for (int i = 0; i < vectorData.length; i++) {
-      vectorData[i] = ((BigDecimal) rawData[i]).floatValue();
+      vectorData[i] = rawData.get(i).floatValue();
     }
     var vectorString = generateBase64EncodedBinaryVector(vectorData);
     var sort =

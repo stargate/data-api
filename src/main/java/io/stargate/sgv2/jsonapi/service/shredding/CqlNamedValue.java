@@ -40,6 +40,9 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
   private final JSONCodecRegistry codecRegistry;
   private final ErrorStrategy<? extends RequestException> errorStrategy;
 
+  // tracked so we can include the root cause of codec errors
+  private ToCQLCodecException toCQLCodecException;
+
   public CqlNamedValue(
       CqlIdentifier name,
       JSONCodecRegistry codecRegistry,
@@ -93,6 +96,7 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
     } catch (MissingJSONCodecException e) {
       setErrorCode(NamedValueState.PREPARE_ERROR, errorStrategy.codeForMissingCodec());
     } catch (ToCQLCodecException e) {
+      toCQLCodecException = e;
       setErrorCode(NamedValueState.PREPARE_ERROR, errorStrategy.codeForCodecError());
     }
 
@@ -234,6 +238,19 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
               .toList();
 
       if (!codecErrors.isEmpty()) {
+        var msg =
+            String.join(
+                ", ",
+                codecErrors.stream()
+                    .map(
+                        nv ->
+                            "%s - Cause: %s"
+                                .formatted(
+                                    errFmt(nv),
+                                    nv.toCQLCodecException == null
+                                        ? "unknown"
+                                        : nv.toCQLCodecException.rootCauseMessage))
+                    .toList());
         throw codeForCodecError()
             .get(
                 errVars(
@@ -243,7 +260,7 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
                           "allColumns",
                           errFmtColumnMetadata(
                               tableSchemaObject.tableMetadata().getColumns().values()));
-                      map.put("invalidColumns", errFmtCqlNamedValue(codecErrors));
+                      map.put("invalidColumns", msg);
                     }));
       }
     }
