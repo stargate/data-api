@@ -118,6 +118,12 @@ public record CollectionRerankingConfig(
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "'enabled' is required property for 'reranking' Object value");
     }
+
+    var rerankingServiceConfig = rerankingConfig.rerankingServiceConfig();
+    if (rerankingServiceConfig == null) {
+      return new CollectionRerankingConfig(enabled, DEFAULT_RERANK_SERVICE);
+    }
+
     String provider = rerankingConfig.rerankingServiceConfig().provider();
     String modelName = rerankingConfig.rerankingServiceConfig().modelName();
     Map<String, String> authentication = rerankingConfig.rerankingServiceConfig().authentication();
@@ -149,8 +155,7 @@ public record CollectionRerankingConfig(
       }
     }
 
-    return new CollectionRerankingConfig(
-        enabled.booleanValue(), provider, modelName, authentication, parameters);
+    return new CollectionRerankingConfig(enabled, provider, modelName, authentication, parameters);
   }
 
   // TODO(Hazel): need config verification for reranking service - like VectorizeConfigValidator
