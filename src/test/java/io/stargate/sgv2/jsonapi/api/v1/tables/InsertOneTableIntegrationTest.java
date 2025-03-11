@@ -470,7 +470,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"doubleValue\"(float) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
+              "\"doubleValue\"(double) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
 
       // And finally BigDecimal: different error message because no String values accepted
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
@@ -479,7 +479,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "\"decimalValue\"(float) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
+              "\"decimalValue\"(decimal) - Cause: no codec matching value type");
     }
 
     private String fpDoc(String id, String floatValue, String doubleValue, String bigDecValue) {
