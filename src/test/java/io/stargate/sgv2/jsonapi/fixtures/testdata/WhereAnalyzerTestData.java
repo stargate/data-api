@@ -13,12 +13,13 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
+import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +72,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
         statementType);
   }
 
-  public static class WhereAnalyzerFixture implements PrettyPrintable {
+  public static class WhereAnalyzerFixture implements Recordable {
 
     private final String message;
     private final TableMetadata tableMetadata;
@@ -132,10 +133,13 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     }
 
     public void callAnalyze() {
-      LOGGER.warn("Analyzing: {}\n {}", message, toString(true));
+      LOGGER.warn("Analyzing: {}\n {}", message, PrettyPrintable.pprint(this));
       // store the result in this fixture for later
       analysisResult =
-          analyzer.analyse(TableWhereCQLClause.forSelect(tableSchemaObject, expression.expression));
+          analyzer.analyse(
+              TableWhereCQLClause.forSelect(
+                      tableSchemaObject, WithWarnings.of(expression.expression))
+                  .target());
       LOGGER.warn("Analysis result: {}", analysisResult);
     }
 
@@ -306,25 +310,10 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     }
 
     @Override
-    public String toString() {
-      return toString(false);
-    }
-
-    public String toString(boolean pretty) {
-      return toString(new PrettyToStringBuilder(getClass(), pretty)).toString();
-    }
-
-    public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-      prettyToStringBuilder
+    public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+      return dataRecorder
           .append("expression", expression.expression)
           .append("table", tableMetadata.describe(true));
-      return prettyToStringBuilder;
-    }
-
-    @Override
-    public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
-      var sb = prettyToStringBuilder.beginSubBuilder(getClass());
-      return toString(sb).endSubBuilder();
     }
   }
 }

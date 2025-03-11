@@ -14,7 +14,7 @@ public record ThrowableCommandResultSupplier(Throwable t) implements Supplier<Co
   @Override
   public CommandResult get() {
 
-    var builder = CommandResult.statusOnlyBuilder(false, false);
+    var builder = CommandResult.statusOnlyBuilder(false, false, null);
 
     // resolve message
     builder.addCommandResultError(ThrowableToErrorMapper.getMapperFunction().apply(t));

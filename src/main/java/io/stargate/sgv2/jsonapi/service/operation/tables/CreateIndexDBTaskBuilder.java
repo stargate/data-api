@@ -10,7 +10,8 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorIndex;
 import java.util.Objects;
 
 /** Builder for a {@link CreateIndexDBTask}. */
-public class CreateIndexDBTaskBuilder extends TaskBuilder<CreateIndexDBTask, TableSchemaObject> {
+public class CreateIndexDBTaskBuilder
+    extends TaskBuilder<CreateIndexDBTask, TableSchemaObject, CreateIndexDBTaskBuilder> {
 
   private SchemaDBTask.SchemaRetryPolicy schemaRetryPolicy;
   // must be specified, the default should not be defined in here

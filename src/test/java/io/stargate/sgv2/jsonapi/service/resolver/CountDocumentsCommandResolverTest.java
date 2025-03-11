@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollect
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -30,11 +31,17 @@ class CountDocumentsCommandResolverTest {
 
   @Inject OperationsConfig operationsConfig;
   @InjectMock protected RequestContext dataApiRequestInfo;
+  private TestConstants testConstants = new TestConstants();
+
+  CommandContext<CollectionSchemaObject> commandContext;
+
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.collectionContext();
+  }
 
   @Nested
   class ResolveCommand {
-
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
 
     @Test
     public void noFilter() throws Exception {

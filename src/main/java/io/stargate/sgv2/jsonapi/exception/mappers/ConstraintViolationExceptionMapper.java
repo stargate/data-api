@@ -34,7 +34,7 @@ public class ConstraintViolationExceptionMapper {
       ConstraintViolationException exception) {
     // map all violations to errors
     Set<ConstraintViolation<?>> violations = exception.getConstraintViolations();
-    var builder = CommandResult.statusOnlyBuilder(false, false);
+    var builder = CommandResult.statusOnlyBuilder(false, false, null);
     violations.stream()
         .map(ConstraintViolationExceptionMapper::getError)
         .distinct()

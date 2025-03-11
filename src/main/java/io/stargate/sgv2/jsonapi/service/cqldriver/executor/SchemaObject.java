@@ -1,11 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Objects;
 
 /** A Collection or Table the command works on */
-public abstract class SchemaObject implements PrettyPrintable {
+public abstract class SchemaObject implements Recordable {
 
   // Because a lot of code needs to make decisions based on the type of the SchemaObject use an
   // enum and we also have generics for strong type checking
@@ -69,17 +68,7 @@ public abstract class SchemaObject implements PrettyPrintable {
   public abstract IndexUsage newIndexUsage();
 
   @Override
-  public String toString() {
-    return toString(false);
-  }
-
-  @Override
-  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    return prettyToStringBuilder
-        .append("type", type)
-        .append("name.keyspace", name.keyspace())
-        .append("name.table", name.table())
-        .append("vectorConfig", vectorConfig())
-        .append("indexUsage", newIndexUsage());
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return dataRecorder.append("type", type).append("name", name);
   }
 }

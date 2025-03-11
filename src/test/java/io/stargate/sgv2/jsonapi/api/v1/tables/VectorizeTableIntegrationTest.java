@@ -140,7 +140,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
     }
   }
 
-  private static Stream<Arguments> INVALID_VECTORIZE_SORT() {
+  private static Stream<Arguments> invalidVectorizeSortTests() {
     return Stream.of(
         Arguments.of(
             ImmutableMap.of(
@@ -176,7 +176,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
   }
 
   @ParameterizedTest
-  @MethodSource("INVALID_VECTORIZE_SORT")
+  @MethodSource("invalidVectorizeSortTests")
   public void invalidVectorizeSort(
       ImmutableMap<String, Object> sort, SortException.Code sortExceptionCode) {
 

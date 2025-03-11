@@ -51,21 +51,21 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
    */
   protected static String validateUpdatePath(UpdateOperator oper, String path) {
     if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)
-        && !(oper.operator().equals("$set")
-            || oper.operator().equals("$unset")
-            || oper.operator().equals("$setOnInsert"))) {
-      throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_VECTOR.toApiException("%s", oper.operator());
+        && !(oper.apiName().equals("$set")
+            || oper.apiName().equals("$unset")
+            || oper.apiName().equals("$setOnInsert"))) {
+      throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_VECTOR.toApiException("%s", oper.apiName());
     }
 
     if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)
-        && !(oper.operator().equals("$set")
-            || oper.operator().equals("$unset")
-            || oper.operator().equals("$setOnInsert"))) {
-      throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_VECTORIZE.toApiException("%s", oper.operator());
+        && !(oper.apiName().equals("$set")
+            || oper.apiName().equals("$unset")
+            || oper.apiName().equals("$setOnInsert"))) {
+      throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_VECTORIZE.toApiException("%s", oper.apiName());
     }
 
     if (DocumentConstants.Fields.DOC_ID.equals(path)) {
-      throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.toApiException("%s", oper.operator());
+      throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.toApiException("%s", oper.apiName());
     }
     return path;
   }
@@ -82,7 +82,7 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
   protected static String validateNonModifierPath(UpdateOperator oper, String path) {
     if (looksLikeModifier(path)) {
       throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.toApiException(
-          "%s does not support modifiers", oper.operator());
+          "%s does not support modifiers", oper.apiName());
     }
     return path;
   }

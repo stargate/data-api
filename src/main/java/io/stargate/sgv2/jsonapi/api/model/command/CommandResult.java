@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.ws.rs.core.Response;
 import java.util.*;
@@ -66,23 +67,29 @@ public record CommandResult(
    * things will turn out.
    */
   public static CommandResultBuilder singleDocumentBuilder(
-      boolean useErrorObjectV2, boolean debugMode) {
+      boolean useErrorObjectV2, boolean debugMode, RequestTracing requestTracing) {
     return new CommandResultBuilder(
-        CommandResultBuilder.ResponseType.SINGLE_DOCUMENT, useErrorObjectV2, debugMode);
+        CommandResultBuilder.ResponseType.SINGLE_DOCUMENT,
+        useErrorObjectV2,
+        debugMode,
+        requestTracing);
   }
 
-  /** See {@link #singleDocumentBuilder(boolean, boolean)} */
+  /** See {@link #singleDocumentBuilder(boolean, boolean, RequestTracing)} */
   public static CommandResultBuilder multiDocumentBuilder(
-      boolean useErrorObjectV2, boolean debugMode) {
+      boolean useErrorObjectV2, boolean debugMode, RequestTracing requestTracing) {
     return new CommandResultBuilder(
-        CommandResultBuilder.ResponseType.MULTI_DOCUMENT, useErrorObjectV2, debugMode);
+        CommandResultBuilder.ResponseType.MULTI_DOCUMENT,
+        useErrorObjectV2,
+        debugMode,
+        requestTracing);
   }
 
-  /** See {@link #singleDocumentBuilder(boolean, boolean)} */
+  /** See {@link #singleDocumentBuilder(boolean, boolean, RequestTracing)} */
   public static CommandResultBuilder statusOnlyBuilder(
-      boolean useErrorObjectV2, boolean debugMode) {
+      boolean useErrorObjectV2, boolean debugMode, RequestTracing requestTracing) {
     return new CommandResultBuilder(
-        CommandResultBuilder.ResponseType.STATUS_ONLY, useErrorObjectV2, debugMode);
+        CommandResultBuilder.ResponseType.STATUS_ONLY, useErrorObjectV2, debugMode, requestTracing);
   }
 
   /**

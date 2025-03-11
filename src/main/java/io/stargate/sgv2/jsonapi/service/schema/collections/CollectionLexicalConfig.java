@@ -14,6 +14,7 @@ public record CollectionLexicalConfig(
     boolean enabled,
     @JsonInclude(JsonInclude.Include.NON_NULL) @JsonProperty("analyzer")
         JsonNode analyzerDefinition) {
+
   public static final String DEFAULT_NAMED_ANALYZER = "standard";
 
   private static final JsonNode DEFAULT_NAMED_ANALYZER_NODE =

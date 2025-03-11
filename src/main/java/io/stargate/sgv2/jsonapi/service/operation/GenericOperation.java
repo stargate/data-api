@@ -95,7 +95,8 @@ public class GenericOperation<
             commandContext.cqlSessionCache(),
             new CommandQueryExecutor.DBRequestContext(
                 commandContext.requestContext().getTenantId(),
-                commandContext.requestContext().getCassandraToken()),
+                commandContext.requestContext().getCassandraToken(),
+                commandContext.requestTracing().enabled()),
             CommandQueryExecutor.QueryTarget.TABLE);
 
     // Common start pattern for all operations

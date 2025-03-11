@@ -88,6 +88,7 @@ public record EmbeddingProvidersConfigImpl(
         Optional<String> taskTypeRead,
         int maxBatchSize)
         implements RequestProperties {
+
       public RequestPropertiesImpl(
           EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig.RequestProperties
               grpcProviderConfigProperties) {

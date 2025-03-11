@@ -5,7 +5,7 @@ import static jakarta.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.ws.rs.core.Response;
 
-public class HttpResponseErrorMessageMapper {
+public class EmbeddingProviderErrorMapper {
   /**
    * Maps an HTTP response to a corresponding API exception. Individual providers can override this
    * method to provide custom exception handling.
@@ -17,6 +17,7 @@ public class HttpResponseErrorMessageMapper {
    */
   public static RuntimeException mapToAPIException(
       String providerName, Response response, String message) {
+
     // Status code == 408 and 504 for timeout
     if (response.getStatus() == Response.Status.REQUEST_TIMEOUT.getStatusCode()
         || response.getStatus() == Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {

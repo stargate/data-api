@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.fixtures.testdata;
 
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTaskTestData;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.ReadDBTaskTestData;
+import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdateOperatorTestData;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;

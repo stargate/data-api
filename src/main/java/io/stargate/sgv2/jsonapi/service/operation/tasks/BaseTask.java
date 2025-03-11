@@ -5,8 +5,8 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -38,7 +38,7 @@ public abstract class BaseTask<
         SchemaT extends SchemaObject,
         ResultSupplierT extends BaseTask.UniSupplier<ResultT>,
         ResultT>
-    implements Task<SchemaT>, PrettyPrintable {
+    implements Task<SchemaT> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BaseTask.class);
 
@@ -91,8 +91,7 @@ public abstract class BaseTask<
   public <SubT extends Task<SchemaT>> Uni<SubT> execute(CommandContext<SchemaT> commandContext) {
 
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
-          "execute() - starting {}, subclass={}", positionTaskIdStatus(), getClass().getName());
+      LOGGER.debug("execute() - starting {}", taskDesc());
     }
 
     if (!swapStatus("start execute()", TaskStatus.READY, TaskStatus.IN_PROGRESS)) {
@@ -120,7 +119,7 @@ public abstract class BaseTask<
                 double durationMs = (System.nanoTime() - startNano) / 1_000_000.0;
                 LOGGER.debug(
                     "execute() - finished {}, durationMs={}, subclass={}",
-                    positionTaskIdStatus(),
+                    taskDesc(),
                     durationMs,
                     getClass().getSimpleName());
               }
@@ -165,17 +164,17 @@ public abstract class BaseTask<
           // exception are not always bad (if we pass the exception it will log the stack)
           LOGGER.debug(
               "maybeAddFailure() - added failure for {}, failure={}",
-              positionTaskIdStatus(),
-              Objects.toString(failure, "NULL"));
+              taskDesc(),
+              Objects.toString(failure));
         }
         setStatus(TaskStatus.ERROR);
       }
     } else if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
           "maybeAddFailure() - will not add failure for {}, because has existing failure={}, attempted new failure={}",
-          positionTaskIdStatus(),
-          Objects.toString(failure, "NULL"),
-          Objects.toString(throwable, "NULL"));
+          taskDesc(),
+          Objects.toString(failure),
+          Objects.toString(throwable));
     }
     return upcastToTask();
   }
@@ -228,8 +227,8 @@ public abstract class BaseTask<
    * io.stargate.sgv2.jsonapi.exception.ExceptionHandler}.
    *
    * <p>Called after we have completed processing a task, on the first error passed to {@link
-   * #maybeAddFailure(Throwable)}. Note that any errors that resulted in a retry will not be
-   * tracked, only the final error.
+   * Task#maybeAddFailure(RuntimeException)}. Note that any errors that resulted in a retry will not
+   * be tracked, only the final error.
    *
    * @param resultSupplier The {@link ResultSupplierT} returned by the subclass from {@link
    *     #buildResultSupplier(CommandContext)}. Note: this may be <b>null</b> if the task either did
@@ -290,8 +289,7 @@ public abstract class BaseTask<
     // starting it is here incase we hae missed something in the retry
     if (status() == TaskStatus.ERROR) {
       if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug(
-            "executeIfInProgress() - in ERROR state, will not execute {}", positionTaskIdStatus());
+        LOGGER.debug("executeIfInProgress() - in ERROR state, will not execute {}", taskDesc());
       }
       return Uni.createFrom().item(null);
     }
@@ -305,8 +303,7 @@ public abstract class BaseTask<
     resultSupplier = buildResultSupplier(commandContext);
     if (resultSupplier == null) {
       throw new IllegalStateException(
-          "executeIfInProgress() - buildStatementExecutor() returned null, "
-              + positionTaskIdStatus());
+          "executeIfInProgress() - buildStatementExecutor() returned null, " + taskDesc());
     }
 
     return resultSupplier.get();
@@ -327,20 +324,19 @@ public abstract class BaseTask<
     if (!checkStatus("decideRetry", TaskStatus.IN_PROGRESS)) {
       throw new IllegalStateException(
           String.format(
-              "decideRetry() called when not IN_PROGRESS status=%s, %s",
-              status(), positionTaskIdStatus()));
+              "decideRetry() called when not IN_PROGRESS status=%s, %s", status(), taskDesc()));
     }
 
     var shouldRetry = retryPolicy.shouldRetry(throwable);
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
           "decideRetry() - retry decision: {}, shouldRetry={}, retryCount={}, retryPolicy.maxRetries={}, policy={}, for throwable {}",
-          positionTaskIdStatus(),
+          taskDesc(),
           shouldRetry,
           retryCount,
           retryPolicy.maxRetries(),
           retryPolicy.getClass().getName(), // full name for so lambda can be used
-          Objects.toString(throwable, "NULL"));
+          Objects.toString(throwable));
     }
     retryCount++;
     return shouldRetry;
@@ -366,16 +362,15 @@ public abstract class BaseTask<
       // in a lot of places we only want to log the toString() of the exception, not the stack
       // we want to log the full exception here as the one place we have the stack
       LOGGER.debug(
-          "onCompletion() - %s, result is null=%s (throwable in message if present)"
-              .formatted(positionTaskIdStatus(), result == null),
+          "onCompletion() - task completed %s, result is null=%s (throwable in message if present)"
+              .formatted(taskDesc(), result == null),
           throwable);
     }
 
     // sanity check, if we do not have a result then we should have an exception
     if (result == null && throwable == null) {
       throw new IllegalStateException(
-          String.format(
-              "onCompletion() - result and throwable are both null, %s", positionTaskIdStatus()));
+          String.format("onCompletion() - result and throwable are both null, %s", taskDesc()));
     }
 
     // handle the error, it is turned into what we want to return to the user
@@ -389,16 +384,16 @@ public abstract class BaseTask<
       // this means we are swallowing an error, may be correct but make sure we warn
       LOGGER.warn(
           "onCompletion() - exception handler returned null so error is swallowed {}, throwable={}",
-          positionTaskIdStatus(),
-          Objects.toString(throwable, "NULL"));
+          taskDesc(),
+          Objects.toString(throwable));
     }
 
     if (LOGGER.isDebugEnabled() && (null != throwable)) {
       // we started with an exception, so log what it is now
       LOGGER.debug(
-          "onCompletion() - started with a throwable, after exception handling {}, handledException={}",
-          positionTaskIdStatus(),
-          Objects.toString(handledException, "NULL"));
+          "onCompletion() - after exception handling {}, handledException={}",
+          taskDesc(),
+          Objects.toString(handledException));
     }
 
     // If we were in progress, we will switch state to either COMPLETE by calling onSuccess
@@ -418,8 +413,7 @@ public abstract class BaseTask<
       }
       default ->
           throw new IllegalStateException(
-              String.format(
-                  "onCompletion() unsupported status=%s, %s", status(), positionTaskIdStatus()));
+              String.format("onCompletion() unsupported status=%s, %s", status(), taskDesc()));
     }
     ;
   }
@@ -435,20 +429,20 @@ public abstract class BaseTask<
   protected void setStatus(TaskStatus newStatus) {
 
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("setStatus() - status changing to {} for {}", newStatus, positionTaskIdStatus());
+      LOGGER.debug("setStatus() - status changing to {} for {}", newStatus, taskDesc());
     }
     status = newStatus;
   }
 
   /**
    * Check the status of the task, if it is the expected status then return this object, otherwise
-   * set a {@link IllegalStateException} via {@link #maybeAddFailure(Throwable)} to change the
-   * status to {@link TaskStatus#ERROR}.
+   * set a {@link IllegalStateException} via {@link Task#maybeAddFailure(RuntimeException)} to
+   * change the status to {@link TaskStatus#ERROR}.
    *
    * @param context short descriptive text about what is being checked, used in the exception
    * @param expectedStatus The status that is expected
    * @return True if the task is in the expected state, otherwise a {@link IllegalStateException} is
-   *     added to the task via {@link #maybeAddFailure(Throwable)} and false is returned.
+   *     added to the task via {@link Task#maybeAddFailure(RuntimeException)} and false is returned.
    */
   protected boolean checkStatus(String context, TaskStatus expectedStatus) {
 
@@ -460,7 +454,7 @@ public abstract class BaseTask<
         new IllegalStateException(
             String.format(
                 "BaseTask: checkStatus() - failed for %s, expected %s but actual %s for %s",
-                context, expectedStatus, status(), positionTaskIdStatus())));
+                context, expectedStatus, status(), taskDesc())));
     return false;
   }
 
@@ -503,32 +497,24 @@ public abstract class BaseTask<
     throw new IllegalStateException(
         String.format(
             "BaseTask: checkTerminal() failed for %s, non-terminal status %s for %s",
-            context, status(), positionTaskIdStatus()));
-  }
-
-  /** Helper method to build a string with the position and taskId, used in logging. */
-  public String positionTaskIdStatus() {
-    return String.format("position=%d, taskId=%s, status=%s", position, taskId, status());
-  }
-
-  @Override
-  public String toString() {
-    return toString(false);
+            context, status(), taskDesc()));
   }
 
   /**
    * Pretty printing to help with logging and tests to better format the details of a task, see
-   * {@link PrettyPrintable#toString(PrettyToStringBuilder)}
+   * {@link PrettyPrintable#toString(PrettyPrintableRecorder)}
    */
   @Override
-  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    return prettyToStringBuilder
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return dataRecorder
         .append("position", position)
         .append("status", status)
         .append("taskId", taskId)
-        .append("schemaObject", schemaObject)
+        .append("schemaObject.type", schemaObject.type())
+        .append("schemaObject.name", schemaObject.name())
         .append("retryPolicy", retryPolicy)
         .append("warnings", warnings)
+        .append("suppressedWarnings", suppressedWarnings)
         .append("failure", failure);
   }
 

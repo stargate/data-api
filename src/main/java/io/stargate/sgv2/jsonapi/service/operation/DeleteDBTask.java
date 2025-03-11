@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.delete.Delete;
 import com.datastax.oss.driver.api.querybuilder.delete.DeleteSelection;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
@@ -42,12 +43,14 @@ public class DeleteDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask
 
   /** {@inheritDoc} */
   @Override
-  protected AsyncResultSetSupplier buildDBResultSupplier(CommandQueryExecutor queryExecutor) {
+  protected AsyncResultSetSupplier buildDBResultSupplier(
+      CommandContext<SchemaT> commandContext, CommandQueryExecutor queryExecutor) {
 
     var statement = buildDeleteStatement();
 
     logStatement(LOGGER, "buildResultSupplier()", statement);
-    return new AsyncResultSetSupplier(statement, () -> queryExecutor.executeWrite(statement));
+    return new AsyncResultSetSupplier(
+        commandContext, this, statement, () -> queryExecutor.executeWrite(statement));
   }
 
   /**

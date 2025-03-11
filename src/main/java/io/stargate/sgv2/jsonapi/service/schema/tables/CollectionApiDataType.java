@@ -77,5 +77,11 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
     return valueType;
   }
 
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    var builder = ApiDataType.super.recordTo(dataRecorder);
+    return builder.append("valueType", valueType);
+  }
+
   public abstract boolean isFrozen();
 }

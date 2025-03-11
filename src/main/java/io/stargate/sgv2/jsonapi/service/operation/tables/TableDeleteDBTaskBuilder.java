@@ -12,7 +12,8 @@ import org.slf4j.LoggerFactory;
 
 /** Builds a {@link DeleteDBTask} to delete from a {@link TableSchemaObject} */
 public class TableDeleteDBTaskBuilder
-    extends TaskBuilder<DeleteDBTask<TableSchemaObject>, TableSchemaObject> {
+    extends TaskBuilder<
+        DeleteDBTask<TableSchemaObject>, TableSchemaObject, TableDeleteDBTaskBuilder> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TableDeleteDBTaskBuilder.class);
 

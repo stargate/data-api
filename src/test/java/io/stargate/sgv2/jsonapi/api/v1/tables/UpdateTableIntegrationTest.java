@@ -674,8 +674,7 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
           .hasSingleApiError(
               UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES,
               UpdateException.class,
-              "null",
-              "are not allowed in")
+              "The update included invalid values for the columns: ")
           .hasNoWarnings();
     }
 

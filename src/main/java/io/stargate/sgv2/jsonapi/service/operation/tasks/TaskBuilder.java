@@ -7,7 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Extensible base for builders to create {@link Task} objects. */
-public abstract class TaskBuilder<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject> {
+public abstract class TaskBuilder<
+    TaskT extends Task<SchemaT>,
+    SchemaT extends SchemaObject,
+    SELF extends TaskBuilder<TaskT, SchemaT, SELF>> {
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskBuilder.class);
 
   // first value is zero, but we increment before we use it
@@ -28,10 +31,10 @@ public abstract class TaskBuilder<TaskT extends Task<SchemaT>, SchemaT extends S
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends TaskBuilder<TaskT, SchemaT>> T withExceptionHandlerFactory(
+  public SELF withExceptionHandlerFactory(
       DefaultDriverExceptionHandler.Factory<SchemaT> exceptionHandlerFactory) {
     this.exceptionHandlerFactory = exceptionHandlerFactory;
-    return (T) this;
+    return (SELF) this;
   }
 
   protected DefaultDriverExceptionHandler.Factory<SchemaT> getExceptionHandlerFactory() {
@@ -48,7 +51,7 @@ public abstract class TaskBuilder<TaskT extends Task<SchemaT>, SchemaT extends S
    * @param <SchemaT>
    */
   public static class BasicTaskBuilder<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject>
-      extends TaskBuilder<TaskT, SchemaT> {
+      extends TaskBuilder<TaskT, SchemaT, BasicTaskBuilder<TaskT, SchemaT>> {
 
     protected final BasicTaskConstructor<TaskT, SchemaT> taskFactory;
 

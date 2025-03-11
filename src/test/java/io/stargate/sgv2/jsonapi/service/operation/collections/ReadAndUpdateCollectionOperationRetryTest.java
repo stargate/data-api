@@ -35,7 +35,6 @@ import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -44,6 +43,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -63,8 +63,9 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
           OperationTestBase.TestColumn.ofUuid("tx_id"),
           OperationTestBase.TestColumn.ofVarchar("doc_json"));
 
-  @PostConstruct
-  public void init() {
+  @BeforeEach
+  public void beforeEach() {
+    super.beforeEach();
     COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
   }
 

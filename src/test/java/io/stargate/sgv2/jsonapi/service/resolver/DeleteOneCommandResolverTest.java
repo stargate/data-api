@@ -22,6 +22,7 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -32,11 +33,17 @@ public class DeleteOneCommandResolverTest {
   @Inject OperationsConfig operationsConfig;
   @Inject DeleteOneCommandResolver resolver;
   @InjectMock protected RequestContext dataApiRequestInfo;
+  private TestConstants testConstants = new TestConstants();
+
+  CommandContext<CollectionSchemaObject> commandContext;
+
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.collectionContext();
+  }
 
   @Nested
   class DeleteOneCommandResolveCommand {
-
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
 
     @Test
     public void idFilterCondition() throws Exception {

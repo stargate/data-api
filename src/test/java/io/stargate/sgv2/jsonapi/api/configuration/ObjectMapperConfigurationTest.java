@@ -58,6 +58,7 @@ class ObjectMapperConfigurationTest {
   @Inject ObjectMapper objectMapper;
 
   @Inject DocumentLimitsConfig documentLimitsConfig;
+  private TestConstants testConstants = new TestConstants();
 
   @Nested
   class UnmatchedOperationCommandHandlerTest {
@@ -183,7 +184,7 @@ class ObjectMapperConfigurationTest {
                         SortExpression.sort("user.age", false));
 
                 FilterClause filterClause =
-                    filterClause(TestConstants.collectionContext(), findOne);
+                    filterClause(testConstants.collectionContext(), findOne);
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);
@@ -369,7 +370,7 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               DeleteOneCommand.class,
               cmd -> {
-                FilterClause filterClause = filterClause(TestConstants.collectionContext(), cmd);
+                FilterClause filterClause = filterClause(testConstants.collectionContext(), cmd);
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);

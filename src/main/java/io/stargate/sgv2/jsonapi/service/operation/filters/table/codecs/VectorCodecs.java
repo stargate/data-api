@@ -20,6 +20,7 @@ import java.util.List;
 public abstract class VectorCodecs {
   private static final GenericType<List<Float>> FLOAT_LIST_TYPE = GenericType.listOf(Float.class);
   private static final GenericType<EJSONWrapper> EJSON_TYPE = GenericType.of(EJSONWrapper.class);
+  private static final GenericType<float[]> FLOAT_ARRAY_TYPE = new GenericType<>() {};
 
   public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> arrayToCQLFloatArrayCodec(
       VectorType vectorType) {
@@ -42,6 +43,16 @@ public abstract class VectorCodecs {
             EJSON_TYPE,
             vectorType,
             (cqlType, value) -> binaryToCQLFloatArray(vectorType, value),
+            null);
+  }
+
+  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> floatArrayToCQLFloatArrayCodec(
+      VectorType vectorType) {
+    return (JSONCodec<JavaT, CqlT>)
+        new JSONCodec<>(
+            FLOAT_ARRAY_TYPE,
+            vectorType,
+            (cqlType, value) -> floatArrayToCQLFloatArray(vectorType, value),
             null);
   }
 
@@ -79,6 +90,18 @@ public abstract class VectorCodecs {
               "expected JSON Number value as Vector element at position #%d (of %d), instead have: %s",
               ix, vectorIn.size(), literalElement));
     }
+    return floats;
+  }
+
+  /**
+   * Following the pattern for the other codecs, we have a separate method for actual conversion
+   *
+   * <p>Does not change the floats buts runs them through the validation for length.
+   */
+  static float[] floatArrayToCQLFloatArray(VectorType vectorType, float[] floats)
+      throws ToCQLCodecException {
+
+    validateVectorLength(vectorType, floats, floats.length);
     return floats;
   }
 

@@ -5,9 +5,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskPage;
 import java.util.function.Supplier;
 
 /**
@@ -15,7 +15,7 @@ import java.util.function.Supplier;
  * {@link GenericOperation}.
  */
 public class MetadataDBTaskPage<TaskT extends MetadataDBTask<SchemaT>, SchemaT extends SchemaObject>
-    extends DBTaskPage<TaskT, SchemaT> {
+    extends TaskPage<TaskT, SchemaT> {
 
   private final boolean showSchema;
   private final CommandStatus statusKey;
@@ -93,7 +93,7 @@ public class MetadataDBTaskPage<TaskT extends MetadataDBTask<SchemaT>, SchemaT e
 
       return new MetadataDBTaskPage<>(
           tasks,
-          CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode),
+          CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode, requestTracing),
           showSchema,
           statusKey);
     }

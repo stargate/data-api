@@ -82,7 +82,7 @@ public class AnnSortTableIntegrationTest extends AbstractTableIntegrationTestBas
         .hasSingleApiError(
             SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORS,
             SortException.class,
-            "The command attempted to sort on the columns: %s, %s."
+            "The command attempted to vector sort on the columns: %s, %s."
                 .formatted(
                     SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL),
                     SCENARIO.fieldName(VectorDimension5TableScenario.UNINDEXED_VECTOR_COL)));

@@ -14,6 +14,8 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A page of results from an insert command, use {@link #accumulator(CommandContext)} to get a
@@ -24,6 +26,8 @@ import java.util.*;
  */
 public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
     extends DBTaskPage<InsertDBTask<SchemaT>, SchemaT> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(InsertDBTaskPage.class);
 
   // True if the response should include detailed info for each document
   private final boolean returnDocumentResponses;
@@ -183,7 +187,7 @@ public class InsertDBTaskPage<SchemaT extends TableBasedSchemaObject>
 
       return new InsertDBTaskPage<>(
           tasks,
-          CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode),
+          CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode, requestTracing),
           returnDocumentResponses);
     }
   }

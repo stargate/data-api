@@ -88,6 +88,14 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
     return valueType == ApiDataTypeDefs.FLOAT;
   }
 
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    var builder = super.recordTo(dataRecorder);
+    builder.append("dimension", dimension);
+    builder.append("vectorizeDefinition", vectorizeDefinition);
+    return builder;
+  }
+
   private static class ColumnDescFactory
       extends TypeFactoryFromColumnDesc<ApiVectorType, VectorColumnDesc> {
 

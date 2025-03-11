@@ -27,6 +27,7 @@ import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -39,11 +40,17 @@ public class UpdateOneCommandResolverTest {
   @Inject DocumentShredder documentShredder;
   @Inject UpdateOneCommandResolver resolver;
   @InjectMock protected RequestContext dataApiRequestInfo;
+  private TestConstants testConstants = new TestConstants();
+
+  CommandContext<CollectionSchemaObject> commandContext;
+
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.collectionContext();
+  }
 
   @Nested
   class Resolve {
-
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
 
     @Test
     public void idFilterCondition() throws Exception {

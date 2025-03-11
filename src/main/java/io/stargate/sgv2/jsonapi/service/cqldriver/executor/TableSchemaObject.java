@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,5 +42,10 @@ public class TableSchemaObject extends TableBasedSchemaObject {
     var vectorConfig = VectorConfig.from(tableMetadata, objectMapper);
     var apiTableDef = ApiTableDef.FROM_CQL_FACTORY.create(tableMetadata, vectorConfig);
     return new TableSchemaObject(tableMetadata, vectorConfig, apiTableDef);
+  }
+
+  @Override
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return super.recordTo(dataRecorder).append("apiTableDef", apiTableDef);
   }
 }

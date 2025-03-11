@@ -7,10 +7,8 @@ import com.datastax.oss.driver.internal.core.type.DefaultVectorType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import java.math.BigDecimal;
 import java.util.Random;
 
@@ -29,9 +27,9 @@ public class DefaultData implements FixtureData {
   private static final Random RANDOM = new Random();
 
   @Override
-  public JsonLiteral<?> fromJSON(DataType type) {
+  public JsonNode fromJSON(DataType type) {
     // We want to get the value type that the RowShredder will generate, so just call it directly
-    return RowShredder.shredValue(getJsonNode(type));
+    return getJsonNode(type);
   }
 
   protected JsonNode getJsonNode(DataType type) {

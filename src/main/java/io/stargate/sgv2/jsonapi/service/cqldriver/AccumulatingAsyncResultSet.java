@@ -64,7 +64,7 @@ public class AccumulatingAsyncResultSet implements AsyncResultSet {
   @Override
   @NonNull
   public ExecutionInfo getExecutionInfo() {
-    throw new NotImplementedException();
+    throw new UnsupportedOperationException();
   }
 
   @Override

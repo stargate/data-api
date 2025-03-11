@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -28,10 +29,17 @@ public class InsertManyCommandResolverTest {
   @Inject InsertManyCommandResolver resolver;
   @InjectMock protected RequestContext dataApiRequestInfo;
 
+  private TestConstants testConstants = new TestConstants();
+
+  CommandContext<CollectionSchemaObject> commandContext;
+
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.collectionContext();
+  }
+
   @Nested
   class ResolveCommand {
-
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
 
     @Test
     public void happyPath() throws Exception {

@@ -74,7 +74,7 @@ public class CollectionResource {
 
   @Inject private SchemaCache schemaCache;
 
-  @Inject private EmbeddingProviderFactory embeddingProviderFactory;
+  private EmbeddingProviderFactory embeddingProviderFactory;
 
   @Inject private RequestContext requestContext;
 
@@ -89,14 +89,17 @@ public class CollectionResource {
   public CollectionResource(
       MeteredCommandProcessor meteredCommandProcessor,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      CQLSessionCache cqlSessionCache) {
+      CQLSessionCache cqlSessionCache,
+      EmbeddingProviderFactory embeddingProviderFactory) {
+    this.embeddingProviderFactory = embeddingProviderFactory;
     this.meteredCommandProcessor = meteredCommandProcessor;
 
     contextBuilderSupplier =
         CommandContext.builderSupplier()
             .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
             .withCqlSessionCache(cqlSessionCache)
-            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty());
+            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
+            .withEmbeddingProviderFactory(embeddingProviderFactory);
   }
 
   @Operation(

@@ -31,6 +31,7 @@ import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -42,11 +43,17 @@ public class FindOneAndReplaceCommandResolverTest {
   @Inject DocumentShredder documentShredder;
   @Inject FindOneAndReplaceCommandResolver resolver;
   @InjectMock protected RequestContext dataApiRequestInfo;
+  private TestConstants testConstants = new TestConstants();
+
+  CommandContext<CollectionSchemaObject> commandContext;
+
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.collectionContext();
+  }
 
   @Nested
   class Resolve {
-
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.collectionContext();
 
     @Test
     public void invalidVectorizeUsage() throws Exception {

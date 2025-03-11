@@ -10,7 +10,8 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import java.util.Objects;
 
 /** Builds a {@link DropTableDBTask}. */
-public class DropTableDBTaskBuilder extends TaskBuilder<DropTableDBTask, KeyspaceSchemaObject> {
+public class DropTableDBTaskBuilder
+    extends TaskBuilder<DropTableDBTask, KeyspaceSchemaObject, DropTableDBTaskBuilder> {
 
   private CqlIdentifier name = null;
   private SchemaDBTask.SchemaRetryPolicy schemaRetryPolicy = null;

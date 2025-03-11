@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserColumn;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -21,7 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** A {@link ApiColumnDefContainer} that maintains the order of the columns as they were added. */
-public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColumnDef> {
+public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColumnDef>
+    implements Recordable {
+
   private static final Logger LOGGER = LoggerFactory.getLogger(ApiColumnDefContainer.class);
 
   private static final ApiColumnDefContainer IMMUTABLE_EMPTY =
@@ -157,6 +160,12 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     ColumnsDescContainer columnsDesc = new ColumnsDescContainer(size());
     forEach((name, columnDef) -> columnsDesc.put(name, columnDef.columnDesc()));
     return columnsDesc;
+  }
+
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    // only want to include the ApiColumnDefs
+    return dataRecorder.append("columns", this.values());
   }
 
   public static class CqlColumnFactory {

@@ -5,9 +5,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskPage;
 import java.util.function.Supplier;
 
 /**
@@ -15,7 +15,7 @@ import java.util.function.Supplier;
  * pass to {@link GenericOperation}.
  */
 public class SchemaDBTaskPage<TaskT extends SchemaDBTask<SchemaT>, SchemaT extends SchemaObject>
-    extends DBTaskPage<TaskT, SchemaT> {
+    extends TaskPage<TaskT, SchemaT> {
 
   private SchemaDBTaskPage(TaskGroup<TaskT, SchemaT> tasks, CommandResultBuilder resultBuilder) {
     super(tasks, resultBuilder);
@@ -54,7 +54,7 @@ public class SchemaDBTaskPage<TaskT extends SchemaDBTask<SchemaT>, SchemaT exten
     @Override
     public Supplier<CommandResult> getResults() {
       return new SchemaDBTaskPage<>(
-          tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode));
+          tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode, requestTracing));
     }
   }
 }

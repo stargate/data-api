@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.request;
 
+import com.fasterxml.uuid.Generators;
+import com.fasterxml.uuid.NoArgGenerator;
 import io.stargate.sgv2.jsonapi.api.request.tenant.DataApiTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
 import io.vertx.ext.web.RoutingContext;
@@ -18,10 +20,14 @@ import java.util.Optional;
  */
 @RequestScoped
 public class RequestContext {
+
+  private static final NoArgGenerator UUID_V7_GENERATOR = Generators.timeBasedEpochGenerator();
+
   private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
   private final EmbeddingCredentials embeddingCredentials;
   private final HttpHeaderAccess httpHeaders;
+  private final String requestId;
 
   /**
    * Constructor that will be useful in the offline library mode, where only the tenant will be set
@@ -34,6 +40,7 @@ public class RequestContext {
     this.cassandraToken = Optional.empty();
     this.embeddingCredentials = null;
     httpHeaders = null;
+    requestId = generateRequestId();
   }
 
   @Inject
@@ -47,6 +54,15 @@ public class RequestContext {
     this.tenantId = (tenantResolver.get()).resolve(routingContext, securityContext);
     this.cassandraToken = (tokenResolver.get()).resolve(routingContext, securityContext);
     httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
+    requestId = generateRequestId();
+  }
+
+  private static String generateRequestId() {
+    return UUID_V7_GENERATOR.generate().toString();
+  }
+
+  public String getRequestId() {
+    return requestId;
   }
 
   public Optional<String> getTenantId() {
