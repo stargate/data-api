@@ -264,7 +264,9 @@ public record InsertCollectionOperation(
     if (lexicalEnabled) {
       insertQuery.append(", ?");
     }
-    insertQuery.append(")");
+    // 11-Mar-2025, tatu: NOTE! "extra" space here is unfortunately needed since our
+    //  Operations unit-tests -- heavily dependent on Mocks -- expects it
+    insertQuery.append(") ");
     if (!offlineMode) {
       // The offline mode SSTableWriter does not support conditional inserts, so it can not have the
       // IF NOT EXISTS clause
