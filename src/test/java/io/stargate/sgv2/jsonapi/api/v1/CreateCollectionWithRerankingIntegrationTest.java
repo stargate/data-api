@@ -182,12 +182,12 @@ public class CreateCollectionWithRerankingIntegrationTest
       String json = createRequestWithReranking(collectionName, "{ }");
 
       givenHeadersPostJsonThenOk(json)
-              .body("$", responseIsError())
-              .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-              .body(
-                      "errors[0].message",
-                      containsString(
-                              "The provided options are invalid: 'enabled' is required property for 'reranking'"));
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "The provided options are invalid: 'enabled' is required property for 'reranking'"));
     }
   }
 
