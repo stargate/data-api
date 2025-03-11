@@ -21,7 +21,7 @@ public record FindRerankProvidersOperation(RerankProvidersConfig config) impleme
     return Uni.createFrom()
         .item(
             () -> {
-              Map<String, FindRerankProvidersOperation.RerankProviderResponse> embeddingProviders =
+              Map<String, FindRerankProvidersOperation.RerankProviderResponse> rerankProviders =
                   config.providers().entrySet().stream()
                       .filter(entry -> entry.getValue().enabled())
                       .collect(
@@ -30,7 +30,7 @@ public record FindRerankProvidersOperation(RerankProvidersConfig config) impleme
                               entry ->
                                   FindRerankProvidersOperation.RerankProviderResponse.provider(
                                       entry.getValue())));
-              return new Result(embeddingProviders);
+              return new Result(rerankProviders);
             });
   }
 
@@ -69,7 +69,7 @@ public record FindRerankProvidersOperation(RerankProvidersConfig config) impleme
           .map(
               model ->
                   new RerankProvidersConfigImpl.RerankProviderConfigImpl.ModelConfigImpl(
-                      model.name(), model.url(), null))
+                      model.name(), model.isDefault(), model.url(), null))
           .collect(Collectors.toList());
     }
   }

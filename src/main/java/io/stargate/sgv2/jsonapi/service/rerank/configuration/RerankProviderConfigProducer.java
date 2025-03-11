@@ -106,6 +106,7 @@ public class RerankProviderConfigProducer {
                 model ->
                     new RerankProvidersConfigImpl.RerankProviderConfigImpl.ModelConfigImpl(
                         model.getName(),
+                        model.getIsDefault(),
                         model.getUrl(),
                         new RerankProvidersConfigImpl.RerankProviderConfigImpl.ModelConfigImpl
                             .RequestPropertiesImpl(
@@ -118,6 +119,7 @@ public class RerankProviderConfigProducer {
             .collect(Collectors.toList());
 
     return new RerankProvidersConfigImpl.RerankProviderConfigImpl(
+        grpcProviderConfig.getIsDefault(),
         grpcProviderConfig.getDisplayName(),
         grpcProviderConfig.getEnabled(),
         supportedAuthenticationsMap,

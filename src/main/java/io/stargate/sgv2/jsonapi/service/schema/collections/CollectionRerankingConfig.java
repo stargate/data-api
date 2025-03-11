@@ -18,9 +18,6 @@ public record CollectionRerankingConfig(
     @JsonInclude(JsonInclude.Include.NON_NULL) @JsonProperty("service")
         RerankProviderConfig rerankProviderConfig) {
 
-  private static final RerankProviderConfig DEFAULT_RERANK_SERVICE =
-      new RerankProviderConfig("nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null);
-
   // Create a nested record for the provider-related fields
   public record RerankProviderConfig(
       String provider,
@@ -45,8 +42,27 @@ public record CollectionRerankingConfig(
    * where no configuration defined: needs to be enabled, using "nvidia" reranking service
    * configuration.
    */
-  public static CollectionRerankingConfig configForNewCollections() {
-    return new CollectionRerankingConfig(true, DEFAULT_RERANK_SERVICE);
+  public static CollectionRerankingConfig configForNewCollections(
+      RerankProvidersConfig rerankProvidersConfig) {
+    // get the default provider from the config
+    var defaultProvider =
+        rerankProvidersConfig.providers().entrySet().stream()
+            .filter(entry -> entry.getValue().isDefault())
+            .findFirst();
+    if (defaultProvider.isEmpty()) {
+      return new CollectionRerankingConfig(false, null);
+    }
+    var provider = defaultProvider.get().getKey();
+    var modelName =
+        rerankProvidersConfig.providers().get(provider).models().stream()
+            .filter(RerankProvidersConfig.RerankProviderConfig.ModelConfig::isDefault)
+            .findFirst()
+            .map(RerankProvidersConfig.RerankProviderConfig.ModelConfig::name)
+            .get();
+
+    var defaultRerankingService = new RerankProviderConfig(provider, modelName, null, null);
+
+    return new CollectionRerankingConfig(true, defaultRerankingService);
   }
 
   /**
@@ -113,7 +129,7 @@ public record CollectionRerankingConfig(
       RerankProvidersConfig rerankProvidersConfig) {
     // If not defined, use default for new collections; valid option
     if (rerankingConfig == null) {
-      return configForNewCollections();
+      return configForNewCollections(rerankProvidersConfig);
     }
     // Otherwise validate and construct
     Boolean enabled = rerankingConfig.enabled();
@@ -121,10 +137,15 @@ public record CollectionRerankingConfig(
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "'enabled' is required property for 'reranking' Object value");
     }
+    // If not enabled, clear out any reranking settings (but don't fail)
+    if (!enabled) {
+      return new CollectionRerankingConfig(enabled, null);
+    }
 
+    // If enabled, but no service config, use default
     var rerankingServiceConfig = rerankingConfig.rerankingServiceConfig();
     if (rerankingServiceConfig == null) {
-      return new CollectionRerankingConfig(enabled, DEFAULT_RERANK_SERVICE);
+      return configForNewCollections(rerankProvidersConfig);
     }
 
     String provider = rerankingConfig.rerankingServiceConfig().provider();

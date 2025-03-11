@@ -171,6 +171,61 @@ public class CreateCollectionWithRerankingIntegrationTest
 
       deleteCollection(collectionName);
     }
+
+    @Test
+    void createRerankingWithDisabledAndModel() {
+      final String collectionName = "coll_Reranking_disabled" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithReranking(
+              collectionName,
+              """
+                            {
+                                "enabled": false,
+                                "service": {
+                                    "provider": "nvidia",
+                                    "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+                                }
+                            }
+                            """);
+
+      givenHeadersPostJsonThenOkNoErrors(json)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+
+      // verify the collection using FindCollection
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                                {
+                                    "findCollections": {
+                                        "options" : {
+                                            "explain": true
+                                        }
+                                     }
+                                }
+                                """)
+          .body("$", responseIsDDLSuccess())
+          .body("status.collections", hasSize(1))
+          .body(
+              "status.collections[0]",
+              jsonEquals(
+                      """
+                                {
+                                                "name": "%s",
+                                                "options": {
+                                                    "lexical": {
+                                                        "enabled": true,
+                                                        "analyzer": "standard"
+                                                    },
+                                                    "reranking": {
+                                                        "enabled": false
+                                                    }
+                                                }
+                                            }
+                                """
+                      .formatted(collectionName)));
+
+      deleteCollection(collectionName);
+    }
   }
 
   @Nested

@@ -7,6 +7,7 @@ public record RerankProvidersConfigImpl(Map<String, RerankProviderConfig> provid
     implements RerankProvidersConfig {
 
   public record RerankProviderConfigImpl(
+      boolean isDefault,
       String displayName,
       boolean enabled,
       Map<AuthenticationType, AuthenticationConfig> supportedAuthentications,
@@ -19,7 +20,8 @@ public record RerankProvidersConfigImpl(Map<String, RerankProviderConfig> provid
       public record TokenConfigImpl(String accepted, String forwarded) implements TokenConfig {}
     }
 
-    public record ModelConfigImpl(String name, String url, RequestProperties properties)
+    public record ModelConfigImpl(
+        String name, boolean isDefault, String url, RequestProperties properties)
         implements ModelConfig {
 
       public record RequestPropertiesImpl(
