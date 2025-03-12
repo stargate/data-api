@@ -60,6 +60,8 @@ public record CollectionRerankingConfig(
             .map(RerankProvidersConfig.RerankProviderConfig.ModelConfig::name)
             .get();
 
+    // TODO(Hazel): Assume no authentication or parameters for default provider and model now, may
+    // need to change
     var defaultRerankingService = new RerankProviderConfig(provider, modelName, null, null);
 
     return new CollectionRerankingConfig(true, defaultRerankingService);
