@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -74,8 +75,12 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     private final CollectionLexicalConfig LEXICAL_CONFIG =
         CollectionLexicalConfig.configForNewCollections();
 
-    private final CollectionRerankingConfig RERANKING_CONFIG =
-        CollectionRerankingConfig.configForNewCollections(rerankProvidersConfig);
+    private CollectionRerankingConfig RERANKING_CONFIG;
+
+    @BeforeEach
+    public void init() {
+      RERANKING_CONFIG = CollectionRerankingConfig.configForNewCollections(rerankProvidersConfig);
+    }
 
     @Test
     public void createCollectionNoVector() {
