@@ -1,10 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.collection;
 
-import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DATA_CONTAINS;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DOC_ID;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
@@ -100,7 +100,7 @@ public class InCollectionFilter extends CollectionFilter {
             this.collectionIndexUsage.arrayContainsTag = true;
             inResult.add(
                 BuiltCondition.of(
-                    ConditionLHS.column(DATA_CONTAINS),
+                    ConditionLHS.column(DocumentConstants.Columns.DATA_CONTAINS_COLUMN_NAME),
                     BuiltConditionPredicate.CONTAINS,
                     new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
           }
@@ -131,7 +131,7 @@ public class InCollectionFilter extends CollectionFilter {
               this.collectionIndexUsage.arrayContainsTag = true;
               ninResults.add(
                   BuiltCondition.of(
-                      ConditionLHS.column(DATA_CONTAINS),
+                      ConditionLHS.column(DocumentConstants.Columns.DATA_CONTAINS_COLUMN_NAME),
                       BuiltConditionPredicate.NOT_CONTAINS,
                       new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
             }

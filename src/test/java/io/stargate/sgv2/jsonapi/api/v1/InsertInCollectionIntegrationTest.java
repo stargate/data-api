@@ -40,7 +40,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase {
+public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegrationTestBase {
   private final ObjectMapper MAPPER = new ObjectMapper();
 
   private static final Pattern UUID_REGEX =
@@ -57,9 +57,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void shredFailureOnNullDoc() {
-      // This used to be a unit test for the InsertOneCommandResolver calld shredderFailure(), but
-      // the resolver does not throw this
-      // error any more, it is instead handed in the result.
+      // This used to be a unit test for the InsertOneCommandResolver called shredderFailure(), but
+      // the resolver does not throw this  error anymore, it is instead handed in the result.
       givenHeadersPostJsonThenOk(
               """
             {
@@ -285,6 +284,90 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
             "username":"user4"
           }
           """));
+    }
+
+    // NOTE: Relies on default settings allowing insertion of "$lexical" content
+    @Test
+    public void insertDocumentWithLexicalSimple() {
+      final String FULL_DOC =
+          """
+              {
+                "_id": "lexical1",
+                "username": "user-lexical",
+                "extra": 123,
+                "$lexical": "monkeys and bananas"
+              }
+              """;
+      givenHeadersPostJsonThenOkNoErrors(
+                  """
+                      {
+                        "insertOne": {
+                          "document": %s
+                        }
+                      }
+                      """
+                  .formatted(FULL_DOC))
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("lexical1"));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "lexical1"}
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          // NOTE: "$lexical" is not included in the response by default, ensure
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                      {
+                          "_id": "lexical1",
+                          "username": "user-lexical",
+                          "extra": 123
+                      }
+                      """));
+
+      // But can explicitly include: either via "include-it-all"
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "lexical1"},
+                          "projection": { "*": 1 }
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]", jsonEquals(FULL_DOC));
+
+      // Or just the "$lexical" field (plus always _id)
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "lexical1"},
+                          "projection": {
+                            "$lexical": 1,
+                            "extra": 1
+                          }
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                                {
+                                    "_id": "lexical1",
+                                    "extra": 123,
+                                    "$lexical": "monkeys and bananas"
+                                }
+                                """));
     }
 
     @Test
@@ -1643,13 +1726,13 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   class Metrics {
     @Test
     public void checkInsertOneMetrics() {
-      InsertIntegrationTest.super.checkMetrics("InsertOneCommand");
-      InsertIntegrationTest.super.checkDriverMetricsTenantId();
+      InsertInCollectionIntegrationTest.super.checkMetrics("InsertOneCommand");
+      InsertInCollectionIntegrationTest.super.checkDriverMetricsTenantId();
     }
 
     @Test
     public void checkInsertManyMetrics() {
-      InsertIntegrationTest.super.checkMetrics("InsertManyCommand");
+      InsertInCollectionIntegrationTest.super.checkMetrics("InsertManyCommand");
     }
   }
 

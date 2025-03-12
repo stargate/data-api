@@ -185,7 +185,7 @@ public class DocumentProjectorTest {
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
-              "Unsupported projection parameter: '$vector'/'$vectorize' are the only allowed paths that can start with '$'");
+              "Unsupported projection parameter: '$lexical'/'$vector'/'$vectorize' are the only allowed paths that can start with '$'");
     }
   }
 
@@ -365,7 +365,7 @@ public class DocumentProjectorTest {
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
-              "Unsupported projection parameter: '$vector'/'$vectorize' are the only allowed paths that can start with '$'");
+              "Unsupported projection parameter: '$lexical'/'$vector'/'$vectorize' are the only allowed paths that can start with '$'");
     }
 
     @Test
@@ -435,6 +435,7 @@ public class DocumentProjectorTest {
                                       {
                                          "_id" : 1,
                                          "value1": 42,
+                                         "$lexical": "brown fox",
                                          "$vectorize": "Quick brown fox",
                                          "$vector": [0.0, 1.0],
                                          "value2": -3

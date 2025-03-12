@@ -27,7 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Refactored as seperate class that represent a collection property.
+ * Refactored as separate class that represent a collection property.
  *
  * <p>TODO: there are a LOT of different ways this is constructed, need to refactor
  */
@@ -35,6 +35,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
   public static final SchemaObjectType TYPE = SchemaObjectType.COLLECTION;
 
+  // Collection Schema to use if all information missing: Vector not configured,
+  // no Lexical enabled
   public static final CollectionSchemaObject MISSING =
       new CollectionSchemaObject(
           SchemaObjectName.MISSING,
@@ -152,7 +154,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     String collectionName = table.getName().asInternal();
     // get vector column
     final Optional<ColumnMetadata> vectorColumn =
-        table.getColumn(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME);
+        table.getColumn(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME);
     boolean vectorEnabled = vectorColumn.isPresent();
     final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
 
@@ -163,7 +165,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       IndexMetadata vectorIndex = null;
       Map<CqlIdentifier, IndexMetadata> indexMap = table.getIndexes();
       for (CqlIdentifier key : indexMap.keySet()) {
-        if (key.asInternal().endsWith(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)) {
+        if (key.asInternal().endsWith(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME)) {
           vectorIndex = indexMap.get(key);
           break;
         }

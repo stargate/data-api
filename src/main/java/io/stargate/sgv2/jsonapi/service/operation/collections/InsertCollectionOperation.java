@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.InsertOperationPage;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -191,7 +192,7 @@ public record InsertCollectionOperation(
   }
 
   // inserts a single document
-  private static Uni<DocumentId> insertDocument(
+  private Uni<DocumentId> insertDocument(
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       String query,
@@ -205,11 +206,17 @@ public record InsertCollectionOperation(
 
     // bind and execute
     final WritableShreddedDocument doc = insertion.document;
-    SimpleStatement boundStatement = bindInsertValues(query, doc, vectorEnabled, offlineMode);
+    SimpleStatement boundStatement =
+        bindInsertValues(
+            query,
+            doc,
+            vectorEnabled,
+            offlineMode,
+            commandContext().schemaObject().lexicalEnabled());
     return queryExecutor
         .executeWrite(dataApiRequestInfo, boundStatement)
 
-        // ensure document was written, if no applied continue with error
+        // ensure document was written, if no applied, continue with error
         .onItem()
         .transformToUni(
             result -> {
@@ -228,77 +235,77 @@ public record InsertCollectionOperation(
 
   // utility for building the insert query
   public String buildInsertQuery(boolean vectorEnabled) {
+    final boolean lexicalEnabled = commandContext().schemaObject().lexicalEnabled();
+    StringBuilder insertQuery = new StringBuilder(200);
+    final SchemaObjectName tableName = commandContext.schemaObject().name();
+
+    insertQuery
+        .append("INSERT INTO \"")
+        .append(tableName.keyspace())
+        .append("\".\"")
+        .append(tableName.table())
+        .append("\"")
+        .append(
+            " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,")
+        .append(" query_dbl_values, query_text_values, query_null_values, query_timestamp_values");
     if (vectorEnabled) {
-      String insertWithVector =
-          "INSERT INTO \"%s\".\"%s\""
-              + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
-              + " VALUES"
-              + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
-              + (offlineMode ? "" : " IF NOT EXISTS");
-      // The offline mode SSTableWriter does not support conditional inserts, so it can not have the
-      // IF NOT EXISTS clause
-      return String.format(
-          insertWithVector,
-          commandContext.schemaObject().name().keyspace(),
-          commandContext.schemaObject().name().table());
-    } else {
-      String insert =
-          "INSERT INTO \"%s\".\"%s\""
-              + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
-              + " VALUES"
-              + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
-              + (offlineMode ? "" : " IF NOT EXISTS");
-      // The offline mode SSTableWriter does not support conditional inserts, so it can not have the
-      // IF NOT EXISTS clause
-      return String.format(
-          insert,
-          commandContext.schemaObject().name().keyspace(),
-          commandContext.schemaObject().name().table());
+      insertQuery.append(", query_vector_value");
     }
+    if (lexicalEnabled) {
+      insertQuery.append(", query_lexical_value");
+    }
+
+    insertQuery.append(") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?");
+    if (vectorEnabled) {
+      insertQuery.append(", ?");
+    }
+    if (lexicalEnabled) {
+      insertQuery.append(", ?");
+    }
+    insertQuery.append(")");
+    if (!offlineMode) {
+      // The offline mode SSTableWriter does not support conditional inserts, so it can not have the
+      // IF NOT EXISTS clause
+      insertQuery.append(" IF NOT EXISTS");
+    }
+    return insertQuery.toString();
   }
 
   // utility for query binding
   private static SimpleStatement bindInsertValues(
-      String query, WritableShreddedDocument doc, boolean vectorEnabled, boolean offlineMode) {
+      String query,
+      WritableShreddedDocument doc,
+      boolean vectorEnabled,
+      boolean offlineMode,
+      boolean lexicalEnabled) {
     // respect the order in the DocsApiConstants.ALL_COLUMNS_NAMES
+    // Build dynamically due to number of permutations
+    List<Object> positional = new ArrayList<>(16); // from 11 to 13 entries currently
+
+    positional.add(CQLBindValues.getDocumentIdValue(doc.id()));
+    positional.add(doc.nextTxID());
+    positional.add(doc.docJson());
+    positional.add(CQLBindValues.getSetValue(doc.existKeys()));
+    positional.add(CQLBindValues.getIntegerMapValues(doc.arraySize()));
+    positional.add(CQLBindValues.getStringSetValue(doc.arrayContains()));
+    positional.add(CQLBindValues.getBooleanMapValues(doc.queryBoolValues()));
+    positional.add(CQLBindValues.getDoubleMapValues(doc.queryNumberValues()));
+    positional.add(CQLBindValues.getStringMapValues(doc.queryTextValues()));
+    positional.add(CQLBindValues.getSetValue(doc.queryNullValues()));
+    // The offline SSTableWriter component expects the timestamp as a Date object instead of
+    // Instant for Date data type
+    positional.add(
+        offlineMode
+            ? CQLBindValues.getTimestampAsDateMapValues(doc.queryTimestampValues())
+            : CQLBindValues.getTimestampMapValues(doc.queryTimestampValues()));
+
     if (vectorEnabled) {
-      return SimpleStatement.newInstance(
-          query,
-          CQLBindValues.getDocumentIdValue(doc.id()),
-          doc.nextTxID(),
-          doc.docJson(),
-          CQLBindValues.getSetValue(doc.existKeys()),
-          CQLBindValues.getIntegerMapValues(doc.arraySize()),
-          CQLBindValues.getStringSetValue(doc.arrayContains()),
-          CQLBindValues.getBooleanMapValues(doc.queryBoolValues()),
-          CQLBindValues.getDoubleMapValues(doc.queryNumberValues()),
-          CQLBindValues.getStringMapValues(doc.queryTextValues()),
-          CQLBindValues.getSetValue(doc.queryNullValues()),
-          // The offline SSTableWriter component expects the timestamp as a Date object instead of
-          // Instant for Date data type
-          offlineMode
-              ? CQLBindValues.getTimestampAsDateMapValues(doc.queryTimestampValues())
-              : CQLBindValues.getTimestampMapValues(doc.queryTimestampValues()),
-          CQLBindValues.getVectorValue(doc.queryVectorValues()));
-    } else {
-      return SimpleStatement.newInstance(
-          query,
-          CQLBindValues.getDocumentIdValue(doc.id()),
-          doc.nextTxID(),
-          doc.docJson(),
-          CQLBindValues.getSetValue(doc.existKeys()),
-          CQLBindValues.getIntegerMapValues(doc.arraySize()),
-          CQLBindValues.getStringSetValue(doc.arrayContains()),
-          CQLBindValues.getBooleanMapValues(doc.queryBoolValues()),
-          CQLBindValues.getDoubleMapValues(doc.queryNumberValues()),
-          CQLBindValues.getStringMapValues(doc.queryTextValues()),
-          CQLBindValues.getSetValue(doc.queryNullValues()),
-          // The offline SSTableWriter component expects the timestamp as a Date object instead of
-          // Instant for Date data type
-          offlineMode
-              ? CQLBindValues.getTimestampAsDateMapValues(doc.queryTimestampValues())
-              : CQLBindValues.getTimestampMapValues(doc.queryTimestampValues()));
+      positional.add(CQLBindValues.getVectorValue(doc.queryVectorValues()));
     }
+    if (lexicalEnabled) {
+      positional.add(doc.queryLexicalValue());
+    }
+    return SimpleStatement.newInstance(query, positional.toArray(new Object[0]));
   }
 
   // simple exception to propagate fail fast

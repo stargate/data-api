@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.internal.core.type.PrimitiveType;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +65,8 @@ public class CollectionTableMatcher implements Predicate<TableMetadata> {
                     new PrimitiveType(ProtocolConstants.DataType.DECIMAL)))
             .or(
                 new CqlColumnMatcher.Map(
-                    CqlIdentifier.fromInternal("query_text_values"),
+                    CqlIdentifier.fromInternal(
+                        DocumentConstants.Columns.QUERY_TEXT_MAP_COLUMN_NAME),
                     new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
                     new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
             .or(
@@ -78,7 +80,7 @@ public class CollectionTableMatcher implements Predicate<TableMetadata> {
                     new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
             .or(
                 new CqlColumnMatcher.BasicType(
-                    CqlIdentifier.fromInternal("query_lexical_value"),
+                    CqlIdentifier.fromInternal(DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME),
                     new PrimitiveType(ProtocolConstants.DataType.VARCHAR)));
 
     // TODO: do not duplicate all of the code above below here, just add one extra predicate if we
@@ -121,7 +123,8 @@ public class CollectionTableMatcher implements Predicate<TableMetadata> {
                     new PrimitiveType(ProtocolConstants.DataType.DECIMAL)))
             .or(
                 new CqlColumnMatcher.Map(
-                    CqlIdentifier.fromInternal("query_text_values"),
+                    CqlIdentifier.fromInternal(
+                        DocumentConstants.Columns.QUERY_TEXT_MAP_COLUMN_NAME),
                     new PrimitiveType(ProtocolConstants.DataType.VARCHAR),
                     new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
             .or(
@@ -135,7 +138,7 @@ public class CollectionTableMatcher implements Predicate<TableMetadata> {
                     new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
             .or(
                 new CqlColumnMatcher.BasicType(
-                    CqlIdentifier.fromInternal("query_lexical_value"),
+                    CqlIdentifier.fromInternal(DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME),
                     new PrimitiveType(ProtocolConstants.DataType.VARCHAR)))
             .or(
                 new CqlColumnMatcher.Vector(

@@ -32,8 +32,19 @@ public final class TestConstants {
   public static final SchemaObjectName SCHEMA_OBJECT_NAME =
       new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
 
-  // Schema objects for testing
+  // Schema objects for testing: uses current ("new") defaults
   public static final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT =
+      new CollectionSchemaObject(
+          SCHEMA_OBJECT_NAME,
+          null,
+          IdConfig.defaultIdConfig(),
+          VectorConfig.NOT_ENABLED_CONFIG,
+          null,
+          // Use configs that by default enable lexical:
+          CollectionLexicalConfig.configForNewCollections());
+
+  // Schema object for testing with legacy (pre-lexical-config) defaults
+  public static final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT_LEGACY =
       new CollectionSchemaObject(
           SCHEMA_OBJECT_NAME,
           null,
