@@ -7,7 +7,7 @@ import com.google.common.collect.Lists;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -304,7 +304,7 @@ public record FindCollectionOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     final boolean vectorEnabled = commandContext().schemaObject().vectorConfig().vectorEnabled();
     if (vector() != null && !vectorEnabled) {
       return Uni.createFrom()
@@ -339,7 +339,7 @@ public record FindCollectionOperation(
    * @return
    */
   public Uni<FindResponse> getDocuments(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       String pageState,
       IDCollectionFilter additionalIdFilter) {

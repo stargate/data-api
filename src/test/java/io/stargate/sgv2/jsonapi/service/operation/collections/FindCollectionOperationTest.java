@@ -97,7 +97,8 @@ public class FindCollectionOperationTest extends OperationTestBase {
                             null))),
                 null,
                 CollectionLexicalConfig.configForLegacyCollections()),
-            jsonProcessingMetricsReporter);
+            jsonProcessingMetricsReporter,
+            null);
   }
 
   @Nested

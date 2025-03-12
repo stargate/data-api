@@ -17,7 +17,7 @@ import com.datastax.oss.protocol.internal.response.result.RawType;
 import io.quarkus.test.InjectMock;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
@@ -35,7 +35,13 @@ import org.apache.commons.lang3.RandomStringUtils;
 
 public class OperationTestBase {
 
+  // aaron feb 11 2025 - not sure how this is working, not sure how @Inject works when then
+  // super class is not under quarkus control. But if I remove it tests break
   @Inject JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
+
+  // this will work even though the base class is not managed by Quarkus
+  @InjectMock protected RequestContext dataApiRequestInfo;
+
   protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final SchemaObjectName SCHEMA_OBJECT_NAME =
@@ -55,13 +61,14 @@ public class OperationTestBase {
 
   protected final CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT =
       TestConstants.collectionContext(
-          TestConstants.TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
+          TestConstants.TEST_COMMAND_NAME,
+          COLLECTION_SCHEMA_OBJECT,
+          jsonProcessingMetricsReporter,
+          null);
 
   protected final CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT =
       TestConstants.keyspaceContext(
           TestConstants.TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
-
-  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
 
   protected static final TupleType DOC_KEY_TYPE =
       DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT);
@@ -69,7 +76,7 @@ public class OperationTestBase {
   protected CommandContext<CollectionSchemaObject> createCommandContextWithCommandName(
       String commandName) {
     return TestConstants.collectionContext(
-        commandName, COLLECTION_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
+        commandName, COLLECTION_SCHEMA_OBJECT, jsonProcessingMetricsReporter, null);
   }
 
   protected ColumnDefinitions buildColumnDefs(TestColumn... columns) {

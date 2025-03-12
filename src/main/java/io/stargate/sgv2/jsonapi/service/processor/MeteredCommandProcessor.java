@@ -12,7 +12,6 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
@@ -44,8 +43,6 @@ public class MeteredCommandProcessor {
 
   private final MeterRegistry meterRegistry;
 
-  private final DataApiRequestInfo dataApiRequestInfo;
-
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final MetricsConfig.TenantRequestCounterConfig tenantConfig;
@@ -68,7 +65,6 @@ public class MeteredCommandProcessor {
   public MeteredCommandProcessor(
       CommandProcessor commandProcessor,
       MeterRegistry meterRegistry,
-      DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       MetricsConfig metricsConfig,
       CommandLevelLoggingConfig commandLevelLoggingConfig) {
@@ -76,7 +72,6 @@ public class MeteredCommandProcessor {
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
     tenantConfig = metricsConfig.tenantRequestCounter();
-    this.dataApiRequestInfo = dataApiRequestInfo;
     errorTrue = Tag.of(tenantConfig.errorTag(), "true");
     errorFalse = Tag.of(tenantConfig.errorTag(), "false");
     tenantUnknown = Tag.of(tenantConfig.tenantTag(), UNKNOWN_VALUE);
@@ -90,19 +85,20 @@ public class MeteredCommandProcessor {
    *
    * @param commandContext {@link CommandContext}
    * @param command {@link Command}
-   * @param <T> Type of the command.
+   * @param <CommandT> Type of the command.
    * @return Uni emitting the result of the command execution.
    */
-  public <T extends Command, U extends SchemaObject> Uni<CommandResult> processCommand(
-      DataApiRequestInfo dataApiRequestInfo, CommandContext<U> commandContext, T command) {
+  public <CommandT extends Command, SchemaT extends SchemaObject> Uni<CommandResult> processCommand(
+      CommandContext<SchemaT> commandContext, CommandT command) {
+
     Timer.Sample sample = Timer.start(meterRegistry);
     // use MDC to populate logs as needed(namespace,collection,tenantId)
     commandContext.schemaObject().name().addToMDC();
 
-    MDC.put("tenantId", dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
+    MDC.put("tenantId", commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE));
     // start by resolving the command, get resolver
     return commandProcessor
-        .processCommand(dataApiRequestInfo, commandContext, command)
+        .processCommand(commandContext, command)
         .onItem()
         .invoke(
             result -> {
@@ -110,14 +106,14 @@ public class MeteredCommandProcessor {
               // add metrics
               sample.stop(meterRegistry.timer(jsonApiMetricsConfig.metricsName(), tags));
 
-              if (isCommandLevelLoggingEnabled(result, false)) {
+              if (isCommandLevelLoggingEnabled(commandContext, result, false)) {
                 logger.info(buildCommandLog(commandContext, command, result));
               }
             })
         .onFailure()
         .invoke(
             throwable -> {
-              if (isCommandLevelLoggingEnabled(null, true)) {
+              if (isCommandLevelLoggingEnabled(commandContext, null, true)) {
                 logger.error(buildCommandLog(commandContext, command, null), throwable);
               }
             });
@@ -136,7 +132,7 @@ public class MeteredCommandProcessor {
     CommandLog commandLog =
         new CommandLog(
             command.getClass().getSimpleName(),
-            dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE),
+            commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE),
             commandContext.schemaObject().name().keyspace(),
             commandContext.schemaObject().name().table(),
             commandContext.schemaObject().type().name(),
@@ -187,14 +183,16 @@ public class MeteredCommandProcessor {
    * @param isFailure - Is from the failure flow
    * @return true if command level logging is allowed, false otherwise
    */
-  private boolean isCommandLevelLoggingEnabled(CommandResult commandResult, boolean isFailure) {
+  private boolean isCommandLevelLoggingEnabled(
+      CommandContext<?> commandContext, CommandResult commandResult, boolean isFailure) {
     if (!commandLevelLoggingConfig.enabled()) {
       return false;
     }
     Set<String> allowedTenants =
         commandLevelLoggingConfig.enabledTenants().orElse(Collections.singleton(ALL_TENANTS));
     if (!allowedTenants.contains(ALL_TENANTS)
-        && !allowedTenants.contains(dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE))) {
+        && !allowedTenants.contains(
+            commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE))) {
       return false;
     }
     if (!isFailure
@@ -218,7 +216,7 @@ public class MeteredCommandProcessor {
   private <T extends SchemaObject> Tags getCustomTags(
       CommandContext<T> commandContext, Command command, CommandResult result) {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
-    String tenant = dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE);
+    String tenant = commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE);
     Tag tenantTag = Tag.of(tenantConfig.tenantTag(), tenant);
     Tag errorTag = errorFalse;
     Tag errorClassTag = defaultErrorClass;

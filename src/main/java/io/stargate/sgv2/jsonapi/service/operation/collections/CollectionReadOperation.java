@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.MinMaxPriorityQueue;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -77,7 +77,7 @@ public interface CollectionReadOperation extends CollectionOperation {
    * @return
    */
   default Uni<FindResponse> findDocument(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       List<SimpleStatement> queries,
       String pageState,
@@ -192,7 +192,7 @@ public interface CollectionReadOperation extends CollectionOperation {
    * @return
    */
   default Uni<FindResponse> findOrderDocument(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       List<SimpleStatement> queries,
       int pageSize,
@@ -385,7 +385,7 @@ public interface CollectionReadOperation extends CollectionOperation {
    * @return
    */
   default Uni<CountResponse> countDocumentsByKey(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
     AtomicLong counter = new AtomicLong();
@@ -415,7 +415,7 @@ public interface CollectionReadOperation extends CollectionOperation {
    * @return
    */
   default Uni<CountResponse> countDocuments(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
     return Uni.createFrom()
@@ -448,7 +448,7 @@ public interface CollectionReadOperation extends CollectionOperation {
    * @return
    */
   default Uni<CountResponse> estimateDocumentCount(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       SimpleStatement simpleStatement) {
     AtomicLong counter = new AtomicLong();

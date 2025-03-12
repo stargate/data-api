@@ -5,7 +5,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
@@ -78,7 +78,7 @@ public record InsertCollectionOperation(
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     final boolean vectorEnabled = commandContext().schemaObject().vectorConfig().vectorEnabled();
     if (!vectorEnabled && insertions.stream().anyMatch(insertion -> insertion.hasVectorValues())) {
       throw ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
@@ -99,7 +99,7 @@ public record InsertCollectionOperation(
 
   // implementation for the ordered insert
   private Uni<Supplier<CommandResult>> insertOrdered(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       boolean vectorEnabled,
       List<CollectionInsertAttempt> insertions) {
@@ -157,7 +157,7 @@ public record InsertCollectionOperation(
 
   // implementation for the unordered insert
   private Uni<Supplier<CommandResult>> insertUnordered(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       boolean vectorEnabled,
       List<CollectionInsertAttempt> insertions) {
@@ -193,7 +193,7 @@ public record InsertCollectionOperation(
 
   // inserts a single document
   private Uni<DocumentId> insertDocument(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       String query,
       CollectionInsertAttempt insertion,

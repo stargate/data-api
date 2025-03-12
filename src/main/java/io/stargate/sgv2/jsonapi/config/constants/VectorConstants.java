@@ -1,8 +1,5 @@
 package io.stargate.sgv2.jsonapi.config.constants;
 
-import io.smallrye.config.ConfigMapping;
-
-@ConfigMapping(prefix = "stargate.jsonapi.vector")
 public interface VectorConstants {
   interface VectorColumn {
     String DIMENSION = "dimension";
