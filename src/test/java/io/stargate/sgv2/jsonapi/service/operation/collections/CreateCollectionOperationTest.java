@@ -34,7 +34,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankingConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
@@ -47,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -61,6 +64,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
   @Inject ObjectMapper objectMapper;
 
+  @Inject RerankProvidersConfig rerankProvidersConfig;
+
   @Nested
   class Execute {
 
@@ -69,6 +74,13 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
     private final CollectionLexicalConfig LEXICAL_CONFIG =
         CollectionLexicalConfig.configForNewCollections();
+
+    private CollectionRerankingConfig RERANKING_CONFIG;
+
+    @BeforeEach
+    public void init() {
+      RERANKING_CONFIG = CollectionRerankingConfig.configForNewCollections(rerankProvidersConfig);
+    }
 
     @Test
     public void createCollectionNoVector() {
@@ -116,7 +128,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               10,
               false,
               false,
-              LEXICAL_CONFIG);
+              LEXICAL_CONFIG,
+              RERANKING_CONFIG);
 
       Supplier<CommandResult> execute =
           operation
@@ -178,7 +191,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               10,
               false,
               false,
-              LEXICAL_CONFIG);
+              LEXICAL_CONFIG,
+              RERANKING_CONFIG);
 
       Supplier<CommandResult> execute =
           operation
@@ -237,7 +251,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               10,
               false,
               true,
-              LEXICAL_CONFIG);
+              LEXICAL_CONFIG,
+              RERANKING_CONFIG);
 
       Supplier<CommandResult> execute =
           operation
@@ -299,7 +314,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               10,
               false,
               true,
-              LEXICAL_CONFIG);
+              LEXICAL_CONFIG,
+              RERANKING_CONFIG);
 
       Supplier<CommandResult> execute =
           operation
@@ -383,7 +399,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               10,
               true,
               false,
-              LEXICAL_CONFIG);
+              LEXICAL_CONFIG,
+              RERANKING_CONFIG);
 
       Supplier<CommandResult> execute =
           operation

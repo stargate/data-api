@@ -122,6 +122,13 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                     "lexical": {
                       "enabled": true,
                       "analyzer": "standard"
+                    },
+                    "reranking": {
+                        "enabled": true,
+                        "service": {
+                            "provider": "nvidia",
+                            "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+                        }
                     }
                   }
                 }
@@ -147,10 +154,17 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                       "lexical": {
                         "enabled": true,
                         "analyzer": "standard"
+                      },
+                      "reranking": {
+                          "enabled": true,
+                          "service": {
+                              "provider": "nvidia",
+                              "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+                          }
                       }
                     }
                   }
-                    """;
+                  """;
       String expected2 =
           """
               {
@@ -167,10 +181,17 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                     "lexical": {
                       "enabled": true,
                       "analyzer": "standard"
+                    },
+                    "reranking": {
+                        "enabled": true,
+                        "service": {
+                            "provider": "nvidia",
+                            "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+                        }
                     }
                   }
                 }
-                """;
+              """;
 
       json =
           """
@@ -351,6 +372,9 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                         },
                         "lexical": {
                           "enabled": false
+                        },
+                        "reranking": {
+                            "enabled": false
                         }
                       }
                     }
@@ -374,6 +398,13 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
         "lexical": {
           "enabled": true,
           "analyzer": "standard"
+        },
+        "reranking": {
+            "enabled": true,
+            "service": {
+                "provider": "nvidia",
+                "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+            }
         }
       }}
       """;
@@ -385,7 +416,14 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                       "lexical": {
                         "enabled": true,
                         "analyzer": "standard"
-                      }
+                      },
+                        "reranking": {
+                            "enabled": true,
+                            "service": {
+                                "provider": "nvidia",
+                                "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+                            }
+                        }
                     }
                   }
               """;
@@ -397,19 +435,30 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
         "lexical": {
             "enabled": true,
             "analyzer": "standard"
-          }
+          },
+            "reranking": {
+                "enabled": true,
+                "service": {
+                    "provider": "nvidia",
+                    "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+                }
+            }
       }}
       """;
       String expected4 =
           """
               {"name":"collection4",
                "options":{
-                 "defaultId" : {"type" : "objectId"},
-                "indexing":{"deny":["comment"]},
-                "lexical": {
-                  "enabled": false
+                  "defaultId" : {"type" : "objectId"},
+                  "indexing":{"deny":["comment"]},
+                  "lexical": {
+                    "enabled": false
+                  },
+                  "reranking": {
+                      "enabled": false
+                  }
                 }
-                }}
+              }
               """;
       json =
           """

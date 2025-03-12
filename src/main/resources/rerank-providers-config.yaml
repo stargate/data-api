@@ -3,6 +3,7 @@ stargate:
     rerank:
       providers:
         nvidia:
+          is-default: true
           display-name: Nvidia
           enabled: true
           supported-authentications:
@@ -10,6 +11,7 @@ stargate:
               enabled: true
           models:
             - name: nvidia/llama-3.2-nv-rerankqa-1b-v2
+              is-default: true
               url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
               properties:
                 max-batch-size: 10

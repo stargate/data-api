@@ -23,7 +23,7 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
     final String typeStr = (deserializer == null) ? "N/A" : deserializer.handledType().toString();
     if (typeStr.endsWith("CreateCollectionCommand$Options")) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "No option \"%s\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"lexical\", \"vector\")",
+          "No option \"%s\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"lexical\", \"reranking\", \"vector\")",
           propertyName);
     }
     if (typeStr.endsWith("CreateCollectionCommand$Options$IdConfig")) {

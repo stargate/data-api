@@ -10,6 +10,10 @@ public interface RerankProvidersConfig {
 
   interface RerankProviderConfig {
     @JsonProperty
+    @WithDefault("false")
+    boolean isDefault();
+
+    @JsonProperty
     String displayName();
 
     @JsonProperty
@@ -47,6 +51,10 @@ public interface RerankProvidersConfig {
     interface ModelConfig {
       @JsonProperty
       String name();
+
+      @JsonProperty
+      @WithDefault("false")
+      boolean isDefault();
 
       @JsonProperty
       String url();

@@ -262,10 +262,11 @@ message GetSupportedRerankProvidersResponse {
 
   // ProviderConfig message represents configuration for an rerank provider.
   message ProviderConfig {
-    string displayName = 1;
-    bool enabled = 2;
-    map<string, AuthenticationConfig> supported_authentications = 3;
-    repeated ModelConfig models = 4;
+    bool isDefault = 1;
+    string displayName = 2;
+    bool enabled = 3;
+    map<string, AuthenticationConfig> supported_authentications = 4;
+    repeated ModelConfig models = 5;
 
     message AuthenticationConfig{
       bool enabled = 1;
@@ -280,8 +281,9 @@ message GetSupportedRerankProvidersResponse {
     // ModelConfig message represents configuration for a specific rerank model.
     message ModelConfig {
       string name = 1;
-      string url = 2;
-      RequestProperties properties = 3;
+      bool isDefault = 2;
+      string url = 3;
+      RequestProperties properties = 4;
 
       message RequestProperties {
         int32 at_most_retries = 1;
