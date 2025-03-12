@@ -48,6 +48,7 @@ public record FindRerankProvidersOperation(RerankProvidersConfig config) impleme
   }
 
   private record RerankProviderResponse(
+      boolean isDefault,
       String displayName,
       Map<
               RerankProvidersConfig.RerankProviderConfig.AuthenticationType,
@@ -57,6 +58,7 @@ public record FindRerankProvidersOperation(RerankProvidersConfig config) impleme
     private static RerankProviderResponse provider(
         RerankProvidersConfig.RerankProviderConfig rerankProviderConfig) {
       return new RerankProviderResponse(
+          rerankProviderConfig.isDefault(),
           rerankProviderConfig.displayName(),
           rerankProviderConfig.supportedAuthentications(),
           excludeProperties(rerankProviderConfig.models()));
