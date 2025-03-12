@@ -53,19 +53,19 @@ public class TaskGroup<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject
   }
 
   public List<TaskT> errorTasks() {
-    return stream().filter(task -> task.status() == BaseTask.TaskStatus.ERROR).toList();
+    return stream().filter(task -> task.status() == Task.TaskStatus.ERROR).toList();
   }
 
   public boolean allTasksCompleted() {
-    return stream().allMatch(task -> task.status() == BaseTask.TaskStatus.COMPLETED);
+    return stream().allMatch(task -> task.status() == Task.TaskStatus.COMPLETED);
   }
 
   public List<TaskT> completedTasks() {
-    return stream().filter(task -> task.status() == BaseTask.TaskStatus.COMPLETED).toList();
+    return stream().filter(task -> task.status() == Task.TaskStatus.COMPLETED).toList();
   }
 
   public List<TaskT> skippedTasks() {
-    return stream().filter(task -> task.status() == BaseTask.TaskStatus.SKIPPED).toList();
+    return stream().filter(task -> task.status() == Task.TaskStatus.SKIPPED).toList();
   }
 
   public void throwIfNotAllTerminal() {
@@ -90,12 +90,12 @@ public class TaskGroup<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject
     if (!sequentialProcessing) {
       return false;
     }
-    return stream().anyMatch(task -> task.status() == BaseTask.TaskStatus.ERROR);
+    return stream().anyMatch(task -> task.status() == Task.TaskStatus.ERROR);
   }
 
   @Override
   public String toString() {
-    Map<BaseTask.TaskStatus, Integer> statusCount = new HashMap<>(size());
+    Map<Task.TaskStatus, Integer> statusCount = new HashMap<>(size());
     forEach(task -> statusCount.merge(task.status(), 1, Math::addExact));
 
     return new StringBuilder("TaskGroup{")

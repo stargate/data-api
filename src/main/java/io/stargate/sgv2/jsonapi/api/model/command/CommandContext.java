@@ -61,6 +61,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
     this.commandConfig = commandConfig;
   }
 
+  /** See doc comments for {@link CommandContext} */
   public static BuilderSupplier builderSupplier() {
     return new BuilderSupplier();
   }
@@ -91,10 +92,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
               ApiFeatures.fromConfigAndRequest(
                   commandConfig.get(FeaturesConfig.class), requestContext.getHttpHeaders());
         }
-        ;
       }
     }
-    ;
     return apiFeatures;
   }
 
@@ -186,6 +185,9 @@ public class CommandContext<SchemaT extends SchemaObject> {
 
     /**
      * A builder for a {@link CommandContext} that is configured with for a specific request.
+     *
+     * <p>Deliberately not a static inner class, so that the {@link BuilderSupplier} does not need
+     * to pass all the resources and config to the builder.
      *
      * @param <SchemaT> The schema object type that this context is for.
      */

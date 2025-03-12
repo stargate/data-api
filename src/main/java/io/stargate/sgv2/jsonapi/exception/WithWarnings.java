@@ -126,12 +126,12 @@ public class WithWarnings<T> implements Consumer<WithWarnings.WarningsSink> {
     /**
      * Called to add a warning to the sink
      *
-     * @param warning The warning message to add, is null the implementation may throw an exception.
+     * @param warning The warning message to add, if null the implementation may throw an exception.
      */
     void addWarning(WarningException warning);
 
     /**
-     * Called to supress a warning that may have been, or may later be, added to the sink.
+     * Called to suppress a warning that may have been, or may later be, added to the sink.
      *
      * <p>The sink should support any order of suppression and adding, and suppressing a warning
      * once will supress all future warnings of that code.
