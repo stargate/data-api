@@ -92,7 +92,7 @@ public class RerankEGWClient extends RerankProvider {
     } catch (StatusRuntimeException e) {
       // TODO, ???
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
-        throw ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
+        throw ErrorCodeV1.RERANK_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
       }
       throw e;
     }

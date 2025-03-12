@@ -7,7 +7,7 @@ import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RerankCredentials;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.error.RerankResponseErrorMessageMapper;
 import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProvidersConfig;
 import jakarta.ws.rs.HeaderParam;
@@ -31,7 +31,6 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  */
 public class NvidiaRerankProvider extends RerankProvider {
 
-  // TODO, switch?
   private static final String providerId = ProviderConstants.NVIDIA;
   private final NvidiaRerankClient nvidiaRerankClient;
 
@@ -66,7 +65,7 @@ public class NvidiaRerankProvider extends RerankProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
+      return RerankResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     private static String getErrorMessage(jakarta.ws.rs.core.Response response) {

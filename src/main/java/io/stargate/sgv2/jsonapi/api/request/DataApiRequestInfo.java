@@ -18,6 +18,7 @@ public class DataApiRequestInfo {
   private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
   private final EmbeddingCredentials embeddingCredentials;
+  private final RerankCredentials rerankCredentials;
   private final HttpHeaderAccess httpHeaders;
 
   /**
@@ -30,6 +31,7 @@ public class DataApiRequestInfo {
     this.tenantId = tenantId;
     this.cassandraToken = Optional.empty();
     this.embeddingCredentials = null;
+    this.rerankCredentials = null;
     httpHeaders = null;
   }
 
@@ -39,8 +41,12 @@ public class DataApiRequestInfo {
       SecurityContext securityContext,
       Instance<DataApiTenantResolver> tenantResolver,
       Instance<DataApiTokenResolver> tokenResolver,
-      Instance<EmbeddingCredentialsResolver> apiKeysResolver) {
-    this.embeddingCredentials = apiKeysResolver.get().resolveEmbeddingCredentials(routingContext);
+      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver,
+      Instance<RerankCredentialsResolver> rerankCredentialsResolver) {
+    this.embeddingCredentials =
+        embeddingCredentialsResolver.get().resolveEmbeddingCredentials(routingContext);
+    this.rerankCredentials =
+        rerankCredentialsResolver.get().resolveRerankCredentials(routingContext);
     this.tenantId = (tenantResolver.get()).resolve(routingContext, securityContext);
     this.cassandraToken = (tokenResolver.get()).resolve(routingContext, securityContext);
     httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
@@ -56,6 +62,10 @@ public class DataApiRequestInfo {
 
   public EmbeddingCredentials getEmbeddingCredentials() {
     return this.embeddingCredentials;
+  }
+
+  public RerankCredentials getRerankCredentials() {
+    return this.rerankCredentials;
   }
 
   public HttpHeaderAccess getHttpHeaders() {

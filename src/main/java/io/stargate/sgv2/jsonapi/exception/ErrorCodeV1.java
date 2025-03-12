@@ -95,6 +95,9 @@ public enum ErrorCodeV1 {
 
   RERANK_SERVICE_TYPE_UNAVAILABLE("Rerank service unavailable : "),
   RERANK_PROVIDER_UNEXPECTED_RESPONSE("The Rerank Provider returned an unexpected response"),
+  RERANK_PROVIDER_CLIENT_ERROR("The Rerank Provider returned a HTTP client error"),
+  RERANK_PROVIDER_SERVER_ERROR("The Rerank Provider returned a HTTP server error"),
+  RERANK_PROVIDER_TIMEOUT("The Rerank Provider timed out"),
 
   TOO_MANY_COLLECTIONS("Too many collections"),
 
