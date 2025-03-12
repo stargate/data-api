@@ -75,7 +75,7 @@ public enum ErrorCodeV1 {
 
   SHRED_BAD_DOCUMENT_VECTORIZE_TYPE("Bad $vectorize document type to shred "),
 
-  SHRED_BAD_DOCUMENT_LEXICAL_TYPE("Bad type for lexical content to shred"),
+  SHRED_BAD_DOCUMENT_LEXICAL_TYPE("Bad type for $lexical content to shred"),
 
   SHRED_BAD_EJSON_VALUE("Bad JSON Extension value"),
 

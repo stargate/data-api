@@ -246,8 +246,8 @@ public record InsertCollectionOperation(
         .append(tableName.table())
         .append("\"")
         .append(
-            " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,"
-                + " query_dbl_values, query_text_values, query_null_values, query_timestamp_values");
+            " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,")
+        .append(" query_dbl_values, query_text_values, query_null_values, query_timestamp_values");
     if (vectorEnabled) {
       insertQuery.append(", query_vector_value");
     }

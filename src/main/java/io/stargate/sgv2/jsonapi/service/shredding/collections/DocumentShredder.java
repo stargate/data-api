@@ -441,9 +441,10 @@ public class DocumentShredder {
         // `$vectorize`, `$binary` fields are not checked for length
         return;
       }
-      // '$lexical` field may have different max length:
       if (DocumentConstants.Fields.LEXICAL_CONTENT_FIELD.equals(referringPropertyName)) {
-        // !!! TODO
+        // '$lexical` field has different max length but not clear what it is: for now,
+        // do not validate (add limit if we find out what SAI imposes)
+        return;
       }
 
       OptionalInt encodedLength =
