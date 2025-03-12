@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Builder to create a group of {@link EmbeddingTask}s from a list of {@link EmbeddingAction}s.
+ * Builder to create a group of {@link EmbeddingTask}s from a list of {@link EmbeddingDeferredAction}s.
  *
  * <p>Such as when there is an insert operation that needs to be vectorized, and the embedding done
  * before the inserts in a {@link io.stargate.sgv2.jsonapi.service.operation.tasks.CompositeTask}
@@ -24,7 +24,7 @@ public class EmbeddingTaskGroupBuilder<SchemaT extends TableBasedSchemaObject> {
   private static final Logger LOGGER = LoggerFactory.getLogger(EmbeddingTaskGroupBuilder.class);
 
   private CommandContext<SchemaT> commandContext;
-  private List<EmbeddingAction> embeddingActions;
+  private List<EmbeddingDeferredAction> embeddingActions;
   private EmbeddingProvider.EmbeddingRequestType requestType;
 
   public EmbeddingTaskGroupBuilder<SchemaT> withCommandContext(
@@ -40,7 +40,7 @@ public class EmbeddingTaskGroupBuilder<SchemaT extends TableBasedSchemaObject> {
   }
 
   public EmbeddingTaskGroupBuilder<SchemaT> withEmbeddingActions(
-      List<EmbeddingAction> embeddingActions) {
+      List<EmbeddingDeferredAction> embeddingActions) {
     this.embeddingActions = embeddingActions;
     return this;
   }
@@ -53,8 +53,8 @@ public class EmbeddingTaskGroupBuilder<SchemaT extends TableBasedSchemaObject> {
     }
 
     // grouping the actions by the calls that need to be made
-    Map<EmbeddingAction.EmbeddingActionGroupKey, List<EmbeddingAction>> actionGroups =
-        embeddingActions.stream().collect(Collectors.groupingBy(EmbeddingAction::groupKey));
+    Map<EmbeddingDeferredAction.EmbeddingActionGroupKey, List<EmbeddingDeferredAction>> actionGroups =
+        embeddingActions.stream().collect(Collectors.groupingBy(EmbeddingDeferredAction::groupKey));
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
           "build() - building embedding task group, actionGroups.size: {}, tasks: {}",

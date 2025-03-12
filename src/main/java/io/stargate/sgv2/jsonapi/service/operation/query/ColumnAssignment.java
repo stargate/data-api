@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.query;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
 import com.google.common.annotations.VisibleForTesting;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
@@ -22,7 +21,7 @@ import java.util.Objects;
  * <p>Designed to be used with the {@link UpdateValuesCQLClause} to build the full clause.
  *
  * <p>Supports {@link Deferrable} so that the values needed vectorizing can be deferred until
- * execution time. See {@link #deferredValues()} for docs.
+ * execution time. See {@link #deferred()} for docs.
  */
 public abstract class ColumnAssignment implements CQLAssignment, Deferrable {
 
@@ -84,7 +83,7 @@ public abstract class ColumnAssignment implements CQLAssignment, Deferrable {
   }
 
   @Override
-  public List<? extends NamedValue<?, ?, ?>> deferredValues() {
+  public List<? extends NamedValue<?, ?, ?>> deferred() {
     return new CqlNamedValueContainer(List.of(namedValue)).deferredValues();
   }
 

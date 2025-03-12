@@ -49,7 +49,7 @@ public class TableOrderByANNCqlClause implements OrderByCqlClause {
   }
 
   @Override
-  public List<? extends NamedValue<?, ?, ?>> deferredValues() {
+  public List<? extends NamedValue<?, ?, ?>> deferred() {
     return new CqlNamedValueContainer(List.of(sortVector)).deferredValues();
   }
 }

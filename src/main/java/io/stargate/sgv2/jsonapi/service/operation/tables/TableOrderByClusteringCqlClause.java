@@ -58,7 +58,7 @@ public class TableOrderByClusteringCqlClause implements OrderByCqlClause {
   }
 
   @Override
-  public List<? extends NamedValue<?, ?, ?>> deferredValues() {
+  public List<? extends NamedValue<?, ?, ?>> deferred() {
     // never have deferred values when doing regular ASC or DESC sorting
     return List.of();
   }

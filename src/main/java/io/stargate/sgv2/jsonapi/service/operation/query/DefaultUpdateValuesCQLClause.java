@@ -41,7 +41,7 @@ public class DefaultUpdateValuesCQLClause implements UpdateValuesCQLClause {
   }
 
   @Override
-  public List<? extends NamedValue<?, ?, ?>> deferredValues() {
-    return Deferrable.deferredValues(new ArrayList<>(assignments));
+  public List<? extends NamedValue<?, ?, ?>> deferred() {
+    return Deferrable.deferred(new ArrayList<>(assignments));
   }
 }

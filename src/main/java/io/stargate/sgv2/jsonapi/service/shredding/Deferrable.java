@@ -5,17 +5,16 @@ import java.util.List;
 
 public interface Deferrable {
 
-  List<? extends NamedValue<?, ?, ?>> deferredValues();
+  List<? extends Deferred> deferred();
 
-  static List<? extends NamedValue<?, ?, ?>> deferredValues(Deferrable deferrable) {
-    return deferredValues(List.of(deferrable));
+  static List<? extends Deferred> deferred(Deferrable deferrable) {
+    return deferred(List.of(deferrable));
   }
 
-  static List<? extends NamedValue<?, ?, ?>> deferredValues(List<Deferrable> deferrables) {
-    // flatMap streaming not happy with generics
-    var result = new ArrayList<NamedValue<?, ?, ?>>();
+  static List<? extends Deferred> deferred(List<Deferrable> deferrables) {
+    var result = new ArrayList<Deferred>();
     for (Deferrable deferrable : deferrables) {
-      result.addAll(deferrable.deferredValues());
+      result.addAll(deferrable.deferred());
     }
     return result;
   }

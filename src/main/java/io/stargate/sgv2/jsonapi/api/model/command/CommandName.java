@@ -33,6 +33,7 @@ public enum CommandName {
   ESTIMATED_DOCUMENT_COUNT(
       Names.ESTIMATED_DOCUMENT_COUNT, CommandType.DML, CommandTarget.COLLECTION),
   FIND(Names.FIND, CommandType.DML, CommandTarget.TABLE, CommandTarget.COLLECTION),
+  FIND_AND_RERANK(Names.FIND_AND_RERANK, CommandType.DML, CommandTarget.COLLECTION),
   FIND_COLLECTIONS(Names.FIND_COLLECTIONS, CommandType.DDL, CommandTarget.KEYSPACE),
   FIND_EMBEDDING_PROVIDERS(
       Names.FIND_EMBEDDING_PROVIDERS, CommandType.ADMIN, CommandTarget.DATABASE),
@@ -117,6 +118,7 @@ public enum CommandName {
     String DROP_TABLE = "dropTable";
     String ESTIMATED_DOCUMENT_COUNT = "estimatedDocumentCount";
     String FIND = "find";
+    String FIND_AND_RERANK = "findAndRerank";
     String FIND_COLLECTIONS = "findCollections";
     String FIND_EMBEDDING_PROVIDERS = "findEmbeddingProviders";
     String FIND_NAMESPACES = "findNamespaces";

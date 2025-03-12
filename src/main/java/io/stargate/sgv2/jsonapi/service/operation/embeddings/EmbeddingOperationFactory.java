@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
-import io.stargate.sgv2.jsonapi.service.shredding.ValueAction;
+import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +26,7 @@ public abstract class EmbeddingOperationFactory {
       CommandContext<TableSchemaObject> commandContext,
       TaskGroupAndDeferrables<TaskT, TableSchemaObject> tasksAndDeferrables) {
 
-    var allDeferredValues = Deferrable.deferredValues(tasksAndDeferrables.deferrables());
+    var allDeferredValues = Deferrable.deferred(tasksAndDeferrables.deferrables());
     if (allDeferredValues.isEmpty()) {
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug(
@@ -41,8 +41,8 @@ public abstract class EmbeddingOperationFactory {
 
     // we have some deferred values, e.g. we need to do vectorizing, so we need  to build a
     // hierarchy of task groups for now we only have vectorize actions so quick sanity check
-    var allActions = ValueAction.filteredActions(ValueAction.class, allDeferredValues);
-    var embeddingActions = ValueAction.filteredActions(EmbeddingAction.class, allDeferredValues);
+    var allActions = DeferredAction.filtered(DeferredAction.class, allDeferredValues);
+    var embeddingActions = DeferredAction.filtered(EmbeddingDeferredAction.class, allDeferredValues);
     if (allActions.size() != embeddingActions.size()) {
       throw new IllegalArgumentException("Unsupported actions in deferred values: " + allActions);
     }

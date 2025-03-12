@@ -20,7 +20,7 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
   private static final Logger LOGGER = LoggerFactory.getLogger(EmbeddingTask.class);
 
   private final EmbeddingProvider embeddingProvider;
-  private final List<EmbeddingAction> embeddingActions;
+  private final List<EmbeddingDeferredAction> embeddingActions;
   private final EmbeddingProvider.EmbeddingRequestType requestType;
 
   protected EmbeddingTask(
@@ -28,7 +28,7 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
       SchemaT schemaObject,
       TaskRetryPolicy retryPolicy,
       EmbeddingProvider embeddingProvider,
-      List<EmbeddingAction> embeddingActions,
+      List<EmbeddingDeferredAction> embeddingActions,
       EmbeddingProvider.EmbeddingRequestType requestType) {
     super(position, schemaObject, retryPolicy);
 
@@ -53,7 +53,7 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
   protected EmbeddingTask.EmbeddingResultSupplier buildResultSupplier(
       CommandContext<SchemaT> commandContext) {
 
-    var vectorizeTexts = embeddingActions.stream().map(EmbeddingAction::startEmbedding).toList();
+    var vectorizeTexts = embeddingActions.stream().map(EmbeddingDeferredAction::startEmbedding).toList();
     return new EmbeddingResultSupplier(
         this,
         commandContext,
@@ -102,14 +102,14 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
     protected final EmbeddingTask<?> embeddingTask;
     protected final CommandContext<?> commandContext;
     protected final BaseTask.UniSupplier<EmbeddingProvider.Response> supplier;
-    protected final List<EmbeddingAction> actions;
+    protected final List<EmbeddingDeferredAction> actions;
     private final List<String> vectorizeTexts;
 
     EmbeddingResultSupplier(
         EmbeddingTask<?> embeddingTask,
         CommandContext<?> commandContext,
         BaseTask.UniSupplier<EmbeddingProvider.Response> supplier,
-        List<EmbeddingAction> actions,
+        List<EmbeddingDeferredAction> actions,
         List<String> vectorizeTexts) {
       this.embeddingTask = embeddingTask;
       this.commandContext = commandContext;
@@ -162,16 +162,16 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
   public static class EmbeddingTaskResult {
 
     protected final List<float[]> rawVectors;
-    protected final List<EmbeddingAction> actions;
+    protected final List<EmbeddingDeferredAction> actions;
 
-    private EmbeddingTaskResult(List<float[]> rawVectors, List<EmbeddingAction> actions) {
+    private EmbeddingTaskResult(List<float[]> rawVectors, List<EmbeddingDeferredAction> actions) {
       this.rawVectors = rawVectors;
       this.actions = actions;
     }
 
     /**
      * Create a new {@link EmbeddingTaskResult} which involves passing the vectors returned from the
-     * provider to the {@link EmbeddingAction}s so they can set the values into the deferred {@link
+     * provider to the {@link EmbeddingDeferredAction}s so they can set the values into the deferred {@link
      * io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue}s.
      *
      * <p>We do this as part of building the result errors occur as part of the execute of the task
@@ -184,7 +184,7 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
         EmbeddingTask<?> embeddingTask,
         CommandContext<?> commandContext,
         EmbeddingProvider.Response providerResponse,
-        List<EmbeddingAction> actions) {
+        List<EmbeddingDeferredAction> actions) {
 
       commandContext
           .requestTracing()

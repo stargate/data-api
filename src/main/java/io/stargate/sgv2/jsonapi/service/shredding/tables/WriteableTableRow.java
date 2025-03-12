@@ -77,7 +77,7 @@ public class WriteableTableRow implements Deferrable, Recordable {
   }
 
   @Override
-  public List<? extends NamedValue<?, ?, ?>> deferredValues() {
+  public List<? extends NamedValue<?, ?, ?>> deferred() {
     return allColumns.deferredValues();
   }
 

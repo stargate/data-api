@@ -16,7 +16,7 @@ public class EmbeddingTaskBuilder<SchemaT extends TableBasedSchemaObject>
   // aaron 22 feb 2025 - for unknown we need the command name when we create the embedding provider
   private String originalCommandName;
   private ApiVectorType apiVectorType;
-  private List<EmbeddingAction> embeddingActions;
+  private List<EmbeddingDeferredAction> embeddingActions;
   private TaskRetryPolicy retryPolicy = null;
   private EmbeddingProvider.EmbeddingRequestType requestType;
 
@@ -32,7 +32,7 @@ public class EmbeddingTaskBuilder<SchemaT extends TableBasedSchemaObject>
   }
 
   public EmbeddingTaskBuilder<SchemaT> withEmbeddingActions(
-      List<EmbeddingAction> embeddingActions) {
+      List<EmbeddingDeferredAction> embeddingActions) {
     this.embeddingActions = embeddingActions;
     return this;
   }
