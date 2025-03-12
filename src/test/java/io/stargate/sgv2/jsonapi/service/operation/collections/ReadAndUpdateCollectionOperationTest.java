@@ -133,7 +133,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                             null))),
                 null,
                 CollectionLexicalConfig.configForLegacyCollections()),
-            jsonProcessingMetricsReporter);
+            jsonProcessingMetricsReporter,
+            null);
   }
 
   private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {

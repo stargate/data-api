@@ -10,7 +10,7 @@ import java.util.Objects;
  * Documents * 26 sept 2024 - aaron - this will be removed when we migrate the delete and update
  * table ops to use OperationAttempt
  */
-abstract class TableOperation implements Operation {
+abstract class TableOperation implements Operation<TableSchemaObject> {
 
   protected final CommandContext<TableSchemaObject> commandContext;
 

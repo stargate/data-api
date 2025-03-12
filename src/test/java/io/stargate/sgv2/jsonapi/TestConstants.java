@@ -1,9 +1,14 @@
 package io.stargate.sgv2.jsonapi;
 
+import static org.mockito.Mockito.mock;
+
+import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
@@ -12,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConf
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import java.util.List;
+import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 
 /**
@@ -64,65 +70,64 @@ public final class TestConstants {
   public static final ApiFeatures DEFAULT_API_FEATURES_FOR_TESTS = ApiFeatures.empty();
 
   public static CommandContext<CollectionSchemaObject> collectionContext() {
-    return collectionContext(COLLECTION_SCHEMA_OBJECT);
+    return collectionContext(TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null, null);
   }
 
-  public static CommandContext<CollectionSchemaObject> collectionContext(
-      JsonProcessingMetricsReporter metricsReporter) {
-    return collectionContext(TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, metricsReporter);
-  }
-
-  public static CommandContext<CollectionSchemaObject> collectionContext(
-      String commandName, JsonProcessingMetricsReporter metricsReporter) {
-    return collectionContext(commandName, COLLECTION_SCHEMA_OBJECT, metricsReporter);
-  }
-
-  public static CommandContext<CollectionSchemaObject> collectionContext(
-      CollectionSchemaObject schema) {
-    return collectionContext(TEST_COMMAND_NAME, schema, null);
-  }
-
-  public static CommandContext<CollectionSchemaObject> collectionContext(
-      String commandName,
-      CollectionSchemaObject schema,
-      JsonProcessingMetricsReporter metricsReporter) {
-    return collectionContext(commandName, schema, metricsReporter, null);
-  }
+  //  public static CommandContext<CollectionSchemaObject> collectionContext(
+  //      String commandName,
+  //      CollectionSchemaObject schema,
+  //      JsonProcessingMetricsReporter metricsReporter) {
+  //    return collectionContext(commandName, schema, metricsReporter, null);
+  //  }
 
   public static CommandContext<CollectionSchemaObject> collectionContext(
       String commandName,
       CollectionSchemaObject schema,
       JsonProcessingMetricsReporter metricsReporter,
       EmbeddingProvider embeddingProvider) {
-    return new CommandContext<>(
-        schema,
-        embeddingProvider,
-        commandName,
-        metricsReporter,
-        DEFAULT_API_FEATURES_FOR_TESTS,
-        null);
+
+    return CommandContext.builderSupplier()
+        .withJsonProcessingMetricsReporter(
+            metricsReporter == null ? mock(JsonProcessingMetricsReporter.class) : metricsReporter)
+        .withCqlSessionCache(mock(CQLSessionCache.class))
+        .withCommandConfig(new CommandConfig())
+        .getBuilder(schema)
+        .withEmbeddingProvider(embeddingProvider)
+        .withCommandName(commandName)
+        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+        .build();
   }
 
   public static CommandContext<KeyspaceSchemaObject> keyspaceContext() {
-    return keyspaceContext(TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, null);
+    return keyspaceContext(
+        TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, mock(JsonProcessingMetricsReporter.class));
   }
 
   public static CommandContext<KeyspaceSchemaObject> keyspaceContext(
       String commandName,
       KeyspaceSchemaObject schema,
       JsonProcessingMetricsReporter metricsReporter) {
-    return new CommandContext<>(
-        schema, null, commandName, metricsReporter, DEFAULT_API_FEATURES_FOR_TESTS, null);
+
+    return CommandContext.builderSupplier()
+        .withJsonProcessingMetricsReporter(
+            metricsReporter == null ? mock(JsonProcessingMetricsReporter.class) : metricsReporter)
+        .withCqlSessionCache(mock(CQLSessionCache.class))
+        .withCommandConfig(new CommandConfig())
+        .getBuilder(schema)
+        .withCommandName(commandName)
+        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+        .build();
   }
 
   private static final CommandContext<DatabaseSchemaObject> DATABASE_CONTEXT =
-      new CommandContext<>(
-          DATABASE_SCHEMA_OBJECT,
-          null,
-          TEST_COMMAND_NAME,
-          null,
-          DEFAULT_API_FEATURES_FOR_TESTS,
-          null);
+      CommandContext.builderSupplier()
+          .withJsonProcessingMetricsReporter(mock(JsonProcessingMetricsReporter.class))
+          .withCqlSessionCache(mock(CQLSessionCache.class))
+          .withCommandConfig(new CommandConfig())
+          .getBuilder(DATABASE_SCHEMA_OBJECT)
+          .withCommandName(TEST_COMMAND_NAME)
+          .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+          .build();
 
   public static CommandContext<DatabaseSchemaObject> databaseContext() {
     return DATABASE_CONTEXT;

@@ -16,7 +16,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -77,7 +77,7 @@ public class InvalidCqlCredentialsTest {
   public void testOSSCxCQLSessionCacheWithInvalidCredentials()
       throws NoSuchFieldException, IllegalAccessException {
     // set request info
-    DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
+    RequestContext dataApiRequestInfo = mock(RequestContext.class);
     when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
     when(dataApiRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());

@@ -3,7 +3,10 @@ package io.stargate.sgv2.jsonapi.service.operation;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Functional interface for a provider that can create an {@link InsertAttempt} from a {@link
+ * IMPORTANT: THIS IS ALSO USED BY THE COLLECTIONS (JUST FOR INSERT) SO IT NEEDS TO STAY UNTIL
+ * COLLECTIONS CODE IS UPDATED (INSERTS STARTED THE "ATTEMPT" PATTERN)
+ *
+ * <p>Functional interface for a provider that can create an {@link InsertAttempt} from a {@link
  * JsonNode}.
  *
  * <p>Implementations need to take care of the shredding of the {@link JsonNode} through to creating

@@ -55,7 +55,8 @@ import org.junit.jupiter.api.Test;
 public class CreateCollectionOperationTest extends OperationTestBase {
 
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT =
-      TestConstants.collectionContext("CreateCollectionCommand", COLLECTION_SCHEMA_OBJECT, null);
+      TestConstants.collectionContext(
+          "CreateCollectionCommand", COLLECTION_SCHEMA_OBJECT, null, null);
 
   @Inject DatabaseLimitsConfig databaseLimitsConfig;
 
