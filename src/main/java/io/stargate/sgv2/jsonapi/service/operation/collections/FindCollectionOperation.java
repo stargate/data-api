@@ -473,7 +473,7 @@ public record FindCollectionOperation(
 
   /**
    * A separate method to build vector search query by using expression, expression can contain
-   * logic operations like 'or','and'..
+   * logic operations like 'or' and 'and'.
    */
   private Query getVectorSearchQueryByExpression(Expression<BuiltCondition> expression) {
     if (projection().doIncludeSimilarityScore()) {
