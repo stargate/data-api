@@ -38,11 +38,11 @@ public class FindCollectionWithLexicalSortIntegrationTest
                     """
               .formatted(COLLECTION_WITH_LEXICAL));
       // And then insert 5 documents
-      insertDoc(lexicalDoc(1, "monkey banana"));
-      insertDoc(lexicalDoc(2, "monkey"));
-      insertDoc(lexicalDoc(3, "biking fun"));
-      insertDoc(lexicalDoc(4, "banana"));
-      insertDoc(lexicalDoc(5, "fun"));
+      insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(1, "monkey banana"));
+      insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(2, "monkey"));
+      insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(3, "biking fun"));
+      insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(4, "banana"));
+      insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(5, "fun"));
     }
   }
 
