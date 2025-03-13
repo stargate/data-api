@@ -2072,27 +2072,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     }
   }
 
-  private void deleteCollection(String collectionName) {
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(
-                """
-                {
-                  "deleteCollection": {
-                    "name": "%s"
-                  }
-                }
-                """
-                .formatted(collectionName))
-        .when()
-        .post(KeyspaceResource.BASE_PATH, keyspaceName)
-        .then()
-        .statusCode(200)
-        .body("$", responseIsDDLSuccess())
-        .body("status.ok", is(1));
-  }
-
   @Nested
   @Order(99)
   class Metrics {
