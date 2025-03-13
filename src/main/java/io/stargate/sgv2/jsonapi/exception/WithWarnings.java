@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.exception;
 
 import com.google.common.base.Preconditions;
-import io.stargate.sgv2.jsonapi.service.operation.OperationAttempt;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -13,13 +12,13 @@ import java.util.function.Consumer;
  *
  * <p>This is usually used when analysing part of a query and generating warnings for the user.
  *
- * <p>Is a {@link Consumer} of {@link OperationAttempt} so that it can add the warnings to the
- * attempt, and so multiple instances can be chained together using {@link
+ * <p>Is a {@link Consumer} of {@link WithWarnings.WarningsSink} so that it can add the warnings to
+ * the task, and so multiple instances can be chained together using {@link
  * Consumer#andThen(Consumer)}
  *
  * @param <T> Type of the target object the warnings are about.
  */
-public class WithWarnings<T> implements Consumer<OperationAttempt<?, ?>> {
+public class WithWarnings<T> implements Consumer<WithWarnings.WarningsSink> {
 
   private final T target;
   private final List<WarningException> warnings;
@@ -104,14 +103,51 @@ public class WithWarnings<T> implements Consumer<OperationAttempt<?, ?>> {
   }
 
   /**
-   * Adds all the warnings to the {@link OperationAttempt}
+   * Adds all the warnings to the warnings sink
    *
-   * @param operationAttempt the {@link OperationAttempt} to add the warnings to
+   * @param sink the {@link WarningsSink} to add the warnings to
    */
   @Override
-  public void accept(OperationAttempt<?, ?> operationAttempt) {
-    Objects.requireNonNull(operationAttempt, "operationAttempt must not be null");
-    warnings.forEach(operationAttempt::addWarning);
-    suppressedWarnings.forEach(operationAttempt::addSuppressedWarning);
+  public void accept(WarningsSink sink) {
+    Objects.requireNonNull(sink, "sink must not be null");
+    warnings.forEach(sink::addWarning);
+    suppressedWarnings.forEach(sink::addSuppressedWarning);
+  }
+
+  /**
+   * Interface for a class that consumes warnings, a sink that warnings drain into.
+   *
+   * <p>Warnings use the {@link WarningException} class to represent the warning, so we can manage
+   * them the same as a {@link APIException}. But they are not errors in the same sense, they are
+   * warnings to send to the users.
+   */
+  public interface WarningsSink {
+
+    /**
+     * Called to add a warning to the sink
+     *
+     * @param warning The warning message to add, if null the implementation may throw an exception.
+     */
+    void addWarning(WarningException warning);
+
+    /**
+     * Called to suppress a warning that may have been, or may later be, added to the sink.
+     *
+     * <p>The sink should support any order of suppression and adding, and suppressing a warning
+     * once will supress all future warnings of that code.
+     *
+     * @param suppressedWarning The warning message code to add, cannot be <code>null</code>.
+     */
+    void addSuppressedWarning(WarningException.Code suppressedWarning);
+
+    List<WarningException> allWarnings();
+
+    /**
+     * Gets the warnings excluding all instances of warnings that have been suppressed using {@link
+     * #addSuppressedWarning(WarningException.Code)}.
+     *
+     * @return An unmodifiable list of warnings, never <code>null</code>
+     */
+    List<WarningException> warningsExcludingSuppressed();
   }
 }

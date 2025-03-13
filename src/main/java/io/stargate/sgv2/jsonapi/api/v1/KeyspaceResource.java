@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
@@ -12,14 +13,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.DropIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListTablesCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
@@ -55,20 +55,23 @@ public class KeyspaceResource {
   public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}";
   private final MeteredCommandProcessor meteredCommandProcessor;
 
-  private final FeaturesConfig apiFeatureConfig;
+  @Inject private RequestContext requestContext;
 
-  private final OperationsConfig operationsConfig;
-
-  @Inject private DataApiRequestInfo dataApiRequestInfo;
+  private final CommandContext.BuilderSupplier contextBuilderSupplier;
 
   @Inject
   public KeyspaceResource(
       MeteredCommandProcessor meteredCommandProcessor,
-      FeaturesConfig apiFeatureConfig,
-      OperationsConfig operationsConfig) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      CQLSessionCache cqlSessionCache) {
     this.meteredCommandProcessor = meteredCommandProcessor;
-    this.apiFeatureConfig = apiFeatureConfig;
-    this.operationsConfig = operationsConfig;
+
+    contextBuilderSupplier =
+        CommandContext.builderSupplier()
+            // old code did not pass a jsonProcessingMetricsReporter not sure why - Aaron Feb 10
+            .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
+            .withCqlSessionCache(cqlSessionCache)
+            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty());
   }
 
   @Operation(
@@ -124,24 +127,22 @@ public class KeyspaceResource {
   public Uni<RestResponse<CommandResult>> postCommand(
       @NotNull @Valid KeyspaceCommand command, @PathParam("keyspace") @NotEmpty String keyspace) {
 
-    final ApiFeatures apiFeatures =
-        ApiFeatures.fromConfigAndRequest(apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
-
     // create context
     // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
     //    CommandContext commandContext = new CommandContext(keyspace, null);
     // HACK TODO: The above did not set a command name on the command context, how did that work ?
-    CommandContext<KeyspaceSchemaObject> commandContext =
-        new CommandContext<>(
-            new KeyspaceSchemaObject(keyspace),
-            null,
-            command.getClass().getSimpleName(),
-            null,
-            apiFeatures,
-            operationsConfig);
+
+    var commandContext =
+        contextBuilderSupplier
+            .getBuilder(new KeyspaceSchemaObject(keyspace))
+            .withEmbeddingProvider(null)
+            .withCommandName(command.getClass().getSimpleName())
+            .withRequestContext(requestContext)
+            .build();
 
     // Need context first to check if feature is enabled
-    if (command instanceof TableOnlyCommand && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
+    if (command instanceof TableOnlyCommand
+        && !commandContext.apiFeatures().isFeatureEnabled(ApiFeature.TABLES)) {
       return Uni.createFrom()
           .item(
               new ThrowableCommandResultSupplier(
@@ -151,7 +152,7 @@ public class KeyspaceResource {
 
     // call processor
     return meteredCommandProcessor
-        .processCommand(dataApiRequestInfo, commandContext, command)
+        .processCommand(commandContext, command)
         // map to 2xx unless overridden by error
         .map(commandResult -> commandResult.toRestResponse());
   }

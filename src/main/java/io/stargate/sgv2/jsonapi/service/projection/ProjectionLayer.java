@@ -47,12 +47,13 @@ class ProjectionLayer {
       List<SliceDef> slices,
       boolean addDocId,
       boolean add$vector,
-      boolean add$vectorize) {
-    return buildLayers(dotPaths, slices, true, addDocId, add$vector, add$vectorize);
+      boolean add$vectorize,
+      boolean add$lexical) {
+    return buildLayers(dotPaths, slices, true, addDocId, add$vector, add$vectorize, add$lexical);
   }
 
   public static ProjectionLayer buildLayersForIndexing(Collection<String> dotPaths) {
-    return buildLayers(dotPaths, Collections.emptyList(), false, false, false, false);
+    return buildLayers(dotPaths, Collections.emptyList(), false, false, false, false, false);
   }
 
   private static ProjectionLayer buildLayers(
@@ -61,7 +62,8 @@ class ProjectionLayer {
       boolean failOnOverlap,
       boolean addDocId,
       boolean add$vector,
-      boolean add$vectorize) {
+      boolean add$vectorize,
+      boolean add$lexical) {
     // Root is always branch (not terminal):
     ProjectionLayer root = new ProjectionLayer("", false);
     for (String fullPath : dotPaths) {
@@ -86,6 +88,7 @@ class ProjectionLayer {
     if (addDocId) {
       buildPath(failOnOverlap, DocumentConstants.Fields.DOC_ID, root, DocumentPath.forDocId());
     }
+    // and similarly for $vector, $vectorize and $lexical
     if (add$vector) {
       buildPath(
           failOnOverlap,
@@ -99,6 +102,13 @@ class ProjectionLayer {
           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
           root,
           DocumentPath.forVectorEmbeddingTextField());
+    }
+    if (add$lexical) {
+      buildPath(
+          failOnOverlap,
+          DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
+          root,
+          DocumentPath.forLexicalContentTextField());
     }
     return root;
   }

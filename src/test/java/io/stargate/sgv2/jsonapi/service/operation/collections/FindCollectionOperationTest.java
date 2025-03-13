@@ -99,7 +99,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
                 null,
                 CollectionLexicalConfig.configForLegacyCollections(),
                 CollectionRerankingConfig.configForLegacyCollections()),
-            jsonProcessingMetricsReporter);
+            jsonProcessingMetricsReporter, null);
   }
 
   @Nested

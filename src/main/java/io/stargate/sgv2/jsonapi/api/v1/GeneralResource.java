@@ -1,15 +1,15 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateKeyspaceCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
@@ -41,15 +41,23 @@ public class GeneralResource {
 
   private final MeteredCommandProcessor meteredCommandProcessor;
 
-  @Inject private DataApiRequestInfo dataApiRequestInfo;
+  @Inject private RequestContext requestContext;
 
-  @Inject private FeaturesConfig apiFeatureConfig;
-
-  @Inject private OperationsConfig operationsConfig;
+  private final CommandContext.BuilderSupplier contextBuilderSupplier;
 
   @Inject
-  public GeneralResource(MeteredCommandProcessor meteredCommandProcessor) {
+  public GeneralResource(
+      MeteredCommandProcessor meteredCommandProcessor,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      CQLSessionCache cqlSessionCache) {
     this.meteredCommandProcessor = meteredCommandProcessor;
+
+    contextBuilderSupplier =
+        CommandContext.builderSupplier()
+            // old code did not set jsonProcessingMetricsReporter - Aaron Feb 10
+            .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
+            .withCqlSessionCache(cqlSessionCache)
+            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty());
   }
 
   // TODO: add example for findEmbeddingProviders
@@ -81,20 +89,16 @@ public class GeneralResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid GeneralCommand command) {
-    final ApiFeatures apiFeatures =
-        ApiFeatures.fromConfigAndRequest(apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
 
     var commandContext =
-        CommandContext.forSchemaObject(
-            new DatabaseSchemaObject(),
-            null,
-            command.getClass().getSimpleName(),
-            null,
-            apiFeatures,
-            operationsConfig);
+        contextBuilderSupplier
+            .getBuilder(new DatabaseSchemaObject())
+            .withCommandName(command.getClass().getSimpleName())
+            .withRequestContext(requestContext)
+            .build();
 
     return meteredCommandProcessor
-        .processCommand(dataApiRequestInfo, commandContext, command)
+        .processCommand(commandContext, command)
         // map to 2xx unless overridden by error
         .map(commandResult -> commandResult.toRestResponse());
   }

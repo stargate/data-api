@@ -11,7 +11,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -119,7 +119,7 @@ public record CreateCollectionOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     logger.info(
         "Executing CreateCollectionOperation for {}.{} with property {}",
         commandContext.schemaObject().name().keyspace(),
@@ -183,15 +183,13 @@ public record CreateCollectionOperation(
   /**
    * execute collection creation and indexes creation
    *
-   * @param dataApiRequestInfo DataApiRequestInfo
+   * @param dataApiRequestInfo DBRequestContext
    * @param queryExecutor QueryExecutor instance
    * @param collectionExisted boolean that says if collection existed before
    * @return Uni<Supplier<CommandResult>>
    */
   private Uni<Supplier<CommandResult>> executeCollectionCreation(
-      DataApiRequestInfo dataApiRequestInfo,
-      QueryExecutor queryExecutor,
-      boolean collectionExisted) {
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor, boolean collectionExisted) {
     final Uni<AsyncResultSet> execute =
         queryExecutor.executeCreateSchemaChange(
             dataApiRequestInfo,
@@ -303,7 +301,7 @@ public record CreateCollectionOperation(
    */
   private Multi<AsyncResultSet> createIndexOrdered(
       QueryExecutor queryExecutor,
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       List<SimpleStatement> indexStatements) {
     return Multi.createFrom()
         .items(indexStatements.stream())
@@ -324,7 +322,7 @@ public record CreateCollectionOperation(
    */
   private Multi<AsyncResultSet> createIndexParallel(
       QueryExecutor queryExecutor,
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       List<SimpleStatement> indexStatements) {
     return Multi.createFrom()
         .items(indexStatements.stream())
@@ -336,7 +334,7 @@ public record CreateCollectionOperation(
   }
 
   public Uni<JsonApiException> cleanUpCollectionFailedWithTooManyIndex(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
 
     DeleteCollectionCollectionOperation deleteCollectionCollectionOperation =
         new DeleteCollectionCollectionOperation(commandContext, name);

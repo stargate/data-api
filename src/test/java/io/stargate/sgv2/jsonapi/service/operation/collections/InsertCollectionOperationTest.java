@@ -84,15 +84,17 @@ public class InsertCollectionOperationTest extends OperationTestBase {
 
   static final String INSERT_CQL =
       "INSERT INTO \"%s\".\"%s\""
-          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
+          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,"
+          + " query_dbl_values, query_text_values, query_null_values, query_timestamp_values)"
           + " VALUES"
-          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS";
 
   static final String INSERT_VECTOR_CQL =
       "INSERT INTO \"%s\".\"%s\""
-          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
+          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,"
+          + " query_dbl_values, query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
           + " VALUES"
-          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS";
 
   @PostConstruct
   public void init() {
@@ -116,7 +118,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                 null,
                 CollectionLexicalConfig.configForLegacyCollections(),
                 CollectionRerankingConfig.configForLegacyCollections()),
-            jsonProcessingMetricsReporter);
+            jsonProcessingMetricsReporter, null);
   }
 
   @Nested
