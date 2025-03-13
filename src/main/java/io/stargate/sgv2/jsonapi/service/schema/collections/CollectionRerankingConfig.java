@@ -97,7 +97,7 @@ public record CollectionRerankingConfig(
         rerankingJsonNode.get(RerankingConstants.RerankingColumn.SERVICE);
 
     // provider, modelName, must exist
-    // TODO(Hazel): WHAT HAPPENS IF THEY DONT ? JSON props on VectorizeConfig say model is not
+    // TODO: WHAT HAPPENS IF THEY DONT ? JSON props on VectorizeConfig say model is not
     // required
     String provider =
         rerankingServiceNode.get(RerankingConstants.RerankingService.PROVIDER).asText();
@@ -107,13 +107,13 @@ public record CollectionRerankingConfig(
     // construct VectorizeDefinition.authentication, can be null
     JsonNode authNode =
         rerankingServiceNode.get(RerankingConstants.RerankingService.AUTHENTICATION);
-    // TODO(Hazel): remove unchecked assignment
+    // TODO: remove unchecked assignment
     Map<String, String> authMap =
         authNode == null ? null : objectMapper.convertValue(authNode, Map.class);
 
     // construct VectorizeDefinition.parameters, can be null
     JsonNode paramsNode = rerankingServiceNode.get(RerankingConstants.RerankingService.PARAMETERS);
-    // TODO(Hazel): remove unchecked assignment
+    // TODO: remove unchecked assignment
     Map<String, Object> paramsMap =
         paramsNode == null ? null : objectMapper.convertValue(paramsNode, Map.class);
 

@@ -48,13 +48,26 @@ public class RerankProviderFactory {
       String commandName) {
     final RerankProvidersConfig.RerankProviderConfig configuration =
         rerankConfig.providers().get(serviceName);
-    // TODO(Hazel): add verification for providers and model
+    RerankProviderFactory.ProviderConstructor ctor =
+        RERANK_PROVIDER_CONSTRUCTOR_MAP.get(serviceName);
+    if (ctor == null) {
+      throw ErrorCodeV1.RERANK_SERVICE_TYPE_UNAVAILABLE.toApiException(
+          "unknown service provider '%s'", serviceName);
+    }
+    var modelConfig =
+        configuration.models().stream()
+            .filter(model -> model.name().equals(modelName))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    ErrorCodeV1.RERANK_SERVICE_TYPE_UNAVAILABLE.toApiException(
+                        "unknown model name '%s'", modelName));
+
     if (operationsConfig.enableEmbeddingGateway()) {
       // return the rerank Grpc client to embedding gateway service
       return new RerankEGWClient(
-          // TODO, Hazel is is also getting index 0 for the model?
-          configuration.models().getFirst().url(),
-          configuration.models().getFirst().properties(),
+          modelConfig.url(),
+          modelConfig.properties(),
           serviceName,
           tenant,
           authToken,
@@ -64,14 +77,6 @@ public class RerankProviderFactory {
           commandName);
     }
 
-    RerankProviderFactory.ProviderConstructor ctor =
-        RERANK_PROVIDER_CONSTRUCTOR_MAP.get(serviceName);
-    if (ctor == null) {
-      throw ErrorCodeV1.RERANK_SERVICE_TYPE_UNAVAILABLE.toApiException(
-          "unknown service provider '%s'", serviceName);
-    }
-    // TODO(Hazel): need models().get(modelName), but models is a list
-    return ctor.create(
-        configuration.models().get(0).url(), modelName, configuration.models().get(0).properties());
+    return ctor.create(modelConfig.url(), modelConfig.name(), modelConfig.properties());
   }
 }
