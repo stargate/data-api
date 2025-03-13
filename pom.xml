@@ -430,7 +430,7 @@
       <properties>
         <!-- Note, Cassandra HCD image is not in public repository anymore, Data API need to pull from certain ECR repo -->
         <stargate.int-test.cassandra.image>559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/prod/hcd</stargate.int-test.cassandra.image>
-        <stargate.int-test.cassandra.image-tag>1.1.0</stargate.int-test.cassandra.image-tag>
+        <stargate.int-test.cassandra.image-tag>1.2.0</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>hcd-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.hcd>true</stargate.int-test.cluster.hcd>
