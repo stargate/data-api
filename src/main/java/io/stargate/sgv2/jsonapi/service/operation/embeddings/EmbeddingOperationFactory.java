@@ -42,7 +42,8 @@ public abstract class EmbeddingOperationFactory {
     // we have some deferred values, e.g. we need to do vectorizing, so we need  to build a
     // hierarchy of task groups for now we only have vectorize actions so quick sanity check
     var allActions = DeferredAction.filtered(DeferredAction.class, allDeferredValues);
-    var embeddingActions = DeferredAction.filtered(EmbeddingDeferredAction.class, allDeferredValues);
+    var embeddingActions =
+        DeferredAction.filtered(EmbeddingDeferredAction.class, allDeferredValues);
     if (allActions.size() != embeddingActions.size()) {
       throw new IllegalArgumentException("Unsupported actions in deferred values: " + allActions);
     }

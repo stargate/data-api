@@ -53,7 +53,8 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
   protected EmbeddingTask.EmbeddingResultSupplier buildResultSupplier(
       CommandContext<SchemaT> commandContext) {
 
-    var vectorizeTexts = embeddingActions.stream().map(EmbeddingDeferredAction::startEmbedding).toList();
+    var vectorizeTexts =
+        embeddingActions.stream().map(EmbeddingDeferredAction::startEmbedding).toList();
     return new EmbeddingResultSupplier(
         this,
         commandContext,
@@ -130,26 +131,15 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
                           .formatted(
                               vectorizeTexts.size(),
                               embeddingTask.embeddingProvider.getClass().getSimpleName(),
-                              actions
-                                  .getFirst()
-                                  .groupKey()
-                                  .vectorType()
-                                  .getVectorizeDefinition()
-                                  .provider(),
-                              actions
-                                  .getFirst()
-                                  .groupKey()
-                                  .vectorType()
-                                  .getVectorizeDefinition()
-                                  .modelName(),
+                              actions.getFirst().groupKey().vectorizeDefinition().provider(),
+                              actions.getFirst().groupKey().vectorizeDefinition().modelName(),
                               embeddingTask.taskDesc()),
                       Recordable.copyOf(vectorizeTexts)));
 
       // The EmbeddingProviders use EmbeddingProviderErrorMapper and turn errors from the providers
-      // into
-      // Error V1 JsonApiException structure, this will be attached to the task if we let it bubble
-      // out
-      // of here.
+      // into Error V1 JsonApiException structure, this will be attached to the task if we let it
+      // bubble
+      // out of here.
       return supplier
           .get()
           .onItem()
@@ -171,8 +161,8 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
 
     /**
      * Create a new {@link EmbeddingTaskResult} which involves passing the vectors returned from the
-     * provider to the {@link EmbeddingDeferredAction}s so they can set the values into the deferred {@link
-     * io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue}s.
+     * provider to the {@link EmbeddingDeferredAction}s so they can set the values into the deferred
+     * {@link io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue}s.
      *
      * <p>We do this as part of building the result errors occur as part of the execute of the task
      *
@@ -195,18 +185,8 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
                           .formatted(
                               providerResponse.embeddings().size(),
                               embeddingTask.embeddingProvider.getClass().getSimpleName(),
-                              actions
-                                  .getFirst()
-                                  .groupKey()
-                                  .vectorType()
-                                  .getVectorizeDefinition()
-                                  .provider(),
-                              actions
-                                  .getFirst()
-                                  .groupKey()
-                                  .vectorType()
-                                  .getVectorizeDefinition()
-                                  .modelName(),
+                              actions.getFirst().groupKey().vectorizeDefinition().provider(),
+                              actions.getFirst().groupKey().vectorizeDefinition().modelName(),
                               embeddingTask.taskDesc())));
 
       // defensive to make sure the order cannot change

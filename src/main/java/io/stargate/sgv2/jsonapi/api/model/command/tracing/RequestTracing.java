@@ -72,6 +72,10 @@ public interface RequestTracing {
     maybeTrace(() -> new TraceMessage(message, recordable));
   }
 
+  default void maybeTrace(String message, Supplier<Recordable> recordable) {
+    maybeTrace(() -> new TraceMessage(message, recordable.get()));
+  }
+
   /**
    * Called to get the complete request trace to be included in the response.
    *

@@ -67,7 +67,8 @@ public class TableInsertTasksBuilder
 
     commandContext
         .requestTracing()
-        .maybeTrace("Parsed Insert JSON Documents", Recordable.copyOf(parsedDocuments));
+        .maybeTrace(
+            "Parsed Insert JSON Documents", Recordable.collectionSupplier(() -> parsedDocuments));
 
     var writeableTableRowBuilder =
         new WriteableTableRowBuilder(commandContext, JSONCodecRegistries.DEFAULT_REGISTRY);

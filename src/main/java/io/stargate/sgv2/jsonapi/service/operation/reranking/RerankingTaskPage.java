@@ -8,11 +8,10 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.CompositeTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskPage;
-
+import java.util.Collection;
 import java.util.function.Supplier;
 
-/**
- */
+/** */
 public class RerankingTaskPage<SchemaT extends TableBasedSchemaObject>
     extends TaskPage<RerankingTask<SchemaT>, SchemaT> {
 
@@ -28,9 +27,17 @@ public class RerankingTaskPage<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  public CommandResult get() {
+  protected void buildCommandResult() {
+    // add any errors and warnings
+    super.buildCommandResult();
 
-    return null;
+    // Get the documents from each task and add them to the result
+    // TODO: there will only be 1 task, check this ?
+    tasks.completedTasks().stream()
+        .map(RerankingTask::rerankingTaskResult)
+        .map(RerankingTask.RerankingTaskResult::rerankedDocuments)
+        .flatMap(Collection::stream)
+        .forEach(resultBuilder::addDocument);
   }
 
   /**
@@ -48,7 +55,7 @@ public class RerankingTaskPage<SchemaT extends TableBasedSchemaObject>
     public Supplier<CommandResult> getResults() {
 
       return new RerankingTaskPage<>(
-          tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode, requestTracing));
+          tasks, CommandResult.multiDocumentBuilder(useErrorObjectV2, debugMode, requestTracing));
     }
   }
 }

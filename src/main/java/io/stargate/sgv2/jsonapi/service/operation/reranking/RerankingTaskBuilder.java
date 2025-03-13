@@ -10,6 +10,4 @@ public class RerankingTaskBuilder<SchemaT extends TableBasedSchemaObject>
   public RerankingTaskBuilder(CommandContext<SchemaT> commandContext) {
     super(commandContext.schemaObject());
   }
-
-
 }

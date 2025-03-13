@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.query;
 import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
-import io.stargate.sgv2.jsonapi.service.shredding.NamedValue;
+import io.stargate.sgv2.jsonapi.service.shredding.Deferred;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -41,7 +41,7 @@ public class DefaultUpdateValuesCQLClause implements UpdateValuesCQLClause {
   }
 
   @Override
-  public List<? extends NamedValue<?, ?, ?>> deferred() {
+  public List<? extends Deferred> deferred() {
     return Deferrable.deferred(new ArrayList<>(assignments));
   }
 }

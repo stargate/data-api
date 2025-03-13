@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.embeddings;
 import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
@@ -28,7 +27,8 @@ public class EmbeddingDeferredAction implements DeferredAction, Recordable {
       ApiVectorType vectorType,
       Consumer<float[]> successConsumer,
       Consumer<RuntimeException> failureConsumer) {
-    this (vectorizeText,
+    this(
+        vectorizeText,
         Objects.requireNonNull(vectorType, "vectorType must not be null").getDimension(),
         Objects.requireNonNull(vectorType, "vectorType must not be null").getVectorizeDefinition(),
         successConsumer,
@@ -49,9 +49,9 @@ public class EmbeddingDeferredAction implements DeferredAction, Recordable {
     this.failureConsumer = failureConsumer;
 
     this.dimension = dimension;
-    this.vectorizeDefinition = Objects.requireNonNull(vectorizeDefinition, "vectorizeDefinition must not be null");
+    this.vectorizeDefinition =
+        Objects.requireNonNull(vectorizeDefinition, "vectorizeDefinition must not be null");
     this.groupKey = new EmbeddingActionGroupKey(dimension, vectorizeDefinition);
-
   }
 
   public EmbeddingActionGroupKey groupKey() {
@@ -108,9 +108,7 @@ public class EmbeddingDeferredAction implements DeferredAction, Recordable {
         .append("vectorizeDefinition.provider", vectorizeDefinition.provider())
         .append("vectorizeDefinition.modelName", vectorizeDefinition.modelName())
         .append("vectorizeDefinition.parameters", vectorizeDefinition.parameters())
-        .append(
-            "vectorizeDefinition.authentication",
-            vectorizeDefinition.authentication())
+        .append("vectorizeDefinition.authentication", vectorizeDefinition.authentication())
         .append("dimension", dimension);
     return dataRecorder;
   }
@@ -123,6 +121,10 @@ public class EmbeddingDeferredAction implements DeferredAction, Recordable {
     EmbeddingActionGroupKey(int dimension, VectorizeDefinition vectorizeDefinition) {
       this.dimension = dimension;
       this.vectorizeDefinition = vectorizeDefinition;
+    }
+
+    public int dimension() {
+      return dimension;
     }
 
     public VectorizeDefinition vectorizeDefinition() {
@@ -152,8 +154,7 @@ public class EmbeddingDeferredAction implements DeferredAction, Recordable {
       if (o == null || getClass() != o.getClass()) return false;
       EmbeddingActionGroupKey that = (EmbeddingActionGroupKey) o;
       return Objects.equals(dimension, that.dimension)
-          && Objects.equals(
-          vectorizeDefinition, that.vectorizeDefinition);
+          && Objects.equals(vectorizeDefinition, that.vectorizeDefinition);
     }
   }
 }

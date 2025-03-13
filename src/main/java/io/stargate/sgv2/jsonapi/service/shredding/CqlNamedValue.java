@@ -104,7 +104,8 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
     return null;
   }
 
-  private DecodeResult<Object> maybeVectorize(ApiVectorType apiVectorType,  JsonNamedValue rawValue) {
+  private DecodeResult<Object> maybeVectorize(
+      ApiVectorType apiVectorType, JsonNamedValue rawValue) {
 
     var vectorizeText = rawValue.value().value().toString();
     // we have a vectorize text, if the text is empty we simply set the value of the vector to be

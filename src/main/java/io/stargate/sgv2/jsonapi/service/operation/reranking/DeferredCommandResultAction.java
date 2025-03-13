@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
-
 import java.util.function.Consumer;
 
 public class DeferredCommandResultAction implements DeferredAction {
@@ -10,7 +9,8 @@ public class DeferredCommandResultAction implements DeferredAction {
   Consumer<CommandResult> successConsumer;
   Consumer<RuntimeException> failureConsumer;
 
-  public DeferredCommandResultAction(Consumer<CommandResult> successConsumer, Consumer<RuntimeException> failureConsumer) {
+  public DeferredCommandResultAction(
+      Consumer<CommandResult> successConsumer, Consumer<RuntimeException> failureConsumer) {
     this.successConsumer = successConsumer;
     this.failureConsumer = failureConsumer;
   }
@@ -22,5 +22,4 @@ public class DeferredCommandResultAction implements DeferredAction {
   public void onFailure(RuntimeException exception) {
     failureConsumer.accept(exception);
   }
-
 }

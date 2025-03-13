@@ -3,10 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.query;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
 import com.google.common.annotations.VisibleForTesting;
-import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
-import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
-import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
-import io.stargate.sgv2.jsonapi.service.shredding.NamedValue;
+import io.stargate.sgv2.jsonapi.service.shredding.*;
 import java.util.List;
 import java.util.Objects;
 
@@ -83,7 +80,7 @@ public abstract class ColumnAssignment implements CQLAssignment, Deferrable {
   }
 
   @Override
-  public List<? extends NamedValue<?, ?, ?>> deferred() {
+  public List<? extends Deferred> deferred() {
     return new CqlNamedValueContainer(List.of(namedValue)).deferredValues();
   }
 
