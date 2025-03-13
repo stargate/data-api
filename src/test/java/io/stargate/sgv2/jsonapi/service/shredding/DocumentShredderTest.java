@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -267,7 +266,7 @@ public class DocumentShredderTest {
     }
 
     @Test
-    public void shredOverlappingPaths() throws JsonProcessingException {
+    public void shredOverlappingPaths() throws Exception {
       final String inputJson =
           """
               {
