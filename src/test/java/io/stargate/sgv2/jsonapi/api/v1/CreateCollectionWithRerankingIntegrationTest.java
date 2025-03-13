@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
@@ -8,7 +7,6 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.*;
@@ -305,26 +303,5 @@ public class CreateCollectionWithRerankingIntegrationTest
                           }
                           """
         .formatted(collectionName, rerankingDef);
-  }
-
-  private void deleteCollection(String collectionName) {
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(
-                """
-                                {
-                                  "deleteCollection": {
-                                    "name": "%s"
-                                  }
-                                }
-                                """
-                .formatted(collectionName))
-        .when()
-        .post(KeyspaceResource.BASE_PATH, keyspaceName)
-        .then()
-        .statusCode(200)
-        .body("$", responseIsDDLSuccess())
-        .body("status.ok", is(1));
   }
 }

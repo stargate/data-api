@@ -11,12 +11,14 @@ import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankingConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
+import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -26,6 +28,7 @@ import org.apache.commons.lang3.RandomStringUtils;
  * collections names get generated for each test
  */
 public final class TestConstants {
+  @Inject RerankProvidersConfig rerankProvidersConfig;
 
   // Random keyspace and collection names, NOTE: these are static for all tests
   public static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
@@ -42,7 +45,12 @@ public final class TestConstants {
           VectorConfig.NOT_ENABLED_CONFIG,
           null,
           // Use configs that by default enable lexical:
-          CollectionLexicalConfig.configForNewCollections());
+          CollectionLexicalConfig.configForNewCollections(),
+          // Use default reranking config - hardcode the value to avoid reading config
+          new CollectionRerankingConfig(
+              true,
+              new CollectionRerankingConfig.RerankProviderConfig(
+                  "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null)));
 
   // Schema object for testing with legacy (pre-lexical-config) defaults
   public static final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT_LEGACY =

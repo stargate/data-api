@@ -118,7 +118,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                 null,
                 CollectionLexicalConfig.configForLegacyCollections(),
                 CollectionRerankingConfig.configForLegacyCollections()),
-            jsonProcessingMetricsReporter, null);
+            jsonProcessingMetricsReporter,
+            null);
   }
 
   @Nested
