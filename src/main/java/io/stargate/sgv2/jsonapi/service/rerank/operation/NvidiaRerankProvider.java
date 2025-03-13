@@ -6,6 +6,7 @@ import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RerankCredentials;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.RerankResponseErrorMessageMapper;
 import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProviderResponseValidation;
@@ -35,10 +36,10 @@ public class NvidiaRerankProvider extends RerankProvider {
   private final NvidiaRerankClient nvidiaRerankClient;
 
   // Nvidia Rerank Service supports truncate or error when the passage is too long.
-  // Data API use truncate as default.
+  // Data API use NONE as default, means the rerank request will error out if there is a query and
+  // passage pair that exceeds allowed token size 8192
   // https://docs.nvidia.com/nim/nemo-retriever/text-reranking/latest/using-reranking.html#token-limits-truncation
-  // If errors, Nvidia returns text/plain {"error": "Invalid Request"}
-  private static final String TRUNCATE_PASSAGE = "END";
+  private static final String TRUNCATE_PASSAGE = "NONE";
 
   public NvidiaRerankProvider(
       String baseUrl,
@@ -109,10 +110,10 @@ public class NvidiaRerankProvider extends RerankProvider {
             TRUNCATE_PASSAGE);
 
     // Note, Nvidia self-host reranker service use Astra token to authenticate the request.
-    // So we use astraToken in rerankCredentials, not apiKey in rerankCredentials.
+    // So we use token in rerankCredentials, not apiKey in rerankCredentials.
     Uni<RerankResponse> response =
         applyRetry(
-            nvidiaRerankClient.rerank("Bearer " + rerankCredentials.astraToken().get(), request));
+            nvidiaRerankClient.rerank("Bearer " + resolveRerankKey(rerankCredentials), request));
 
     return response
         .onItem()
@@ -125,5 +126,22 @@ public class NvidiaRerankProvider extends RerankProvider {
               Usage usage = new Usage(resp.usage().prompt_tokens(), resp.usage().total_tokens());
               return RerankProvider.RerankBatchResponse.of(batchId, ranks, usage);
             });
+  }
+
+  /**
+   * For Astra self-hosted Nvidia rerank in the GPU plane, it requires the AstraCS token to access.
+   * So Data API in Astra will resolve the AstraCS token from the request header. For Data API in
+   * non-astra environment, since the token is also used for backend authentication, so the user
+   * needs to pass the rerank API key in the request header 'x-rerank-api-key'.
+   */
+  private String resolveRerankKey(RerankCredentials rerankCredentials) {
+    if (rerankCredentials.token().startsWith("AstraCS")) {
+      return rerankCredentials.token();
+    }
+    if (rerankCredentials.apiKey().isEmpty()) {
+      throw ErrorCodeV1.RERANK_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
+          "In order to rerank, please add the rerank API key in the request header 'x-rerank-api-key' for non-astra environment.");
+    }
+    return rerankCredentials.apiKey().get();
   }
 }

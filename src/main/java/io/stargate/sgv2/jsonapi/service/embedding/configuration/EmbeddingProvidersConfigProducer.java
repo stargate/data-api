@@ -38,7 +38,7 @@ public class EmbeddingProvidersConfigProducer {
     // defaultEmbeddingProviderConfig is what we mapped from embedding-providers-config.yaml
     // and will be used if embedding-gateway is not enabled
     if (!operationsConfig.enableEmbeddingGateway()) {
-      LOG.info("embedding gateway disabled, use default config");
+      LOG.info("embedding gateway disabled, use default embedding config");
       return defaultConfig;
     }
     LOG.info("embedding gateway enabled, fetch supported providers from embedding gateway");

@@ -71,13 +71,16 @@ public class RerankEGWClient extends RerankProvider {
             .build();
 
     // Build the rerank provider context in grpc request
-    final EmbeddingGateway.ProviderRerankRequest.ProviderContext providerContext =
+    var contextBuilder =
         EmbeddingGateway.ProviderRerankRequest.ProviderContext.newBuilder()
             .setProviderName(provider)
             .setTenantId(tenant.orElse(DEFAULT_TENANT_ID))
-            .putAuthTokens(DATA_API_TOKEN, authToken.orElse(""))
-            .putAuthTokens(RERANK_API_KEY, authToken.orElse(""))
-            .build();
+            .putAuthTokens(DATA_API_TOKEN, rerankCredentials.token());
+    if (rerankCredentials.apiKey().isPresent()) {
+      contextBuilder.putAuthTokens(RERANK_API_KEY, rerankCredentials.apiKey().get());
+    }
+    final EmbeddingGateway.ProviderRerankRequest.ProviderContext providerContext =
+        contextBuilder.build();
 
     // Built the Grpc request
     final EmbeddingGateway.ProviderRerankRequest grpcRerankRequest =
@@ -90,7 +93,6 @@ public class RerankEGWClient extends RerankProvider {
     try {
       grpcRerankResponse = rerankGrpcService.rerank(grpcRerankRequest);
     } catch (StatusRuntimeException e) {
-      // TODO, ???
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
         throw ErrorCodeV1.RERANK_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
       }

@@ -322,13 +322,6 @@ public record CollectionRerankingConfig(
               "Reranking provider '%s' does not support authentication key '%s'",
               provider, userAuth.getKey());
         }
-
-        // Validate the credential name from secret service
-        // already append the .providerKey to the value in CreateCollectionCommand
-        // TODO(Yuqi): Add EGW support
-        //        if (operationsConfig.enableEmbeddingGateway()) {
-        //          validateCredentials.validate(provider, userAuth.getValue());
-        //        }
       }
     }
     return authentication;

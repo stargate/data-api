@@ -100,6 +100,8 @@ public enum ErrorCodeV1 {
   RERANK_PROVIDER_CLIENT_ERROR("The Rerank Provider returned a HTTP client error"),
   RERANK_PROVIDER_SERVER_ERROR("The Rerank Provider returned a HTTP server error"),
   RERANK_PROVIDER_TIMEOUT("The Rerank Provider timed out"),
+  RERANK_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED(
+      "The rerank provider authentication key is not provided"),
 
   TOO_MANY_COLLECTIONS("Too many collections"),
 

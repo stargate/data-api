@@ -219,7 +219,6 @@ message ProviderRerankRequest {
     string 					      query = 2;
     // The passages texts for the rerank request
     repeated string 			passages = 3;
-    // TODOs: truncate?
     // The command contains rerank
     string                command_name = 4;
   }
