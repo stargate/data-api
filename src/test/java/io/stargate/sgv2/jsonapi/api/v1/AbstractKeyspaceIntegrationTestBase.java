@@ -129,6 +129,27 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
         .body("$", responseIsDDLSuccess());
   }
 
+  protected void deleteCollection(String collectionName) {
+    given()
+        .headers(getHeaders())
+        .contentType(ContentType.JSON)
+        .body(
+                """
+                    {
+                      "deleteCollection": {
+                        "name": "%s"
+                      }
+                    }
+                    """
+                .formatted(collectionName))
+        .when()
+        .post(KeyspaceResource.BASE_PATH, keyspaceName)
+        .then()
+        .statusCode(200)
+        .body("$", responseIsDDLSuccess())
+        .body("status.ok", is(1));
+  }
+
   protected int getTestPort() {
     try {
       return ConfigProvider.getConfig().getValue("quarkus.http.test-port", Integer.class);
