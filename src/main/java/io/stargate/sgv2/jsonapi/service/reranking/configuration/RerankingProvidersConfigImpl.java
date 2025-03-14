@@ -1,18 +1,18 @@
-package io.stargate.sgv2.jsonapi.service.rerank.configuration;
+package io.stargate.sgv2.jsonapi.service.reranking.configuration;
 
 import java.util.List;
 import java.util.Map;
 
-public record RerankProvidersConfigImpl(Map<String, RerankProviderConfig> providers)
-    implements RerankProvidersConfig {
+public record RerankingProvidersConfigImpl(Map<String, RerankingProviderConfig> providers)
+    implements RerankingProvidersConfig {
 
-  public record RerankProviderConfigImpl(
+  public record RerankingProviderConfigImpl(
       boolean isDefault,
       String displayName,
       boolean enabled,
       Map<AuthenticationType, AuthenticationConfig> supportedAuthentications,
       List<ModelConfig> models)
-      implements RerankProviderConfig {
+      implements RerankingProviderConfig {
 
     public record AuthenticationConfigImpl(boolean enabled, List<TokenConfig> tokens)
         implements AuthenticationConfig {
@@ -31,7 +31,7 @@ public record RerankProvidersConfigImpl(Map<String, RerankProviderConfig> provid
           int maxBackOffMillis,
           double jitter,
           int maxBatchSize)
-          implements RerankProvidersConfig.RerankProviderConfig.ModelConfig.RequestProperties {}
+          implements RerankingProviderConfig.ModelConfig.RequestProperties {}
     }
   }
 }

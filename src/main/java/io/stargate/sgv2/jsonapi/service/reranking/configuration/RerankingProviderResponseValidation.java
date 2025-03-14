@@ -1,7 +1,7 @@
-package io.stargate.sgv2.jsonapi.service.rerank.configuration;
+package io.stargate.sgv2.jsonapi.service.reranking.configuration;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
-import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.RERANK_PROVIDER_UNEXPECTED_RESPONSE;
+import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.RERANKING_PROVIDER_UNEXPECTED_RESPONSE;
 
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.client.ClientRequestContext;
@@ -14,7 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A client response filter/interceptor that validates the response from the rerank provider.
+ * A client response filter/interceptor that validates the response from the reranking provider.
  *
  * <p>This filter checks the Content-Type of the response to ensure it is compatible with
  * 'application/json' or 'text/json'. It also verifies the presence of a JSON body in the response.
@@ -22,11 +22,11 @@ import org.slf4j.LoggerFactory;
  * <p>If the response fails the validation, a {@link JsonApiException} is thrown with an appropriate
  * error message.
  */
-public class RerankProviderResponseValidation implements ClientResponseFilter {
+public class RerankingProviderResponseValidation implements ClientResponseFilter {
 
   static final MediaType MEDIATYPE_TEXT_JSON = new MediaType("text", "json");
 
-  Logger logger = LoggerFactory.getLogger(RerankProviderResponseValidation.class);
+  Logger logger = LoggerFactory.getLogger(RerankingProviderResponseValidation.class);
 
   /**
    * Filters the client response by validating the Content-Type and JSON body.
@@ -45,8 +45,8 @@ public class RerankProviderResponseValidation implements ClientResponseFilter {
     }
     // Throw error if there is no response body
     if (!responseContext.hasEntity()) {
-      throw RERANK_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-          "No response body from the rerank provider");
+      throw RERANKING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
+          "No response body from the reranking provider");
     }
 
     // response should always be JSON; if not, error out, include raw response message for
@@ -65,7 +65,7 @@ public class RerankProviderResponseValidation implements ClientResponseFilter {
             "Cannot convert the provider's error response to string: {}", e.getMessage(), e);
       }
       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-          "Expected response Content-Type ('application/json' or 'text/json') from the rerank provider but found '%s'; HTTP Status: %s; The response body is: '%s'.",
+          "Expected response Content-Type ('application/json' or 'text/json') from the reranking provider but found '%s'; HTTP Status: %s; The response body is: '%s'.",
           contentType, responseContext.getStatus(), responseBody);
     }
   }

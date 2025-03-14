@@ -1,35 +1,36 @@
-package io.stargate.sgv2.jsonapi.service.rerank.operation;
+package io.stargate.sgv2.jsonapi.service.reranking.operation;
 
 import io.quarkus.grpc.GrpcClient;
-import io.stargate.embedding.gateway.RerankService;
+import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProvidersConfig;
-import io.stargate.sgv2.jsonapi.service.rerank.gateway.RerankEGWClient;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.reranking.gateway.RerankingEGWClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
 import java.util.Optional;
 
 @ApplicationScoped
-public class RerankProviderFactory {
-  @Inject RerankProvidersConfig rerankConfig;
+public class RerankingProviderFactory {
+  @Inject RerankingProvidersConfig rerankingConfig;
   @Inject OperationsConfig operationsConfig;
 
   @GrpcClient("embedding")
-  RerankService rerankGrpcService;
+  RerankingService rerankingGrpcService;
 
   interface ProviderConstructor {
-    RerankProvider create(
+    RerankingProvider create(
         String baseUrl,
         String modelName,
-        RerankProvidersConfig.RerankProviderConfig.ModelConfig.RequestProperties requestProperties);
+        RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties
+            requestProperties);
   }
 
-  private static final Map<String, ProviderConstructor> RERANK_PROVIDER_CONSTRUCTOR_MAP =
-      Map.ofEntries(Map.entry("nvidia", NvidiaRerankProvider::new));
+  private static final Map<String, ProviderConstructor> RERANKING_PROVIDER_CONSTRUCTOR_MAP =
+      Map.ofEntries(Map.entry("nvidia", NvidiaRerankingProvider::new));
 
-  public RerankProvider getConfiguration(
+  public RerankingProvider getConfiguration(
       Optional<String> tenant,
       Optional<String> authToken,
       String serviceName,
@@ -39,19 +40,19 @@ public class RerankProviderFactory {
     return addService(tenant, authToken, serviceName, modelName, authentication, commandName);
   }
 
-  private synchronized RerankProvider addService(
+  private synchronized RerankingProvider addService(
       Optional<String> tenant,
       Optional<String> authToken,
       String serviceName,
       String modelName,
       Map<String, String> authentication,
       String commandName) {
-    final RerankProvidersConfig.RerankProviderConfig configuration =
-        rerankConfig.providers().get(serviceName);
-    RerankProviderFactory.ProviderConstructor ctor =
-        RERANK_PROVIDER_CONSTRUCTOR_MAP.get(serviceName);
+    final RerankingProvidersConfig.RerankingProviderConfig configuration =
+        rerankingConfig.providers().get(serviceName);
+    RerankingProviderFactory.ProviderConstructor ctor =
+        RERANKING_PROVIDER_CONSTRUCTOR_MAP.get(serviceName);
     if (ctor == null) {
-      throw ErrorCodeV1.RERANK_SERVICE_TYPE_UNAVAILABLE.toApiException(
+      throw ErrorCodeV1.RERANKING_SERVICE_TYPE_UNAVAILABLE.toApiException(
           "unknown service provider '%s'", serviceName);
     }
     var modelConfig =
@@ -60,19 +61,19 @@ public class RerankProviderFactory {
             .findFirst()
             .orElseThrow(
                 () ->
-                    ErrorCodeV1.RERANK_SERVICE_TYPE_UNAVAILABLE.toApiException(
+                    ErrorCodeV1.RERANKING_SERVICE_TYPE_UNAVAILABLE.toApiException(
                         "unknown model name '%s'", modelName));
 
     if (operationsConfig.enableEmbeddingGateway()) {
-      // return the rerank Grpc client to embedding gateway service
-      return new RerankEGWClient(
+      // return the reranking Grpc client to embedding gateway service
+      return new RerankingEGWClient(
           modelConfig.url(),
           modelConfig.properties(),
           serviceName,
           tenant,
           authToken,
           modelName,
-          rerankGrpcService,
+          rerankingGrpcService,
           authentication,
           commandName);
     }

@@ -21,8 +21,8 @@ public interface HttpConstants {
   /** Data API Embedding service secret id header name. */
   String EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME = "x-embedding-secret-id";
 
-  /** Data API rerank service Authentication token header name. */
-  String RERANK_AUTHENTICATION_TOKEN_HEADER_NAME = "x-rerank-api-key";
+  /** Data API reranking service Authentication token header name. */
+  String RERANKING_AUTHENTICATION_TOKEN_HEADER_NAME = "x-reranking-api-key";
 
   /**
    * @return Embedding service header name for token.

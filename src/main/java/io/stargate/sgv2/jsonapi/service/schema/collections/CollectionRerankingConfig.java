@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -16,10 +16,10 @@ import java.util.stream.Collectors;
 public record CollectionRerankingConfig(
     boolean enabled,
     @JsonInclude(JsonInclude.Include.NON_NULL) @JsonProperty("service")
-        RerankProviderConfig rerankProviderConfig) {
+        RerankingProviderConfig rerankingProviderConfig) {
 
   // Create a nested record for the provider-related fields
-  public record RerankProviderConfig(
+  public record RerankingProviderConfig(
       String provider,
       String modelName,
       Map<String, String> authentication,
@@ -34,7 +34,9 @@ public record CollectionRerankingConfig(
     // Clear out any reranking settings if not enabled (but don't fail)
     this(
         enabled,
-        enabled ? new RerankProviderConfig(provider, modelName, authentication, parameters) : null);
+        enabled
+            ? new RerankingProviderConfig(provider, modelName, authentication, parameters)
+            : null);
   }
 
   /**
@@ -43,10 +45,10 @@ public record CollectionRerankingConfig(
    * configuration.
    */
   public static CollectionRerankingConfig configForNewCollections(
-      RerankProvidersConfig rerankProvidersConfig) {
+      RerankingProvidersConfig rerankingProvidersConfig) {
     // get the default provider from the config
     var defaultProvider =
-        rerankProvidersConfig.providers().entrySet().stream()
+        rerankingProvidersConfig.providers().entrySet().stream()
             .filter(entry -> entry.getValue().isDefault())
             .findFirst();
     if (defaultProvider.isEmpty()) {
@@ -54,15 +56,15 @@ public record CollectionRerankingConfig(
     }
     var provider = defaultProvider.get().getKey();
     var modelName =
-        rerankProvidersConfig.providers().get(provider).models().stream()
-            .filter(RerankProvidersConfig.RerankProviderConfig.ModelConfig::isDefault)
+        rerankingProvidersConfig.providers().get(provider).models().stream()
+            .filter(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::isDefault)
             .findFirst()
-            .map(RerankProvidersConfig.RerankProviderConfig.ModelConfig::name)
+            .map(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::name)
             .get();
 
     // TODO(Hazel): Assume no authentication or parameters for default provider and model now, may
     // need to change
-    var defaultRerankingService = new RerankProviderConfig(provider, modelName, null, null);
+    var defaultRerankingService = new RerankingProviderConfig(provider, modelName, null, null);
 
     return new CollectionRerankingConfig(true, defaultRerankingService);
   }
@@ -128,10 +130,10 @@ public record CollectionRerankingConfig(
    */
   public static CollectionRerankingConfig validateAndConstruct(
       CreateCollectionCommand.Options.RerankingConfigDefinition rerankingConfig,
-      RerankProvidersConfig rerankProvidersConfig) {
+      RerankingProvidersConfig rerankingProvidersConfig) {
     // If not defined, use default for new collections; valid option
     if (rerankingConfig == null) {
-      return configForNewCollections(rerankProvidersConfig);
+      return configForNewCollections(rerankingProvidersConfig);
     }
     // Otherwise validate and construct
     Boolean enabled = rerankingConfig.enabled();
@@ -147,7 +149,7 @@ public record CollectionRerankingConfig(
     // If enabled, but no service config, use default
     var rerankingServiceConfig = rerankingConfig.rerankingServiceConfig();
     if (rerankingServiceConfig == null) {
-      return configForNewCollections(rerankProvidersConfig);
+      return configForNewCollections(rerankingProvidersConfig);
     }
 
     String provider = rerankingConfig.rerankingServiceConfig().provider();
@@ -155,8 +157,8 @@ public record CollectionRerankingConfig(
     Map<String, String> authentication = rerankingConfig.rerankingServiceConfig().authentication();
     Map<String, Object> parameters = rerankingConfig.rerankingServiceConfig().parameters();
 
-    RerankProvidersConfig.RerankProviderConfig providerConfig =
-        getAndValidateProviderConfig(provider, rerankProvidersConfig);
+    RerankingProvidersConfig.RerankingProviderConfig providerConfig =
+        getAndValidateProviderConfig(provider, rerankingProvidersConfig);
 
     modelName = validateModel(provider, modelName, providerConfig);
 
@@ -173,18 +175,18 @@ public record CollectionRerankingConfig(
    * system.
    *
    * @param provider The name of the service provider.
-   * @param rerankProvidersConfig The configuration for available reranking providers.
+   * @param rerankingProvidersConfig The configuration for available reranking providers.
    * @return The configuration for the reranking provider, if valid.
    * @throws JsonApiException If the provider is not supported or not enabled.
    */
-  private static RerankProvidersConfig.RerankProviderConfig getAndValidateProviderConfig(
-      String provider, RerankProvidersConfig rerankProvidersConfig) {
+  private static RerankingProvidersConfig.RerankingProviderConfig getAndValidateProviderConfig(
+      String provider, RerankingProvidersConfig rerankingProvidersConfig) {
     if (provider == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "'provider' is required property for 'reranking.service' Object value");
     }
 
-    var providerConfig = rerankProvidersConfig.providers().get(provider);
+    var providerConfig = rerankingProvidersConfig.providers().get(provider);
     if (providerConfig == null || !providerConfig.enabled()) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "Reranking provider '%s' is not supported", provider);
@@ -199,14 +201,14 @@ public record CollectionRerankingConfig(
   private static String validateModel(
       String provider,
       String modelName,
-      RerankProvidersConfig.RerankProviderConfig rerankProviderConfig) {
+      RerankingProvidersConfig.RerankingProviderConfig rerankingProviderConfig) {
     // 1. model name is required
     if (modelName == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "'modelName' is needed for reranking provider %s", provider);
     }
     // 2. model name must be supported by the provider - in the config
-    rerankProviderConfig.models().stream()
+    rerankingProviderConfig.models().stream()
         .filter(m -> m.name().equals(modelName))
         .findFirst()
         .orElseThrow(
@@ -249,20 +251,20 @@ public record CollectionRerankingConfig(
   private static Map<String, String> validateAuthentication(
       String provider,
       Map<String, String> authentication,
-      RerankProvidersConfig.RerankProviderConfig rerankProviderConfig) {
+      RerankingProvidersConfig.RerankingProviderConfig rerankingProviderConfig) {
     // Get all the accepted keys in SHARED_SECRET
     Set<String> acceptedKeys =
-        rerankProviderConfig.supportedAuthentications().entrySet().stream()
+        rerankingProviderConfig.supportedAuthentications().entrySet().stream()
             .filter(
                 config ->
                     config
                         .getKey()
                         .equals(
-                            RerankProvidersConfig.RerankProviderConfig.AuthenticationType
+                            RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType
                                 .SHARED_SECRET))
             .filter(config -> config.getValue().enabled() && config.getValue().tokens() != null)
             .flatMap(config -> config.getValue().tokens().stream())
-            .map(RerankProvidersConfig.RerankProviderConfig.TokenConfig::accepted)
+            .map(RerankingProvidersConfig.RerankingProviderConfig.TokenConfig::accepted)
             .collect(Collectors.toSet());
 
     // If the user hasn't provided authentication details, verify that either the 'NONE' or 'HEADER'
@@ -271,19 +273,22 @@ public record CollectionRerankingConfig(
       // Check if 'NONE' authentication type is enabled
       boolean noneEnabled =
           Optional.ofNullable(
-                  rerankProviderConfig
+                  rerankingProviderConfig
                       .supportedAuthentications()
-                      .get(RerankProvidersConfig.RerankProviderConfig.AuthenticationType.NONE))
-              .map(RerankProvidersConfig.RerankProviderConfig.AuthenticationConfig::enabled)
+                      .get(
+                          RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType.NONE))
+              .map(RerankingProvidersConfig.RerankingProviderConfig.AuthenticationConfig::enabled)
               .orElse(false);
 
       // Check if 'HEADER' authentication type is enabled
       boolean headerEnabled =
           Optional.ofNullable(
-                  rerankProviderConfig
+                  rerankingProviderConfig
                       .supportedAuthentications()
-                      .get(RerankProvidersConfig.RerankProviderConfig.AuthenticationType.HEADER))
-              .map(RerankProvidersConfig.RerankProviderConfig.AuthenticationConfig::enabled)
+                      .get(
+                          RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType
+                              .HEADER))
+              .map(RerankingProvidersConfig.RerankingProviderConfig.AuthenticationConfig::enabled)
               .orElse(false);
 
       // If neither 'NONE' nor 'HEADER' authentication type is enabled, throw an exception

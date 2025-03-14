@@ -18,9 +18,9 @@ import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 @StaticInitSafe
 public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
   private static final String EMBEDDING_CONFIG_ENV = "EMBEDDING_CONFIG_PATH";
-  private static final String RERANK_CONFIG_ENV = "RERANK_CONFIG_PATH";
+  private static final String RERANKING_CONFIG_ENV = "RERANKING_CONFIG_PATH";
   private static final String EMBEDDING_CONFIG_RESOURCE = "embedding-providers-config.yaml";
-  private static final String RERANK_CONFIG_RESOURCE = "rerank-providers-config.yaml";
+  private static final String RERANKING_CONFIG_RESOURCE = "reranking-providers-config.yaml";
 
   @Override
   public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
@@ -31,10 +31,10 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
           loadConfigSource(
               System.getenv(EMBEDDING_CONFIG_ENV), EMBEDDING_CONFIG_RESOURCE, forClassLoader));
 
-      // Add rerank config source
+      // Add reranking config source
       configSources.add(
           loadConfigSource(
-              System.getenv(RERANK_CONFIG_ENV), RERANK_CONFIG_RESOURCE, forClassLoader));
+              System.getenv(RERANKING_CONFIG_ENV), RERANKING_CONFIG_RESOURCE, forClassLoader));
 
       return configSources;
     } catch (IOException e) {

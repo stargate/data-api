@@ -1,9 +1,9 @@
-package io.stargate.sgv2.jsonapi.service.rerank.configuration;
+package io.stargate.sgv2.jsonapi.service.reranking.configuration;
 
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.runtime.Startup;
 import io.stargate.embedding.gateway.EmbeddingGateway;
-import io.stargate.embedding.gateway.RerankServiceGrpc;
+import io.stargate.embedding.gateway.RerankingServiceGrpc;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -17,8 +17,8 @@ import org.eclipse.microprofile.faulttolerance.Retry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RerankProviderConfigProducer {
-  private static final Logger LOG = LoggerFactory.getLogger(RerankProviderConfigProducer.class);
+public class RerankingProviderConfigProducer {
+  private static final Logger LOG = LoggerFactory.getLogger(RerankingProviderConfigProducer.class);
 
   @Produces
   @ApplicationScoped
@@ -29,49 +29,50 @@ public class RerankProviderConfigProducer {
       delayUnit = ChronoUnit.SECONDS,
       maxDuration = 180,
       durationUnit = ChronoUnit.SECONDS)
-  RerankProvidersConfig produce(
-      DefaultRerankProviderConfig defaultRerankProviderConfig,
+  RerankingProvidersConfig produce(
+      DefaultRerankingProviderConfig defaultRerankingProviderConfig,
       OperationsConfig operationsConfig,
-      @GrpcClient("embedding") RerankServiceGrpc.RerankServiceBlockingStub rerankService) {
-    RerankProvidersConfig defaultConfig =
-        new RerankProvidersConfigImpl(defaultRerankProviderConfig.providers());
-    // defaultRerankProviderConfig is what we mapped from rerank-providers-config.yaml
+      @GrpcClient("embedding") RerankingServiceGrpc.RerankingServiceBlockingStub rerankingService) {
+    RerankingProvidersConfig defaultConfig =
+        new RerankingProvidersConfigImpl(defaultRerankingProviderConfig.providers());
+    // defaultRerankingProviderConfig is what we mapped from reranking-providers-config.yaml
     // and will be used if embedding-gateway is not enabled
     if (!operationsConfig.enableEmbeddingGateway()) {
-      LOG.info("embedding gateway disabled, use default rerank config");
+      LOG.info("embedding gateway disabled, use default reranking config");
       return defaultConfig;
     }
-    LOG.info("embedding gateway enabled, fetch supported rerank providers from embedding gateway");
-    final EmbeddingGateway.GetSupportedRerankProvidersRequest grpcRequest =
-        EmbeddingGateway.GetSupportedRerankProvidersRequest.newBuilder().build();
+    LOG.info(
+        "embedding gateway enabled, fetch supported reranking providers from embedding gateway");
+    final EmbeddingGateway.GetSupportedRerankingProvidersRequest grpcRequest =
+        EmbeddingGateway.GetSupportedRerankingProvidersRequest.newBuilder().build();
     try {
-      EmbeddingGateway.GetSupportedRerankProvidersResponse supportedProvidersResponse =
-          rerankService.getSupportedRerankProviders(grpcRequest);
+      EmbeddingGateway.GetSupportedRerankingProvidersResponse supportedProvidersResponse =
+          rerankingService.getSupportedRerankingProviders(grpcRequest);
       return grpcResponseToConfig(supportedProvidersResponse);
     } catch (Exception e) {
       throw ErrorCodeV1.SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE.toApiException();
     }
   }
 
-  private RerankProvidersConfig grpcResponseToConfig(
-      EmbeddingGateway.GetSupportedRerankProvidersResponse grpcResponse) {
-    Map<String, RerankProvidersConfig.RerankProviderConfig> providerMap = new HashMap<>();
+  private RerankingProvidersConfig grpcResponseToConfig(
+      EmbeddingGateway.GetSupportedRerankingProvidersResponse grpcResponse) {
+    Map<String, RerankingProvidersConfig.RerankingProviderConfig> providerMap = new HashMap<>();
 
     // traverse ProviderConfig in Grpc response
-    for (Map.Entry<String, EmbeddingGateway.GetSupportedRerankProvidersResponse.ProviderConfig>
+    for (Map.Entry<String, EmbeddingGateway.GetSupportedRerankingProvidersResponse.ProviderConfig>
         entry : grpcResponse.getSupportedProvidersMap().entrySet()) {
-      // create each rerank provider
-      providerMap.put(entry.getKey(), createRerankProviderImpl(entry.getValue()));
+      // create each reranking provider
+      providerMap.put(entry.getKey(), createRerankingProviderImpl(entry.getValue()));
     }
-    return new RerankProvidersConfigImpl(providerMap);
+    return new RerankingProvidersConfigImpl(providerMap);
   }
 
-  private RerankProvidersConfig.RerankProviderConfig createRerankProviderImpl(
-      EmbeddingGateway.GetSupportedRerankProvidersResponse.ProviderConfig grpcProviderConfig) {
+  private RerankingProvidersConfig.RerankingProviderConfig createRerankingProviderImpl(
+      EmbeddingGateway.GetSupportedRerankingProvidersResponse.ProviderConfig grpcProviderConfig) {
 
     Map<
-            RerankProvidersConfig.RerankProviderConfig.AuthenticationType,
-            RerankProvidersConfig.RerankProviderConfig.AuthenticationConfig>
+            RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType,
+            RerankingProvidersConfig.RerankingProviderConfig.AuthenticationConfig>
         supportedAuthenticationsMap =
             grpcProviderConfig.getSupportedAuthenticationsMap().entrySet().stream()
                 .collect(
@@ -79,36 +80,37 @@ public class RerankProviderConfigProducer {
                         // Convert AuthenticationType string from grpc response to
                         // AuthenticationType
                         eachEntry ->
-                            RerankProvidersConfig.RerankProviderConfig.AuthenticationType.valueOf(
-                                eachEntry.getKey()),
+                            RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType
+                                .valueOf(eachEntry.getKey()),
                         // Construct AuthenticationConfig which includes list of tokenConfig
                         eachEntry -> {
-                          EmbeddingGateway.GetSupportedRerankProvidersResponse.ProviderConfig
+                          EmbeddingGateway.GetSupportedRerankingProvidersResponse.ProviderConfig
                                   .AuthenticationConfig
                               grpcProviderAuthConfig = eachEntry.getValue();
-                          List<RerankProvidersConfig.RerankProviderConfig.TokenConfig>
+                          List<RerankingProvidersConfig.RerankingProviderConfig.TokenConfig>
                               tokenConfigs =
                                   grpcProviderAuthConfig.getTokensList().stream()
                                       .map(
                                           token ->
-                                              new RerankProvidersConfigImpl.RerankProviderConfigImpl
+                                              new RerankingProvidersConfigImpl
+                                                  .RerankingProviderConfigImpl
                                                   .AuthenticationConfigImpl.TokenConfigImpl(
                                                   token.getAccepted(), token.getForwarded()))
                                       .collect(Collectors.toList());
-                          return new RerankProvidersConfigImpl.RerankProviderConfigImpl
+                          return new RerankingProvidersConfigImpl.RerankingProviderConfigImpl
                               .AuthenticationConfigImpl(
                               grpcProviderAuthConfig.getEnabled(), tokenConfigs);
                         }));
 
-    List<RerankProvidersConfig.RerankProviderConfig.ModelConfig> models =
+    List<RerankingProvidersConfig.RerankingProviderConfig.ModelConfig> models =
         grpcProviderConfig.getModelsList().stream()
             .map(
                 model ->
-                    new RerankProvidersConfigImpl.RerankProviderConfigImpl.ModelConfigImpl(
+                    new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
                         model.getName(),
                         model.getIsDefault(),
                         model.getUrl(),
-                        new RerankProvidersConfigImpl.RerankProviderConfigImpl.ModelConfigImpl
+                        new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
                             .RequestPropertiesImpl(
                             model.getProperties().getAtMostRetries(),
                             model.getProperties().getInitialBackOffMillis(),
@@ -118,7 +120,7 @@ public class RerankProviderConfigProducer {
                             model.getProperties().getMaxBatchSize())))
             .collect(Collectors.toList());
 
-    return new RerankProvidersConfigImpl.RerankProviderConfigImpl(
+    return new RerankingProvidersConfigImpl.RerankingProviderConfigImpl(
         grpcProviderConfig.getIsDefault(),
         grpcProviderConfig.getDisplayName(),
         grpcProviderConfig.getEnabled(),
