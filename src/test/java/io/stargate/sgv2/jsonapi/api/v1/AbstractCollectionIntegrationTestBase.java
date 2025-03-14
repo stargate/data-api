@@ -137,19 +137,35 @@ public abstract class AbstractCollectionIntegrationTestBase
 
   /** Utility method for reducing boilerplate code for sending JSON commands */
   protected ValidatableResponse givenHeadersPostJsonThen(String json) {
+    return givenHeadersPostJsonThen(keyspaceName, collectionName, json);
+  }
+
+  protected ValidatableResponse givenHeadersPostJsonThen(
+      String keyspace, String collectionName, String json) {
     return givenHeadersAndJson(json)
         .when()
-        .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+        .post(CollectionResource.BASE_PATH, keyspace, collectionName)
         .then();
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */
   protected ValidatableResponse givenHeadersPostJsonThenOk(String json) {
-    return givenHeadersPostJsonThen(json).statusCode(200);
+    return givenHeadersPostJsonThenOk(keyspaceName, collectionName, json);
+  }
+
+  protected ValidatableResponse givenHeadersPostJsonThenOk(
+      String keyspace, String collectionName, String json) {
+    return givenHeadersPostJsonThen(keyspace, collectionName, json).statusCode(200);
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */
   protected ValidatableResponse givenHeadersPostJsonThenOkNoErrors(String json) {
-    return givenHeadersPostJsonThenOk(json).body("errors", is(nullValue()));
+    return givenHeadersPostJsonThenOkNoErrors(keyspaceName, collectionName, json);
+  }
+
+  protected ValidatableResponse givenHeadersPostJsonThenOkNoErrors(
+      String keyspace, String collectionName, String json) {
+    return givenHeadersPostJsonThenOk(keyspace, collectionName, json)
+        .body("errors", is(nullValue()));
   }
 }
