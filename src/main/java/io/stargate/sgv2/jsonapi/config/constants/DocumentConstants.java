@@ -31,6 +31,10 @@ public interface DocumentConstants {
 
     /** Field name used in projection clause to get similarity score in response. */
     String VECTOR_FUNCTION_SIMILARITY_FIELD = "$similarity";
+
+    /** Document field used DOCUMENT_RESPONSE of a findAndRerank scores, so not actually allowed in a document  . */
+    String RERANK_FIELD = "$rerank";
+    ;
   }
 
   interface KeyTypeId {

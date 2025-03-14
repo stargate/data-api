@@ -21,6 +21,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -104,6 +106,14 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     return newCollectionIndexUsage();
   }
 
+  @Override
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return super.recordTo(dataRecorder)
+        .append("idConfig", idConfig)
+        .append("vectorConfig", vectorConfig)
+        .append("indexingConfig", indexingConfig)
+        .append("lexicalConfig", lexicalConfig);
+  }
   /**
    * Helper to avoid cast from the interface method because there are times we need to set
    * properties on this immediately
