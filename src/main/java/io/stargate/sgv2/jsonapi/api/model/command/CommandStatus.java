@@ -23,7 +23,7 @@ public enum CommandStatus {
   /** Status for reporting existing embedding services. */
   @JsonProperty(Names.EXISTING_EMBEDDING_PROVIDERS)
   EXISTING_VECTOR_PROVIDERS(Names.EXISTING_EMBEDDING_PROVIDERS),
-  /** Status for reporting existing rerank services. */
+  /** Status for reporting existing reranking services. */
   @JsonProperty(Names.EXISTING_RERANKING_PROVIDERS)
   EXISTING_RERANKING_PROVIDERS(Names.EXISTING_RERANKING_PROVIDERS),
   /** Status for reporting existing collections. */

@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.operation.rerank;
+package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;

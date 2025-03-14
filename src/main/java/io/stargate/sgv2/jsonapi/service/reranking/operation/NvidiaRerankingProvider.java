@@ -21,7 +21,7 @@ import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 /**
- * The Rerank Nvidia Client that sends the request to the Nvidia Rerank Service.
+ * The Reranking Nvidia Client that sends the request to the Nvidia Reranking Service.
  *
  * <p>Sample http request to self-host nvidia nvidia/llama-3.2-nv-rerankqa-1b-v2: { "model":
  * "nvidia/llama-3.2-nv-rerankqa-1b-v2", "query": { "text": "which way should i go?" }, "passages":
@@ -35,8 +35,9 @@ public class NvidiaRerankingProvider extends RerankingProvider {
   private static final String providerId = ProviderConstants.NVIDIA;
   private final NvidiaRerankingClient nvidiaRerankingClient;
 
-  // Nvidia Rerank Service supports truncate or error when the passage is too long.
-  // Data API use NONE as default, means the rerank request will error out if there is a query and
+  // Nvidia Reranking Service supports truncate or error when the passage is too long.
+  // Data API use NONE as default, means the reranking request will error out if there is a query
+  // and
   // passage pair that exceeds allowed token size 8192
   // https://docs.nvidia.com/nim/nemo-retriever/text-reranking/latest/using-reranking.html#token-limits-truncation
   private static final String TRUNCATE_PASSAGE = "NONE";
@@ -60,9 +61,8 @@ public class NvidiaRerankingProvider extends RerankingProvider {
 
     @POST
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
-    Uni<RerankResponse> rerank(
-        @HeaderParam("Authorization") String accessToken,
-        NvidiaRerankingProvider.RerankRequest request);
+    Uni<RerankingResponse> rerank(
+        @HeaderParam("Authorization") String accessToken, RerankingRequest request);
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
@@ -77,22 +77,22 @@ public class NvidiaRerankingProvider extends RerankingProvider {
       // Log the response body
       logger.info(
           String.format(
-              "Error response from rerank provider '%s': %s", providerId, rootNode.toString()));
+              "Error response from reranking provider '%s': %s", providerId, rootNode.toString()));
       JsonNode messageNode = rootNode.path("message");
       // Return the text of the "message" node, or the whole response body if it is missing
       return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
     }
   }
 
-  /** Rerank request to the Nvidia Rerank Service */
-  private record RerankRequest(
+  /** reranking request to the Nvidia Reranking Service */
+  private record RerankingRequest(
       String model, TextWrapper query, List<TextWrapper> passages, String truncate) {
     private record TextWrapper(String text) {}
   }
 
-  /** Rerank response from the Nvidia Rerank Service */
+  /** reranking response from the Nvidia reranking Service */
   @JsonIgnoreProperties(ignoreUnknown = true)
-  private record RerankResponse(List<Ranking> rankings, Usage usage) {
+  private record RerankingResponse(List<Ranking> rankings, Usage usage) {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record Ranking(int index, float logit) {}
 
@@ -101,22 +101,22 @@ public class NvidiaRerankingProvider extends RerankingProvider {
   }
 
   @Override
-  public Uni<RerankBatchResponse> rerank(
+  public Uni<RerankingBatchResponse> rerank(
       int batchId, String query, List<String> passages, RerankingCredentials rerankingCredentials) {
 
-    NvidiaRerankingProvider.RerankRequest request =
-        new NvidiaRerankingProvider.RerankRequest(
+    RerankingRequest request =
+        new RerankingRequest(
             modelName,
-            new RerankRequest.TextWrapper(query),
-            passages.stream().map(RerankRequest.TextWrapper::new).toList(),
+            new RerankingRequest.TextWrapper(query),
+            passages.stream().map(RerankingRequest.TextWrapper::new).toList(),
             TRUNCATE_PASSAGE);
 
     // Note, Nvidia self-host reranker service use Astra token to authenticate the request.
     // So we use token in rerankingCredentials, not apiKey in rerankingCredentials.
-    Uni<RerankResponse> response =
+    Uni<RerankingResponse> response =
         applyRetry(
             nvidiaRerankingClient.rerank(
-                "Bearer " + resolveRerankKey(rerankingCredentials), request));
+                "Bearer " + resolveRerankingKey(rerankingCredentials), request));
 
     return response
         .onItem()
@@ -127,23 +127,23 @@ public class NvidiaRerankingProvider extends RerankingProvider {
                       .map(rank -> new Rank(rank.index(), rank.logit()))
                       .toList();
               Usage usage = new Usage(resp.usage().prompt_tokens(), resp.usage().total_tokens());
-              return RerankingProvider.RerankBatchResponse.of(batchId, ranks, usage);
+              return RerankingBatchResponse.of(batchId, ranks, usage);
             });
   }
 
   /**
-   * For Astra self-hosted Nvidia rerank in the GPU plane, it requires the AstraCS token to access.
-   * So Data API in Astra will resolve the AstraCS token from the request header. For Data API in
-   * non-astra environment, since the token is also used for backend authentication, so the user
-   * needs to pass the rerank API key in the request header 'x-rerank-api-key'.
+   * For Astra self-hosted Nvidia reranking in the GPU plane, it requires the AstraCS token to
+   * access. So Data API in Astra will resolve the AstraCS token from the request header. For Data
+   * API in non-astra environment, since the token is also used for backend authentication, so the
+   * user needs to pass the reranking API key in the request header 'x-reranking-api-key'.
    */
-  private String resolveRerankKey(RerankingCredentials rerankingCredentials) {
+  private String resolveRerankingKey(RerankingCredentials rerankingCredentials) {
     if (rerankingCredentials.token().startsWith("AstraCS")) {
       return rerankingCredentials.token();
     }
     if (rerankingCredentials.apiKey().isEmpty()) {
       throw ErrorCodeV1.RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
-          "In order to rerank, please add the rerank API key in the request header 'x-rerank-api-key' for non-astra environment.");
+          "In order to reranking, please add the reranking API key in the request header 'x-reranking-api-key' for non-astra environment.");
     }
     return rerankingCredentials.apiKey().get();
   }

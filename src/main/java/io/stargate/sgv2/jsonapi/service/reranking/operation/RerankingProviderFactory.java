@@ -27,7 +27,7 @@ public class RerankingProviderFactory {
             requestProperties);
   }
 
-  private static final Map<String, ProviderConstructor> RERANK_PROVIDER_CONSTRUCTOR_MAP =
+  private static final Map<String, ProviderConstructor> RERANKING_PROVIDER_CONSTRUCTOR_MAP =
       Map.ofEntries(Map.entry("nvidia", NvidiaRerankingProvider::new));
 
   public RerankingProvider getConfiguration(
@@ -50,7 +50,7 @@ public class RerankingProviderFactory {
     final RerankingProvidersConfig.RerankingProviderConfig configuration =
         rerankingConfig.providers().get(serviceName);
     RerankingProviderFactory.ProviderConstructor ctor =
-        RERANK_PROVIDER_CONSTRUCTOR_MAP.get(serviceName);
+        RERANKING_PROVIDER_CONSTRUCTOR_MAP.get(serviceName);
     if (ctor == null) {
       throw ErrorCodeV1.RERANKING_SERVICE_TYPE_UNAVAILABLE.toApiException(
           "unknown service provider '%s'", serviceName);
@@ -65,7 +65,7 @@ public class RerankingProviderFactory {
                         "unknown model name '%s'", modelName));
 
     if (operationsConfig.enableEmbeddingGateway()) {
-      // return the rerank Grpc client to embedding gateway service
+      // return the reranking Grpc client to embedding gateway service
       return new RerankingEGWClient(
           modelConfig.url(),
           modelConfig.properties(),

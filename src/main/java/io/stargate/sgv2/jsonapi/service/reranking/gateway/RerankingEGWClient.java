@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/** Grpc client to make rerank Grpc requests to rerank API inside EmbeddingGatewayService */
+/** Grpc client to make reranking Grpc requests to reranking API inside EmbeddingGatewayService */
 public class RerankingEGWClient extends RerankingProvider {
 
   private static final String DEFAULT_TENANT_ID = "default";
@@ -22,18 +22,18 @@ public class RerankingEGWClient extends RerankingProvider {
   private static final String DATA_API_TOKEN = "DATA_API_TOKEN";
 
   /**
-   * key name of the rerank service provider. Note, the request self-hosted Nvidia reranker service
-   * does not need to specify an auth token in Data API request header. Instead, we use the Astra
-   * token to authenticate the request.
+   * key name of the reranking service provider. Note, the request self-hosted Nvidia reranker
+   * service does not need to specify an auth token in Data API request header. Instead, we use the
+   * Astra token to authenticate the request.
    */
-  private static final String RERANK_API_KEY = "RERANK_API_KEY";
+  private static final String RERANKING_API_KEY = "RERANKING_API_KEY";
 
   private String provider;
 
   private Optional<String> tenant;
   private Optional<String> authToken;
   private String modelName;
-  private RerankingService rerankGrpcService;
+  private RerankingService rerankingGrpcService;
   Map<String, String> authentication;
   private String commandName;
 
@@ -45,7 +45,7 @@ public class RerankingEGWClient extends RerankingProvider {
       Optional<String> tenant,
       Optional<String> authToken,
       String modelName,
-      RerankingService rerankGrpcService,
+      RerankingService rerankingGrpcService,
       Map<String, String> authentication,
       String commandName) {
     super(baseUrl, modelName, requestProperties);
@@ -53,16 +53,16 @@ public class RerankingEGWClient extends RerankingProvider {
     this.tenant = tenant;
     this.authToken = authToken;
     this.modelName = modelName;
-    this.rerankGrpcService = rerankGrpcService;
+    this.rerankingGrpcService = rerankingGrpcService;
     this.authentication = authentication;
     this.commandName = commandName;
   }
 
   @Override
-  public Uni<RerankBatchResponse> rerank(
+  public Uni<RerankingBatchResponse> rerank(
       int batchId, String query, List<String> passages, RerankingCredentials rerankingCredentials) {
 
-    // Build the rerank provider request in grpc request
+    // Build the reranking provider request in grpc request
     final EmbeddingGateway.ProviderRerankingRequest.RerankingRequest rerankingRequest =
         EmbeddingGateway.ProviderRerankingRequest.RerankingRequest.newBuilder()
             .setModelName(modelName)
@@ -71,28 +71,28 @@ public class RerankingEGWClient extends RerankingProvider {
             .setCommandName(commandName)
             .build();
 
-    // Build the rerank provider context in grpc request
+    // Build the reranking provider context in grpc request
     var contextBuilder =
         EmbeddingGateway.ProviderRerankingRequest.ProviderContext.newBuilder()
             .setProviderName(provider)
             .setTenantId(tenant.orElse(DEFAULT_TENANT_ID))
             .putAuthTokens(DATA_API_TOKEN, rerankingCredentials.token());
     if (rerankingCredentials.apiKey().isPresent()) {
-      contextBuilder.putAuthTokens(RERANK_API_KEY, rerankingCredentials.apiKey().get());
+      contextBuilder.putAuthTokens(RERANKING_API_KEY, rerankingCredentials.apiKey().get());
     }
     final EmbeddingGateway.ProviderRerankingRequest.ProviderContext providerContext =
         contextBuilder.build();
 
     // Built the Grpc request
-    final EmbeddingGateway.ProviderRerankingRequest grpcRerankRequest =
+    final EmbeddingGateway.ProviderRerankingRequest grpcRerankingRequest =
         EmbeddingGateway.ProviderRerankingRequest.newBuilder()
             .setRerankingRequest(rerankingRequest)
             .setProviderContext(providerContext)
             .build();
 
-    Uni<EmbeddingGateway.RerankingResponse> grpcRerankResponse;
+    Uni<EmbeddingGateway.RerankingResponse> grpcRerankingResponse;
     try {
-      grpcRerankResponse = rerankGrpcService.rerank(grpcRerankRequest);
+      grpcRerankingResponse = rerankingGrpcService.rerank(grpcRerankingRequest);
     } catch (StatusRuntimeException e) {
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
         throw ErrorCodeV1.RERANKING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
@@ -100,7 +100,7 @@ public class RerankingEGWClient extends RerankingProvider {
       throw e;
     }
 
-    return grpcRerankResponse
+    return grpcRerankingResponse
         .onItem()
         .transform(
             resp -> {
@@ -109,7 +109,7 @@ public class RerankingEGWClient extends RerankingProvider {
                     ErrorCodeV1.valueOf(resp.getError().getErrorCode()),
                     resp.getError().getErrorMessage());
               }
-              return RerankBatchResponse.of(
+              return RerankingBatchResponse.of(
                   batchId,
                   resp.getRanksList().stream()
                       .map(rank -> new Rank(rank.getIndex(), rank.getScore()))

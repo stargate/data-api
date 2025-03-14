@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindRerankingProvidersCom
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.rerank.FindRerankingProvidersOperation;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.FindRerankingProvidersOperation;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

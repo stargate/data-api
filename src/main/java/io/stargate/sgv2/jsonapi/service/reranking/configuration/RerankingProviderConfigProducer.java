@@ -32,21 +32,22 @@ public class RerankingProviderConfigProducer {
   RerankingProvidersConfig produce(
       DefaultRerankingProviderConfig defaultRerankingProviderConfig,
       OperationsConfig operationsConfig,
-      @GrpcClient("embedding") RerankingServiceGrpc.RerankingServiceBlockingStub rerankService) {
+      @GrpcClient("embedding") RerankingServiceGrpc.RerankingServiceBlockingStub rerankingService) {
     RerankingProvidersConfig defaultConfig =
         new RerankingProvidersConfigImpl(defaultRerankingProviderConfig.providers());
     // defaultRerankingProviderConfig is what we mapped from reranking-providers-config.yaml
     // and will be used if embedding-gateway is not enabled
     if (!operationsConfig.enableEmbeddingGateway()) {
-      LOG.info("embedding gateway disabled, use default rerank config");
+      LOG.info("embedding gateway disabled, use default reranking config");
       return defaultConfig;
     }
-    LOG.info("embedding gateway enabled, fetch supported rerank providers from embedding gateway");
+    LOG.info(
+        "embedding gateway enabled, fetch supported reranking providers from embedding gateway");
     final EmbeddingGateway.GetSupportedRerankingProvidersRequest grpcRequest =
         EmbeddingGateway.GetSupportedRerankingProvidersRequest.newBuilder().build();
     try {
       EmbeddingGateway.GetSupportedRerankingProvidersResponse supportedProvidersResponse =
-          rerankService.getSupportedRerankingProviders(grpcRequest);
+          rerankingService.getSupportedRerankingProviders(grpcRequest);
       return grpcResponseToConfig(supportedProvidersResponse);
     } catch (Exception e) {
       throw ErrorCodeV1.SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE.toApiException();
@@ -60,13 +61,13 @@ public class RerankingProviderConfigProducer {
     // traverse ProviderConfig in Grpc response
     for (Map.Entry<String, EmbeddingGateway.GetSupportedRerankingProvidersResponse.ProviderConfig>
         entry : grpcResponse.getSupportedProvidersMap().entrySet()) {
-      // create each rerank provider
-      providerMap.put(entry.getKey(), createRerankProviderImpl(entry.getValue()));
+      // create each reranking provider
+      providerMap.put(entry.getKey(), createRerankingProviderImpl(entry.getValue()));
     }
     return new RerankingProvidersConfigImpl(providerMap);
   }
 
-  private RerankingProvidersConfig.RerankingProviderConfig createRerankProviderImpl(
+  private RerankingProvidersConfig.RerankingProviderConfig createRerankingProviderImpl(
       EmbeddingGateway.GetSupportedRerankingProvidersResponse.ProviderConfig grpcProviderConfig) {
 
     Map<

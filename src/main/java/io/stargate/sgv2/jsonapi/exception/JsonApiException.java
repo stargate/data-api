@@ -234,8 +234,8 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     if (errorCode.name().startsWith("EMBEDDING") || errorCode.name().startsWith("VECTORIZE")) {
       return ErrorScope.EMBEDDING;
     }
-    if (errorCode.name().startsWith("RERANK")) {
-      return ErrorScope.RERANK;
+    if (errorCode.name().startsWith("RERANKING")) {
+      return ErrorScope.RERANKING;
     }
     if (errorCode.name().contains("FILTER")) {
       return ErrorScope.FILTER;
@@ -280,7 +280,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     FILTER("FILTER"),
     INDEX("INDEX"),
     PROJECTION("PROJECTION"),
-    RERANK("RERANK"),
+    RERANKING("RERANKING"),
     SCHEMA("SCHEMA"),
     SORT("SORT"),
     UPDATE("UPDATE");
