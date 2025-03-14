@@ -13,8 +13,8 @@ LOGLEVEL=INFO
 DATAAPITAG="v1"
 DATAAPIIMAGE="stargateio/data-api"
 
-HCDTAG="1.2.1-early-preview"
-HCDIMAGE="559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/staging/hcd"
+HCDTAG="1.0.0"
+HCDIMAGE="cr.dtsx.io/datastax/hcd"
 HCDONLY="false"
 HCDNODES=1
 
