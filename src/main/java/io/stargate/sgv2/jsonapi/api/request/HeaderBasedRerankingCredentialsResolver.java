@@ -9,7 +9,7 @@ import java.util.Optional;
 /**
  * Implementation to resolve the embedding api key, access id and secret id from the request header.
  *
- * <p>We need to store both Data API token and Rerank Token in the RerankCredentials record. E.G.
+ * <p>We need to store both Data API token and Rerank Token in the RerankingCredentials record. E.G.
  * For Astra self-hosted Nvidia rerank in the GPU plane, it requires the AstraCS token to access, so
  * Data API in Astra will resolve the AstraCS token from the request header.
  *
@@ -18,17 +18,18 @@ import java.util.Optional;
  * 'x-rerank-api-key'.
  */
 @Singleton
-public class HeaderBasedRerankCredentialsResolver implements RerankCredentialsResolver {
+public class HeaderBasedRerankingCredentialsResolver implements RerankingCredentialsResolver {
 
-  public RerankCredentials resolveRerankCredentials(RoutingContext context) {
+  public RerankingCredentials resolveRerankingCredentials(RoutingContext context) {
     HttpServerRequest request = context.request();
     String token = request.getHeader(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME);
     String legacyToken =
         request.getHeader(HttpConstants.DEPRECATED_AUTHENTICATION_TOKEN_HEADER_NAME);
-    String rerankApiKey = request.getHeader(HttpConstants.RERANK_AUTHENTICATION_TOKEN_HEADER_NAME);
+    String rerankingApiKey =
+        request.getHeader(HttpConstants.RERANKING_AUTHENTICATION_TOKEN_HEADER_NAME);
     ;
 
-    return new RerankCredentials(
-        token != null ? token : legacyToken, Optional.ofNullable(rerankApiKey));
+    return new RerankingCredentials(
+        token != null ? token : legacyToken, Optional.ofNullable(rerankingApiKey));
   }
 }

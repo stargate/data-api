@@ -256,7 +256,7 @@ public record CreateCollectionCommand(
 
     public record RerankingConfigDefinition(
         @Schema(
-                description = "Whether to enable the use of reranker model (default: 'true')",
+                description = "Whether to enable the use of reranking model (default: 'true')",
                 defaultValue = "true",
                 type = SchemaType.BOOLEAN,
                 implementation = Boolean.class,
@@ -264,7 +264,7 @@ public record CreateCollectionCommand(
             Boolean enabled,
         @Schema(
                 description =
-                    "Rerank model configuration. Default is llama-3.2-nv-rerankqa-1b-v2 model from Nvidia.",
+                    "Reranking model configuration. Default is llama-3.2-nv-rerankqa-1b-v2 model from Nvidia.",
                 defaultValue =
                     "\"service\": {\"provider\": \"nvidia\",\"modelName\": \"nvidia/llama-3.2-nv-rerankqa-1b-v2\"}",
                 implementation = RerankingServiceConfig.class)

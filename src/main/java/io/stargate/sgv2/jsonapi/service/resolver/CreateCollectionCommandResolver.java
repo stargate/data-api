@@ -15,7 +15,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
@@ -33,7 +33,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   private final DatabaseLimitsConfig dbLimitsConfig;
   private final OperationsConfig operationsConfig;
   private final VectorizeConfigValidator validateVectorize;
-  private final RerankProvidersConfig rerankProvidersConfig;
+  private final RerankingProvidersConfig rerankingProvidersConfig;
 
   @Inject
   public CreateCollectionCommandResolver(
@@ -43,14 +43,14 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       DatabaseLimitsConfig dbLimitsConfig,
       OperationsConfig operationsConfig,
       VectorizeConfigValidator validateVectorize,
-      RerankProvidersConfig rerankProvidersConfig) {
+      RerankingProvidersConfig rerankingProvidersConfig) {
     this.objectMapper = objectMapper;
     this.cqlSessionCache = cqlSessionCache;
     this.documentLimitsConfig = documentLimitsConfig;
     this.dbLimitsConfig = dbLimitsConfig;
     this.operationsConfig = operationsConfig;
     this.validateVectorize = validateVectorize;
-    this.rerankProvidersConfig = rerankProvidersConfig;
+    this.rerankingProvidersConfig = rerankingProvidersConfig;
   }
 
   public CreateCollectionCommandResolver() {
@@ -73,7 +73,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       final CollectionLexicalConfig lexicalConfig =
           CollectionLexicalConfig.configForNewCollections();
       final CollectionRerankingConfig rerankingConfig =
-          CollectionRerankingConfig.configForNewCollections(rerankProvidersConfig);
+          CollectionRerankingConfig.configForNewCollections(rerankingProvidersConfig);
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
           dbLimitsConfig,
@@ -95,7 +95,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     final CollectionLexicalConfig lexicalConfig =
         CollectionLexicalConfig.validateAndConstruct(objectMapper, options.lexical());
     final CollectionRerankingConfig rerankingConfig =
-        CollectionRerankingConfig.validateAndConstruct(options.reranking(), rerankProvidersConfig);
+        CollectionRerankingConfig.validateAndConstruct(
+            options.reranking(), rerankingProvidersConfig);
 
     boolean indexingDenyAll = false;
     // handling indexing options

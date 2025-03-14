@@ -4,6 +4,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /** Functional interface to resolve the rerank api key from the request context. */
 @FunctionalInterface
-public interface RerankCredentialsResolver {
-  RerankCredentials resolveRerankCredentials(RoutingContext context);
+public interface RerankingCredentialsResolver {
+  RerankingCredentials resolveRerankingCredentials(RoutingContext context);
 }

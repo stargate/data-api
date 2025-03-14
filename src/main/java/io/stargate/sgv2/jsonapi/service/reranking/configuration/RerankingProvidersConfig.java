@@ -1,14 +1,14 @@
-package io.stargate.sgv2.jsonapi.service.rerank.configuration;
+package io.stargate.sgv2.jsonapi.service.reranking.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.smallrye.config.WithDefault;
 import java.util.List;
 import java.util.Map;
 
-public interface RerankProvidersConfig {
-  Map<String, RerankProviderConfig> providers();
+public interface RerankingProvidersConfig {
+  Map<String, RerankingProviderConfig> providers();
 
-  interface RerankProviderConfig {
+  interface RerankingProviderConfig {
     @JsonProperty
     @WithDefault("false")
     boolean isDefault();

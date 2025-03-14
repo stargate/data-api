@@ -400,10 +400,10 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     if (rerankingConfig.enabled()) {
       rerankingServiceConfig =
           new CreateCollectionCommand.Options.RerankingServiceConfig(
-              rerankingConfig.rerankProviderConfig().provider(),
-              rerankingConfig.rerankProviderConfig().modelName(),
-              rerankingConfig.rerankProviderConfig().authentication(),
-              rerankingConfig.rerankProviderConfig().parameters());
+              rerankingConfig.rerankingProviderConfig().provider(),
+              rerankingConfig.rerankingProviderConfig().modelName(),
+              rerankingConfig.rerankingProviderConfig().authentication(),
+              rerankingConfig.rerankingProviderConfig().parameters());
     }
     var rerankingDef =
         new CreateCollectionCommand.Options.RerankingConfigDefinition(

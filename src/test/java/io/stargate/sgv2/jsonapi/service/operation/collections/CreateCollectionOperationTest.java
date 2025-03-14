@@ -34,7 +34,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankingConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -65,7 +65,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
   @Inject ObjectMapper objectMapper;
 
-  @Inject RerankProvidersConfig rerankProvidersConfig;
+  @Inject RerankingProvidersConfig rerankingProvidersConfig;
 
   @Nested
   class Execute {
@@ -80,7 +80,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
     @BeforeEach
     public void init() {
-      RERANKING_CONFIG = CollectionRerankingConfig.configForNewCollections(rerankProvidersConfig);
+      RERANKING_CONFIG =
+          CollectionRerankingConfig.configForNewCollections(rerankingProvidersConfig);
     }
 
     @Test

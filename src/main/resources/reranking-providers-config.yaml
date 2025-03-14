@@ -1,6 +1,6 @@
 stargate:
   jsonapi:
-    rerank:
+    reranking:
       providers:
         nvidia:
           is-default: true

@@ -24,8 +24,8 @@ public enum CommandStatus {
   @JsonProperty(Names.EXISTING_EMBEDDING_PROVIDERS)
   EXISTING_VECTOR_PROVIDERS(Names.EXISTING_EMBEDDING_PROVIDERS),
   /** Status for reporting existing rerank services. */
-  @JsonProperty(Names.EXISTING_RERANK_PROVIDERS)
-  EXISTING_RERANK_PROVIDERS(Names.EXISTING_RERANK_PROVIDERS),
+  @JsonProperty(Names.EXISTING_RERANKING_PROVIDERS)
+  EXISTING_RERANKING_PROVIDERS(Names.EXISTING_RERANKING_PROVIDERS),
   /** Status for reporting existing collections. */
   @JsonProperty(Names.EXISTING_COLLECTIONS)
   EXISTING_COLLECTIONS(Names.EXISTING_COLLECTIONS),
@@ -156,7 +156,7 @@ public enum CommandStatus {
     String EXISTING_NAMESPACES = "namespaces";
     String EXISTING_KEYSPACES = "keyspaces";
     String EXISTING_EMBEDDING_PROVIDERS = "embeddingProviders";
-    String EXISTING_RERANK_PROVIDERS = "rerankProviders";
+    String EXISTING_RERANKING_PROVIDERS = "rerankingProviders";
     String EXISTING_COLLECTIONS = "collections";
     String EXISTING_TABLES = "tables";
     String EXISTING_INDEXES = "indexes";

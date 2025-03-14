@@ -1,10 +1,10 @@
-package io.stargate.sgv2.jsonapi.service.rerank.operation;
+package io.stargate.sgv2.jsonapi.service.reranking.operation;
 
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.RerankCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -13,17 +13,18 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class RerankProvider {
-  protected static final Logger logger = LoggerFactory.getLogger(RerankProvider.class);
+public abstract class RerankingProvider {
+  protected static final Logger logger = LoggerFactory.getLogger(RerankingProvider.class);
   protected final String baseUrl;
   protected final String modelName;
-  protected final RerankProvidersConfig.RerankProviderConfig.ModelConfig.RequestProperties
+  protected final RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties
       requestProperties;
 
-  protected RerankProvider(
+  protected RerankingProvider(
       String baseUrl,
       String modelName,
-      RerankProvidersConfig.RerankProviderConfig.ModelConfig.RequestProperties requestProperties) {
+      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties
+          requestProperties) {
     this.baseUrl = baseUrl;
     this.modelName = modelName;
     this.requestProperties = requestProperties;
@@ -48,13 +49,13 @@ public abstract class RerankProvider {
    * {index:1, score:x2}, {index:2, score:x3}, {index:3, score:x4}, {index:4, score:x5}]
    */
   public Uni<RerankResponse> rerank(
-      String query, List<String> passages, RerankCredentials rerankCredentials) {
+      String query, List<String> passages, RerankingCredentials rerankingCredentials) {
     int maxBatch = requestProperties.maxBatchSize();
     List<Uni<RerankBatchResponse>> batchReranks = new ArrayList<>();
     for (int i = 0; i < passages.size(); i += maxBatch) {
       int batchId = i / maxBatch;
       List<String> batch = passages.subList(i, Math.min(i + maxBatch, passages.size()));
-      batchReranks.add(rerank(batchId, query, batch, rerankCredentials));
+      batchReranks.add(rerank(batchId, query, batch, rerankingCredentials));
     }
     return Uni.join()
         .all(batchReranks)
@@ -82,7 +83,7 @@ public abstract class RerankProvider {
 
   /** Micro batch rerank method, which will rerank a batch of passages. */
   public abstract Uni<RerankBatchResponse> rerank(
-      int batchId, String query, List<String> passages, RerankCredentials rerankCredentials);
+      int batchId, String query, List<String> passages, RerankingCredentials rerankingCredentials);
 
   /** The response of a batch rerank call. */
   public record RerankBatchResponse(int batchId, List<Rank> ranks, Usage usage) {

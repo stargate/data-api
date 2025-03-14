@@ -55,7 +55,7 @@ public class EmbeddingProvidersConfigProducer {
 
   /**
    * @param getSupportedProvidersResponse
-   * @return EmbeddingProvidersConfig Convert Grpc response map<string, RerankProviderConfig>
+   * @return EmbeddingProvidersConfig Convert Grpc response map<string, RerankingProviderConfig>
    *     supportedProviders To EmbeddingProvidersConfig
    */
   private EmbeddingProvidersConfig grpcResponseToConfig(
@@ -63,7 +63,7 @@ public class EmbeddingProvidersConfigProducer {
       EmbeddingProvidersConfig.CustomConfig customConfig) {
     Map<String, EmbeddingProvidersConfig.EmbeddingProviderConfig> providerMap = new HashMap<>();
 
-    // traverse RerankProviderConfig in Grpc GetSupportedProvidersResponse
+    // traverse RerankingProviderConfig in Grpc GetSupportedProvidersResponse
     for (Map.Entry<String, EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig> entry :
         getSupportedProvidersResponse.getSupportedProvidersMap().entrySet()) {
 
@@ -136,7 +136,7 @@ public class EmbeddingProvidersConfigProducer {
           new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
               grpcProviderConfigProperties);
 
-      // construct rerankProviderConfig
+      // construct rerankingProviderConfig
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig =
           new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
               grpcProviderConfig.getDisplayName(),

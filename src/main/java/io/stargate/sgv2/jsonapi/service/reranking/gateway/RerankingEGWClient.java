@@ -1,20 +1,20 @@
-package io.stargate.sgv2.jsonapi.service.rerank.gateway;
+package io.stargate.sgv2.jsonapi.service.reranking.gateway;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
-import io.stargate.embedding.gateway.RerankService;
-import io.stargate.sgv2.jsonapi.api.request.RerankCredentials;
+import io.stargate.embedding.gateway.RerankingService;
+import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.rerank.configuration.RerankProvidersConfig;
-import io.stargate.sgv2.jsonapi.service.rerank.operation.RerankProvider;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /** Grpc client to make rerank Grpc requests to rerank API inside EmbeddingGatewayService */
-public class RerankEGWClient extends RerankProvider {
+public class RerankingEGWClient extends RerankingProvider {
 
   private static final String DEFAULT_TENANT_ID = "default";
 
@@ -33,18 +33,19 @@ public class RerankEGWClient extends RerankProvider {
   private Optional<String> tenant;
   private Optional<String> authToken;
   private String modelName;
-  private RerankService rerankGrpcService;
+  private RerankingService rerankGrpcService;
   Map<String, String> authentication;
   private String commandName;
 
-  public RerankEGWClient(
+  public RerankingEGWClient(
       String baseUrl,
-      RerankProvidersConfig.RerankProviderConfig.ModelConfig.RequestProperties requestProperties,
+      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties
+          requestProperties,
       String provider,
       Optional<String> tenant,
       Optional<String> authToken,
       String modelName,
-      RerankService rerankGrpcService,
+      RerankingService rerankGrpcService,
       Map<String, String> authentication,
       String commandName) {
     super(baseUrl, modelName, requestProperties);
@@ -59,11 +60,11 @@ public class RerankEGWClient extends RerankProvider {
 
   @Override
   public Uni<RerankBatchResponse> rerank(
-      int batchId, String query, List<String> passages, RerankCredentials rerankCredentials) {
+      int batchId, String query, List<String> passages, RerankingCredentials rerankingCredentials) {
 
     // Build the rerank provider request in grpc request
-    final EmbeddingGateway.ProviderRerankRequest.RerankRequest rerankRequest =
-        EmbeddingGateway.ProviderRerankRequest.RerankRequest.newBuilder()
+    final EmbeddingGateway.ProviderRerankingRequest.RerankingRequest rerankingRequest =
+        EmbeddingGateway.ProviderRerankingRequest.RerankingRequest.newBuilder()
             .setModelName(modelName)
             .setQuery(query)
             .addAllPassages(passages)
@@ -72,29 +73,29 @@ public class RerankEGWClient extends RerankProvider {
 
     // Build the rerank provider context in grpc request
     var contextBuilder =
-        EmbeddingGateway.ProviderRerankRequest.ProviderContext.newBuilder()
+        EmbeddingGateway.ProviderRerankingRequest.ProviderContext.newBuilder()
             .setProviderName(provider)
             .setTenantId(tenant.orElse(DEFAULT_TENANT_ID))
-            .putAuthTokens(DATA_API_TOKEN, rerankCredentials.token());
-    if (rerankCredentials.apiKey().isPresent()) {
-      contextBuilder.putAuthTokens(RERANK_API_KEY, rerankCredentials.apiKey().get());
+            .putAuthTokens(DATA_API_TOKEN, rerankingCredentials.token());
+    if (rerankingCredentials.apiKey().isPresent()) {
+      contextBuilder.putAuthTokens(RERANK_API_KEY, rerankingCredentials.apiKey().get());
     }
-    final EmbeddingGateway.ProviderRerankRequest.ProviderContext providerContext =
+    final EmbeddingGateway.ProviderRerankingRequest.ProviderContext providerContext =
         contextBuilder.build();
 
     // Built the Grpc request
-    final EmbeddingGateway.ProviderRerankRequest grpcRerankRequest =
-        EmbeddingGateway.ProviderRerankRequest.newBuilder()
-            .setRerankRequest(rerankRequest)
+    final EmbeddingGateway.ProviderRerankingRequest grpcRerankRequest =
+        EmbeddingGateway.ProviderRerankingRequest.newBuilder()
+            .setRerankingRequest(rerankingRequest)
             .setProviderContext(providerContext)
             .build();
 
-    Uni<EmbeddingGateway.RerankResponse> grpcRerankResponse;
+    Uni<EmbeddingGateway.RerankingResponse> grpcRerankResponse;
     try {
       grpcRerankResponse = rerankGrpcService.rerank(grpcRerankRequest);
     } catch (StatusRuntimeException e) {
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
-        throw ErrorCodeV1.RERANK_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
+        throw ErrorCodeV1.RERANKING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
       }
       throw e;
     }

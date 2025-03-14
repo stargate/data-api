@@ -95,12 +95,12 @@ public enum ErrorCodeV1 {
 
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
 
-  RERANK_SERVICE_TYPE_UNAVAILABLE("Rerank service unavailable : "),
-  RERANK_PROVIDER_UNEXPECTED_RESPONSE("The Rerank Provider returned an unexpected response"),
-  RERANK_PROVIDER_CLIENT_ERROR("The Rerank Provider returned a HTTP client error"),
-  RERANK_PROVIDER_SERVER_ERROR("The Rerank Provider returned a HTTP server error"),
-  RERANK_PROVIDER_TIMEOUT("The Rerank Provider timed out"),
-  RERANK_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED(
+  RERANKING_SERVICE_TYPE_UNAVAILABLE("Rerank service unavailable : "),
+  RERANKING_PROVIDER_UNEXPECTED_RESPONSE("The Rerank Provider returned an unexpected response"),
+  RERANKING_PROVIDER_CLIENT_ERROR("The Rerank Provider returned a HTTP client error"),
+  RERANKING_PROVIDER_SERVER_ERROR("The Rerank Provider returned a HTTP server error"),
+  RERANKING_PROVIDER_TIMEOUT("The Rerank Provider timed out"),
+  RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED(
       "The rerank provider authentication key is not provided"),
 
   TOO_MANY_COLLECTIONS("Too many collections"),
