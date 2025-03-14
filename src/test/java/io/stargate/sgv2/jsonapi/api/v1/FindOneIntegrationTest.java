@@ -831,6 +831,24 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
               containsString(
                   "Bad JSON Extension value: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"bogus\")"));
     }
+
+    // [data-api#1902] - $lexical not allowed in filter
+    @Test
+    public void failForFilteringOnLexical() {
+      for (String filter :
+          new String[] {
+            "{\"$lexical\": \"quick brown fox\"}", "{\"$lexical\": {\"eq\": \"quick brown fox\"}}"
+          }) {
+        givenHeadersPostJsonThenOk("{ \"findOne\": { \"filter\" : %s}}".formatted(filter))
+            .body("$", responseIsError())
+            .body("errors", hasSize(1))
+            .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+            .body(
+                "errors[0].message",
+                containsString(
+                    "Cannot filter on lexical content field '$lexical': only 'sort' clause supported"));
+      }
+    }
   }
 
   @Nested
