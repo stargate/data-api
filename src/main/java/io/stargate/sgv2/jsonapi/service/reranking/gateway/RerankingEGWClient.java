@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/** Grpc client to make rerank Grpc requests to rerank API inside EmbeddingGatewayService */
+/** Grpc client to make reranking Grpc requests to reranking API inside EmbeddingGatewayService */
 public class RerankingEGWClient extends RerankingProvider {
 
   private static final String DEFAULT_TENANT_ID = "default";
@@ -22,9 +22,9 @@ public class RerankingEGWClient extends RerankingProvider {
   private static final String DATA_API_TOKEN = "DATA_API_TOKEN";
 
   /**
-   * key name of the rerank service provider. Note, the request self-hosted Nvidia reranker service
-   * does not need to specify an auth token in Data API request header. Instead, we use the Astra
-   * token to authenticate the request.
+   * key name of the reranking service provider. Note, the request self-hosted Nvidia reranker
+   * service does not need to specify an auth token in Data API request header. Instead, we use the
+   * Astra token to authenticate the request.
    */
   private static final String RERANKING_API_KEY = "RERANKING_API_KEY";
 
@@ -62,7 +62,7 @@ public class RerankingEGWClient extends RerankingProvider {
   public Uni<RerankingBatchResponse> rerank(
       int batchId, String query, List<String> passages, RerankingCredentials rerankingCredentials) {
 
-    // Build the rerank provider request in grpc request
+    // Build the reranking provider request in grpc request
     final EmbeddingGateway.ProviderRerankingRequest.RerankingRequest rerankingRequest =
         EmbeddingGateway.ProviderRerankingRequest.RerankingRequest.newBuilder()
             .setModelName(modelName)
@@ -71,7 +71,7 @@ public class RerankingEGWClient extends RerankingProvider {
             .setCommandName(commandName)
             .build();
 
-    // Build the rerank provider context in grpc request
+    // Build the reranking provider context in grpc request
     var contextBuilder =
         EmbeddingGateway.ProviderRerankingRequest.ProviderContext.newBuilder()
             .setProviderName(provider)

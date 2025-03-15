@@ -135,7 +135,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
    * For Astra self-hosted Nvidia rerank in the GPU plane, it requires the AstraCS token to access.
    * So Data API in Astra will resolve the AstraCS token from the request header. For Data API in
    * non-astra environment, since the token is also used for backend authentication, so the user
-   * needs to pass the rerank API key in the request header 'x-rerank-api-key'.
+   * needs to pass the reranking API key in the request header 'x-rerank-api-key'.
    */
   private String resolveRerankingKey(RerankingCredentials rerankingCredentials) {
     if (rerankingCredentials.token().startsWith("AstraCS")) {

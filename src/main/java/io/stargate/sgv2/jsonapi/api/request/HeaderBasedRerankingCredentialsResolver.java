@@ -14,7 +14,7 @@ import java.util.Optional;
  * access, so Data API in Astra will resolve the AstraCS token from the request header.
  *
  * <p>For Data API in non-astra environment, since the token is also used for backend
- * authentication, so the user needs to pass the rerank API key in the request header
+ * authentication, so the user needs to pass the reranking API key in the request header
  * 'x-reranking-api-key'.
  */
 @Singleton

@@ -14,7 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A client response filter/interceptor that validates the response from the rerank provider.
+ * A client response filter/interceptor that validates the response from the reranking provider.
  *
  * <p>This filter checks the Content-Type of the response to ensure it is compatible with
  * 'application/json' or 'text/json'. It also verifies the presence of a JSON body in the response.
@@ -46,7 +46,7 @@ public class RerankingProviderResponseValidation implements ClientResponseFilter
     // Throw error if there is no response body
     if (!responseContext.hasEntity()) {
       throw RERANKING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-          "No response body from the rerank provider");
+          "No response body from the reranking provider");
     }
 
     // response should always be JSON; if not, error out, include raw response message for
@@ -65,7 +65,7 @@ public class RerankingProviderResponseValidation implements ClientResponseFilter
             "Cannot convert the provider's error response to string: {}", e.getMessage(), e);
       }
       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-          "Expected response Content-Type ('application/json' or 'text/json') from the rerank provider but found '%s'; HTTP Status: %s; The response body is: '%s'.",
+          "Expected response Content-Type ('application/json' or 'text/json') from the reranking provider but found '%s'; HTTP Status: %s; The response body is: '%s'.",
           contentType, responseContext.getStatus(), responseBody);
     }
   }
