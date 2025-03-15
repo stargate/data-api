@@ -139,7 +139,7 @@ public record CollectionRerankingConfig(
     Boolean enabled = rerankingConfig.enabled();
     if (enabled == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'enabled' is required property for 'reranking' Object value");
+          "'enabled' is required property for 'rerank' Object value");
     }
     // If not enabled, clear out any reranking settings (but don't fail)
     if (!enabled) {
@@ -183,7 +183,7 @@ public record CollectionRerankingConfig(
       String provider, RerankingProvidersConfig rerankingProvidersConfig) {
     if (provider == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'provider' is required property for 'reranking.service' Object value");
+          "'provider' is required property for 'rerank.service' Object value");
     }
 
     var providerConfig = rerankingProvidersConfig.providers().get(provider);

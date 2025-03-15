@@ -13,8 +13,7 @@ import java.util.List;
  * "options":{"indexing":{"deny":["heh"]}, "defaultId":{"type":"objectId"}},
  * "vector":{"dimension":1024,"metric":"cosine","service":{"provider":"nvidia","modelName":"query","authentication":{"type":["HEADER"]},
  * "parameters":{"projectId":"test project"}}} }, "lexical":{"enabled":true,"analyzer":"standard"},
- * "reranking":{"enabled":true,"provider":"nvidia","modelName":"nvidia/llama-3.2-nv-rerankqa-1b-v2"},
- * }
+ * "rerank":{"enabled":true,"provider":"nvidia","modelName":"nvidia/llama-3.2-nv-rerankqa-1b-v2"}, }
  */
 public class CollectionSettingsV1Reader implements CollectionSettingsReader {
   @Override

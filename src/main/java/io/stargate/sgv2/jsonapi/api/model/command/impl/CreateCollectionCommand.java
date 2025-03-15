@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
+import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
@@ -72,10 +72,11 @@ public record CreateCollectionCommand(
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Nullable
           @Schema(
-              description = "Optional configuration defining if and how to support reranking",
+              description =
+                  "Optional configuration defining if and how to support use of 'rerank' field",
               type = SchemaType.OBJECT,
               implementation = RerankingConfigDefinition.class)
-          RerankingConfigDefinition reranking) {
+          RerankingConfigDefinition rerank) {
 
     public record IdConfig(
         @Nullable
@@ -278,20 +279,20 @@ public record CreateCollectionCommand(
                 description = "Registered reranking service provider",
                 type = SchemaType.STRING,
                 implementation = String.class)
-            @JsonProperty(VectorConstants.Vectorize.PROVIDER)
+            @JsonProperty(RerankingConstants.RerankingService.PROVIDER)
             String provider,
         @Schema(
                 description = "Registered reranking service model",
                 type = SchemaType.STRING,
                 implementation = String.class)
-            @JsonProperty(VectorConstants.Vectorize.MODEL_NAME)
+            @JsonProperty(RerankingConstants.RerankingService.MODEL_NAME)
             String modelName,
         @Valid
             @Nullable
             @Schema(
                 description = "Authentication config for chosen reranking service",
                 type = SchemaType.OBJECT)
-            @JsonProperty(VectorConstants.Vectorize.AUTHENTICATION)
+            @JsonProperty(RerankingConstants.RerankingService.AUTHENTICATION)
             @JsonInclude(JsonInclude.Include.NON_NULL)
             Map<String, String> authentication,
         @Nullable
@@ -299,7 +300,7 @@ public record CreateCollectionCommand(
                 description =
                     "Optional parameters that match the messageTemplate provided for the reranking provider",
                 type = SchemaType.OBJECT)
-            @JsonProperty(VectorConstants.Vectorize.PARAMETERS)
+            @JsonProperty(RerankingConstants.RerankingService.PARAMETERS)
             @JsonInclude(JsonInclude.Include.NON_NULL)
             Map<String, Object> parameters) {}
 
@@ -308,13 +309,13 @@ public record CreateCollectionCommand(
         VectorSearchConfig vector,
         IndexingConfig indexing,
         LexicalConfigDefinition lexical,
-        RerankingConfigDefinition reranking) {
+        RerankingConfigDefinition rerank) {
       // idConfig could be null, will resolve idType to empty string in table comment
       this.idConfig = idConfig;
       this.vector = vector;
       this.indexing = indexing;
       this.lexical = lexical;
-      this.reranking = reranking;
+      this.rerank = rerank;
     }
   }
 

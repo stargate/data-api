@@ -123,7 +123,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                       "enabled": true,
                       "analyzer": "standard"
                     },
-                    "reranking": {
+                    "rerank": {
                         "enabled": true,
                         "service": {
                             "provider": "nvidia",
@@ -155,7 +155,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                         "enabled": true,
                         "analyzer": "standard"
                       },
-                      "reranking": {
+                      "rerank": {
                           "enabled": true,
                           "service": {
                               "provider": "nvidia",
@@ -182,7 +182,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                       "enabled": true,
                       "analyzer": "standard"
                     },
-                    "reranking": {
+                    "rerank": {
                         "enabled": true,
                         "service": {
                             "provider": "nvidia",
@@ -373,7 +373,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                         "lexical": {
                           "enabled": false
                         },
-                        "reranking": {
+                        "rerank": {
                             "enabled": false
                         }
                       }
@@ -399,7 +399,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           "enabled": true,
           "analyzer": "standard"
         },
-        "reranking": {
+        "rerank": {
             "enabled": true,
             "service": {
                 "provider": "nvidia",
@@ -417,7 +417,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                         "enabled": true,
                         "analyzer": "standard"
                       },
-                        "reranking": {
+                        "rerank": {
                             "enabled": true,
                             "service": {
                                 "provider": "nvidia",
@@ -436,7 +436,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
             "enabled": true,
             "analyzer": "standard"
           },
-            "reranking": {
+            "rerank": {
                 "enabled": true,
                 "service": {
                     "provider": "nvidia",
@@ -454,7 +454,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                   "lexical": {
                     "enabled": false
                   },
-                  "reranking": {
+                  "rerank": {
                       "enabled": false
                   }
                 }

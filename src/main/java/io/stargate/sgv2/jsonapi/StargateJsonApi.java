@@ -405,7 +405,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                               "createCollection": {
                                   "name": "events",
                                   "options": {
-                                      "reranking": {
+                                      "rerank": {
                                           "enabled": true,
                                           "service": {
                                               "provider": "nvidia",

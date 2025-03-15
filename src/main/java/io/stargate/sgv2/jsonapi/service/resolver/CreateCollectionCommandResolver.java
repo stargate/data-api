@@ -95,8 +95,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     final CollectionLexicalConfig lexicalConfig =
         CollectionLexicalConfig.validateAndConstruct(objectMapper, options.lexical());
     final CollectionRerankingConfig rerankingConfig =
-        CollectionRerankingConfig.validateAndConstruct(
-            options.reranking(), rerankingProvidersConfig);
+        CollectionRerankingConfig.validateAndConstruct(options.rerank(), rerankingProvidersConfig);
 
     boolean indexingDenyAll = false;
     // handling indexing options
