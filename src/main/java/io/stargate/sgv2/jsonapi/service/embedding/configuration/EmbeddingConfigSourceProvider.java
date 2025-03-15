@@ -31,7 +31,7 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
           loadConfigSource(
               System.getenv(EMBEDDING_CONFIG_ENV), EMBEDDING_CONFIG_RESOURCE, forClassLoader));
 
-      // Add reranking config source
+      // Add rerank config source
       configSources.add(
           loadConfigSource(
               System.getenv(RERANKING_CONFIG_ENV), RERANKING_CONFIG_RESOURCE, forClassLoader));

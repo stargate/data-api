@@ -19,7 +19,7 @@ import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvide
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankingConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankConfig;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -72,8 +72,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     if (options == null) {
       final CollectionLexicalConfig lexicalConfig =
           CollectionLexicalConfig.configForNewCollections();
-      final CollectionRerankingConfig rerankingConfig =
-          CollectionRerankingConfig.configForNewCollections(rerankingProvidersConfig);
+      final CollectionRerankConfig rerankConfig =
+          CollectionRerankConfig.configForNewCollections(rerankingProvidersConfig);
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
           dbLimitsConfig,
@@ -81,12 +81,12 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           cqlSessionCache,
           name,
           generateComment(
-              objectMapper, false, false, name, null, null, null, lexicalConfig, rerankingConfig),
+              objectMapper, false, false, name, null, null, null, lexicalConfig, rerankConfig),
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
           false,
           lexicalConfig,
-          rerankingConfig); // Since the options is null
+          rerankConfig); // Since the options is null
     }
 
     boolean hasIndexing = options.indexing() != null;
@@ -94,9 +94,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     CreateCollectionCommand.Options.VectorSearchConfig vector = options.vector();
     final CollectionLexicalConfig lexicalConfig =
         CollectionLexicalConfig.validateAndConstruct(objectMapper, options.lexical());
-    final CollectionRerankingConfig rerankingConfig =
-        CollectionRerankingConfig.validateAndConstruct(
-            options.reranking(), rerankingProvidersConfig);
+    final CollectionRerankConfig rerankConfig =
+        CollectionRerankConfig.validateAndConstruct(options.rerank(), rerankingProvidersConfig);
 
     boolean indexingDenyAll = false;
     // handling indexing options
@@ -122,7 +121,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             vector,
             options.idConfig(),
             lexicalConfig,
-            rerankingConfig);
+            rerankConfig);
 
     if (hasVectorSearch) {
       return CreateCollectionOperation.withVectorSearch(
@@ -139,7 +138,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           operationsConfig.tooManyIndexesRollbackEnabled(),
           indexingDenyAll,
           lexicalConfig,
-          rerankingConfig);
+          rerankConfig);
     } else {
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
@@ -152,7 +151,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           operationsConfig.tooManyIndexesRollbackEnabled(),
           indexingDenyAll,
           lexicalConfig,
-          rerankingConfig);
+          rerankConfig);
     }
   }
 
@@ -175,7 +174,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       CreateCollectionCommand.Options.VectorSearchConfig vector,
       CreateCollectionCommand.Options.IdConfig idConfig,
       CollectionLexicalConfig lexicalConfig,
-      CollectionRerankingConfig rerankingConfig) {
+      CollectionRerankConfig rerankConfig) {
     final ObjectNode collectionNode = objectMapper.createObjectNode();
     ObjectNode optionsNode = objectMapper.createObjectNode(); // For storing collection options.
 
@@ -198,8 +197,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     // Store Lexical Config as-is:
     optionsNode.putPOJO(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY, lexicalConfig);
 
-    // Store Reranking Config as-is:
-    optionsNode.putPOJO(TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY, rerankingConfig);
+    // Store Rerank Config as-is:
+    optionsNode.putPOJO(TableCommentConstants.COLLECTION_RERANK_CONFIG_KEY, rerankConfig);
 
     collectionNode.put(TableCommentConstants.COLLECTION_NAME_KEY, commandName);
     collectionNode.put(

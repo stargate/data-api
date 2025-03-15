@@ -7,12 +7,12 @@ import jakarta.ws.rs.core.Response;
 
 public class RerankingResponseErrorMessageMapper {
   /**
-   * Maps an HTTP response to a corresponding API exception. Individual reranking providers can
+   * Maps an HTTP response to a corresponding API exception. Individual rerank providers can
    * override this method to provide custom exception handling.
    *
-   * @param providerName the name of the reranking provider
+   * @param providerName the name of the rerank provider
    * @param response the HTTP response
-   * @param message the error message from reranking provider
+   * @param message the error message from rerank provider
    * @return a JsonApiException that corresponds to the specific HTTP response status
    */
   public static RuntimeException mapToAPIException(
@@ -26,7 +26,7 @@ public class RerankingResponseErrorMessageMapper {
     }
 
     // Status code == 429
-    // TODO reranking EmbeddingGateway rate limiting
+    // TODO rerank EmbeddingGateway rate limiting
 
     // Status code in 4XX other than 429
     if (response.getStatusInfo().getFamily() == CLIENT_ERROR) {

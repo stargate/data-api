@@ -65,7 +65,7 @@ public class RerankingProviderFactory {
                         "unknown model name '%s'", modelName));
 
     if (operationsConfig.enableEmbeddingGateway()) {
-      // return the reranking Grpc client to embedding gateway service
+      // return the rerank Grpc client to embedding gateway service
       return new RerankingEGWClient(
           modelConfig.url(),
           modelConfig.properties(),

@@ -36,7 +36,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
   private final NvidiaRerankingClient nvidiaRerankingClient;
 
   // Nvidia Reranking Service supports truncate or error when the passage is too long.
-  // Data API use NONE as default, means the reranking request will error out if there is a query
+  // Data API use NONE as default, means the rerank request will error out if there is a query
   // and
   // passage pair that exceeds allowed token size 8192
   // https://docs.nvidia.com/nim/nemo-retriever/text-reranking/latest/using-reranking.html#token-limits-truncation
@@ -77,20 +77,20 @@ public class NvidiaRerankingProvider extends RerankingProvider {
       // Log the response body
       logger.info(
           String.format(
-              "Error response from reranking provider '%s': %s", providerId, rootNode.toString()));
+              "Error response from rerank provider '%s': %s", providerId, rootNode.toString()));
       JsonNode messageNode = rootNode.path("message");
       // Return the text of the "message" node, or the whole response body if it is missing
       return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
     }
   }
 
-  /** reranking request to the Nvidia Reranking Service */
+  /** rerank request to the Nvidia Reranking Service */
   private record RerankingRequest(
       String model, TextWrapper query, List<TextWrapper> passages, String truncate) {
     private record TextWrapper(String text) {}
   }
 
-  /** reranking response from the Nvidia reranking Service */
+  /** rerank response from the Nvidia rerank Service */
   @JsonIgnoreProperties(ignoreUnknown = true)
   private record RerankingResponse(List<Ranking> rankings, Usage usage) {
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -132,10 +132,10 @@ public class NvidiaRerankingProvider extends RerankingProvider {
   }
 
   /**
-   * For Astra self-hosted Nvidia reranking in the GPU plane, it requires the AstraCS token to
-   * access. So Data API in Astra will resolve the AstraCS token from the request header. For Data
-   * API in non-astra environment, since the token is also used for backend authentication, so the
-   * user needs to pass the reranking API key in the request header 'x-reranking-api-key'.
+   * For Astra self-hosted Nvidia rerank in the GPU plane, it requires the AstraCS token to access.
+   * So Data API in Astra will resolve the AstraCS token from the request header. For Data API in
+   * non-astra environment, since the token is also used for backend authentication, so the user
+   * needs to pass the rerank API key in the request header 'x-rerank-api-key'.
    */
   private String resolveRerankingKey(RerankingCredentials rerankingCredentials) {
     if (rerankingCredentials.token().startsWith("AstraCS")) {
@@ -143,7 +143,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
     }
     if (rerankingCredentials.apiKey().isEmpty()) {
       throw ErrorCodeV1.RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
-          "In order to reranking, please add the reranking API key in the request header 'x-reranking-api-key' for non-astra environment.");
+          "In order to rerank, please add the rerank API key in the request header 'x-rerank-api-key' for non-astra environment.");
     }
     return rerankingCredentials.apiKey().get();
   }

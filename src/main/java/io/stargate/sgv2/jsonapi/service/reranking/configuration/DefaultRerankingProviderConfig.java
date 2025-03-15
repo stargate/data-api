@@ -4,7 +4,7 @@ import io.smallrye.config.ConfigMapping;
 import jakarta.annotation.Nullable;
 import java.util.Map;
 
-@ConfigMapping(prefix = "stargate.jsonapi.reranking")
+@ConfigMapping(prefix = "stargate.jsonapi.rerank")
 public interface DefaultRerankingProviderConfig {
   @Nullable
   Map<String, RerankingProvidersConfig.RerankingProviderConfig> providers();

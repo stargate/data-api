@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
+import io.stargate.sgv2.jsonapi.config.constants.RerankConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
@@ -13,7 +13,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /** Validated configuration Object for Reranking configuration for Collections. */
-public record CollectionRerankingConfig(
+public record CollectionRerankConfig(
     boolean enabled,
     @JsonInclude(JsonInclude.Include.NON_NULL) @JsonProperty("service")
         RerankingProviderConfig rerankingProviderConfig) {
@@ -25,13 +25,13 @@ public record CollectionRerankingConfig(
       Map<String, String> authentication,
       Map<String, Object> parameters) {}
 
-  public CollectionRerankingConfig(
+  public CollectionRerankConfig(
       boolean enabled,
       String provider,
       String modelName,
       Map<String, String> authentication,
       Map<String, Object> parameters) {
-    // Clear out any reranking settings if not enabled (but don't fail)
+    // Clear out any rerank settings if not enabled (but don't fail)
     this(
         enabled,
         enabled
@@ -41,10 +41,10 @@ public record CollectionRerankingConfig(
 
   /**
    * Accessor for an instance to use for a default configuration for newly created collections:
-   * where no configuration defined: needs to be enabled, using "nvidia" reranking service
+   * where no configuration defined: needs to be enabled, using "nvidia" rerank service
    * configuration.
    */
-  public static CollectionRerankingConfig configForNewCollections(
+  public static CollectionRerankConfig configForNewCollections(
       RerankingProvidersConfig rerankingProvidersConfig) {
     // get the default provider from the config
     var defaultProvider =
@@ -52,7 +52,7 @@ public record CollectionRerankingConfig(
             .filter(entry -> entry.getValue().isDefault())
             .findFirst();
     if (defaultProvider.isEmpty()) {
-      return new CollectionRerankingConfig(false, null);
+      return new CollectionRerankConfig(false, null);
     }
     var provider = defaultProvider.get().getKey();
     var modelName =
@@ -66,96 +66,91 @@ public record CollectionRerankingConfig(
     // need to change
     var defaultRerankingService = new RerankingProviderConfig(provider, modelName, null, null);
 
-    return new CollectionRerankingConfig(true, defaultRerankingService);
+    return new CollectionRerankConfig(true, defaultRerankingService);
   }
 
   /**
-   * Accessor for an instance to use for existing pre-reranking collections: ones without reranking
-   * field and index: needs to be disabled
+   * Accessor for an instance to use for existing pre-rerank collections: ones without rerank field
+   * and index: needs to be disabled
    */
-  public static CollectionRerankingConfig configForLegacyCollections() {
-    return new CollectionRerankingConfig(false, null);
+  public static CollectionRerankConfig configForLegacyCollections() {
+    return new CollectionRerankConfig(false, null);
   }
 
   /**
    * Accessor for an instance to use for missing collection: cases where definition does not exist:
    * needs to be disabled.
    */
-  public static CollectionRerankingConfig configForMissingCollection() {
-    return new CollectionRerankingConfig(false, null);
+  public static CollectionRerankConfig configForMissingCollection() {
+    return new CollectionRerankConfig(false, null);
   }
 
-  /** Read the reranking configuration from the JSON node. */
-  public static CollectionRerankingConfig fromJson(
+  /** Read the rerank configuration from the JSON node. */
+  public static CollectionRerankConfig fromJson(
       JsonNode rerankingJsonNode, ObjectMapper objectMapper) {
-    boolean enabled =
-        rerankingJsonNode.path(RerankingConstants.RerankingColumn.ENABLED).asBoolean(false);
+    boolean enabled = rerankingJsonNode.path(RerankConstants.RerankColumn.ENABLED).asBoolean(false);
 
     if (!enabled) {
-      return new CollectionRerankingConfig(enabled, null);
+      return new CollectionRerankConfig(enabled, null);
     }
 
-    JsonNode rerankingServiceNode =
-        rerankingJsonNode.get(RerankingConstants.RerankingColumn.SERVICE);
+    JsonNode rerankingServiceNode = rerankingJsonNode.get(RerankConstants.RerankColumn.SERVICE);
 
     // provider, modelName, must exist
     // TODO: WHAT HAPPENS IF THEY DONT ? JSON props on VectorizeConfig say model is not
     // required
-    String provider =
-        rerankingServiceNode.get(RerankingConstants.RerankingService.PROVIDER).asText();
-    String modelName =
-        rerankingServiceNode.get(RerankingConstants.RerankingService.MODEL_NAME).asText();
+    String provider = rerankingServiceNode.get(RerankConstants.RerankService.PROVIDER).asText();
+    String modelName = rerankingServiceNode.get(RerankConstants.RerankService.MODEL_NAME).asText();
 
     // construct VectorizeDefinition.authentication, can be null
-    JsonNode authNode =
-        rerankingServiceNode.get(RerankingConstants.RerankingService.AUTHENTICATION);
+    JsonNode authNode = rerankingServiceNode.get(RerankConstants.RerankService.AUTHENTICATION);
     // TODO: remove unchecked assignment
     Map<String, String> authMap =
         authNode == null ? null : objectMapper.convertValue(authNode, Map.class);
 
     // construct VectorizeDefinition.parameters, can be null
-    JsonNode paramsNode = rerankingServiceNode.get(RerankingConstants.RerankingService.PARAMETERS);
+    JsonNode paramsNode = rerankingServiceNode.get(RerankConstants.RerankService.PARAMETERS);
     // TODO: remove unchecked assignment
     Map<String, Object> paramsMap =
         paramsNode == null ? null : objectMapper.convertValue(paramsNode, Map.class);
 
-    return new CollectionRerankingConfig(enabled, provider, modelName, authMap, paramsMap);
+    return new CollectionRerankConfig(enabled, provider, modelName, authMap, paramsMap);
   }
 
   /**
-   * Method for validating the reranking config passed and constructing actual configuration object
-   * to use.
+   * Method for validating the rerank config passed and constructing actual configuration object to
+   * use.
    *
-   * @return Valid CollectionRerankingConfig object
+   * @return Valid CollectionRerankConfig object
    */
-  public static CollectionRerankingConfig validateAndConstruct(
-      CreateCollectionCommand.Options.RerankingConfigDefinition rerankingConfig,
+  public static CollectionRerankConfig validateAndConstruct(
+      CreateCollectionCommand.Options.RerankConfigDefinition rerankConfig,
       RerankingProvidersConfig rerankingProvidersConfig) {
     // If not defined, use default for new collections; valid option
-    if (rerankingConfig == null) {
+    if (rerankConfig == null) {
       return configForNewCollections(rerankingProvidersConfig);
     }
     // Otherwise validate and construct
-    Boolean enabled = rerankingConfig.enabled();
+    Boolean enabled = rerankConfig.enabled();
     if (enabled == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'enabled' is required property for 'reranking' Object value");
+          "'enabled' is required property for 'rerank' Object value");
     }
-    // If not enabled, clear out any reranking settings (but don't fail)
+    // If not enabled, clear out any rerank settings (but don't fail)
     if (!enabled) {
-      return new CollectionRerankingConfig(enabled, null);
+      return new CollectionRerankConfig(enabled, null);
     }
 
     // If enabled, but no service config, use default
-    var rerankingServiceConfig = rerankingConfig.rerankingServiceConfig();
+    var rerankingServiceConfig = rerankConfig.rerankServiceConfig();
     if (rerankingServiceConfig == null) {
       return configForNewCollections(rerankingProvidersConfig);
     }
 
-    String provider = rerankingConfig.rerankingServiceConfig().provider();
-    String modelName = rerankingConfig.rerankingServiceConfig().modelName();
-    Map<String, String> authentication = rerankingConfig.rerankingServiceConfig().authentication();
-    Map<String, Object> parameters = rerankingConfig.rerankingServiceConfig().parameters();
+    String provider = rerankConfig.rerankServiceConfig().provider();
+    String modelName = rerankConfig.rerankServiceConfig().modelName();
+    Map<String, String> authentication = rerankConfig.rerankServiceConfig().authentication();
+    Map<String, Object> parameters = rerankConfig.rerankServiceConfig().parameters();
 
     RerankingProvidersConfig.RerankingProviderConfig providerConfig =
         getAndValidateProviderConfig(provider, rerankingProvidersConfig);
@@ -166,7 +161,7 @@ public record CollectionRerankingConfig(
 
     // TODO(Hazel): No need to validate the parameters, add back when it's needed
 
-    return new CollectionRerankingConfig(enabled, provider, modelName, authentication, parameters);
+    return new CollectionRerankConfig(enabled, provider, modelName, authentication, parameters);
   }
 
   /**
@@ -183,7 +178,7 @@ public record CollectionRerankingConfig(
       String provider, RerankingProvidersConfig rerankingProvidersConfig) {
     if (provider == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'provider' is required property for 'reranking.service' Object value");
+          "'provider' is required property for 'rerank.service' Object value");
     }
 
     var providerConfig = rerankingProvidersConfig.providers().get(provider);
@@ -205,7 +200,7 @@ public record CollectionRerankingConfig(
     // 1. model name is required
     if (modelName == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'modelName' is needed for reranking provider %s", provider);
+          "'modelName' is needed for rerank provider %s", provider);
     }
     // 2. model name must be supported by the provider - in the config
     rerankingProviderConfig.models().stream()
@@ -214,14 +209,14 @@ public record CollectionRerankingConfig(
         .orElseThrow(
             () ->
                 ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                    "Model name '%s' for reranking provider '%s' is not supported",
+                    "Model name '%s' for rerank provider '%s' is not supported",
                     modelName, provider));
     return modelName;
   }
 
   /**
-   * Validates user authentication for reranking models when creating a collection using the
-   * specified configurations.
+   * Validates user authentication for rerank models when creating a collection using the specified
+   * configurations.
    *
    * <ol>
    *   <li>Validate that all keys (member names) in the authentication stanza (e.g. providerKey) are
@@ -244,8 +239,8 @@ public record CollectionRerankingConfig(
    *       </ol>
    * </ol>
    *
-   * @param provider The reranking provider name.
-   * @param authentication The reranking authentication details.
+   * @param provider The rerank provider name.
+   * @param authentication The rerank authentication details.
    * @throws JsonApiException If the user authentication is invalid.
    */
   private static Map<String, String> validateAuthentication(

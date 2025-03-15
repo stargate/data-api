@@ -52,7 +52,7 @@ public class CreateCollectionWithRerankingIntegrationTest
                                               "enabled": true,
                                               "analyzer": "standard"
                                           },
-                                          "reranking": {
+                                          "rerank": {
                                               "enabled": true,
                                               "service": {
                                                   "provider": "nvidia",
@@ -111,7 +111,7 @@ public class CreateCollectionWithRerankingIntegrationTest
                                                       "enabled": true,
                                                       "analyzer": "standard"
                                                   },
-                                                  "reranking": {
+                                                  "rerank": {
                                                       "enabled": true,
                                                       "service": {
                                                           "provider": "nvidia",
@@ -159,7 +159,7 @@ public class CreateCollectionWithRerankingIntegrationTest
                                                       "enabled": true,
                                                       "analyzer": "standard"
                                                   },
-                                                  "reranking": {
+                                                  "rerank": {
                                                       "enabled": false
                                                   }
                                               }
@@ -214,7 +214,7 @@ public class CreateCollectionWithRerankingIntegrationTest
                                                         "enabled": true,
                                                         "analyzer": "standard"
                                                     },
-                                                    "reranking": {
+                                                    "rerank": {
                                                         "enabled": false
                                                     }
                                                 }
@@ -240,7 +240,7 @@ public class CreateCollectionWithRerankingIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: 'enabled' is required property for 'reranking'"));
+                  "The provided options are invalid: 'enabled' is required property for 'rerank'"));
     }
 
     @Test
@@ -262,7 +262,7 @@ public class CreateCollectionWithRerankingIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: 'provider' is required property for 'reranking.service' Object value"));
+                  "The provided options are invalid: 'provider' is required property for 'rerank.service' Object value"));
     }
 
     @Test
@@ -286,7 +286,7 @@ public class CreateCollectionWithRerankingIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: 'modelName' is needed for reranking provider nvidia"));
+                  "The provided options are invalid: 'modelName' is needed for rerank provider nvidia"));
     }
   }
 
@@ -297,7 +297,7 @@ public class CreateCollectionWithRerankingIntegrationTest
                             "createCollection": {
                               "name": "%s",
                               "options": {
-                                "reranking": %s
+                                "rerank": %s
                               }
                             }
                           }

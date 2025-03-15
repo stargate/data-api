@@ -31,12 +31,12 @@ public abstract class RerankingProvider {
   }
 
   /**
-   * Gather the results from all batch reranking calls, adjust the indices, so they refer to the
+   * Gather the results from all batch rerank calls, adjust the indices, so they refer to the
    * original passages list, and return a final RerankingResponse as the original order of the
-   * passages with the reranking score.
+   * passages with the rerank score.
    *
    * <p>E.G. if the original passages list is ["a", "b", "c", "d", "e"] and the micro batch is 2,
-   * then API will do 3 batch reranking calls: ["a", "b"], ["c", "d"], ["e"]. 3 response will be
+   * then API will do 3 batch rerank calls: ["a", "b"], ["c", "d"], ["e"]. 3 response will be
    * returned:
    *
    * <ul>

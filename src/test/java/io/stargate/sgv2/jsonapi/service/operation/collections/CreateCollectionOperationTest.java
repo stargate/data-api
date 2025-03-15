@@ -36,7 +36,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankingConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
@@ -76,12 +76,11 @@ public class CreateCollectionOperationTest extends OperationTestBase {
     private final CollectionLexicalConfig LEXICAL_CONFIG =
         CollectionLexicalConfig.configForNewCollections();
 
-    private CollectionRerankingConfig RERANKING_CONFIG;
+    private CollectionRerankConfig RERANKING_CONFIG;
 
     @BeforeEach
     public void init() {
-      RERANKING_CONFIG =
-          CollectionRerankingConfig.configForNewCollections(rerankingProvidersConfig);
+      RERANKING_CONFIG = CollectionRerankConfig.configForNewCollections(rerankingProvidersConfig);
     }
 
     @Test

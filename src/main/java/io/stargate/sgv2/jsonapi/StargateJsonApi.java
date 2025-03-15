@@ -397,15 +397,15 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                 }
                                 """),
               @ExampleObject(
-                  name = "createCollectionReranking",
-                  summary = "`CreateCollection` command with reranking model enabled",
+                  name = "createCollectionRerank",
+                  summary = "`CreateCollection` command with rerank model enabled",
                   value =
                       """
                             {
                               "createCollection": {
                                   "name": "events",
                                   "options": {
-                                      "reranking": {
+                                      "rerank": {
                                           "enabled": true,
                                           "service": {
                                               "provider": "nvidia",

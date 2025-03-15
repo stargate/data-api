@@ -35,14 +35,13 @@ public class RerankingProviderConfigProducer {
       @GrpcClient("embedding") RerankingServiceGrpc.RerankingServiceBlockingStub rerankingService) {
     RerankingProvidersConfig defaultConfig =
         new RerankingProvidersConfigImpl(defaultRerankingProviderConfig.providers());
-    // defaultRerankingProviderConfig is what we mapped from reranking-providers-config.yaml
+    // defaultRerankingProviderConfig is what we mapped from rerank-providers-config.yaml
     // and will be used if embedding-gateway is not enabled
     if (!operationsConfig.enableEmbeddingGateway()) {
-      LOG.info("embedding gateway disabled, use default reranking config");
+      LOG.info("embedding gateway disabled, use default rerank config");
       return defaultConfig;
     }
-    LOG.info(
-        "embedding gateway enabled, fetch supported reranking providers from embedding gateway");
+    LOG.info("embedding gateway enabled, fetch supported rerank providers from embedding gateway");
     final EmbeddingGateway.GetSupportedRerankingProvidersRequest grpcRequest =
         EmbeddingGateway.GetSupportedRerankingProvidersRequest.newBuilder().build();
     try {
@@ -61,7 +60,7 @@ public class RerankingProviderConfigProducer {
     // traverse ProviderConfig in Grpc response
     for (Map.Entry<String, EmbeddingGateway.GetSupportedRerankingProvidersResponse.ProviderConfig>
         entry : grpcResponse.getSupportedProvidersMap().entrySet()) {
-      // create each reranking provider
+      // create each rerank provider
       providerMap.put(entry.getKey(), createRerankingProviderImpl(entry.getValue()));
     }
     return new RerankingProvidersConfigImpl(providerMap);
