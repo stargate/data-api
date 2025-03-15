@@ -234,6 +234,9 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     if (errorCode.name().startsWith("EMBEDDING") || errorCode.name().startsWith("VECTORIZE")) {
       return ErrorScope.EMBEDDING;
     }
+    if (errorCode.name().startsWith("RERANKING")) {
+      return ErrorScope.RERANKING;
+    }
     if (errorCode.name().contains("FILTER")) {
       return ErrorScope.FILTER;
     }
@@ -269,14 +272,15 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
 
   enum ErrorScope {
     AUTHENTICATION("AUTHENTICATION"),
-    DATA_LOADER("DATA_LOADER"),
     DATABASE("DATABASE"),
+    DATA_LOADER("DATA_LOADER"),
     DOCUMENT("DOCUMENT"),
     EMBEDDING("EMBEDDING"),
     EMPTY(""),
     FILTER("FILTER"),
     INDEX("INDEX"),
     PROJECTION("PROJECTION"),
+    RERANKING("RERANKING"),
     SCHEMA("SCHEMA"),
     SORT("SORT"),
     UPDATE("UPDATE");

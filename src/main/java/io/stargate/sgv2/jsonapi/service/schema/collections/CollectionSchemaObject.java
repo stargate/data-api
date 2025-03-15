@@ -44,13 +44,15 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           IdConfig.defaultIdConfig(),
           VectorConfig.NOT_ENABLED_CONFIG,
           null,
-          CollectionLexicalConfig.configForMissingCollection());
+          CollectionLexicalConfig.configForMissingCollection(),
+          CollectionRerankingConfig.configForMissingCollection());
 
   private final IdConfig idConfig;
   private final VectorConfig vectorConfig;
   private final CollectionIndexingConfig indexingConfig;
   private final TableMetadata tableMetadata;
   private final CollectionLexicalConfig lexicalConfig;
+  private final CollectionRerankingConfig rerankingConfig;
 
   /**
    * @param vectorConfig
@@ -63,14 +65,16 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       IdConfig idConfig,
       VectorConfig vectorConfig,
       CollectionIndexingConfig indexingConfig,
-      CollectionLexicalConfig lexicalConfig) {
+      CollectionLexicalConfig lexicalConfig,
+      CollectionRerankingConfig rerankingConfig) {
     this(
         new SchemaObjectName(keypaceName, name),
         tableMetadata,
         idConfig,
         vectorConfig,
         indexingConfig,
-        lexicalConfig);
+        lexicalConfig,
+        rerankingConfig);
   }
 
   public CollectionSchemaObject(
@@ -79,7 +83,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       IdConfig idConfig,
       VectorConfig vectorConfig,
       CollectionIndexingConfig indexingConfig,
-      CollectionLexicalConfig lexicalConfig) {
+      CollectionLexicalConfig lexicalConfig,
+      CollectionRerankingConfig rerankingConfig) {
     super(TYPE, name, tableMetadata);
 
     this.idConfig = idConfig;
@@ -87,13 +92,20 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     this.indexingConfig = indexingConfig;
     this.tableMetadata = tableMetadata;
     this.lexicalConfig = Objects.requireNonNull(lexicalConfig);
+    this.rerankingConfig = Objects.requireNonNull(rerankingConfig);
   }
 
   // TODO: remove this, it is just here for testing and can be handled by creating test data
   // effectively
   public CollectionSchemaObject withIdType(CollectionIdType idType) {
     return new CollectionSchemaObject(
-        name(), tableMetadata, new IdConfig(idType), vectorConfig, indexingConfig, lexicalConfig);
+        name(),
+        tableMetadata,
+        new IdConfig(idType),
+        vectorConfig,
+        indexingConfig,
+        lexicalConfig,
+        rerankingConfig);
   }
 
   @Override
@@ -250,6 +262,9 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     if (comment == null || comment.isBlank()) {
       // If no "comment", must assume Legacy (no Lexical) config
       CollectionLexicalConfig lexicalConfig = CollectionLexicalConfig.configForLegacyCollections();
+      // If no "comment", must assume Legacy (no Reranking) config
+      CollectionRerankingConfig rerankingConfig =
+          CollectionRerankingConfig.configForLegacyCollections();
       if (vectorEnabled) {
         return new CollectionSchemaObject(
             keyspaceName,
@@ -265,7 +280,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
                         sourceModel,
                         null))),
             null,
-            lexicalConfig);
+            lexicalConfig,
+            rerankingConfig);
       } else {
         return new CollectionSchemaObject(
             keyspaceName,
@@ -274,7 +290,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            lexicalConfig);
+            lexicalConfig,
+            rerankingConfig);
       }
     } else {
       JsonNode commentConfigNode;
@@ -371,13 +388,30 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             ? null
             : new CreateCollectionCommand.Options.IdConfig(idType.toString());
 
+    // construct the CreateCollectionCommand.options.lexicalConfig
     CollectionLexicalConfig lexicalConfig = collectionSetting.lexicalConfig;
     var lexicalDef =
         new CreateCollectionCommand.Options.LexicalConfigDefinition(
             lexicalConfig.enabled(), lexicalConfig.analyzerDefinition());
+
+    // construct the CreateCollectionCommand.options.rerankingConfig
+    CollectionRerankingConfig rerankingConfig = collectionSetting.rerankingConfig;
+    CreateCollectionCommand.Options.RerankingServiceConfig rerankingServiceConfig = null;
+    if (rerankingConfig.enabled()) {
+      rerankingServiceConfig =
+          new CreateCollectionCommand.Options.RerankingServiceConfig(
+              rerankingConfig.rerankingProviderConfig().provider(),
+              rerankingConfig.rerankingProviderConfig().modelName(),
+              rerankingConfig.rerankingProviderConfig().authentication(),
+              rerankingConfig.rerankingProviderConfig().parameters());
+    }
+    var rerankingDef =
+        new CreateCollectionCommand.Options.RerankingConfigDefinition(
+            rerankingConfig.enabled(), rerankingServiceConfig);
+
     options =
         new CreateCollectionCommand.Options(
-            idConfig, vectorSearchConfig, indexingConfig, lexicalDef);
+            idConfig, vectorSearchConfig, indexingConfig, lexicalDef, rerankingDef);
 
     // CreateCollectionCommand object is created for convenience to generate json
     // response. The code is not creating a collection here.
@@ -422,7 +456,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         && Objects.equals(this.idConfig, that.idConfig)
         && Objects.equals(this.vectorConfig, that.vectorConfig)
         && Objects.equals(this.indexingConfig, that.indexingConfig)
-        && Objects.equals(this.lexicalConfig, that.lexicalConfig);
+        && Objects.equals(this.lexicalConfig, that.lexicalConfig)
+        && Objects.equals(this.rerankingConfig, that.rerankingConfig);
   }
 
   @Override
@@ -447,6 +482,9 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         + ", "
         + "lexicalConfig="
         + lexicalConfig
+        + ", "
+        + "rerankingConfig="
+        + rerankingConfig
         + ']';
   }
 }

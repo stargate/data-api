@@ -49,7 +49,8 @@ public record VectorizeConfig(
       Map<String, String> authentication,
       Map<String, Object> parameters) {
     if (provider == null) {
-      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException("'provider' is required");
+      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          "'provider' in required property for 'vector.service' Object value");
     }
     this.provider = provider;
     // HuggingfaceDedicated does not need user to specify model explicitly
@@ -60,7 +61,7 @@ public record VectorizeConfig(
         modelName = ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL;
       } else if (!modelName.equals(ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL)) {
         throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "'modelName' is not needed for provider %s explicitly, only '%s' is accepted",
+            "'modelName' is not needed for embedding provider %s explicitly, only '%s' is accepted",
             ProviderConstants.HUGGINGFACE_DEDICATED,
             ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL);
       }

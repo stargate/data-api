@@ -397,6 +397,26 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                 }
                                 """),
               @ExampleObject(
+                  name = "createCollectionReranking",
+                  summary = "`CreateCollection` command with reranking model enabled",
+                  value =
+                      """
+                            {
+                              "createCollection": {
+                                  "name": "events",
+                                  "options": {
+                                      "rerank": {
+                                          "enabled": true,
+                                          "service": {
+                                              "provider": "nvidia",
+                                              "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+                                          }
+                                      }
+                                  }
+                              }
+                            }
+                            """),
+              @ExampleObject(
                   name = "createCollectionVectorSearch",
                   summary = "`CreateCollection` command with vector search",
                   value =

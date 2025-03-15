@@ -36,6 +36,8 @@ public enum CommandName {
   FIND_COLLECTIONS(Names.FIND_COLLECTIONS, CommandType.DDL, CommandTarget.KEYSPACE),
   FIND_EMBEDDING_PROVIDERS(
       Names.FIND_EMBEDDING_PROVIDERS, CommandType.ADMIN, CommandTarget.DATABASE),
+  FIND_RERANKING_PROVIDERS(
+      Names.FIND_RERANKING_PROVIDERS, CommandType.ADMIN, CommandTarget.DATABASE),
   FIND_NAMESPACES(Names.FIND_NAMESPACES, CommandType.DDL, CommandTarget.DATABASE),
   FIND_KEYSPACES(Names.FIND_KEYSPACES, CommandType.DDL, CommandTarget.DATABASE),
   FIND_ONE(Names.FIND_ONE, CommandType.DML, CommandTarget.TABLE, CommandTarget.COLLECTION),
@@ -119,6 +121,7 @@ public enum CommandName {
     String FIND = "find";
     String FIND_COLLECTIONS = "findCollections";
     String FIND_EMBEDDING_PROVIDERS = "findEmbeddingProviders";
+    String FIND_RERANKING_PROVIDERS = "findRerankingProviders";
     String FIND_NAMESPACES = "findNamespaces";
     String FIND_KEYSPACES = "findKeyspaces";
     String FIND_ONE = "findOne";

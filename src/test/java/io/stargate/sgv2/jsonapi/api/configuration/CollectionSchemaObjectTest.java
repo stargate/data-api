@@ -6,10 +6,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIndexingConfig;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.*;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -30,7 +27,8 @@ public class CollectionSchemaObjectTest {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             indexingConfig,
-            CollectionLexicalConfig.configForLegacyCollections());
+            CollectionLexicalConfig.configForLegacyCollections(),
+            CollectionRerankingConfig.configForLegacyCollections());
     IndexingProjector indexingProj = settings.indexingProjector();
     assertThat(indexingProj)
         .isNotNull()
