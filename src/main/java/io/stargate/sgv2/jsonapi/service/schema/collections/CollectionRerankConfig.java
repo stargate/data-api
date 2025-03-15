@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.config.constants.RerankConstants;
+import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
@@ -88,28 +88,33 @@ public record CollectionRerankConfig(
   /** Read the rerank configuration from the JSON node. */
   public static CollectionRerankConfig fromJson(
       JsonNode rerankingJsonNode, ObjectMapper objectMapper) {
-    boolean enabled = rerankingJsonNode.path(RerankConstants.RerankColumn.ENABLED).asBoolean(false);
+    boolean enabled =
+        rerankingJsonNode.path(RerankingConstants.RerankingColumn.ENABLED).asBoolean(false);
 
     if (!enabled) {
       return new CollectionRerankConfig(enabled, null);
     }
 
-    JsonNode rerankingServiceNode = rerankingJsonNode.get(RerankConstants.RerankColumn.SERVICE);
+    JsonNode rerankingServiceNode =
+        rerankingJsonNode.get(RerankingConstants.RerankingColumn.SERVICE);
 
     // provider, modelName, must exist
     // TODO: WHAT HAPPENS IF THEY DONT ? JSON props on VectorizeConfig say model is not
     // required
-    String provider = rerankingServiceNode.get(RerankConstants.RerankService.PROVIDER).asText();
-    String modelName = rerankingServiceNode.get(RerankConstants.RerankService.MODEL_NAME).asText();
+    String provider =
+        rerankingServiceNode.get(RerankingConstants.RerankingService.PROVIDER).asText();
+    String modelName =
+        rerankingServiceNode.get(RerankingConstants.RerankingService.MODEL_NAME).asText();
 
     // construct VectorizeDefinition.authentication, can be null
-    JsonNode authNode = rerankingServiceNode.get(RerankConstants.RerankService.AUTHENTICATION);
+    JsonNode authNode =
+        rerankingServiceNode.get(RerankingConstants.RerankingService.AUTHENTICATION);
     // TODO: remove unchecked assignment
     Map<String, String> authMap =
         authNode == null ? null : objectMapper.convertValue(authNode, Map.class);
 
     // construct VectorizeDefinition.parameters, can be null
-    JsonNode paramsNode = rerankingServiceNode.get(RerankConstants.RerankService.PARAMETERS);
+    JsonNode paramsNode = rerankingServiceNode.get(RerankingConstants.RerankingService.PARAMETERS);
     // TODO: remove unchecked assignment
     Map<String, Object> paramsMap =
         paramsNode == null ? null : objectMapper.convertValue(paramsNode, Map.class);
@@ -124,7 +129,7 @@ public record CollectionRerankConfig(
    * @return Valid CollectionRerankConfig object
    */
   public static CollectionRerankConfig validateAndConstruct(
-      CreateCollectionCommand.Options.RerankConfigDefinition rerankConfig,
+      CreateCollectionCommand.Options.RerankingConfigDefinition rerankConfig,
       RerankingProvidersConfig rerankingProvidersConfig) {
     // If not defined, use default for new collections; valid option
     if (rerankConfig == null) {
@@ -142,15 +147,15 @@ public record CollectionRerankConfig(
     }
 
     // If enabled, but no service config, use default
-    var rerankingServiceConfig = rerankConfig.rerankServiceConfig();
+    var rerankingServiceConfig = rerankConfig.rerankingServiceConfig();
     if (rerankingServiceConfig == null) {
       return configForNewCollections(rerankingProvidersConfig);
     }
 
-    String provider = rerankConfig.rerankServiceConfig().provider();
-    String modelName = rerankConfig.rerankServiceConfig().modelName();
-    Map<String, String> authentication = rerankConfig.rerankServiceConfig().authentication();
-    Map<String, Object> parameters = rerankConfig.rerankServiceConfig().parameters();
+    String provider = rerankConfig.rerankingServiceConfig().provider();
+    String modelName = rerankConfig.rerankingServiceConfig().modelName();
+    Map<String, String> authentication = rerankConfig.rerankingServiceConfig().authentication();
+    Map<String, Object> parameters = rerankConfig.rerankingServiceConfig().parameters();
 
     RerankingProvidersConfig.RerankingProviderConfig providerConfig =
         getAndValidateProviderConfig(provider, rerankingProvidersConfig);

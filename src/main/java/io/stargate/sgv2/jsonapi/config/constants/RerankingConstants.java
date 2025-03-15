@@ -1,13 +1,13 @@
 package io.stargate.sgv2.jsonapi.config.constants;
 
-public interface RerankConstants {
+public interface RerankingConstants {
 
-  interface RerankColumn {
+  interface RerankingColumn {
     String ENABLED = "enabled";
     String SERVICE = "service";
   }
 
-  interface RerankService {
+  interface RerankingService {
     String PROVIDER = "provider";
     String MODEL_NAME = "modelName";
     String AUTHENTICATION = "authentication";

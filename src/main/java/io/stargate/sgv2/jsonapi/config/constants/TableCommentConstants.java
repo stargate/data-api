@@ -18,7 +18,7 @@ public interface TableCommentConstants {
   String COLLECTION_LEXICAL_CONFIG_KEY = "lexical";
 
   /** Collection rerank settings configuration key */
-  String COLLECTION_RERANK_CONFIG_KEY = "rerank";
+  String COLLECTION_RERANKING_CONFIG_KEY = "rerank";
 
   /** Collection vector key */
   String COLLECTION_VECTOR_KEY = "vector";

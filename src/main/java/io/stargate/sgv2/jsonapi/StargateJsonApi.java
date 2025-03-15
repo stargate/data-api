@@ -397,8 +397,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                 }
                                 """),
               @ExampleObject(
-                  name = "createCollectionRerank",
-                  summary = "`CreateCollection` command with rerank model enabled",
+                  name = "createCollectionReranking",
+                  summary = "`CreateCollection` command with reranking model enabled",
                   value =
                       """
                             {

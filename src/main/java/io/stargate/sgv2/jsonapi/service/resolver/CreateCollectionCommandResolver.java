@@ -198,7 +198,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     optionsNode.putPOJO(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY, lexicalConfig);
 
     // Store Rerank Config as-is:
-    optionsNode.putPOJO(TableCommentConstants.COLLECTION_RERANK_CONFIG_KEY, rerankConfig);
+    optionsNode.putPOJO(TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY, rerankConfig);
 
     collectionNode.put(TableCommentConstants.COLLECTION_NAME_KEY, commandName);
     collectionNode.put(

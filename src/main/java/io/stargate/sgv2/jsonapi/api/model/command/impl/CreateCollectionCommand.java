@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.config.constants.RerankConstants;
+import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
@@ -75,8 +75,8 @@ public record CreateCollectionCommand(
               description =
                   "Optional configuration defining if and how to support use of 'rerank' field",
               type = SchemaType.OBJECT,
-              implementation = RerankConfigDefinition.class)
-          RerankConfigDefinition rerank) {
+              implementation = RerankingConfigDefinition.class)
+          RerankingConfigDefinition rerank) {
 
     public record IdConfig(
         @Nullable
@@ -255,9 +255,9 @@ public record CreateCollectionCommand(
             @JsonProperty("analyzer")
             JsonNode analyzerDef) {}
 
-    public record RerankConfigDefinition(
+    public record RerankingConfigDefinition(
         @Schema(
-                description = "Whether to enable the use of rerank model (default: 'true')",
+                description = "Whether to enable the use of reranking model (default: 'true')",
                 defaultValue = "true",
                 type = SchemaType.BOOLEAN,
                 implementation = Boolean.class,
@@ -268,31 +268,31 @@ public record CreateCollectionCommand(
                     "Reranking model configuration. Default is llama-3.2-nv-rerankqa-1b-v2 model from Nvidia.",
                 defaultValue =
                     "\"service\": {\"provider\": \"nvidia\",\"modelName\": \"nvidia/llama-3.2-nv-rerankqa-1b-v2\"}",
-                implementation = RerankServiceConfig.class)
+                implementation = RerankingServiceConfig.class)
             @JsonInclude(JsonInclude.Include.NON_NULL)
             @JsonProperty("service")
-            RerankServiceConfig rerankServiceConfig) {}
+            RerankingServiceConfig rerankingServiceConfig) {}
 
-    public record RerankServiceConfig(
+    public record RerankingServiceConfig(
         @NotNull
             @Schema(
                 description = "Registered reranking service provider",
                 type = SchemaType.STRING,
                 implementation = String.class)
-            @JsonProperty(RerankConstants.RerankService.PROVIDER)
+            @JsonProperty(RerankingConstants.RerankingService.PROVIDER)
             String provider,
         @Schema(
                 description = "Registered reranking service model",
                 type = SchemaType.STRING,
                 implementation = String.class)
-            @JsonProperty(RerankConstants.RerankService.MODEL_NAME)
+            @JsonProperty(RerankingConstants.RerankingService.MODEL_NAME)
             String modelName,
         @Valid
             @Nullable
             @Schema(
                 description = "Authentication config for chosen reranking service",
                 type = SchemaType.OBJECT)
-            @JsonProperty(RerankConstants.RerankService.AUTHENTICATION)
+            @JsonProperty(RerankingConstants.RerankingService.AUTHENTICATION)
             @JsonInclude(JsonInclude.Include.NON_NULL)
             Map<String, String> authentication,
         @Nullable
@@ -300,7 +300,7 @@ public record CreateCollectionCommand(
                 description =
                     "Optional parameters that match the messageTemplate provided for the reranking provider",
                 type = SchemaType.OBJECT)
-            @JsonProperty(RerankConstants.RerankService.PARAMETERS)
+            @JsonProperty(RerankingConstants.RerankingService.PARAMETERS)
             @JsonInclude(JsonInclude.Include.NON_NULL)
             Map<String, Object> parameters) {}
 
@@ -309,7 +309,7 @@ public record CreateCollectionCommand(
         VectorSearchConfig vector,
         IndexingConfig indexing,
         LexicalConfigDefinition lexical,
-        RerankConfigDefinition rerank) {
+        RerankingConfigDefinition rerank) {
       // idConfig could be null, will resolve idType to empty string in table comment
       this.idConfig = idConfig;
       this.vector = vector;

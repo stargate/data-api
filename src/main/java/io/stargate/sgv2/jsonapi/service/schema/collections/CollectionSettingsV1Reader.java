@@ -62,7 +62,7 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
 
     CollectionRerankConfig rerankingConfig = null;
     JsonNode rerankingNode =
-        collectionOptionsNode.path(TableCommentConstants.COLLECTION_RERANK_CONFIG_KEY);
+        collectionOptionsNode.path(TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY);
     if (rerankingNode.isMissingNode()) {
       rerankingConfig = CollectionRerankConfig.configForLegacyCollections();
     } else {
