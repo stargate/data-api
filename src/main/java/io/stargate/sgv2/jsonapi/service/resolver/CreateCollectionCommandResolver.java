@@ -94,7 +94,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     CreateCollectionCommand.Options.VectorSearchConfig vector = options.vector();
     final CollectionLexicalConfig lexicalConfig =
         CollectionLexicalConfig.validateAndConstruct(objectMapper, options.lexical());
-    final CollectionRerankingConfig rerankConfig =
+    final CollectionRerankingConfig rerankingConfig =
         CollectionRerankingConfig.validateAndConstruct(options.rerank(), rerankingProvidersConfig);
 
     boolean indexingDenyAll = false;
@@ -121,7 +121,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             vector,
             options.idConfig(),
             lexicalConfig,
-            rerankConfig);
+            rerankingConfig);
 
     if (hasVectorSearch) {
       return CreateCollectionOperation.withVectorSearch(
@@ -138,7 +138,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           operationsConfig.tooManyIndexesRollbackEnabled(),
           indexingDenyAll,
           lexicalConfig,
-          rerankConfig);
+          rerankingConfig);
     } else {
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
@@ -151,7 +151,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           operationsConfig.tooManyIndexesRollbackEnabled(),
           indexingDenyAll,
           lexicalConfig,
-          rerankConfig);
+          rerankingConfig);
     }
   }
 

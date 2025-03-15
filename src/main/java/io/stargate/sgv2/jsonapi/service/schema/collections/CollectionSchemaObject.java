@@ -405,13 +405,13 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
               rerankingConfig.rerankingProviderConfig().authentication(),
               rerankingConfig.rerankingProviderConfig().parameters());
     }
-    var rerankDef =
+    var rerankingDef =
         new CreateCollectionCommand.Options.RerankingConfigDefinition(
             rerankingConfig.enabled(), rerankingServiceConfig);
 
     options =
         new CreateCollectionCommand.Options(
-            idConfig, vectorSearchConfig, indexingConfig, lexicalDef, rerankDef);
+            idConfig, vectorSearchConfig, indexingConfig, lexicalDef, rerankingDef);
 
     // CreateCollectionCommand object is created for convenience to generate json
     // response. The code is not creating a collection here.
