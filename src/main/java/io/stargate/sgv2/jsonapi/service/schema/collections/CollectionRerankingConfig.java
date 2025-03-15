@@ -31,7 +31,7 @@ public record CollectionRerankingConfig(
       String modelName,
       Map<String, String> authentication,
       Map<String, Object> parameters) {
-    // Clear out any rerank settings if not enabled (but don't fail)
+    // Clear out any reranking settings if not enabled (but don't fail)
     this(
         enabled,
         enabled
@@ -41,7 +41,7 @@ public record CollectionRerankingConfig(
 
   /**
    * Accessor for an instance to use for a default configuration for newly created collections:
-   * where no configuration defined: needs to be enabled, using "nvidia" rerank service
+   * where no configuration defined: needs to be enabled, using "nvidia" reranking service
    * configuration.
    */
   public static CollectionRerankingConfig configForNewCollections(
@@ -70,8 +70,8 @@ public record CollectionRerankingConfig(
   }
 
   /**
-   * Accessor for an instance to use for existing pre-rerank collections: ones without rerank field
-   * and index: needs to be disabled
+   * Accessor for an instance to use for existing pre-reranking collections: ones without reranking
+   * field and index: needs to be disabled
    */
   public static CollectionRerankingConfig configForLegacyCollections() {
     return new CollectionRerankingConfig(false, null);
@@ -85,7 +85,7 @@ public record CollectionRerankingConfig(
     return new CollectionRerankingConfig(false, null);
   }
 
-  /** Read the rerank configuration from the JSON node. */
+  /** Read the reranking configuration from the JSON node. */
   public static CollectionRerankingConfig fromJson(
       JsonNode rerankingJsonNode, ObjectMapper objectMapper) {
     boolean enabled =
@@ -123,8 +123,8 @@ public record CollectionRerankingConfig(
   }
 
   /**
-   * Method for validating the rerank config passed and constructing actual configuration object to
-   * use.
+   * Method for validating the reranking config passed and constructing actual configuration object
+   * to use.
    *
    * @return Valid CollectionRerankingConfig object
    */
@@ -141,7 +141,7 @@ public record CollectionRerankingConfig(
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "'enabled' is required property for 'rerank' Object value");
     }
-    // If not enabled, clear out any rerank settings (but don't fail)
+    // If not enabled, clear out any reranking settings (but don't fail)
     if (!enabled) {
       return new CollectionRerankingConfig(enabled, null);
     }
@@ -205,7 +205,7 @@ public record CollectionRerankingConfig(
     // 1. model name is required
     if (modelName == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'modelName' is needed for rerank provider %s", provider);
+          "'modelName' is needed for reranking provider %s", provider);
     }
     // 2. model name must be supported by the provider - in the config
     rerankingProviderConfig.models().stream()
@@ -214,14 +214,14 @@ public record CollectionRerankingConfig(
         .orElseThrow(
             () ->
                 ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                    "Model name '%s' for rerank provider '%s' is not supported",
+                    "Model name '%s' for reranking provider '%s' is not supported",
                     modelName, provider));
     return modelName;
   }
 
   /**
-   * Validates user authentication for rerank models when creating a collection using the specified
-   * configurations.
+   * Validates user authentication for reranking models when creating a collection using the
+   * specified configurations.
    *
    * <ol>
    *   <li>Validate that all keys (member names) in the authentication stanza (e.g. providerKey) are
@@ -244,8 +244,8 @@ public record CollectionRerankingConfig(
    *       </ol>
    * </ol>
    *
-   * @param provider The rerank provider name.
-   * @param authentication The rerank authentication details.
+   * @param provider The reranking provider name.
+   * @param authentication The reranking authentication details.
    * @throws JsonApiException If the user authentication is invalid.
    */
   private static Map<String, String> validateAuthentication(

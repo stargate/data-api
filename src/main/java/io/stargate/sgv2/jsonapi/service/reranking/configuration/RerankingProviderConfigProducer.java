@@ -61,7 +61,7 @@ public class RerankingProviderConfigProducer {
     // traverse ProviderConfig in Grpc response
     for (Map.Entry<String, EmbeddingGateway.GetSupportedRerankingProvidersResponse.ProviderConfig>
         entry : grpcResponse.getSupportedProvidersMap().entrySet()) {
-      // create each rerank provider
+      // create each reranking provider
       providerMap.put(entry.getKey(), createRerankingProviderImpl(entry.getValue()));
     }
     return new RerankingProvidersConfigImpl(providerMap);

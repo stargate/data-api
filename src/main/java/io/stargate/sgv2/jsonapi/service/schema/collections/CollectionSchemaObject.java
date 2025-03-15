@@ -66,7 +66,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       VectorConfig vectorConfig,
       CollectionIndexingConfig indexingConfig,
       CollectionLexicalConfig lexicalConfig,
-      CollectionRerankingConfig rerankConfig) {
+      CollectionRerankingConfig rerankingConfig) {
     this(
         new SchemaObjectName(keypaceName, name),
         tableMetadata,
@@ -74,7 +74,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         vectorConfig,
         indexingConfig,
         lexicalConfig,
-        rerankConfig);
+        rerankingConfig);
   }
 
   public CollectionSchemaObject(
@@ -84,7 +84,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       VectorConfig vectorConfig,
       CollectionIndexingConfig indexingConfig,
       CollectionLexicalConfig lexicalConfig,
-      CollectionRerankingConfig rerankConfig) {
+      CollectionRerankingConfig rerankingConfig) {
     super(TYPE, name, tableMetadata);
 
     this.idConfig = idConfig;
@@ -92,7 +92,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     this.indexingConfig = indexingConfig;
     this.tableMetadata = tableMetadata;
     this.lexicalConfig = Objects.requireNonNull(lexicalConfig);
-    this.rerankConfig = Objects.requireNonNull(rerankConfig);
+    this.rerankConfig = Objects.requireNonNull(rerankingConfig);
   }
 
   // TODO: remove this, it is just here for testing and can be handled by creating test data

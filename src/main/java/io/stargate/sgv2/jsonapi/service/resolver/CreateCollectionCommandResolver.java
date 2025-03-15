@@ -174,7 +174,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       CreateCollectionCommand.Options.VectorSearchConfig vector,
       CreateCollectionCommand.Options.IdConfig idConfig,
       CollectionLexicalConfig lexicalConfig,
-      CollectionRerankingConfig rerankConfig) {
+      CollectionRerankingConfig rerankingConfig) {
     final ObjectNode collectionNode = objectMapper.createObjectNode();
     ObjectNode optionsNode = objectMapper.createObjectNode(); // For storing collection options.
 
@@ -198,7 +198,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     optionsNode.putPOJO(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY, lexicalConfig);
 
     // Store Rerank Config as-is:
-    optionsNode.putPOJO(TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY, rerankConfig);
+    optionsNode.putPOJO(TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY, rerankingConfig);
 
     collectionNode.put(TableCommentConstants.COLLECTION_NAME_KEY, commandName);
     collectionNode.put(
