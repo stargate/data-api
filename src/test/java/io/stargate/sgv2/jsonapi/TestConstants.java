@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankingConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import java.util.List;
@@ -44,9 +44,9 @@ public final class TestConstants {
           // Use configs that by default enable lexical:
           CollectionLexicalConfig.configForNewCollections(),
           // Use default rerank config - hardcode the value to avoid reading config
-          new CollectionRerankConfig(
+          new CollectionRerankingConfig(
               true,
-              new CollectionRerankConfig.RerankingProviderConfig(
+              new CollectionRerankingConfig.RerankingProviderConfig(
                   "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null)));
 
   // Schema object for testing with legacy (pre-lexical-config) defaults
@@ -58,7 +58,7 @@ public final class TestConstants {
           VectorConfig.NOT_ENABLED_CONFIG,
           null,
           CollectionLexicalConfig.configForLegacyCollections(),
-          CollectionRerankConfig.configForLegacyCollections());
+          CollectionRerankingConfig.configForLegacyCollections());
 
   public static final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT =
       new CollectionSchemaObject(
@@ -75,7 +75,7 @@ public final class TestConstants {
                       null))),
           null,
           CollectionLexicalConfig.configForLegacyCollections(),
-          CollectionRerankConfig.configForLegacyCollections());
+          CollectionRerankingConfig.configForLegacyCollections());
 
   public static final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =
       KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);

@@ -13,7 +13,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /** Validated configuration Object for Reranking configuration for Collections. */
-public record CollectionRerankConfig(
+public record CollectionRerankingConfig(
     boolean enabled,
     @JsonInclude(JsonInclude.Include.NON_NULL) @JsonProperty("service")
         RerankingProviderConfig rerankingProviderConfig) {
@@ -25,7 +25,7 @@ public record CollectionRerankConfig(
       Map<String, String> authentication,
       Map<String, Object> parameters) {}
 
-  public CollectionRerankConfig(
+  public CollectionRerankingConfig(
       boolean enabled,
       String provider,
       String modelName,
@@ -44,7 +44,7 @@ public record CollectionRerankConfig(
    * where no configuration defined: needs to be enabled, using "nvidia" rerank service
    * configuration.
    */
-  public static CollectionRerankConfig configForNewCollections(
+  public static CollectionRerankingConfig configForNewCollections(
       RerankingProvidersConfig rerankingProvidersConfig) {
     // get the default provider from the config
     var defaultProvider =
@@ -52,7 +52,7 @@ public record CollectionRerankConfig(
             .filter(entry -> entry.getValue().isDefault())
             .findFirst();
     if (defaultProvider.isEmpty()) {
-      return new CollectionRerankConfig(false, null);
+      return new CollectionRerankingConfig(false, null);
     }
     var provider = defaultProvider.get().getKey();
     var modelName =
@@ -66,33 +66,33 @@ public record CollectionRerankConfig(
     // need to change
     var defaultRerankingService = new RerankingProviderConfig(provider, modelName, null, null);
 
-    return new CollectionRerankConfig(true, defaultRerankingService);
+    return new CollectionRerankingConfig(true, defaultRerankingService);
   }
 
   /**
    * Accessor for an instance to use for existing pre-rerank collections: ones without rerank field
    * and index: needs to be disabled
    */
-  public static CollectionRerankConfig configForLegacyCollections() {
-    return new CollectionRerankConfig(false, null);
+  public static CollectionRerankingConfig configForLegacyCollections() {
+    return new CollectionRerankingConfig(false, null);
   }
 
   /**
    * Accessor for an instance to use for missing collection: cases where definition does not exist:
    * needs to be disabled.
    */
-  public static CollectionRerankConfig configForMissingCollection() {
-    return new CollectionRerankConfig(false, null);
+  public static CollectionRerankingConfig configForMissingCollection() {
+    return new CollectionRerankingConfig(false, null);
   }
 
   /** Read the rerank configuration from the JSON node. */
-  public static CollectionRerankConfig fromJson(
+  public static CollectionRerankingConfig fromJson(
       JsonNode rerankingJsonNode, ObjectMapper objectMapper) {
     boolean enabled =
         rerankingJsonNode.path(RerankingConstants.RerankingColumn.ENABLED).asBoolean(false);
 
     if (!enabled) {
-      return new CollectionRerankConfig(enabled, null);
+      return new CollectionRerankingConfig(enabled, null);
     }
 
     JsonNode rerankingServiceNode =
@@ -119,16 +119,16 @@ public record CollectionRerankConfig(
     Map<String, Object> paramsMap =
         paramsNode == null ? null : objectMapper.convertValue(paramsNode, Map.class);
 
-    return new CollectionRerankConfig(enabled, provider, modelName, authMap, paramsMap);
+    return new CollectionRerankingConfig(enabled, provider, modelName, authMap, paramsMap);
   }
 
   /**
    * Method for validating the rerank config passed and constructing actual configuration object to
    * use.
    *
-   * @return Valid CollectionRerankConfig object
+   * @return Valid CollectionRerankingConfig object
    */
-  public static CollectionRerankConfig validateAndConstruct(
+  public static CollectionRerankingConfig validateAndConstruct(
       CreateCollectionCommand.Options.RerankingConfigDefinition rerankConfig,
       RerankingProvidersConfig rerankingProvidersConfig) {
     // If not defined, use default for new collections; valid option
@@ -143,7 +143,7 @@ public record CollectionRerankConfig(
     }
     // If not enabled, clear out any rerank settings (but don't fail)
     if (!enabled) {
-      return new CollectionRerankConfig(enabled, null);
+      return new CollectionRerankingConfig(enabled, null);
     }
 
     // If enabled, but no service config, use default
@@ -166,7 +166,7 @@ public record CollectionRerankConfig(
 
     // TODO(Hazel): No need to validate the parameters, add back when it's needed
 
-    return new CollectionRerankConfig(enabled, provider, modelName, authentication, parameters);
+    return new CollectionRerankingConfig(enabled, provider, modelName, authentication, parameters);
   }
 
   /**

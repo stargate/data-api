@@ -45,14 +45,14 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           VectorConfig.NOT_ENABLED_CONFIG,
           null,
           CollectionLexicalConfig.configForMissingCollection(),
-          CollectionRerankConfig.configForMissingCollection());
+          CollectionRerankingConfig.configForMissingCollection());
 
   private final IdConfig idConfig;
   private final VectorConfig vectorConfig;
   private final CollectionIndexingConfig indexingConfig;
   private final TableMetadata tableMetadata;
   private final CollectionLexicalConfig lexicalConfig;
-  private final CollectionRerankConfig rerankConfig;
+  private final CollectionRerankingConfig rerankConfig;
 
   /**
    * @param vectorConfig
@@ -66,7 +66,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       VectorConfig vectorConfig,
       CollectionIndexingConfig indexingConfig,
       CollectionLexicalConfig lexicalConfig,
-      CollectionRerankConfig rerankConfig) {
+      CollectionRerankingConfig rerankConfig) {
     this(
         new SchemaObjectName(keypaceName, name),
         tableMetadata,
@@ -84,7 +84,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       VectorConfig vectorConfig,
       CollectionIndexingConfig indexingConfig,
       CollectionLexicalConfig lexicalConfig,
-      CollectionRerankConfig rerankConfig) {
+      CollectionRerankingConfig rerankConfig) {
     super(TYPE, name, tableMetadata);
 
     this.idConfig = idConfig;
@@ -263,7 +263,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       // If no "comment", must assume Legacy (no Lexical) config
       CollectionLexicalConfig lexicalConfig = CollectionLexicalConfig.configForLegacyCollections();
       // If no "comment", must assume Legacy (no Rerank) config
-      CollectionRerankConfig rerankConfig = CollectionRerankConfig.configForLegacyCollections();
+      CollectionRerankingConfig rerankConfig =
+          CollectionRerankingConfig.configForLegacyCollections();
       if (vectorEnabled) {
         return new CollectionSchemaObject(
             keyspaceName,
@@ -394,7 +395,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             lexicalConfig.enabled(), lexicalConfig.analyzerDefinition());
 
     // construct the CreateCollectionCommand.options.rerankConfig
-    CollectionRerankConfig rerankConfig = collectionSetting.rerankConfig;
+    CollectionRerankingConfig rerankConfig = collectionSetting.rerankConfig;
     CreateCollectionCommand.Options.RerankingServiceConfig rerankingServiceConfig = null;
     if (rerankConfig.enabled()) {
       rerankingServiceConfig =

@@ -19,7 +19,7 @@ import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvide
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankingConfig;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -72,8 +72,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     if (options == null) {
       final CollectionLexicalConfig lexicalConfig =
           CollectionLexicalConfig.configForNewCollections();
-      final CollectionRerankConfig rerankConfig =
-          CollectionRerankConfig.configForNewCollections(rerankingProvidersConfig);
+      final CollectionRerankingConfig rerankConfig =
+          CollectionRerankingConfig.configForNewCollections(rerankingProvidersConfig);
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
           dbLimitsConfig,
@@ -94,8 +94,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     CreateCollectionCommand.Options.VectorSearchConfig vector = options.vector();
     final CollectionLexicalConfig lexicalConfig =
         CollectionLexicalConfig.validateAndConstruct(objectMapper, options.lexical());
-    final CollectionRerankConfig rerankConfig =
-        CollectionRerankConfig.validateAndConstruct(options.rerank(), rerankingProvidersConfig);
+    final CollectionRerankingConfig rerankConfig =
+        CollectionRerankingConfig.validateAndConstruct(options.rerank(), rerankingProvidersConfig);
 
     boolean indexingDenyAll = false;
     // handling indexing options
@@ -174,7 +174,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       CreateCollectionCommand.Options.VectorSearchConfig vector,
       CreateCollectionCommand.Options.IdConfig idConfig,
       CollectionLexicalConfig lexicalConfig,
-      CollectionRerankConfig rerankConfig) {
+      CollectionRerankingConfig rerankConfig) {
     final ObjectNode collectionNode = objectMapper.createObjectNode();
     ObjectNode optionsNode = objectMapper.createObjectNode(); // For storing collection options.
 
