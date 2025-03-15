@@ -270,16 +270,12 @@ public abstract class StargateTestResource
   }
 
   public static boolean isDse() {
-    String dse =
-        System.getProperty(
-            "testing.containers.cluster-dse", StargateTestResource.Defaults.CLUSTER_DSE);
+    String dse = System.getProperty("testing.containers.cluster-dse", null);
     return "true".equals(dse);
   }
 
   public static boolean isHcd() {
-    String dse =
-        System.getProperty(
-            "testing.containers.cluster-hcd", StargateTestResource.Defaults.CLUSTER_HCD);
+    String dse = System.getProperty("testing.containers.cluster-hcd", null);
     return "true".equals(dse);
   }
 
@@ -316,8 +312,7 @@ public abstract class StargateTestResource
       HttpResponse<String> response =
           HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
       ObjectMapper objectMapper = new ObjectMapper();
-      AuthResponse authResponse =
-          (AuthResponse) objectMapper.readValue((String) response.body(), AuthResponse.class);
+      AuthResponse authResponse = objectMapper.readValue(response.body(), AuthResponse.class);
       return authResponse.authToken;
     } catch (Exception var9) {
       throw new RuntimeException("Failed to get Cassandra token for integration tests.", var9);
@@ -334,29 +329,5 @@ public abstract class StargateTestResource
 
   public abstract Long getMaxDocumentSortCount();
 
-  interface Defaults {
-    String CASSANDRA_IMAGE = "cassandra";
-    String CASSANDRA_IMAGE_TAG = "4.0.10";
-    String STARGATE_IMAGE = "stargateio/coordinator-4_0";
-    String STARGATE_IMAGE_TAG = "v2.1";
-    String CLUSTER_NAME = "int-test-cluster";
-    String PERSISTENCE_MODULE = "persistence-cassandra-4.0";
-    String CLUSTER_DSE = null;
-
-    String CLUSTER_HCD = null;
-
-    String CQL_HOST = "stargate";
-    long CASSANDRA_STARTUP_TIMEOUT = 2L;
-    long COORDINATOR_STARTUP_TIMEOUT = 3L;
-  }
-
-  static record AuthResponse(String authToken) {
-    AuthResponse(String authToken) {
-      this.authToken = authToken;
-    }
-
-    public String authToken() {
-      return this.authToken;
-    }
-  }
+  record AuthResponse(String authToken) {}
 }
