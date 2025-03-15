@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Mock a test rerank provider that returns ranks based on query and passages */
+/** Mock a test reranking provider that returns ranks based on query and passages */
 public class TestRerankingProvider extends RerankingProvider {
 
   protected TestRerankingProvider(

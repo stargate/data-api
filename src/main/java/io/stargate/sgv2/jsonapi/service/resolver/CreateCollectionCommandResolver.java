@@ -72,7 +72,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     if (options == null) {
       final CollectionLexicalConfig lexicalConfig =
           CollectionLexicalConfig.configForNewCollections();
-      final CollectionRerankingConfig rerankConfig =
+      final CollectionRerankingConfig rerankingConfig =
           CollectionRerankingConfig.configForNewCollections(rerankingProvidersConfig);
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
@@ -81,12 +81,12 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           cqlSessionCache,
           name,
           generateComment(
-              objectMapper, false, false, name, null, null, null, lexicalConfig, rerankConfig),
+              objectMapper, false, false, name, null, null, null, lexicalConfig, rerankingConfig),
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
           false,
           lexicalConfig,
-          rerankConfig); // Since the options is null
+          rerankingConfig); // Since the options is null
     }
 
     boolean hasIndexing = options.indexing() != null;
@@ -197,7 +197,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     // Store Lexical Config as-is:
     optionsNode.putPOJO(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY, lexicalConfig);
 
-    // Store Rerank Config as-is:
+    // Store Reranking Config as-is:
     optionsNode.putPOJO(TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY, rerankingConfig);
 
     collectionNode.put(TableCommentConstants.COLLECTION_NAME_KEY, commandName);

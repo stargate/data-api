@@ -129,14 +129,14 @@ public record CollectionRerankingConfig(
    * @return Valid CollectionRerankingConfig object
    */
   public static CollectionRerankingConfig validateAndConstruct(
-      CreateCollectionCommand.Options.RerankingConfigDefinition rerankConfig,
+      CreateCollectionCommand.Options.RerankingConfigDefinition rerankingConfig,
       RerankingProvidersConfig rerankingProvidersConfig) {
     // If not defined, use default for new collections; valid option
-    if (rerankConfig == null) {
+    if (rerankingConfig == null) {
       return configForNewCollections(rerankingProvidersConfig);
     }
     // Otherwise validate and construct
-    Boolean enabled = rerankConfig.enabled();
+    Boolean enabled = rerankingConfig.enabled();
     if (enabled == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "'enabled' is required property for 'rerank' Object value");
@@ -147,15 +147,15 @@ public record CollectionRerankingConfig(
     }
 
     // If enabled, but no service config, use default
-    var rerankingServiceConfig = rerankConfig.rerankingServiceConfig();
+    var rerankingServiceConfig = rerankingConfig.rerankingServiceConfig();
     if (rerankingServiceConfig == null) {
       return configForNewCollections(rerankingProvidersConfig);
     }
 
-    String provider = rerankConfig.rerankingServiceConfig().provider();
-    String modelName = rerankConfig.rerankingServiceConfig().modelName();
-    Map<String, String> authentication = rerankConfig.rerankingServiceConfig().authentication();
-    Map<String, Object> parameters = rerankConfig.rerankingServiceConfig().parameters();
+    String provider = rerankingConfig.rerankingServiceConfig().provider();
+    String modelName = rerankingConfig.rerankingServiceConfig().modelName();
+    Map<String, String> authentication = rerankingConfig.rerankingServiceConfig().authentication();
+    Map<String, Object> parameters = rerankingConfig.rerankingServiceConfig().parameters();
 
     RerankingProvidersConfig.RerankingProviderConfig providerConfig =
         getAndValidateProviderConfig(provider, rerankingProvidersConfig);

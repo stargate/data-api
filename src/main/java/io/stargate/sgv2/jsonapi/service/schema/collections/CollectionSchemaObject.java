@@ -52,7 +52,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   private final CollectionIndexingConfig indexingConfig;
   private final TableMetadata tableMetadata;
   private final CollectionLexicalConfig lexicalConfig;
-  private final CollectionRerankingConfig rerankConfig;
+  private final CollectionRerankingConfig rerankingConfig;
 
   /**
    * @param vectorConfig
@@ -92,7 +92,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     this.indexingConfig = indexingConfig;
     this.tableMetadata = tableMetadata;
     this.lexicalConfig = Objects.requireNonNull(lexicalConfig);
-    this.rerankConfig = Objects.requireNonNull(rerankingConfig);
+    this.rerankingConfig = Objects.requireNonNull(rerankingConfig);
   }
 
   // TODO: remove this, it is just here for testing and can be handled by creating test data
@@ -105,7 +105,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         vectorConfig,
         indexingConfig,
         lexicalConfig,
-        rerankConfig);
+        rerankingConfig);
   }
 
   @Override
@@ -262,8 +262,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     if (comment == null || comment.isBlank()) {
       // If no "comment", must assume Legacy (no Lexical) config
       CollectionLexicalConfig lexicalConfig = CollectionLexicalConfig.configForLegacyCollections();
-      // If no "comment", must assume Legacy (no Rerank) config
-      CollectionRerankingConfig rerankConfig =
+      // If no "comment", must assume Legacy (no Reranking) config
+      CollectionRerankingConfig rerankingConfig =
           CollectionRerankingConfig.configForLegacyCollections();
       if (vectorEnabled) {
         return new CollectionSchemaObject(
@@ -281,7 +281,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
                         null))),
             null,
             lexicalConfig,
-            rerankConfig);
+            rerankingConfig);
       } else {
         return new CollectionSchemaObject(
             keyspaceName,
@@ -291,7 +291,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
             lexicalConfig,
-            rerankConfig);
+            rerankingConfig);
       }
     } else {
       JsonNode commentConfigNode;
@@ -394,20 +394,20 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         new CreateCollectionCommand.Options.LexicalConfigDefinition(
             lexicalConfig.enabled(), lexicalConfig.analyzerDefinition());
 
-    // construct the CreateCollectionCommand.options.rerankConfig
-    CollectionRerankingConfig rerankConfig = collectionSetting.rerankConfig;
+    // construct the CreateCollectionCommand.options.rerankingConfig
+    CollectionRerankingConfig rerankingConfig = collectionSetting.rerankingConfig;
     CreateCollectionCommand.Options.RerankingServiceConfig rerankingServiceConfig = null;
-    if (rerankConfig.enabled()) {
+    if (rerankingConfig.enabled()) {
       rerankingServiceConfig =
           new CreateCollectionCommand.Options.RerankingServiceConfig(
-              rerankConfig.rerankingProviderConfig().provider(),
-              rerankConfig.rerankingProviderConfig().modelName(),
-              rerankConfig.rerankingProviderConfig().authentication(),
-              rerankConfig.rerankingProviderConfig().parameters());
+              rerankingConfig.rerankingProviderConfig().provider(),
+              rerankingConfig.rerankingProviderConfig().modelName(),
+              rerankingConfig.rerankingProviderConfig().authentication(),
+              rerankingConfig.rerankingProviderConfig().parameters());
     }
     var rerankDef =
         new CreateCollectionCommand.Options.RerankingConfigDefinition(
-            rerankConfig.enabled(), rerankingServiceConfig);
+            rerankingConfig.enabled(), rerankingServiceConfig);
 
     options =
         new CreateCollectionCommand.Options(
@@ -457,7 +457,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         && Objects.equals(this.vectorConfig, that.vectorConfig)
         && Objects.equals(this.indexingConfig, that.indexingConfig)
         && Objects.equals(this.lexicalConfig, that.lexicalConfig)
-        && Objects.equals(this.rerankConfig, that.rerankConfig);
+        && Objects.equals(this.rerankingConfig, that.rerankingConfig);
   }
 
   @Override
@@ -483,8 +483,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         + "lexicalConfig="
         + lexicalConfig
         + ", "
-        + "rerankConfig="
-        + rerankConfig
+        + "rerankingConfig="
+        + rerankingConfig
         + ']';
   }
 }

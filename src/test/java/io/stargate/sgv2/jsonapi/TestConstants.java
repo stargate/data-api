@@ -43,7 +43,7 @@ public final class TestConstants {
           null,
           // Use configs that by default enable lexical:
           CollectionLexicalConfig.configForNewCollections(),
-          // Use default rerank config - hardcode the value to avoid reading config
+          // Use default reranking config - hardcode the value to avoid reading config
           new CollectionRerankingConfig(
               true,
               new CollectionRerankingConfig.RerankingProviderConfig(

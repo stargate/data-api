@@ -22,7 +22,7 @@ public class RerankingProviderTest {
 
   @Test
   void microBatchingTest() {
-    // mock a test rerank provider with maxBatchSize configured to 10
+    // mock a test reranking provider with maxBatchSize configured to 10
     TestRerankingProvider mockRerankingProvider = new TestRerankingProvider(10);
 
     // mock query string

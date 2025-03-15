@@ -286,7 +286,7 @@ public class CreateCollectionWithRerankingIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: 'modelName' is needed for rerank provider nvidia"));
+                  "The provided options are invalid: 'modelName' is needed for reranking provider nvidia"));
     }
   }
 
