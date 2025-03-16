@@ -252,7 +252,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
         return this;
       }
 
-
       public CommandContext<SchemaT> build() {
         // embeddingProvider may be null, e.g. a keyspace command this will change when we pass in
         // all the providers
@@ -268,7 +267,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
             cqlSessionCache,
             commandConfig,
             embeddingProviderFactory);
-
       }
     }
   }

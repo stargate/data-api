@@ -117,7 +117,6 @@ public class CommandConfig {
     return configClass.getSimpleName() + "{" + properties + "}";
   }
 
-
   /** If the value is from our stargate package, then it is some sort of sub object to iterate. */
   private static String valueToString(Object value) {
     if (value.getClass().getPackageName().startsWith("io.stargate")) {
