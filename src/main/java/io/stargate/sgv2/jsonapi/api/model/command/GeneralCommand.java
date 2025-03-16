@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = FindEmbeddingProvidersCommand.class),
+  @JsonSubTypes.Type(value = FindRerankingProvidersCommand.class),
   @JsonSubTypes.Type(value = CreateNamespaceCommand.class),
   @JsonSubTypes.Type(value = CreateKeyspaceCommand.class),
   @JsonSubTypes.Type(value = DropNamespaceCommand.class),

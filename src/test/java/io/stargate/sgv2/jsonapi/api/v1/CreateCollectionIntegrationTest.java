@@ -633,7 +633,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: No option \"InDex\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"lexical\", \"vector\")"));
+                  "The provided options are invalid: No option \"InDex\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"lexical\", \"rerank\", \"vector\")"));
     }
 
     @Test
@@ -2070,27 +2070,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
               startsWith(
                   "Request invalid: field 'command.options.vector.sourceModel' value \"invalidName\" not valid."));
     }
-  }
-
-  private void deleteCollection(String collectionName) {
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(
-                """
-                {
-                  "deleteCollection": {
-                    "name": "%s"
-                  }
-                }
-                """
-                .formatted(collectionName))
-        .when()
-        .post(KeyspaceResource.BASE_PATH, keyspaceName)
-        .then()
-        .statusCode(200)
-        .body("$", responseIsDDLSuccess())
-        .body("status.ok", is(1));
   }
 
   @Nested

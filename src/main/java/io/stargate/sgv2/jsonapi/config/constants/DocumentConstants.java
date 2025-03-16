@@ -8,11 +8,35 @@ public interface DocumentConstants {
     /** Primary key for Documents stored; has special handling for many operations. */
     String DOC_ID = "_id";
 
+    /** Document field name to which vector data is stored. */
+    String VECTOR_EMBEDDING_FIELD = "$vector";
+
+    /** Document field name that will have text value for which vectorize method in called */
+    String VECTOR_EMBEDDING_TEXT_FIELD = "$vectorize";
+
+    /** Document field name that will have lexical (BM-25) content for analyzed text for search */
+    String LEXICAL_CONTENT_FIELD = "$lexical";
+
+    /** Document field name that will have text value for which vectorize method in called */
+    String BINARY_VECTOR_TEXT_FIELD = "$binary";
+
+    /** Field name used in projection clause to get similarity score in response. */
+    String VECTOR_FUNCTION_SIMILARITY_FIELD = "$similarity";
+
+    /**
+     * Document field used DOCUMENT_RESPONSE of a findAndRerank scores, so not actually allowed in a
+     * document .
+     */
+    String RERANK_FIELD = "$rerank";
+  }
+
+  /** Names of columns in Document-containing Tables */
+  interface Columns {
     /**
      * Atomic values are added to the array_contains field to support $eq on both atomic value and
      * array element
      */
-    String DATA_CONTAINS = "array_contains";
+    String DATA_CONTAINS_COLUMN_NAME = "array_contains";
 
     /** Text map support _id $ne and _id $nin on both atomic value and array element */
     String QUERY_TEXT_MAP_COLUMN_NAME = "query_text_values";
@@ -32,9 +56,8 @@ public interface DocumentConstants {
     /** Field name used in projection clause to get similarity score in response. */
     String VECTOR_FUNCTION_SIMILARITY_FIELD = "$similarity";
 
-    /** Document field used DOCUMENT_RESPONSE of a findAndRerank scores, so not actually allowed in a document  . */
-    String RERANK_FIELD = "$rerank";
-    ;
+    /** Physical table column name that stores the lexical content. */
+    String LEXICAL_INDEX_COLUMN_NAME = "query_lexical_value";
   }
 
   interface KeyTypeId {

@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFac
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankingConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import java.util.List;
@@ -54,7 +55,12 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            CollectionLexicalConfig.configForLegacyCollections());
+            CollectionLexicalConfig.configForLegacyCollections(),
+            // Use default reranking config - hardcode the value to avoid reading config
+            new CollectionRerankingConfig(
+                true,
+                new CollectionRerankingConfig.RerankingProviderConfig(
+                    "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null)));
 
     VECTOR_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -70,7 +76,8 @@ public class TestConstants {
                         EmbeddingSourceModel.OTHER,
                         null))),
             null,
-            CollectionLexicalConfig.configForLegacyCollections());
+            CollectionLexicalConfig.configForLegacyCollections(),
+            CollectionRerankingConfig.configForLegacyCollections());
 
     KEYSPACE_SCHEMA_OBJECT = KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
     DATABASE_SCHEMA_OBJECT = new DatabaseSchemaObject();

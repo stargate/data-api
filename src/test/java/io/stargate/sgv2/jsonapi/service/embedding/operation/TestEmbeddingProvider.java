@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankingConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import java.util.ArrayList;
@@ -36,7 +37,8 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
                         EmbeddingSourceModel.OTHER,
                         new VectorizeDefinition("custom", "custom", null, null)))),
             null,
-            CollectionLexicalConfig.configForLegacyCollections()),
+            CollectionLexicalConfig.configForLegacyCollections(),
+            CollectionRerankingConfig.configForLegacyCollections()),
         null,
         this);
   }

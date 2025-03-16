@@ -40,7 +40,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase {
+public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegrationTestBase {
   private final ObjectMapper MAPPER = new ObjectMapper();
 
   private static final Pattern UUID_REGEX =
@@ -57,9 +57,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void shredFailureOnNullDoc() {
-      // This used to be a unit test for the InsertOneCommandResolver calld shredderFailure(), but
-      // the resolver does not throw this
-      // error any more, it is instead handed in the result.
+      // This used to be a unit test for the InsertOneCommandResolver called shredderFailure(), but
+      // the resolver does not throw this  error anymore, it is instead handed in the result.
       givenHeadersPostJsonThenOk(
               """
             {
@@ -1007,6 +1006,135 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
   @Nested
   @Order(5)
+  class InsertOneWithLexical {
+    static final String DOC_WITH_LEXICAL =
+        """
+                {
+                  "_id": "lexical1",
+                  "username": "user-lexical",
+                  "extra": 123,
+                  "$lexical": "monkeys and bananas"
+                }
+                """;
+
+    // NOTE: Relies on default settings allowing insertion of "$lexical" content
+    @Test
+    @Order(1)
+    public void insertDocWithLexicalOk() {
+      givenHeadersPostJsonThenOkNoErrors(
+                  """
+                  {
+                    "insertOne": {
+                      "document": %s
+                    }
+                  }
+                  """
+                  .formatted(DOC_WITH_LEXICAL))
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("lexical1"));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "lexical1"}
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          // NOTE: "$lexical" is not included in the response by default, ensure
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                                  {
+                                      "_id": "lexical1",
+                                      "username": "user-lexical",
+                                      "extra": 123
+                                  }
+                                  """));
+
+      // But can explicitly include: either via "include-it-all"
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "lexical1"},
+                          "projection": { "*": 1 }
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]", jsonEquals(DOC_WITH_LEXICAL));
+
+      // Or just the "$lexical" field (plus always _id)
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "filter" : {"_id" : "lexical1"},
+                          "projection": {
+                            "$lexical": 1,
+                            "extra": 1
+                          }
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                                            {
+                                                "_id": "lexical1",
+                                                "extra": 123,
+                                                "$lexical": "monkeys and bananas"
+                                            }
+                                            """));
+    }
+
+    @Test
+    @Order(2)
+    public void failInsertDocWithLexicalIfNotEnabled() {
+      final String COLLECTION_WITHOUT_LEXICAL =
+          "coll_insert_no_lexical_" + RandomStringUtils.randomNumeric(16);
+      createComplexCollection(
+              """
+                      {
+                        "name": "%s",
+                        "options" : {
+                          "lexical": {
+                            "enabled": false
+                          }
+                        }
+                      }
+                      """
+              .formatted(COLLECTION_WITHOUT_LEXICAL));
+
+      givenHeadersAndJson(
+                  """
+                  {
+                    "insertOne": {
+                      "document": %s
+                    }
+                  }
+                  """
+                  .formatted(DOC_WITH_LEXICAL))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, COLLECTION_WITHOUT_LEXICAL)
+          .then()
+          .body("$", responseIsWritePartialSuccess())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
+          .body("errors[0].message", containsString("Lexical search is not enabled"));
+
+      // And finally, drop the Collection after use
+      deleteCollection(COLLECTION_WITHOUT_LEXICAL);
+    }
+  }
+
+  @Nested
+  @Order(6)
   class InsertInMixedCaseCollection {
     private static final String COLLECTION_MIXED = "MyCollection";
 
@@ -1052,7 +1180,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(6)
+  @Order(7)
   class InsertMany {
 
     @Test
@@ -1282,7 +1410,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(7)
+  @Order(8)
   class InsertManyLimitsChecking {
     @Test
     public void tryInsertTooLongNumber() {
@@ -1384,7 +1512,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(8)
+  @Order(9)
   class InsertManyFails {
     @Test
     public void orderedFailOnDups() {
@@ -1643,13 +1771,13 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   class Metrics {
     @Test
     public void checkInsertOneMetrics() {
-      InsertIntegrationTest.super.checkMetrics("InsertOneCommand");
-      InsertIntegrationTest.super.checkDriverMetricsTenantId();
+      InsertInCollectionIntegrationTest.super.checkMetrics("InsertOneCommand");
+      InsertInCollectionIntegrationTest.super.checkDriverMetricsTenantId();
     }
 
     @Test
     public void checkInsertManyMetrics() {
-      InsertIntegrationTest.super.checkMetrics("InsertManyCommand");
+      InsertInCollectionIntegrationTest.super.checkMetrics("InsertManyCommand");
     }
   }
 

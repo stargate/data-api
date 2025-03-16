@@ -68,7 +68,6 @@ public abstract class DBTask<SchemaT extends SchemaObject>
    * ALLOW FILTERING the next may have it.
    */
   public static class AsyncResultSetSupplier implements BaseTask.UniSupplier<AsyncResultSet> {
-
     protected final CommandContext<?> commandContext;
     protected final Task<?> task;
     protected final SimpleStatement statement;

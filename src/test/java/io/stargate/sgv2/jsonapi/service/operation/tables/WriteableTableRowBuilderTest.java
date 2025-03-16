@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.fixtures.*;
 import io.stargate.sgv2.jsonapi.fixtures.containers.json.*;
@@ -65,7 +64,6 @@ public class WriteableTableRowBuilderTest {
             .withEmbeddingProvider(mock(EmbeddingProvider.class))
             .withCommandName("testCommand")
             .withRequestContext(new RequestContext(Optional.of("test-tenant")))
-            .withApiFeatures(ApiFeatures.empty())
             .build();
 
     var builder =

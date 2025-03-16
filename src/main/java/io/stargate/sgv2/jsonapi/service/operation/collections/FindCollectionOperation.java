@@ -481,14 +481,14 @@ public record FindCollectionOperation(
           .select()
           .column(CollectionReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
           .similarityFunction(
-              DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+              DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME,
               commandContext().schemaObject().similarityFunction())
           .from(
               commandContext.schemaObject().name().keyspace(),
               commandContext.schemaObject().name().table())
           .where(expression)
           .limit(limit)
-          .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
+          .vsearch(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
           .build();
     } else {
       return new QueryBuilder()
@@ -499,7 +499,7 @@ public record FindCollectionOperation(
               commandContext.schemaObject().name().table())
           .where(expression)
           .limit(limit)
-          .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
+          .vsearch(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
           .build();
     }
   }

@@ -75,6 +75,8 @@ public enum ErrorCodeV1 {
 
   SHRED_BAD_DOCUMENT_VECTORIZE_TYPE("Bad $vectorize document type to shred "),
 
+  SHRED_BAD_DOCUMENT_LEXICAL_TYPE("Bad type for $lexical content to shred"),
+
   SHRED_BAD_EJSON_VALUE("Bad JSON Extension value"),
 
   SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
@@ -92,6 +94,14 @@ public enum ErrorCodeV1 {
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
+
+  RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable : "),
+  RERANKING_PROVIDER_UNEXPECTED_RESPONSE("The Reranking Provider returned an unexpected response"),
+  RERANKING_PROVIDER_CLIENT_ERROR("The Reranking Provider returned a HTTP client error"),
+  RERANKING_PROVIDER_SERVER_ERROR("The Reranking Provider returned a HTTP server error"),
+  RERANKING_PROVIDER_TIMEOUT("The Reranking Provider timed out"),
+  RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED(
+      "The reranking provider authentication key is not provided"),
 
   TOO_MANY_COLLECTIONS("Too many collections"),
 
@@ -157,6 +167,8 @@ public enum ErrorCodeV1 {
 
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
   VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
+
+  LEXICAL_NOT_ENABLED_FOR_COLLECTION("Lexical search is not enabled for the collection"),
 
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   COLLECTION_CREATION_ERROR(

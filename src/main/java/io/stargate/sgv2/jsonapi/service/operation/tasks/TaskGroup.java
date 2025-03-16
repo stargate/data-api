@@ -54,19 +54,20 @@ public class TaskGroup<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject
   }
 
   public List<TaskT> errorTasks() {
-    return stream().filter(task -> task.status() == BaseTask.TaskStatus.ERROR).toList();
+
+    return stream().filter(task -> task.status() == Task.TaskStatus.ERROR).toList();
   }
 
   public boolean allTasksCompleted() {
-    return stream().allMatch(task -> task.status() == BaseTask.TaskStatus.COMPLETED);
+    return stream().allMatch(task -> task.status() == Task.TaskStatus.COMPLETED);
   }
 
   public List<TaskT> completedTasks() {
-    return stream().filter(task -> task.status() == BaseTask.TaskStatus.COMPLETED).toList();
+    return stream().filter(task -> task.status() == Task.TaskStatus.COMPLETED).toList();
   }
 
   public List<TaskT> skippedTasks() {
-    return stream().filter(task -> task.status() == BaseTask.TaskStatus.SKIPPED).toList();
+    return stream().filter(task -> task.status() == Task.TaskStatus.SKIPPED).toList();
   }
 
   public void throwIfNotAllTerminal() {

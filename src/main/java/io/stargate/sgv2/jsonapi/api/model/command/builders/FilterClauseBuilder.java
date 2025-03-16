@@ -544,6 +544,10 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
             "filter clause path cannot be empty String");
       }
+      if (path.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)) {
+        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+            "Cannot filter on lexical content field '%s': only 'sort' clause supported", path);
+      }
       throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
           "filter clause path ('%s') cannot start with `$`", path);
     }
