@@ -255,7 +255,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
       }
 
       /**
-       * Optional {@link ApiFeatures} that can be set when running testing, normally set to {@link ApiFeatures#empty()}
+       * Optional {@link ApiFeatures} that can be set when running testing, normally set to {@link
+       * ApiFeatures#empty()}
        */
       public Builder<SchemaT> withApiFeatures(ApiFeatures apiFeatures) {
         this.apiFeatures = apiFeatures;
