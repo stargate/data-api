@@ -135,6 +135,7 @@ public interface Task<SchemaT extends SchemaObject>
    */
   Task<SchemaT> maybeAddFailure(Throwable runtimeException);
 
+
   /**
    * The <b>first</b> error that happened when trying to process the task.
    *

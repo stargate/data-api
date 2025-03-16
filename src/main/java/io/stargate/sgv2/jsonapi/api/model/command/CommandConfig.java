@@ -34,7 +34,7 @@ public class CommandConfig {
   private final ConcurrentMap<Class<?>, Object> configCache = new ConcurrentHashMap<>();
 
   // use getConfigProvider()
-  private static SmallRyeConfig _config_provider = null;
+  private SmallRyeConfig _config_provider = null;
 
   /**
    * Call to preload and log the config classes.
@@ -73,15 +73,19 @@ public class CommandConfig {
    *
    * <p>TODO: Copied from JsonAPIException , not sure why we need to do this
    */
-  private static SmallRyeConfig getConfigProvider() {
+  private SmallRyeConfig getConfigProvider() {
     // aaron - copied from JsonAPIException , not sure why we need to do this
     // TODO - cleanup how we get config, this seem unnecessary complicated
 
     if (_config_provider == null) {
-      _config_provider =
-          ApiConstants.isOffline()
-              ? new SmallRyeConfigBuilder().build()
-              : ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+      synchronized (this) {
+        if (_config_provider == null) {
+          _config_provider =
+              ApiConstants.isOffline()
+                  ? new SmallRyeConfigBuilder().build()
+                  : ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        }
+      }
     }
     return _config_provider;
   }
@@ -113,9 +117,8 @@ public class CommandConfig {
     return configClass.getSimpleName() + "{" + properties + "}";
   }
 
-  /**
-   * If the value is from our stargate package, then it is some sort of sub object to iterate it.
-   */
+
+  /** If the value is from our stargate package, then it is some sort of sub object to iterate. */
   private static String valueToString(Object value) {
     if (value.getClass().getPackageName().startsWith("io.stargate")) {
       return configMappingToString(value.getClass(), value);

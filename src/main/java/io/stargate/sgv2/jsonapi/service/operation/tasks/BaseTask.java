@@ -40,6 +40,7 @@ public abstract class BaseTask<
         ResultT>
     implements Task<SchemaT> {
 
+
   private static final Logger LOGGER = LoggerFactory.getLogger(BaseTask.class);
 
   // Keep this private, so subclasses set through setter incase we need to synchronize later

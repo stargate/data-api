@@ -68,5 +68,6 @@ public class TaskRetryPolicy implements Recordable {
   @Override
   public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
     return dataRecorder.append("maxRetries", maxRetries).append("delay", delay);
+
   }
 }

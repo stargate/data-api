@@ -6,10 +6,13 @@ import static io.stargate.sgv2.jsonapi.util.CqlPrintUtil.trimmedPositionalValues
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
+
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.service.cqldriver.AccumulatingAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
@@ -71,7 +74,6 @@ public abstract class DBTask<SchemaT extends SchemaObject>
    * ALLOW FILTERING the next may have it.
    */
   public static class AsyncResultSetSupplier implements BaseTask.UniSupplier<AsyncResultSet> {
-
     protected final CommandContext<?> commandContext;
     protected final Task<?> task;
     protected final SimpleStatement statement;

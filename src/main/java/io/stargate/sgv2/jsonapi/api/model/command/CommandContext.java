@@ -60,7 +60,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CQLSessionCache cqlSessionCache,
       CommandConfig commandConfig,
-      ApiFeatures apiFeatures,
       EmbeddingProviderFactory embeddingProviderFactory) {
 
     this.schemaObject = schemaObject;
@@ -81,6 +80,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
             : RequestTracing.NO_TRACING;
   }
 
+  /** See doc comments for {@link CommandContext} */
   public static BuilderSupplier builderSupplier() {
     return new BuilderSupplier();
   }
@@ -115,10 +115,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
               ApiFeatures.fromConfigAndRequest(
                   commandConfig.get(FeaturesConfig.class), requestContext.getHttpHeaders());
         }
-        ;
       }
     }
-    ;
     return apiFeatures;
   }
 
@@ -223,6 +221,9 @@ public class CommandContext<SchemaT extends SchemaObject> {
     /**
      * A builder for a {@link CommandContext} that is configured with for a specific request.
      *
+     * <p>Deliberately not a static inner class, so that the {@link BuilderSupplier} does not need
+     * to pass all the resources and config to the builder.
+     *
      * @param <SchemaT> The schema object type that this context is for.
      */
     public class Builder<SchemaT extends SchemaObject> {
@@ -231,7 +232,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
       private EmbeddingProvider embeddingProvider;
       private String commandName;
       private RequestContext requestContext;
-      private ApiFeatures apiFeatures;
 
       Builder(SchemaT schemaObject) {
         this.schemaObject = schemaObject;
@@ -252,17 +252,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
         return this;
       }
 
-      /**
-       * Optional to use in testing, set to {@link ApiFeatures#empty()} or another instance so the
-       * config is not read.
-       *
-       * @param apiFeatures
-       * @return
-       */
-      public Builder<SchemaT> withApiFeatures(ApiFeatures apiFeatures) {
-        this.apiFeatures = apiFeatures;
-        return this;
-      }
 
       public CommandContext<SchemaT> build() {
         // embeddingProvider may be null, e.g. a keyspace command this will change when we pass in
@@ -278,8 +267,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
             jsonProcessingMetricsReporter,
             cqlSessionCache,
             commandConfig,
-            apiFeatures,
             embeddingProviderFactory);
+
       }
     }
   }

@@ -57,8 +57,13 @@ public class IndexingProjector {
       if (!allowed.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
         allowed.add(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
       }
+      // as does "$vectorize"
       if (!allowed.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
         allowed.add(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+      }
+      // and "$lexical too
+      if (!allowed.contains(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)) {
+        allowed.add(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
       }
       return new IndexingProjector(ProjectionLayer.buildLayersForIndexing(allowed), true, false);
     }
@@ -66,10 +71,11 @@ public class IndexingProjector {
       // (special) Case 4:
       if (denied.size() == 1 && denied.contains("*")) {
         // Basically inclusion projector with nothing to include but handle for $vector and
-        // $vectorize
+        // $vectorize and $lexical
         Set<String> overrideFields = new HashSet<>();
         overrideFields.add(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
         overrideFields.add(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+        overrideFields.add(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
         return new IndexingProjector(
             ProjectionLayer.buildLayersForIndexing(overrideFields), true, true);
       }
