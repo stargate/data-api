@@ -25,8 +25,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,11 +124,13 @@ class FindAndRerankOperationBuilder {
         new TaskGroup<>(true);
     taskGroup.add(task);
 
-    var rerankAccumulator = RerankingTaskPage.accumulator(commandContext)
-        .withIncludeScores(getOrDefault(command.options(), FindAndRerankCommand.Options::includeScores, false))
-        .withIncludeSortVector(
-            getOrDefault(command.options(), FindAndRerankCommand.Options::includeSortVector, false)
-        );
+    var rerankAccumulator =
+        RerankingTaskPage.accumulator(commandContext)
+            .withIncludeScores(
+                getOrDefault(command.options(), FindAndRerankCommand.Options::includeScores, false))
+            .withIncludeSortVector(
+                getOrDefault(
+                    command.options(), FindAndRerankCommand.Options::includeSortVector, false));
 
     return new TaskGroupAndDeferrables<>(taskGroup, rerankAccumulator, deferrables);
   }
@@ -153,8 +153,10 @@ class FindAndRerankOperationBuilder {
             getOrDefault(command.options(), FindAndRerankCommand.Options::limit, 10),
             0,
             null,
-            command.options().includeScores(),      // pass through, then pull $similarity from the doc
-            command.options().includeSortVector()); // pass through, then pull from intermediate result
+            command.options().includeScores(), // pass through, then pull $similarity from the doc
+            command
+                .options()
+                .includeSortVector()); // pass through, then pull from intermediate result
 
     // The BM25 read
     // TODO: get the BM 25 sort from the findAndReRank command

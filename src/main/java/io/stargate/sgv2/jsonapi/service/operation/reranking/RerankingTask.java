@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.RERANK_FIELD;
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -12,14 +15,9 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
-
 import java.util.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.RERANK_FIELD;
-import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
 
 public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     extends BaseTask<
@@ -68,15 +66,13 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     // Find the sort vector that was used for the inner query, if any
     // For now there should only ever be one sort vector included
     for (CommandResult rawReadResult : rawReadResults) {
-      float[] candidateSortVector = (float[])rawReadResult.status().get(CommandStatus.SORT_VECTOR);
+      float[] candidateSortVector = (float[]) rawReadResult.status().get(CommandStatus.SORT_VECTOR);
       if (candidateSortVector != null) {
         if (sortVector == null) {
           sortVector = candidateSortVector;
-        }
-        else if (!Arrays.equals(sortVector, candidateSortVector)) {
+        } else if (!Arrays.equals(sortVector, candidateSortVector)) {
           throw new IllegalStateException("Multiple sort vectors found in raw read results");
-        }
-        else {
+        } else {
           sortVector = candidateSortVector;
         }
       }
@@ -123,26 +119,35 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     return sortVector;
   }
 
-  private record DeduplicationResult(int totalDocuments, List<ScoredDocument> deduplicatedDocuments) {}
+  private record DeduplicationResult(
+      int totalDocuments, List<ScoredDocument> deduplicatedDocuments) {}
 
   private DeduplicationResult deduplicateResults(List<CommandResult> rawReadResults) {
 
     // This code relies on working with collections where the documents all have _id
     // will need to change for tables and rows
     Set<JsonNode> seenDocs = new HashSet<>();
-    List<ScoredDocument> deduplicatedDocuments = new ArrayList<>(Math.divideExact(rawReadResults.size(), 2));
+    List<ScoredDocument> deduplicatedDocuments =
+        new ArrayList<>(Math.divideExact(rawReadResults.size(), 2));
     int totalCount = 0;
 
-    for (var commandResult : rawReadResults){
+    for (var commandResult : rawReadResults) {
       var multiDocResponse = (ResponseData.MultiResponseData) commandResult.data();
       totalCount += multiDocResponse.documents().size();
-      for (var doc : multiDocResponse.documents()){
-        if (!seenDocs.add(doc.get(DocumentConstants.Fields.DOC_ID))){
+      for (var doc : multiDocResponse.documents()) {
+        if (!seenDocs.add(doc.get(DocumentConstants.Fields.DOC_ID))) {
           var similarityNode = doc.get(DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD);
           if (similarityNode != null && !similarityNode.isNumber()) {
-            throw new IllegalStateException("%s document field is not a number for doc _id %s".formatted(DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD, doc.get(DocumentConstants.Fields.DOC_ID)));
+            throw new IllegalStateException(
+                "%s document field is not a number for doc _id %s"
+                    .formatted(
+                        DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD,
+                        doc.get(DocumentConstants.Fields.DOC_ID)));
           }
-          var score = similarityNode == null ? DocumentScore.empty() : DocumentScore.vectorScore(similarityNode.floatValue());
+          var score =
+              similarityNode == null
+                  ? DocumentScore.empty()
+                  : DocumentScore.vectorScore(similarityNode.floatValue());
           deduplicatedDocuments.add(new ScoredDocument(doc, score));
         }
       }
@@ -150,9 +155,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     return new DeduplicationResult(totalCount, deduplicatedDocuments);
   }
 
-  /**
-   * Calls the reranking provider to get the ranking
-   */
+  /** Calls the reranking provider to get the ranking */
   public static class RerankingResultSupplier implements UniSupplier<RerankingTaskResult> {
 
     private final List<ScoredDocument> unrankedDocs;
@@ -174,9 +177,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     }
   }
 
-  /**
-   * Merges the results of the ReRanking call with the unranked documents, and ranks them
-   */
+  /** Merges the results of the ReRanking call with the unranked documents, and ranks them */
   public static class RerankingTaskResult {
 
     private final List<ScoredDocument> rerankedDocuments;
@@ -185,10 +186,9 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       this.rerankedDocuments = rerankedDocuments;
     }
 
-    /**
-     *
-     */
-    static RerankingTaskResult create(List<ScoredDocument> unrankedDocuments, List<FakeRank> fakeRanks) {
+    /** */
+    static RerankingTaskResult create(
+        List<ScoredDocument> unrankedDocuments, List<FakeRank> fakeRanks) {
       // in a factory to avoid too much work in a ctor
 
       if (unrankedDocuments.size() != fakeRanks.size()) {
@@ -202,13 +202,15 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
         ScoredDocument unrankedDoc;
         try {
           unrankedDoc = unrankedDocuments.get(fakeRank.index());
-        }
-        catch (IndexOutOfBoundsException e){
-          throw new IllegalArgumentException("fakeRank index %s out of bounds for unrankedDocuments.size()=%s".formatted(fakeRank.index(), unrankedDocuments.size()));
+        } catch (IndexOutOfBoundsException e) {
+          throw new IllegalArgumentException(
+              "fakeRank index %s out of bounds for unrankedDocuments.size()=%s"
+                  .formatted(fakeRank.index(), unrankedDocuments.size()));
         }
 
         // merge the scores, this will keep the vector score if there was one
-        rerankedDocuments.add(new ScoredDocument(unrankedDoc.document(), unrankedDoc.score().merge(rerankScore)));
+        rerankedDocuments.add(
+            new ScoredDocument(unrankedDoc.document(), unrankedDoc.score().merge(rerankScore)));
       }
       rerankedDocuments.sort(Comparator.naturalOrder());
       return new RerankingTaskResult(List.copyOf(rerankedDocuments));
@@ -219,17 +221,14 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     }
   }
 
-  record FakeRank(int index, float rank){}
+  record FakeRank(int index, float rank) {}
 
   public record DocumentScore(
-      @JsonIgnore
-      boolean hasRerank,
-      @JsonProperty(RERANK_FIELD)
-      float rerank,
-      @JsonIgnore
-      boolean hasVector,
-      @JsonProperty(VECTOR_EMBEDDING_FIELD)
-      float vector) implements Comparable<DocumentScore>{
+      @JsonIgnore boolean hasRerank,
+      @JsonProperty(RERANK_FIELD) float rerank,
+      @JsonIgnore boolean hasVector,
+      @JsonProperty(VECTOR_EMBEDDING_FIELD) float vector)
+      implements Comparable<DocumentScore> {
     private static final DocumentScore EMPTY = new DocumentScore(false, 0, false, 0);
 
     static DocumentScore empty() {
@@ -244,36 +243,42 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       return new DocumentScore(true, rerank, false, 0);
     }
 
-    DocumentScore merge (DocumentScore other) {
+    DocumentScore merge(DocumentScore other) {
       if (hasRerank && other.hasRerank) {
         throw new IllegalArgumentException("Cannot merge two rerank scores");
       }
       if (hasVector && other.hasVector) {
         throw new IllegalArgumentException("Cannot merge two vector scores");
       }
-      return new DocumentScore(hasRerank || other.hasRerank,  hasRerank ? rerank : other.rerank, hasVector || other.hasVector, hasVector ? vector :  other.vector);
+      return new DocumentScore(
+          hasRerank || other.hasRerank,
+          hasRerank ? rerank : other.rerank,
+          hasVector || other.hasVector,
+          hasVector ? vector : other.vector);
     }
 
     /**
      * Sorts based on the rerank score, other scores are ignored.
-     * <p>
-     * NOTE: this sorts in descending order, larger scores are better
+     *
+     * <p>NOTE: this sorts in descending order, larger scores are better
      */
     @Override
     public int compareTo(DocumentScore o) {
       if (!hasRerank && !o.hasRerank) {
-        throw new IllegalStateException("Attempt to compare two DocumentScores where one does not have a rerank score");
+        throw new IllegalStateException(
+            "Attempt to compare two DocumentScores where one does not have a rerank score");
       }
       return Float.compare(rerank, o.rerank) * -1;
     }
-  };
+  }
+  ;
 
-
-  public record ScoredDocument(JsonNode document, DocumentScore score) implements Comparable<ScoredDocument> {
+  public record ScoredDocument(JsonNode document, DocumentScore score)
+      implements Comparable<ScoredDocument> {
     @Override
     public int compareTo(ScoredDocument o) {
       return score.compareTo(o.score);
     }
-  };
-
+  }
+  ;
 }

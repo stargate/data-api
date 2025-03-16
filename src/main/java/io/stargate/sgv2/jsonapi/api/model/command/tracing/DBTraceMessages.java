@@ -103,14 +103,19 @@ public abstract class DBTraceMessages {
     return Uni.createFrom()
         .completionStage(() -> asyncResultSet.getExecutionInfo().getQueryTraceAsync())
         .onItemOrFailure()
-        .invoke((trace, throwable) -> {
-          if (throwable == null) {
-            cqltrace(requestTracing, trace, messageTemplate, args);
-          } else {
-            // getting the trace will try up to 5 times by default, and then throw a IllegalStateException
-            maybeTrace(requestTracing, Recordable.mapSupplier( () -> Map.of("error", throwable)), "Error retrieving CQL trace");
-          }
-        });
+        .invoke(
+            (trace, throwable) -> {
+              if (throwable == null) {
+                cqltrace(requestTracing, trace, messageTemplate, args);
+              } else {
+                // getting the trace will try up to 5 times by default, and then throw a
+                // IllegalStateException
+                maybeTrace(
+                    requestTracing,
+                    Recordable.mapSupplier(() -> Map.of("error", throwable)),
+                    "Error retrieving CQL trace");
+              }
+            });
   }
 
   public static Uni<?> maybeCqlTrace(

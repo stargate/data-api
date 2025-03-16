@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.CompositeTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskPage;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -43,23 +42,26 @@ public class RerankingTaskPage<SchemaT extends TableBasedSchemaObject>
 
     // There should only be 1 rerankig task
     if (tasks.completedTasks().size() != 1) {
-      throw new IllegalStateException("Expected exactly 1 completed RerankingTask, got " + tasks.completedTasks().size());
+      throw new IllegalStateException(
+          "Expected exactly 1 completed RerankingTask, got " + tasks.completedTasks().size());
     }
     var completedTask = tasks.completedTasks().getFirst();
 
     // add any errors and warnings
     super.buildCommandResult();
 
-    if (includeSortVector){
+    if (includeSortVector) {
       // to match with the find commands, we include the status field and it may be null
       resultBuilder.addStatus(CommandStatus.SORT_VECTOR, completedTask.sortVector());
     }
 
     var rerankedDocuments = completedTask.rerankingTaskResult().rerankedDocuments();
-    List<RerankingTask.DocumentScore> scores = includeScores ? new ArrayList<>(rerankedDocuments.size()) : null;
+    List<RerankingTask.DocumentScore> scores =
+        includeScores ? new ArrayList<>(rerankedDocuments.size()) : null;
     // These should be the reranked documents in order, using regular forEach
     rerankedDocuments.stream()
-            .forEachOrdered( scoredDocument -> {
+        .forEachOrdered(
+            scoredDocument -> {
               resultBuilder.addDocument(scoredDocument.document());
               if (scores != null) {
                 scores.add(scoredDocument.score());

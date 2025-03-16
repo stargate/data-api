@@ -22,7 +22,6 @@ import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -128,6 +127,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         .append("indexingConfig", indexingConfig)
         .append("lexicalConfig", lexicalConfig);
   }
+
   /**
    * Helper to avoid cast from the interface method because there are times we need to set
    * properties on this immediately
