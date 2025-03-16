@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
@@ -66,7 +67,16 @@ public record CreateCollectionCommand(
                   "Optional configuration defining if and how to support use of '$lexical' field",
               type = SchemaType.OBJECT,
               implementation = LexicalConfigDefinition.class)
-          LexicalConfigDefinition lexical) {
+          LexicalConfigDefinition lexical,
+      @Valid
+          @JsonInclude(JsonInclude.Include.NON_NULL)
+          @Nullable
+          @Schema(
+              description =
+                  "Optional configuration defining if and how to support use of 'rerank' field",
+              type = SchemaType.OBJECT,
+              implementation = RerankingConfigDefinition.class)
+          RerankingConfigDefinition rerank) {
 
     public record IdConfig(
         @Nullable
@@ -245,16 +255,67 @@ public record CreateCollectionCommand(
             @JsonProperty("analyzer")
             JsonNode analyzerDef) {}
 
+    public record RerankingConfigDefinition(
+        @Schema(
+                description = "Whether to enable the use of reranking model (default: 'true')",
+                defaultValue = "true",
+                type = SchemaType.BOOLEAN,
+                implementation = Boolean.class,
+                required = true)
+            Boolean enabled,
+        @Schema(
+                description =
+                    "Reranking model configuration. Default is llama-3.2-nv-rerankqa-1b-v2 model from Nvidia.",
+                defaultValue =
+                    "\"service\": {\"provider\": \"nvidia\",\"modelName\": \"nvidia/llama-3.2-nv-rerankqa-1b-v2\"}",
+                implementation = RerankingServiceConfig.class)
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            @JsonProperty("service")
+            RerankingServiceConfig rerankingServiceConfig) {}
+
+    public record RerankingServiceConfig(
+        @NotNull
+            @Schema(
+                description = "Registered reranking service provider",
+                type = SchemaType.STRING,
+                implementation = String.class)
+            @JsonProperty(RerankingConstants.RerankingService.PROVIDER)
+            String provider,
+        @Schema(
+                description = "Registered reranking service model",
+                type = SchemaType.STRING,
+                implementation = String.class)
+            @JsonProperty(RerankingConstants.RerankingService.MODEL_NAME)
+            String modelName,
+        @Valid
+            @Nullable
+            @Schema(
+                description = "Authentication config for chosen reranking service",
+                type = SchemaType.OBJECT)
+            @JsonProperty(RerankingConstants.RerankingService.AUTHENTICATION)
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            Map<String, String> authentication,
+        @Nullable
+            @Schema(
+                description =
+                    "Optional parameters that match the messageTemplate provided for the reranking provider",
+                type = SchemaType.OBJECT)
+            @JsonProperty(RerankingConstants.RerankingService.PARAMETERS)
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            Map<String, Object> parameters) {}
+
     public Options(
         IdConfig idConfig,
         VectorSearchConfig vector,
         IndexingConfig indexing,
-        LexicalConfigDefinition lexical) {
+        LexicalConfigDefinition lexical,
+        RerankingConfigDefinition rerank) {
       // idConfig could be null, will resolve idType to empty string in table comment
       this.idConfig = idConfig;
       this.vector = vector;
       this.indexing = indexing;
       this.lexical = lexical;
+      this.rerank = rerank;
     }
   }
 

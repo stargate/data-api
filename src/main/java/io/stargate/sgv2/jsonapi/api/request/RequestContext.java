@@ -26,6 +26,7 @@ public class RequestContext {
   private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
   private final EmbeddingCredentials embeddingCredentials;
+  private final RerankingCredentials rerankingCredentials;
   private final HttpHeaderAccess httpHeaders;
   private final String requestId;
 
@@ -39,6 +40,7 @@ public class RequestContext {
     this.tenantId = tenantId;
     this.cassandraToken = Optional.empty();
     this.embeddingCredentials = null;
+    this.rerankingCredentials = null;
     httpHeaders = null;
     requestId = generateRequestId();
   }
@@ -49,8 +51,12 @@ public class RequestContext {
       SecurityContext securityContext,
       Instance<DataApiTenantResolver> tenantResolver,
       Instance<DataApiTokenResolver> tokenResolver,
-      Instance<EmbeddingCredentialsResolver> apiKeysResolver) {
-    this.embeddingCredentials = apiKeysResolver.get().resolveEmbeddingCredentials(routingContext);
+      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver,
+      Instance<RerankingCredentialsResolver> rerankingCredentialsResolver) {
+    this.embeddingCredentials =
+        embeddingCredentialsResolver.get().resolveEmbeddingCredentials(routingContext);
+    this.rerankingCredentials =
+        rerankingCredentialsResolver.get().resolveRerankingCredentials(routingContext);
     this.tenantId = (tenantResolver.get()).resolve(routingContext, securityContext);
     this.cassandraToken = (tokenResolver.get()).resolve(routingContext, securityContext);
     httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
@@ -75,6 +81,10 @@ public class RequestContext {
 
   public EmbeddingCredentials getEmbeddingCredentials() {
     return this.embeddingCredentials;
+  }
+
+  public RerankingCredentials getRerankingCredentials() {
+    return this.rerankingCredentials;
   }
 
   public HttpHeaderAccess getHttpHeaders() {

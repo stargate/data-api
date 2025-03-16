@@ -6,7 +6,8 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 
@@ -16,31 +17,60 @@ import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
  */
 @StaticInitSafe
 public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
-  String configPath = System.getenv("EMBEDDING_CONFIG_PATH");
+  private static final String EMBEDDING_CONFIG_ENV = "EMBEDDING_CONFIG_PATH";
+  private static final String RERANKING_CONFIG_ENV = "RERANKING_CONFIG_PATH";
+  private static final String EMBEDDING_CONFIG_RESOURCE = "embedding-providers-config.yaml";
+  private static final String RERANKING_CONFIG_RESOURCE = "reranking-providers-config.yaml";
 
   @Override
   public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
+    List<ConfigSource> configSources = new ArrayList<>();
     try {
-      // Load the YAML files from environment variable
-      if (configPath != null && !configPath.isEmpty()) {
-        File file = new File(configPath);
-        if (!file.exists()) {
-          throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-              "Config file does not exist at the path: %s", file.getCanonicalPath());
-        }
-        URL fileUrl = file.toURI().toURL();
-        YamlConfigSource configSource = new YamlConfigSource(fileUrl);
-        return Collections.singletonList(configSource);
-      }
-      // Load the YAML files from src/main/resources/
-      URL resourceURL = forClassLoader.getResource("embedding-providers-config.yaml");
-      YamlConfigSource configSource = new YamlConfigSource(resourceURL);
-      return Collections.singletonList(configSource);
+      // Add embedding config source
+      configSources.add(
+          loadConfigSource(
+              System.getenv(EMBEDDING_CONFIG_ENV), EMBEDDING_CONFIG_RESOURCE, forClassLoader));
+
+      // Add reranking config source
+      configSources.add(
+          loadConfigSource(
+              System.getenv(RERANKING_CONFIG_ENV), RERANKING_CONFIG_RESOURCE, forClassLoader));
+
+      return configSources;
     } catch (IOException e) {
       throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-          e,
-          "Failed to load embedding provider config from 'embedding-providers-config.yaml': %s",
-          e.getMessage());
+          e, "Failed to load configuration: %s", e.getMessage());
     }
+  }
+
+  /**
+   * Loads a config source from the provided environment path if it exists, otherwise falls back to
+   * the resource path.
+   *
+   * @param envPath Path from environment variable
+   * @param resourcePath Path to resource file
+   * @param classLoader ClassLoader to load resources
+   * @return The loaded YamlConfigSource
+   * @throws IOException If loading fails
+   */
+  private YamlConfigSource loadConfigSource(
+      String envPath, String resourcePath, ClassLoader classLoader) throws IOException {
+    // Try to load from environment path first
+    if (envPath != null && !envPath.isEmpty()) {
+      File file = new File(envPath);
+      if (!file.exists()) {
+        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
+            "Config file does not exist at the path: %s", file.getCanonicalPath());
+      }
+      return new YamlConfigSource(file.toURI().toURL());
+    }
+
+    // Fall back to resource path
+    URL resourceURL = classLoader.getResource(resourcePath);
+    if (resourceURL == null) {
+      throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
+          "Resource not found: %s", resourcePath);
+    }
+    return new YamlConfigSource(resourceURL);
   }
 }
