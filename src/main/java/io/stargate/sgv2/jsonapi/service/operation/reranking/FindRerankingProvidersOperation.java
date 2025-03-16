@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -40,7 +41,7 @@ public record FindRerankingProvidersOperation(RerankingProvidersConfig config)
     @Override
     public CommandResult get() {
 
-      return CommandResult.statusOnlyBuilder(false, false)
+      return CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_TRACING)
           .addStatus(CommandStatus.EXISTING_RERANKING_PROVIDERS, rerankingProviders)
           .build();
     }

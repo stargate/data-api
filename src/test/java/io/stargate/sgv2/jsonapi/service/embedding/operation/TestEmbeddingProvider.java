@@ -43,7 +43,6 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
         this);
   }
 
-
   @Override
   public Uni<Response> vectorize(
       int batchId,
