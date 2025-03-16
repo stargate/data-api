@@ -111,13 +111,15 @@ class FindAndRerankOperationBuilder {
 
     // todo: move to a builder pattern, mosty to make it eaier to manage the task position and retry
     // policy
+    int commandLimit = getOrDefault(command.options(), FindAndRerankCommand.Options::limit, 10);
     RerankingTask<CollectionSchemaObject> task =
         new RerankingTask<>(
             0,
             commandContext.schemaObject(),
             TaskRetryPolicy.NO_RETRY,
             rerankingProvider,
-            deferredCommandResults);
+            deferredCommandResults,
+            commandLimit);
 
     // there is only 1 task, but making it clear that we want sequential for this step
     TaskGroup<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject> taskGroup =

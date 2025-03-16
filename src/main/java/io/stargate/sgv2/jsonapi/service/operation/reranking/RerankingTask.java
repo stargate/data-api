@@ -27,6 +27,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
   private final Object rerankingProvider;
   private final List<DeferredCommandResult> deferredReads;
+  private final int limit;
 
   private float[] sortVector = null;
   // captured in onSuccess
@@ -37,11 +38,13 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       SchemaT schemaObject,
       TaskRetryPolicy retryPolicy,
       Object rerankingProvider,
-      List<DeferredCommandResult> deferredReads) {
+      List<DeferredCommandResult> deferredReads,
+      int limit) {
     super(position, schemaObject, retryPolicy);
 
     this.rerankingProvider = rerankingProvider;
     this.deferredReads = deferredReads;
+    this.limit = limit;
 
     setStatus(TaskStatus.READY);
   }
@@ -66,6 +69,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     // Find the sort vector that was used for the inner query, if any
     // For now there should only ever be one sort vector included
     for (CommandResult rawReadResult : rawReadResults) {
+
       float[] candidateSortVector = (float[]) rawReadResult.status().get(CommandStatus.SORT_VECTOR);
       if (candidateSortVector != null) {
         if (sortVector == null) {
@@ -86,7 +90,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
             "De-duplicated %s documents from inner reads to %s documents for reranking"
                 .formatted(dedupResult.totalDocuments(), dedupResult.deduplicatedDocuments.size()));
 
-    return new RerankingResultSupplier(dedupResult.deduplicatedDocuments());
+    return new RerankingResultSupplier(dedupResult.deduplicatedDocuments(), limit);
   }
 
   @Override
@@ -134,8 +138,10 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     for (var commandResult : rawReadResults) {
       var multiDocResponse = (ResponseData.MultiResponseData) commandResult.data();
       totalCount += multiDocResponse.documents().size();
+
       for (var doc : multiDocResponse.documents()) {
-        if (!seenDocs.add(doc.get(DocumentConstants.Fields.DOC_ID))) {
+        if (seenDocs.add(doc.get(DocumentConstants.Fields.DOC_ID))) {
+
           var similarityNode = doc.get(DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD);
           if (similarityNode != null && !similarityNode.isNumber()) {
             throw new IllegalStateException(
@@ -152,6 +158,8 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
         }
       }
     }
+
+    LOGGER.debug("deduplicateResults() - totalDocuments={}, deduplicatedDocuments.size()={}", totalCount, deduplicatedDocuments.size());
     return new DeduplicationResult(totalCount, deduplicatedDocuments);
   }
 
@@ -159,9 +167,11 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   public static class RerankingResultSupplier implements UniSupplier<RerankingTaskResult> {
 
     private final List<ScoredDocument> unrankedDocs;
+    private final int limit;
 
-    RerankingResultSupplier(List<ScoredDocument> unrankedDocs) {
+    RerankingResultSupplier(List<ScoredDocument> unrankedDocs, int limit) {
       this.unrankedDocs = unrankedDocs;
+      this.limit = limit;
     }
 
     @Override
@@ -173,12 +183,13 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       for (int i = 0; i < unrankedDocs.size(); i++) {
         fakeRanks.add(new FakeRank(i, random.nextFloat()));
       }
-      return Uni.createFrom().item(RerankingTaskResult.create(unrankedDocs, fakeRanks));
+      return Uni.createFrom().item(RerankingTaskResult.create(unrankedDocs, fakeRanks, limit));
     }
   }
 
   /** Merges the results of the ReRanking call with the unranked documents, and ranks them */
   public static class RerankingTaskResult {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RerankingTaskResult.class);
 
     private final List<ScoredDocument> rerankedDocuments;
 
@@ -188,7 +199,8 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
     /** */
     static RerankingTaskResult create(
-        List<ScoredDocument> unrankedDocuments, List<FakeRank> fakeRanks) {
+        List<ScoredDocument> unrankedDocuments, List<FakeRank> fakeRanks, int limit) {
+
       // in a factory to avoid too much work in a ctor
 
       if (unrankedDocuments.size() != fakeRanks.size()) {
@@ -213,7 +225,14 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
             new ScoredDocument(unrankedDoc.document(), unrankedDoc.score().merge(rerankScore)));
       }
       rerankedDocuments.sort(Comparator.naturalOrder());
-      return new RerankingTaskResult(List.copyOf(rerankedDocuments));
+      var truncatedDocuments = List.copyOf(rerankedDocuments).subList(0, Math.min(rerankedDocuments.size(), limit));
+      LOGGER.debug(
+          "create() - documents reranked and truncated, unrankedDocuments.size()={}, limit={}, truncatedDocuments.size()={}",
+          unrankedDocuments.size(),
+          limit,
+          truncatedDocuments.size());
+
+      return new RerankingTaskResult(truncatedDocuments);
     }
 
     public List<ScoredDocument> rerankedDocuments() {
