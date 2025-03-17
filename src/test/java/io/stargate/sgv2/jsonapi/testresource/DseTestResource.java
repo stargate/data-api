@@ -13,12 +13,15 @@ public class DseTestResource extends StargateTestResource {
     if (null == System.getProperty("testing.containers.cassandra-image")) {
       // 14-Mar-2025, tatu: Change from custom "dse-next" to the official DSE image
       //  even for IDE tests
+      // 17-Mar-2025, tatu: and then to HCD to get BM25 implementation
       System.setProperty(
           "testing.containers.cassandra-image",
           // "stargateio/dse-next:4.0.11-591d171ac9c9"
-          "datastax/dse-server:6.9.7");
-      // MUST set this to get DS_LICENSE env var set
-      System.setProperty("testing.containers.cluster-dse", "true");
+          // "datastax/dse-server:6.9.7"
+          "559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/staging/hcd:1.2.1-early-preview");
+      // MUST set one of these to get DS_LICENSE env var set
+      // System.setProperty("testing.containers.cluster-dse", "true");
+      System.setProperty("testing.containers.cluster-hcd", "true");
     }
 
     // 14-Mar-2025, tatu: We no longer run Stargate Coordinator for ITs set up removed
