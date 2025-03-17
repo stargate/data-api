@@ -231,14 +231,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                               }
                               """
               .formatted(filter, limit);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(expected));
     }
