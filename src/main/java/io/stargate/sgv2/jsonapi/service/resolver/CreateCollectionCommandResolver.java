@@ -71,7 +71,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
     if (options == null) {
       final CollectionLexicalConfig lexicalConfig =
-          CollectionLexicalConfig.configForNewCollections();
+          CollectionLexicalConfig.configForEnabledStandard();
       final CollectionRerankingConfig rerankingConfig =
           CollectionRerankingConfig.configForNewCollections(rerankingProvidersConfig);
       return CreateCollectionOperation.withoutVectorSearch(

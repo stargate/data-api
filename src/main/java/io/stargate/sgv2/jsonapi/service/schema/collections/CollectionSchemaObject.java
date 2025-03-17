@@ -44,7 +44,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           IdConfig.defaultIdConfig(),
           VectorConfig.NOT_ENABLED_CONFIG,
           null,
-          CollectionLexicalConfig.configForMissingCollection(),
+          CollectionLexicalConfig.configForDisabled(),
           CollectionRerankingConfig.configForMissingCollection());
 
   private final IdConfig idConfig;
@@ -261,7 +261,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
     if (comment == null || comment.isBlank()) {
       // If no "comment", must assume Legacy (no Lexical) config
-      CollectionLexicalConfig lexicalConfig = CollectionLexicalConfig.configForLegacyCollections();
+      CollectionLexicalConfig lexicalConfig = CollectionLexicalConfig.configForDisabled();
       // If no "comment", must assume Legacy (no Reranking) config
       CollectionRerankingConfig rerankingConfig =
           CollectionRerankingConfig.configForLegacyCollections();

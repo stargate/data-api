@@ -27,7 +27,7 @@ public class CollectionSchemaObjectTest {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             indexingConfig,
-            CollectionLexicalConfig.configForLegacyCollections(),
+            CollectionLexicalConfig.configForDisabled(),
             CollectionRerankingConfig.configForLegacyCollections());
     IndexingProjector indexingProj = settings.indexingProjector();
     assertThat(indexingProj)

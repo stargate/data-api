@@ -245,7 +245,7 @@ public class DataVectorizerTest {
                           EmbeddingSourceModel.OTHER,
                           new VectorizeDefinition("custom", "custom", null, null)))),
               null,
-              CollectionLexicalConfig.configForLegacyCollections(),
+              CollectionLexicalConfig.configForDisabled(),
               CollectionRerankingConfig.configForLegacyCollections());
       List<JsonNode> documents = new ArrayList<>();
       for (int i = 0; i < 2; i++) {
