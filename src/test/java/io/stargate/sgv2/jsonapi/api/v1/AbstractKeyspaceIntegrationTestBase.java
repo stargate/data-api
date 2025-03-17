@@ -321,7 +321,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
         useCoordinator()
             ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
             : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
-    String dc = null;
+    String dc;
     if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
       dc = "dc1";
     } else {

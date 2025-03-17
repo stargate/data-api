@@ -28,17 +28,12 @@
     <!-- 14-Mar-2025, tatu: default to DSE (was "dse-next") -->
     <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
     <stargate.int-test.cassandra.image-tag>${cassandra.version}</stargate.int-test.cassandra.image-tag>
-    <stargate.int-test.coordinator.image>stargateio/coordinator-dse-next</stargate.int-test.coordinator.image>
-    <stargate.int-test.coordinator.image-tag>v${stargate.version}</stargate.int-test.coordinator.image-tag>
     <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
-    <!-- 14-Mar-2025, tatu: what should this be? Only have "dse-next" and "dse-6.8"
-          persistence backends?
-      -->
-    <stargate.int-test.cluster.persistence>persistence-dse-next</stargate.int-test.cluster.persistence>
     <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
     <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>
     <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
-    <stargate.int-test.use-coordinator>true</stargate.int-test.use-coordinator>
+    <!-- 14-Mar-2025, tatu: no more use of Stargate Coordinator -->
+    <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
     <!-- Cassandra driver -->
     <driver.version>4.17.0</driver.version>
     <!-- Compiler -->

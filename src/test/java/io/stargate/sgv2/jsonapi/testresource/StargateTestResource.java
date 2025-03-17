@@ -165,7 +165,7 @@ public abstract class StargateTestResource
 
   private GenericContainer<?> baseCassandraContainer(boolean reuse) {
     String image = this.getCassandraImage();
-    GenericContainer<?> container = null;
+    GenericContainer<?> container;
     if (this.isDse()) {
       container =
           new GenericContainer<>(image)

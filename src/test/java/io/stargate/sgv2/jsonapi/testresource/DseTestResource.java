@@ -21,24 +21,7 @@ public class DseTestResource extends StargateTestResource {
       System.setProperty("testing.containers.cluster-dse", "true");
     }
 
-    // 14-Mar-2025, tatu: We no longer run Stargate Coordinator for ITs, left this here
-    //   for reference for now.
-    /*
-    if (null == System.getProperty("testing.containers.stargate-image")) {
-      // 07-Dec-2023, tatu: For some reason floating tag "v2.1" does not seem to work so
-      //    use specific version. Needs to be kept up to date:
-      System.setProperty(
-          "testing.containers.stargate-image", "stargateio/coordinator-dse-next:v2.1.0-BETA-23");
-    }
-
-    if (null == System.getProperty("testing.containers.cluster-persistence")) {
-      System.setProperty("testing.containers.cluster-persistence", "persistence-dse-next");
-    }
-
-    if (null == System.getProperty("testing.containers.cluster-dse")) {
-      System.setProperty("testing.containers.cluster-dse", "false");
-    }
-     */
+    // 14-Mar-2025, tatu: We no longer run Stargate Coordinator for ITs set up removed
 
     if (null == System.getProperty("cassandra.sai.max_string_term_size_kb")) {
       System.setProperty(
