@@ -89,7 +89,6 @@ public interface CollectionReadOperation extends CollectionOperation {
       boolean vectorSearch,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
-
     return Multi.createFrom()
         .items(queries.stream())
         .onItem()
@@ -143,31 +142,42 @@ public interface CollectionReadOperation extends CollectionOperation {
         .collect()
         .asList()
         .onItem()
-        .transform(
-            list -> {
-              // Merge all find responses
-              List<ReadDocument> documents = new ArrayList<>();
-              String tempPageState = null;
-              if (limit == 1) {
-                // In case of findOne limit will be 1 return one document. Need to do it to support
-                // `in` operator
-                for (FindResponse response : list) {
-                  if (!response.docs().isEmpty()) {
-                    documents.add(response.docs().get(0));
-                    break;
-                  }
-                }
-              } else {
-                // pagination is handled only when single query is run(non `in` filter), so here
-                // page state of the last query is returned
-                for (FindResponse response : list) {
-                  documents.addAll(response.docs());
-                  // picking the last page state
-                  tempPageState = response.pageState();
-                }
-              }
-              return new FindResponse(documents, tempPageState);
-            });
+        .transform(list -> applyLimitToFindResponses(list, limit));
+  }
+
+  /**
+   * A single findCommand may result as multiple cql queries in case of `$in` filter on `_id` field.
+   *
+   * <p>E.G. <code>{"find": {"filter": {"_id": {"$in": ["1", "2", "3"]}}}</code> will result as 3
+   * cql queries,
+   *
+   * <ul>
+   *   <li>SELECT key, tx_id, doc_json FROM xxx WHERE key = '1' LIMIT 2147483647
+   *   <li>SELECT key, tx_id, doc_json FROM xxx WHERE key = '2' LIMIT 2147483647
+   *   <li>SELECT key, tx_id, doc_json FROM xxx WHERE key = '3' LIMIT 2147483647
+   * </ul>
+   *
+   * and then 3 findResponse. For this case, we need to merge all the responses and then apply
+   * limit, since limit is applied to the command, so we need to do necessary trimming.
+   *
+   * <p>In terms of pageState, for above case tempPageState will be just as null, since "_id"
+   * partition key select won't have pageState.
+   *
+   * <p>For other filter conditions, there will be just one single cql query, the pageState will be
+   * set as the corresponding one. And limit has been applied to the single cql query, so the
+   * trimming here won't affect anything.
+   */
+  private FindResponse applyLimitToFindResponses(List<FindResponse> responses, int limit) {
+    List<ReadDocument> documents = new ArrayList<>();
+    String tempPageState = null;
+    for (FindResponse response : responses) {
+      documents.addAll(response.docs());
+      tempPageState = response.pageState();
+    }
+    if (documents.size() > limit) {
+      documents = documents.subList(0, limit);
+    }
+    return new FindResponse(documents, tempPageState);
   }
 
   byte true_byte = (byte) 1;
