@@ -927,6 +927,28 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     }
 
     @Test
+    void insertEmptyLists() {
+      String docJSON =
+          """
+                          { "id": "emptyLists",
+                            "stringList": [],
+                            "intList": [],
+                            "doubleList": []
+                          }
+                          """;
+      assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful()
+          .hasInsertedIds(List.of("emptyLists"));
+
+      assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"emptyLists\" } }")
+          .wasSuccessful()
+          .hasJSONField("data.document", "{\"id\": \"emptySets\"}");
+    }
+
+    @Test
     void failOnNonArrayListValue() {
       assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
           .templated()
@@ -1059,6 +1081,29 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                 "intSet": [-999, 3, 42]
                               }
                               """);
+    }
+
+    @Test
+    void insertEmptySets() {
+      String docJSON =
+          """
+                   {
+                        "id": "emptySets",
+                        "doubleSet": [],
+                        "intSet": [],
+                        "stringSet": []
+                   }
+              """;
+      assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful()
+          .hasInsertedIds(List.of("emptySets"));
+
+      assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"emptySets\" } }")
+          .wasSuccessful()
+          .hasJSONField("data.document", "{\"id\": \"emptySets\"}");
     }
 
     @Test
@@ -1270,6 +1315,61 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                             ]
                         }
                         """);
+    }
+
+    @Test
+    void insertEmptyMaps() {
+      String docJSON =
+          """
+                        { "id": "emptyMaps",
+                          "textMap": {},
+                          "asciiMap": {},
+                          "inetMap": {},
+                          "dateMap": {},
+                          "timeMap": {},
+                          "timestampMap": {},
+                          "uuidMap": {},
+                          "durationMap": {},
+                          "intMap": {},
+                          "tinyintMap": {},
+                          "varintMap": {},
+                          "floatMap": {},
+                          "bigintMap": {},
+                          "smallintMap": {},
+                          "decimalMap": {},
+                          "doubleMap": {},
+                          "booleanMap": {},
+                          "blobMap": {}
+                        }
+                      """;
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful()
+          .hasInsertedIds(List.of("emptyMaps"));
+
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"emptyMaps\" } }")
+          .wasSuccessful()
+          .hasJSONField("data.document", "{\"id\": \"emptyMaps\"}");
+
+      // Note, for inserting empty map, must use {}, can not use []
+      String invalidEmptyMap =
+          """
+                        { "id": "invalidEmptyMap",
+                          "intMap": []
+                        }
+                      """;
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(invalidEmptyMap)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `Map(INT => INT",
+              "from value.class `java.util.ArrayList`, value []",
+              "no codec matching value type");
     }
 
     @Test
