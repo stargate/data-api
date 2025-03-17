@@ -31,10 +31,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@TestProfile(CqlSessionCacheTest.TestProfile.class)
+@TestProfile(CqlSessionCacheIntegrationTest.TestProfile.class)
 // Since Quarkus 3.13, will not automatically get global test resources so need this:
 @WithTestResource(DseTestResource.class)
-public class CqlSessionCacheTest {
+// 17-Mar-2025, tatu: Renamed as "IntegrationTest" because it is not a unit test
+//  (due to needing {@link DseTestResource}), fails if run in Unit Test context
+//  of CI
+public class CqlSessionCacheIntegrationTest {
   public static class TestProfile implements QuarkusTestProfile {
     // Alas, we do need actual DB backend so cannot do:
     // public boolean disableGlobalTestResources() { return true; }

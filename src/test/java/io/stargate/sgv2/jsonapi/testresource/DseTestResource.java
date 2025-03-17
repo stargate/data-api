@@ -4,6 +4,10 @@ import com.google.common.collect.ImmutableMap;
 import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import java.util.Map;
 
+/**
+ * Test resource for Cassandra-via-Docket -backed Integration Tests. Note that "Dse" in name is not
+ * strictly accurate, but kept for backwards compatibility: may run HCD as the backend for example.
+ */
 public class DseTestResource extends StargateTestResource {
   // set default props if not set, so we launch DSE
   // this is only needed for tests run from the IDE
