@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.fixtures.testdata;
 
-import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptTestData;
-import io.stargate.sgv2.jsonapi.service.operation.ReadAttemptTestData;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTaskTestData;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.ReadDBTaskTestData;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -47,12 +47,12 @@ public class TestData {
     return getOrCache(TableMetadataTestData.class);
   }
 
-  public OperationAttemptTestData operationAttempt() {
-    return getOrCache(OperationAttemptTestData.class);
+  public BaseTaskTestData operationAttempt() {
+    return getOrCache(BaseTaskTestData.class);
   }
 
-  public ReadAttemptTestData readAttempt() {
-    return getOrCache(ReadAttemptTestData.class);
+  public ReadDBTaskTestData readAttempt() {
+    return getOrCache(ReadDBTaskTestData.class);
   }
 
   public ResultSetTestData resultSet() {
@@ -77,5 +77,9 @@ public class TestData {
 
   public TableUpdateAnalyzerTestData tableUpdateAnalyzer() {
     return getOrCache(TableUpdateAnalyzerTestData.class);
+  }
+
+  public TableUpdateOperatorTestData tableUpdateOperator() {
+    return getOrCache(TableUpdateOperatorTestData.class);
   }
 }

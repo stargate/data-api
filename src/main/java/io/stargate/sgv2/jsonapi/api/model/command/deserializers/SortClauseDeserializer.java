@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -153,7 +154,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         // this is also why we do not break the look here
         sortExpressions.add(SortExpression.tableVectorizeSort(path, inner.getValue().textValue()));
       } else {
-        validateSortClausePath(path);
+        String validatedPath = validateSortClausePath(path);
 
         if (!inner.getValue().isInt()
             || !(inner.getValue().intValue() == 1 || inner.getValue().intValue() == -1)) {
@@ -163,7 +164,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         }
 
         boolean ascending = inner.getValue().intValue() == 1;
-        SortExpression exp = SortExpression.sort(path, ascending);
+        SortExpression exp = SortExpression.sort(validatedPath, ascending);
         sortExpressions.add(exp);
       }
     }
@@ -191,7 +192,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
     return arrayVals;
   }
 
-  private void validateSortClausePath(String path) {
+  private String validateSortClausePath(String path) {
     if (!NamingRules.FIELD.apply(path)) {
       if (path.isEmpty()) {
         throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
@@ -200,5 +201,14 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
           "path ('%s') cannot start with `$`", path);
     }
+
+    try {
+      path = DocumentPath.verifyEncodedPath(path);
+    } catch (IllegalArgumentException e) {
+      throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
+          "sort clause path ('%s') is not a valid path. " + e.getMessage(), path);
+    }
+
+    return path;
   }
 }

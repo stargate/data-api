@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.keyspaces;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.SchemaChangeResult;
@@ -22,7 +22,7 @@ public record DropKeyspaceOperation(String name) implements Operation {
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     SimpleStatement deleteStatement =
         SimpleStatement.newInstance(DROP_KEYSPACE_CQL.formatted(name));
     // execute

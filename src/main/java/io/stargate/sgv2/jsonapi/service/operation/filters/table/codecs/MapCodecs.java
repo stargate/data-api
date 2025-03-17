@@ -77,10 +77,13 @@ public class MapCodecs {
           (entry.getKey() instanceof JsonLiteral<?> jsonLiteralKey)
               ? jsonLiteralKey.value()
               : entry.getKey();
+      // If the raw map key or value is JsonLiteral<>(null, JsonType.NULL);
       Object element = entry.getValue().value();
-      if (element == null) {
-        result.put(key, null);
-        continue;
+      if (key == null || element == null) {
+        throw new ToCQLCodecException(
+            null,
+            DataTypes.mapOf(keyType, elementType),
+            "null keys/values are not allowed in map column");
       }
       // In most cases same codec can be used for all elements, but we still need to check
       // since same CQL value type can have multiple codecs based on JSON value type
@@ -105,7 +108,7 @@ public class MapCodecs {
    * @param isValue true indicating that we are looking for a value codec, false indicating that we
    *     are looking for a key codec
    */
-  private static JSONCodec<Object, Object> findMapKeyOrValueCodec(
+  static JSONCodec<Object, Object> findMapKeyOrValueCodec(
       List<JSONCodec<?, ?>> codecs, DataType type, Object target, boolean isValue)
       throws ToCQLCodecException {
     for (JSONCodec<?, ?> codec : codecs) {

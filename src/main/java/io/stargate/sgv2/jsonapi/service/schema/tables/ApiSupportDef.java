@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -28,8 +29,6 @@ public interface ApiSupportDef {
    * The type can be used as component for collection
    *
    * <p>E.G. list values, set values, map keys, map values.
-   *
-   * @return <code>true</code> if the type can be used in a createTable statement.
    */
   Collection collection();
 
@@ -54,6 +53,9 @@ public interface ApiSupportDef {
    */
   boolean filter();
 
+  /** The type can be used with update operators */
+  Update update();
+
   default boolean isUnsupportedAny() {
     return isUnsupportedDDL() || isUnsupportedDML();
   }
@@ -68,9 +70,7 @@ public interface ApiSupportDef {
   }
 
   /**
-   * Record to represent if a dataType is supported as component for map/set/list
-   *
-   * <p>
+   * Record to represent if a dataType is supported as component for map/set/list.
    *
    * @param asListValue If the type can be created as value on a List.
    * @param asSetValue If the type can be created as value on a Set.
@@ -83,15 +83,45 @@ public interface ApiSupportDef {
   }
 
   /**
+   * Record to represent if a dataType is supported for update operations.
+   *
+   * @param set If the type can be used in a $set operation.
+   * @param unset If the type can be used in a $unset operation.
+   * @param push If the type can be used in a $push operation.
+   * @param pullAll If the type can be used in a $pullAll operation.
+   */
+  record Update(boolean set, boolean unset, boolean push, boolean pullAll) {
+    public static final Update PRIMITIVE = new Update(true, true, false, false);
+    public static final Update FULL = new Update(true, true, true, true);
+    public static final Update NONE = new Update(false, false, false, false);
+
+    public boolean supports(UpdateOperator updateOperator) {
+      return switch (updateOperator) {
+        case SET -> set;
+        case UNSET -> unset;
+        case PUSH -> push;
+        case PULL_ALL -> pullAll;
+        default -> false;
+      };
+    }
+  }
+
+  /**
    * Helper record to be used when the support can be determined at compile time, or easily cached.
    */
   record Support(
-      boolean createTable, Collection collection, boolean insert, boolean read, boolean filter)
+      boolean createTable,
+      Collection collection,
+      boolean insert,
+      boolean read,
+      boolean filter,
+      Update update)
       implements ApiSupportDef {
 
-    public static final Support FULL = new Support(true, Collection.FULL, true, true, true);
-
-    public static final Support NONE = new Support(false, Collection.NONE, false, false, false);
+    public static final Support FULL =
+        new Support(true, Collection.FULL, true, true, true, Update.PRIMITIVE);
+    public static final Support NONE =
+        new Support(false, Collection.NONE, false, false, false, Update.NONE);
   }
 
   /** Predicate to match for full support. */

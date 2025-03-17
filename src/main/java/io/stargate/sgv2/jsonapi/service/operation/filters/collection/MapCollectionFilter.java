@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.collection;
 
-import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DATA_CONTAINS;
-
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
@@ -90,12 +89,12 @@ public abstract class MapCollectionFilter<T> extends CollectionFilter {
     switch (operator) {
       case EQ:
         return BuiltCondition.of(
-            ConditionLHS.column(DATA_CONTAINS),
+            ConditionLHS.column(DocumentConstants.Columns.DATA_CONTAINS_COLUMN_NAME),
             BuiltConditionPredicate.CONTAINS,
             new JsonTerm(getHashValue(new DocValueHasher(), key, value)));
       case NE:
         return BuiltCondition.of(
-            ConditionLHS.column(DATA_CONTAINS),
+            ConditionLHS.column(DocumentConstants.Columns.DATA_CONTAINS_COLUMN_NAME),
             BuiltConditionPredicate.NOT_CONTAINS,
             new JsonTerm(getHashValue(new DocValueHasher(), key, value)));
       case MAP_EQUALS:

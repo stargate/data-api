@@ -9,7 +9,6 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
@@ -2136,11 +2135,10 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("$", responseIsError())
           .body(
               "errors[0].message",
-              containsString("The command used the unsupported ampersand escape path: 'price&'."))
-          .body(
-              "errors[0].errorCode",
-              is(ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.name()))
-          .body("errors[0].exceptionClass", is("ProjectionException"));
+              containsString(
+                  "Unsupported projection parameter: projection path ('price&') is not a valid path."))
+          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
@@ -2159,11 +2157,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body(
               "errors[0].message",
               containsString(
-                  "The command used the unsupported ampersand escape path: 'price&abc'."))
-          .body(
-              "errors[0].errorCode",
-              is(ProjectionException.Code.UNSUPPORTED_AMPERSAND_ESCAPE_USAGE.name()))
-          .body("errors[0].exceptionClass", is("ProjectionException"));
+                  "Unsupported projection parameter: projection path ('price&abc') is not a valid path."))
+          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
@@ -2181,11 +2177,10 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("$", responseIsError())
           .body(
               "errors[0].message",
-              containsString("The segments from the path in the projection cannot be empty."))
-          .body(
-              "errors[0].errorCode",
-              is(ProjectionException.Code.UNSUPPORTED_PROJECTION_PATH.name()))
-          .body("errors[0].exceptionClass", is("ProjectionException"));
+              containsString(
+                  "Unsupported projection parameter: projection path ('foo..bar') is not a valid path."))
+          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
   }
 

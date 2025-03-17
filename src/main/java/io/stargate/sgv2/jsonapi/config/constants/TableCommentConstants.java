@@ -14,6 +14,12 @@ public interface TableCommentConstants {
   /** Collection indexing key */
   String COLLECTION_INDEXING_KEY = "indexing";
 
+  /** Collection lexical settings configuration key */
+  String COLLECTION_LEXICAL_CONFIG_KEY = "lexical";
+
+  /** Collection rerank settings configuration key */
+  String COLLECTION_RERANKING_CONFIG_KEY = "rerank";
+
   /** Collection vector key */
   String COLLECTION_VECTOR_KEY = "vector";
 

@@ -9,9 +9,11 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import java.util.List;
 
 /**
- * schema_version 1 sample:
- * {"collection":{"name":"newVectorize","schema_version":1,"options":{"indexing":{"deny":["heh"]},"defaultId":{"type":"objectId"}},"vector":{"dimension":1024,"metric":"cosine","service":{"provider":"nvidia","modelName":"query","authentication":{"type":["HEADER"]},"parameters":{"projectId":"test
- * project"}}}}}}
+ * schema_version 1 sample: {"collection":{"name":"newVectorize","schema_version":1,
+ * "options":{"indexing":{"deny":["heh"]}, "defaultId":{"type":"objectId"}},
+ * "vector":{"dimension":1024,"metric":"cosine","service":{"provider":"nvidia","modelName":"query","authentication":{"type":["HEADER"]},
+ * "parameters":{"projectId":"test project"}}} }, "lexical":{"enabled":true,"analyzer":"standard"},
+ * "rerank":{"enabled":true,"provider":"nvidia","modelName":"nvidia/llama-3.2-nv-rerankqa-1b-v2"}, }
  */
 public class CollectionSettingsV1Reader implements CollectionSettingsReader {
   @Override
@@ -47,7 +49,34 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
       idConfig = IdConfig.defaultIdConfig();
     }
 
+    CollectionLexicalConfig lexicalConfig;
+    JsonNode lexicalNode =
+        collectionOptionsNode.path(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY);
+    if (lexicalNode == null) {
+      lexicalConfig = CollectionLexicalConfig.configForLegacyCollections();
+    } else {
+      boolean enabled = lexicalNode.path("enabled").asBoolean(false);
+      JsonNode analyzerNode = lexicalNode.path("analyzer");
+      lexicalConfig = new CollectionLexicalConfig(enabled, analyzerNode);
+    }
+
+    CollectionRerankingConfig rerankingConfig = null;
+    JsonNode rerankingNode =
+        collectionOptionsNode.path(TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY);
+    if (rerankingNode.isMissingNode()) {
+      rerankingConfig = CollectionRerankingConfig.configForLegacyCollections();
+    } else {
+      rerankingConfig = CollectionRerankingConfig.fromJson(rerankingNode, objectMapper);
+    }
+
     return new CollectionSchemaObject(
-        keyspaceName, collectionName, tableMetadata, idConfig, vectorConfig, indexingConfig);
+        keyspaceName,
+        collectionName,
+        tableMetadata,
+        idConfig,
+        vectorConfig,
+        indexingConfig,
+        lexicalConfig,
+        rerankingConfig);
   }
 }

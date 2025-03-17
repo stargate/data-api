@@ -9,7 +9,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 public class FindOneCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject FindOneCommandResolver resolver;
-  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
+  @InjectMock protected RequestContext dataApiRequestInfo;
 
   @Nested
   class Resolve {

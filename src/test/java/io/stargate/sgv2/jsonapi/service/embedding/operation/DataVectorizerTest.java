@@ -22,6 +22,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankingConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import jakarta.inject.Inject;
@@ -242,7 +244,9 @@ public class DataVectorizerTest {
                           SimilarityFunction.COSINE,
                           EmbeddingSourceModel.OTHER,
                           new VectorizeDefinition("custom", "custom", null, null)))),
-              null);
+              null,
+              CollectionLexicalConfig.configForLegacyCollections(),
+              CollectionRerankingConfig.configForLegacyCollections());
       List<JsonNode> documents = new ArrayList<>();
       for (int i = 0; i < 2; i++) {
         documents.add(objectMapper.createObjectNode().put("$vectorize", "test data"));

@@ -9,7 +9,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -26,7 +26,7 @@ public class InsertManyCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject DocumentShredder documentShredder;
   @Inject InsertManyCommandResolver resolver;
-  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
+  @InjectMock protected RequestContext dataApiRequestInfo;
 
   @Nested
   class ResolveCommand {

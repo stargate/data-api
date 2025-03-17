@@ -29,7 +29,7 @@ public class EstimatedDocumentCountCommandResolver
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, EstimatedDocumentCountCommand command) {
     return new EstimatedDocumentCountCollectionOperation(ctx);
   }

@@ -1,23 +1,22 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
-import static io.stargate.sgv2.jsonapi.util.ApiPropertyUtils.getOrDefault;
+import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
-import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
-import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
-import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexAttemptBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTaskPage;
+import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiRegularIndex;
@@ -35,10 +34,10 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
   }
 
   @Override
-  public Operation resolveTableCommand(
-      CommandContext<TableSchemaObject> ctx, CreateIndexCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, CreateIndexCommand command) {
 
-    final var name = validateSchemaName(command.name(), NamingRules.INDEX);
+    final var indexName = validateSchemaName(command.name(), NamingRules.INDEX);
 
     var indexType =
         command.indexType() == null
@@ -59,37 +58,40 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
               "unsupportedType", command.indexType()));
     }
 
-    var attemptBuilder = new CreateIndexAttemptBuilder(ctx.schemaObject());
-
-    attemptBuilder =
-        attemptBuilder.withIfNotExists(
-            getOrDefault(
-                command.options(),
-                CreateIndexCommand.CreateIndexCommandOptions::ifNotExists,
-                TableDescDefaults.CreateIndexOptionsDefaults.IF_NOT_EXISTS));
-
     // TODO: we need a centralised way of creating retry policy.
-    attemptBuilder =
-        attemptBuilder.withSchemaRetryPolicy(
-            new SchemaAttempt.SchemaRetryPolicy(
-                ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
-                Duration.ofMillis(
-                    ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis())));
+    var taskBuilder =
+        CreateIndexDBTask.builder(commandContext.schemaObject())
+            .withIfNotExists(
+                getOrDefault(
+                    command.options(),
+                    CreateIndexCommand.CreateIndexCommandOptions::ifNotExists,
+                    TableDescDefaults.CreateIndexOptionsDefaults.IF_NOT_EXISTS))
+            .withSchemaRetryPolicy(
+                new SchemaDBTask.SchemaRetryPolicy(
+                    commandContext
+                        .config()
+                        .get(OperationsConfig.class)
+                        .databaseConfig()
+                        .ddlRetries(),
+                    Duration.ofMillis(
+                        commandContext
+                            .config()
+                            .get(OperationsConfig.class)
+                            .databaseConfig()
+                            .ddlRetryDelayMillis())));
 
     // this will throw APIException if the index is not supported
     var apiIndex =
-        ApiRegularIndex.FROM_DESC_FACTORY.create(ctx.schemaObject(), name, command.definition());
-    var attempt = attemptBuilder.build(apiIndex);
+        ApiRegularIndex.FROM_DESC_FACTORY.create(
+            commandContext.schemaObject(), indexName, command.definition());
 
-    var pageBuilder =
-        SchemaAttemptPage.<TableSchemaObject>builder()
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
-
-    return new GenericOperation<>(
-        new OperationAttemptContainer<>(attempt),
-        pageBuilder,
+    taskBuilder.withExceptionHandlerFactory(
         DefaultDriverExceptionHandler.Factory.withIdentifier(
             CreateIndexExceptionHandler::new, apiIndex.indexName()));
+
+    var taskGroup = new TaskGroup<>(taskBuilder.build(apiIndex));
+
+    return new TaskOperation<>(
+        taskGroup, SchemaDBTaskPage.accumulator(CreateIndexDBTask.class, commandContext));
   }
 }

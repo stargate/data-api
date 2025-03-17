@@ -4,8 +4,8 @@ import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.*;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,7 +21,7 @@ import org.apache.commons.lang3.tuple.Pair;
 public class MeteredEmbeddingProvider extends EmbeddingProvider {
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
-  private final DataApiRequestInfo dataApiRequestInfo;
+  private final RequestContext dataApiRequestInfo;
   private static final String UNKNOWN_VALUE = "unknown";
   private final EmbeddingProvider embeddingProvider;
   private final String commandName;
@@ -29,7 +29,7 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
   public MeteredEmbeddingProvider(
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig,
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext dataApiRequestInfo,
       EmbeddingProvider embeddingProvider,
       String commandName) {
     this.meterRegistry = meterRegistry;

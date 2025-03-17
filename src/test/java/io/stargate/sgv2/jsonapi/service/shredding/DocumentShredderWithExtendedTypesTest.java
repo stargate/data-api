@@ -10,7 +10,7 @@ import com.fasterxml.uuid.impl.UUIDUtil;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIdType;
@@ -41,7 +41,7 @@ public class DocumentShredderWithExtendedTypesTest {
   @Inject ObjectMapper objectMapper;
 
   @Inject DocumentShredder documentShredder;
-  @InjectMock protected DataApiRequestInfo bogusRequestInfo;
+  @InjectMock protected RequestContext bogusRequestInfo;
 
   @Nested
   class OkCasesExplicitId {

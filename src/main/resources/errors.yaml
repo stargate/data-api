@@ -227,7 +227,6 @@ request-errors:
       The command included the following vector columns without vectorize definition: ${invalidVectorizeColumns}.
       
       Resend the command using only vector columns with a vectorize definition.
-      
 
 # ================================================================================================================
 # Family: REQUEST         Scope: FILTER
@@ -378,8 +377,38 @@ request-errors:
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The command included the column ${invalidColumn} that has ${columnType} type defined.
+      ${embeddedCodecMessage}
       
       Resend the command using only supported column values.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATOR
+    title: Update operator is not supported by target column
+    body: |-
+      The command included update operator ${operator} that are not supported by ${targetColumn}.
+      Note, $push and $pullAll are only supported against map, set, list columns.
+      
+      Resend the command using only supported update operators.
+
+  - scope: UPDATE
+    code: INVALID_PUSH_OPERATOR_USAGE
+    title: The command has invalid usage of $push operator
+    body: |-
+      The command has invalid usage of $push operator, ${reason}.
+      
+      Update operator $push works for adding single element, combine $push with $each for adding multiple elements.
+      
+      E.G.
+      Push single element to set/list. 
+      {"$push": {"listColumn": "value"}}
+      Push multiple elements to set/list. 
+      {"$push": {"listColumn": {"$each": ["value1","value2"]}}}
+      Push single entry to map.
+      {"$push": {"mapColumn": ["key1", "value1"]}} or {"$push": {"mapColumn": {"key1":"value1"}}}
+      Push multiple entries to map.
+      {"$push": {"mapColumn": {"$each": [["key1","value1"],["key2", "value2"]]}}} or {"$push": {"mapColumn": {"$each": [{"key1":"value1"},{"key2":"value2"}]}}}
+
+      Resend the command with valid usage of $push operator.
 
   - scope: UPDATE
     code: UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS
@@ -393,6 +422,22 @@ request-errors:
       The update included the following primary keys: ${updateOnPrimaryKeyColumns}.
       
       Resend the command without updating primary key columns.
+
+  - scope: UPDATE
+    code: INVALID_UPDATE_OPERATOR_PULL_ALL_VALUE
+    title: Update operator $pullAll requires array value to update the map, set, list column
+    body: |-
+      Update operator $pullAll requires array value to remove elements from the map, set, list column.
+      E.G. 
+      {"$pullAll": {"listColumn": [value1, value2]}
+      {"$pullAll": {"setColumn": [value1, value2]}
+      {"$pullAll": {"mapColumn": [key1, key2]}
+      
+      The command uses $pullAll with value ${providedValue}.
+      
+      Resend the command using array value for $pullAll operator.
+
+
 
   - scope: UPDATE
     code: MISSING_UPDATE_OPERATIONS
@@ -623,31 +668,6 @@ request-errors:
       The command included the following columns cannot be read: ${unsupportedColumns}.
       
       Resend the command using only supported column types.
-
-  - scope: PROJECTION
-    code: UNSUPPORTED_AMPERSAND_ESCAPE_USAGE
-    title: The usage of ampersand escape is not supported
-    body: |-
-      The usage of ampersand escape is not supported.
-      
-      Ampersand & can only be used as an escape character and must be followed by a & or . character.
-      
-      The command used the unsupported ampersand escape path: '${unsupportedAmpersandEscape}'.
-      
-      Resend the command using supported ampersand escape.
-
-  - scope: PROJECTION
-    code: UNSUPPORTED_PROJECTION_PATH
-    title: The path in the projection is not supported
-    body: |-
-      The path in the projection is not supported.
-      
-      The segments from the path in the projection cannot be empty.
-      
-      The command used the unsupported projection path: '${unsupportedProjectionPath}'.
-      
-      Resend the command using supported projection path.
-
 
   - scope: PROJECTION
     code: UNKNOWN_TABLE_COLUMNS

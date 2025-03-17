@@ -30,6 +30,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankingConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
@@ -82,15 +84,17 @@ public class InsertCollectionOperationTest extends OperationTestBase {
 
   static final String INSERT_CQL =
       "INSERT INTO \"%s\".\"%s\""
-          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
+          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,"
+          + " query_dbl_values, query_text_values, query_null_values, query_timestamp_values)"
           + " VALUES"
-          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS";
 
   static final String INSERT_VECTOR_CQL =
       "INSERT INTO \"%s\".\"%s\""
-          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
+          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,"
+          + " query_dbl_values, query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
           + " VALUES"
-          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS";
 
   @PostConstruct
   public void init() {
@@ -111,8 +115,11 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                             SimilarityFunction.COSINE,
                             EmbeddingSourceModel.OTHER,
                             null))),
-                null),
-            jsonProcessingMetricsReporter);
+                null,
+                CollectionLexicalConfig.configForLegacyCollections(),
+                CollectionRerankingConfig.configForLegacyCollections()),
+            jsonProcessingMetricsReporter,
+            null);
   }
 
   @Nested

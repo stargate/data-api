@@ -23,7 +23,10 @@ public class ApiVectorType extends CollectionApiDataType<VectorType> {
 
   // Here so the ApiVectorColumnDesc can get it when deserializing from JSON
   // NOTE: the vector type cannot be frozen so we do not need different support for frozen
-  public static final ApiSupportDef API_SUPPORT = defaultApiSupport(false);
+  // Update operators $set and $unset can be used for vector columns, but $push and $pullAll cannot.
+  public static final ApiSupportDef API_SUPPORT =
+      new ApiSupportDef.Support(
+          true, ApiSupportDef.Collection.NONE, true, true, false, ApiSupportDef.Update.PRIMITIVE);
 
   private final int dimension;
   private final VectorizeDefinition vectorizeDefinition;

@@ -178,6 +178,12 @@ public final class ThrowableToErrorMapper {
           .toApiException("root cause = (%s) %s", throwable.getClass().getSimpleName(), message)
           .getCommandResultError(Response.Status.OK);
     }
+    // [data-api#1900]: Need to convert Lexical-index creation failure to something more meaningful
+    if (message.contains("Invalid analyzer config")) {
+      return ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS
+          .toApiException()
+          .getCommandResultError(message, Response.Status.OK);
+    }
     return ErrorCodeV1.INVALID_QUERY
         .toApiException()
         .getCommandResultError(message, Response.Status.OK);

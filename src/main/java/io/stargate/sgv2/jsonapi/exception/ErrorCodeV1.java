@@ -69,13 +69,13 @@ public enum ErrorCodeV1 {
 
   SHRED_BAD_DOCID_EMPTY_STRING("Bad value for '_id' property: empty String not allowed"),
 
-  SHRED_BAD_DOCUMENT_PATH_CONFLICTS("Bad document to shred, contains conflicting Field path(s)"),
-
   SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
 
   SHRED_BAD_DOCUMENT_VECTOR_TYPE("Bad $vector document type to shred "),
 
   SHRED_BAD_DOCUMENT_VECTORIZE_TYPE("Bad $vectorize document type to shred "),
+
+  SHRED_BAD_DOCUMENT_LEXICAL_TYPE("Bad type for $lexical content to shred"),
 
   SHRED_BAD_EJSON_VALUE("Bad JSON Extension value"),
 
@@ -94,6 +94,14 @@ public enum ErrorCodeV1 {
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
+
+  RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable : "),
+  RERANKING_PROVIDER_UNEXPECTED_RESPONSE("The Reranking Provider returned an unexpected response"),
+  RERANKING_PROVIDER_CLIENT_ERROR("The Reranking Provider returned a HTTP client error"),
+  RERANKING_PROVIDER_SERVER_ERROR("The Reranking Provider returned a HTTP server error"),
+  RERANKING_PROVIDER_TIMEOUT("The Reranking Provider timed out"),
+  RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED(
+      "The reranking provider authentication key is not provided"),
 
   TOO_MANY_COLLECTIONS("Too many collections"),
 
@@ -150,6 +158,7 @@ public enum ErrorCodeV1 {
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
   VECTOR_SIZE_MISMATCH("Length of vector parameter different from declared '$vector' dimension"),
 
+  VECTORIZE_MODEL_DEPRECATED("Vectorize model is deprecated"),
   VECTORIZE_FEATURE_NOT_AVAILABLE("Vectorize feature is not available in the environment"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
@@ -158,6 +167,8 @@ public enum ErrorCodeV1 {
 
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
   VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
+
+  LEXICAL_NOT_ENABLED_FOR_COLLECTION("Lexical search is not enabled for the collection"),
 
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   COLLECTION_CREATION_ERROR(

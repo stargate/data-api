@@ -1,16 +1,24 @@
 package io.stargate.sgv2.jsonapi;
 
+import static org.mockito.Mockito.mock;
+
+import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankingConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import java.util.List;
+import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 
 /**
@@ -25,14 +33,32 @@ public final class TestConstants {
   public static final SchemaObjectName SCHEMA_OBJECT_NAME =
       new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
 
-  // Schema objects for testing
+  // Schema objects for testing: uses current ("new") defaults
   public static final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT =
       new CollectionSchemaObject(
           SCHEMA_OBJECT_NAME,
           null,
           IdConfig.defaultIdConfig(),
           VectorConfig.NOT_ENABLED_CONFIG,
-          null);
+          null,
+          // Use configs that by default enable lexical:
+          CollectionLexicalConfig.configForNewCollections(),
+          // Use default reranking config - hardcode the value to avoid reading config
+          new CollectionRerankingConfig(
+              true,
+              new CollectionRerankingConfig.RerankingProviderConfig(
+                  "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null)));
+
+  // Schema object for testing with legacy (pre-lexical-config) defaults
+  public static final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT_LEGACY =
+      new CollectionSchemaObject(
+          SCHEMA_OBJECT_NAME,
+          null,
+          IdConfig.defaultIdConfig(),
+          VectorConfig.NOT_ENABLED_CONFIG,
+          null,
+          CollectionLexicalConfig.configForLegacyCollections(),
+          CollectionRerankingConfig.configForLegacyCollections());
 
   public static final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT =
       new CollectionSchemaObject(
@@ -47,7 +73,9 @@ public final class TestConstants {
                       SimilarityFunction.COSINE,
                       EmbeddingSourceModel.OTHER,
                       null))),
-          null);
+          null,
+          CollectionLexicalConfig.configForLegacyCollections(),
+          CollectionRerankingConfig.configForLegacyCollections());
 
   public static final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =
       KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
@@ -61,65 +89,64 @@ public final class TestConstants {
   public static final ApiFeatures DEFAULT_API_FEATURES_FOR_TESTS = ApiFeatures.empty();
 
   public static CommandContext<CollectionSchemaObject> collectionContext() {
-    return collectionContext(COLLECTION_SCHEMA_OBJECT);
+    return collectionContext(TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null, null);
   }
 
-  public static CommandContext<CollectionSchemaObject> collectionContext(
-      JsonProcessingMetricsReporter metricsReporter) {
-    return collectionContext(TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, metricsReporter);
-  }
-
-  public static CommandContext<CollectionSchemaObject> collectionContext(
-      String commandName, JsonProcessingMetricsReporter metricsReporter) {
-    return collectionContext(commandName, COLLECTION_SCHEMA_OBJECT, metricsReporter);
-  }
-
-  public static CommandContext<CollectionSchemaObject> collectionContext(
-      CollectionSchemaObject schema) {
-    return collectionContext(TEST_COMMAND_NAME, schema, null);
-  }
-
-  public static CommandContext<CollectionSchemaObject> collectionContext(
-      String commandName,
-      CollectionSchemaObject schema,
-      JsonProcessingMetricsReporter metricsReporter) {
-    return collectionContext(commandName, schema, metricsReporter, null);
-  }
+  //  public static CommandContext<CollectionSchemaObject> collectionContext(
+  //      String commandName,
+  //      CollectionSchemaObject schema,
+  //      JsonProcessingMetricsReporter metricsReporter) {
+  //    return collectionContext(commandName, schema, metricsReporter, null);
+  //  }
 
   public static CommandContext<CollectionSchemaObject> collectionContext(
       String commandName,
       CollectionSchemaObject schema,
       JsonProcessingMetricsReporter metricsReporter,
       EmbeddingProvider embeddingProvider) {
-    return new CommandContext<>(
-        schema,
-        embeddingProvider,
-        commandName,
-        metricsReporter,
-        DEFAULT_API_FEATURES_FOR_TESTS,
-        null);
+
+    return CommandContext.builderSupplier()
+        .withJsonProcessingMetricsReporter(
+            metricsReporter == null ? mock(JsonProcessingMetricsReporter.class) : metricsReporter)
+        .withCqlSessionCache(mock(CQLSessionCache.class))
+        .withCommandConfig(new CommandConfig())
+        .getBuilder(schema)
+        .withEmbeddingProvider(embeddingProvider)
+        .withCommandName(commandName)
+        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+        .build();
   }
 
   public static CommandContext<KeyspaceSchemaObject> keyspaceContext() {
-    return keyspaceContext(TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, null);
+    return keyspaceContext(
+        TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, mock(JsonProcessingMetricsReporter.class));
   }
 
   public static CommandContext<KeyspaceSchemaObject> keyspaceContext(
       String commandName,
       KeyspaceSchemaObject schema,
       JsonProcessingMetricsReporter metricsReporter) {
-    return new CommandContext<>(
-        schema, null, commandName, metricsReporter, DEFAULT_API_FEATURES_FOR_TESTS, null);
+
+    return CommandContext.builderSupplier()
+        .withJsonProcessingMetricsReporter(
+            metricsReporter == null ? mock(JsonProcessingMetricsReporter.class) : metricsReporter)
+        .withCqlSessionCache(mock(CQLSessionCache.class))
+        .withCommandConfig(new CommandConfig())
+        .getBuilder(schema)
+        .withCommandName(commandName)
+        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+        .build();
   }
 
   private static final CommandContext<DatabaseSchemaObject> DATABASE_CONTEXT =
-      new CommandContext<>(
-          DATABASE_SCHEMA_OBJECT,
-          null,
-          TEST_COMMAND_NAME,
-          null,
-          DEFAULT_API_FEATURES_FOR_TESTS,
-          null);
+      CommandContext.builderSupplier()
+          .withJsonProcessingMetricsReporter(mock(JsonProcessingMetricsReporter.class))
+          .withCqlSessionCache(mock(CQLSessionCache.class))
+          .withCommandConfig(new CommandConfig())
+          .getBuilder(DATABASE_SCHEMA_OBJECT)
+          .withCommandName(TEST_COMMAND_NAME)
+          .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+          .build();
 
   public static CommandContext<DatabaseSchemaObject> databaseContext() {
     return DATABASE_CONTEXT;

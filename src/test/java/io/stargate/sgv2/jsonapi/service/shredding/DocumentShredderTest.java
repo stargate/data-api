@@ -10,7 +10,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -37,7 +38,7 @@ public class DocumentShredderTest {
   @Inject ObjectMapper objectMapper;
 
   @Inject DocumentShredder documentShredder;
-  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
+  @InjectMock protected RequestContext dataApiRequestInfo;
 
   @Nested
   class OkCases {
@@ -110,8 +111,56 @@ public class DocumentShredderTest {
                       .getHash(List.of(new BigDecimal(1), new BigDecimal(2)))
                       .hash()));
       assertThat(doc.queryNullValues()).isEqualTo(Collections.singleton(JsonPath.from("nullable")));
-      float[] vector = {0.11f, 0.22f, 0.33f, 0.44f};
       assertThat(doc.queryVectorValues()).containsOnly(0.11f, 0.22f, 0.33f, 0.44f);
+    }
+
+    @Test
+    public void shredSimpleWithLexical() throws Exception {
+      final String inputJson =
+          """
+                          { "_id" : "lex1",
+                            "name" : "Jack",
+                            "nullable" : null,
+                            "$vector" : [ 0.25, -1.5 ],
+                            "$lexical": "monkeys like bananas"
+                          }
+                          """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc =
+          documentShredder.shred(TestConstants.collectionContext(), inputDoc, null);
+
+      assertThat(doc.id()).isEqualTo(DocumentId.fromString("lex1"));
+      List<JsonPath> expPaths =
+          Arrays.asList(
+              JsonPath.from("_id"),
+              JsonPath.from("name"),
+              JsonPath.from("nullable"),
+              JsonPath.from("$vector"),
+              JsonPath.from("$lexical"));
+
+      // First verify paths
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+
+      // No arrays ($vector is special)
+      assertThat(doc.arraySize()).hasSize(0);
+
+      // We have 2 main level properties (_id excluded)
+      assertThat(doc.arrayContains()).hasSize(2);
+      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("name SJack", "nullable Z");
+
+      // Also, the document should be the same, including _id:
+      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+
+      // Then atomic value containers
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNumberValues()).isEmpty();
+      assertThat(doc.queryTextValues())
+          .isEqualTo(Map.of(JsonPath.from("_id"), "lex1", JsonPath.from("name"), "Jack"));
+      assertThat(doc.queryNullValues()).isEqualTo(Collections.singleton(JsonPath.from("nullable")));
+      assertThat(doc.queryVectorValues()).containsOnly(0.25f, -1.5f);
+
+      assertThat(doc.queryLexicalValue()).isEqualTo("monkeys like bananas");
     }
 
     @Test
@@ -214,6 +263,51 @@ public class DocumentShredderTest {
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(new BigDecimal(30L)));
       // Verify that we do NOT have '{"_id":3E+1}':
       assertThat(doc.docJson()).isEqualTo(inputJson);
+    }
+
+    @Test
+    public void shredOverlappingPaths() throws Exception {
+      final String inputJson =
+          """
+              {
+                "_id" : "doc1",
+                "price": {
+                  "usd": 5
+                },
+                "price.usd": 8.5
+              }
+              """;
+      WritableShreddedDocument doc = documentShredder.shred(fromJson(inputJson));
+
+      List<JsonPath> expPaths =
+          Arrays.asList(
+              JsonPath.from("_id"),
+              JsonPath.from("price"),
+              JsonPath.from("price.usd"),
+              JsonPath.from("price&.usd"));
+
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+      assertThat(doc.arraySize()).isEmpty();
+      // 2 non-doc-id main-level properties with hashes:
+      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("price.usd N5", "price&.usd N8.5");
+
+      // Then atomic value containers
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryNumberValues())
+          .isEqualTo(
+              Map.of(
+                  JsonPath.from("price&.usd"),
+                  BigDecimal.valueOf(8.5),
+                  JsonPath.from("price.usd"),
+                  BigDecimal.valueOf(5)));
+      assertThat(doc.queryTextValues())
+          .isEqualTo(Map.of(JsonPath.from("_id"), "doc1", JsonPath.from("price"), "O1\nusd\nN5"));
+
+      // the doc_json should not have the escape character
+      final JsonNode inputDoc = fromJson(inputJson);
+      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
     }
   }
 
@@ -408,27 +502,6 @@ public class DocumentShredderTest {
           .isNotNull()
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
           .hasMessage("Document field name invalid: field name '' is empty");
-    }
-
-    @Test
-    public void docFailConflictingPaths() {
-      Throwable t =
-          catchThrowable(
-              () ->
-                  documentShredder.shred(
-                      objectMapper.readTree(
-                          """
-                              {
-                                "price": {
-                                  "usd": 5.0
-                                },
-                                "price.usd": 8.50
-                              }
-                              """)));
-
-      assertThat(t)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCUMENT_PATH_CONFLICTS)
-          .hasMessage("Bad document to shred, contains conflicting Field path(s): [price.usd]");
     }
   }
 

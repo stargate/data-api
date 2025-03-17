@@ -12,6 +12,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.core.Base64Variants;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
@@ -126,6 +127,27 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
         .then()
         .statusCode(200)
         .body("$", responseIsDDLSuccess());
+  }
+
+  protected void deleteCollection(String collectionName) {
+    given()
+        .headers(getHeaders())
+        .contentType(ContentType.JSON)
+        .body(
+                """
+                    {
+                      "deleteCollection": {
+                        "name": "%s"
+                      }
+                    }
+                    """
+                .formatted(collectionName))
+        .when()
+        .post(KeyspaceResource.BASE_PATH, keyspaceName)
+        .then()
+        .statusCode(200)
+        .body("$", responseIsDDLSuccess())
+        .body("status.ok", is(1));
   }
 
   protected int getTestPort() {
@@ -310,5 +332,20 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
         .addContactPoint(new InetSocketAddress("localhost", port))
         .withAuthCredentials(CQLSessionCache.CASSANDRA, CQLSessionCache.CASSANDRA);
     return builder.build();
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected ValidatableResponse givenHeadersPostJsonThen(String json) {
+    return givenHeadersAndJson(json).when().post(KeyspaceResource.BASE_PATH, keyspaceName).then();
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected ValidatableResponse givenHeadersPostJsonThenOk(String json) {
+    return givenHeadersPostJsonThen(json).statusCode(200);
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected ValidatableResponse givenHeadersPostJsonThenOkNoErrors(String json) {
+    return givenHeadersPostJsonThenOk(json).body("errors", is(nullValue()));
   }
 }
