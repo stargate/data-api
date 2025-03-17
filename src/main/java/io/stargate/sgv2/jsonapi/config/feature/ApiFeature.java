@@ -49,13 +49,20 @@ public enum ApiFeature {
    */
   private final String featureNameAsHeader;
 
-  ApiFeature(String featureName) {
+  /**
+   * State of feature if not otherwise specified: if {@code true}, feature is enabled by default;
+   * otherwise disabled.
+   */
+  private final boolean enabledByDefault;
+
+  ApiFeature(String featureName, boolean enabledByDefault) {
     if (!featureName.equals(featureName.toLowerCase())) {
       throw new IllegalStateException(
           "Internal error: 'featureName' must be lower-case, was: \"" + featureName + "\"");
     }
     this.featureName = featureName;
     featureNameAsHeader = HTTP_HEADER_PREFIX + featureName;
+    this.enabledByDefault = enabledByDefault;
   }
 
   @JsonValue // for Jackson to serialize as lower-case
@@ -65,5 +72,9 @@ public enum ApiFeature {
 
   public String httpHeaderName() {
     return featureNameAsHeader;
+  }
+
+  public boolean enabledByDefault() {
+    return enabledByDefault;
   }
 }
