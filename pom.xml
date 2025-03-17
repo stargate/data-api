@@ -430,7 +430,7 @@
         <!-- 14-Mar-2025, tatu [data-api#1923]: Need to use pre-release image for HCD; hence diff URL -->
         <!-- 559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/prod/hcd -->
         <stargate.int-test.cassandra.image>559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/staging/hcd</stargate.int-test.cassandra.image>
-        <stargate.int-test.cassandra.image-tag>1.1.0</stargate.int-test.cassandra.image-tag>
+        <stargate.int-test.cassandra.image-tag>1.2.1-early-preview</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>hcd-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.hcd>true</stargate.int-test.cluster.hcd>
