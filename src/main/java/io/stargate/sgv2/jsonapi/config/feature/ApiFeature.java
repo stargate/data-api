@@ -21,14 +21,14 @@ public enum ApiFeature {
    * "$lexical"-enabled Collections. If disabled, those operations will fail with {@link
    * ErrorCodeV1#LEXICAL_NOT_ENABLED_FOR_COLLECTION}).
    */
-  LEXICAL("lexical"),
+  LEXICAL("lexical", true),
 
   /**
    * API Tables feature flag: if enabled, the API will expose table-specific Namespace resource
    * commands, and support commands on Tables. If disabled, those operations will fail with {@link
    * ErrorCodeV1#TABLE_FEATURE_NOT_ENABLED}.
    */
-  TABLES("tables");
+  TABLES("tables", false);
 
   /**
    * Prefix for HTTP headers used to override feature flags for specific requests: prepended before
