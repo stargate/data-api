@@ -17,6 +17,13 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
  */
 public enum ApiFeature {
   /**
+   * Lexical search/sort feature flag: if enabled, the API will allow construction of
+   * "$lexical"-enabled Collections. If disabled, those operations will fail with {@link
+   * ErrorCodeV1#LEXICAL_NOT_ENABLED_FOR_COLLECTION}).
+   */
+  LEXICAL("lexical"),
+
+  /**
    * API Tables feature flag: if enabled, the API will expose table-specific Namespace resource
    * commands, and support commands on Tables. If disabled, those operations will fail with {@link
    * ErrorCodeV1#TABLE_FEATURE_NOT_ENABLED}.
