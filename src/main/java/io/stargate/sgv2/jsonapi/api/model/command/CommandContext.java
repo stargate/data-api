@@ -60,6 +60,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CQLSessionCache cqlSessionCache,
       CommandConfig commandConfig,
+      ApiFeatures apiFeatures,
       EmbeddingProviderFactory embeddingProviderFactory) {
 
     this.schemaObject = schemaObject;
@@ -232,6 +233,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
       private EmbeddingProvider embeddingProvider;
       private String commandName;
       private RequestContext requestContext;
+      private ApiFeatures apiFeatures;
 
       Builder(SchemaT schemaObject) {
         this.schemaObject = schemaObject;
@@ -252,6 +254,15 @@ public class CommandContext<SchemaT extends SchemaObject> {
         return this;
       }
 
+      /**
+       * Optional {@link ApiFeatures} that can be set when running testing, normally set to {@link
+       * ApiFeatures#empty()}
+       */
+      public Builder<SchemaT> withApiFeatures(ApiFeatures apiFeatures) {
+        this.apiFeatures = apiFeatures;
+        return this;
+      }
+
       public CommandContext<SchemaT> build() {
         // embeddingProvider may be null, e.g. a keyspace command this will change when we pass in
         // all the providers
@@ -266,6 +277,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
             jsonProcessingMetricsReporter,
             cqlSessionCache,
             commandConfig,
+            apiFeatures,
             embeddingProviderFactory);
       }
     }

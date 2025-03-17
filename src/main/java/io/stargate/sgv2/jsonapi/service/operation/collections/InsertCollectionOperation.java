@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.InsertOperationPage;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -228,33 +229,40 @@ public record InsertCollectionOperation(
 
   // utility for building the insert query
   public String buildInsertQuery(boolean vectorEnabled) {
+    final boolean lexicalEnabled = commandContext().schemaObject().lexicalEnabled();
+    StringBuilder insertQuery = new StringBuilder(200);
+    final SchemaObjectName tableName = commandContext.schemaObject().name();
+
+    insertQuery
+        .append("INSERT INTO \"")
+        .append(tableName.keyspace())
+        .append("\".\"")
+        .append(tableName.table())
+        .append("\"")
+        .append(
+            " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,")
+        .append(" query_dbl_values, query_text_values, query_null_values, query_timestamp_values");
     if (vectorEnabled) {
-      String insertWithVector =
-          "INSERT INTO \"%s\".\"%s\""
-              + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
-              + " VALUES"
-              + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
-              + (offlineMode ? "" : " IF NOT EXISTS");
-      // The offline mode SSTableWriter does not support conditional inserts, so it can not have the
-      // IF NOT EXISTS clause
-      return String.format(
-          insertWithVector,
-          commandContext.schemaObject().name().keyspace(),
-          commandContext.schemaObject().name().table());
-    } else {
-      String insert =
-          "INSERT INTO \"%s\".\"%s\""
-              + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
-              + " VALUES"
-              + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
-              + (offlineMode ? "" : " IF NOT EXISTS");
-      // The offline mode SSTableWriter does not support conditional inserts, so it can not have the
-      // IF NOT EXISTS clause
-      return String.format(
-          insert,
-          commandContext.schemaObject().name().keyspace(),
-          commandContext.schemaObject().name().table());
+      insertQuery.append(", query_vector_value");
     }
+    if (lexicalEnabled) {
+      insertQuery.append(", query_lexical_value");
+    }
+
+    insertQuery.append(") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?");
+    if (vectorEnabled) {
+      insertQuery.append(", ?");
+    }
+    if (lexicalEnabled) {
+      insertQuery.append(", ?");
+    }
+    insertQuery.append(")");
+    if (!offlineMode) {
+      // The offline mode SSTableWriter does not support conditional inserts, so it can not have the
+      // IF NOT EXISTS clause
+      insertQuery.append(" IF NOT EXISTS");
+    }
+    return insertQuery.toString();
   }
 
   // utility for query binding
