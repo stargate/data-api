@@ -55,7 +55,9 @@ public class CollectionSettingsV0Reader implements CollectionSettingsReader {
         vectorConfig,
         indexingConfig,
         // Legacy config, must assume legacy lexical config (disabled)
-        CollectionLexicalConfig.configForLegacyCollections());
+        CollectionLexicalConfig.configForLegacyCollections(),
+        // Legacy config, must assume legacy reranking config (disabled)
+        CollectionRerankingConfig.configForLegacyCollections());
   }
 
   /**
