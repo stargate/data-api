@@ -67,7 +67,7 @@ public class DseTestResource extends StargateTestResource {
 
   // By default, allow Lexical on HCD backend, but not on DSE
   public String getFeatureFlagLexical() {
-    return this.isHcd() ? "true" : "false";
+    return isHcd() ? "true" : "false";
   }
 
   // By default, we enable the feature flag for tables

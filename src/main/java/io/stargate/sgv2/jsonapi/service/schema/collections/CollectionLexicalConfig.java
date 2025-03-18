@@ -36,10 +36,12 @@ public record CollectionLexicalConfig(
    * @return Valid CollectionLexicalConfig object
    */
   public static CollectionLexicalConfig validateAndConstruct(
-      ObjectMapper mapper, CreateCollectionCommand.Options.LexicalConfigDefinition lexicalConfig) {
-    // If not defined, use default for new collections; valid option
+      ObjectMapper mapper,
+      boolean lexicalAvailable,
+      CreateCollectionCommand.Options.LexicalConfigDefinition lexicalConfig) {
+    // If not defined, enable if available, otherwise disable
     if (lexicalConfig == null) {
-      return configForEnabledStandard();
+      return lexicalAvailable ? configForEnabledStandard() : configForDisabled();
     }
     // Otherwise validate and construct
     Boolean enabled = lexicalConfig.enabled();
@@ -47,6 +49,11 @@ public record CollectionLexicalConfig(
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "'enabled' is required property for 'lexical' Object value");
     }
+    // Can only enable if feature is available
+    if (enabled && !lexicalAvailable) {
+      throw ErrorCodeV1.LEXICAL_NOT_AVAILABLE_FOR_DATABASE.toApiException();
+    }
+
     JsonNode analyzer = lexicalConfig.analyzerDef();
     if (analyzer == null) {
       analyzer = mapper.getNodeFactory().textNode(CollectionLexicalConfig.DEFAULT_NAMED_ANALYZER);
