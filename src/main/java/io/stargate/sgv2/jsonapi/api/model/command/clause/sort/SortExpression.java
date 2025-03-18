@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
-import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
-import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
@@ -18,20 +17,25 @@ public record SortExpression(
     // this can be modeled in different ways, would this be enough for now
     boolean ascending,
     @Nullable float[] vector,
-    @Nullable String vectorize) {
+    @Nullable String vectorize,
+    @Nullable String bm25Query) {
 
   // TODO: either remove the static factories or make this a class, as a record the ctor is public
 
   public static SortExpression sort(String path, boolean ascending) {
-    return new SortExpression(path, ascending, null, null);
+    return new SortExpression(path, ascending, null, null, null);
   }
 
   public static SortExpression vsearch(float[] vector) {
-    return new SortExpression(VECTOR_EMBEDDING_FIELD, false, vector, null);
+    return new SortExpression(VECTOR_EMBEDDING_FIELD, false, vector, null, null);
   }
 
   public static SortExpression vectorizeSearch(String vectorize) {
-    return new SortExpression(VECTOR_EMBEDDING_TEXT_FIELD, false, null, vectorize);
+    return new SortExpression(VECTOR_EMBEDDING_TEXT_FIELD, false, null, vectorize, null);
+  }
+
+  public static SortExpression bm25Search(String bm25Query) {
+    return new SortExpression(LEXICAL_CONTENT_FIELD, false, null, null, bm25Query);
   }
 
   /**
@@ -41,7 +45,7 @@ public record SortExpression(
    * for tables
    */
   public static SortExpression tableVectorSort(String path, float[] vector) {
-    return new SortExpression(path, false, vector, null);
+    return new SortExpression(path, false, vector, null, null);
   }
 
   /**
@@ -51,11 +55,15 @@ public record SortExpression(
    * vectorize for tables
    */
   public static SortExpression tableVectorizeSort(String path, String vectorize) {
-    return new SortExpression(path, false, null, vectorize);
+    return new SortExpression(path, false, null, vectorize, null);
   }
 
   public CqlIdentifier pathAsCqlIdentifier() {
     return cqlIdentifierFromUserInput(path);
+  }
+
+  public boolean isBM25Search() {
+    return bm25Query != null;
   }
 
   public boolean isTableVectorSort() {

@@ -116,6 +116,47 @@ public class FindCollectionWithLexicalSortIntegrationTest
           .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
           .body("errors[0].message", containsString("Lexical search is not enabled"));
     }
+
+    @Test
+    void failForBadLexicalSortValueType() {
+      givenHeadersPostJsonThenOk(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                          {
+                            "find": {
+                              "sort" : {"$lexical": -1 }
+                            }
+                          }
+                          """)
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"))
+          .body(
+              "errors[0].message",
+              containsString("if sorting by '$lexical' value must be STRING, not NUMBER"));
+    }
+
+    @Test
+    void failForLexicalSortWithOtherExpressions() {
+      givenHeadersPostJsonThenOk(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                          {
+                            "find": {
+                              "sort" : {
+                                 "a": 1,
+                                 "$lexical": "bananas"
+                               }
+                            }
+                          }
+                          """)
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"))
+          .body(
+              "errors[0].message",
+              containsString("if sorting by '$lexical' no other sort expressions allowed"));
+    }
   }
 
   private String lexicalDoc(int id, String keywords) {
