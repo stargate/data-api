@@ -945,7 +945,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"emptyLists\" } }")
           .wasSuccessful()
-          .hasJSONField("data.document", "{\"id\": \"emptySets\"}");
+          .hasJSONField("data.document", "{\"id\": \"emptyLists\"}");
     }
 
     @Test
