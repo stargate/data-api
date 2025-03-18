@@ -56,7 +56,7 @@ public class OperationTestBase {
           VectorConfig.NOT_ENABLED_CONFIG,
           null,
           CollectionLexicalConfig.configForLegacyCollections(),
-          CollectionRerankingConfig.configForLegacyCollections());
+          CollectionRerankingConfig.configForPreRerankingCollections());
 
   protected final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =
       KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);

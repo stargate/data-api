@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.collections;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
@@ -10,21 +11,65 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import java.util.*;
-import java.util.stream.Collectors;
 
-/** Validated configuration Object for Reranking configuration for Collections. */
-public record CollectionRerankingConfig(
-    boolean enabled,
-    @JsonInclude(JsonInclude.Include.NON_NULL) @JsonProperty("service")
-        RerankingProviderConfig rerankingProviderConfig) {
+/**
+ * Internal configuration class for managing reranking settings for collections.
+ *
+ * <p>This class serves three main purposes in the collection lifecycle:
+ *
+ * <ol>
+ *   <li>During collection creation: Validates and transforms user-provided configuration
+ *       (deserialized from API as {@link
+ *       io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand.Options.RerankingConfigDefinition})
+ *       into a validated internal representation via {@link #fromApiDefinition}.
+ *   <li>For persistence: After validation, instances of this class are serialized to JSON and
+ *       stored in the database as part of the collection comment.
+ *   <li>During query operations: Deserializes stored configuration in the comment via {@link
+ *       #fromJson} to be used during reranking operations.
+ * </ol>
+ *
+ * <p>Note: This class is for internal use only and is not directly exposed through the DataAPI. The
+ * DataAPI exposes {@link
+ * io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand.Options.RerankingConfigDefinition}
+ * for user input, which is then validated and transformed into instances of this class before being
+ * persisted in the collection's metadata comment.
+ */
+public class CollectionRerankingConfig {
+  private final boolean enabled;
 
-  // Create a nested record for the provider-related fields
-  public record RerankingProviderConfig(
-      String provider,
-      String modelName,
-      Map<String, String> authentication,
-      Map<String, Object> parameters) {}
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonProperty("service")
+  private final RerankingServiceConfig rerankingServiceConfig;
 
+  /**
+   * Singleton instance for disabled reranking configuration. It can be used for disabled reranking
+   * collections, existing pre-reranking collections, and missing collections.
+   */
+  private static final CollectionRerankingConfig DISABLED_RERANKING_CONFIG =
+      new CollectionRerankingConfig(false, null);
+
+  /**
+   * Constructs a reranking configuration with the specified enabled state and service
+   * configuration.
+   *
+   * @param enabled Whether reranking is enabled for this collection
+   * @param rerankingServiceConfig The service configuration for reranking, can be null if reranking
+   *     is disabled
+   */
+  public CollectionRerankingConfig(boolean enabled, RerankingServiceConfig rerankingServiceConfig) {
+    this.enabled = enabled;
+    this.rerankingServiceConfig = rerankingServiceConfig;
+  }
+
+  /**
+   * Constructs a detailed reranking configuration with individual service parameters.
+   *
+   * @param enabled Whether reranking is enabled for this collection
+   * @param provider The name of the reranking provider
+   * @param modelName The name of the reranking model
+   * @param authentication Authentication parameters for the reranking service
+   * @param parameters Additional parameters for the reranking service
+   */
   public CollectionRerankingConfig(
       boolean enabled,
       String provider,
@@ -35,300 +80,317 @@ public record CollectionRerankingConfig(
     this(
         enabled,
         enabled
-            ? new RerankingProviderConfig(provider, modelName, authentication, parameters)
+            ? new RerankingServiceConfig(provider, modelName, authentication, parameters)
             : null);
   }
 
+  /** Returns whether reranking is enabled for this collection. */
+  public boolean enabled() {
+    return enabled;
+  }
+
+  /** Returns the reranking service configuration for this collection. */
+  public RerankingServiceConfig rerankingProviderConfig() {
+    return rerankingServiceConfig;
+  }
+
   /**
-   * Accessor for an instance to use for a default configuration for newly created collections:
-   * where no configuration defined: needs to be enabled, using "nvidia" reranking service
-   * configuration.
+   * Creates default reranking configuration for new collections.
+   *
+   * <p>When a collection is created without explicit reranking settings, this method provides a
+   * default configuration based on the reranking providers' configuration. It looks for the
+   * provider marked as default and its default model.
+   *
+   * <p>If no default provider is configured in the yaml, reranking will be disabled for new
+   * collections. Similarly, if the default provider doesn't have a default model, reranking will be
+   * disabled.
+   *
+   * @param rerankingProvidersConfig The configuration for all available reranking providers
+   * @return A default-configured CollectionRerankingConfig
    */
   public static CollectionRerankingConfig configForNewCollections(
       RerankingProvidersConfig rerankingProvidersConfig) {
-    // get the default provider from the config
-    var defaultProvider =
-        rerankingProvidersConfig.providers().entrySet().stream()
-            .filter(entry -> entry.getValue().isDefault())
-            .findFirst();
-    if (defaultProvider.isEmpty()) {
-      return new CollectionRerankingConfig(false, null);
+    // Find the provider marked as default
+    Optional<Map.Entry<String, RerankingProvidersConfig.RerankingProviderConfig>>
+        defaultProviderEntry =
+            rerankingProvidersConfig.providers().entrySet().stream()
+                .filter(entry -> entry.getValue().isDefault())
+                .findFirst();
+    // If no default provider exists, disable reranking
+    if (defaultProviderEntry.isEmpty()) {
+      return DISABLED_RERANKING_CONFIG;
     }
-    var provider = defaultProvider.get().getKey();
-    var modelName =
-        rerankingProvidersConfig.providers().get(provider).models().stream()
-            .filter(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::isDefault)
-            .findFirst()
-            .map(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::name)
-            .get();
 
-    // TODO(Hazel): Assume no authentication or parameters for default provider and model now, may
-    // need to change
-    var defaultRerankingService = new RerankingProviderConfig(provider, modelName, null, null);
+    // Extract provider information
+    String providerName = defaultProviderEntry.get().getKey();
+    RerankingProvidersConfig.RerankingProviderConfig providerConfig =
+        defaultProviderEntry.get().getValue();
+
+    // Find the model marked as default for this provider
+    Optional<String> defaultModelName =
+        providerConfig.models().stream()
+            .filter(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::isDefault)
+            .map(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::name)
+            .findFirst();
+
+    // If no default model exists, disable reranking
+    if (defaultModelName.isEmpty()) {
+      return DISABLED_RERANKING_CONFIG;
+    }
+
+    // Create reranking service config with default provider and model
+    // Authentication and parameters are intentionally null for default configs
+    var defaultRerankingService =
+        new RerankingServiceConfig(
+            providerName,
+            defaultModelName.get(),
+            null, // No authentication for default configuration
+            null // No parameters for default configuration
+            );
 
     return new CollectionRerankingConfig(true, defaultRerankingService);
   }
 
   /**
-   * Accessor for an instance to use for existing pre-reranking collections: ones without reranking
-   * field and index: needs to be disabled
+   * Factory method for creating a configuration for existing collections that predate reranking
+   * support.
+   *
+   * <p>Used for collections created before reranking functionality was available. These collections
+   * need to have reranking explicitly disabled for backward compatibility.
+   *
+   * @return A singleton CollectionRerankingConfig instance with reranking disabled
    */
-  public static CollectionRerankingConfig configForLegacyCollections() {
-    return new CollectionRerankingConfig(false, null);
+  public static CollectionRerankingConfig configForPreRerankingCollections() {
+    return DISABLED_RERANKING_CONFIG;
   }
 
   /**
-   * Accessor for an instance to use for missing collection: cases where definition does not exist:
-   * needs to be disabled.
+   * Factory method for creating a configuration when a collection definition is missing.
+   *
+   * @return A singleton CollectionRerankingConfig instance with reranking disabled
    */
   public static CollectionRerankingConfig configForMissingCollection() {
-    return new CollectionRerankingConfig(false, null);
+    return DISABLED_RERANKING_CONFIG;
   }
 
-  /** Read the reranking configuration from the JSON node. */
+  /**
+   * This method is used when retrieving the stored reranking configuration from the collection
+   * comments during query operations. It transforms the stored JSON representation back into a
+   * usable configuration object.
+   *
+   * @param rerankingJsonNode The JSON node containing the stored reranking configuration
+   * @param objectMapper The object mapper to use for JSON conversion
+   * @return A CollectionRerankingConfig object reconstructed from the stored JSON
+   */
   public static CollectionRerankingConfig fromJson(
       JsonNode rerankingJsonNode, ObjectMapper objectMapper) {
+    // Check if reranking is enabled (defaults to false if not specified)
     boolean enabled =
         rerankingJsonNode.path(RerankingConstants.RerankingColumn.ENABLED).asBoolean(false);
 
+    // Short-circuit for disabled reranking
     if (!enabled) {
-      return new CollectionRerankingConfig(enabled, null);
+      return DISABLED_RERANKING_CONFIG;
     }
 
-    JsonNode rerankingServiceNode =
-        rerankingJsonNode.get(RerankingConstants.RerankingColumn.SERVICE);
+    // Get the service configuration node
+    JsonNode serviceNode = rerankingJsonNode.get(RerankingConstants.RerankingColumn.SERVICE);
+    // sanity check
+    Objects.requireNonNull(
+        serviceNode, "Reranking service configuration in the collection comment must not be null");
 
-    // provider, modelName, must exist
-    // TODO: WHAT HAPPENS IF THEY DONT ? JSON props on VectorizeConfig say model is not
-    // required
-    String provider =
-        rerankingServiceNode.get(RerankingConstants.RerankingService.PROVIDER).asText();
-    String modelName =
-        rerankingServiceNode.get(RerankingConstants.RerankingService.MODEL_NAME).asText();
+    // Extract reranking service configuration
+    String provider = serviceNode.path(RerankingConstants.RerankingService.PROVIDER).asText();
+    String modelName = serviceNode.path(RerankingConstants.RerankingService.MODEL_NAME).asText();
+    // Extract optional authentication map
+    Map<String, String> authentication = null;
+    JsonNode authNode = serviceNode.get(RerankingConstants.RerankingService.AUTHENTICATION);
+    if (authNode != null && !authNode.isNull()) {
+      authentication = objectMapper.convertValue(authNode, new TypeReference<>() {});
+    }
 
-    // construct VectorizeDefinition.authentication, can be null
-    JsonNode authNode =
-        rerankingServiceNode.get(RerankingConstants.RerankingService.AUTHENTICATION);
-    // TODO: remove unchecked assignment
-    Map<String, String> authMap =
-        authNode == null ? null : objectMapper.convertValue(authNode, Map.class);
+    // Extract optional parameters map
+    Map<String, Object> parameters = null;
+    JsonNode paramsNode = serviceNode.get(RerankingConstants.RerankingService.PARAMETERS);
+    if (paramsNode != null && !paramsNode.isNull()) {
+      parameters = objectMapper.convertValue(paramsNode, new TypeReference<>() {});
+    }
 
-    // construct VectorizeDefinition.parameters, can be null
-    JsonNode paramsNode = rerankingServiceNode.get(RerankingConstants.RerankingService.PARAMETERS);
-    // TODO: remove unchecked assignment
-    Map<String, Object> paramsMap =
-        paramsNode == null ? null : objectMapper.convertValue(paramsNode, Map.class);
-
-    return new CollectionRerankingConfig(enabled, provider, modelName, authMap, paramsMap);
+    return new CollectionRerankingConfig(true, provider, modelName, authentication, parameters);
   }
 
   /**
-   * Method for validating the reranking config passed and constructing actual configuration object
-   * to use.
+   * This method is used during collection creation to validate and transform the user-provided
+   * configuration from the DataAPI ({@link
+   * io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand.Options.RerankingConfigDefinition})
+   * into an internal configuration object. The resulting object will be persisted to the database.
    *
-   * @return Valid CollectionRerankingConfig object
+   * @param apiConfig The reranking configuration received from API input (may be null)
+   * @param providerConfigs The reranking configuration yaml for available reranking providers
+   * @return A validated CollectionRerankingConfig object
+   * @throws JsonApiException if the configuration is invalid
    */
-  public static CollectionRerankingConfig validateAndConstruct(
-      CreateCollectionCommand.Options.RerankingConfigDefinition rerankingConfig,
-      RerankingProvidersConfig rerankingProvidersConfig) {
-    // If not defined, use default for new collections; valid option
-    if (rerankingConfig == null) {
-      return configForNewCollections(rerankingProvidersConfig);
+  public static CollectionRerankingConfig fromApiDefinition(
+      CreateCollectionCommand.Options.RerankingConfigDefinition apiConfig,
+      RerankingProvidersConfig providerConfigs) {
+    // Case 1: No configuration provided - use defaults
+    if (apiConfig == null) {
+      return configForNewCollections(providerConfigs);
     }
-    // Otherwise validate and construct
-    Boolean enabled = rerankingConfig.enabled();
+
+    // Case 2: Validate 'enabled' flag is present
+    Boolean enabled = apiConfig.enabled();
     if (enabled == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "'enabled' is required property for 'rerank' Object value");
     }
-    // If not enabled, clear out any reranking settings (but don't fail)
+
+    // Case 3: Reranking disabled - return simple disabled config
     if (!enabled) {
-      return new CollectionRerankingConfig(enabled, null);
+      return DISABLED_RERANKING_CONFIG;
     }
 
-    // If enabled, but no service config, use default
-    var rerankingServiceConfig = rerankingConfig.rerankingServiceConfig();
-    if (rerankingServiceConfig == null) {
-      return configForNewCollections(rerankingProvidersConfig);
+    // Case 4: Enabled but no service config - use defaults
+    var serviceConfig = apiConfig.rerankingServiceConfig();
+    if (serviceConfig == null) {
+      return configForNewCollections(providerConfigs);
     }
 
-    String provider = rerankingConfig.rerankingServiceConfig().provider();
-    String modelName = rerankingConfig.rerankingServiceConfig().modelName();
-    Map<String, String> authentication = rerankingConfig.rerankingServiceConfig().authentication();
-    Map<String, Object> parameters = rerankingConfig.rerankingServiceConfig().parameters();
+    // Case 5: Full configuration - validate all components
+    // Extract values from API config
+    String provider = apiConfig.rerankingServiceConfig().provider();
+    String modelName = apiConfig.rerankingServiceConfig().modelName();
+    Map<String, String> authentication = apiConfig.rerankingServiceConfig().authentication();
+    Map<String, Object> parameters = apiConfig.rerankingServiceConfig().parameters();
 
-    RerankingProvidersConfig.RerankingProviderConfig providerConfig =
-        getAndValidateProviderConfig(provider, rerankingProvidersConfig);
-
+    // Validate against the yaml  configuration
+    var providerConfig = getAndValidateProviderConfig(provider, providerConfigs);
     modelName = validateModel(provider, modelName, providerConfig);
-
     authentication = validateAuthentication(provider, authentication, providerConfig);
+    parameters = validateParameters(provider, parameters, providerConfig);
 
-    // TODO(Hazel): No need to validate the parameters, add back when it's needed
-
+    // Create validated configuration
     return new CollectionRerankingConfig(enabled, provider, modelName, authentication, parameters);
   }
 
   /**
-   * Retrieves and validates the provider configuration for reranking model based on user input.
-   * This method ensures that the specified service provider is configured and enabled in the
-   * system.
+   * Validates and retrieves the configuration for a reranking provider. This method performs two
+   * validations:<br>
+   * 1. Ensures the provider name is specified (not null)<br>
+   * 2. Verifies the provider exists in configuration and is enabled (includes null and empty check)
    *
-   * @param provider The name of the service provider.
-   * @param rerankingProvidersConfig The configuration for available reranking providers.
-   * @return The configuration for the reranking provider, if valid.
-   * @throws JsonApiException If the provider is not supported or not enabled.
+   * @param provider The reranking provider name.
+   * @param rerankingProvidersConfig The configuration containing all available reranking providers.
+   * @return The validated provider configuration.
+   * @throws JsonApiException If the provider is null, not found, or not enabled.
    */
   private static RerankingProvidersConfig.RerankingProviderConfig getAndValidateProviderConfig(
       String provider, RerankingProvidersConfig rerankingProvidersConfig) {
     if (provider == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'provider' is required property for 'rerank.service' Object value");
+          "Provider name is required for reranking service configuration");
     }
 
     var providerConfig = rerankingProvidersConfig.providers().get(provider);
-    if (providerConfig == null || !providerConfig.enabled()) {
+    if (providerConfig == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "Reranking provider '%s' is not supported", provider);
+    }
+
+    if (!providerConfig.enabled()) {
+      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          "Reranking provider '%s' is disabled", provider);
     }
     return providerConfig;
   }
 
   /**
-   * Validates the model name provided by the user against the specified reranking provider
-   * configuration.
+   * Validates the model name for a reranking provider when creating a collection. This method
+   * performs two validations:<br>
+   * 1. Ensures the model name is provided (not null) <br>
+   * 2. Verifies the model is supported by the specified provider according to configuration
+   * (includes null and empty check)
+   *
+   * @param provider The reranking provider name.
+   * @param modelName The name of the reranking model to validate.
+   * @param rerankingProviderConfig The configuration for the specified reranking provider.
+   * @return The validated model name if it passes all checks.
+   * @throws JsonApiException If the model name is null or not supported by the provider.
    */
   private static String validateModel(
       String provider,
       String modelName,
       RerankingProvidersConfig.RerankingProviderConfig rerankingProviderConfig) {
-    // 1. model name is required
     if (modelName == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'modelName' is needed for reranking provider %s", provider);
+          "Model name is required for reranking provider '%s'", provider);
     }
-    // 2. model name must be supported by the provider - in the config
-    rerankingProviderConfig.models().stream()
-        .filter(m -> m.name().equals(modelName))
-        .findFirst()
-        .orElseThrow(
-            () ->
-                ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                    "Model name '%s' for reranking provider '%s' is not supported",
-                    modelName, provider));
+
+    boolean isModelSupported =
+        rerankingProviderConfig.models().stream().anyMatch(m -> m.name().equals(modelName));
+
+    if (!isModelSupported) {
+      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          "Model '%s' is not supported by reranking provider '%s'", modelName, provider);
+    }
     return modelName;
   }
 
   /**
-   * Validates user authentication for reranking models when creating a collection using the
-   * specified configurations.
-   *
-   * <ol>
-   *   <li>Validate that all keys (member names) in the authentication stanza (e.g. providerKey) are
-   *       listed in the configuration for the provider as accepted keys.
-   *   <li>For each key-value member of the authentication stanza:
-   *       <ol type="a">
-   *         <li>If the value does not contain the period character "." it assumes the value is the
-   *             name of the credential without specifying the key.
-   *             <ol type="i">
-   *               <li>The credential name is appended with .&lt;key&gt; and the secret service
-   *                   called to validate that a credential with that name exists and it has the
-   *                   named key.
-   *             </ol>
-   *         <li>If the value does contain a period character "." it assumes the first part is the
-   *             name of the credential and the second the name of the key within it.
-   *             <ol type="i">
-   *               <li>The secret service called to validate that a credential with that name exists
-   *                   and it has the named key.
-   *             </ol>
-   *       </ol>
-   * </ol>
+   * Validates authentication parameters for reranking models when creating a collection. Currently,
+   * this method enforces that no authentication details are provided, as all supported reranking
+   * providers use the 'NONE' authentication type. Add more verifications if more authentication
+   * types are supported in the future.
    *
    * @param provider The reranking provider name.
    * @param authentication The reranking authentication details.
-   * @throws JsonApiException If the user authentication is invalid.
+   * @param rerankingProviderConfig The configuration for the specified reranking provider.
+   * @return The validated authentication map.
+   * @throws JsonApiException If authentication parameters are provided when none are expected.
    */
   private static Map<String, String> validateAuthentication(
       String provider,
       Map<String, String> authentication,
       RerankingProvidersConfig.RerankingProviderConfig rerankingProviderConfig) {
-    // Get all the accepted keys in SHARED_SECRET
-    Set<String> acceptedKeys =
-        rerankingProviderConfig.supportedAuthentications().entrySet().stream()
-            .filter(
-                config ->
-                    config
-                        .getKey()
-                        .equals(
-                            RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType
-                                .SHARED_SECRET))
-            .filter(config -> config.getValue().enabled() && config.getValue().tokens() != null)
-            .flatMap(config -> config.getValue().tokens().stream())
-            .map(RerankingProvidersConfig.RerankingProviderConfig.TokenConfig::accepted)
-            .collect(Collectors.toSet());
-
-    // If the user hasn't provided authentication details, verify that either the 'NONE' or 'HEADER'
-    // authentication type is enabled.
-    if (authentication == null || authentication.isEmpty()) {
-      // Check if 'NONE' authentication type is enabled
-      boolean noneEnabled =
-          Optional.ofNullable(
-                  rerankingProviderConfig
-                      .supportedAuthentications()
-                      .get(
-                          RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType.NONE))
-              .map(RerankingProvidersConfig.RerankingProviderConfig.AuthenticationConfig::enabled)
-              .orElse(false);
-
-      // Check if 'HEADER' authentication type is enabled
-      boolean headerEnabled =
-          Optional.ofNullable(
-                  rerankingProviderConfig
-                      .supportedAuthentications()
-                      .get(
-                          RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType
-                              .HEADER))
-              .map(RerankingProvidersConfig.RerankingProviderConfig.AuthenticationConfig::enabled)
-              .orElse(false);
-
-      // If neither 'NONE' nor 'HEADER' authentication type is enabled, throw an exception
-      if (!noneEnabled && !headerEnabled) {
-        throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "Reranking provider '%s' does not support either 'NONE' or 'HEADER' authentication types.",
-            provider);
-      }
-    } else {
-      // User has provided authentication details. Validate each key against the provider's accepted
-      // list.
-
-      Map<String, String> updatedAuth = new HashMap<>();
-      for (Map.Entry<String, String> userAuth : authentication.entrySet()) {
-        // Determine the full credential name based on the sharedKeyValue pair
-        // If the sharedKeyValue does not contain a dot (e.g. myKey) or the part after the dot
-        // does not match the key (e.g. myKey.test), append the key to the sharedKeyValue with
-        // a dot (e.g. myKey.providerKey or myKey.test.providerKey). Otherwise, use the
-        // sharedKeyValue (e.g. myKey.providerKey) as is.
-        String sharedKeyValue = userAuth.getValue();
-        String credentialName =
-            sharedKeyValue.lastIndexOf('.') <= 0
-                    || !sharedKeyValue
-                        .substring(sharedKeyValue.lastIndexOf('.') + 1)
-                        .equals(userAuth.getKey())
-                ? sharedKeyValue + "." + userAuth.getKey()
-                : sharedKeyValue;
-        updatedAuth.put(userAuth.getKey(), credentialName);
-        authentication = updatedAuth;
-      }
-
-      for (Map.Entry<String, String> userAuth : authentication.entrySet()) {
-        // Check if the key is accepted by the provider
-        if (!acceptedKeys.contains(userAuth.getKey())) {
-          throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-              "Reranking provider '%s' does not support authentication key '%s'",
-              provider, userAuth.getKey());
-        }
-      }
+    // Currently, all supported reranking providers use the 'NONE' authentication type,
+    // so the authentication map must be null or empty
+    if (authentication != null && !authentication.isEmpty()) {
+      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          "Reranking provider '%s' currently supports only the 'NONE' authentication type. No authentication parameters should be provided.",
+          provider);
     }
     return authentication;
   }
+
+  /**
+   * Validates parameters for reranking models when creating a collection. Currently, this method
+   * enforces that no parameters are provided, as all supported reranking providers don't accept any
+   * parameters. Add more verifications if parameters are supported in the future.
+   *
+   * @param provider The reranking provider name.
+   * @param parameters The reranking parameters (expected to be null or empty).
+   * @param rerankingProviderConfig The configuration for the specified reranking provider.
+   * @return The validated parameters map (null or empty for currently supported providers).
+   * @throws JsonApiException If parameters are provided when none are expected.
+   */
+  private static Map<String, Object> validateParameters(
+      String provider,
+      Map<String, Object> parameters,
+      RerankingProvidersConfig.RerankingProviderConfig rerankingProviderConfig) {
+    // Currently, all supported reranking providers don't accept any parameters,
+    // so the parameters map must be null or empty
+    if (parameters != null && !parameters.isEmpty()) {
+      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          "Reranking provider '%s' currently doesn't support any parameters. No parameters should be provided.",
+          provider);
+    }
+    return parameters;
+  }
+
+  // Create a nested record for the provider-related fields
+  public record RerankingServiceConfig(
+      String provider,
+      String modelName,
+      Map<String, String> authentication,
+      Map<String, Object> parameters) {}
 }

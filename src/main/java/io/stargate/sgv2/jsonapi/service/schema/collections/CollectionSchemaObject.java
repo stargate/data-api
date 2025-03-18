@@ -264,7 +264,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       CollectionLexicalConfig lexicalConfig = CollectionLexicalConfig.configForLegacyCollections();
       // If no "comment", must assume Legacy (no Reranking) config
       CollectionRerankingConfig rerankingConfig =
-          CollectionRerankingConfig.configForLegacyCollections();
+          CollectionRerankingConfig.configForPreRerankingCollections();
       if (vectorEnabled) {
         return new CollectionSchemaObject(
             keyspaceName,

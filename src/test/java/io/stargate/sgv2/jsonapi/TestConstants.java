@@ -46,7 +46,7 @@ public final class TestConstants {
           // Use default reranking config - hardcode the value to avoid reading config
           new CollectionRerankingConfig(
               true,
-              new CollectionRerankingConfig.RerankingProviderConfig(
+              new CollectionRerankingConfig.RerankingServiceConfig(
                   "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null)));
 
   // Schema object for testing with legacy (pre-lexical-config) defaults
@@ -58,7 +58,7 @@ public final class TestConstants {
           VectorConfig.NOT_ENABLED_CONFIG,
           null,
           CollectionLexicalConfig.configForLegacyCollections(),
-          CollectionRerankingConfig.configForLegacyCollections());
+          CollectionRerankingConfig.configForPreRerankingCollections());
 
   public static final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT =
       new CollectionSchemaObject(
@@ -75,7 +75,7 @@ public final class TestConstants {
                       null))),
           null,
           CollectionLexicalConfig.configForLegacyCollections(),
-          CollectionRerankingConfig.configForLegacyCollections());
+          CollectionRerankingConfig.configForPreRerankingCollections());
 
   public static final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =
       KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);

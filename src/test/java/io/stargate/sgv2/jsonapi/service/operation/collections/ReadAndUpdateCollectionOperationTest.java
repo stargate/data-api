@@ -134,7 +134,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                             null))),
                 null,
                 CollectionLexicalConfig.configForLegacyCollections(),
-                CollectionRerankingConfig.configForLegacyCollections()),
+                CollectionRerankingConfig.configForPreRerankingCollections()),
             jsonProcessingMetricsReporter,
             null);
   }

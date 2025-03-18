@@ -246,7 +246,7 @@ public class DataVectorizerTest {
                           new VectorizeDefinition("custom", "custom", null, null)))),
               null,
               CollectionLexicalConfig.configForLegacyCollections(),
-              CollectionRerankingConfig.configForLegacyCollections());
+              CollectionRerankingConfig.configForPreRerankingCollections());
       List<JsonNode> documents = new ArrayList<>();
       for (int i = 0; i < 2; i++) {
         documents.add(objectMapper.createObjectNode().put("$vectorize", "test data"));

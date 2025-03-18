@@ -36,7 +36,7 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
                           new VectorizeDefinition("custom", "custom", null, null)))),
               null,
               CollectionLexicalConfig.configForLegacyCollections(),
-              CollectionRerankingConfig.configForLegacyCollections()),
+              CollectionRerankingConfig.configForPreRerankingCollections()),
           null,
           new TestEmbeddingProvider());
 
