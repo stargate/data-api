@@ -125,7 +125,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         .append("idConfig", idConfig)
         .append("vectorConfig", vectorConfig)
         .append("indexingConfig", indexingConfig)
-        .append("lexicalConfig", lexicalConfig);
+        .append("lexicalConfig", lexicalConfig)
+        .append("rerankingConfig", rerankingConfig);
   }
 
   /**
@@ -436,14 +437,12 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     return indexingConfig;
   }
 
-  /**
-   * Accessor for checking whether this Collection has support for "$lexical" sort (has analyzed
-   * text column "query_lexical_value")
-   *
-   * @return True if "lexical" sort is supported by this Collection; false if not.
-   */
-  public boolean lexicalEnabled() {
-    return lexicalConfig.enabled();
+  public CollectionLexicalConfig lexicalConfig() {
+    return lexicalConfig;
+  }
+
+  public CollectionRerankingConfig rerankingConfig() {
+    return rerankingConfig;
   }
 
   // TODO: these helper functions break encapsulation for very little benefit

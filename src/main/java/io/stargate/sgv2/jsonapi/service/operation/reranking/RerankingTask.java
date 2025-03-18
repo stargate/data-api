@@ -1,20 +1,17 @@
 package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
-import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.RERANK_FIELD;
-import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.NumericNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.ResponseData;
+import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +22,12 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RerankingTask.class);
 
-  private final Object rerankingProvider;
+  private final RerankingProvider rerankingProvider;
+  private final String query;
+  private final String passageField;
   private final List<DeferredCommandResult> deferredReads;
   private final int limit;
+  private final boolean includeSimilarityScore;
 
   private float[] sortVector = null;
   // captured in onSuccess
@@ -37,14 +37,20 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       int position,
       SchemaT schemaObject,
       TaskRetryPolicy retryPolicy,
-      Object rerankingProvider,
+      RerankingProvider rerankingProvider,
+      String query,
+      String passageField,
       List<DeferredCommandResult> deferredReads,
-      int limit) {
+      int limit,
+      boolean includeSimilarityScore) {
     super(position, schemaObject, retryPolicy);
 
     this.rerankingProvider = rerankingProvider;
+    this.query = query;
+    this.passageField = passageField;
     this.deferredReads = deferredReads;
     this.limit = limit;
+    this.includeSimilarityScore = includeSimilarityScore;
 
     setStatus(TaskStatus.READY);
   }
@@ -90,7 +96,13 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
             "De-duplicated %s documents from inner reads to %s documents for reranking"
                 .formatted(dedupResult.totalDocuments(), dedupResult.deduplicatedDocuments.size()));
 
-    return new RerankingResultSupplier(dedupResult.deduplicatedDocuments(), limit);
+    return new RerankingResultSupplier(
+        rerankingProvider,
+        commandContext.requestContext().getRerankingCredentials(),
+        query,
+        passageField,
+        dedupResult.deduplicatedDocuments(),
+        limit);
   }
 
   @Override
@@ -128,48 +140,71 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
   private DeduplicationResult deduplicateResults(List<CommandResult> rawReadResults) {
 
+    if (rawReadResults.isEmpty()) {
+      throw new IllegalArgumentException("rawReadResults must not be empty");
+    }
+
     // This code relies on working with collections where the documents all have _id
     // will need to change for tables and rows
-    Set<JsonNode> seenDocs = new HashSet<>();
-    List<ScoredDocument> deduplicatedDocuments =
-        new ArrayList<>(Math.divideExact(rawReadResults.size(), 2));
-    int totalCount = 0;
+    // Keyed on the _id as a JsonNode
+
+    ScoredDocumentMerger merger = null;
 
     for (var commandResult : rawReadResults) {
       var multiDocResponse = (ResponseData.MultiResponseData) commandResult.data();
-      totalCount += multiDocResponse.documents().size();
+
+      if (merger == null){
+        merger = new ScoredDocumentMerger(multiDocResponse.documents().size() * 2, includeSimilarityScore);
+      }
 
       for (var doc : multiDocResponse.documents()) {
-        if (seenDocs.add(doc.get(DocumentConstants.Fields.DOC_ID))) {
 
-          var similarityNode = doc.get(DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD);
-          if (similarityNode != null && !similarityNode.isNumber()) {
-            throw new IllegalStateException(
-                "%s document field is not a number for doc _id %s"
-                    .formatted(
-                        DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD,
-                        doc.get(DocumentConstants.Fields.DOC_ID)));
-          }
-          var score =
-              similarityNode == null
-                  ? DocumentScore.empty()
-                  : DocumentScore.vectorScore(similarityNode.floatValue());
-          deduplicatedDocuments.add(new ScoredDocument(doc, score));
-        }
+        var thisDocScore = switch (doc.get(DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD)){
+          case null -> DocumentScores.EMPTY;
+          case NumericNode numberNode -> DocumentScores.withVectorScore(numberNode.floatValue());
+          default -> throw new IllegalStateException(
+              "%s document field is not a number for doc _id %s"
+                  .formatted(
+                      DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD,
+                      doc.get(DocumentConstants.Fields.DOC_ID)));
+        };
+        merger.mergeDocument(new ScoredDocument(doc.get(DocumentConstants.Fields.DOC_ID), doc, thisDocScore));
       }
     }
 
-    LOGGER.debug("deduplicateResults() - totalDocuments={}, deduplicatedDocuments.size()={}", totalCount, deduplicatedDocuments.size());
-    return new DeduplicationResult(totalCount, deduplicatedDocuments);
+    var deduplicatedDocuments = merger.mergedDocuments();
+    LOGGER.debug(
+        "deduplicateResults() - totalDocuments={}, deduplicatedDocuments.size()={}",
+        merger.seenDocuments(),
+        deduplicatedDocuments.size());
+    return new DeduplicationResult(merger.seenDocuments(), deduplicatedDocuments);
   }
 
-  /** Calls the reranking provider to get the ranking */
+  /**
+   * Calls the reranking provider to get the ranking
+   *
+   * <p>Needs to be static for the generics to work
+   */
   public static class RerankingResultSupplier implements UniSupplier<RerankingTaskResult> {
 
+    private final RerankingProvider rerankingProvider;
+    private final RerankingCredentials credentials;
+    private final String query;
+    private final String passageField;
     private final List<ScoredDocument> unrankedDocs;
     private final int limit;
 
-    RerankingResultSupplier(List<ScoredDocument> unrankedDocs, int limit) {
+    RerankingResultSupplier(
+        RerankingProvider rerankingProvider,
+        RerankingCredentials credentials,
+        String query,
+        String passageField,
+        List<ScoredDocument> unrankedDocs,
+        int limit) {
+      this.rerankingProvider = rerankingProvider;
+      this.credentials = credentials;
+      this.query = query;
+      this.passageField = passageField;
       this.unrankedDocs = unrankedDocs;
       this.limit = limit;
     }
@@ -177,17 +212,31 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     @Override
     public Uni<RerankingTaskResult> get() {
 
-      // TODO: Call the reranking provider and handle the results
-      List<FakeRank> fakeRanks = new ArrayList<>(unrankedDocs.size());
-      Random random = new Random();
-      for (int i = 0; i < unrankedDocs.size(); i++) {
-        fakeRanks.add(new FakeRank(i, random.nextFloat()));
+      List<String> passages = new ArrayList<>(unrankedDocs.size());
+      for (var scoredDoc : unrankedDocs) {
+        var passageNode = scoredDoc.document().get(passageField);
+        if (passageNode == null || !passageNode.isTextual()) {
+          throw new IllegalStateException(
+              "Passage field not found or not a text node in document _id=%s"
+                  .formatted(scoredDoc.document().get(DocumentConstants.Fields.DOC_ID)));
+        }
+        passages.add(passageNode.textValue());
       }
-      return Uni.createFrom().item(RerankingTaskResult.create(unrankedDocs, fakeRanks, limit));
+
+      return rerankingProvider
+          .rerank(query, passages, credentials)
+          .onItem()
+          .transform(
+              rerankingResponse ->
+                  RerankingTaskResult.create(rerankingResponse, unrankedDocs, limit));
     }
   }
 
-  /** Merges the results of the ReRanking call with the unranked documents, and ranks them */
+  /**
+   * Merges the results of the ReRanking call with the unranked documents, ranks and enforces limit
+   *
+   * <p>
+   */
   public static class RerankingTaskResult {
     private static final Logger LOGGER = LoggerFactory.getLogger(RerankingTaskResult.class);
 
@@ -199,33 +248,37 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
     /** */
     static RerankingTaskResult create(
-        List<ScoredDocument> unrankedDocuments, List<FakeRank> fakeRanks, int limit) {
+        RerankingProvider.RerankingResponse rerankingResponse,
+        List<ScoredDocument> unrankedDocuments,
+        int limit) {
 
       // in a factory to avoid too much work in a ctor
-
-      if (unrankedDocuments.size() != fakeRanks.size()) {
-        throw new IllegalArgumentException("unrankedDocuments and fakeRanks must be the same size");
+      var ranks = rerankingResponse.ranks();
+      if (unrankedDocuments.size() != ranks.size()) {
+        throw new IllegalArgumentException("unrankedDocuments and ranks must be the same size");
       }
 
       List<ScoredDocument> rerankedDocuments = new ArrayList<>(unrankedDocuments.size());
-      for (var fakeRank : fakeRanks) {
+      for (var rank : ranks) {
 
-        var rerankScore = DocumentScore.rerankScore(fakeRank.rank());
+        var rerankScore = DocumentScores.withRerankScore(rank.score());
         ScoredDocument unrankedDoc;
         try {
-          unrankedDoc = unrankedDocuments.get(fakeRank.index());
+          unrankedDoc = unrankedDocuments.get(rank.index());
         } catch (IndexOutOfBoundsException e) {
           throw new IllegalArgumentException(
-              "fakeRank index %s out of bounds for unrankedDocuments.size()=%s"
-                  .formatted(fakeRank.index(), unrankedDocuments.size()));
+              "rank index %s out of bounds for unrankedDocuments.size()=%s"
+                  .formatted(rank.index(), unrankedDocuments.size()));
         }
 
         // merge the scores, this will keep the vector score if there was one
-        rerankedDocuments.add(
-            new ScoredDocument(unrankedDoc.document(), unrankedDoc.score().merge(rerankScore)));
+        unrankedDoc.mergeScore(rerankScore);
+        rerankedDocuments.add(unrankedDoc);
       }
+
       rerankedDocuments.sort(Comparator.naturalOrder());
-      var truncatedDocuments = List.copyOf(rerankedDocuments).subList(0, Math.min(rerankedDocuments.size(), limit));
+      var truncatedDocuments =
+          List.copyOf(rerankedDocuments).subList(0, Math.min(rerankedDocuments.size(), limit));
       LOGGER.debug(
           "create() - documents reranked and truncated, unrankedDocuments.size()={}, limit={}, truncatedDocuments.size()={}",
           unrankedDocuments.size(),
@@ -240,64 +293,4 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     }
   }
 
-  record FakeRank(int index, float rank) {}
-
-  public record DocumentScore(
-      @JsonIgnore boolean hasRerank,
-      @JsonProperty(RERANK_FIELD) float rerank,
-      @JsonIgnore boolean hasVector,
-      @JsonProperty(VECTOR_EMBEDDING_FIELD) float vector)
-      implements Comparable<DocumentScore> {
-    private static final DocumentScore EMPTY = new DocumentScore(false, 0, false, 0);
-
-    static DocumentScore empty() {
-      return EMPTY;
-    }
-
-    static DocumentScore vectorScore(float vector) {
-      return new DocumentScore(false, 0, true, vector);
-    }
-
-    static DocumentScore rerankScore(float rerank) {
-      return new DocumentScore(true, rerank, false, 0);
-    }
-
-    DocumentScore merge(DocumentScore other) {
-      if (hasRerank && other.hasRerank) {
-        throw new IllegalArgumentException("Cannot merge two rerank scores");
-      }
-      if (hasVector && other.hasVector) {
-        throw new IllegalArgumentException("Cannot merge two vector scores");
-      }
-      return new DocumentScore(
-          hasRerank || other.hasRerank,
-          hasRerank ? rerank : other.rerank,
-          hasVector || other.hasVector,
-          hasVector ? vector : other.vector);
-    }
-
-    /**
-     * Sorts based on the rerank score, other scores are ignored.
-     *
-     * <p>NOTE: this sorts in descending order, larger scores are better
-     */
-    @Override
-    public int compareTo(DocumentScore o) {
-      if (!hasRerank && !o.hasRerank) {
-        throw new IllegalStateException(
-            "Attempt to compare two DocumentScores where one does not have a rerank score");
-      }
-      return Float.compare(rerank, o.rerank) * -1;
-    }
-  }
-  ;
-
-  public record ScoredDocument(JsonNode document, DocumentScore score)
-      implements Comparable<ScoredDocument> {
-    @Override
-    public int compareTo(ScoredDocument o) {
-      return score.compareTo(o.score);
-    }
-  }
-  ;
 }

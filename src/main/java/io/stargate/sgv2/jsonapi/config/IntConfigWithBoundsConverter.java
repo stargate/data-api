@@ -15,12 +15,15 @@ public class IntConfigWithBoundsConverter implements Converter<IntConfigWithBoun
     }
     String[] parts = value.split(",");
     if (parts.length == 1) {
-      return new IntConfigWithBounds(Integer.MIN_VALUE, Integer.parseInt(parts[0]), Integer.MAX_VALUE);
+      return new IntConfigWithBounds(
+          Integer.MIN_VALUE, Integer.parseInt(parts[0]), Integer.MAX_VALUE);
     }
     if (parts.length == 3) {
-      return new IntConfigWithBounds(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+      return new IntConfigWithBounds(
+          Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
     }
 
-    throw new IllegalArgumentException("Expected 1 or 3 parts for min,default,max but got: " + value);
+    throw new IllegalArgumentException(
+        "Expected 1 or 3 parts for min,default,max but got: " + value);
   }
 }

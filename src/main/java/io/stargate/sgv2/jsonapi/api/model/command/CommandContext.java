@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import java.util.Objects;
 
@@ -38,6 +39,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
   private final CQLSessionCache cqlSessionCache;
   private final CommandConfig commandConfig;
   private final EmbeddingProviderFactory embeddingProviderFactory;
+  private final RerankingProviderFactory rerankingProviderFactory;
 
   // Request specific
   private final SchemaT schemaObject;
@@ -61,7 +63,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
       CQLSessionCache cqlSessionCache,
       CommandConfig commandConfig,
       ApiFeatures apiFeatures,
-      EmbeddingProviderFactory embeddingProviderFactory) {
+      EmbeddingProviderFactory embeddingProviderFactory,
+      RerankingProviderFactory rerankingProviderFactory) {
 
     this.schemaObject = schemaObject;
     this.embeddingProvider = embeddingProvider;
@@ -72,6 +75,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
     this.cqlSessionCache = cqlSessionCache;
     this.commandConfig = commandConfig;
     this.embeddingProviderFactory = embeddingProviderFactory;
+    this.rerankingProviderFactory = rerankingProviderFactory;
 
     this.apiFeatures = apiFeatures;
     this.requestTracing =
@@ -92,6 +96,10 @@ public class CommandContext<SchemaT extends SchemaObject> {
 
   public EmbeddingProvider embeddingProvider() {
     return embeddingProvider;
+  }
+
+  public RerankingProviderFactory rerankingProviderFactory() {
+    return rerankingProviderFactory;
   }
 
   public String commandName() {
@@ -181,6 +189,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
     private CQLSessionCache cqlSessionCache;
     private CommandConfig commandConfig;
     private EmbeddingProviderFactory embeddingProviderFactory;
+    private RerankingProviderFactory rerankingProviderFactory;
 
     BuilderSupplier() {}
 
@@ -206,6 +215,12 @@ public class CommandContext<SchemaT extends SchemaObject> {
       return this;
     }
 
+    public BuilderSupplier withRerankingProviderFactory(
+        RerankingProviderFactory rerankingProviderFactory) {
+      this.rerankingProviderFactory = rerankingProviderFactory;
+      return this;
+    }
+
     public <SchemaT extends SchemaObject> Builder<SchemaT> getBuilder(SchemaT schemaObject) {
 
       Objects.requireNonNull(
@@ -213,6 +228,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
       Objects.requireNonNull(cqlSessionCache, "cqlSessionCache must not be null");
       Objects.requireNonNull(commandConfig, "commandConfig must not be null");
       Objects.requireNonNull(embeddingProviderFactory, "embeddingProviderFactory must not be null");
+      Objects.requireNonNull(rerankingProviderFactory, "rerankingProviderFactory must not be null");
 
       // SchemaObject is passed here so the generics gets locked here, makes call chaining easier
       Objects.requireNonNull(schemaObject, "schemaObject must not be null");
@@ -278,7 +294,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
             cqlSessionCache,
             commandConfig,
             apiFeatures,
-            embeddingProviderFactory);
+            embeddingProviderFactory,
+            rerankingProviderFactory);
       }
     }
   }

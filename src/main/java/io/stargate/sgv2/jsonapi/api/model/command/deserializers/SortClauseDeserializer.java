@@ -137,6 +137,23 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         // TODO: aaron 17-oct-2024 - this break seems unneeded as above it checks if there is only 1
         // field, leaving for now
         break;
+      } else if (DocumentConstants.Fields.HYBRID_FIELD.equals(path)) {
+        // Hybrid search can't be used with other sort clause
+        if (totalFields > 1) {
+          throw new IllegalArgumentException("XXX TODO - add error message");
+        }
+        if (!inner.getValue().isTextual()) {
+          throw new IllegalArgumentException("XXX TODO - add error message");
+        }
+
+        String hybridQuery = inner.getValue().textValue();
+        if (hybridQuery.isBlank()) {
+          throw new IllegalArgumentException("XXX TODO - add error message");
+        }
+        SortExpression exp = new SortExpression(path, false, null, hybridQuery);
+        sortExpressions.clear();
+        sortExpressions.add(exp);
+        break;
       } else if (inner.getValue().isArray()) {
         // TODO: HACK: quick support for tables, if the value is an array we will assume the column
         // is a vector then need to check on table pathway that the sort is correct.

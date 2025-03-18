@@ -50,6 +50,7 @@ public abstract class RerankingProvider {
    */
   public Uni<RerankingResponse> rerank(
       String query, List<String> passages, RerankingCredentials rerankingCredentials) {
+
     int maxBatch = requestProperties.maxBatchSize();
     List<Uni<RerankingBatchResponse>> batchRerankings = new ArrayList<>();
     for (int i = 0; i < passages.size(); i += maxBatch) {

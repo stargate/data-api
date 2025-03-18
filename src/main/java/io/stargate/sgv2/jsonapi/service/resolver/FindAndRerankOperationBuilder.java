@@ -9,6 +9,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -19,6 +21,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.CompositeTaskOperationBu
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroupAndDeferrables;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
@@ -63,6 +66,8 @@ class FindAndRerankOperationBuilder {
 
     Objects.requireNonNull(command, "command cannot be null");
 
+    checkSupported();
+
     // Step 1 - we need a reranking task and the deferrable actions to do the intermediate reads
     var rerankTasksAndDeferrables = rerankTasks();
 
@@ -96,13 +101,51 @@ class FindAndRerankOperationBuilder {
         rerankTasksAndDeferrables.accumulator());
   }
 
+  /**
+   * Check the collection supports hybrid search with the features the request uses, throw if it
+   * does not
+   */
+  private void checkSupported() {
+
+    // TODO: Check vector if that is used
+
+    // TODO: Check vectorize if that is used
+
+    // TODO: check lexical if that is used
+
+    if (!commandContext.schemaObject().rerankingConfig().enabled()) {
+      // TODO: more info in the error
+      throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
+    }
+  }
+
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
       rerankTasks() {
 
-    // TODO : Get the reranking provider
-    Object rerankingProvider = new Object();
+    // Previous code will check reranking is supported
+    RerankingProvider rerankingProvider =
+        commandContext
+            .rerankingProviderFactory()
+            .getConfiguration(
+                commandContext.requestContext().getTenantId(),
+                commandContext.requestContext().getCassandraToken(),
+                commandContext
+                    .schemaObject()
+                    .rerankingConfig()
+                    .rerankingProviderConfig()
+                    .provider(),
+                commandContext
+                    .schemaObject()
+                    .rerankingConfig()
+                    .rerankingProviderConfig()
+                    .modelName(),
+                commandContext
+                    .schemaObject()
+                    .rerankingConfig()
+                    .rerankingProviderConfig()
+                    .authentication(),
+                commandContext.commandName());
 
-    // TODO: look at the command to see what we want to do both the ANN and BM25 reads
     // we need a deferred action for each read
     // at the moment we dont
     List<DeferredCommandResult> deferredCommandResults =
@@ -112,14 +155,20 @@ class FindAndRerankOperationBuilder {
     // todo: move to a builder pattern, mosty to make it eaier to manage the task position and retry
     // policy
     int commandLimit = getOrDefault(command.options(), FindAndRerankCommand.Options::limit, 10);
+    boolean includeSimilarity =
+        getOrDefault(command.options(), FindAndRerankCommand.Options::includeSimilarity, false);
+
     RerankingTask<CollectionSchemaObject> task =
         new RerankingTask<>(
             0,
             commandContext.schemaObject(),
             TaskRetryPolicy.NO_RETRY,
             rerankingProvider,
+            hybridQuery(),
+            VECTOR_EMBEDDING_TEXT_FIELD,
             deferredCommandResults,
-            commandLimit);
+            commandLimit,
+            includeSimilarity);
 
     // there is only 1 task, but making it clear that we want sequential for this step
     TaskGroup<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject> taskGroup =
@@ -155,7 +204,7 @@ class FindAndRerankOperationBuilder {
             getOrDefault(command.options(), FindAndRerankCommand.Options::limit, 10),
             0,
             null,
-            command.options().includeScores(), // pass through, then pull $similarity from the doc
+            command.options().includeScores() , // pass through, then pull $similarity from the doc
             command
                 .options()
                 .includeSortVector()); // pass through, then pull from intermediate result
@@ -219,5 +268,15 @@ class FindAndRerankOperationBuilder {
 
     // No accumulator, this will be wrapped in an intermediate composite task
     return new TaskGroupAndDeferrables<>(taskGroup, null, List.of(deferredVectorize));
+  }
+
+  private String hybridQuery() {
+
+    for (var sortExpression : command.sortClause().sortExpressions()) {
+      if (sortExpression.path().equals(DocumentConstants.Fields.HYBRID_FIELD)) {
+        return sortExpression.vectorize();
+      }
+    }
+    throw new IllegalArgumentException("XXX TODO - Better error message");
   }
 }

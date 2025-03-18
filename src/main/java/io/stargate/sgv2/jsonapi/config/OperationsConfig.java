@@ -155,7 +155,6 @@ public interface OperationsConfig {
   @WithDefault("100")
   int defaultCountPageSize();
 
-
   @NotNull
   @Valid
   LwtConfig lwt();
@@ -318,5 +317,4 @@ public interface OperationsConfig {
   @WithDefault("0,50,100")
   @WithConverter(IntConfigWithBoundsConverter.class)
   IntConfigWithBounds hybridSearchLexicalLimit();
-
 }

@@ -28,6 +28,13 @@ public interface DocumentConstants {
      * document .
      */
     String RERANK_FIELD = "$rerank";
+
+    /** Document field used DOCUMENT_RESPONSE of a findAndRerank scores, sorting, and inserting */
+    String HYBRID_FIELD = "$hybrid";
+
+    /** Document field used DOCUMENT_RESPONSE of a findAndRerank scores*/
+    String SCORES_FIELD = "$scores";
+
   }
 
   /** Names of columns in Document-containing Tables */

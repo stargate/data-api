@@ -14,11 +14,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
-import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDescDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
-
 import java.io.IOException;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -52,45 +50,46 @@ public record FindAndRerankCommand(
     return options() == null ? Optional.empty() : Optional.of(options().includeSortVector);
   }
 
-
   public record Options(
       @Positive(message = "limit should be greater than `0`")
-      @Schema(
-          description =
-              "The maximum number of documents to return after the reranking service has ranked them.",
-          type = SchemaType.INTEGER,
-          implementation = Integer.class)
-      Integer limit,
-
+          @Schema(
+              description =
+                  "The maximum number of documents to return after the reranking service has ranked them.",
+              type = SchemaType.INTEGER,
+              implementation = Integer.class)
+          Integer limit,
       @Positive(message = "limit should be greater than `0`")
+          @Schema(
+              description =
+                  "The maximum number of documents to read for the vector and lexical queries that feed into the reranking.",
+              type = SchemaType.INTEGER,
+              implementation = Integer.class)
+          int hybridLimits,
+      // include similarity function score
       @Schema(
-          description =
-              "The maximum number of documents to read for the vector and lexical queries that feed into the reranking.",
-          type = SchemaType.INTEGER,
-          implementation = Integer.class)
-      HybridLimits hybridLimits,
-
-      @Schema(
-          description = "Include the scores from vectors and reranking in the response.",
+          description = "Include similarity function score in response.",
           type = SchemaType.BOOLEAN)
-      boolean includeScores,
+      boolean includeSimilarity,
       @Schema(
-          description = "Return vector embedding used for ANN sorting.",
-          type = SchemaType.BOOLEAN)
-      boolean includeSortVector) {}
+              description = "Include the scores from vectors and reranking in the response.",
+              type = SchemaType.BOOLEAN)
+          boolean includeScores,
+      @Schema(
+              description = "Return vector embedding used for ANN sorting.",
+              type = SchemaType.BOOLEAN)
+          boolean includeSortVector) {}
 
   @JsonDeserialize(using = HybridLimitsDeserializer.class)
   public record HybridLimits(
-      @JsonProperty(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
-      int vectorLimit,
+      @JsonProperty(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) int vectorLimit,
       // TODO: AARON : Get the constant for $lexical
-      @JsonProperty("$lexical")
-      int lexicalLimit){}
+      @JsonProperty("$lexical") int lexicalLimit) {}
 
   /**
    * Deserializer for the `hybridLimits` option, the limits for the inner reads.
-   * <p>
-   * The limit can be:
+   *
+   * <p>The limit can be:
+   *
    * <pre>
    *   {
    *     "options" : {
@@ -111,12 +110,18 @@ public record FindAndRerankCommand(
     }
 
     @Override
-    public HybridLimits deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+    public HybridLimits deserialize(
+        JsonParser jsonParser, DeserializationContext deserializationContext)
+        throws IOException, JsonProcessingException {
 
-      return switch (deserializationContext.readTree(jsonParser)){
+      return switch (deserializationContext.readTree(jsonParser)) {
         case NumericNode number -> new HybridLimits(number.asInt(), number.asInt());
-        case ObjectNode object -> deserializationContext.readTreeAsValue(object, HybridLimits.class);
-        default -> throw new JsonMappingException(jsonParser, "hybridLimits must be an integer or an object with $vector and $lexical fields");
+        case ObjectNode object ->
+            deserializationContext.readTreeAsValue(object, HybridLimits.class);
+        default ->
+            throw new JsonMappingException(
+                jsonParser,
+                "hybridLimits must be an integer or an object with $vector and $lexical fields");
       };
     }
   }

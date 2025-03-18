@@ -56,15 +56,15 @@ public class RerankingTaskPage<SchemaT extends TableBasedSchemaObject>
     }
 
     var rerankedDocuments = completedTask.rerankingTaskResult().rerankedDocuments();
-    List<RerankingTask.DocumentScore> scores =
+    List<DocumentScoresDesc> scores =
         includeScores ? new ArrayList<>(rerankedDocuments.size()) : null;
-    // These should be the reranked documents in order, using regular forEach
+    // These should be the reranked documents in order
     rerankedDocuments.stream()
         .forEachOrdered(
             scoredDocument -> {
               resultBuilder.addDocument(scoredDocument.document());
               if (scores != null) {
-                scores.add(scoredDocument.score());
+                scores.add(scoredDocument.scores().scoresDesc());
               }
             });
 
