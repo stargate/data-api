@@ -334,6 +334,10 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     return builder.build();
   }
 
+  protected boolean isLexicalAvailable() {
+    return !"true".equals(System.getProperty("testing.db.lexical-disabled"));
+  }
+
   /** Utility method for reducing boilerplate code for sending JSON commands */
   protected ValidatableResponse givenHeadersPostJsonThen(String json) {
     return givenHeadersAndJson(json).when().post(KeyspaceResource.BASE_PATH, keyspaceName).then();
