@@ -32,7 +32,8 @@
     <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
     <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>
     <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
-    <stargate.int-test.lexical-disabled/>
+    <!-- Defaults are for DSE which does not support (full) lexical feature set so: -->
+    <stargate.int-test.lexical-disabled>true</stargate.int-test.lexical-disabled>
     <!-- 14-Mar-2025, tatu: no more use of Stargate Coordinator -->
     <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
     <!-- Cassandra driver -->
