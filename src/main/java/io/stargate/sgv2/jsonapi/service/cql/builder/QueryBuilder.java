@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class QueryBuilder {
+  private static final String COUNT_FUNCTION_NAME = "COUNT";
+
   private String keyspaceName;
   private String tableName;
   private boolean isInsert;
@@ -22,6 +24,7 @@ public class QueryBuilder {
   private boolean isSelect;
   private Integer limitInt;
   private String orderByAnn;
+  private BM25Clause bm25Clause;
   private final List<QueryBuilder.FunctionCall> functionCalls = new ArrayList<>();
 
   /** The vectorValue used to compute similarityScore or process an ANN search */
@@ -32,8 +35,6 @@ public class QueryBuilder {
 
   /** The where expression which contains conditions and logic operation for a SELECT or UPDATE. */
   private Expression<BuiltCondition> whereExpression = null;
-
-  private static final String COUNT_FUNCTION_NAME = "COUNT";
 
   public void keyspace(String keyspace) {
     this.keyspaceName = keyspace;
@@ -143,9 +144,15 @@ public class QueryBuilder {
       builder.append(" ORDER BY ").append(orderByAnn).append(" ANN OF ?");
       values.add(vectorValue);
     }
+    if (bm25Clause != null) {
+      builder.append(" ORDER BY ").append(bm25Clause.column()).append(" BM25 OF ?");
+      values.add(bm25Clause.query());
+    }
 
     if (limitInt != null) {
       builder.append(" LIMIT ").append(limitInt == -1 ? "?" : limitInt);
+    } else if (bm25Clause != null) {
+      builder.append(" LIMIT ").append(bm25Clause.limit());
     }
 
     return new Query(builder.toString(), values);
@@ -280,11 +287,18 @@ public class QueryBuilder {
     return this;
   }
 
+  public QueryBuilder bm25Sort(String column, int limit, String text) {
+    bm25Clause = new BM25Clause(column, limit, text);
+    return this;
+  }
+
   public QueryBuilder vsearch(String column, float[] vectorValue) {
     this.orderByAnn = column;
     this.vectorValue = CQLBindValues.getVectorValue(vectorValue);
     return this;
   }
+
+  private record BM25Clause(String column, int limit, String query) {}
 
   public static class FunctionCall {
     final String columnName;

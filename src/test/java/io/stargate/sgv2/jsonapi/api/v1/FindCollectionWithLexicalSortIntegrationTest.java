@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
@@ -22,6 +23,9 @@ public class FindCollectionWithLexicalSortIntegrationTest
     extends AbstractCollectionIntegrationTestBase {
   static final String COLLECTION_WITH_LEXICAL =
       "coll_lexical_sort_" + RandomStringUtils.randomNumeric(16);
+
+  static final String COLLECTION_WITHOUT_LEXICAL =
+      "coll_no_lexical_sort_" + RandomStringUtils.randomNumeric(16);
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
@@ -49,6 +53,23 @@ public class FindCollectionWithLexicalSortIntegrationTest
       insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(3, "biking fun"));
       insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(4, "banana"));
       insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(5, "fun"));
+    }
+
+    @Test
+    void createCollectionWithoutLexical() {
+      // Create a Collection with lexical feature disabled
+      createComplexCollection(
+              """
+                      {
+                        "name": "%s",
+                        "options" : {
+                          "lexical": {
+                            "enabled": false
+                          }
+                        }
+                      }
+                      """
+              .formatted(COLLECTION_WITHOUT_LEXICAL));
     }
   }
 
@@ -78,7 +99,24 @@ public class FindCollectionWithLexicalSortIntegrationTest
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
   @Order(3)
-  class FailingCases {}
+  class FailingCases {
+    @Test
+    void failIfLexicalDisabledForCollection() {
+      givenHeadersPostJsonThenOk(
+              keyspaceName,
+              COLLECTION_WITHOUT_LEXICAL,
+              """
+                          {
+                            "find": {
+                              "sort" : {"$lexical": "banana" }
+                            }
+                          }
+                          """)
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
+          .body("errors[0].message", containsString("Lexical search is not enabled"));
+    }
+  }
 
   private String lexicalDoc(int id, String keywords) {
     return
