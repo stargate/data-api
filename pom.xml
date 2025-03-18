@@ -17,21 +17,22 @@
     <wiremock.version>3.4.2</wiremock.version>
     <mockito.version>5.12.0</mockito.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
+    <!-- Integration test props -->
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
     <quarkus.container-image.group>stargateio</quarkus.container-image.group>
     <quarkus.container-image.name>jsonapi</quarkus.container-image.name>
     <quarkus.container-image.tag>v${project.version}</quarkus.container-image.tag>
     <quarkus.container-image.additional-tags>v1</quarkus.container-image.additional-tags>
-    <cassandra.version>6.9.7</cassandra.version>
-    <!-- Integration test props -->
     <!-- When updating please change defaults in the DseTestResource class -->
-    <!-- 14-Mar-2025, tatu: default to DSE (was "dse-next") -->
+    <!-- 14-Mar-2025, tatu: default to DSE-6.9 (was "dse-next") -->
     <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
+    <cassandra.version>6.9.7</cassandra.version>
     <stargate.int-test.cassandra.image-tag>${cassandra.version}</stargate.int-test.cassandra.image-tag>
     <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
-    <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
+    <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
     <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>
     <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
+    <stargate.int-test.lexical-disabled/>
     <!-- 14-Mar-2025, tatu: no more use of Stargate Coordinator -->
     <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
     <!-- Cassandra driver -->
@@ -306,6 +307,12 @@
           <systemPropertyVariables>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
             <maven.home>${maven.home}</maven.home>
+            <!-- Some Cache "unit" tests run with DseTestResource, so need to pass these configs -->
+            <testing.containers.cassandra-image>${stargate.int-test.cassandra.image}:${stargate.int-test.cassandra.image-tag}</testing.containers.cassandra-image>
+            <testing.containers.cluster-name>${stargate.int-test.cluster.name}</testing.containers.cluster-name>
+            <testing.containers.cluster-dse>${stargate.int-test.cluster.dse}</testing.containers.cluster-dse>
+            <testing.containers.cluster-hcd>${stargate.int-test.cluster.hcd}</testing.containers.cluster-hcd>
+            <testing.containers.use-coordinator>false</testing.containers.use-coordinator>
           </systemPropertyVariables>
           <excludes>
             <exclude>**/*IntegrationTest.*</exclude>
@@ -390,6 +397,7 @@
                 <testing.containers.cluster-dse>${stargate.int-test.cluster.dse}</testing.containers.cluster-dse>
                 <testing.containers.cluster-hcd>${stargate.int-test.cluster.hcd}</testing.containers.cluster-hcd>
                 <testing.package.type>${quarkus.package.type}</testing.package.type>
+                <testing.db.lexical-disabled>${stargate.int-test.lexical-disabled}</testing.db.lexical-disabled>
                 <maven.home>${maven.home}</maven.home>
                 <testing.containers.use-coordinator>${stargate.int-test.use-coordinator}</testing.containers.use-coordinator>
               </systemPropertyVariables>
@@ -416,6 +424,9 @@
         <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
+        <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>
+        <!-- No lexical-sort on DSE: -->
+        <stargate.int-test.lexical-disabled>true</stargate.int-test.lexical-disabled>
       </properties>
     </profile>
     <profile>
@@ -433,7 +444,10 @@
         <stargate.int-test.cassandra.image-tag>1.2.1-early-preview</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>hcd-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
+        <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
         <stargate.int-test.cluster.hcd>true</stargate.int-test.cluster.hcd>
+        <!-- HCD does have lexical-sort: -->
+        <stargate.int-test.lexical-disabled>false</stargate.int-test.lexical-disabled>
       </properties>
     </profile>
   </profiles>

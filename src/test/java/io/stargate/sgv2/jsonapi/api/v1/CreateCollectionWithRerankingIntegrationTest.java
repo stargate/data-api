@@ -48,10 +48,7 @@ public class CreateCollectionWithRerankingIntegrationTest
                       {
                                       "name": "%s",
                                       "options": {
-                                          "lexical": {
-                                              "enabled": true,
-                                              "analyzer": "standard"
-                                          },
+                                          "lexical": %s,
                                           "rerank": {
                                               "enabled": true,
                                               "service": {
@@ -62,7 +59,7 @@ public class CreateCollectionWithRerankingIntegrationTest
                                       }
                                   }
                       """
-                      .formatted(collectionName)));
+                      .formatted(collectionName, lexical())));
 
       deleteCollection(collectionName);
     }
@@ -107,10 +104,7 @@ public class CreateCollectionWithRerankingIntegrationTest
                               {
                                               "name": "%s",
                                               "options": {
-                                                  "lexical": {
-                                                      "enabled": true,
-                                                      "analyzer": "standard"
-                                                  },
+                                                  "lexical": %s,
                                                   "rerank": {
                                                       "enabled": true,
                                                       "service": {
@@ -121,7 +115,7 @@ public class CreateCollectionWithRerankingIntegrationTest
                                               }
                                           }
                               """
-                      .formatted(collectionName)));
+                      .formatted(collectionName, lexical())));
 
       deleteCollection(collectionName);
     }
@@ -155,17 +149,14 @@ public class CreateCollectionWithRerankingIntegrationTest
                               {
                                               "name": "%s",
                                               "options": {
-                                                  "lexical": {
-                                                      "enabled": true,
-                                                      "analyzer": "standard"
-                                                  },
+                                                  "lexical": %s,
                                                   "rerank": {
                                                       "enabled": false
                                                   }
                                               }
                                           }
                               """
-                      .formatted(collectionName)));
+                      .formatted(collectionName, lexical())));
 
       deleteCollection(collectionName);
     }
@@ -210,17 +201,14 @@ public class CreateCollectionWithRerankingIntegrationTest
                                 {
                                                 "name": "%s",
                                                 "options": {
-                                                    "lexical": {
-                                                        "enabled": true,
-                                                        "analyzer": "standard"
-                                                    },
+                                                    "lexical": %s,
                                                     "rerank": {
                                                         "enabled": false
                                                     }
                                                 }
                                             }
                                 """
-                      .formatted(collectionName)));
+                      .formatted(collectionName, lexical())));
 
       deleteCollection(collectionName);
     }
@@ -303,5 +291,22 @@ public class CreateCollectionWithRerankingIntegrationTest
                           }
                           """
         .formatted(collectionName, rerankingDef);
+  }
+
+  private String lexical() {
+    return isLexicalAvailableForDB()
+        ?
+        """
+            {
+                "enabled": true,
+                "analyzer": "standard"
+            }
+            """
+        :
+        """
+            {
+                "enabled": false
+            }
+            """;
   }
 }

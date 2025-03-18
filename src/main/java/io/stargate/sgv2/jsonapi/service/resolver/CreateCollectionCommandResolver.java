@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -66,12 +67,16 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateCollectionCommand command) {
 
+    final boolean lexicalAvailableForDB = ctx.apiFeatures().isFeatureEnabled(ApiFeature.LEXICAL);
+
     final var name = validateSchemaName(command.name(), NamingRules.COLLECTION);
     final CreateCollectionCommand.Options options = command.options();
 
     if (options == null) {
       final CollectionLexicalConfig lexicalConfig =
-          CollectionLexicalConfig.configForNewCollections();
+          lexicalAvailableForDB
+              ? CollectionLexicalConfig.configForEnabledStandard()
+              : CollectionLexicalConfig.configForDisabled();
       final CollectionRerankingConfig rerankingConfig =
           CollectionRerankingConfig.configForNewCollections(rerankingProvidersConfig);
       return CreateCollectionOperation.withoutVectorSearch(
@@ -93,7 +98,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     boolean hasVectorSearch = options.vector() != null;
     CreateCollectionCommand.Options.VectorSearchConfig vector = options.vector();
     final CollectionLexicalConfig lexicalConfig =
-        CollectionLexicalConfig.validateAndConstruct(objectMapper, options.lexical());
+        CollectionLexicalConfig.validateAndConstruct(
+            objectMapper, lexicalAvailableForDB, options.lexical());
     final CollectionRerankingConfig rerankingConfig =
         CollectionRerankingConfig.validateAndConstruct(options.rerank(), rerankingProvidersConfig);
 
