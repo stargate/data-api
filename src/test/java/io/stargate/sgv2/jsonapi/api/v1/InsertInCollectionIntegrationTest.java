@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
@@ -1021,6 +1022,9 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
     @Test
     @Order(1)
     public void insertDocWithLexicalOk() {
+      // Must have Lexical functionality available
+      Assumptions.assumeTrue(isLexicalAvailable());
+
       givenHeadersPostJsonThenOkNoErrors(
                   """
                   {
