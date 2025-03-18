@@ -1,16 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
-import com.fasterxml.jackson.databind.node.NumericNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.ResponseData;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import java.util.*;
 import org.slf4j.Logger;
@@ -25,9 +24,9 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   private final RerankingProvider rerankingProvider;
   private final String query;
   private final String passageField;
+  private final DocumentProjector userProjection;
   private final List<DeferredCommandResult> deferredReads;
   private final int limit;
-  private final boolean includeSimilarityScore;
 
   private float[] sortVector = null;
   // captured in onSuccess
@@ -40,17 +39,17 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       RerankingProvider rerankingProvider,
       String query,
       String passageField,
+      DocumentProjector userProjection,
       List<DeferredCommandResult> deferredReads,
-      int limit,
-      boolean includeSimilarityScore) {
+      int limit) {
     super(position, schemaObject, retryPolicy);
 
     this.rerankingProvider = rerankingProvider;
     this.query = query;
     this.passageField = passageField;
+    this.userProjection = userProjection;
     this.deferredReads = deferredReads;
     this.limit = limit;
-    this.includeSimilarityScore = includeSimilarityScore;
 
     setStatus(TaskStatus.READY);
   }
@@ -153,23 +152,12 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     for (var commandResult : rawReadResults) {
       var multiDocResponse = (ResponseData.MultiResponseData) commandResult.data();
 
-      if (merger == null){
-        merger = new ScoredDocumentMerger(multiDocResponse.documents().size() * 2, includeSimilarityScore);
+      if (merger == null) {
+        merger =
+            new ScoredDocumentMerger(
+                multiDocResponse.documents().size() * 2, passageField, userProjection);
       }
-
-      for (var doc : multiDocResponse.documents()) {
-
-        var thisDocScore = switch (doc.get(DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD)){
-          case null -> DocumentScores.EMPTY;
-          case NumericNode numberNode -> DocumentScores.withVectorScore(numberNode.floatValue());
-          default -> throw new IllegalStateException(
-              "%s document field is not a number for doc _id %s"
-                  .formatted(
-                      DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD,
-                      doc.get(DocumentConstants.Fields.DOC_ID)));
-        };
-        merger.mergeDocument(new ScoredDocument(doc.get(DocumentConstants.Fields.DOC_ID), doc, thisDocScore));
-      }
+      multiDocResponse.documents().forEach(merger::merge);
     }
 
     var deduplicatedDocuments = merger.mergedDocuments();
@@ -214,13 +202,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
       List<String> passages = new ArrayList<>(unrankedDocs.size());
       for (var scoredDoc : unrankedDocs) {
-        var passageNode = scoredDoc.document().get(passageField);
-        if (passageNode == null || !passageNode.isTextual()) {
-          throw new IllegalStateException(
-              "Passage field not found or not a text node in document _id=%s"
-                  .formatted(scoredDoc.document().get(DocumentConstants.Fields.DOC_ID)));
-        }
-        passages.add(passageNode.textValue());
+        passages.add(scoredDoc.passage());
       }
 
       return rerankingProvider
@@ -292,5 +274,4 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       return rerankedDocuments;
     }
   }
-
 }

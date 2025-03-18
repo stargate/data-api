@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
 import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
@@ -35,6 +37,12 @@ import org.slf4j.LoggerFactory;
 class FindAndRerankOperationBuilder {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FindAndRerankOperationBuilder.class);
+
+  // Need a Projection for the inner finds, it's too complicated to merge the user projection
+  // and what we need, because the user may be running a projection to hide fields, which
+  // cannot then include fields, so we just use the * wildcard to include all fields for now
+  private static final JsonNode INCLUDE_ALL_PROJECTION =
+      JsonNodeFactory.instance.objectNode().put("*", 1);
 
   private final CommandContext<CollectionSchemaObject> commandContext;
 
@@ -123,27 +131,16 @@ class FindAndRerankOperationBuilder {
       rerankTasks() {
 
     // Previous code will check reranking is supported
+    var providerConfig = commandContext.schemaObject().rerankingConfig().rerankingProviderConfig();
     RerankingProvider rerankingProvider =
         commandContext
             .rerankingProviderFactory()
             .getConfiguration(
                 commandContext.requestContext().getTenantId(),
                 commandContext.requestContext().getCassandraToken(),
-                commandContext
-                    .schemaObject()
-                    .rerankingConfig()
-                    .rerankingProviderConfig()
-                    .provider(),
-                commandContext
-                    .schemaObject()
-                    .rerankingConfig()
-                    .rerankingProviderConfig()
-                    .modelName(),
-                commandContext
-                    .schemaObject()
-                    .rerankingConfig()
-                    .rerankingProviderConfig()
-                    .authentication(),
+                providerConfig.provider(),
+                providerConfig.modelName(),
+                providerConfig.authentication(),
                 commandContext.commandName());
 
     // we need a deferred action for each read
@@ -155,9 +152,6 @@ class FindAndRerankOperationBuilder {
     // todo: move to a builder pattern, mosty to make it eaier to manage the task position and retry
     // policy
     int commandLimit = getOrDefault(command.options(), FindAndRerankCommand.Options::limit, 10);
-    boolean includeSimilarity =
-        getOrDefault(command.options(), FindAndRerankCommand.Options::includeSimilarity, false);
-
     RerankingTask<CollectionSchemaObject> task =
         new RerankingTask<>(
             0,
@@ -166,9 +160,9 @@ class FindAndRerankOperationBuilder {
             rerankingProvider,
             hybridQuery(),
             VECTOR_EMBEDDING_TEXT_FIELD,
+            command.buildProjector(),
             deferredCommandResults,
-            commandLimit,
-            includeSimilarity);
+            commandLimit);
 
     // there is only 1 task, but making it clear that we want sequential for this step
     TaskGroup<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject> taskGroup =
@@ -204,7 +198,7 @@ class FindAndRerankOperationBuilder {
             getOrDefault(command.options(), FindAndRerankCommand.Options::limit, 10),
             0,
             null,
-            command.options().includeScores() , // pass through, then pull $similarity from the doc
+            command.options().includeScores(), // pass through, then pull $similarity from the doc
             command
                 .options()
                 .includeSortVector()); // pass through, then pull from intermediate result
@@ -217,7 +211,7 @@ class FindAndRerankOperationBuilder {
     var bm25ReadCommand =
         new FindCommand(
             command.filterSpec(),
-            command.projectionDefinition(),
+            INCLUDE_ALL_PROJECTION,
             new SortClause(new ArrayList<>()), // TODO: LEXICAL SORT !,
             findCommandOptions);
     var bm25IntermediateReadTask =
@@ -246,7 +240,7 @@ class FindAndRerankOperationBuilder {
     var vectorReadCommand =
         new FindCommand(
             command.filterSpec(),
-            command.projectionDefinition(),
+            INCLUDE_ALL_PROJECTION,
             new SortClause(new ArrayList<>()), // TODO: VECTOR SORT !
             findCommandOptions);
 

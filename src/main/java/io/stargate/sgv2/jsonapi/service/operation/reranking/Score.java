@@ -2,10 +2,11 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 public class Score implements Comparable<Score> {
 
-  public static final Score EMPTY_RERANKING = new Score(ScoreSource.RERANKING, false, Integer.MIN_VALUE);
+  public static final Score EMPTY_RERANKING =
+      new Score(ScoreSource.RERANKING, false, Integer.MIN_VALUE);
   public static final Score EMPTY_VECTOR = new Score(ScoreSource.VECTOR, false, Integer.MIN_VALUE);
 
-  public enum ScoreSource{
+  public enum ScoreSource {
     RERANKING,
     VECTOR;
   }
@@ -25,11 +26,12 @@ public class Score implements Comparable<Score> {
   public float score() {
     return score;
   }
+
   public boolean exists() {
     return exists;
   }
 
-  public ScoreSource source(){
+  public ScoreSource source() {
     return source;
   }
 
@@ -45,17 +47,19 @@ public class Score implements Comparable<Score> {
     checkSameSource("merge()", other);
     // can only merge if one of the scores does not exist
     if (exists && other.exists) {
-      throw new IllegalArgumentException("Cannot merge two scores that both exist, got %s and %s".formatted(this, other));
+      throw new IllegalArgumentException(
+          "Cannot merge two scores that both exist, got %s and %s".formatted(this, other));
     }
     return new Score(source, exists || other.exists, exists ? score : other.score);
   }
 
-  private void checkSameSource(String context, Score other){
+  private void checkSameSource(String context, Score other) {
     if (source != other.source) {
-      throw new IllegalArgumentException("Cannot %s scores from different sources, got %s and %s".formatted(context, source, other.source));
+      throw new IllegalArgumentException(
+          "Cannot %s scores from different sources, got %s and %s"
+              .formatted(context, source, other.source));
     }
   }
-
 
   /**
    * Sorts based on the score
@@ -63,7 +67,7 @@ public class Score implements Comparable<Score> {
    * <p>NOTE: this sorts in <b>descending</b> order, larger scores are better
    */
   @Override
-  public int compareTo( Score other) {
+  public int compareTo(Score other) {
     if (other == null) {
       return 1;
     }

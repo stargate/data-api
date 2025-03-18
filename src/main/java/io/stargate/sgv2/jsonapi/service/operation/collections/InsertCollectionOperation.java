@@ -115,12 +115,12 @@ public record InsertCollectionOperation(
         .transformToUni(
             insertion ->
                 insertDocument(
-                    dataApiRequestInfo,
-                    queryExecutor,
-                    query,
-                    insertion,
-                    vectorEnabled,
-                    offlineMode)
+                        dataApiRequestInfo,
+                        queryExecutor,
+                        query,
+                        insertion,
+                        vectorEnabled,
+                        offlineMode)
                     // wrap item and failure
                     // the collection can decide how to react on failure
                     .onItemOrFailure()
@@ -171,12 +171,12 @@ public record InsertCollectionOperation(
         .transformToUniAndMerge(
             insertion ->
                 insertDocument(
-                    dataApiRequestInfo,
-                    queryExecutor,
-                    query,
-                    insertion,
-                    vectorEnabled,
-                    offlineMode)
+                        dataApiRequestInfo,
+                        queryExecutor,
+                        query,
+                        insertion,
+                        vectorEnabled,
+                        offlineMode)
                     // handle errors fail silent mode
                     .onItemOrFailure()
                     .transform((id, t) -> insertion.maybeAddFailure(t)))

@@ -65,11 +65,14 @@ public record FindAndRerankCommand(
               type = SchemaType.INTEGER,
               implementation = Integer.class)
           int hybridLimits,
-      // include similarity function score
       @Schema(
-          description = "Include similarity function score in response.",
-          type = SchemaType.BOOLEAN)
-      boolean includeSimilarity,
+              description =
+                  "Name of the Document Field that contains the passage we want to rerank on, defaults to "
+                      + DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD
+                      + ".",
+              type = SchemaType.STRING,
+              defaultValue = DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)
+          boolean rerankOn,
       @Schema(
               description = "Include the scores from vectors and reranking in the response.",
               type = SchemaType.BOOLEAN)

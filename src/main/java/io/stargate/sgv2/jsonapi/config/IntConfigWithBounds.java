@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.config;
 
-
 /**
  * An integer value that has a min, default, and max.
  *

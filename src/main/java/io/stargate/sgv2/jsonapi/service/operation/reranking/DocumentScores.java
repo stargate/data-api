@@ -2,12 +2,11 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import java.util.Objects;
 
-/**
- * <p></p>
- */
+/** */
 public class DocumentScores implements Comparable<DocumentScores> {
 
-  public static final DocumentScores EMPTY = new DocumentScores(Score.EMPTY_VECTOR, Score.EMPTY_RERANKING);
+  public static final DocumentScores EMPTY =
+      new DocumentScores(Score.EMPTY_VECTOR, Score.EMPTY_RERANKING);
 
   private Score vectorScore;
   private Score rerankScore;
@@ -27,21 +26,22 @@ public class DocumentScores implements Comparable<DocumentScores> {
 
   public DocumentScores merge(DocumentScores other) {
     Objects.requireNonNull(other, "Other must not be null");
-    return new DocumentScores(vectorScore.merge(other.vectorScore), rerankScore.merge(other.rerankScore));
+    return new DocumentScores(
+        vectorScore.merge(other.vectorScore), rerankScore.merge(other.rerankScore));
   }
 
   /**
    * Returns the {@link DocumentScoresDesc} to describe the scores in the response of an API call
    */
-  DocumentScoresDesc scoresDesc(){
+  DocumentScoresDesc scoresDesc() {
     return new DocumentScoresDesc(vectorScore.score(), rerankScore.score());
   }
-  
-  Score rerank(){
+
+  Score rerank() {
     return rerankScore;
   }
 
-  Score vector(){
+  Score vector() {
     return vectorScore;
   }
 
@@ -55,5 +55,4 @@ public class DocumentScores implements Comparable<DocumentScores> {
     Objects.requireNonNull(other, "Other must not be null");
     return rerankScore.compareTo(other.rerankScore);
   }
-
 }
