@@ -35,8 +35,7 @@ import java.util.*;
  * persisted in the collection's metadata comment.
  */
 public class CollectionRerankingConfig {
-  @JsonProperty
-  private final boolean enabled;
+  @JsonProperty private final boolean enabled;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonProperty("service")
