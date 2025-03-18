@@ -387,6 +387,31 @@ public class CollectionRerankingConfig {
     return parameters;
   }
 
+  @Override
+  public int hashCode() {
+    return Objects.hash(enabled, rerankingServiceConfig);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (obj == null || getClass() != obj.getClass()) return false;
+    CollectionRerankingConfig that = (CollectionRerankingConfig) obj;
+    return enabled == that.enabled
+        && Objects.equals(rerankingServiceConfig, that.rerankingServiceConfig);
+  }
+
+  @Override
+  public String toString() {
+    return "CollectionRerankingConfig["
+        + "enabled="
+        + enabled
+        + ", "
+        + "rerankingServiceConfig="
+        + rerankingServiceConfig
+        + ']';
+  }
+
   // Create a nested record for the provider-related fields
   public record RerankingServiceConfig(
       String provider,
