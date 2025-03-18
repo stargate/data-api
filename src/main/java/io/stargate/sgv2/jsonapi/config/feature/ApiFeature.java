@@ -17,11 +17,22 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
  */
 public enum ApiFeature {
   /**
+   * Lexical search/sort feature flag: if enabled, the API will allow construction of
+   * "$lexical"-enabled Collections. If disabled, those operations will fail with {@link
+   * ErrorCodeV1#LEXICAL_NOT_AVAILABLE_FOR_DATABASE}).
+   *
+   * <p>Enabled by default.
+   */
+  LEXICAL("lexical", true),
+
+  /**
    * API Tables feature flag: if enabled, the API will expose table-specific Namespace resource
    * commands, and support commands on Tables. If disabled, those operations will fail with {@link
    * ErrorCodeV1#TABLE_FEATURE_NOT_ENABLED}.
+   *
+   * <p>Disabled by default.
    */
-  TABLES("tables");
+  TABLES("tables", false);
 
   /**
    * Prefix for HTTP headers used to override feature flags for specific requests: prepended before
@@ -42,13 +53,20 @@ public enum ApiFeature {
    */
   private final String featureNameAsHeader;
 
-  ApiFeature(String featureName) {
+  /**
+   * State of feature if not otherwise specified: if {@code true}, feature is enabled by default;
+   * otherwise disabled.
+   */
+  private final boolean enabledByDefault;
+
+  ApiFeature(String featureName, boolean enabledByDefault) {
     if (!featureName.equals(featureName.toLowerCase())) {
       throw new IllegalStateException(
           "Internal error: 'featureName' must be lower-case, was: \"" + featureName + "\"");
     }
     this.featureName = featureName;
     featureNameAsHeader = HTTP_HEADER_PREFIX + featureName;
+    this.enabledByDefault = enabledByDefault;
   }
 
   @JsonValue // for Jackson to serialize as lower-case
@@ -58,5 +76,9 @@ public enum ApiFeature {
 
   public String httpHeaderName() {
     return featureNameAsHeader;
+  }
+
+  public boolean enabledByDefault() {
+    return enabledByDefault;
   }
 }

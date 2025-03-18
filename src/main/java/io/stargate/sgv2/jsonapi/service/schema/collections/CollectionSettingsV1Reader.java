@@ -53,7 +53,7 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
     JsonNode lexicalNode =
         collectionOptionsNode.path(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY);
     if (lexicalNode == null) {
-      lexicalConfig = CollectionLexicalConfig.configForLegacyCollections();
+      lexicalConfig = CollectionLexicalConfig.configForDisabled();
     } else {
       boolean enabled = lexicalNode.path("enabled").asBoolean(false);
       JsonNode analyzerNode = lexicalNode.path("analyzer");

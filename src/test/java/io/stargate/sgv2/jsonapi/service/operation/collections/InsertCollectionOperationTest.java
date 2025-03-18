@@ -116,7 +116,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                             EmbeddingSourceModel.OTHER,
                             null))),
                 null,
-                CollectionLexicalConfig.configForLegacyCollections(),
+                CollectionLexicalConfig.configForDisabled(),
                 CollectionRerankingConfig.configForPreRerankingCollections()),
             jsonProcessingMetricsReporter,
             null);

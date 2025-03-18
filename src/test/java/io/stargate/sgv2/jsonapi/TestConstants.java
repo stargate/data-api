@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -42,7 +41,7 @@ public final class TestConstants {
           VectorConfig.NOT_ENABLED_CONFIG,
           null,
           // Use configs that by default enable lexical:
-          CollectionLexicalConfig.configForNewCollections(),
+          CollectionLexicalConfig.configForEnabledStandard(),
           // Use default reranking config - hardcode the value to avoid reading config
           new CollectionRerankingConfig(
               true,
@@ -57,7 +56,7 @@ public final class TestConstants {
           IdConfig.defaultIdConfig(),
           VectorConfig.NOT_ENABLED_CONFIG,
           null,
-          CollectionLexicalConfig.configForLegacyCollections(),
+          CollectionLexicalConfig.configForDisabled(),
           CollectionRerankingConfig.configForPreRerankingCollections());
 
   public static final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT =
@@ -74,7 +73,7 @@ public final class TestConstants {
                       EmbeddingSourceModel.OTHER,
                       null))),
           null,
-          CollectionLexicalConfig.configForLegacyCollections(),
+          CollectionLexicalConfig.configForDisabled(),
           CollectionRerankingConfig.configForPreRerankingCollections());
 
   public static final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =
@@ -85,8 +84,6 @@ public final class TestConstants {
   public static final String TEST_COMMAND_NAME = "testCommand";
 
   // CommandContext for working on the schema objects above
-
-  public static final ApiFeatures DEFAULT_API_FEATURES_FOR_TESTS = ApiFeatures.empty();
 
   public static CommandContext<CollectionSchemaObject> collectionContext() {
     return collectionContext(TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null, null);
