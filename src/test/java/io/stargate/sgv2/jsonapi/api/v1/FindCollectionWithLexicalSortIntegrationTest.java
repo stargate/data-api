@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -22,6 +23,7 @@ public class FindCollectionWithLexicalSortIntegrationTest
   static final String COLLECTION_WITH_LEXICAL =
       "coll_lexical_sort_" + RandomStringUtils.randomNumeric(16);
 
+  @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
   @Order(1)
   class Setup {
@@ -50,6 +52,7 @@ public class FindCollectionWithLexicalSortIntegrationTest
     }
   }
 
+  @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
   @Order(2)
   class HappyCases {
@@ -72,8 +75,9 @@ public class FindCollectionWithLexicalSortIntegrationTest
     }
   }
 
+  @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
-  @Order(2)
+  @Order(3)
   class FailingCases {}
 
   private String lexicalDoc(int id, String keywords) {
