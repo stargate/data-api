@@ -65,6 +65,11 @@ public class DseTestResource extends StargateTestResource {
     return 100L;
   }
 
+  // By default, allow Lexical on HCD backend, but not on DSE
+  public String getFeatureFlagLexical() {
+    return isHcd() ? "true" : "false";
+  }
+
   // By default, we enable the feature flag for tables
   public String getFeatureFlagTables() {
     return "true";
@@ -76,6 +81,12 @@ public class DseTestResource extends StargateTestResource {
     ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
     propsBuilder.putAll(env);
     propsBuilder.put("stargate.jsonapi.custom.embedding.enabled", "true");
+
+    // 17-Mar-2025, tatu: [data-api#1903] Lexical search/sort feature flag
+    String lexicalFeatureSetting = getFeatureFlagLexical();
+    if (lexicalFeatureSetting != null) {
+      propsBuilder.put("stargate.feature.flags.lexical", lexicalFeatureSetting);
+    }
 
     // 04-Sep-2024, tatu: [data-api#1335] Enable Tables using new Feature Flag:
     String tableFeatureSetting = getFeatureFlagTables();
