@@ -9,6 +9,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -24,6 +25,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
   class CreateLexicalHappyPath {
     @Test
     void createLexicalSimpleEnabledMinimal() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
       final String collectionName = "coll_lexical_minimal" + RandomStringUtils.randomNumeric(16);
       String json = createRequestWithLexical(collectionName, "{\"enabled\": true}");
 
@@ -35,6 +38,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
     @Test
     void createLexicalSimpleEnabledStandard() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
       final String collectionName = "coll_lexical_simple" + RandomStringUtils.randomNumeric(16);
       String json =
           createRequestWithLexical(
@@ -54,6 +59,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
     @Test
     void createLexicalSimpleEnabledCustom() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
       final String collectionName = "coll_lexical_cust_" + RandomStringUtils.randomNumeric(16);
       String json =
           createRequestWithLexical(
@@ -77,6 +84,8 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
     @Test
     void createLexicalSimpleDisabled() {
+      // Fine regardless of whether Lexical available for DB or not
+
       final String collectionName = "coll_lexical_disabled" + RandomStringUtils.randomNumeric(16);
       String json = createRequestWithLexical(collectionName, "{\"enabled\": false}");
 
@@ -117,13 +126,19 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
                                 }
                           """);
 
-      givenHeadersPostJsonThenOk(json)
-          .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
-          // analyzers
-          .body("errors[0].message", containsString("Invalid analyzer config"))
-          .body("errors[0].message", containsString("token 'unknown'"));
+      if (isLexicalAvailableForDB()) {
+        givenHeadersPostJsonThenOk(json)
+            .body("$", responseIsError())
+            .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+            // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
+            // analyzers
+            .body("errors[0].message", containsString("Invalid analyzer config"))
+            .body("errors[0].message", containsString("token 'unknown'"));
+      } else {
+        givenHeadersPostJsonThenOk(json)
+            .body("$", responseIsError())
+            .body("errors[0].errorCode", is("LEXICAL_NOT_AVAILABLE_FOR_DATABASE"));
+      }
     }
 
     @Test
@@ -139,15 +154,21 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
                                         }
                                   """);
 
-      givenHeadersPostJsonThenOk(json)
-          .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
-          // analyzers
-          .body(
-              "errors[0].message",
-              containsString(
-                  "'analyzer' property of 'lexical' must be either String or JSON Object, is: ARRAY"));
+      if (isLexicalAvailableForDB()) {
+        givenHeadersPostJsonThenOk(json)
+            .body("$", responseIsError())
+            .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+            // Not ideal: but Cassandra has pretty sub-optimal message for unknown pre-defined
+            // analyzers
+            .body(
+                "errors[0].message",
+                containsString(
+                    "'analyzer' property of 'lexical' must be either String or JSON Object, is: ARRAY"));
+      } else {
+        givenHeadersPostJsonThenOk(json)
+            .body("$", responseIsError())
+            .body("errors[0].errorCode", is("LEXICAL_NOT_AVAILABLE_FOR_DATABASE"));
+      }
     }
   }
 

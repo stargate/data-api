@@ -32,6 +32,7 @@
     <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
     <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>
     <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
+    <stargate.int-test.lexical-disabled/>
     <!-- 14-Mar-2025, tatu: no more use of Stargate Coordinator -->
     <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
     <!-- Cassandra driver -->
@@ -396,6 +397,7 @@
                 <testing.containers.cluster-dse>${stargate.int-test.cluster.dse}</testing.containers.cluster-dse>
                 <testing.containers.cluster-hcd>${stargate.int-test.cluster.hcd}</testing.containers.cluster-hcd>
                 <testing.package.type>${quarkus.package.type}</testing.package.type>
+                <testing.db.lexical-disabled>${stargate.int-test.lexical-disabled}</testing.db.lexical-disabled>
                 <maven.home>${maven.home}</maven.home>
                 <testing.containers.use-coordinator>${stargate.int-test.use-coordinator}</testing.containers.use-coordinator>
               </systemPropertyVariables>
@@ -423,6 +425,8 @@
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
         <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>
+        <!-- No lexical-sort on DSE: -->
+        <stargate.int-test.lexical-disabled>true</stargate.int-test.lexical-disabled>
       </properties>
     </profile>
     <profile>
@@ -442,6 +446,8 @@
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
         <stargate.int-test.cluster.hcd>true</stargate.int-test.cluster.hcd>
+        <!-- HCD does have lexical-sort: -->
+        <stargate.int-test.lexical-disabled>false</stargate.int-test.lexical-disabled>
       </properties>
     </profile>
   </profiles>
