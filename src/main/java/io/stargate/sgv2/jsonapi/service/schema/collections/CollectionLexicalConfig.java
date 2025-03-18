@@ -37,11 +37,11 @@ public record CollectionLexicalConfig(
    */
   public static CollectionLexicalConfig validateAndConstruct(
       ObjectMapper mapper,
-      boolean lexicalAvailable,
+      boolean lexicalAvailableForDB,
       CreateCollectionCommand.Options.LexicalConfigDefinition lexicalConfig) {
     // If not defined, enable if available, otherwise disable
     if (lexicalConfig == null) {
-      return lexicalAvailable ? configForEnabledStandard() : configForDisabled();
+      return lexicalAvailableForDB ? configForEnabledStandard() : configForDisabled();
     }
     // Otherwise validate and construct
     Boolean enabled = lexicalConfig.enabled();
@@ -50,7 +50,7 @@ public record CollectionLexicalConfig(
           "'enabled' is required property for 'lexical' Object value");
     }
     // Can only enable if feature is available
-    if (enabled && !lexicalAvailable) {
+    if (enabled && !lexicalAvailableForDB) {
       throw ErrorCodeV1.LEXICAL_NOT_AVAILABLE_FOR_DATABASE.toApiException();
     }
 

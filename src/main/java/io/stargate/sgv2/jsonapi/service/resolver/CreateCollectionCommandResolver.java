@@ -67,14 +67,14 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateCollectionCommand command) {
 
-    final boolean lexicalAvailable = ctx.apiFeatures().isFeatureEnabled(ApiFeature.LEXICAL);
+    final boolean lexicalAvailableForDB = ctx.apiFeatures().isFeatureEnabled(ApiFeature.LEXICAL);
 
     final var name = validateSchemaName(command.name(), NamingRules.COLLECTION);
     final CreateCollectionCommand.Options options = command.options();
 
     if (options == null) {
       final CollectionLexicalConfig lexicalConfig =
-          lexicalAvailable
+          lexicalAvailableForDB
               ? CollectionLexicalConfig.configForEnabledStandard()
               : CollectionLexicalConfig.configForDisabled();
       final CollectionRerankingConfig rerankingConfig =
@@ -99,7 +99,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     CreateCollectionCommand.Options.VectorSearchConfig vector = options.vector();
     final CollectionLexicalConfig lexicalConfig =
         CollectionLexicalConfig.validateAndConstruct(
-            objectMapper, lexicalAvailable, options.lexical());
+            objectMapper, lexicalAvailableForDB, options.lexical());
     final CollectionRerankingConfig rerankingConfig =
         CollectionRerankingConfig.validateAndConstruct(options.rerank(), rerankingProvidersConfig);
 

@@ -25,7 +25,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
   class CreateLexicalHappyPath {
     @Test
     void createLexicalSimpleEnabledMinimal() {
-      Assumptions.assumeTrue(isLexicalAvailable());
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
 
       final String collectionName = "coll_lexical_minimal" + RandomStringUtils.randomNumeric(16);
       String json = createRequestWithLexical(collectionName, "{\"enabled\": true}");
@@ -38,7 +38,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
     @Test
     void createLexicalSimpleEnabledStandard() {
-      Assumptions.assumeTrue(isLexicalAvailable());
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
 
       final String collectionName = "coll_lexical_simple" + RandomStringUtils.randomNumeric(16);
       String json =
@@ -59,7 +59,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
 
     @Test
     void createLexicalSimpleEnabledCustom() {
-      Assumptions.assumeTrue(isLexicalAvailable());
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
 
       final String collectionName = "coll_lexical_cust_" + RandomStringUtils.randomNumeric(16);
       String json =
@@ -126,7 +126,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
                                 }
                           """);
 
-      if (isLexicalAvailable()) {
+      if (isLexicalAvailableForDB()) {
         givenHeadersPostJsonThenOk(json)
             .body("$", responseIsError())
             .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
@@ -154,7 +154,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
                                         }
                                   """);
 
-      if (isLexicalAvailable()) {
+      if (isLexicalAvailableForDB()) {
         givenHeadersPostJsonThenOk(json)
             .body("$", responseIsError())
             .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))

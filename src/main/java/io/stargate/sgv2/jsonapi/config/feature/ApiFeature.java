@@ -19,7 +19,7 @@ public enum ApiFeature {
   /**
    * Lexical search/sort feature flag: if enabled, the API will allow construction of
    * "$lexical"-enabled Collections. If disabled, those operations will fail with {@link
-   * ErrorCodeV1#LEXICAL_NOT_ENABLED_FOR_COLLECTION}).
+   * ErrorCodeV1#LEXICAL_NOT_AVAILABLE_FOR_DATABASE}).
    *
    * <p>Enabled by default.
    */

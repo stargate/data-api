@@ -108,7 +108,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
     @Order(3)
     public void happyPathWithExplain() {
       // To create Collection with Lexical, it must be available for the database
-      Assumptions.assumeTrue(isLexicalAvailable());
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
 
       String json =
           """
@@ -363,7 +363,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
     @Order(7)
     public void happyPathIndexingWithExplain() {
       // To create Collection with Lexical, it must be available for the database
-      Assumptions.assumeTrue(isLexicalAvailable());
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
 
       String json =
           """

@@ -294,7 +294,7 @@ public class CreateCollectionWithRerankingIntegrationTest
   }
 
   private String lexical() {
-    return isLexicalAvailable()
+    return isLexicalAvailableForDB()
         ?
         """
             {

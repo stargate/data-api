@@ -1023,7 +1023,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
     @Order(1)
     public void insertDocWithLexicalOk() {
       // Must have Lexical functionality available
-      Assumptions.assumeTrue(isLexicalAvailable());
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
 
       givenHeadersPostJsonThenOkNoErrors(
                   """

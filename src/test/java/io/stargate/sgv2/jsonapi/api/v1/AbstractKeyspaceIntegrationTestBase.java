@@ -334,7 +334,8 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     return builder.build();
   }
 
-  protected boolean isLexicalAvailable() {
+  /** Helper method for determining if lexical search is available for the database backend */
+  protected boolean isLexicalAvailableForDB() {
     return !"true".equals(System.getProperty("testing.db.lexical-disabled"));
   }
 
