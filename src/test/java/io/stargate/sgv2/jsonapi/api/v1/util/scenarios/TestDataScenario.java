@@ -108,9 +108,9 @@ public abstract class TestDataScenario {
       // Get a sublist for the current batch
       List<Map<String, Object>> batch = rows.subList(i, Math.min(i + batchSize, rows.size()));
 
-      if (LOGGER.isWarnEnabled()) {
+      if (LOGGER.isDebugEnabled()) {
         for (var row : batch) {
-          LOGGER.warn("Inserting row {}", row);
+          LOGGER.debug("Inserting row {}", row);
         }
       }
       assertTableCommand(keyspaceName, tableName).templated().insertManyMap(batch).wasSuccessful();
