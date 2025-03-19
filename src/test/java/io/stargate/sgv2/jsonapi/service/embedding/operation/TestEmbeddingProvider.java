@@ -52,7 +52,7 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
           if (t.equals("return 1s")) response.add(new float[] {1.0f, 1.0f, 1.0f});
           else response.add(new float[] {0.25f, 0.25f, 0.25f});
         });
-    return Uni.createFrom().item(Response.of(batchId, response));
+    return Uni.createFrom().item(new Response(batchId, response, new VectorizeUsage()));
   }
 
   @Override

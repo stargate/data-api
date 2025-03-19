@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstant
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,11 +56,12 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
+  @RegisterProvider(NetworkUsageInterceptor.class)
   public interface OpenAIEmbeddingProviderClient {
     @POST
     // no path specified, as it is already included in the baseUri
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
-    Uni<EmbeddingResponse> embed(
+    Uni<jakarta.ws.rs.core.Response> embed(
         // API keys as "api-key", MS Entra as "Authorization: Bearer [token]
         @HeaderParam("api-key") String accessToken, EmbeddingRequest request);
 
@@ -120,7 +122,7 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
 
     // NOTE: NO "Bearer " prefix with API key for Azure OpenAI
-    Uni<EmbeddingResponse> response =
+    Uni<jakarta.ws.rs.core.Response> response =
         applyRetry(
             openAIEmbeddingProviderClient.embed(embeddingCredentials.apiKey().get(), request));
 
@@ -128,13 +130,26 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
         .onItem()
         .transform(
             resp -> {
-              if (resp.data() == null) {
-                return Response.of(batchId, Collections.emptyList());
+              EmbeddingResponse embeddingResponse = resp.readEntity(EmbeddingResponse.class);
+              if (embeddingResponse.data() == null) {
+                return new Response(
+                    batchId,
+                    Collections.emptyList(),
+                    new VectorizeUsage(ProviderConstants.AZURE_OPENAI, modelName));
               }
-              Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
+              int sentBytes = Integer.parseInt(resp.getHeaderString("sent-bytes"));
+              int receivedBytes = Integer.parseInt(resp.getHeaderString("received-bytes"));
+              VectorizeUsage vectorizeUsage =
+                  new VectorizeUsage(
+                      sentBytes,
+                      receivedBytes,
+                      embeddingResponse.usage().total_tokens(),
+                      ProviderConstants.AZURE_OPENAI,
+                      modelName);
+              Arrays.sort(embeddingResponse.data(), (a, b) -> a.index() - b.index());
               List<float[]> vectors =
-                  Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
-              return Response.of(batchId, vectors);
+                  Arrays.stream(embeddingResponse.data()).map(data -> data.embedding()).toList();
+              return new Response(batchId, vectors, vectorizeUsage);
             });
   }
 

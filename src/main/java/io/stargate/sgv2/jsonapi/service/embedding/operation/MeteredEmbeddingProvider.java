@@ -91,11 +91,13 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
               Collections.sort(
                   vectorizedBatches, (a, b) -> Integer.compare(a.batchId(), b.batchId()));
               List<float[]> result = new ArrayList<>();
+              VectorizeUsage vectorizeUsage = new VectorizeUsage();
               for (Response vectorizedBatch : vectorizedBatches) {
                 // create the final ordered result
                 result.addAll(vectorizedBatch.embeddings());
+                vectorizeUsage.merge(vectorizedBatch.vectorizeUsage());
               }
-              return Response.of(1, result);
+              return new Response(1, result, vectorizeUsage);
             })
         .invoke(
             () ->

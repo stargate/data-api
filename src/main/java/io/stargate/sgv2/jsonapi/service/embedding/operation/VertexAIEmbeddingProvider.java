@@ -14,6 +14,7 @@ import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -46,11 +47,12 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
+  @RegisterProvider(NetworkUsageInterceptor.class)
   public interface VertexAIEmbeddingProviderClient {
     @POST
     @Path("/{modelId}:predict")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
-    Uni<EmbeddingResponse> embed(
+    Uni<jakarta.ws.rs.core.Response> embed(
         @HeaderParam("Authorization") String accessToken,
         @PathParam("modelId") String modelId,
         EmbeddingRequest request);
@@ -77,8 +79,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
       logger.info(
-          String.format(
-              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
+          "Error response from embedding provider '{}': {}", providerId, rootNode.toString());
       return rootNode.toString();
     }
   }
@@ -159,7 +160,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
     EmbeddingRequest request =
         new EmbeddingRequest(texts.stream().map(t -> new EmbeddingRequest.Content(t)).toList());
 
-    Uni<EmbeddingResponse> serviceResponse =
+    Uni<jakarta.ws.rs.core.Response> serviceResponse =
         applyRetry(
             vertexAIEmbeddingProviderClient.embed(
                 "Bearer " + embeddingCredentials.apiKey().get(), modelName, request));
@@ -167,15 +168,24 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
     return serviceResponse
         .onItem()
         .transform(
-            response -> {
-              if (response.getPredictions() == null) {
-                return Response.of(batchId, Collections.emptyList());
+            resp -> {
+              EmbeddingResponse embeddingResponse = resp.readEntity(EmbeddingResponse.class);
+              if (embeddingResponse.getPredictions() == null) {
+                return new Response(
+                    batchId,
+                    Collections.emptyList(),
+                    new VectorizeUsage(ProviderConstants.VERTEXAI, modelName));
               }
               List<float[]> vectors =
-                  response.getPredictions().stream()
+                  embeddingResponse.getPredictions().stream()
                       .map(prediction -> prediction.getEmbeddings().getValues())
                       .collect(Collectors.toList());
-              return Response.of(batchId, vectors);
+              int sentBytes = Integer.parseInt(resp.getHeaderString("sent-bytes"));
+              int receivedBytes = Integer.parseInt(resp.getHeaderString("received-bytes"));
+              VectorizeUsage vectorizeUsage =
+                  new VectorizeUsage(
+                      sentBytes, receivedBytes, 0, ProviderConstants.VERTEXAI, modelName);
+              return new Response(batchId, vectors, vectorizeUsage);
             });
   }
 

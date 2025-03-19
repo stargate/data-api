@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstant
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -44,10 +45,11 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
+  @RegisterProvider(NetworkUsageInterceptor.class)
   public interface MistralEmbeddingProviderClient {
     @POST
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
-    Uni<EmbeddingResponse> embed(
+    Uni<jakarta.ws.rs.core.Response> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 
     @ClientExceptionMapper
@@ -83,8 +85,7 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
       logger.info(
-          String.format(
-              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
+          "Error response from embedding provider '{}': {}", providerId, rootNode.toString());
       // Extract the "message" node from the root node
       JsonNode messageNode = rootNode.path("message");
       // Return the text of the "message" node, or the whole response body if it is missing
@@ -111,7 +112,7 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
 
     EmbeddingRequest request = new EmbeddingRequest(texts, modelName, "float");
 
-    Uni<EmbeddingResponse> response =
+    Uni<jakarta.ws.rs.core.Response> response =
         applyRetry(
             mistralEmbeddingProviderClient.embed(
                 "Bearer " + embeddingCredentials.apiKey().get(), request));
@@ -120,13 +121,26 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
         .onItem()
         .transform(
             resp -> {
-              if (resp.data() == null) {
-                return Response.of(batchId, Collections.emptyList());
+              EmbeddingResponse embeddingResponse = resp.readEntity(EmbeddingResponse.class);
+              if (embeddingResponse.data() == null) {
+                return new Response(
+                    batchId,
+                    Collections.emptyList(),
+                    new VectorizeUsage(ProviderConstants.MISTRAL, modelName));
               }
-              Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
+              Arrays.sort(embeddingResponse.data(), (a, b) -> a.index() - b.index());
+              int sentBytes = Integer.parseInt(resp.getHeaderString("sent-bytes"));
+              int receivedBytes = Integer.parseInt(resp.getHeaderString("received-bytes"));
+              VectorizeUsage vectorizeUsage =
+                  new VectorizeUsage(
+                      sentBytes,
+                      receivedBytes,
+                      embeddingResponse.usage().total_tokens(),
+                      ProviderConstants.MISTRAL,
+                      modelName);
               List<float[]> vectors =
-                  Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
-              return Response.of(batchId, vectors);
+                  Arrays.stream(embeddingResponse.data()).map(data -> data.embedding()).toList();
+              return new Response(batchId, vectors, vectorizeUsage);
             });
   }
 
