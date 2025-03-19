@@ -121,10 +121,20 @@ public class QueryBuilderTest {
               .select()
               .column("a", "b", "c")
               .from("ks", "tbl")
-              .bm25Sort("query_lexical_value", 99, "monkey bananas")
+              .bm25Sort("query_lexical_value", "monkey bananas")
+              .limit(20)
               .build(),
-          "SELECT a, b, c FROM ks.tbl ORDER BY query_lexical_value BM25 OF ? LIMIT 99",
-          List.of("monkey bananas"))
+          "SELECT a, b, c FROM ks.tbl ORDER BY query_lexical_value BM25 OF ? LIMIT 20",
+          List.of("monkey bananas")),
+      arguments(
+          new QueryBuilder()
+              .select()
+              .column("a", "b", "c")
+              .from("ks", "tbl")
+              .bm25Sort("query_lexical_value", "tags")
+              .build(),
+          "SELECT a, b, c FROM ks.tbl ORDER BY query_lexical_value BM25 OF ? LIMIT 100",
+          List.of("tags"))
     };
   }
 

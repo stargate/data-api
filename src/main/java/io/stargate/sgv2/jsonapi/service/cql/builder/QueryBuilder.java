@@ -152,13 +152,12 @@ public class QueryBuilder {
       // LIMIT gets tricky with BM25: should use explicit one, if one given, but
       // it looks like it's sometimes passed as `Integer.MAX_VALUE` to mean "no limit"
 
-      int bm25Limit;
-      if (limitInt != null && limitInt > 0 && (limitInt != Integer.MAX_VALUE)) {
-        bm25Limit = limitInt;
+      final int bm25Limit;
+      if (limitInt == null || limitInt < 1 || (limitInt == Integer.MAX_VALUE)) {
+        bm25Limit = DEFAULT_BM25_LIMIT;
       } else {
-        bm25Limit = bm25Clause.limit();
+        bm25Limit = Math.min(limitInt, MAX_BM25_LIMIT);
       }
-      bm25Limit = Math.min(bm25Limit, MAX_BM25_LIMIT);
 
       builder
           .append(" ORDER BY ")
@@ -303,8 +302,8 @@ public class QueryBuilder {
     return this;
   }
 
-  public QueryBuilder bm25Sort(String column, int limit, String text) {
-    bm25Clause = new BM25Clause(column, limit, text);
+  public QueryBuilder bm25Sort(String column, String text) {
+    bm25Clause = new BM25Clause(column, text);
     return this;
   }
 
@@ -314,7 +313,7 @@ public class QueryBuilder {
     return this;
   }
 
-  private record BM25Clause(String column, int limit, String query) {}
+  private record BM25Clause(String column, String query) {}
 
   public static class FunctionCall {
     final String columnName;

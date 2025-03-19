@@ -524,9 +524,7 @@ public record FindCollectionOperation(
             if (bm25Expr != null) {
               qb =
                   qb.bm25Sort(
-                      DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME,
-                      100,
-                      bm25Expr.bm25Query());
+                      DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME, bm25Expr.bm25Query());
             }
             query = qb.build();
           } else {
