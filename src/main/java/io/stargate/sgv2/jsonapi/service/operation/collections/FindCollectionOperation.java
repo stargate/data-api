@@ -236,7 +236,7 @@ public record FindCollectionOperation(
    * @param pageSize page size
    * @param readType type of the read
    * @param objectMapper object mapper to use
-   * @param vector vector to search * @param
+   * @param vector vector to search
    * @param includeSortVector include sort vector in the response
    * @return FindCollectionOperation for a multi document unsorted find
    */
