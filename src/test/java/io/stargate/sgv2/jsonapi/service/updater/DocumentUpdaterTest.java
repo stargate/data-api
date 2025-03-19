@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 public class DocumentUpdaterTest {
   @Inject ObjectMapper objectMapper;
   @Inject DataVectorizerService dataVectorizerService;
+  private TestEmbeddingProvider testEmbeddingProvider = new TestEmbeddingProvider();
 
   private static String BASE_DOC_JSON =
       """
@@ -574,7 +575,7 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   firstResponse,
                   dataVectorizerService,
-                  TestEmbeddingProvider.commandContextWithVectorize)
+                  testEmbeddingProvider.commandContextWithVectorize())
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -784,7 +785,7 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   firstResponse,
                   dataVectorizerService,
-                  TestEmbeddingProvider.commandContextWithVectorize)
+                  testEmbeddingProvider.commandContextWithVectorize())
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -953,7 +954,7 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   updatedDocument,
                   dataVectorizerService,
-                  TestEmbeddingProvider.commandContextWithVectorize)
+                  testEmbeddingProvider.commandContextWithVectorize())
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1201,7 +1202,7 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   updatedDocument,
                   dataVectorizerService,
-                  TestEmbeddingProvider.commandContextWithVectorize)
+                  testEmbeddingProvider.commandContextWithVectorize())
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()

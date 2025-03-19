@@ -93,6 +93,11 @@ public class ApiMapType extends CollectionApiDataType<MapType> {
     return keyType;
   }
 
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return super.recordTo(dataRecorder).append("keyType", keyType);
+  }
+
   private static class ColumnDescFactory
       extends TypeFactoryFromColumnDesc<ApiMapType, MapColumnDesc> {
 

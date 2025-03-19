@@ -31,7 +31,6 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final FilterResolver<FindOneCommand, CollectionSchemaObject> collectionFilterResolver;
-  private final ReadCommandResolver<FindOneCommand> readCommandResolver;
 
   @Inject
   public FindOneCommandResolver(
@@ -39,7 +38,6 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
       OperationsConfig operationsConfig,
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
-    this.readCommandResolver = new ReadCommandResolver<>(objectMapper, operationsConfig);
     this.objectMapper = objectMapper;
     this.operationsConfig = operationsConfig;
     this.meterRegistry = meterRegistry;
@@ -57,12 +55,11 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, FindOneCommand command) {
 
-    var accumulator =
-        ReadDBTaskPage.accumulator(commandContext).singleResponse(true).mayReturnVector(command);
-
-    // the skip is 0 and the limit is 1 always for findOne
-    return readCommandResolver.buildReadOperation(
-        commandContext, command, CqlPagingState.EMPTY, accumulator);
+    return new TableReadDBOperationBuilder<>(commandContext)
+        .withCommand(command)
+        .withPagingState(CqlPagingState.EMPTY)
+        .withSingleResponse(true)
+        .build();
   }
 
   @Override

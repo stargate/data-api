@@ -5,7 +5,9 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.util.function.Supplier;
 
 /**
- * After processing the {@link OperationAttempt}'s are grouped together into a page and then a
+ * TODO: aaron 19 march 2025 - remove OperationAttempt and related code once Tasks are solid
+ *
+ * <p>After processing the {@link OperationAttempt}'s are grouped together into a page and then a
  * {@link CommandResult} is built from the page.
  *
  * <p>The {@link GenericOperation} a {@link OperationAttemptPageBuilder} that supports accumulating

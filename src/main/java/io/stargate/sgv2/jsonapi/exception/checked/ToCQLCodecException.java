@@ -11,6 +11,7 @@ import com.datastax.oss.driver.api.core.type.DataType;
 public class ToCQLCodecException extends CheckedApiException {
   public final Object value;
   public final DataType targetCQLType;
+  public final String rootCauseMessage;
 
   public ToCQLCodecException(Object value, DataType targetCQLType, Exception rootCause) {
     super(
@@ -18,12 +19,14 @@ public class ToCQLCodecException extends CheckedApiException {
         rootCause);
     this.value = value;
     this.targetCQLType = targetCQLType;
+    rootCauseMessage = rootCause == null ? "" : rootCause.getMessage();
   }
 
   public ToCQLCodecException(Object value, DataType targetCQLType, String rootCauseMessage) {
     super(formatMessage(value, targetCQLType, rootCauseMessage));
     this.value = value;
     this.targetCQLType = targetCQLType;
+    this.rootCauseMessage = rootCauseMessage;
   }
 
   private static String formatMessage(

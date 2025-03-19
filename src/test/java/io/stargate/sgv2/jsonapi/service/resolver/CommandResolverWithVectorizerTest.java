@@ -48,6 +48,7 @@ import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -77,32 +78,39 @@ public class CommandResolverWithVectorizerTest {
   @Inject InsertOneCommandResolver insertOneCommandResolver;
 
   @Inject DataVectorizerService dataVectorizerService;
+  private TestConstants testConstants = new TestConstants();
+  private TestEmbeddingProvider testEmbeddingProvider = new TestEmbeddingProvider();
 
   @Nested
   class Resolve {
     // TODO: do these need to be unique to this test ? Can we use TestConstants ?
     protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
     protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-    private final CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT =
-        TestConstants.collectionContext(
-            "testCommand",
-            new CollectionSchemaObject(
-                new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME),
-                null,
-                IdConfig.defaultIdConfig(),
-                VectorConfig.fromColumnDefinitions(
-                    List.of(
-                        new VectorColumnDefinition(
-                            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-                            -1,
-                            SimilarityFunction.COSINE,
-                            EmbeddingSourceModel.OTHER,
-                            null))),
-                null,
-                CollectionLexicalConfig.configForDisabled(),
-                CollectionRerankingConfig.configForLegacyCollections()),
-            null,
-            null);
+    private CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT;
+
+    @BeforeEach
+    public void beforeEach() {
+      VECTOR_COMMAND_CONTEXT =
+          testConstants.collectionContext(
+              "testCommand",
+              new CollectionSchemaObject(
+                  new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME),
+                  null,
+                  IdConfig.defaultIdConfig(),
+                  VectorConfig.fromColumnDefinitions(
+                      List.of(
+                          new VectorColumnDefinition(
+                              DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                              -1,
+                              SimilarityFunction.COSINE,
+                              EmbeddingSourceModel.OTHER,
+                              null))),
+                  null,
+                  CollectionLexicalConfig.configForDisabled(),
+                  CollectionRerankingConfig.configForLegacyCollections()),
+              null,
+              null);
+    }
 
     @Test
     public void find() throws Exception {
@@ -116,17 +124,16 @@ public class CommandResolverWithVectorizerTest {
           """;
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
+      var commandContext = testEmbeddingProvider.commandContextWithVectorize();
       final FindCommand vectorizedCommand =
           (FindCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, findOneCommand)
+                  .vectorize(commandContext, findOneCommand)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()
                   .getItem();
-      Operation operation =
-          findCommandResolver.resolveCommand(
-              TestEmbeddingProvider.commandContextWithVectorize, vectorizedCommand);
+      Operation operation = findCommandResolver.resolveCommand(commandContext, vectorizedCommand);
 
       assertThat(operation)
           .isInstanceOfSatisfying(
@@ -134,8 +141,7 @@ public class CommandResolverWithVectorizerTest {
               find -> {
                 float[] vector = new float[] {0.25f, 0.25f, 0.25f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                assertThat(find.commandContext())
-                    .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
                 assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
@@ -196,24 +202,23 @@ public class CommandResolverWithVectorizerTest {
           """;
 
       DeleteOneCommand deleteOneCommand = objectMapper.readValue(json, DeleteOneCommand.class);
+      var commandContext = testEmbeddingProvider.commandContextWithVectorize();
       final DeleteOneCommand vectorizedCommand =
           (DeleteOneCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, deleteOneCommand)
+                  .vectorize(commandContext, deleteOneCommand)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()
                   .getItem();
       Operation operation =
-          deleteOneCommandResolver.resolveCommand(
-              TestEmbeddingProvider.commandContextWithVectorize, vectorizedCommand);
+          deleteOneCommandResolver.resolveCommand(commandContext, vectorizedCommand);
 
       assertThat(operation)
           .isInstanceOfSatisfying(
               DeleteCollectionOperation.class,
               op -> {
-                assertThat(op.commandContext())
-                    .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
+                assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.deleteLimit()).isEqualTo(1);
                 assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
                 assertThat(op.findCollectionOperation())
@@ -225,8 +230,7 @@ public class CommandResolverWithVectorizerTest {
                                   "col", MapCollectionFilter.Operator.EQ, "val");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext())
-                              .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
+                          assertThat(find.commandContext()).isEqualTo(commandContext);
                           assertThat(find.pageSize()).isEqualTo(1);
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
@@ -254,24 +258,24 @@ public class CommandResolverWithVectorizerTest {
             """;
 
       UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
+      var commandContext = testEmbeddingProvider.commandContextWithVectorize();
       final UpdateOneCommand vectorizedCommand =
           (UpdateOneCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, command)
+                  .vectorize(commandContext, command)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()
                   .getItem();
+
       Operation operation =
-          updateOneCommandResolver.resolveCommand(
-              TestEmbeddingProvider.commandContextWithVectorize, vectorizedCommand);
+          updateOneCommandResolver.resolveCommand(commandContext, vectorizedCommand);
 
       assertThat(operation)
           .isInstanceOfSatisfying(
               ReadAndUpdateCollectionOperation.class,
               op -> {
-                assertThat(op.commandContext())
-                    .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
+                assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.returnDocumentInResponse()).isFalse();
                 assertThat(op.returnUpdatedDocument()).isFalse();
                 assertThat(op.upsert()).isFalse();
@@ -299,8 +303,7 @@ public class CommandResolverWithVectorizerTest {
                                   "col", MapCollectionFilter.Operator.EQ, "val");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext())
-                              .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
+                          assertThat(find.commandContext()).isEqualTo(commandContext);
                           assertThat(find.pageSize()).isEqualTo(1);
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
@@ -360,23 +363,22 @@ public class CommandResolverWithVectorizerTest {
         """;
 
       FindOneAndDeleteCommand command = objectMapper.readValue(json, FindOneAndDeleteCommand.class);
+      var commandContext = testEmbeddingProvider.commandContextWithVectorize();
       final FindOneAndDeleteCommand vectorizedCommand =
           (FindOneAndDeleteCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, command)
+                  .vectorize(commandContext, command)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()
                   .getItem();
       Operation operation =
-          findOneAndDeleteCommandResolver.resolveCommand(
-              TestEmbeddingProvider.commandContextWithVectorize, vectorizedCommand);
+          findOneAndDeleteCommandResolver.resolveCommand(commandContext, vectorizedCommand);
       assertThat(operation)
           .isInstanceOfSatisfying(
               DeleteCollectionOperation.class,
               op -> {
-                assertThat(op.commandContext())
-                    .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
+                assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.returnDocumentInResponse()).isTrue();
                 assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
                 assertThat(op.findCollectionOperation())
@@ -388,8 +390,7 @@ public class CommandResolverWithVectorizerTest {
                                   "status", MapCollectionFilter.Operator.EQ, "active");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                          assertThat(find.commandContext())
-                              .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
+                          assertThat(find.commandContext()).isEqualTo(commandContext);
                           assertThat(find.pageSize()).isEqualTo(1);
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
@@ -415,17 +416,17 @@ public class CommandResolverWithVectorizerTest {
           """;
 
       FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+      var commandContext = testEmbeddingProvider.commandContextWithVectorize();
       final FindOneCommand vectorizedCommand =
           (FindOneCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, command)
+                  .vectorize(commandContext, command)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()
                   .getItem();
       Operation operation =
-          findOneCommandResolver.resolveCommand(
-              TestEmbeddingProvider.commandContextWithVectorize, vectorizedCommand);
+          findOneCommandResolver.resolveCommand(commandContext, vectorizedCommand);
 
       assertThat(operation)
           .isInstanceOfSatisfying(
@@ -436,8 +437,7 @@ public class CommandResolverWithVectorizerTest {
 
                 float[] vector = new float[] {0.25f, 0.25f, 0.25f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                assertThat(find.commandContext())
-                    .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
                 assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(1);
                 assertThat(find.limit()).isEqualTo(1);
@@ -474,17 +474,17 @@ public class CommandResolverWithVectorizerTest {
           """;
 
       InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
+      var commandContext = testEmbeddingProvider.commandContextWithVectorize();
       final InsertManyCommand vectorizedCommand =
           (InsertManyCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, command)
+                  .vectorize(commandContext, command)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()
                   .getItem();
       Operation result =
-          insertManyCommandResolver.resolveCommand(
-              TestEmbeddingProvider.commandContextWithVectorize, vectorizedCommand);
+          insertManyCommandResolver.resolveCommand(commandContext, vectorizedCommand);
       assertThat(result)
           .isInstanceOfSatisfying(
               InsertCollectionOperation.class,
@@ -496,8 +496,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(first.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
                 assertThat(second.queryVectorValues().length).isEqualTo(3);
                 assertThat(second.queryVectorValues()).containsExactly(1.0f, 1.0f, 1.0f);
-                assertThat(op.commandContext())
-                    .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
+                assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.ordered()).isFalse();
                 assertThat(op.insertions()).hasSize(2);
               });
@@ -562,17 +561,16 @@ public class CommandResolverWithVectorizerTest {
         """;
 
       InsertOneCommand command = objectMapper.readValue(json, InsertOneCommand.class);
+      var commandContext = testEmbeddingProvider.commandContextWithVectorize();
       final InsertOneCommand vectorizedCommand =
           (InsertOneCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, command)
+                  .vectorize(commandContext, command)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()
                   .getItem();
-      Operation result =
-          insertOneCommandResolver.resolveCommand(
-              TestEmbeddingProvider.commandContextWithVectorize, vectorizedCommand);
+      Operation result = insertOneCommandResolver.resolveCommand(commandContext, vectorizedCommand);
 
       assertThat(result)
           .isInstanceOfSatisfying(
@@ -581,8 +579,7 @@ public class CommandResolverWithVectorizerTest {
                 WritableShreddedDocument expected = documentShredder.shred(command.document());
                 assertThat(expected.queryVectorValues().length).isEqualTo(3);
                 assertThat(expected.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
-                assertThat(op.commandContext())
-                    .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
+                assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.ordered()).isFalse();
                 assertThat(op.insertions()).hasSize(1);
               });

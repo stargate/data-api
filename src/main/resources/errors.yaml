@@ -376,17 +376,21 @@ request-errors:
       Only values that are supported by the column data type can be included when updating.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      The command included the column ${invalidColumn} that has ${columnType} type defined.
-      ${embeddedCodecMessage}
+      The update included invalid values for the columns: ${invalidColumns}.
       
       Resend the command using only supported column values.
 
   - scope: UPDATE
     code: UNSUPPORTED_UPDATE_OPERATOR
-    title: Update operator is not supported by target column
+    title: Update operator is not supported by target columns
     body: |-
-      The command included update operator ${operator} that are not supported by ${targetColumn}.
+      Only update operators that are supported by the column type can be used in the update clause.
+      
       Note, $push and $pullAll are only supported against map, set, list columns.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command used the update operator: ${operator}.
+      The operation was not supported by the columns: ${unsupportedColumns}.
       
       Resend the command using only supported update operators.
 
@@ -422,22 +426,6 @@ request-errors:
       The update included the following primary keys: ${updateOnPrimaryKeyColumns}.
       
       Resend the command without updating primary key columns.
-
-  - scope: UPDATE
-    code: INVALID_UPDATE_OPERATOR_PULL_ALL_VALUE
-    title: Update operator $pullAll requires array value to update the map, set, list column
-    body: |-
-      Update operator $pullAll requires array value to remove elements from the map, set, list column.
-      E.G. 
-      {"$pullAll": {"listColumn": [value1, value2]}
-      {"$pullAll": {"setColumn": [value1, value2]}
-      {"$pullAll": {"mapColumn": [key1, key2]}
-      
-      The command uses $pullAll with value ${providedValue}.
-      
-      Resend the command using array value for $pullAll operator.
-
-
 
   - scope: UPDATE
     code: MISSING_UPDATE_OPERATIONS
@@ -483,6 +471,18 @@ request-errors:
       The update included the following vector columns without vectorize configuration: ${invalidVectorizeColumns}.
       
       Resend the command vector columns with vectorize enabled.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_COLUMN_TYPES
+    title: Column types in update clause are not supported
+    body: |-
+      Only supported column types can be included when updating columns in a table.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command included the following columns that have unsupported data types: ${unsupportedColumns}.
+      
+      Resend the command using only supported column types.
+
 
   # ================================================================================================================
   # Family: REQUEST         Scope: WARNING
@@ -1192,9 +1192,22 @@ request-errors:
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
       The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
-      The command attempted to sort on the columns: ${sortColumns}.
+      The command attempted to vector sort on the columns: ${sortColumns}.
       
       Resend the command with only one vector sort.
+
+  - scope: SORT
+    code: CANNOT_SORT_ON_MULTIPLE_VECTORIZE
+    title: More than one vectorize sort provided
+    body: |-
+      The command used a sort clause with more than one vectorize sort, only one vectorize sort is allowed. 
+
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
+      The command attempted to vectorize sort on the columns: ${sortColumns}.
+      
+      Resend the command with only one vectorize sort.
 
   - scope: SORT
     code: CANNOT_SORT_UNKNOWN_COLUMNS
@@ -1221,14 +1234,40 @@ request-errors:
     code: CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS
     title: Vector sort columns are not `vector` type
     body: |-
-      The command attempted to vector sort columns that are not of vector type. 
+      The command attempted to vectorize sort on a column that is not of `vector` type.
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
       The table ${keyspace}.${table} defines the columns: ${vectorColumns}.
       The command attempted to sort the non vector columns: ${sortColumns}.  
       
-      Resend the command using only vector columns.
+      Resend the command using only `vector` columns.
+
+  - scope: SORT
+    code: CANNOT_VECTORIZE_SORT_NON_VECTOR_COLUMN
+    title: Vectorize sort columns are not `vector` type
+    body: |-
+      The command attempted to vectorize sort on a column that is not of `vector` type.
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      The table ${keyspace}.${table} defines the columns: ${vectorColumns}.
+      The command attempted to sort the non vector columns: ${sortColumns}.  
+      
+      Resend the command using only `vector` columns wth vectorize enabled.
+
+  - scope: SORT
+    code: CANNOT_VECTORIZE_SORT_WHEN_MISSING_VECTORIZE_DEFINITION
+    title: Vectorize sort not supported on column with missing vectorize configuration
+    body: |-
+      Vectorize sort can only be used with columns that have a vectorize configuration. 
+      
+      ${SNIPPET.ADD_VECTORIZE_CONFIG}
+      
+      The table ${keyspace}.${table} defines the vector columns with vectorize definition: ${validVectorizeColumns}.
+      The command included the following vector columns without vectorize definition: ${invalidVectorizeColumns}.
+      
+      Resend the command using only `vector` columns with a vectorize definition.
 
   - scope: SORT
     code: CANNOT_VECTOR_SORT_WITH_LIMIT_EXCEEDS_MAX
@@ -1302,36 +1341,6 @@ request-errors:
       Updating row in a table does not support sorting, a row can only be updated by specifying full primary key(s).
       
       Resend the command without the sort clause.
-
-  - scope: SORT
-    code: CANNOT_SORT_ON_MULTIPLE_VECTORIZE
-    title: More than one vectorize sort provided
-    body: |-
-      The command attempted to sort by vectorizing multiple vector columns. 
-
-      The sort included the vectrized columns: ${sortVectorizeColumns}
-      
-      Resend the command using a single vectorize sort.
-
-  - scope: SORT
-    code: CANNOT_VECTORIZE_SORT_NON_VECTOR_COLUMN
-    title: Vectorize sort columns are not `vector` type
-    body: |-
-      The command attempted to vectorize sort on a column that is not of `vector` type.
-      
-      The sort vectorized the non-vector columns: ${nonVectorColumn}
-      
-      Resend the command using only `vector` columns types.
-
-  - scope: SORT
-    code: CANNOT_VECTORIZE_SORT_WHEN_MISSING_VECTORIZE_DEFINITION
-    title: Vectorize sort columns require a vectorize configuration
-    body: |-
-      The command attempted to sort on a `vector` column that do not have a vectorize configuration.
-      
-      The sort included the non vectorized columns: ${noVectorizeDefinition}
-      
-      Resend the command using only `vector` columns with vectorize configuration.
 
   - scope: SORT
     code: UNSUPPORTED_PAGINATION_WITH_IN_MEMORY_SORTING

@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -14,13 +15,14 @@ import java.util.function.Supplier;
  *
  * <p>This base class provides the basic accumulate / getResults pattern. Subclasses can also be
  * used to "smuggle" state such as options for the response docs into the building of the results
- * via a subclass. the subclasses are used often called a PageBuilder see {@link DBTaskPage}
+ * via a subclass. the subclasses are used often called a PageBuilder see {@link TaskPage}
  */
 public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject> {
 
   // TODO: remove all of error obj v2 flags, we use it all now
   protected boolean useErrorObjectV2 = false;
   protected boolean debugMode = false;
+  protected RequestTracing requestTracing = null;
 
   protected final TaskGroup<TaskT, SchemaT> tasks = new TaskGroup<>();
 
@@ -36,7 +38,8 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
 
     accumulator
         .debugMode(commandContext.config().get(DebugModeConfig.class).enabled())
-        .useErrorObjectV2(commandContext.config().get(OperationsConfig.class).extendError());
+        .useErrorObjectV2(commandContext.config().get(OperationsConfig.class).extendError())
+        .requestTracing(commandContext.requestTracing());
     return accumulator;
   }
 
@@ -53,7 +56,7 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
    * Called to turn the accumulated attempts into a {@link CommandResult}.
    *
    * @return A supplier that will provide the {@link CommandResult} when called, such as a subclass
-   *     of {@link DBTaskPage}
+   *     of {@link TaskPage}
    */
   public abstract Supplier<CommandResult> getResults();
 
@@ -74,6 +77,18 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
   @SuppressWarnings("unchecked")
   public <SubT extends TaskAccumulator<TaskT, SchemaT>> SubT debugMode(boolean debugMode) {
     this.debugMode = debugMode;
+    return (SubT) this;
+  }
+
+  /**
+   * Set the {@link RequestTracing} object for the request. This will be passed to the {@link
+   * io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder} which will add the tracing if
+   * the object is not null and {@link RequestTracing#getTrace()} returns a trace.
+   */
+  @SuppressWarnings("unchecked")
+  public <SubT extends TaskAccumulator<TaskT, SchemaT>> SubT requestTracing(
+      RequestTracing requestTracing) {
+    this.requestTracing = requestTracing;
     return (SubT) this;
   }
 }
