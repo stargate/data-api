@@ -145,6 +145,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           includeSortVector);
     }
 
+    // BM25 search / sort?
     SortExpression bm25Expr = SortClauseUtil.resolveBM25Search(sortClause);
     if (bm25Expr != null) {
       return FindCollectionOperation.bm25(

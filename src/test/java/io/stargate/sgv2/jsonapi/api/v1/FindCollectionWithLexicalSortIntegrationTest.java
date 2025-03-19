@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
+import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -27,6 +28,12 @@ public class FindCollectionWithLexicalSortIntegrationTest
   static final String COLLECTION_WITHOUT_LEXICAL =
       "coll_no_lexical_sort_" + RandomStringUtils.randomNumeric(16);
 
+  static final String DOC1_JSON = lexicalDoc(1, "monkey banana");
+  static final String DOC2_JSON = lexicalDoc(2, "monkey");
+  static final String DOC3_JSON = lexicalDoc(3, "biking fun");
+  static final String DOC4_JSON = lexicalDoc(4, "banana");
+  static final String DOC5_JSON = lexicalDoc(5, "fun");
+
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
   @Order(1)
@@ -48,11 +55,11 @@ public class FindCollectionWithLexicalSortIntegrationTest
                     """
               .formatted(COLLECTION_WITH_LEXICAL));
       // And then insert 5 documents
-      insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(1, "monkey banana"));
-      insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(2, "monkey"));
-      insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(3, "biking fun"));
-      insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(4, "banana"));
-      insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(5, "fun"));
+      insertDoc(COLLECTION_WITH_LEXICAL, DOC1_JSON);
+      insertDoc(COLLECTION_WITH_LEXICAL, DOC2_JSON);
+      insertDoc(COLLECTION_WITH_LEXICAL, DOC3_JSON);
+      insertDoc(COLLECTION_WITH_LEXICAL, DOC4_JSON);
+      insertDoc(COLLECTION_WITH_LEXICAL, DOC5_JSON);
     }
 
     @Test
@@ -76,9 +83,9 @@ public class FindCollectionWithLexicalSortIntegrationTest
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
   @Order(2)
-  class HappyCases {
+  class HappyCasesFindMany {
     @Test
-    void findSimpleWithLexicalSort() {
+    void findManyWithLexicalSort() {
       givenHeadersPostJsonThenOkNoErrors(
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
@@ -93,6 +100,47 @@ public class FindCollectionWithLexicalSortIntegrationTest
           .body("data.documents", hasSize(2))
           .body("data.documents[0]._id", is("lexical-4"))
           .body("data.documents[1]._id", is("lexical-1"));
+    }
+  }
+
+  @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
+  @Nested
+  @Order(2)
+  class HappyCasesFindOne {
+    @Test
+    void findOneWithLexicalSortBiking() {
+      givenHeadersPostJsonThenOkNoErrors(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                      {
+                        "findOne": {
+                          "projection": {"$lexical": 1 },
+                          "sort" : {"$lexical": "biking" }
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          // Needs to get "lexical-3" with "biking fun"
+          .body("data.document", jsonEquals(DOC3_JSON));
+    }
+
+    @Test
+    void findOneWithLexicalSortMonkeyBananas() {
+      givenHeadersPostJsonThenOkNoErrors(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                          {
+                            "findOne": {
+                              "projection": {"$lexical": 1 },
+                              "sort" : {"$lexical": "monkey banana" }
+                            }
+                          }
+                          """)
+          .body("$", responseIsFindSuccess())
+          // Needs to get "lexical-1" with "monkey banana"
+          .body("data.document", jsonEquals(DOC1_JSON));
     }
   }
 
@@ -159,7 +207,7 @@ public class FindCollectionWithLexicalSortIntegrationTest
     }
   }
 
-  private String lexicalDoc(int id, String keywords) {
+  static String lexicalDoc(int id, String keywords) {
     return
         """
             {

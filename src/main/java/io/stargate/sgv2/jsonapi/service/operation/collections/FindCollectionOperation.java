@@ -132,6 +132,32 @@ public record FindCollectionOperation(
         includeSortVector);
   }
 
+  /** Constructs find operation for BM25-sorted single-document find. */
+  public static FindCollectionOperation bm25Single(
+      CommandContext<CollectionSchemaObject> commandContext,
+      DBLogicalExpression dbLogicalExpression,
+      DocumentProjector projection,
+      CollectionReadType readType,
+      ObjectMapper objectMapper,
+      SortExpression bm25Expr) {
+    return new FindCollectionOperation(
+        commandContext,
+        dbLogicalExpression,
+        projection,
+        null,
+        1,
+        1,
+        readType,
+        objectMapper,
+        null,
+        0,
+        0,
+        true,
+        null,
+        bm25Expr,
+        false);
+  }
+
   /** Constructs find operation for BM25-sorted multi-document find. */
   public static FindCollectionOperation bm25(
       CommandContext<CollectionSchemaObject> commandContext,
