@@ -57,7 +57,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   public InsertOperationPage(
       List<? extends InsertAttempt<SchemaT>> allAttemptedInsertions,
       boolean returnDocumentResponses) {
-    this(allAttemptedInsertions, returnDocumentResponses, false, false, null);
+    this(allAttemptedInsertions, returnDocumentResponses, false, false, RequestTracing.NO_OP);
   }
 
   /**
