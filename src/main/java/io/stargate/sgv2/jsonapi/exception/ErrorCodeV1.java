@@ -99,6 +99,7 @@ public enum ErrorCodeV1 {
   RERANKING_PROVIDER_UNEXPECTED_RESPONSE("The Reranking Provider returned an unexpected response"),
   RERANKING_PROVIDER_CLIENT_ERROR("The Reranking Provider returned a HTTP client error"),
   RERANKING_PROVIDER_SERVER_ERROR("The Reranking Provider returned a HTTP server error"),
+  RERANKING_PROVIDER_RATE_LIMITED("The Reranking Provider rate limited the request"),
   RERANKING_PROVIDER_TIMEOUT("The Reranking Provider timed out"),
   RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED(
       "The reranking provider authentication key is not provided"),

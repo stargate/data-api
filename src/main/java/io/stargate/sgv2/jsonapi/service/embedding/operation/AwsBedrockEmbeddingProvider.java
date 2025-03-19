@@ -115,7 +115,7 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
                   || bedrockRuntimeException.statusCode()
                       == jakarta.ws.rs.core.Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {
                 return ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(
-                    "Provider: %s; HTTP Status: %s; Error Message: %s",
+                    "Embedding Provider: %s; HTTP Status: %s; Error Message: %s",
                     providerId,
                     bedrockRuntimeException.statusCode(),
                     bedrockRuntimeException.getMessage());
@@ -125,7 +125,7 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
               if (bedrockRuntimeException.statusCode()
                   == jakarta.ws.rs.core.Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {
                 return ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED.toApiException(
-                    "Provider: %s; HTTP Status: %s; Error Message: %s",
+                    "Embedding Provider: %s; HTTP Status: %s; Error Message: %s",
                     providerId,
                     bedrockRuntimeException.statusCode(),
                     bedrockRuntimeException.getMessage());
@@ -135,7 +135,7 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
               if (bedrockRuntimeException.statusCode() > 400
                   && bedrockRuntimeException.statusCode() < 500) {
                 return ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.toApiException(
-                    "Provider: %s; HTTP Status: %s; Error Message: %s",
+                    "Embedding Provider: %s; HTTP Status: %s; Error Message: %s",
                     providerId,
                     bedrockRuntimeException.statusCode(),
                     bedrockRuntimeException.getMessage());
@@ -144,7 +144,7 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
               // Status code in 5XX
               if (bedrockRuntimeException.statusCode() >= 500) {
                 return ErrorCodeV1.EMBEDDING_PROVIDER_SERVER_ERROR.toApiException(
-                    "Provider: %s; HTTP Status: %s; Error Message: %s",
+                    "Embedding Provider: %s; HTTP Status: %s; Error Message: %s",
                     providerId,
                     bedrockRuntimeException.statusCode(),
                     bedrockRuntimeException.getMessage());
@@ -152,7 +152,7 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
 
               // All other errors, Should never happen as all errors are covered above
               return ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-                  "Provider: %s; HTTP Status: %s; Error Message: %s",
+                  "Embedding Provider: %s; HTTP Status: %s; Error Message: %s",
                   providerId,
                   bedrockRuntimeException.statusCode(),
                   bedrockRuntimeException.getMessage());

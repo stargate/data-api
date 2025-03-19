@@ -8,7 +8,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.error.RerankingResponseErrorMessageMapper;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.error.ProviderHttpResponseErrorMapper;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import jakarta.ws.rs.HeaderParam;
@@ -67,8 +67,11 @@ public class NvidiaRerankingProvider extends RerankingProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return RerankingResponseErrorMessageMapper.mapToAPIException(
-          providerId, response, errorMessage);
+      return ProviderHttpResponseErrorMapper.mapToAPIException(
+          ProviderHttpResponseErrorMapper.ProviderType.RERANKING,
+          providerId,
+          response,
+          errorMessage);
     }
 
     private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
