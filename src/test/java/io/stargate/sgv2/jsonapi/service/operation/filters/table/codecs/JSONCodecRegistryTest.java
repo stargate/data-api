@@ -333,6 +333,7 @@ public class JSONCodecRegistryTest {
     // Arguments: (CQL-type, from-caller-json, bound-by-driver-for-cql)
     return Stream.of(
         // // Lists:
+        Arguments.of(DataTypes.listOf(DataTypes.TEXT), List.of(), List.of()),
         Arguments.of(
             DataTypes.listOf(DataTypes.TEXT),
             Arrays.asList(stringLiteral("a"), stringLiteral("b")),
@@ -350,6 +351,7 @@ public class JSONCodecRegistryTest {
             Arrays.asList(0.25, -7.5)),
 
         // // Sets:
+        Arguments.of(DataTypes.setOf(DataTypes.TEXT), List.of(), Set.of()),
         Arguments.of(
             DataTypes.setOf(DataTypes.TEXT),
             Arrays.asList(stringLiteral("a"), stringLiteral("b")),
@@ -370,6 +372,7 @@ public class JSONCodecRegistryTest {
     // Arguments: (CQL-type, from-caller-json, bound-by-driver-for-cql)
     return Stream.of(
         // // Lists:
+        Arguments.of(DataTypes.listOf(DataTypes.TEXT), List.of(), List.of()),
         Arguments.of(
             DataTypes.listOf(DataTypes.TEXT, true),
             Arrays.asList(stringLiteral("a"), stringLiteral("b")),
@@ -387,6 +390,7 @@ public class JSONCodecRegistryTest {
             Arrays.asList(0.25, -7.5)),
 
         // // Sets:
+        Arguments.of(DataTypes.setOf(DataTypes.TEXT), List.of(), Set.of()),
         Arguments.of(
             DataTypes.setOf(DataTypes.TEXT, true),
             Arrays.asList(stringLiteral("a"), stringLiteral("b")),
@@ -406,6 +410,7 @@ public class JSONCodecRegistryTest {
   private static Stream<Arguments> validCodecToCQLTestCasesMaps() {
     // Arguments: (CQL-type, from-caller-json, bound-by-driver-for-cql)
     return Stream.of(
+        Arguments.of(DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT), Map.of(), Map.of()),
         Arguments.of(
             DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT),
             Map.of("str1", stringLiteral("a"), "str2", stringLiteral("b")),
