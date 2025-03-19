@@ -1337,10 +1337,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `Map(INT => INT",
-              "from value.class `java.util.ArrayList`, value []",
-              "no codec matching value type");
+              "\"intMap\"(map) - Cause: no codec matching value type");
     }
 
     @Test
