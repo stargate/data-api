@@ -50,7 +50,7 @@ public class CohereEmbeddingProvider extends EmbeddingProvider {
   public interface CohereEmbeddingProviderClient {
     @POST
     @Path("/embed")
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 

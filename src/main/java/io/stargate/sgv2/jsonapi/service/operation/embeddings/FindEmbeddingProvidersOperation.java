@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 /**
  * Operation that list all available and enabled vector providers into the {@link
- * CommandStatus#EXISTING_VECTOR_PROVIDERS} command status.
+ * CommandStatus#EXISTING_EMBEDDING_PROVIDERS} command status.
  */
 public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
     implements Operation {
@@ -42,7 +42,7 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
     public CommandResult get() {
 
       return CommandResult.statusOnlyBuilder(false, false)
-          .addStatus(CommandStatus.EXISTING_VECTOR_PROVIDERS, embeddingProviders)
+          .addStatus(CommandStatus.EXISTING_EMBEDDING_PROVIDERS, embeddingProviders)
           .build();
     }
   }

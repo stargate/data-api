@@ -58,7 +58,7 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
   public interface OpenAIEmbeddingProviderClient {
     @POST
     // no path specified, as it is already included in the baseUri
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<EmbeddingResponse> embed(
         // API keys as "api-key", MS Entra as "Authorization: Bearer [token]
         @HeaderParam("api-key") String accessToken, EmbeddingRequest request);

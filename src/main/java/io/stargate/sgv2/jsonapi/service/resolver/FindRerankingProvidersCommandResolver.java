@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindRerankingProvidersCommand;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.FindRerankingProvidersOperation;
@@ -15,7 +14,6 @@ import jakarta.inject.Inject;
 public class FindRerankingProvidersCommandResolver
     implements CommandResolver<FindRerankingProvidersCommand> {
 
-  @Inject OperationsConfig operationsConfig;
   @Inject RerankingProvidersConfig rerankingProvidersConfig;
 
   public FindRerankingProvidersCommandResolver() {}
@@ -26,7 +24,7 @@ public class FindRerankingProvidersCommandResolver
   }
 
   @Override
-  public Operation resolveDatabaseCommand(
+  public Operation<DatabaseSchemaObject> resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, FindRerankingProvidersCommand command) {
     return new FindRerankingProvidersOperation(rerankingProvidersConfig);
   }

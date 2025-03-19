@@ -53,7 +53,7 @@ public class OpenAIEmbeddingProvider extends EmbeddingProvider {
   public interface OpenAIEmbeddingProviderClient {
     @POST
     @Path("/embeddings")
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken,
         @HeaderParam("OpenAI-Organization") String organizationId,

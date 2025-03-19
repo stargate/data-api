@@ -49,7 +49,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
   public interface VertexAIEmbeddingProviderClient {
     @POST
     @Path("/{modelId}:predict")
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken,
         @PathParam("modelId") String modelId,

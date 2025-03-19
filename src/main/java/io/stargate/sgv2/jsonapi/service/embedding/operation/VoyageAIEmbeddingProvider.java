@@ -55,7 +55,7 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
   public interface VoyageAIEmbeddingProviderClient {
     @POST
     // no path specified, as it is already included in the baseUri
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 
