@@ -25,7 +25,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 /**
  * The Reranking Nvidia Client that sends the request to the Nvidia Reranking Service.
  *
- * <p>Sample http request to self-host nvidia nvidia/llama-3.2-nv-rerankqa-1b-v2:
+ * <p>Sample http request to self hosted nvidia model - nvidia/llama-3.2-nv-rerankqa-1b-v2:
  *
  * <pre>{@code
  * {

@@ -4,8 +4,8 @@ public interface RerankingConstants {
 
   interface CollectionRerankingOptions {
     String ENABLED = "enabled";
-    String SERVICE = CommonConstants.ServiceConfig.SERVICE;
+    String SERVICE = ServiceDescConstants.SERVICE;
   }
 
-  interface RerankingService extends CommonConstants.ServiceConfig {}
+  interface RerankingService extends ServiceDescConstants {}
 }

@@ -5,10 +5,10 @@ public interface VectorConstants {
     String DIMENSION = "dimension";
     String METRIC = "metric";
     String SOURCE_MODEL = "sourceModel";
-    String SERVICE = CommonConstants.ServiceConfig.SERVICE;
+    String SERVICE = ServiceDescConstants.SERVICE;
   }
 
-  interface Vectorize extends CommonConstants.ServiceConfig {}
+  interface Vectorize extends ServiceDescConstants {}
 
   interface CQLAnnIndex {
     String SOURCE_MODEL = "source_model";
