@@ -67,6 +67,6 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
             .withExceptionHandlerFactory(TableDriverExceptionHandler::new)
             .build(command.documents());
 
-    return EmbeddingOperationFactory.maybeEmbedding(commandContext, tasksAndDeferrables);
+    return EmbeddingOperationFactory.createOperation(commandContext, tasksAndDeferrables);
   }
 }

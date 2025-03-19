@@ -9,11 +9,22 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Builds a {@link EmbeddingTask}, normally use the {@link EmbeddingTaskGroupBuilder} because it can
+ * handle needing multiple tasks for multiple embedding calls.
+ *
+ * <p>aaron - march 19 2025 - this is not adding a lot other than knowing how to get the
+ * EmbeddingProvider , but it uses the TaskBuilder where we will add more things for the task
+ * positions (complex in hierarchies) and manage creating the retry policy.
+ *
+ * @param <SchemaT>
+ */
 public class EmbeddingTaskBuilder<SchemaT extends TableBasedSchemaObject>
     extends TaskBuilder<EmbeddingTask<SchemaT>, SchemaT, EmbeddingTaskBuilder<SchemaT>> {
 
   private final CommandContext<SchemaT> commandContext;
-  // aaron 22 feb 2025 - for unknown we need the command name when we create the embedding provider
+  // aaron 22 feb 2025 - for unknown reasons we need the command name when we create the embedding
+  // provider
   private String originalCommandName;
   private ApiVectorType apiVectorType;
   private List<EmbeddingAction> embeddingActions;
@@ -22,12 +33,11 @@ public class EmbeddingTaskBuilder<SchemaT extends TableBasedSchemaObject>
 
   public EmbeddingTaskBuilder(CommandContext<SchemaT> commandContext) {
     super(commandContext.schemaObject());
-
     this.commandContext = commandContext;
   }
 
   public EmbeddingTaskBuilder<SchemaT> withApiVectorType(ApiVectorType apiVectorType) {
-    this.apiVectorType = apiVectorType;
+    this.apiVectorType = apiVectorType; // note changes in a later PR to use the vectorizeDefinition
     return this;
   }
 

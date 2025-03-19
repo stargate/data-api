@@ -66,7 +66,7 @@ public interface Task<SchemaT extends SchemaObject>
    * exception thrown from the method will be passed through a {@link
    * io.stargate.sgv2.jsonapi.exception.ExceptionHandler} to where it can be re-mapped into
    * something we want to return to a user, and then set as the failure via {@link
-   * #maybeAddFailure(RuntimeException)} so the accumulator can see it.
+   * #maybeAddFailure(Throwable)} so the accumulator can see it.
    *
    * <p>
    *
@@ -105,7 +105,7 @@ public interface Task<SchemaT extends SchemaObject>
    * Set the status to {@link TaskStatus#SKIPPED} if the status is {@link TaskStatus#READY}.
    *
    * <p>If not in the {@link TaskStatus#READY} the task must add a {@link IllegalStateException} via
-   * {@link #maybeAddFailure(RuntimeException)}.
+   * {@link #maybeAddFailure(Throwable)}.
    *
    * <p>This is a small method, but is here and public to make it clear what the intention is for
    * external callers. We use this when skipping tasks in a sequential task group.

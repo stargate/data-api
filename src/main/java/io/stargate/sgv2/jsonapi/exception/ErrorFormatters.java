@@ -102,7 +102,7 @@ public abstract class ErrorFormatters {
    * the ApDataType
    */
   public static String errFmt(ApiDataType apiDataType) {
-    // the save way to get the  name when the type may be unsupported
+    // the safe way to get the  name when the type may be unsupported
     return apiDataType.apiName();
   }
 

@@ -10,7 +10,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
-import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
 import io.stargate.sgv2.jsonapi.service.cqldriver.AccumulatingAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
@@ -102,7 +102,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
           .requestTracing()
           .maybeTrace(
               () ->
-                  new RequestTracing.TraceMessage(
+                  new TraceMessage(
                       "Executing statement for task %s".formatted(task.taskDesc()),
                       Recordable.copyOf(
                           Map.of(
@@ -123,6 +123,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
                 // UnsupportedOperationException - because the interface says the return from
                 // getExecutionInfo
                 // cannot be null
+                // aaron - NOTE - improved in later PR
                 try {
                   if (asyncResultset.getExecutionInfo() == null
                       || asyncResultset.getExecutionInfo().getTracingId() == null) {
@@ -144,7 +145,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
                               .requestTracing()
                               .maybeTrace(
                                   (objectMapper) ->
-                                      new RequestTracing.TraceMessage(
+                                      new TraceMessage(
                                           "Statement trace for task %s".formatted(task.taskDesc()),
                                           objectMapper.convertValue(trace, JsonNode.class)));
                         });

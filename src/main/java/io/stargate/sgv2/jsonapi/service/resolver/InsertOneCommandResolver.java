@@ -58,6 +58,6 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
             .withExceptionHandlerFactory(TableDriverExceptionHandler::new)
             .build(List.of(command.document()));
 
-    return EmbeddingOperationFactory.maybeEmbedding(commandContext, tasksAndDeferrables);
+    return EmbeddingOperationFactory.createOperation(commandContext, tasksAndDeferrables);
   }
 }

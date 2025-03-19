@@ -10,7 +10,20 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import java.util.*;
 import java.util.function.Function;
 
-/** TODO: WIP copied from RowShredder */
+/**
+ * TODO: DOCS: this was the RowShredder, docs copier below.
+ *
+ * <p>See the {@link
+ * io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory} for use.
+ *
+ * <p>Shreds a document transforming it from a {@link JsonNode} to a {@link
+ * io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer}, extracting the values from
+ * the Jackson document ready to be later converted into values for the CQL Driver.
+ *
+ * <p>Note: logic in {@link #shredValue(JsonNode)} and {@link #shredNumber} needs to be kept in sync
+ * with code in {@link io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec}:
+ * types shredded here must be supported by the codec.
+ */
 @FunctionalInterface
 public interface JsonNodeDecoder extends Function<JsonNode, JsonLiteral<?>> {
 

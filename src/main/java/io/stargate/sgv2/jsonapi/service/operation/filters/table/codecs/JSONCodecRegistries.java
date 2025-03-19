@@ -3,11 +3,13 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 import java.util.List;
 
 /**
- * Defines the default {@link JSONCodecRegistry} that and the {@link JSONCodec}s it contains.
+ * Defines the default {@link JSONCodecRegistry}'s that and the {@link JSONCodec}s they contain.
  *
- * <p><b>NOTE:</b> Only codecs in {@link #DEFAULT_REGISTRY} will be used by the API
+ * <p>In almost all cases use the {@link #DEFAULT_REGISTRY}
  */
 public abstract class JSONCodecRegistries {
+
+  private JSONCodecRegistries() {}
 
   /** The default to be used to convert a Java value into what the CQL driver wants to see. */
   public static final JSONCodecRegistry DEFAULT_REGISTRY;

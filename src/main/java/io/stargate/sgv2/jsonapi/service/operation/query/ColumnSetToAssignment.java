@@ -13,8 +13,8 @@ import java.util.List;
 /**
  * CQL Column assignment that set the value of a CQL column.
  *
- * <p>Currently resolved from by API operator $set, $unset, see {@link TableUpdateSetResolver},
- * {@link TableUpdateUnsetResolver}.
+ * <p>Currently resolved from API operator $set, $unset, see {@link TableUpdateSetResolver}, {@link
+ * TableUpdateUnsetResolver}.
  */
 public class ColumnSetToAssignment extends ColumnAssignment {
 

@@ -6,6 +6,13 @@ import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdatePullAllResolver;
 import java.util.Collection;
 
+/**
+ * Registry designed to be used with the {@link
+ * io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator#PULL_ALL} operation where
+ * we only have the keys of the map entries to remove, not the map itself. Needs to be handled
+ * specially because the CQL type is still a MAP but we want to create a list of values to pass to
+ * the CQL operation.
+ */
 public class MapKeyJSONCodecRegistry extends DefaultJSONCodecRegistry {
 
   public MapKeyJSONCodecRegistry(DefaultJSONCodecRegistry source) {

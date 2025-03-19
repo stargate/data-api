@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -10,7 +11,7 @@ import java.util.function.Supplier;
  * The results of running the inner tasks for a {@link CompositeTask}, and a way to smuggle the
  * result of the running the last composite task that has the results for the whole command.
  *
- * <p>Create via the {@link #accumulator(CommandContext)} , check it's not docs for how it is to be
+ * <p>Create via the {@link #accumulator(CommandContext)} , check it's docs for how it is to be
  * used.
  *
  * <p>This page does not know how to build a {@link CommandResult}, it's job is to:
@@ -19,7 +20,7 @@ import java.util.function.Supplier;
  *   <li>Gather the inner tasks that have completed, so we can see if any failed to lift their
  *       errors.
  *   <li>Hold the last task accumulator, so that if the composite task is the last we can use that
- *       to get the results for the user.
+ *       to get the results for the user. Called from {@link CompositeTaskOuterPage}
  * </ul>
  */
 public class CompositeTaskInnerPage<InnerTaskT extends Task<SchemaT>, SchemaT extends SchemaObject>
@@ -27,7 +28,6 @@ public class CompositeTaskInnerPage<InnerTaskT extends Task<SchemaT>, SchemaT ex
 
   private TaskGroup<InnerTaskT, SchemaT> tasks;
   private final TaskAccumulator<InnerTaskT, SchemaT> lastTaskAccumulator;
-  private CommandResult lastTaskResult;
 
   private CompositeTaskInnerPage(
       TaskGroup<InnerTaskT, SchemaT> tasks,
@@ -44,16 +44,10 @@ public class CompositeTaskInnerPage<InnerTaskT extends Task<SchemaT>, SchemaT ex
 
   @Override
   public CommandResult get() {
-
+    Objects.requireNonNull(
+        lastTaskAccumulator,
+        "CompositeTaskInnerPage.get() called when the lastTaskAccumulator is null, this is not last task?");
     return lastTaskAccumulator.getResults().get();
-  }
-
-  void fetchLastTaskResults() {
-    if (lastTaskAccumulator == null) {
-      throw new IllegalStateException("lastTaskAccumulator is null, this should not happen");
-    }
-
-    lastTaskResult = lastTaskAccumulator.getResults().get();
   }
 
   Optional<InnerTaskT> firstFailedTask() {

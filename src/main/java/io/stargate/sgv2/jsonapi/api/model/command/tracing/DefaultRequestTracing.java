@@ -1,15 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.model.command.tracing;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.*;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Request Tracing that tracks the messages in a session. */
-public class DefaultRequestTracing implements RequestTracing {
+public class DefaultRequestTracing extends RequestTracing {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DefaultRequestTracing.class);
 
@@ -17,54 +14,23 @@ public class DefaultRequestTracing implements RequestTracing {
 
   private final TraceSession session;
 
-  public DefaultRequestTracing(String requestId, String tenantId) {
+  public DefaultRequestTracing(String requestId, String tenantId, boolean includeData) {
+    super(true);
+
     Objects.requireNonNull(requestId, "requestId must not be null");
     Objects.requireNonNull(tenantId, "tenantId must not be null");
 
     // not checking if they are empty strings, that is the responsibility of the caller
-    this.session = new TraceSession(requestId, tenantId);
+    session = new TraceSession(requestId, tenantId, includeData);
   }
 
   @Override
-  public boolean enabled() {
-    return true;
-  }
-
-  @Override
-  public void maybeTrace(Supplier<RequestTracing.TraceMessage> messageSupplier) {
-    // TODO: Aaron move this to be in the interface, and have addEvent be the abstract
-    Objects.requireNonNull(messageSupplier, "messageSupplier must not be null");
-
-    var message = messageSupplier.get();
-    if (message == null) {
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug(
-            "TraceMessage supplier returned a null message, ignoring: messageSupplier.class:{}",
-            messageSupplier.getClass());
-      }
-      return;
-    }
+  protected void traceMessage(TraceMessage message) {
     session.addMessage(message);
   }
 
   @Override
-  public void maybeTrace(Function<ObjectMapper, TraceMessage> messageSupplier) {
-    Objects.requireNonNull(messageSupplier, "messageSupplier must not be null");
-
-    var message = messageSupplier.apply(OBJECT_MAPPER);
-    if (message == null) {
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug(
-            "TraceMessage supplier returned a null message, ignoring: messageSupplier.class:{}",
-            messageSupplier.getClass());
-      }
-      return;
-    }
-    session.addMessage(message);
-  }
-
-  @Override
-  public Optional<JsonNode> getTrace() {
-    return Optional.of(OBJECT_MAPPER.convertValue(session, JsonNode.class));
+  public Optional<TraceSession> getSession() {
+    return Optional.of(session);
   }
 }

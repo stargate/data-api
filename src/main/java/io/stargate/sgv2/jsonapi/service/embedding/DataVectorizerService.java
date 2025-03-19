@@ -60,15 +60,9 @@ public class DataVectorizerService {
 
     final DataVectorizer dataVectorizer = constructDataVectorizer(commandContext);
 
-    // TODO, This is the hack to make table vectorize failure goes into command process flow
-    try {
-      if (commandContext.schemaObject() instanceof TableSchemaObject) {
-        // TODO: AARON: HACK: skipping the vectorizing here so we can do it in the pipeline
-        return Uni.createFrom().item(command);
-        // return vectorizeTableCommand(dataVectorizer, commandContext.asTableContext(), command);
-      }
-    } catch (Exception e) {
-      return Uni.createFrom().failure(e);
+    if (commandContext.schemaObject() instanceof TableSchemaObject) {
+      // For Tables, this is now handled by the EmbeddingTask and composite tasks
+      return Uni.createFrom().item(command);
     }
 
     return vectorizeSortClause(dataVectorizer, commandContext, command)

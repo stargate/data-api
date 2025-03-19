@@ -41,7 +41,7 @@ public record FindRerankingProvidersOperation(RerankingProvidersConfig config)
     @Override
     public CommandResult get() {
 
-      return CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_TRACING)
+      return CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
           .addStatus(CommandStatus.EXISTING_RERANKING_PROVIDERS, rerankingProviders)
           .build();
     }

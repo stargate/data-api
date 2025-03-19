@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.APIException;
@@ -67,8 +67,8 @@ public class CommandProcessor {
         .requestTracing()
         .maybeTrace(
             () ->
-                new RequestTracing.TraceMessage(
-                    "Starting to processing '%s' command for schema object %s"
+                new TraceMessage(
+                    "Starting to process '%s' command for schema object %s"
                         .formatted(
                             command.commandName().getApiName(),
                             PrettyPrintable.print(commandContext.schemaObject().name())),

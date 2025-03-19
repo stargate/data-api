@@ -12,14 +12,16 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
 import java.util.Objects;
 
 /**
- * Builds a {@link CqlNamedValueContainer} from a {@link JsonNamedValueContainer}.
- *
- * <p>The caller is responsible for checking the state of the values in the returned {@link
- * CqlNamedValueContainer}.
+ * Builds a {@link CqlNamedValueContainer} from a {@link JsonNamedValueContainer}, using a {@link
+ * JSONCodecRegistry} to create the values CQL wants and detecting any deferred values.
  */
 public class CqlNamedValueContainerFactory {
 
-  /** Factory function for creating a {@link CqlNamedValue} or subtype instance. */
+  /**
+   * Factory function for creating a {@link CqlNamedValue} or subtype instance.
+   *
+   * <p>Exists because of the {@link io.stargate.sgv2.jsonapi.service.shredding.CqlVectorNamedValue}
+   */
   @FunctionalInterface
   public interface CqlNamedValueFactory {
     CqlNamedValue create(
@@ -53,13 +55,22 @@ public class CqlNamedValueContainerFactory {
     this.errorStrategy = Objects.requireNonNull(errorStrategy, "errorStrategy cannot be null");
   }
 
+  /**
+   * Creates a {@link CqlNamedValueContainer} from the values in the {@link
+   * JsonNamedValueContainer}.
+   *
+   * <p>{@link
+   * io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue.ErrorStrategy#allChecks(TableSchemaObject,
+   * CqlNamedValueContainer)} is called on the created container, which may throw exceptions if any
+   * of the values are in an error state.
+   *
+   * @param source The {@link io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValue}'s to
+   *     process.
+   * @return The {@link CqlNamedValueContainer} with the values from the source.
+   */
   public CqlNamedValueContainer create(JsonNamedValueContainer source) {
 
     Objects.requireNonNull(source, "source cannot be null");
-
-    Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
-    Objects.requireNonNull(codecRegistry, "codecRegistry cannot be null");
-    Objects.requireNonNull(errorStrategy, "errorStrategy cannot be null");
 
     // Map everything from the JSON source into a CQL Value, we can check their state after.
     var allColumns = new CqlNamedValueContainer(source.size());

@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
@@ -23,14 +22,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Encapsulates resolving a read command into a {@link Operation}, which includes building the taska
+ * Encapsulates resolving a read command into a {@link Operation}, which includes building the tasks
  * and any deferrables.
  *
  * <p>We use this for the Read commands because they are complex and have a lot more to put together
- * than other commands like an insert, such as {@link
- * InsertManyCommandResolver#resolveTableCommand(CommandContext, InsertManyCommand)}
- *
- * @param <CmdT>
+ * than other commands like an insert.
  */
 class TableReadDBOperationBuilder<
     CmdT extends ReadCommand & Filterable & Projectable & Sortable & Windowable & VectorSortable> {
@@ -139,6 +135,6 @@ class TableReadDBOperationBuilder<
                 .mayReturnVector(command),
             List.of(orderByWithWarnings.target()));
 
-    return EmbeddingOperationFactory.maybeEmbedding(commandContext, tasksAndDeferrables);
+    return EmbeddingOperationFactory.createOperation(commandContext, tasksAndDeferrables);
   }
 }

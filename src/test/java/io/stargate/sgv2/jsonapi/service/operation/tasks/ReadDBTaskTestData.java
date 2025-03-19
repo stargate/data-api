@@ -48,7 +48,7 @@ public class ReadDBTaskTestData {
 
     var mockTable = BaseTaskAssertions.mockTable(keyspaceName, tableName);
     CommandContext<TableSchemaObject> mockCommandContext = mock(CommandContext.class);
-    when(mockCommandContext.requestTracing()).thenReturn(RequestTracing.NO_TRACING);
+    when(mockCommandContext.requestTracing()).thenReturn(RequestTracing.NO_OP);
 
     var mockProjection = mock(TableProjection.class);
 

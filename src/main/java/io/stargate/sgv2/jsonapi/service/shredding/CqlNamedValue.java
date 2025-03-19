@@ -100,7 +100,7 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
       setErrorCode(NamedValueState.PREPARE_ERROR, errorStrategy.codeForCodecError());
     }
 
-    // ok to return null here, we have set the error code
+    // ok to return null here, we have set the error code or thrown
     return null;
   }
 

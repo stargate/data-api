@@ -156,6 +156,14 @@ public interface Jsonable {
             }
           }
         }
+
+        case JsonNode valueNode -> {
+          if (thisArray != null) {
+            thisArray.add(valueNode);
+          } else if (thisObject != null) {
+            thisObject.set(key, valueNode);
+          }
+        }
         case Number number -> {
           if (thisArray != null) {
             thisArray.add(number.doubleValue());

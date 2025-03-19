@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.validation.ConstraintViolation;
@@ -34,7 +35,7 @@ public class ConstraintViolationExceptionMapper {
       ConstraintViolationException exception) {
     // map all violations to errors
     Set<ConstraintViolation<?>> violations = exception.getConstraintViolations();
-    var builder = CommandResult.statusOnlyBuilder(false, false, null);
+    var builder = CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP);
     violations.stream()
         .map(ConstraintViolationExceptionMapper::getError)
         .distinct()

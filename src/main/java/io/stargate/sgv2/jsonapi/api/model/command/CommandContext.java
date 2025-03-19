@@ -48,7 +48,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
   private RequestTracing requestTracing;
 
   // created on demand or set via builder, otherwise we need to read from config too early when
-  // running tests
+  // running tests, See the {@link Builder#withApiFeatures}
   // access via {@link CommandContext#apiFeatures()}
   private ApiFeatures apiFeatures;
 
@@ -74,11 +74,18 @@ public class CommandContext<SchemaT extends SchemaObject> {
     this.embeddingProviderFactory = embeddingProviderFactory;
 
     this.apiFeatures = apiFeatures;
-    this.requestTracing =
+
+    var anyTracing =
         apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING)
+            || apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL);
+
+    this.requestTracing =
+        anyTracing
             ? new DefaultRequestTracing(
-                requestContext.getRequestId(), requestContext.getTenantId().orElse(""))
-            : RequestTracing.NO_TRACING;
+                requestContext.getRequestId(),
+                requestContext.getTenantId().orElse(""),
+                apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL))
+            : RequestTracing.NO_OP;
   }
 
   /** See doc comments for {@link CommandContext} */

@@ -17,8 +17,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Builder to create a group of {@link EmbeddingTask}s from a list of {@link EmbeddingAction}s.
  *
- * <p>Such as when there is an insert operation that needs to be vectorized, and the embedding done
- * before the inserts in a {@link io.stargate.sgv2.jsonapi.service.operation.tasks.CompositeTask}
+ * <p>Handles needing to make multiple embedding calls by looking at the {@link
+ * EmbeddingAction#groupKey()}
  */
 public class EmbeddingTaskGroupBuilder<SchemaT extends TableBasedSchemaObject> {
   private static final Logger LOGGER = LoggerFactory.getLogger(EmbeddingTaskGroupBuilder.class);
@@ -47,6 +47,7 @@ public class EmbeddingTaskGroupBuilder<SchemaT extends TableBasedSchemaObject> {
 
   public TaskGroup<EmbeddingTask<SchemaT>, SchemaT> build() {
     Objects.requireNonNull(embeddingActions, "embeddingActions cannot be null");
+    Objects.requireNonNull(requestType, "requestType cannot be null");
 
     if (embeddingActions.isEmpty()) {
       throw new IllegalArgumentException("embeddingActions is empty, nothing to do");
@@ -57,19 +58,15 @@ public class EmbeddingTaskGroupBuilder<SchemaT extends TableBasedSchemaObject> {
         embeddingActions.stream().collect(Collectors.groupingBy(EmbeddingAction::groupKey));
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "build() - building embedding task group, actionGroups.size: {}, tasks: {}",
+          "build() - building embedding task group, actionGroups.size: {}, actionGroups: {}",
           actionGroups.size(),
-          PrettyPrintable.pprint(Recordable.copyOf(actionGroups)));
+          PrettyPrintable.print(Recordable.copyOf(actionGroups)));
     }
 
-    // UPTO: ARON = TRACE the actions
-
-    // each group of embedding actions is a single Embedding Task
+    // each group of embedding actions is a single Embedding Task, they group the provider etc.
     // and we will run them in parallel
     TaskGroup<EmbeddingTask<SchemaT>, SchemaT> taskGroup = new TaskGroup<>(false);
 
-    // maybe the EmbeddingTask.builder is not needed any  more, but it was made first and is
-    // there to build a single task
     actionGroups.forEach(
         (groupKey, groupActions) -> {
           var embeddingTask =

@@ -105,7 +105,7 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
             UpdateDBTaskPage.accumulator(commandContext),
             List.of(updateWithWarnings.target()));
 
-    return EmbeddingOperationFactory.maybeEmbedding(commandContext, groupAndDeferrables);
+    return EmbeddingOperationFactory.createOperation(commandContext, groupAndDeferrables);
   }
 
   @Override

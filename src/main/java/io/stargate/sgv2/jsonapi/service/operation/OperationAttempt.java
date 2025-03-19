@@ -21,7 +21,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A single query we want to run against the database.
+ * TODO: aaron 19 march 2025 - remove OperationAttempt and related code once Tasks are solid
+ *
+ * <p>A single query we want to run against the database.
  *
  * <p>This can be any type of DML or DDL statement, the operation is responsible for executing the
  * query and handling any errors and retries. Used together with the {@link

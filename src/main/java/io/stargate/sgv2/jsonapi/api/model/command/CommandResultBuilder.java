@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
+import io.stargate.sgv2.jsonapi.util.recordable.Jsonable;
 import java.util.*;
 
 /**
@@ -57,8 +58,9 @@ public class CommandResultBuilder {
     this.responseType = responseType;
     this.useErrorObjectV2 = useErrorObjectV2;
     this.debugMode = debugMode;
-    // null allowed, as is the tracing returning a null
-    this.requestTracing = requestTracing;
+
+    // There is a no op implementation for tracing that is used when tracing is disabled
+    this.requestTracing = Objects.requireNonNull(requestTracing, "requestTracing must not be null");
 
     this.apiExceptionToError = new APIExceptionCommandErrorBuilder(debugMode, useErrorObjectV2);
     this.apiWarningToError = new APIExceptionCommandErrorBuilder(debugMode, true);
@@ -153,9 +155,10 @@ public class CommandResultBuilder {
       cmdStatus.put(CommandStatus.WARNINGS, warnings);
     }
 
-    if (requestTracing != null) {
-      requestTracing.getTrace().ifPresent(trace -> cmdStatus.put(CommandStatus.TRACE, trace));
-    }
+    requestTracing
+        .getSession()
+        .ifPresent(session -> cmdStatus.put(CommandStatus.TRACE, Jsonable.toJson(session)));
+
     // null out values that are empty, the CommandResult serializer will ignore them when the JSON
     // is built
     var finalStatus = cmdStatus.isEmpty() ? null : cmdStatus;

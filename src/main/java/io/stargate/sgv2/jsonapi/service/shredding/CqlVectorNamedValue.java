@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.TableOrderByANNCqlClaus
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 
 /**
- * Sublcass of {@link CqlVectorNamedValue} for use with the find code pathway when deferring values
+ * Sublcass of {@link CqlVectorNamedValue} for use with the read code pathway when deferring values
  * for vectorizing.
  *
  * <p>When building the ANN order by with {@link TableOrderByANNCqlClause} the driver wants a {@link

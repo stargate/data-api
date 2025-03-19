@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * CQL Column assignment that appends the value to a list or set CQL type.
  *
- * <p>Currently resolved from by API operator $push, see {@link TableUpdatePushResolver}.
+ * <p>Currently resolved from API operator $push, see {@link TableUpdatePushResolver}.
  */
 public class ColumnAppendToAssignment extends ColumnAssignment {
 

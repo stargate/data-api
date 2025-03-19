@@ -20,7 +20,9 @@ import java.util.stream.Collectors;
  * Analyzer for table update command.<br>
  * For Table UpdateOne update clause, there are several rules to check as followings:
  *
- * <p>2. rule checkUpdateOnPrimaryKey(). Can not update on PK columns. <br>
+ * <p>rule checkUpdateOnPrimaryKey(). Can not update on PK columns. aaron -19 march 2025 - a number
+ * of rules were moved from there into the {@link
+ * io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue.ErrorStrategy}
  */
 public class TableUpdateAnalyzer {
 

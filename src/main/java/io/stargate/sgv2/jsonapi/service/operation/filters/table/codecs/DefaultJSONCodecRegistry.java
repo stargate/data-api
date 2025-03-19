@@ -201,29 +201,6 @@ public class DefaultJSONCodecRegistry implements JSONCodecRegistry {
     throw new ToCQLCodecException(value, vectorType, "no codec matching value type");
   }
 
-  //  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(
-  //      TableMetadata table, CqlIdentifier columnId)
-  //      throws UnknownColumnException, MissingJSONCodecException {
-  //
-  //    Objects.requireNonNull(table, "table must not be null");
-  //    Objects.requireNonNull(columnId, "column must not be null");
-  //
-  //    var columnMetadata =
-  //        table.getColumn(columnId).orElseThrow(() -> new UnknownColumnException(table,
-  // columnId));
-  //    return codecToJSON(table, columnMetadata);
-  //  }
-
-  //  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(
-  //      TableMetadata table, ColumnMetadata column) throws MissingJSONCodecException {
-  //    // compiler telling me we need to use the unchecked assignment again like the codecFor does
-  //    JSONCodec<JavaT, CqlT> codec = codecToJSON(column.getType());
-  //    if (codec == null) {
-  //      throw new MissingJSONCodecException(table, column, null, null);
-  //    }
-  //    return codec;
-  //  }
-
   /**
    * Method to find a codec for the specified CQL Type, converting from Java to JSON
    *
