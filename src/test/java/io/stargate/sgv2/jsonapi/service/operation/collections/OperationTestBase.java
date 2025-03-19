@@ -70,7 +70,7 @@ public class OperationTestBase {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            CollectionLexicalConfig.configForLegacyCollections(),
+            CollectionLexicalConfig.configForDisabled(),
             CollectionRerankingConfig.configForLegacyCollections());
 
     KEYSPACE_SCHEMA_OBJECT = KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);

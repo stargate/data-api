@@ -118,8 +118,8 @@ public interface JsonNodeDecoder extends Function<JsonNode, JsonLiteral<?>> {
 
         /**
          * For non-string key maps, public API uses tuple format to represent map entries. This
-         * method will detect if the given array looks like tuple map entries, then then shred to
-         * object format JsonLiteral.
+         * method will detect if the given array looks like tuple map entries, then shred to object
+         * format JsonLiteral.
          *
          * <p>Tuple map entries are represented as an array of arrays where each inner array has two
          * elements.
@@ -135,6 +135,12 @@ public interface JsonNodeDecoder extends Function<JsonNode, JsonLiteral<?>> {
          *     entries, then shred to object format JsonLiteral.
          */
         private Optional<JsonLiteral<?>> tupleToObject(ArrayNode arrayNode) {
+
+          // this is to avoid the case where an empty array is considered as list/set
+          // so to insert an empty map, user should use {} instead of []
+          if (arrayNode.isEmpty()) {
+            return Optional.empty();
+          }
 
           // Tuple map entries are represented as an array of arrays where each inner array has two
           // elements.

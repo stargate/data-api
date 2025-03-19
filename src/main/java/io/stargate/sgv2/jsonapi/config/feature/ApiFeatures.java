@@ -47,6 +47,9 @@ public class ApiFeatures {
         b = httpHeaders.getHeaderAsBoolean(flag.httpHeaderName());
       }
     }
-    return (b != null) && b.booleanValue();
+    if (b != null) {
+      return b.booleanValue();
+    }
+    return flag.enabledByDefault();
   }
 }

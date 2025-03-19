@@ -37,6 +37,7 @@ public class TestConstants {
 
   // Schema objects for testing
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
+  public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT_LEGACY;
   public final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT;
   public final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
   public final DatabaseSchemaObject DATABASE_SCHEMA_OBJECT;
@@ -55,12 +56,23 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            CollectionLexicalConfig.configForLegacyCollections(),
+            CollectionLexicalConfig.configForEnabledStandard(),
             // Use default reranking config - hardcode the value to avoid reading config
             new CollectionRerankingConfig(
                 true,
                 new CollectionRerankingConfig.RerankingProviderConfig(
                     "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null)));
+
+    // Schema object for testing with legacy (pre-lexical-config) defaults
+    COLLECTION_SCHEMA_OBJECT_LEGACY =
+        new CollectionSchemaObject(
+            SCHEMA_OBJECT_NAME,
+            null,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.NOT_ENABLED_CONFIG,
+            null,
+            CollectionLexicalConfig.configForDisabled(),
+            CollectionRerankingConfig.configForLegacyCollections());
 
     VECTOR_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -76,7 +88,7 @@ public class TestConstants {
                         EmbeddingSourceModel.OTHER,
                         null))),
             null,
-            CollectionLexicalConfig.configForLegacyCollections(),
+            CollectionLexicalConfig.configForDisabled(),
             CollectionRerankingConfig.configForLegacyCollections());
 
     KEYSPACE_SCHEMA_OBJECT = KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);

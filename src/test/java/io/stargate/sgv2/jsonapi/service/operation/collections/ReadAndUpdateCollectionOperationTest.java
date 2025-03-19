@@ -136,7 +136,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                             EmbeddingSourceModel.OTHER,
                             null))),
                 null,
-                CollectionLexicalConfig.configForLegacyCollections(),
+                CollectionLexicalConfig.configForDisabled(),
                 CollectionRerankingConfig.configForLegacyCollections()),
             jsonProcessingMetricsReporter,
             null);
