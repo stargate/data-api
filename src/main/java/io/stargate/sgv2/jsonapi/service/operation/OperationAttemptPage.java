@@ -10,8 +10,10 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * base for a page of {@link OperationAttempt}s that have been run, subclasses are used to configure
- * the {@link CommandResult} as needed for each command type.
+ * TODO: aaron 19 march 2025 - remove OperationAttempt and related code once Tasks are solid
+ *
+ * <p>base for a page of {@link OperationAttempt}s that have been run, subclasses are used to
+ * configure the {@link CommandResult} as needed for each command type.
  *
  * <p>Implements the {@link Supplier} interface to provide a {@link CommandResult}, which is what is
  * returned by an {@link Operation}. Subclasses should normally override the {@link

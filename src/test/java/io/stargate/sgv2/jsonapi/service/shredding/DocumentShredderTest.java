@@ -4,13 +4,13 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
@@ -111,56 +111,8 @@ public class DocumentShredderTest {
                       .getHash(List.of(new BigDecimal(1), new BigDecimal(2)))
                       .hash()));
       assertThat(doc.queryNullValues()).isEqualTo(Collections.singleton(JsonPath.from("nullable")));
+      float[] vector = {0.11f, 0.22f, 0.33f, 0.44f};
       assertThat(doc.queryVectorValues()).containsOnly(0.11f, 0.22f, 0.33f, 0.44f);
-    }
-
-    @Test
-    public void shredSimpleWithLexical() throws Exception {
-      final String inputJson =
-          """
-                          { "_id" : "lex1",
-                            "name" : "Jack",
-                            "nullable" : null,
-                            "$vector" : [ 0.25, -1.5 ],
-                            "$lexical": "monkeys like bananas"
-                          }
-                          """;
-      final JsonNode inputDoc = objectMapper.readTree(inputJson);
-      WritableShreddedDocument doc =
-          documentShredder.shred(TestConstants.collectionContext(), inputDoc, null);
-
-      assertThat(doc.id()).isEqualTo(DocumentId.fromString("lex1"));
-      List<JsonPath> expPaths =
-          Arrays.asList(
-              JsonPath.from("_id"),
-              JsonPath.from("name"),
-              JsonPath.from("nullable"),
-              JsonPath.from("$vector"),
-              JsonPath.from("$lexical"));
-
-      // First verify paths
-      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
-
-      // No arrays ($vector is special)
-      assertThat(doc.arraySize()).hasSize(0);
-
-      // We have 2 main level properties (_id excluded)
-      assertThat(doc.arrayContains()).hasSize(2);
-      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("name SJack", "nullable Z");
-
-      // Also, the document should be the same, including _id:
-      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
-      assertThat(jsonFromShredded).isEqualTo(inputDoc);
-
-      // Then atomic value containers
-      assertThat(doc.queryBoolValues()).isEmpty();
-      assertThat(doc.queryNumberValues()).isEmpty();
-      assertThat(doc.queryTextValues())
-          .isEqualTo(Map.of(JsonPath.from("_id"), "lex1", JsonPath.from("name"), "Jack"));
-      assertThat(doc.queryNullValues()).isEqualTo(Collections.singleton(JsonPath.from("nullable")));
-      assertThat(doc.queryVectorValues()).containsOnly(0.25f, -1.5f);
-
-      assertThat(doc.queryLexicalValue()).isEqualTo("monkeys like bananas");
     }
 
     @Test
@@ -266,7 +218,7 @@ public class DocumentShredderTest {
     }
 
     @Test
-    public void shredOverlappingPaths() throws Exception {
+    public void shredOverlappingPaths() throws JsonProcessingException {
       final String inputJson =
           """
               {

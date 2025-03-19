@@ -1,13 +1,18 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.DefaultRequestTracing;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import java.util.Objects;
 
@@ -32,6 +37,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
   private final JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
   private final CQLSessionCache cqlSessionCache;
   private final CommandConfig commandConfig;
+  private final EmbeddingProviderFactory embeddingProviderFactory;
 
   // Request specific
   private final SchemaT schemaObject;
@@ -39,7 +45,11 @@ public class CommandContext<SchemaT extends SchemaObject> {
       embeddingProvider; // to be removed later, this is a single provider
   private final String commandName; // TODO: remove the command name, but it is used in 14 places
   private final RequestContext requestContext;
-  // created on demand, otherwise we need to read from config too early when running tests
+  private RequestTracing requestTracing;
+
+  // created on demand or set via builder, otherwise we need to read from config too early when
+  // running tests, See the {@link Builder#withApiFeatures}
+  // access via {@link CommandContext#apiFeatures()}
   private ApiFeatures apiFeatures;
 
   private CommandContext(
@@ -49,7 +59,9 @@ public class CommandContext<SchemaT extends SchemaObject> {
       RequestContext requestContext,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CQLSessionCache cqlSessionCache,
-      CommandConfig commandConfig) {
+      CommandConfig commandConfig,
+      ApiFeatures apiFeatures,
+      EmbeddingProviderFactory embeddingProviderFactory) {
 
     this.schemaObject = schemaObject;
     this.embeddingProvider = embeddingProvider;
@@ -59,6 +71,21 @@ public class CommandContext<SchemaT extends SchemaObject> {
     this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
     this.cqlSessionCache = cqlSessionCache;
     this.commandConfig = commandConfig;
+    this.embeddingProviderFactory = embeddingProviderFactory;
+
+    this.apiFeatures = apiFeatures;
+
+    var anyTracing =
+        apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING)
+            || apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL);
+
+    this.requestTracing =
+        anyTracing
+            ? new DefaultRequestTracing(
+                requestContext.getRequestId(),
+                requestContext.getTenantId().orElse(""),
+                apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL))
+            : RequestTracing.NO_OP;
   }
 
   /** See doc comments for {@link CommandContext} */
@@ -76,6 +103,10 @@ public class CommandContext<SchemaT extends SchemaObject> {
 
   public String commandName() {
     return commandName;
+  }
+
+  public RequestTracing requestTracing() {
+    return requestTracing;
   }
 
   public RequestContext requestContext() {
@@ -107,6 +138,10 @@ public class CommandContext<SchemaT extends SchemaObject> {
 
   public CommandConfig config() {
     return commandConfig;
+  }
+
+  public EmbeddingProviderFactory embeddingProviderFactory() {
+    return embeddingProviderFactory;
   }
 
   @SuppressWarnings("unchecked")
@@ -152,6 +187,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
     private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
     private CQLSessionCache cqlSessionCache;
     private CommandConfig commandConfig;
+    private EmbeddingProviderFactory embeddingProviderFactory;
 
     BuilderSupplier() {}
 
@@ -171,12 +207,19 @@ public class CommandContext<SchemaT extends SchemaObject> {
       return this;
     }
 
+    public BuilderSupplier withEmbeddingProviderFactory(
+        EmbeddingProviderFactory embeddingProviderFactory) {
+      this.embeddingProviderFactory = embeddingProviderFactory;
+      return this;
+    }
+
     public <SchemaT extends SchemaObject> Builder<SchemaT> getBuilder(SchemaT schemaObject) {
 
       Objects.requireNonNull(
           jsonProcessingMetricsReporter, "jsonProcessingMetricsReporter must not be null");
       Objects.requireNonNull(cqlSessionCache, "cqlSessionCache must not be null");
       Objects.requireNonNull(commandConfig, "commandConfig must not be null");
+      Objects.requireNonNull(embeddingProviderFactory, "embeddingProviderFactory must not be null");
 
       // SchemaObject is passed here so the generics gets locked here, makes call chaining easier
       Objects.requireNonNull(schemaObject, "schemaObject must not be null");
@@ -197,6 +240,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
       private EmbeddingProvider embeddingProvider;
       private String commandName;
       private RequestContext requestContext;
+      private ApiFeatures apiFeatures;
 
       Builder(SchemaT schemaObject) {
         this.schemaObject = schemaObject;
@@ -217,6 +261,15 @@ public class CommandContext<SchemaT extends SchemaObject> {
         return this;
       }
 
+      /**
+       * Optional {@link ApiFeatures} that can be set when running testing, normally set to {@link
+       * ApiFeatures#empty()}
+       */
+      public Builder<SchemaT> withApiFeatures(ApiFeatures apiFeatures) {
+        this.apiFeatures = apiFeatures;
+        return this;
+      }
+
       public CommandContext<SchemaT> build() {
         // embeddingProvider may be null, e.g. a keyspace command this will change when we pass in
         // all the providers
@@ -230,7 +283,9 @@ public class CommandContext<SchemaT extends SchemaObject> {
             requestContext,
             jsonProcessingMetricsReporter,
             cqlSessionCache,
-            commandConfig);
+            commandConfig,
+            apiFeatures,
+            embeddingProviderFactory);
       }
     }
   }

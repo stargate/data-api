@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -35,8 +36,8 @@ public class TableInsertDBTask extends InsertDBTask<TableSchemaObject> {
     setStatus(TaskStatus.READY);
   }
 
-  public static TableInsertDBTaskBuilder builder(TableSchemaObject schemaObject) {
-    return new TableInsertDBTaskBuilder(schemaObject);
+  public static TableInsertDBTaskBuilder builder(CommandContext<TableSchemaObject> commandContext) {
+    return new TableInsertDBTaskBuilder(commandContext);
   }
 
   @Override
