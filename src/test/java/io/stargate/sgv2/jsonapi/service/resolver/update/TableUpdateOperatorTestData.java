@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.fixtures.testdata;
+package io.stargate.sgv2.jsonapi.service.resolver.update;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -8,14 +8,14 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
+import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
+import io.stargate.sgv2.jsonapi.fixtures.testdata.TestDataSuplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
-import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdateOperatorResolver;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,28 +29,35 @@ public class TableUpdateOperatorTestData extends TestDataSuplier {
   }
 
   public TableUpdateOperatorResolverFixture tableWithMapSetList(
-      TableUpdateOperatorResolver tableUpdateOperatorResolver, String message) {
+      TableUpdateOperatorResolver tableUpdateOperatorResolver,
+      UpdateOperator updateOperator,
+      String message) {
+
     var table = testData.schemaObject().tableWithMapSetList();
-    return new TableUpdateOperatorResolverFixture(table, tableUpdateOperatorResolver, message);
+    return new TableUpdateOperatorResolverFixture(
+        table, tableUpdateOperatorResolver, updateOperator, message);
   }
 
-  public static class TableUpdateOperatorResolverFixture implements PrettyPrintable {
+  public static class TableUpdateOperatorResolverFixture implements Recordable {
 
     private String message;
     private String operatorJson = null;
     private final TableMetadata tableMetadata;
     private final TableSchemaObject tableSchemaObject;
     private final TableUpdateOperatorResolver tableUpdateOperatorResolver;
+    private final UpdateOperator updateOperator;
     private List<ColumnAssignment> columnAssignments = null;
     public Throwable exception = null;
 
     public TableUpdateOperatorResolverFixture(
         TableSchemaObject table,
         TableUpdateOperatorResolver tableUpdateOperatorResolver,
+        UpdateOperator updateOperator,
         String message) {
       this.tableMetadata = table.tableMetadata();
       this.tableSchemaObject = table;
       this.tableUpdateOperatorResolver = tableUpdateOperatorResolver;
+      this.updateOperator = updateOperator;
       this.message = message;
     }
 
@@ -88,10 +95,13 @@ public class TableUpdateOperatorTestData extends TestDataSuplier {
     }
 
     private void callResolve() throws JsonProcessingException {
-      LOGGER.warn("Resolve the : {}\n {}", message, toString(true));
+      LOGGER.warn("Resolve the : {}\n {}", message, PrettyPrintable.pprint(this));
+
       columnAssignments =
           tableUpdateOperatorResolver.resolve(
-              tableSchemaObject, (ObjectNode) mapper.readTree(operatorJson));
+              tableSchemaObject,
+              new TableUpdateResolver.ErrorStrategy(updateOperator),
+              (ObjectNode) mapper.readTree(operatorJson));
     }
 
     public TableUpdateOperatorResolverFixture assertSingleAssignment() {
@@ -100,33 +110,19 @@ public class TableUpdateOperatorTestData extends TestDataSuplier {
     }
 
     public TableUpdateOperatorResolverFixture assertFirstAssignmentEqual(
-        UpdateOperator operator, JsonLiteral<?> expectedJsonLiteral) {
-      assertThat(columnAssignments.getFirst().testEquals(operator, expectedJsonLiteral)).isTrue();
+        UpdateOperator operator, Object expectedValue) {
+
+      assertThat(columnAssignments.getFirst().namedValue().value()).isEqualTo(expectedValue);
       return this;
     }
 
     @Override
-    public String toString() {
-      return toString(false);
-    }
-
-    public String toString(boolean pretty) {
-      return toString(new PrettyToStringBuilder(getClass(), pretty)).toString();
-    }
-
-    public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-      prettyToStringBuilder
+    public DataRecorder recordTo(DataRecorder dataRecorder) {
+      return dataRecorder
           .append("table", tableMetadata.describe(true))
           .append("operatorJson", operatorJson)
           .append("columnAssignments", columnAssignments)
           .append("exception", exception);
-      return prettyToStringBuilder;
-    }
-
-    @Override
-    public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
-      var sb = prettyToStringBuilder.beginSubBuilder(getClass());
-      return toString(sb).endSubBuilder();
     }
   }
 }

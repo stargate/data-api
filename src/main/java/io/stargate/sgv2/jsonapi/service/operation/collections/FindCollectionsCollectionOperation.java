@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -96,7 +97,7 @@ public record FindCollectionsCollectionOperation(
     @Override
     public CommandResult get() {
 
-      var builder = CommandResult.statusOnlyBuilder(false, false);
+      var builder = CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP);
       if (explain) {
         final List<CreateCollectionCommand> createCollectionCommands =
             collections.stream()

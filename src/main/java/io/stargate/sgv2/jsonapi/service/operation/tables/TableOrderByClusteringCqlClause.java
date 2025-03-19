@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.shredding.NamedValue;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -54,6 +55,12 @@ public class TableOrderByClusteringCqlClause implements OrderByCqlClause {
   @Override
   public boolean fullyCoversCommand() {
     return true;
+  }
+
+  @Override
+  public List<? extends NamedValue<?, ?, ?>> deferredValues() {
+    // never have deferred values when doing regular ASC or DESC sorting
+    return List.of();
   }
 
   @Override

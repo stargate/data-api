@@ -16,15 +16,16 @@ import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.tables.*;
+import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingOperationFactory;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroupAndDeferrables;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdateResolver;
-import io.stargate.sgv2.jsonapi.service.resolver.update.UpdateResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
@@ -44,9 +45,6 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final FilterResolver<UpdateOneCommand, CollectionSchemaObject> collectionFilterResolver;
-  private final FilterResolver<UpdateOneCommand, TableSchemaObject> tableFilterResolver;
-
-  private final UpdateResolver<UpdateOneCommand, TableSchemaObject> tableUpdateResolver;
 
   @Inject
   public UpdateOneCommandResolver(
@@ -65,8 +63,6 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
-    this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
-    this.tableUpdateResolver = new TableUpdateResolver<>(operationsConfig);
   }
 
   @Override
@@ -84,20 +80,32 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
           errVars(commandContext.schemaObject(), map -> {}));
     }
 
-    var taskBuilder = UpdateDBTask.builder(commandContext.schemaObject()).withUpdateOne(true);
-    taskBuilder.withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+    var filterResolver =
+        new TableFilterResolver<>(commandContext.config().get(OperationsConfig.class));
+    var updateWithWarnings =
+        new TableUpdateResolver<>(commandContext.config().get(OperationsConfig.class))
+            .resolve(commandContext, command);
 
-    // need to update so we use WithWarnings correctly
-    var where =
-        TableWhereCQLClause.forUpdate(
-            commandContext.schemaObject(),
-            tableFilterResolver.resolve(commandContext, command).target());
+    var taskBuilder =
+        UpdateDBTask.builder(commandContext.schemaObject())
+            .withUpdateOne(true)
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new)
+            .withWhereCQLClause(
+                TableWhereCQLClause.forUpdate(
+                    commandContext.schemaObject(), filterResolver.resolve(commandContext, command)))
+            .withUpdateValuesCQLClause(updateWithWarnings);
 
-    var taskGroup =
-        new TaskGroup<>(
-            taskBuilder.build(where, tableUpdateResolver.resolve(commandContext, command)));
+    // always parallel processing for the taskgroup
+    var taskGroup = new TaskGroup<UpdateDBTask<TableSchemaObject>, TableSchemaObject>();
+    taskGroup.add(taskBuilder.build());
 
-    return new TaskOperation<>(taskGroup, UpdateAttemptPage.accumulator(commandContext));
+    var groupAndDeferrables =
+        new TaskGroupAndDeferrables<>(
+            taskGroup,
+            UpdateDBTaskPage.accumulator(commandContext),
+            List.of(updateWithWarnings.target()));
+
+    return EmbeddingOperationFactory.createOperation(commandContext, groupAndDeferrables);
   }
 
   @Override

@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -49,7 +50,8 @@ public class GeneralResource {
   public GeneralResource(
       MeteredCommandProcessor meteredCommandProcessor,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      CQLSessionCache cqlSessionCache) {
+      CQLSessionCache cqlSessionCache,
+      EmbeddingProviderFactory embeddingProviderFactory) {
     this.meteredCommandProcessor = meteredCommandProcessor;
 
     contextBuilderSupplier =
@@ -57,7 +59,8 @@ public class GeneralResource {
             // old code did not set jsonProcessingMetricsReporter - Aaron Feb 10
             .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
             .withCqlSessionCache(cqlSessionCache)
-            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty());
+            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
+            .withEmbeddingProviderFactory(embeddingProviderFactory);
   }
 
   // TODO: add example for findEmbeddingProviders

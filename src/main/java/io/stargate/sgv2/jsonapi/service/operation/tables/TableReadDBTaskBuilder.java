@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
  * clause the command creates.
  */
 public class TableReadDBTaskBuilder
-    extends TaskBuilder<ReadDBTask<TableSchemaObject>, TableSchemaObject> {
+    extends TaskBuilder<ReadDBTask<TableSchemaObject>, TableSchemaObject, TableReadDBTaskBuilder> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TableReadDBTaskBuilder.class);
 
@@ -61,7 +61,7 @@ public class TableReadDBTaskBuilder
     return this;
   }
 
-  public TableReadDBTaskBuilder withBuilderOption(CQLOption<Select> option) {
+  public TableReadDBTaskBuilder withCqlBuilderOption(CQLOption<Select> option) {
     cqlOptions.addBuilderOption(option);
     return this;
   }
@@ -119,8 +119,7 @@ public class TableReadDBTaskBuilder
       warnings = warnings.andThen(whereWithWarnings);
 
       if (LOGGER.isDebugEnabled() && whereWithWarnings.requiresAllowFiltering()) {
-        LOGGER.debug(
-            "build() - enabled ALLOW FILTERING for attempt {}", task.positionTaskIdStatus());
+        LOGGER.debug("build() - enabled ALLOW FILTERING for attempt {}", task.taskDesc());
       }
     }
 
@@ -129,7 +128,7 @@ public class TableReadDBTaskBuilder
     if (LOGGER.isDebugEnabled() && !task.allWarnings().isEmpty()) {
       LOGGER.debug(
           "build() - adding warnings for task {}, warnings={}",
-          task.positionTaskIdStatus(),
+          task.taskDesc(),
           task.allWarnings());
     }
     return task;

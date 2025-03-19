@@ -93,7 +93,7 @@ public class MetadataDBTaskPage<TaskT extends MetadataDBTask<SchemaT>, SchemaT e
 
       return new MetadataDBTaskPage<>(
           tasks,
-          CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode),
+          CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode, requestTracing),
           showSchema,
           statusKey);
     }

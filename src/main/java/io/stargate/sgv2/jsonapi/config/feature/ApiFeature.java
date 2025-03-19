@@ -32,7 +32,18 @@ public enum ApiFeature {
    *
    * <p>Disabled by default.
    */
-  TABLES("tables", false);
+  TABLES("tables", false),
+
+  /**
+   * The request will return a trace of the processing that includes a message of the steps taken,
+   * but excludes the data of the message which can be large.
+   */
+  REQUEST_TRACING("request-tracing", false),
+
+  /**
+   * The request will return a trace of the processing that includes both the message and the data.
+   */
+  REQUEST_TRACING_FULL("request-tracing-full", false);
 
   /**
    * Prefix for HTTP headers used to override feature flags for specific requests: prepended before

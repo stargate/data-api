@@ -6,14 +6,13 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionInsertAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingOperationFactory;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTask;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTaskBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory;
 import io.stargate.sgv2.jsonapi.util.ApiOptionUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -23,12 +22,10 @@ import jakarta.inject.Inject;
 public class InsertManyCommandResolver implements CommandResolver<InsertManyCommand> {
 
   private final DocumentShredder documentShredder;
-  private final RowShredder rowShredder;
 
   @Inject
-  public InsertManyCommandResolver(DocumentShredder documentShredder, RowShredder rowShredder) {
+  public InsertManyCommandResolver(DocumentShredder documentShredder) {
     this.documentShredder = documentShredder;
-    this.rowShredder = rowShredder;
   }
 
   @Override
@@ -55,24 +52,21 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, InsertManyCommand command) {
 
-    TableInsertDBTaskBuilder taskBuilder =
-        TableInsertDBTask.builder(commandContext.schemaObject())
-            .withRowShredder(rowShredder)
-            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
-
     // TODO: move the default for ordered to a constant and use in the API
-    var taskGroup =
-        new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(
-            ApiOptionUtils.getOrDefault(
-                command.options(), InsertManyCommand.Options::ordered, false));
-    taskGroup.addAll(command.documents().stream().map(taskBuilder::build).toList());
-
-    var accumulator =
-        InsertDBTaskPage.accumulator(commandContext)
-            .returnDocumentResponses(
+    var tasksAndDeferrables =
+        TableInsertDBTask.builder(commandContext)
+            .withOrdered(
                 ApiOptionUtils.getOrDefault(
-                    command.options(), InsertManyCommand.Options::returnDocumentResponses, false));
+                    command.options(), InsertManyCommand.Options::ordered, false))
+            .withReturnDocumentResponses(
+                ApiOptionUtils.getOrDefault(
+                    command.options(), InsertManyCommand.Options::returnDocumentResponses, false))
+            .withJsonNamedValueFactory(
+                new JsonNamedValueContainerFactory(
+                    commandContext.schemaObject(), JsonNodeDecoder.DEFAULT))
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new)
+            .build(command.documents());
 
-    return new TaskOperation<>(taskGroup, accumulator);
+    return EmbeddingOperationFactory.createOperation(commandContext, tasksAndDeferrables);
   }
 }

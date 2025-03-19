@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Comparator;
 import java.util.Objects;
 
@@ -32,7 +33,7 @@ import java.util.Objects;
  * When you have more than one use a {@link ApiColumnDefContainer} to hold them, it also contains
  * the serialization logic.
  */
-public class ApiColumnDef {
+public class ApiColumnDef implements Recordable {
 
   public static final ColumnFactoryFromCql FROM_CQL_FACTORY = new CqlColumnFactory();
   public static ColumnFactoryFromColumnDesc FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
@@ -138,17 +139,11 @@ public class ApiColumnDef {
   }
 
   @Override
-  public String toString() {
-    return new StringBuilder()
-        .append("ApiColumnDef{")
-        .append("name=")
-        .append(name.asCql(true))
-        .append(", isStatic=")
-        .append(isStatic)
-        .append(", type.apiName=")
-        .append(type.apiName())
-        .append("}")
-        .toString();
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return dataRecorder
+        .append("name", name.asCql(true))
+        .append("isStatic", isStatic)
+        .append("type", type);
   }
 
   private static class CqlColumnFactory implements ColumnFactoryFromCql {

@@ -55,9 +55,4 @@ abstract class ApiSupportedIndex implements ApiIndexDef {
   public ApiIndexFunction indexFunction() {
     return indexFunction;
   }
-
-  @Override
-  public String toString() {
-    return toString(false);
-  }
 }
