@@ -28,14 +28,14 @@ public class RerankingEGWClient extends RerankingProvider {
    */
   private static final String RERANKING_API_KEY = "RERANKING_API_KEY";
 
-  private String provider;
+  private final String provider;
 
-  private Optional<String> tenant;
-  private Optional<String> authToken;
-  private String modelName;
-  private RerankingService rerankingGrpcService;
+  private final Optional<String> tenant;
+  private final Optional<String> authToken;
+  private final String modelName;
+  private final RerankingService rerankingGrpcService;
   Map<String, String> authentication;
-  private String commandName;
+  private final String commandName;
 
   public RerankingEGWClient(
       String baseUrl,

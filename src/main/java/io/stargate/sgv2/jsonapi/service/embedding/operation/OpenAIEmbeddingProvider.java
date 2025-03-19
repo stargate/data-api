@@ -13,6 +13,8 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProvi
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,7 +55,7 @@ public class OpenAIEmbeddingProvider extends EmbeddingProvider {
   public interface OpenAIEmbeddingProviderClient {
     @POST
     @Path("/embeddings")
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken,
         @HeaderParam("OpenAI-Organization") String organizationId,

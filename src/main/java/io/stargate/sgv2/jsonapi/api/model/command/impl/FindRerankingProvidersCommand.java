@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(description = "Command that lists all available reranking providers.")
+@Schema(description = "Lists the available Reranking Providers for this database.")
 @JsonTypeName(CommandName.Names.FIND_RERANKING_PROVIDERS)
 public record FindRerankingProvidersCommand() implements GeneralCommand, NoOptionsCommand {
 
