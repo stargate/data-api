@@ -185,13 +185,17 @@ public abstract class StargateTestResource
                   MountableFile.forClasspathResource("cassandra.yaml"),
                   "/etc/cassandra/cassandra.yaml");
     }
+    final String JVM_EXTRA_OPTS =
+        "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8"
+            // 18-Mar-2025, tatu: to work around [https://github.com/riptano/cndb/issues/13330],
+            // need
+            //    to temporarily add this:
+            + " -Dcassandra.cluster_version_provider.min_stable_duration_ms=-1";
     container
         .withEnv("HEAP_NEWSIZE", "512M")
         .withEnv("MAX_HEAP_SIZE", "2048M")
         .withEnv("CASSANDRA_CGROUP_MEMORY_LIMIT", "true")
-        .withEnv(
-            "JVM_EXTRA_OPTS",
-            "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8")
+        .withEnv("JVM_EXTRA_OPTS", JVM_EXTRA_OPTS)
         .withNetworkAliases(new String[] {"cassandra"})
         .withExposedPorts(new Integer[] {7000, 9042})
         .withLogConsumer(
