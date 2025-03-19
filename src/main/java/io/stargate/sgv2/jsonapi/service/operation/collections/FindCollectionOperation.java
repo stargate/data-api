@@ -159,7 +159,7 @@ public record FindCollectionOperation(
   }
 
   /** Constructs find operation for BM25-sorted multi-document find. */
-  public static FindCollectionOperation bm25(
+  public static FindCollectionOperation bm25Multi(
       CommandContext<CollectionSchemaObject> commandContext,
       DBLogicalExpression dbLogicalExpression,
       DocumentProjector projection,

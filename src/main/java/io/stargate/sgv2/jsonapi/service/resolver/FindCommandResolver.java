@@ -148,7 +148,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     // BM25 search / sort?
     SortExpression bm25Expr = SortClauseUtil.resolveBM25Search(sortClause);
     if (bm25Expr != null) {
-      return FindCollectionOperation.bm25(
+      return FindCollectionOperation.bm25Multi(
           commandContext,
           resolvedDbLogicalExpression,
           command.buildProjector(),
