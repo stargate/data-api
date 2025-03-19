@@ -3,7 +3,11 @@ package io.stargate.sgv2.jsonapi.service.operation.query;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
 import com.google.common.annotations.VisibleForTesting;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
+import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import java.util.List;
 import java.util.Objects;
 

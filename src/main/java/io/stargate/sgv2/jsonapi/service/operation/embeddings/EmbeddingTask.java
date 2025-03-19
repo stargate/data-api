@@ -66,6 +66,7 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
 
     var vectorizeTexts =
         embeddingActions.stream().map(EmbeddingDeferredAction::startEmbedding).toList();
+
     return new EmbeddingResultSupplier(
         this,
         commandContext,

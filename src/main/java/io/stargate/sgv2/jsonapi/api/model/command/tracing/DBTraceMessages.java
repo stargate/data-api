@@ -24,9 +24,7 @@ public abstract class DBTraceMessages {
       String messageTemplate,
       Object... args) {
     requestTracing.maybeTrace(
-        () ->
-            new TraceMessage(
-                messageTemplate.formatted(args), recordableSupplier.get()));
+        () -> new TraceMessage(messageTemplate.formatted(args), recordableSupplier.get()));
   }
 
   public static void executingStatement(
