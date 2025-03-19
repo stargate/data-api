@@ -148,14 +148,14 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
           // documentConfig.defaultPageSize() as limit
           operationsConfig.maxDocumentSortCount(),
           false);
-    } else {
-      return FindCollectionOperation.unsortedSingle(
-          commandContext,
-          dbLogicalExpression,
-          DocumentProjector.includeAllProjector(),
-          CollectionReadType.KEY,
-          objectMapper,
-          false);
     }
+    // Otherwise non-sorted
+    return FindCollectionOperation.unsortedSingle(
+        commandContext,
+        dbLogicalExpression,
+        DocumentProjector.includeAllProjector(),
+        CollectionReadType.KEY,
+        objectMapper,
+        false);
   }
 }

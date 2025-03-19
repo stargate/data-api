@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -47,6 +48,7 @@ public record FindCollectionOperation(
     int maxSortReadLimit,
     boolean singleResponse,
     float[] vector,
+    SortExpression bm25SearchExpression,
 
     /** Whether to include the sort vector in the response. This is used for vector search. */
     boolean includeSortVector)
@@ -83,6 +85,7 @@ public record FindCollectionOperation(
         0,
         0,
         true,
+        null,
         null,
         includeSortVector);
   }
@@ -125,7 +128,37 @@ public record FindCollectionOperation(
         0,
         false,
         null,
+        null,
         includeSortVector);
+  }
+
+  /** Constructs find operation for BM25-sorted multi-document find. */
+  public static FindCollectionOperation bm25(
+      CommandContext<CollectionSchemaObject> commandContext,
+      DBLogicalExpression dbLogicalExpression,
+      DocumentProjector projection,
+      String pageState,
+      int limit,
+      int pageSize,
+      CollectionReadType readType,
+      ObjectMapper objectMapper,
+      SortExpression bm25Expr) {
+    return new FindCollectionOperation(
+        commandContext,
+        dbLogicalExpression,
+        projection,
+        pageState,
+        limit,
+        pageSize,
+        readType,
+        objectMapper,
+        null,
+        0,
+        0,
+        false,
+        null,
+        bm25Expr,
+        false);
   }
 
   /**
@@ -162,6 +195,7 @@ public record FindCollectionOperation(
         0,
         true,
         vector,
+        null,
         includeSortVector);
   }
 
@@ -175,7 +209,8 @@ public record FindCollectionOperation(
    * @param limit limit of rows to fetch
    * @param pageSize page size
    * @param readType type of the read
-   * @param objectMapper object mapper to use * @param vector vector to search * @param
+   * @param objectMapper object mapper to use
+   * @param vector vector to search * @param
    * @param includeSortVector include sort vector in the response
    * @return FindCollectionOperation for a multi document unsorted find
    */
@@ -204,6 +239,7 @@ public record FindCollectionOperation(
         0,
         false,
         vector,
+        null,
         includeSortVector);
   }
 
@@ -246,6 +282,7 @@ public record FindCollectionOperation(
         skip,
         maxSortReadLimit,
         true,
+        null,
         null,
         includeSortVector);
   }
@@ -294,6 +331,7 @@ public record FindCollectionOperation(
         maxSortReadLimit,
         false,
         null,
+        null,
         includeSortVector);
   }
 
@@ -307,9 +345,9 @@ public record FindCollectionOperation(
               ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
                   "%s", commandContext().schemaObject().name().table()));
     }
+
     // get FindResponse
     return getDocuments(dataApiRequestInfo, queryExecutor, pageState(), null)
-
         // map the response to result
         .map(
             docs -> {
@@ -444,7 +482,7 @@ public record FindCollectionOperation(
         expression -> {
           final Query query;
           if (vector() == null) {
-            query =
+            QueryBuilder qb =
                 new QueryBuilder()
                     .select()
                     .column(
@@ -455,8 +493,16 @@ public record FindCollectionOperation(
                         commandContext.schemaObject().name().keyspace(),
                         commandContext.schemaObject().name().table())
                     .where(expression)
-                    .limit(limit)
-                    .build();
+                    .limit(limit);
+            var bm25Expr = bm25SearchExpression();
+            if (bm25Expr != null) {
+              qb =
+                  qb.bm25Sort(
+                      DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME,
+                      100,
+                      bm25Expr.bm25Query());
+            }
+            query = qb.build();
           } else {
             query = getVectorSearchQueryByExpression(expression);
           }

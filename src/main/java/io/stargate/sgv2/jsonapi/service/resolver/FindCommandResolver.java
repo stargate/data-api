@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
@@ -115,7 +116,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     }
 
     // if vector search
-    float[] vector = SortClauseUtil.resolveVsearch(sortClause);
+    final float[] vector = SortClauseUtil.resolveVsearch(sortClause);
     var indexUsage = commandContext.schemaObject().newCollectionIndexUsage();
     indexUsage.vectorIndexTag = vector != null;
 
@@ -144,27 +145,9 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           includeSortVector);
     }
 
-    List<FindCollectionOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
-    // if orderBy present
-    if (orderBy != null) {
-      return FindCollectionOperation.sorted(
-          commandContext,
-          resolvedDbLogicalExpression,
-          command.buildProjector(),
-          pageState,
-          // For in memory sorting if no limit provided in the request will use
-          // documentConfig.defaultPageSize() as limit
-          Math.min(limit, operationsConfig.defaultPageSize()),
-          // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
-          operationsConfig.defaultSortPageSize(),
-          CollectionReadType.SORTED_DOCUMENT,
-          objectMapper,
-          orderBy,
-          skip,
-          operationsConfig.maxDocumentSortCount(),
-          includeSortVector);
-    } else {
-      return FindCollectionOperation.unsorted(
+    SortExpression bm25Expr = SortClauseUtil.resolveBM25Search(sortClause);
+    if (bm25Expr != null) {
+      return FindCollectionOperation.bm25(
           commandContext,
           resolvedDbLogicalExpression,
           command.buildProjector(),
@@ -173,7 +156,38 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           operationsConfig.defaultPageSize(),
           CollectionReadType.DOCUMENT,
           objectMapper,
+          bm25Expr);
+    }
+
+    List<FindCollectionOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
+    // if orderBy present
+    if (orderBy != null) {
+      return FindCollectionOperation.sorted(
+          commandContext,
+          resolvedDbLogicalExpression,
+          command.buildProjector(),
+          pageState,
+          // For in-memory sorting if no limit provided in the request will use
+          // documentConfig.defaultPageSize() as limit
+          Math.min(limit, operationsConfig.defaultPageSize()),
+          // For in-memory sorting we read more data than needed, so defaultSortPageSize like 100
+          operationsConfig.defaultSortPageSize(),
+          CollectionReadType.SORTED_DOCUMENT,
+          objectMapper,
+          orderBy,
+          skip,
+          operationsConfig.maxDocumentSortCount(),
           includeSortVector);
     }
+    return FindCollectionOperation.unsorted(
+        commandContext,
+        resolvedDbLogicalExpression,
+        command.buildProjector(),
+        pageState,
+        limit,
+        operationsConfig.defaultPageSize(),
+        CollectionReadType.DOCUMENT,
+        objectMapper,
+        includeSortVector);
   }
 }

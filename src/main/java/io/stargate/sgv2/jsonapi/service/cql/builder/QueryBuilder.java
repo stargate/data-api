@@ -14,6 +14,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class QueryBuilder {
+  public static final int DEFAULT_BM25_LIMIT = 100;
+  public static final int MAX_BM25_LIMIT = 1000;
+
   private static final String COUNT_FUNCTION_NAME = "COUNT";
 
   private String keyspaceName;
@@ -144,15 +147,28 @@ public class QueryBuilder {
       builder.append(" ORDER BY ").append(orderByAnn).append(" ANN OF ?");
       values.add(vectorValue);
     }
-    if (bm25Clause != null) {
-      builder.append(" ORDER BY ").append(bm25Clause.column()).append(" BM25 OF ?");
-      values.add(bm25Clause.query());
-    }
 
-    if (limitInt != null) {
+    if (bm25Clause != null) {
+      // LIMIT gets tricky with BM25: should use explicit one, if one given, but
+      // it looks like it's sometimes passed as `Integer.MAX_VALUE` to mean "no limit"
+
+      int bm25Limit;
+      if (limitInt != null && limitInt > 0 && (limitInt != Integer.MAX_VALUE)) {
+        bm25Limit = limitInt;
+      } else {
+        bm25Limit = bm25Clause.limit();
+      }
+      bm25Limit = Math.min(bm25Limit, MAX_BM25_LIMIT);
+
+      builder
+          .append(" ORDER BY ")
+          .append(bm25Clause.column())
+          .append(" BM25 OF ? LIMIT ")
+          .append(bm25Limit);
+
+      values.add(bm25Clause.query());
+    } else if (limitInt != null) {
       builder.append(" LIMIT ").append(limitInt == -1 ? "?" : limitInt);
-    } else if (bm25Clause != null) {
-      builder.append(" LIMIT ").append(bm25Clause.limit());
     }
 
     return new Query(builder.toString(), values);
