@@ -43,7 +43,7 @@ public abstract class EmbeddingOperationFactory {
         ValueAction.filteredActions(
             EmbeddingAction.class, Deferrable.deferredValues(tasksAndDeferrables.deferrables()));
 
-    if (!embeddingActions.isEmpty()) {
+    if (embeddingActions.isEmpty()) {
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug(
             "createOperation() - zero embeddingActions, creating direct TaskOperation operation tasksAndDeferrables.taskGroup().size()={}",
