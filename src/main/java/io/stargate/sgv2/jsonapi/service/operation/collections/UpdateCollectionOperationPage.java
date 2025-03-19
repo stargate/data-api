@@ -5,6 +5,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.util.ExceptionUtil;
 import java.util.ArrayList;
@@ -30,8 +31,8 @@ public record UpdateCollectionOperationPage(
 
     var builder =
         returnDocs
-            ? CommandResult.singleDocumentBuilder(false, false, null)
-            : CommandResult.statusOnlyBuilder(false, false, null);
+            ? CommandResult.singleDocumentBuilder(false, false, RequestTracing.NO_OP)
+            : CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP);
 
     // aggregate the errors by error code or error class
     Multimap<String, ReadAndUpdateCollectionOperation.UpdatedDocument> groupedErrorUpdates =

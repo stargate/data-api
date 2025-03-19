@@ -5,16 +5,16 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskAccumulator;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskPage;
 
 /**
  * A page of results from a update command, use {@link #builder()} to get a builder to pass to
  * {@link GenericOperation}.
  */
 public class UpdateDBTaskPage<SchemaT extends TableSchemaObject>
-    extends TaskPage<UpdateDBTask<SchemaT>, SchemaT> {
+    extends DBTaskPage<UpdateDBTask<SchemaT>, SchemaT> {
 
   private UpdateDBTaskPage(
       TaskGroup<UpdateDBTask<SchemaT>, SchemaT> tasks, CommandResultBuilder resultBuilder) {

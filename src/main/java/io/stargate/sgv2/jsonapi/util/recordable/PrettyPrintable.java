@@ -1,57 +1,19 @@
 package io.stargate.sgv2.jsonapi.util.recordable;
 
-import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
 import java.util.List;
 
 /**
- * An interface for objects that can be pretty-printed using the {@link PrettyPrintableRecorder}.
- * Implementations will normally just:
- *
- * <ol>
- *   <li>override the {@link #toString()} method to call {@link #toString(boolean)} with false
- *   <li>override the {@link #toString(PrettyPrintableRecorder)} method to append the fields of the
- *       object as below, the builder will call the {@link
- *       PrettyPrintable#appendTo(PrettyPrintableRecorder)} for any objects that implement this
- *       interface. </oi>
- *       <p>If they do not create a sub-builder they are adding at the same level as the parent.
- *       <p>Example implementation:
- *       <pre>
- *   &#64;Override
- *   public String toString() {
- *     return toString(false);
- *   }
- *
- *   public DataRecorder recordTo(DataRecorder dataRecorder) {
- *     return prettyToStringBuilder
- *          .append("keyspace", tableSchemaObject.tableMetadata.getKeyspace())
- *         .append("table", tableSchemaObject.tableMetadata.getName())
- *         .append("keyColumns", keyColumns)
- *         .append("nonKeyColumns", nonKeyColumns);
- *   }
- *
- * </pre>
+ * Recorder for converting a {@link Recordable} into a string, that may pretty print with new lines
+ * and tabs
  */
 public interface PrettyPrintable {
 
-  /**
-   * Returns a string representation of the object, using the {@link PrettyPrintableRecorder}
-   *
-   * @param pretty If <code>true</code> the string is pretty printed, using indents and carriage
-   *     returns etc
-   * @return A string representation of the object
-   */
-  //  default String toString(boolean pretty) {
-  //    return prettyPrint(this, pretty);
-  //  }
-  //
-  //  static String prettyPrint(Object object) {
-  //    return (object instanceof Recordable pp) ? pp.toString(true) : object.toString();
-  //  }
-
+  /** Prints the recordable *with* new lines and tabs for pretty printing */
   static String pprint(Recordable recordable) {
     return pprint(recordable, true);
   }
 
+  /** Prints the recordable *without* new lines and tabs for pretty printing */
   static String print(Recordable recordable) {
     return pprint(recordable, false);
   }
@@ -63,31 +25,7 @@ public interface PrettyPrintable {
   }
 
   /**
-   * Appends the string representation of the object to the {@link PrettyPrintableRecorder}, called
-   * by the builder when building the string representation of the object in a hierarchy.
-   *
-   * @param prettyToStringBuilder The builder to append the string representation to
-   * @return The builder returned from ending the sub-builder, for chaining
-   */
-  //  default PrettyPrintableRecorder appendTo(PrettyPrintableRecorder prettyToStringBuilder) {
-  //    var sb = prettyToStringBuilder.beginSubRecorder(getClass());
-  //    return toString(sb).endSubBuilder();
-  //  }
-
-  /**
-   * Implement to append the fields for the object to the {@link PrettyPrintableRecorder}, see class
-   * documentation,
-   *
-   * @param prettyToStringBuilder The builder to append the string representation to
-   * @return Return the builder returned from the last append() call, for chaining
-   */
-  //  DataRecorder recordTo(DataRecorder dataRecorder);
-
-  /**
-   * Helper used to print the objects when testing, for example the {@link JsonNamedValueContainer}
-   * and the fixture types.
-   *
-   * <p>Useful because there tests have a lot of context with them, example of the sort of output:
+   * Example output:
    *
    * <pre>
    *   INFO  [main] 2024-09-09 13:24:01,849 WriteableTableRowBuilderTest.java:35 - allColumns:

@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -61,7 +62,8 @@ public class MeteredCommandProcessorTest {
       CountDocumentsCommand countCommand =
           objectMapper.readValue(json, CountDocumentsCommand.class);
 
-      CommandResult commandResult = CommandResult.statusOnlyBuilder(false, false, null).build();
+      CommandResult commandResult =
+          CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP).build();
 
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
@@ -116,7 +118,9 @@ public class MeteredCommandProcessorTest {
       CommandResult.Error error =
           new CommandResult.Error("message", fields, fields, Response.Status.OK);
       CommandResult commandResult =
-          CommandResult.statusOnlyBuilder(false, false, null).addCommandResultError(error).build();
+          CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+              .addCommandResultError(error)
+              .build();
 
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
@@ -174,7 +178,9 @@ public class MeteredCommandProcessorTest {
       CommandResult.Error error =
           new CommandResult.Error("message", fields, fields, Response.Status.OK);
       CommandResult commandResult =
-          CommandResult.statusOnlyBuilder(false, false, null).addCommandResultError(error).build();
+          CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+              .addCommandResultError(error)
+              .build();
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
       Mockito.when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));

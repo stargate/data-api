@@ -86,7 +86,6 @@ public class CommandResolverWithVectorizerTest {
     // TODO: do these need to be unique to this test ? Can we use TestConstants ?
     protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
     protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-
     private CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT;
 
     @BeforeEach
@@ -107,7 +106,7 @@ public class CommandResolverWithVectorizerTest {
                               EmbeddingSourceModel.OTHER,
                               null))),
                   null,
-                  CollectionLexicalConfig.configForLegacyCollections(),
+                  CollectionLexicalConfig.configForDisabled(),
                   CollectionRerankingConfig.configForLegacyCollections()),
               null,
               null);

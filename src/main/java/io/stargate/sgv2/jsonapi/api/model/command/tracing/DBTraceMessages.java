@@ -25,7 +25,7 @@ public abstract class DBTraceMessages {
       Object... args) {
     requestTracing.maybeTrace(
         () ->
-            new RequestTracing.TraceMessage(
+            new TraceMessage(
                 messageTemplate.formatted(args), recordableSupplier.get()));
   }
 
@@ -131,7 +131,7 @@ public abstract class DBTraceMessages {
       Object... args) {
     requestTracing.maybeTrace(
         (objectMapper) ->
-            new RequestTracing.TraceMessage(
+            new TraceMessage(
                 messageTemplate.formatted(args),
                 objectMapper.convertValue(queryTrace, JsonNode.class)));
   }

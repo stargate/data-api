@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import com.fasterxml.jackson.core.exc.StreamConstraintsException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.APIException;
@@ -44,7 +45,7 @@ public class WebApplicationExceptionMapper {
           new APIExceptionCommandErrorBuilder(
               debugModeConfig.enabled(), operationsConfig.extendError());
       return RestResponse.ok(
-          CommandResult.statusOnlyBuilder(false, false, null)
+          CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
               .addCommandResultError(errorBuilder.buildLegacyCommandResultError(ae))
               .build());
     }

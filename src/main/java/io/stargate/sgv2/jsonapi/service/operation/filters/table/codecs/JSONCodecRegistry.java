@@ -8,7 +8,12 @@ import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnknownColumnException;
 
-/** TODO: DOCS */
+/**
+ * Defines the interface for a codec registy for converting the Java objects extracted from the JSON
+ * document into the values the CQL driver wanta.
+ *
+ * <p>See {@link DefaultJSONCodecRegistry} for the basic implementation,
+ */
 public interface JSONCodecRegistry {
 
   /**

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -45,7 +46,9 @@ public class ErrorChallengeSender
         new CommandResult.Error(
             message, Collections.emptyMap(), Collections.emptyMap(), Response.Status.UNAUTHORIZED);
     commandResult =
-        CommandResult.statusOnlyBuilder(false, false, null).addCommandResultError(error).build();
+        CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+            .addCommandResultError(error)
+            .build();
   }
 
   /** {@inheritDoc} */

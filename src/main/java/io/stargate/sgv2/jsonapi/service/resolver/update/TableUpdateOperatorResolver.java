@@ -41,8 +41,15 @@ public abstract class TableUpdateOperatorResolver {
    * @param tableSchemaObject The table schema object
    * @param errorStrategy Error strategy to use with the {@link CqlNamedValueContainerFactory}
    * @param arguments The right hand side arguments to the update operation, from the request. If
-   *     the update clause has <code>{"$set" : { "age" : 51 , "human" : false}}</code> this is
-   *     <code>{ "age" : 51 , "human" : false}</code>
+   *     the update clause has:
+   *     <pre>
+   *     {"$set" : { "age" : 51 , "human" : false}}
+   *     </pre>
+   *     this is:
+   *     <pre>
+   *     { "age" : 51 , "human" : false}
+   *     </pre>
+   *
    * @return A list of the assignments to make for this update operation.
    */
   public abstract List<ColumnAssignment> resolve(
@@ -61,6 +68,7 @@ public abstract class TableUpdateOperatorResolver {
       CqlNamedValue.ErrorStrategy<UpdateException> errorStrategy,
       UpdateOperator updateOperator,
       Function<CqlNamedValue, ColumnAssignment> assignmentSupplier) {
+
     return createColumnAssignments(
         tableSchemaObject,
         normalisedUpdateDoc,

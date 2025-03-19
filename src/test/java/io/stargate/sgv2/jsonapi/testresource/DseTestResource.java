@@ -4,31 +4,31 @@ import com.google.common.collect.ImmutableMap;
 import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import java.util.Map;
 
+/**
+ * Test resource for Cassandra-via-Docket -backed Integration Tests. Note that "Dse" in name is not
+ * strictly accurate, but kept for backwards compatibility: may run HCD as the backend for example.
+ */
 public class DseTestResource extends StargateTestResource {
   // set default props if not set, so we launch DSE
-  // this is only needed for test from the IDE
+  // this is only needed for tests run from the IDE
   public DseTestResource() {
     super();
 
     if (null == System.getProperty("testing.containers.cassandra-image")) {
+      // 14-Mar-2025, tatu: Change from custom "dse-next" to the official DSE image
+      //  even for IDE tests
+      // 17-Mar-2025, tatu: and then to HCD to get BM25 implementation
       System.setProperty(
-          "testing.containers.cassandra-image", "stargateio/dse-next:4.0.11-591d171ac9c9");
+          "testing.containers.cassandra-image",
+          // "stargateio/dse-next:4.0.11-591d171ac9c9"
+          // "datastax/dse-server:6.9.7"
+          "559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/staging/hcd:1.2.1-early-preview");
+      // MUST set one of these to get DS_LICENSE env var set
+      // System.setProperty("testing.containers.cluster-dse", "true");
+      System.setProperty("testing.containers.cluster-hcd", "true");
     }
 
-    if (null == System.getProperty("testing.containers.stargate-image")) {
-      // 07-Dec-2023, tatu: For some reason floating tag "v2.1" does not seem to work so
-      //    use specific version. Needs to be kept up to date:
-      System.setProperty(
-          "testing.containers.stargate-image", "stargateio/coordinator-dse-next:v2.1.0-BETA-14");
-    }
-
-    if (null == System.getProperty("testing.containers.cluster-persistence")) {
-      System.setProperty("testing.containers.cluster-persistence", "persistence-dse-next");
-    }
-
-    if (null == System.getProperty("testing.containers.cluster-dse")) {
-      System.setProperty("testing.containers.cluster-dse", "false");
-    }
+    // 14-Mar-2025, tatu: We no longer run Stargate Coordinator for ITs set up removed
 
     if (null == System.getProperty("cassandra.sai.max_string_term_size_kb")) {
       System.setProperty(
@@ -65,6 +65,11 @@ public class DseTestResource extends StargateTestResource {
     return 100L;
   }
 
+  // By default, allow Lexical on HCD backend, but not on DSE
+  public String getFeatureFlagLexical() {
+    return isHcd() ? "true" : "false";
+  }
+
   // By default, we enable the feature flag for tables
   public String getFeatureFlagTables() {
     return "true";
@@ -76,6 +81,12 @@ public class DseTestResource extends StargateTestResource {
     ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
     propsBuilder.putAll(env);
     propsBuilder.put("stargate.jsonapi.custom.embedding.enabled", "true");
+
+    // 17-Mar-2025, tatu: [data-api#1903] Lexical search/sort feature flag
+    String lexicalFeatureSetting = getFeatureFlagLexical();
+    if (lexicalFeatureSetting != null) {
+      propsBuilder.put("stargate.feature.flags.lexical", lexicalFeatureSetting);
+    }
 
     // 04-Sep-2024, tatu: [data-api#1335] Enable Tables using new Feature Flag:
     String tableFeatureSetting = getFeatureFlagTables();

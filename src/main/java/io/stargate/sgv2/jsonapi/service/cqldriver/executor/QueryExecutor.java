@@ -39,7 +39,7 @@ public class QueryExecutor {
 
   @Inject
   public QueryExecutor(CQLSessionCache cqlSessionCache, OperationsConfig operationsConfig) {
-    this(cqlSessionCache, operationsConfig, RequestTracing.NO_TRACING);
+    this(cqlSessionCache, operationsConfig, RequestTracing.NO_OP);
   }
 
   public QueryExecutor(

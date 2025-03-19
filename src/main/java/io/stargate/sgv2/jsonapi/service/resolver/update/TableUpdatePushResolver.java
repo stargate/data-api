@@ -26,7 +26,7 @@ public class TableUpdatePushResolver extends TableUpdateOperatorResolver {
    *
    * <p>Push operator can only be used for collection columns (list, set, map).
    *
-   * <p>For examples of the fomratting see {@link #normaliseListSet(TableSchemaObject, JsonNode)} or
+   * <p>For examples of the formatting see {@link #normaliseListSet(TableSchemaObject, JsonNode)} or
    * {@link #normaliseMap(TableSchemaObject, JsonNode)}
    */
   @Override

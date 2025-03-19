@@ -23,33 +23,33 @@ import org.slf4j.LoggerFactory;
  * which both check the data is valid, the first that the document does not exceed the limits, and
  * the second that the data is valid for the table.
  */
-public class TableInsertTasksBuilder
+public class TableInsertDBTaskBuilder
     extends TaskBuilder<
-        InsertDBTask<TableSchemaObject>, TableSchemaObject, TableInsertTasksBuilder> {
+        InsertDBTask<TableSchemaObject>, TableSchemaObject, TableInsertDBTaskBuilder> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TableInsertTasksBuilder.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TableInsertDBTaskBuilder.class);
 
   private final CommandContext<TableSchemaObject> commandContext;
   private JsonNamedValueContainerFactory jsonNamedValueFactory = null;
   private Boolean ordered = null;
   private Boolean returnDocumentResponses = null;
 
-  public TableInsertTasksBuilder(CommandContext<TableSchemaObject> commandContext) {
+  public TableInsertDBTaskBuilder(CommandContext<TableSchemaObject> commandContext) {
     super(commandContext.schemaObject());
     this.commandContext = commandContext;
   }
 
-  public TableInsertTasksBuilder withOrdered(Boolean ordered) {
+  public TableInsertDBTaskBuilder withOrdered(Boolean ordered) {
     this.ordered = ordered;
     return this;
   }
 
-  public TableInsertTasksBuilder withReturnDocumentResponses(Boolean returnDocumentResponses) {
+  public TableInsertDBTaskBuilder withReturnDocumentResponses(Boolean returnDocumentResponses) {
     this.returnDocumentResponses = returnDocumentResponses;
     return this;
   }
 
-  public TableInsertTasksBuilder withJsonNamedValueFactory(
+  public TableInsertDBTaskBuilder withJsonNamedValueFactory(
       JsonNamedValueContainerFactory jsonNamedValueFactory) {
     this.jsonNamedValueFactory = jsonNamedValueFactory;
     return this;

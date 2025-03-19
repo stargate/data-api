@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * CQL Column assignment that removes the value to a list or set CQL type.
  *
- * <p>Currently resolved from by API operator $pullAll, see {@link TableUpdatePullAllResolver}.
+ * <p>Currently resolved from API operator $pullAll, see {@link TableUpdatePullAllResolver}.
  */
 public class ColumnRemoveToAssignment extends ColumnAssignment {
 

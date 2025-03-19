@@ -321,7 +321,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
         useCoordinator()
             ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
             : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
-    String dc = null;
+    String dc;
     if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
       dc = "dc1";
     } else {
@@ -332,6 +332,11 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
         .addContactPoint(new InetSocketAddress("localhost", port))
         .withAuthCredentials(CQLSessionCache.CASSANDRA, CQLSessionCache.CASSANDRA);
     return builder.build();
+  }
+
+  /** Helper method for determining if lexical search is available for the database backend */
+  protected boolean isLexicalAvailableForDB() {
+    return !"true".equals(System.getProperty("testing.db.lexical-disabled"));
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */

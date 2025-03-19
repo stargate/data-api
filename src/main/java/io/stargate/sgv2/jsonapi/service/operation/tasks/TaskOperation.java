@@ -4,7 +4,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
@@ -67,38 +67,30 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
               var msg =
                   "Starting to process taskGroup of %s with status=%s"
                       .formatted(taskGroup.taskClassName(), taskGroup.statusCount());
-              return new RequestTracing.TraceMessage(msg, taskGroup);
+              return new TraceMessage(msg, taskGroup);
             });
 
-    var result = executeInternal(commandContext, TaskAccumulator::getResults);
-
-    return result.invoke(
-        () -> {
-          commandContext
-              .requestTracing()
-              .maybeTrace(
-                  () -> {
-                    var msg =
-                        "Completed processing taskGroup of %s with status=%s"
-                            .formatted(taskGroup.taskClassName(), taskGroup.statusCount());
-                    return new RequestTracing.TraceMessage(msg, taskGroup);
-                  });
-        });
-    //    Objects.requireNonNull(commandContext, "commandContext cannot be null");
-    //
-    //    LOGGER.debug("execute() - starting to process tasks={}", taskGroup);
-    //
-    //    return startMulti(commandContext)
-    //        .collect()
-    //        .in(() -> taskAccumulator, TaskAccumulator::accumulate)
-    //        .onItem()
-    //        .invoke(() -> LOGGER.debug("execute() - finished processing tasks={}", taskGroup))
-    //        .onItem()
-    //        .invoke(taskGroup::throwIfNotAllTerminal)
-    //        .onItem()
-    //        .transform(TaskAccumulator::getResults);
+    return executeInternal(commandContext, TaskAccumulator::getResults)
+        .invoke(
+            () -> {
+              commandContext
+                  .requestTracing()
+                  .maybeTrace(
+                      () -> {
+                        var msg =
+                            "Completed processing taskGroup of %s with status=%s"
+                                .formatted(taskGroup.taskClassName(), taskGroup.statusCount());
+                        return new TraceMessage(msg, taskGroup);
+                      });
+            });
   }
 
+  /**
+   * Package internal overload that allows the result of running the tasks to be replaced with the
+   * result of the supplied {@link Supplier}.
+   *
+   * <p>for use by the {@link CompositeTask}
+   */
   <T> Uni<Supplier<T>> executeInternal(
       CommandContext<SchemaT> commandContext,
       Function<TaskAccumulator<TaskT, SchemaT>, Supplier<T>> resultSupplier) {
@@ -107,7 +99,7 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "executeInternal() - starting to process tasks={}", PrettyPrintable.pprint(taskGroup));
+          "executeInternal() - starting to process tasks={}", PrettyPrintable.print(taskGroup));
     }
 
     return startMulti(commandContext)

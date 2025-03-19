@@ -1,24 +1,33 @@
 package io.stargate.sgv2.jsonapi.api.model.command.tracing;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
 import com.google.common.base.Stopwatch;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
+import java.text.DateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Tracing Session contains the trace information for a single request.
  *
- * <p>The {@link RequestTracing} interface does not require the use of {@link TraceSession} or
- * {@link TraceEvent} implementations can whatever they want. This is used by {@link
- * DefaultRequestTracing}.
+ * <p>
  *
- * <p>This and the {@link TraceEvent} are designed to be serialised by Jackson.
+ * <p>NOTE: Design to be thread safe so that multiple Uni stages can add messages to the trace at
+ * the same time. The use the {@link io.stargate.sgv2.jsonapi.util.recordable.Recordable} interface
+ * to record the state of objects, because this also Synchronised.
  */
-class TraceSession {
+public class TraceSession implements Recordable {
 
   private static final NoArgGenerator UUID_V7_GENERATOR = Generators.timeBasedEpochGenerator();
+  private static final DateFormat DATE_FORMAT = DateFormat.getDateInstance();
+  private static final TextNode DATA_OMITTED =
+      new TextNode(
+          "Data Omitted - for full data use header: %s=true"
+              .formatted(ApiFeature.REQUEST_TRACING_FULL.httpHeaderName()));
 
   private final String requestId;
   private final String tenantId;
@@ -27,9 +36,12 @@ class TraceSession {
   private final Date startedAt;
   private final List<TraceEvent> events = new ArrayList<>();
 
-  TraceSession(String requestId, String tenantId) {
+  private final boolean includeData;
+
+  TraceSession(String requestId, String tenantId, boolean includeData) {
     this.requestId = requestId;
     this.tenantId = tenantId;
+    this.includeData = includeData;
 
     watch = Stopwatch.createStarted();
     startedAt = new Date();
@@ -61,8 +73,8 @@ class TraceSession {
    * @param traceMessage Required, the message to add.
    * @return The {@link TraceEvent} that was created to hold the message.
    */
-  TraceEvent addMessage(RequestTracing.TraceMessage traceMessage) {
-    Objects.requireNonNull(traceMessage, "messageSupplier must not be null");
+  TraceEvent addMessage(TraceMessage traceMessage) {
+    Objects.requireNonNull(traceMessage, "traceMessage must not be null");
 
     var event =
         new TraceEvent(
@@ -70,37 +82,41 @@ class TraceSession {
             new Date(),
             elapsedMicroseconds(),
             traceMessage.message(),
-            traceMessage.data());
+            includeData ? traceMessage.dataOrRecordable() : DATA_OMITTED);
 
-    events.add(event);
+    synchronized (events) {
+      events.add(event);
+    }
     return event;
   }
 
-  public String getRequestId() {
-    return requestId;
-  }
-
-  public String getTenantId() {
-    return tenantId;
-  }
-
-  public Date getStartedAt() {
-    return startedAt;
-  }
-
-  public int getDurationMicroseconds() {
-    return elapsedMicroseconds();
-  }
-
-  public List<TraceEvent> getEvents() {
-    return events;
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    synchronized (events) {
+      return dataRecorder
+          .append("requestId", requestId)
+          .append("tenantId", tenantId)
+          .append("startedAt", DATE_FORMAT.format(startedAt))
+          .append("durationMicroseconds", elapsedMicroseconds())
+          .append("events", events);
+    }
   }
 
   /**
-   * An even in the request trace, based on the {@link
-   * io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing.TraceMessage} with context
-   * for when it happened.
+   * An even in the request trace, based on the {@link TraceMessage} with context for when it
+   * happened.
    */
   record TraceEvent(
-      UUID eventId, Date timestamp, int elapsedMicroseconds, String message, JsonNode data) {}
+      UUID eventId, Date timestamp, int elapsedMicroseconds, String message, JsonNode data)
+      implements Recordable {
+    @Override
+    public DataRecorder recordTo(DataRecorder dataRecorder) {
+      return dataRecorder
+          .append("eventId", eventId)
+          .append("timestamp", DATE_FORMAT.format(timestamp))
+          .append("elapsedMicroseconds", elapsedMicroseconds)
+          .append("message", message)
+          .append("data", data);
+    }
+  }
 }

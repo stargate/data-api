@@ -16,6 +16,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
@@ -106,6 +107,9 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
     @Test
     @Order(3)
     public void happyPathWithExplain() {
+      // To create Collection with Lexical, it must be available for the database
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
       String json =
           """
               {
@@ -358,6 +362,9 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
     @Test
     @Order(7)
     public void happyPathIndexingWithExplain() {
+      // To create Collection with Lexical, it must be available for the database
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
       String json =
           """
                   {

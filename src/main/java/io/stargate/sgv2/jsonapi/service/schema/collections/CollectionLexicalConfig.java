@@ -14,7 +14,6 @@ public record CollectionLexicalConfig(
     boolean enabled,
     @JsonInclude(JsonInclude.Include.NON_NULL) @JsonProperty("analyzer")
         JsonNode analyzerDefinition) {
-
   public static final String DEFAULT_NAMED_ANALYZER = "standard";
 
   private static final JsonNode DEFAULT_NAMED_ANALYZER_NODE =
@@ -37,10 +36,12 @@ public record CollectionLexicalConfig(
    * @return Valid CollectionLexicalConfig object
    */
   public static CollectionLexicalConfig validateAndConstruct(
-      ObjectMapper mapper, CreateCollectionCommand.Options.LexicalConfigDefinition lexicalConfig) {
-    // If not defined, use default for new collections; valid option
+      ObjectMapper mapper,
+      boolean lexicalAvailableForDB,
+      CreateCollectionCommand.Options.LexicalConfigDefinition lexicalConfig) {
+    // If not defined, enable if available, otherwise disable
     if (lexicalConfig == null) {
-      return configForNewCollections();
+      return lexicalAvailableForDB ? configForEnabledStandard() : configForDisabled();
     }
     // Otherwise validate and construct
     Boolean enabled = lexicalConfig.enabled();
@@ -48,6 +49,11 @@ public record CollectionLexicalConfig(
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "'enabled' is required property for 'lexical' Object value");
     }
+    // Can only enable if feature is available
+    if (enabled && !lexicalAvailableForDB) {
+      throw ErrorCodeV1.LEXICAL_NOT_AVAILABLE_FOR_DATABASE.toApiException();
+    }
+
     JsonNode analyzer = lexicalConfig.analyzerDef();
     if (analyzer == null) {
       analyzer = mapper.getNodeFactory().textNode(CollectionLexicalConfig.DEFAULT_NAMED_ANALYZER);
@@ -60,26 +66,18 @@ public record CollectionLexicalConfig(
   }
 
   /**
-   * Accessor for an instance to use for a default configuration for newly created collections:
-   * where no configuration defined: needs to be enabled, using "standard" analyzer configuration.
+   * Accessor for an instance to use for "default enabled" cases, using "standard" analyzer
+   * configuration: typically used for new collections where lexical search is available.
    */
-  public static CollectionLexicalConfig configForNewCollections() {
+  public static CollectionLexicalConfig configForEnabledStandard() {
     return new CollectionLexicalConfig(true, DEFAULT_NAMED_ANALYZER_NODE);
   }
 
   /**
-   * Accessor for an instance to use for existing pre-lexical collections: ones without lexical
-   * field and index: needs to be disabled
+   * Accessor for an instance to use for "lexical disabled" cases: either for existing collections
+   * without lexical config, or envi
    */
-  public static CollectionLexicalConfig configForLegacyCollections() {
-    return new CollectionLexicalConfig(false, null);
-  }
-
-  /**
-   * Accessor for an instance to use for missing collection: cases where definition does not exist:
-   * needs to be disabled.
-   */
-  public static CollectionLexicalConfig configForMissingCollection() {
+  public static CollectionLexicalConfig configForDisabled() {
     return new CollectionLexicalConfig(false, null);
   }
 }

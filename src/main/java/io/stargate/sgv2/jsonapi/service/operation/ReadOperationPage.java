@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -34,8 +35,8 @@ public record ReadOperationPage(
 
     var builder =
         singleResponse
-            ? CommandResult.singleDocumentBuilder(false, false, null)
-            : CommandResult.multiDocumentBuilder(false, false, null);
+            ? CommandResult.singleDocumentBuilder(false, false, RequestTracing.NO_OP)
+            : CommandResult.multiDocumentBuilder(false, false, RequestTracing.NO_OP);
 
     if (includeSortVector) {
       builder.addStatus(CommandStatus.SORT_VECTOR, vector);

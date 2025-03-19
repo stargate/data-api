@@ -233,9 +233,8 @@ public class CollectionResource {
                       .failure(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException());
                 }
 
-                // TODO: This needs to change, currenty it is only checking if there is vecotrize
-                // for
-                // the $vector column in a collection
+                // TODO: This needs to change, currently it is only checking if there is vectorize
+                // for the $vector column in a collection
 
                 VectorColumnDefinition vectorColDef = null;
                 if (schemaObject.type() == SchemaObject.SchemaObjectType.COLLECTION) {

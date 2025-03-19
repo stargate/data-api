@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 
 /**
- * Hlpes build an {@link Operation} to run composite tasks of inner task groups.
+ * Helps build an {@link Operation} to run composite tasks of inner task groups.
  *
  * <p>There is some complex steps and relationships between the tasks, so this builder helps to
  * codeify them. See the {@link CompositeTask} for details on what it needs.

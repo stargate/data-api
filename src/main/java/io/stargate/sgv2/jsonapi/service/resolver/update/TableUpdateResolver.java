@@ -141,7 +141,11 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
     return WithWarnings.of(new DefaultUpdateValuesCQLClause(assignments));
   }
 
-  /** Error strategy to use with {@link CqlNamedValueContainerFactory} for updates. */
+  /**
+   * Error strategy to use with {@link CqlNamedValueContainerFactory} for updates.
+   *
+   * <p>
+   */
   @VisibleForTesting
   static class ErrorStrategy implements CqlNamedValue.ErrorStrategy<UpdateException> {
 

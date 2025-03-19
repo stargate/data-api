@@ -50,7 +50,7 @@ public record TableInsertValuesCQLClause(TableSchemaObject tableSchemaObject, Wr
           "apply() - building insert keyspace={} table={} row.allColumns={}",
           tableSchemaObject.keyspaceName().asCql(true),
           tableSchemaObject.tableName().asCql(true),
-          PrettyPrintable.pprint(row.allColumns()));
+          PrettyPrintable.print(row.allColumns()));
     }
 
     for (var cqlNamedValue : row.allColumns().values()) {
