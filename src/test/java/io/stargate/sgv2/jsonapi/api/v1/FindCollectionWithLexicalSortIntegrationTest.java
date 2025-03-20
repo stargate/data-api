@@ -333,7 +333,37 @@ public class FindCollectionWithLexicalSortIntegrationTest
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
   @Order(13)
-  class HappyCasesFindOneAndDelete {}
+  class HappyCasesFindOneAndDelete {
+    @Test
+    void findOneAndDelete() {
+      givenHeadersPostJsonThenOkNoErrors(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                      {
+                        "findOneAndDelete": {
+                          "sort": { "$lexical": "monkey" },
+                          "projection": {"$lexical": 1 }
+                        }
+                      }
+                      """)
+          .body("status.deletedCount", is(1))
+          .body("data.document", jsonEquals(DOC2_JSON));
+
+      // Plus query to check that the document was deleted
+      givenHeadersPostJsonThenOkNoErrors(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              "{ \"find\": { \"filter\" : {\"_id\" : \"lexical-2\"} } }")
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(0));
+
+      // And thus should only have 4 documents left
+      givenHeadersPostJsonThenOkNoErrors(keyspaceName, COLLECTION_WITH_LEXICAL, "{ \"find\": { } }")
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(4));
+    }
+  }
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
