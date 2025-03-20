@@ -35,7 +35,7 @@ public class RerankingEGWClient extends RerankingProvider {
   private String modelName;
   private RerankingService rerankingGrpcService;
   Map<String, String> authentication;
-  private String commandName;
+  private final String commandName;
 
   public RerankingEGWClient(
       String baseUrl,

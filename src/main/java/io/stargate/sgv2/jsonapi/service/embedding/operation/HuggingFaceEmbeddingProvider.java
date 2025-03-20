@@ -5,7 +5,6 @@ import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
@@ -14,6 +13,8 @@ import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -47,9 +48,7 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
   public interface HuggingFaceEmbeddingProviderClient {
     @POST
     @Path("/{modelId}")
-    @ClientHeaderParam(
-        name = HttpConstants.CONTENT_TYPE_HEADER,
-        value = HttpConstants.CONTENT_TYPE_APPLICATION_JSON)
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<List<float[]>> embed(
         @HeaderParam("Authorization") String accessToken,
         @PathParam("modelId") String modelId,
