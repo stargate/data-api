@@ -6,6 +6,7 @@ import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.RerankingResponseErrorMessageMapper;
@@ -23,12 +24,16 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 /**
  * The Reranking Nvidia Client that sends the request to the Nvidia Reranking Service.
  *
- * <p>Sample http request to self-host nvidia nvidia/llama-3.2-nv-rerankqa-1b-v2: { "model":
- * "nvidia/llama-3.2-nv-rerankqa-1b-v2", "query": { "text": "which way should i go?" }, "passages":
- * [ { "text": "left turn" }, { "text": "apple" } ], "truncate": "END" }
+ * <p>Sample http request to self-host nvidia nvidia/llama-3.2-nv-rerankqa-1b-v2:
  *
- * <p>Sample response { "rankings": [ { "index": 0, "score": -5.50390625 }, { "index": 1, "score":
- * -11.8828125 } ], "usage": { "prompt_tokens": 26, "total_tokens": 26 } }
+ * <p><code>{ "model":
+ * "nvidia/llama-3.2-nv-rerankqa-1b-v2", "query": { "text": "which way should i go?" }, "passages":
+ * [ { "text": "left turn" }, { "text": "apple" } ], "truncate": "END" }</code>
+ *
+ * <p>Sample http response from self-host nvidia nvidia/llama-3.2-nv-rerankqa-1b-v2:
+ *
+ * <p><code>{ "rankings": [ { "index": 0, "score": -5.50390625 }, { "index": 1, "score":
+ * -11.8828125 } ], "usage": { "prompt_tokens": 26, "total_tokens": 26 } }</code>
  */
 public class NvidiaRerankingProvider extends RerankingProvider {
 
@@ -60,7 +65,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
   public interface NvidiaRerankingClient {
 
     @POST
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    @ClientHeaderParam(name = HttpConstants.CONTENT_TYPE_HEADER, value = "application/json")
     Uni<RerankingResponse> rerank(
         @HeaderParam("Authorization") String accessToken, RerankingRequest request);
 
@@ -75,9 +80,8 @@ public class NvidiaRerankingProvider extends RerankingProvider {
       // Get the whole response body
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
-      logger.info(
-          String.format(
-              "Error response from reranking provider '%s': %s", providerId, rootNode.toString()));
+      logger.error(
+          "Error response from reranking provider '{}': {}", providerId, rootNode.toString());
       JsonNode messageNode = rootNode.path("message");
       // Return the text of the "message" node, or the whole response body if it is missing
       return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
@@ -87,6 +91,10 @@ public class NvidiaRerankingProvider extends RerankingProvider {
   /** reranking request to the Nvidia Reranking Service */
   private record RerankingRequest(
       String model, TextWrapper query, List<TextWrapper> passages, String truncate) {
+    /**
+     * query and passage string needs to be wrapped in with text key for request to the Nvidia
+     * Reranking Service. E.G. { "text": "which way should i go?" }
+     */
     private record TextWrapper(String text) {}
   }
 
@@ -116,7 +124,8 @@ public class NvidiaRerankingProvider extends RerankingProvider {
     Uni<RerankingResponse> response =
         applyRetry(
             nvidiaRerankingClient.rerank(
-                "Bearer " + resolveRerankingKey(rerankingCredentials), request));
+                HttpConstants.BEARER_PREFIX_FOR_API_KEY + resolveRerankingKey(rerankingCredentials),
+                request));
 
     return response
         .onItem()

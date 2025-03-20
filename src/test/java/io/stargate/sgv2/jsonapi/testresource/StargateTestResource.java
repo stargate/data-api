@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -306,7 +307,8 @@ public abstract class StargateTestResource
       HttpRequest request =
           HttpRequest.newBuilder()
               .uri(authUri)
-              .header("Content-Type", "application/json")
+              .header(
+                  HttpConstants.CONTENT_TYPE_HEADER, HttpConstants.CONTENT_TYPE_APPLICATION_JSON)
               .POST(BodyPublishers.ofString(json))
               .build();
       HttpResponse<String> response =

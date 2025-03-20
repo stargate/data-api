@@ -50,36 +50,41 @@ public abstract class RerankingProvider {
    */
   public Uni<RerankingResponse> rerank(
       String query, List<String> passages, RerankingCredentials rerankingCredentials) {
-    int maxBatch = requestProperties.maxBatchSize();
+    List<List<String>> passageBatches = createPassageBatches(passages);
     List<Uni<RerankingBatchResponse>> batchRerankings = new ArrayList<>();
-    for (int i = 0; i < passages.size(); i += maxBatch) {
-      int batchId = i / maxBatch;
-      List<String> batch = passages.subList(i, Math.min(i + maxBatch, passages.size()));
-      batchRerankings.add(rerank(batchId, query, batch, rerankingCredentials));
+    for (int batchId = 0; batchId < passageBatches.size(); batchId++) {
+      batchRerankings.add(
+          rerank(batchId, query, passageBatches.get(batchId), rerankingCredentials));
     }
-    return Uni.join()
-        .all(batchRerankings)
-        .andFailFast()
-        .map(
-            batchResponses -> {
-              List<Rank> finalRanks = new ArrayList<>();
-              for (RerankingBatchResponse batchResponse : batchResponses) {
-                int batchStartIndex = batchResponse.batchId() * maxBatch;
-                for (Rank rank : batchResponse.ranks()) {
-                  finalRanks.add(new Rank(batchStartIndex + rank.index(), rank.score()));
-                }
-              }
-              // This is the original order of the passages
-              finalRanks.sort(Comparator.comparingInt(Rank::index));
-              return RerankingResponse.of(finalRanks);
-            });
+
+    return Uni.join().all(batchRerankings).andFailFast().map(this::aggregateRanks);
   }
 
-  public record RerankingResponse(List<Rank> ranks) {
-    public static RerankingResponse of(List<Rank> ranks) {
-      return new RerankingResponse(ranks);
+  /** Create batches of passages to be reranked. */
+  private List<List<String>> createPassageBatches(List<String> passages) {
+    List<List<String>> batches = new ArrayList<>();
+    for (int i = 0; i < passages.size(); i += requestProperties.maxBatchSize()) {
+      batches.add(
+          passages.subList(i, Math.min(i + requestProperties.maxBatchSize(), passages.size())));
     }
+    return batches;
   }
+
+  /** Aggregate the ranks from all batched reranking calls. */
+  private RerankingResponse aggregateRanks(List<RerankingBatchResponse> batchResponses) {
+    List<Rank> finalRanks = new ArrayList<>();
+    for (RerankingBatchResponse batchResponse : batchResponses) {
+      int batchStartIndex = batchResponse.batchId() * requestProperties.maxBatchSize();
+      for (Rank rank : batchResponse.ranks()) {
+        finalRanks.add(new Rank(batchStartIndex + rank.index(), rank.score()));
+      }
+    }
+    // This is the original order of all the passages.
+    finalRanks.sort(Comparator.comparingInt(Rank::index));
+    return new RerankingResponse(finalRanks);
+  }
+
+  public record RerankingResponse(List<Rank> ranks) {}
 
   /** Micro batch rerank method, which will rerank a batch of passages. */
   public abstract Uni<RerankingBatchResponse> rerank(

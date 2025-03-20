@@ -18,18 +18,18 @@ public class RerankingEGWClient extends RerankingProvider {
 
   private static final String DEFAULT_TENANT_ID = "default";
 
-  /** Map to the value of `Token` in the header */
+  /**
+   * This string acts as key of authTokens map, for passing Data API token to EGW in grpc request.
+   */
   private static final String DATA_API_TOKEN = "DATA_API_TOKEN";
 
   /**
-   * key name of the reranking service provider. Note, the request self-hosted Nvidia reranker
-   * service does not need to specify an auth token in Data API request header. Instead, we use the
-   * Astra token to authenticate the request.
+   * This string acts as key of authTokens map, for passing Reranking API key to EGW in grpc
+   * request.
    */
   private static final String RERANKING_API_KEY = "RERANKING_API_KEY";
 
   private String provider;
-
   private Optional<String> tenant;
   private Optional<String> authToken;
   private String modelName;

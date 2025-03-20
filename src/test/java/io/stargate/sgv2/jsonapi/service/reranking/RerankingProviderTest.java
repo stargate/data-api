@@ -21,6 +21,43 @@ public class RerankingProviderTest {
       new RerankingCredentials("mocked data api token", Optional.empty());
 
   @Test
+  @SuppressWarnings("unchecked")
+  void createPassageBatchesTest() {
+    // mock a test reranking provider with maxBatchSize configured to 3
+    TestRerankingProvider mockRerankingProvider = new TestRerankingProvider(3);
+    // mock 11 passages
+    List<String> passages =
+        List.of(
+            "orange",
+            "apple",
+            "banana",
+            "grape",
+            "kiwi",
+            "mango",
+            "pear",
+            "peach",
+            "plum",
+            "pineapple",
+            "strawberry");
+
+    // invoke the private method createPassageBatches
+    try {
+      java.lang.reflect.Method method =
+          RerankingProvider.class.getDeclaredMethod("createPassageBatches", List.class);
+      method.setAccessible(true);
+      List<List<String>> batches =
+          (List<List<String>>) method.invoke(mockRerankingProvider, passages);
+      assertThat(batches).hasSize(4);
+      assertThat(batches.get(0)).hasSize(3);
+      assertThat(batches.get(1)).hasSize(3);
+      assertThat(batches.get(2)).hasSize(3);
+      assertThat(batches.get(3)).hasSize(2);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Test
   void microBatchingTest() {
     // mock a test reranking provider with maxBatchSize configured to 10
     TestRerankingProvider mockRerankingProvider = new TestRerankingProvider(10);
