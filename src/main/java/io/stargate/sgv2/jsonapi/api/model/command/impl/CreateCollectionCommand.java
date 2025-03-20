@@ -75,8 +75,8 @@ public record CreateCollectionCommand(
               description =
                   "Optional configuration defining if and how to support use of 'rerank' field",
               type = SchemaType.OBJECT,
-              implementation = RerankingConfigDefinition.class)
-          RerankingConfigDefinition rerank) {
+              implementation = RerankDesc.class)
+          CreateCollectionCommand.Options.RerankDesc rerank) {
 
     public record IdConfig(
         @Nullable
@@ -255,7 +255,7 @@ public record CreateCollectionCommand(
             @JsonProperty("analyzer")
             JsonNode analyzerDef) {}
 
-    public record RerankingConfigDefinition(
+    public record RerankDesc(
         @Schema(
                 description = "Whether to enable the use of reranking model (default: 'true')",
                 defaultValue = "true",
@@ -268,12 +268,12 @@ public record CreateCollectionCommand(
                     "Reranking model configuration. Default is llama-3.2-nv-rerankqa-1b-v2 model from Nvidia.",
                 defaultValue =
                     "\"service\": {\"provider\": \"nvidia\",\"modelName\": \"nvidia/llama-3.2-nv-rerankqa-1b-v2\"}",
-                implementation = RerankingServiceConfig.class)
+                implementation = RerankServiceDesc.class)
             @JsonInclude(JsonInclude.Include.NON_NULL)
             @JsonProperty("service")
-            RerankingServiceConfig rerankingServiceConfig) {}
+            RerankServiceDesc rerankServiceDesc) {}
 
-    public record RerankingServiceConfig(
+    public record RerankServiceDesc(
         @NotNull
             @Schema(
                 description = "Registered reranking service provider",

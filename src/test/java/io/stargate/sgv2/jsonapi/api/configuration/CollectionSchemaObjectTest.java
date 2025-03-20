@@ -28,7 +28,7 @@ public class CollectionSchemaObjectTest {
             VectorConfig.NOT_ENABLED_CONFIG,
             indexingConfig,
             CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankingConfig.configForPreRerankingCollections());
+            CollectionRerankDef.configForPreRerankingCollections());
     IndexingProjector indexingProj = settings.indexingProjector();
     assertThat(indexingProj)
         .isNotNull()

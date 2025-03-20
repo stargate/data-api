@@ -60,13 +60,15 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
       lexicalConfig = new CollectionLexicalConfig(enabled, analyzerNode);
     }
 
-    CollectionRerankingConfig rerankingConfig = null;
+    CollectionRerankDef rerankingConfig = null;
     JsonNode rerankingNode =
         collectionOptionsNode.path(TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY);
     if (rerankingNode.isMissingNode()) {
-      rerankingConfig = CollectionRerankingConfig.configForPreRerankingCollections();
+      rerankingConfig = CollectionRerankDef.configForPreRerankingCollections();
     } else {
-      rerankingConfig = CollectionRerankingConfig.fromJson(rerankingNode, objectMapper);
+      rerankingConfig =
+          CollectionRerankDef.fromCommentJson(
+              keyspaceName, collectionName, rerankingNode, objectMapper);
     }
 
     return new CollectionSchemaObject(
