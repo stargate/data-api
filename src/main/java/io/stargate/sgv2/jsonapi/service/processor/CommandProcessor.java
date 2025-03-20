@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.APIException;
@@ -15,6 +16,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.function.Supplier;
@@ -61,6 +63,16 @@ public class CommandProcessor {
     var debugMode = commandContext.config().get(DebugModeConfig.class).enabled();
     var errorObjectV2 = commandContext.config().get(OperationsConfig.class).extendError();
 
+    commandContext
+        .requestTracing()
+        .maybeTrace(
+            () ->
+                new TraceMessage(
+                    "Starting to process '%s' command for schema object %s"
+                        .formatted(
+                            command.commandName().getApiName(),
+                            PrettyPrintable.print(commandContext.schemaObject().name())),
+                    commandContext.schemaObject()));
     // vectorize the data
     return dataVectorizerService
         .vectorize(commandContext, command)
@@ -97,7 +109,8 @@ public class CommandProcessor {
                     // yet more mucking about with suppliers everywhere :(
                     yield (Supplier<CommandResult>)
                         () ->
-                            CommandResult.statusOnlyBuilder(errorObjectV2, debugMode)
+                            CommandResult.statusOnlyBuilder(
+                                    errorObjectV2, debugMode, commandContext.requestTracing())
                                 .addCommandResultError(
                                     errorBuilder.buildLegacyCommandResultError(apiException))
                                 .build();

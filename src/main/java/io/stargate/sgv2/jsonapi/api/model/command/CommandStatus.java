@@ -22,7 +22,7 @@ public enum CommandStatus {
   EXISTING_KEYSPACES(Names.EXISTING_KEYSPACES),
   /** Status for reporting existing embedding services. */
   @JsonProperty(Names.EXISTING_EMBEDDING_PROVIDERS)
-  EXISTING_VECTOR_PROVIDERS(Names.EXISTING_EMBEDDING_PROVIDERS),
+  EXISTING_EMBEDDING_PROVIDERS(Names.EXISTING_EMBEDDING_PROVIDERS),
   /** Status for reporting existing reranking services. */
   @JsonProperty(Names.EXISTING_RERANKING_PROVIDERS)
   EXISTING_RERANKING_PROVIDERS(Names.EXISTING_RERANKING_PROVIDERS),
@@ -133,6 +133,10 @@ public enum CommandStatus {
    */
   @JsonProperty(Names.SORTED_ROW_COUNT)
   SORTED_ROW_COUNT(Names.SORTED_ROW_COUNT),
+
+  /** The internal tracing for processing the request. */
+  @JsonProperty(Names.TRACE)
+  TRACE(Names.TRACE),
   ;
 
   private final String apiName;
@@ -175,5 +179,6 @@ public enum CommandStatus {
     String PRIMARY_KEY_SCHEMA = "primaryKeySchema";
     String PROJECTION_SCHEMA = "projectionSchema";
     String SORTED_ROW_COUNT = "sortedRowCount";
+    String TRACE = "trace";
   }
 }

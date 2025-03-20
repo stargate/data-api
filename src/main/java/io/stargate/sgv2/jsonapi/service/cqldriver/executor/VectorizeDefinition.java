@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.config.constants.SchemaConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +27,8 @@ public record VectorizeDefinition(
     String provider,
     String modelName,
     Map<String, String> authentication,
-    Map<String, Object> parameters) {
+    Map<String, Object> parameters)
+    implements Recordable {
 
   private static Logger LOGGER = LoggerFactory.getLogger(VectorizeDefinition.class);
 
@@ -127,6 +129,15 @@ public record VectorizeDefinition(
       throw SchemaException.Code.INVALID_CONFIGURATION.get();
     }
     return defs;
+  }
+
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return dataRecorder
+        .append("provider", provider)
+        .append("modelName", modelName)
+        .append("authentication", authentication)
+        .append("parameters", parameters);
   }
 
   public VectorizeConfig toVectorizeConfig() {

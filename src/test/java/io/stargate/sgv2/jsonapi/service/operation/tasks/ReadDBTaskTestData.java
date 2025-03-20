@@ -3,9 +3,11 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import static org.mockito.Mockito.*;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.querybuilder.select.OngoingSelection;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -33,6 +35,11 @@ public class ReadDBTaskTestData {
 
     if (resultSet == null) {
       resultSet = mock(AsyncResultSet.class);
+
+      // this is how we show there is no CQL tracing
+      var executionInfo = mock(ExecutionInfo.class);
+      when(executionInfo.getTracingId()).thenReturn(null);
+      when(resultSet.getExecutionInfo()).thenReturn(executionInfo);
     }
 
     if (exceptionHandlerFactory == null) {
@@ -41,6 +48,7 @@ public class ReadDBTaskTestData {
 
     var mockTable = BaseTaskAssertions.mockTable(keyspaceName, tableName);
     CommandContext<TableSchemaObject> mockCommandContext = mock(CommandContext.class);
+    when(mockCommandContext.requestTracing()).thenReturn(RequestTracing.NO_OP);
 
     var mockProjection = mock(TableProjection.class);
 

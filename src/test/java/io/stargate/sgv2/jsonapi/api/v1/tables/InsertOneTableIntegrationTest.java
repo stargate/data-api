@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistryTestData;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
@@ -274,7 +275,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "String contains non-ASCII character");
+              "\"asciiText\"(ascii) - Cause: String contains non-ASCII character at index #12");
     }
   }
 
@@ -326,7 +327,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Root cause: Rounding necessary");
+              "Cause: Rounding necessary");
     }
 
     private String intDoc(String id, String num) {
@@ -461,17 +462,15 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              " value \"Bazillion\"",
-              "Root cause: Unsupported String value: only");
+              "\"floatValue\"(float) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
       // Then double
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .templated()
-          .insertOne(fpDoc("doubleUnknownString", "\"Bazillion\"", "1.0", "0.5"))
+          .insertOne(fpDoc("doubleUnknownString", "0.5", "\"Bazillion\"", "0.5"))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              " value \"Bazillion\"",
-              "Root cause: Unsupported String value: only");
+              "\"doubleValue\"(double) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
 
       // And finally BigDecimal: different error message because no String values accepted
       assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
@@ -480,9 +479,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by the column data type can be included when inserting",
-              "no codec matching value type",
-              "\"decimalValue\"");
+              "\"decimalValue\"(decimal) - Cause: no codec matching value type");
     }
 
     private String fpDoc(String id, String floatValue, String doubleValue, String bigDecValue) {
@@ -525,8 +522,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `BLOB` from");
+              "\"binaryValue\"(blob) - Cause: Unsupported JSON value in EJSON $binary wrapper: String not valid Base64-encoded content, problem: Illegal character '-' (code 0x2d) in base64 content");
     }
 
     @Test
@@ -670,9 +666,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `DATE` from",
-              "Text 'xxx'");
+              "\"dateValue\"(date) - Cause: Invalid String value for type `DATE`; problem: Text 'xxx' could not be parsed at index 0");
     }
 
     @Test
@@ -683,9 +677,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `DURATION` from",
-              "Unable to convert 'xxx'");
+              "\"durationValue\"(duration) - Cause: Invalid String value for type `DURATION`; problem: Unable to convert 'xxx' to a duration");
     }
 
     @Test
@@ -696,9 +688,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `TIME` from",
-              "Text 'xxx'");
+              "\"timeValue\"(time) - Cause: Invalid String value for type `TIME`; problem: Text 'xxx' could not be parsed at index 0");
     }
 
     @Test
@@ -709,9 +699,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `TIMESTAMP` from",
-              "Text 'xxx'");
+              "\"timestampValue\"(timestamp) - Cause: Invalid String value for type `TIMESTAMP`; problem: Text 'xxx' could not be parsed at index 0");
     }
 
     private String datetimeDoc(
@@ -768,9 +756,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `UUID` from",
-              "problem: Invalid UUID string: xxx");
+              "\"uuidValue\"(uuid) - Cause: Invalid String value for type `UUID`; problem: Invalid UUID string: xxx");
     }
 
     // Test for non-String input
@@ -782,9 +768,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `UUID` from",
-              "Root cause: no codec matching value type");
+              "\"uuidValue\"(uuid) - Cause: no codec matching value type");
     }
 
     private String uuidDoc(String id, String uuidValueStr) {
@@ -825,9 +809,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `INET` from",
-              "problem: Invalid IP address value 'xxx'");
+              "\"inetValue\"(inet) - Cause: Invalid String value for type `INET`; problem: Invalid IP address value 'xxx'");
     }
 
     // Test for non-String input
@@ -839,9 +821,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `INET` from",
-              "Root cause: no codec matching value type");
+              "\"inetValue\"(inet) - Cause: no codec matching value type");
     }
 
     private String inetDoc(String id, String inetValueStr) {
@@ -962,9 +942,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `List(TEXT",
-              "no codec matching value type");
+              "\"stringList\"(list) - Cause: no codec matching value type");
     }
 
     @Test
@@ -981,9 +959,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `INT`",
-              "no codec matching (list/set) declared element type");
+              "\"intList\"(list) - Cause: no codec matching (list/set) declared element type `INT`, actual value type `java.lang.String`");
     }
 
     @Test
@@ -1120,9 +1096,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `Set(INT",
-              "no codec matching value type");
+              "\"intSet\"(set) - Cause: no codec matching value type");
     }
 
     @Test
@@ -1139,10 +1113,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `DOUBLE`",
-              // Double is special since there are NaNs represented by Constants
-              "Unsupported String value: only");
+              "\"doubleSet\"(set) - Cause: Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
     }
 
     @Test
@@ -1366,10 +1337,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `Map(INT => INT",
-              "from value.class `java.util.ArrayList`, value []",
-              "no codec matching value type");
+              "\"intMap\"(map) - Cause: no codec matching value type");
     }
 
     @Test
@@ -1466,9 +1434,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `Map(INT => INT",
-              "no codec matching value type");
+              "\"intMap\"(map) - Cause: no codec matching value type");
     }
 
     @Test
@@ -1485,9 +1451,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `INT`",
-              "actual type `java.lang.String`");
+              "\"intMap\"(map) - Cause: no codec matching map declared value type `INT`, actual type `java.lang.String`");
     }
 
     @Test
@@ -1504,9 +1468,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `INT`",
-              "actual type `java.lang.String`");
+              "\"intMap\"(map) - Cause: no codec matching map declared key type `INT`, actual type `java.lang.String`");
     }
 
     @Test
@@ -1668,21 +1630,20 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
     @Test
     void failOnNonArrayVectorValue() {
+      // if we use a string, the server will thing we are trying to do vectorize
       assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
           .templated()
           .insertOne(
               """
               {
                 "id": "vectorInvalid",
-                "vector": "abc"
+                "vector": 1
               }
               """)
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `Vector(FLOAT",
-              "no codec matching value type");
+              "vector(vector) - Cause: no codec matching value type");
     }
 
     @Test
@@ -1699,9 +1660,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `Vector(FLOAT",
-              "expected JSON Number value as Vector element at position #0");
+              "vector(vector) - Cause: expected JSON Number value as Vector element at position #0 (of 3), instead have");
     }
 
     @Test
@@ -1720,15 +1679,12 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "Only values that are supported by",
-              "Error trying to convert to targetCQLType `Vector(FLOAT",
-              "expected vector of length 3, got one with 2 elements");
+              "vector(vector) - Cause: expected vector of length 3, got one with 2 elements");
     }
 
     @Test
-    void failOnDifferentVectorizeDimensions() {
-      // Two vector columns with same provider and model, but different dimension, not allowed for
-      // now
+    void insertDifferentVectorizeDimensions() {
+      // Two vector columns with same provider and model, but different dimension, is now allowed
       final String tableName = "insertOneMultipleVectorizeDiffDimensionsTable";
 
       assertNamespaceCommand(keyspaceName)
@@ -1757,6 +1713,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "id")
           .wasSuccessful();
 
+      // will fail the token
       assertTableCommand(keyspaceName, tableName)
           .templated()
           .insertOne(
@@ -1767,16 +1724,14 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                   }
                                   """)
           .hasSingleApiError(
-              DocumentException.Code.UNSUPPORTED_VECTORIZE_CONFIGURATIONS,
-              DocumentException.class,
-              "A request can include only one unique combination of provider, model, and dimension for vectorization.",
-              "The following combinations were included in your request: [[provider=openai, modelName=text-embedding-3-small, dimension=5], [provider=openai, modelName=text-embedding-3-small, dimension=10]]");
+              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.name(),
+              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: Incorrect API key provided: test_emb");
     }
 
     @Test
-    void failOnDifferentVectorizeModels() {
-      // Two vector columns with same provider, different models, different dimensions - not allowed
-      // for now
+    void insertDifferentVectorizeModels() {
+      // Two vector columns with same provider, different models, different dimensions
+      // is supported
       String tableName = "insertOneMultipleVectorizeDiffModelsTable";
 
       assertNamespaceCommand(keyspaceName)
@@ -1805,6 +1760,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "id")
           .wasSuccessful();
 
+      // wont have the correct token
       assertTableCommand(keyspaceName, tableName)
           .templated()
           .insertOne(
@@ -1815,14 +1771,12 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                     }
                                     """)
           .hasSingleApiError(
-              DocumentException.Code.UNSUPPORTED_VECTORIZE_CONFIGURATIONS,
-              DocumentException.class,
-              "A request can include only one unique combination of provider, model, and dimension for vectorization.",
-              "The following combinations were included in your request: [[provider=openai, modelName=text-embedding-3-small, dimension=5], [provider=openai, modelName=text-embedding-3-large, dimension=256]]");
+              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.name(),
+              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: Incorrect API key provided: test_emb");
     }
 
     @Test
-    void failOnDifferentVectorizeProviders() {
+    void insertDifferentVectorizeProviders() {
       // Two columns with different providers, not allowed for now
       String tableName = "insertOneMultipleVectorizeDiffProvidersTable";
 
@@ -1852,6 +1806,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "id")
           .wasSuccessful();
 
+      // this will error that the embedding provider key was not found
       assertTableCommand(keyspaceName, tableName)
           .templated()
           .insertOne(
@@ -1862,10 +1817,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                   }
                                   """)
           .hasSingleApiError(
-              DocumentException.Code.UNSUPPORTED_VECTORIZE_CONFIGURATIONS,
-              DocumentException.class,
-              "A request can include only one unique combination of provider, model, and dimension for vectorization.",
-              "The following combinations were included in your request: [[provider=openai, modelName=text-embedding-3-small, dimension=5], [provider=jinaAI, modelName=jina-embeddings-v2-base-en, dimension=768]]");
+              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.name(),
+              "Provider: openai; HTTP Status: 401; Error Message: Incorrect API key provided: test_emb");
     }
   }
 }

@@ -3,10 +3,11 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 
 /** TODO WORDS */
 @JsonSerialize(using = ApiDataTypeDefSerializer.class)
-public interface ApiDataType {
+public interface ApiDataType extends Recordable {
 
   ApiTypeName typeName();
 
@@ -40,4 +41,12 @@ public interface ApiDataType {
    * @return {@link ColumnDesc} that describes the data type to the user.
    */
   ColumnDesc columnDesc();
+
+  @Override
+  default Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return dataRecorder
+        .append("apiName", apiName())
+        .append("apiSupport", apiSupport())
+        .append("cqlType", cqlType());
+  }
 }

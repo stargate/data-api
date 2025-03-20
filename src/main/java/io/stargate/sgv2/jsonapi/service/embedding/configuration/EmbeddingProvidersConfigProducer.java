@@ -55,7 +55,7 @@ public class EmbeddingProvidersConfigProducer {
 
   /**
    * @param getSupportedProvidersResponse
-   * @return EmbeddingProvidersConfig Convert Grpc response map<string, EmbeddingProvidersConfig>
+   * @return EmbeddingProvidersConfig Convert Grpc response map<string, ProviderConfig>
    *     supportedProviders To EmbeddingProvidersConfig
    */
   private EmbeddingProvidersConfig grpcResponseToConfig(

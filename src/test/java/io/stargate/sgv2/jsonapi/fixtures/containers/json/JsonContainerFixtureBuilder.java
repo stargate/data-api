@@ -1,15 +1,17 @@
 package io.stargate.sgv2.jsonapi.fixtures.containers.json;
 
 import static io.stargate.sgv2.jsonapi.fixtures.TestListUtil.*;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
 import io.stargate.sgv2.jsonapi.fixtures.data.AllNullValues;
 import io.stargate.sgv2.jsonapi.fixtures.data.DefaultData;
 import io.stargate.sgv2.jsonapi.fixtures.types.CqlTypesForTesting;
-import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
-import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
+import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -69,37 +71,32 @@ public abstract class JsonContainerFixtureBuilder implements Supplier<List<JsonC
       List<ColumnMetadata> nonKeyMetadata);
 
   /** Generate values for the given list of columns using the {@link CqlFixture} data generator. */
-  protected Map<ColumnMetadata, JsonNamedValue> columnValues(
+  protected JsonNamedValueContainer columnValues(
       Set<ColumnMetadata> primaryKeyColumns, List<ColumnMetadata> columns) {
     // Collectors.toMap does not handle a null value in a map.
 
-    Map<ColumnMetadata, JsonNamedValue> values = new HashMap<>();
+    var jsonDoc = new ObjectMapper().createObjectNode();
+
     columns.forEach(
         metadata -> {
-          JsonNamedValue jsonNamedValue = null;
           // For AllNullValues FixtureData, we don't want to set primaryKey columns value as null or
           // ignore,
           // That will cause exception DocumentException.Code.MISSING_PRIMARY_KEY_COLUMNS
           // So when this situation is tested, switch to DefaultData to get the non-null JsonLiteral
           if (cqlFixture.data() instanceof AllNullValues allNullValues
               && primaryKeyColumns.contains(metadata)) {
-            jsonNamedValue =
-                new JsonNamedValue(
-                    JsonPath.rootBuilder().property(metadata.getName().asInternal()).build(),
-                    new DefaultData().fromJSON(metadata.getType()));
+            jsonDoc.set(
+                cqlIdentifierToJsonKey(metadata.getName()),
+                new DefaultData().fromJSON(metadata.getType()));
           } else {
-            jsonNamedValue =
-                new JsonNamedValue(
-                    // get the asInternal - we do not want any quotes, this is the value that would
-                    // be
-                    // pulled from JSON doc
-                    JsonPath.rootBuilder().property(metadata.getName().asInternal()).build(),
-                    cqlFixture.data().fromJSON(metadata.getType()));
+            jsonDoc.set(
+                cqlIdentifierToJsonKey(metadata.getName()),
+                cqlFixture.data().fromJSON(metadata.getType()));
           }
-
-          values.put(metadata, jsonNamedValue);
         });
-    return values;
+    return new JsonNamedValueContainerFactory(
+            cqlFixture.tableSchemaObject(), JsonNodeDecoder.DEFAULT)
+        .create(jsonDoc);
   }
 
   /**
@@ -115,9 +112,7 @@ public abstract class JsonContainerFixtureBuilder implements Supplier<List<JsonC
       List<ColumnMetadata> setKeys, List<ColumnMetadata> setNonKeyColumns) {
 
     var allSetColumns = join(setKeys, setNonKeyColumns);
-    var columnValues = columnValues(new HashSet<>(setKeys), allSetColumns);
-
-    return new JsonNamedValueContainer(columnValues.values());
+    return columnValues(new HashSet<>(setKeys), allSetColumns);
   }
 
   /**

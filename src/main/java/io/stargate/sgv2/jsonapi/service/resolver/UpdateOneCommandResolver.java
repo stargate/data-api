@@ -6,9 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
@@ -16,15 +18,16 @@ import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.tables.*;
+import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingOperationFactory;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroupAndDeferrables;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdateResolver;
-import io.stargate.sgv2.jsonapi.service.resolver.update.UpdateResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
@@ -44,9 +47,6 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final FilterResolver<UpdateOneCommand, CollectionSchemaObject> collectionFilterResolver;
-  private final FilterResolver<UpdateOneCommand, TableSchemaObject> tableFilterResolver;
-
-  private final UpdateResolver<UpdateOneCommand, TableSchemaObject> tableUpdateResolver;
 
   @Inject
   public UpdateOneCommandResolver(
@@ -65,8 +65,6 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
-    this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
-    this.tableUpdateResolver = new TableUpdateResolver<>(operationsConfig);
   }
 
   @Override
@@ -84,20 +82,32 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
           errVars(commandContext.schemaObject(), map -> {}));
     }
 
-    var taskBuilder = UpdateDBTask.builder(commandContext.schemaObject()).withUpdateOne(true);
-    taskBuilder.withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+    var filterResolver =
+        new TableFilterResolver<>(commandContext.config().get(OperationsConfig.class));
+    var updateWithWarnings =
+        new TableUpdateResolver<>(commandContext.config().get(OperationsConfig.class))
+            .resolve(commandContext, command);
 
-    // need to update so we use WithWarnings correctly
-    var where =
-        TableWhereCQLClause.forUpdate(
-            commandContext.schemaObject(),
-            tableFilterResolver.resolve(commandContext, command).target());
+    var taskBuilder =
+        UpdateDBTask.builder(commandContext.schemaObject())
+            .withUpdateOne(true)
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new)
+            .withWhereCQLClause(
+                TableWhereCQLClause.forUpdate(
+                    commandContext.schemaObject(), filterResolver.resolve(commandContext, command)))
+            .withUpdateValuesCQLClause(updateWithWarnings);
 
-    var taskGroup =
-        new TaskGroup<>(
-            taskBuilder.build(where, tableUpdateResolver.resolve(commandContext, command)));
+    // always parallel processing for the taskgroup
+    var taskGroup = new TaskGroup<UpdateDBTask<TableSchemaObject>, TableSchemaObject>();
+    taskGroup.add(taskBuilder.build());
 
-    return new TaskOperation<>(taskGroup, UpdateAttemptPage.accumulator(commandContext));
+    var groupAndDeferrables =
+        new TaskGroupAndDeferrables<>(
+            taskGroup,
+            UpdateDBTaskPage.accumulator(commandContext),
+            List.of(updateWithWarnings.target()));
+
+    return EmbeddingOperationFactory.createOperation(commandContext, groupAndDeferrables);
   }
 
   @Override
@@ -156,6 +166,23 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
           objectMapper,
           vector,
           false);
+    }
+
+    // BM25 search / sort?
+    SortExpression bm25Expr = SortClauseUtil.resolveBM25Search(sortClause);
+    if (bm25Expr != null) {
+      throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
+          "BM25 search is not yet supported for this command");
+      // Likely implementation of [data-api#1939] to support BM25 sort
+      /*
+      return FindCollectionOperation.bm25Single(
+              commandContext,
+              dbLogicalExpression,
+              DocumentProjector.includeAllProjector(),
+              CollectionReadType.DOCUMENT,
+              objectMapper,
+              bm25Expr);
+       */
     }
 
     List<FindCollectionOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);

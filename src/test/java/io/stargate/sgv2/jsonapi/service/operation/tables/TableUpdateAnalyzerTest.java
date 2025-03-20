@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestDataNames;
@@ -23,7 +26,11 @@ public class TableUpdateAnalyzerTest {
   public void updateOnKnownColumn() {
     var fixture =
         TEST_DATA.tableUpdateAnalyzer().table2PK3Clustering1Index("updateOnKnownColumn()");
-    fixture.columnAssignments().setOnKnownColumn().analyze().assertNoUpdateException();
+    fixture
+        .columnAssignments()
+        .setOnKnownColumn(fixture.tableSchemaObject)
+        .analyze()
+        .assertNoUpdateException();
   }
 
   @Test
@@ -31,7 +38,7 @@ public class TableUpdateAnalyzerTest {
     var fixture = TEST_DATA.tableUpdateAnalyzer().table2PK3Clustering1Index("updateOnPrimaryKey()");
     fixture
         .columnAssignments()
-        .setOnPrimaryKeys()
+        .setOnPrimaryKeys(fixture.tableSchemaObject)
         .analyzeThrows(UpdateException.class)
         .assertUpdateExceptionCode(UpdateException.Code.UNSUPPORTED_UPDATE_FOR_PRIMARY_KEY_COLUMNS);
   }
@@ -42,10 +49,20 @@ public class TableUpdateAnalyzerTest {
         TEST_DATA.tableUpdateAnalyzer().table2PK3Clustering1Index("updateOnUnknownColumn()");
     var unknownColumnIdentifier =
         CqlIdentifierUtil.cqlIdentifierFromUserInput("column" + System.currentTimeMillis());
-    fixture
-        .columnAssignments()
-        .setOnUnknownColumn(unknownColumnIdentifier)
-        .analyzeThrows(UpdateException.class)
-        .assertUpdateExceptionCode(UpdateException.Code.UNKNOWN_TABLE_COLUMNS);
+
+    // unknown column is now caught when binding / preparing the values
+    var exception =
+        assertThrowsExactly(
+            UpdateException.class,
+            () ->
+                fixture
+                    .columnAssignments()
+                    .setOnUnknownColumn(fixture.tableSchemaObject, unknownColumnIdentifier));
+
+    var expectedCode = UpdateException.Code.UNKNOWN_TABLE_COLUMNS;
+    assertThat(exception)
+        .as("UpdateException with code %s when: %s".formatted(expectedCode, fixture.message))
+        .isInstanceOf(UpdateException.class)
+        .satisfies(e -> assertThat(e.code).isEqualTo(expectedCode.name()));
   }
 }

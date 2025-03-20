@@ -36,7 +36,11 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
   public List<SortExpression> tableVectorSorts() {
     return sortExpressions == null
         ? List.of()
-        : sortExpressions.stream().filter(SortExpression::isTableVectorSort).toList();
+        : sortExpressions.stream()
+            .filter(
+                sortExpression ->
+                    sortExpression.isTableVectorSort() || sortExpression.isTableVectorizeSort())
+            .toList();
   }
 
   /** Get the sort expressions that are not trying to vector sort columns on a table */
@@ -44,7 +48,9 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
     return sortExpressions == null
         ? List.of()
         : sortExpressions.stream()
-            .filter(sortExpression -> !sortExpression.isTableVectorSort())
+            .filter(
+                sortExpression ->
+                    !sortExpression.isTableVectorSort() && !sortExpression.isTableVectorizeSort())
             .toList();
   }
 
@@ -85,7 +91,26 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
             .equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
   }
 
+  public SortExpression bm25SearchExpression() {
+    if ((sortExpressions == null) || sortExpressions.size() != 1) {
+      return null;
+    }
+    SortExpression expr = sortExpressions.get(0);
+    return expr.isBM25Search() ? expr : null;
+  }
+
   public void validate(CollectionSchemaObject collection) {
+    // First things first: BM25 search may or may not be available
+    SortExpression bm25Expr = bm25SearchExpression();
+    if (bm25Expr != null) {
+      if (!collection.lexicalEnabled()) {
+        throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
+            "Lexical search is not enabled for collection '%s'", collection.name());
+      }
+      // But it must be the only sort expression so we can stop here
+      return;
+    }
+
     IndexingProjector indexingProjector = collection.indexingProjector();
     // If nothing specified, everything indexed
     if (indexingProjector.isIdentityProjection()) {

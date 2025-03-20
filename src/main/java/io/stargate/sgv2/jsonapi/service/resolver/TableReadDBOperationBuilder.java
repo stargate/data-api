@@ -7,66 +7,78 @@ import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
+import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingOperationFactory;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.RowSorter;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableProjection;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableReadDBTaskBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
+import io.stargate.sgv2.jsonapi.service.operation.tables.*;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.TableCqlSortClauseResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.sort.TableMemorySortClauseResolver;
+import java.util.List;
+import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * NOTE: This was intended to be a base class for the Find and FindOne resolvers, but I could not
- * work out how to get subclassing to work with the dependency injection framework. So, I have left
- * it as a standalone class for now. - aaron 4 nov 2024
+ * Encapsulates resolving a read command into a {@link Operation}, which includes building the tasks
+ * and any deferrables.
  *
- * @param <CmdT>
+ * <p>We use this for the Read commands because they are complex and have a lot more to put together
+ * than other commands like an insert.
  */
-class ReadCommandResolver<
+class TableReadDBOperationBuilder<
     CmdT extends ReadCommand & Filterable & Projectable & Sortable & Windowable & VectorSortable> {
 
-  private final ObjectMapper objectMapper;
-  private final OperationsConfig operationsConfig;
+  private static final Logger LOGGER = LoggerFactory.getLogger(TableReadDBOperationBuilder.class);
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  private final CommandContext<TableSchemaObject> commandContext;
   private final FilterResolver<CmdT, TableSchemaObject> tableFilterResolver;
   private final TableCqlSortClauseResolver<CmdT> tableCqlSortClauseResolver;
+  // we use this in a bunch of places
+  private final OperationsConfig operationsConfig;
 
-  protected ReadCommandResolver(ObjectMapper objectMapper, OperationsConfig operationsConfig) {
-    this.objectMapper = objectMapper;
-    this.operationsConfig = operationsConfig;
+  // things set in the builder pattern.
+  private CqlPagingState cqlPageState = null;
+  private CmdT command;
+  private Boolean singleResponse = null;
 
+  public TableReadDBOperationBuilder(CommandContext<TableSchemaObject> commandContext) {
+    this.commandContext = Objects.requireNonNull(commandContext, "commandContext cannot be null");
+
+    operationsConfig = commandContext.config().get(OperationsConfig.class);
     this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
     this.tableCqlSortClauseResolver = new TableCqlSortClauseResolver<>(operationsConfig);
   }
 
-  /**
-   * Build a read operation for the command and context.
-   *
-   * <p>Params are the specific per command values
-   *
-   * @param commandContext
-   * @param command
-   * @param cqlPageState The CQL paging state, if any, must be non null
-   * @param taskAccumulator The page builder to use, the caller should configure this with any
-   *     command specific options before passing, such as single document mode
-   * @return Configured read operation
-   */
-  protected TaskOperation<ReadDBTask<TableSchemaObject>, TableSchemaObject> buildReadOperation(
-      CommandContext<TableSchemaObject> commandContext,
-      CmdT command,
-      CqlPagingState cqlPageState,
-      ReadDBTaskPage.Accumulator<TableSchemaObject> taskAccumulator) {
+  TableReadDBOperationBuilder<CmdT> withPagingState(CqlPagingState cqlPageState) {
+    this.cqlPageState = cqlPageState;
+    return this;
+  }
 
-    var taskBuilder = new TableReadDBTaskBuilder(commandContext.schemaObject());
-    taskBuilder.withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+  TableReadDBOperationBuilder<CmdT> withCommand(CmdT command) {
+    this.command = command;
+    return this;
+  }
 
-    if (cqlPageState != null) {
-      taskBuilder.withPagingState(cqlPageState);
-    }
+  TableReadDBOperationBuilder<CmdT> withSingleResponse(Boolean singleResponse) {
+    this.singleResponse = singleResponse;
+    return this;
+  }
+
+  public Operation<TableSchemaObject> build() {
+
+    Objects.requireNonNull(command, "command cannot be null");
+    Objects.requireNonNull(cqlPageState, "cqlPageState cannot be null");
+    Objects.requireNonNull(singleResponse, "singleResponse cannot be null");
+
+    var taskBuilder =
+        new TableReadDBTaskBuilder(commandContext.schemaObject())
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new)
+            .withPagingState(cqlPageState);
 
     var orderByWithWarnings = tableCqlSortClauseResolver.resolve(commandContext, command);
     taskBuilder.withOrderBy(orderByWithWarnings);
@@ -92,7 +104,7 @@ class ReadCommandResolver<
     // if in memory sort the limit to use in select query will be
     // `operationsConfig.maxDocumentSortCount() + 1` so we read all the docs into memory and then
     // sort
-    taskBuilder.withBuilderOption(
+    taskBuilder.withCqlBuilderOption(
         CQLOption.ForSelect.limit(
             inMemorySort.target() == RowSorter.NO_OP
                 ? commandLimit
@@ -101,7 +113,7 @@ class ReadCommandResolver<
     // the columns the user wants
     // NOTE: the TableProjection is doing double duty as the select and the operation projection
     var projection =
-        TableProjection.fromDefinition(objectMapper, command, commandContext.schemaObject());
+        TableProjection.fromDefinition(OBJECT_MAPPER, command, commandContext.schemaObject());
 
     taskBuilder.withSelect(WithWarnings.of(projection));
     taskBuilder.withProjection(projection);
@@ -110,12 +122,19 @@ class ReadCommandResolver<
     // the builder builds on the where clause
     var where =
         TableWhereCQLClause.forSelect(
-            commandContext.schemaObject(),
-            tableFilterResolver.resolve(commandContext, command).target());
+            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command));
 
-    // parallel processing all the of time
-    var taskGroup = new TaskGroup<>(taskBuilder.build(where));
+    // always parallel processing for the taskgroup
+    var taskGroup = new TaskGroup<>(taskBuilder.build(where.target()));
 
-    return new TaskOperation<>(taskGroup, taskAccumulator);
+    var tasksAndDeferrables =
+        new TaskGroupAndDeferrables<>(
+            taskGroup,
+            ReadDBTaskPage.accumulator(commandContext)
+                .singleResponse(singleResponse)
+                .mayReturnVector(command),
+            List.of(orderByWithWarnings.target()));
+
+    return EmbeddingOperationFactory.createOperation(commandContext, tasksAndDeferrables);
   }
 }

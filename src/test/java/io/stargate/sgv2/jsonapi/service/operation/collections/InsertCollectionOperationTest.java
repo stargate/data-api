@@ -40,7 +40,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDo
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -50,14 +49,17 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class InsertCollectionOperationTest extends OperationTestBase {
-  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_NON_VECTOR;
 
+  private TestConstants testConstants = new TestConstants();
+
+  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_NON_VECTOR;
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_VECTOR;
 
   private final ColumnDefinitions COLUMNS_APPLIED =
@@ -96,12 +98,14 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           + " VALUES"
           + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS";
 
-  @PostConstruct
-  public void init() {
+  @BeforeEach
+  public void beforeEach() {
+    super.beforeEach();
+
     COMMAND_CONTEXT_NON_VECTOR = createCommandContextWithCommandName("testCommand");
 
     COMMAND_CONTEXT_VECTOR =
-        TestConstants.collectionContext(
+        testConstants.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
                 SCHEMA_OBJECT_NAME,

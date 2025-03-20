@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class FilterMatchRuleTest {
   @Inject ObjectMapper objectMapper;
+  private TestConstants testConstants = new TestConstants();
 
   @Nested
   class FilterMatchRuleApply {
@@ -49,7 +50,7 @@ public class FilterMatchRuleTest {
       FilterMatchRule<FindOneCommand> filterMatchRule =
           new FilterMatchRule(matcher, resolveFunction);
       Optional<DBLogicalExpression> response =
-          filterMatchRule.apply(TestConstants.collectionContext(), findOneCommand);
+          filterMatchRule.apply(testConstants.collectionContext(), findOneCommand);
       assertThat(response).isPresent();
 
       matcher = new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY);
@@ -58,7 +59,7 @@ public class FilterMatchRuleTest {
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL);
       filterMatchRule = new FilterMatchRule(matcher, resolveFunction);
 
-      response = filterMatchRule.apply(TestConstants.collectionContext(), findOneCommand);
+      response = filterMatchRule.apply(testConstants.collectionContext(), findOneCommand);
       assertThat(response).isEmpty();
     }
 
@@ -87,7 +88,7 @@ public class FilterMatchRuleTest {
           .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
 
       Optional<DBLogicalExpression> response =
-          filterMatchRule.apply(TestConstants.collectionContext(), findOneCommand);
+          filterMatchRule.apply(testConstants.collectionContext(), findOneCommand);
       assertThat(response).isPresent();
     }
   }

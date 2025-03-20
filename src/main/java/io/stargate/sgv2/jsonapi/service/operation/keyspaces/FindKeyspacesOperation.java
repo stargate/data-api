@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -68,7 +69,9 @@ public class FindKeyspacesOperation implements Operation {
       var statusKey =
           useKeyspaceNaming ? CommandStatus.EXISTING_KEYSPACES : CommandStatus.EXISTING_NAMESPACES;
 
-      return CommandResult.statusOnlyBuilder(false, false).addStatus(statusKey, keyspaces).build();
+      return CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+          .addStatus(statusKey, keyspaces)
+          .build();
     }
   }
 }

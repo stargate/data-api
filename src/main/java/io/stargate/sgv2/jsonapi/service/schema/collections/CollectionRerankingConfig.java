@@ -186,7 +186,9 @@ public class CollectionRerankingConfig {
       JsonNode rerankingJsonNode, ObjectMapper objectMapper) {
     // Check if reranking is enabled (defaults to false if not specified)
     boolean enabled =
-        rerankingJsonNode.path(RerankingConstants.RerankingColumn.ENABLED).asBoolean(false);
+        rerankingJsonNode
+            .path(RerankingConstants.CollectionRerankingOptions.ENABLED)
+            .asBoolean(false);
 
     // Short-circuit for disabled reranking
     if (!enabled) {
@@ -194,7 +196,7 @@ public class CollectionRerankingConfig {
     }
 
     // Get the service configuration node
-    JsonNode serviceNode = rerankingJsonNode.get(RerankingConstants.RerankingColumn.SERVICE);
+    JsonNode serviceNode = rerankingJsonNode.get(RerankingConstants.CollectionRerankingOptions.SERVICE);
     // sanity check
     Objects.requireNonNull(
         serviceNode, "Reranking service configuration in the collection comment must not be null");

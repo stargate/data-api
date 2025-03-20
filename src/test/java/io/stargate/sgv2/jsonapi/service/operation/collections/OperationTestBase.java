@@ -33,6 +33,7 @@ import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.*;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.BeforeEach;
 
 public class OperationTestBase {
 
@@ -43,41 +44,51 @@ public class OperationTestBase {
   // this will work even though the base class is not managed by Quarkus
   @InjectMock protected RequestContext dataApiRequestInfo;
 
+  private final TestConstants testConstants = new TestConstants();
+
   protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final SchemaObjectName SCHEMA_OBJECT_NAME =
       new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
 
-  protected final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT =
-      new CollectionSchemaObject(
-          SCHEMA_OBJECT_NAME,
-          null,
-          IdConfig.defaultIdConfig(),
-          VectorConfig.NOT_ENABLED_CONFIG,
-          null,
-          CollectionLexicalConfig.configForDisabled(),
-          CollectionRerankingConfig.configForPreRerankingCollections());
+  protected CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
+  protected KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
 
-  protected final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =
-      KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
-
-  protected final CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT =
-      TestConstants.collectionContext(
-          TestConstants.TEST_COMMAND_NAME,
-          COLLECTION_SCHEMA_OBJECT,
-          jsonProcessingMetricsReporter,
-          null);
-
-  protected final CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT =
-      TestConstants.keyspaceContext(
-          TestConstants.TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
+  protected CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT;
+  protected CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT;
 
   protected static final TupleType DOC_KEY_TYPE =
       DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT);
 
+  @BeforeEach
+  public void beforeEach() {
+    // must do this here to avoid touching quarkus config before it is initialized
+    COLLECTION_SCHEMA_OBJECT =
+        new CollectionSchemaObject(
+            SCHEMA_OBJECT_NAME,
+            null,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.NOT_ENABLED_CONFIG,
+            null,
+            CollectionLexicalConfig.configForDisabled(),
+            CollectionRerankingConfig.configForPreRerankingCollections());
+
+    KEYSPACE_SCHEMA_OBJECT = KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
+
+    COLLECTION_CONTEXT =
+        testConstants.collectionContext(
+            testConstants.TEST_COMMAND_NAME,
+            COLLECTION_SCHEMA_OBJECT,
+            jsonProcessingMetricsReporter,
+            null);
+    KEYSPACE_CONTEXT =
+        testConstants.keyspaceContext(
+            testConstants.TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
+  }
+
   protected CommandContext<CollectionSchemaObject> createCommandContextWithCommandName(
       String commandName) {
-    return TestConstants.collectionContext(
+    return testConstants.collectionContext(
         commandName, COLLECTION_SCHEMA_OBJECT, jsonProcessingMetricsReporter, null);
   }
 
