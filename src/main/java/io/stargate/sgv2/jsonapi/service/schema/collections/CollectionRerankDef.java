@@ -50,37 +50,34 @@ public class CollectionRerankDef {
    * Constructs a reranking configuration with the specified enabled state and service
    * configuration.
    *
+   * <p>This constructor is annotated with {@link JsonCreator} to enable Jackson deserialization.
+   * {@link JsonProperty} annotations on parameters allow Jackson to map JSON properties to
+   * constructor parameters during deserialization.
+   *
+   * <p>Validation behavior:
+   *
+   * <ul>
+   *   <li>If reranking is enabled (enabled = true), the service definition must not be null
+   *   <li>If reranking is disabled (enabled = false), the service definition is set to null
+   *       regardless of the input value to ensure consistency
+   * </ul>
+   *
    * @param enabled Whether reranking is enabled for this collection
-   * @param rerankServiceDef The service configuration for reranking, can be null if reranking is
-   *     disabled
+   * @param rerankServiceDef The service configuration for reranking, must not be null if reranking
+   *     is enabled
+   * @throws NullPointerException if reranking is enabled and rerankingServiceConfig is null
    */
   @JsonCreator
   public CollectionRerankDef(
       @JsonProperty("enabled") boolean enabled,
       @JsonProperty("service") RerankServiceDef rerankServiceDef) {
     this.enabled = enabled;
-    this.rerankServiceDef = rerankServiceDef;
-  }
-
-  /**
-   * Constructs a detailed reranking configuration with individual service parameters.
-   *
-   * @param enabled Whether reranking is enabled for this collection
-   * @param provider The name of the reranking provider
-   * @param modelName The name of the reranking model
-   * @param authentication Authentication parameters for the reranking service
-   * @param parameters Additional parameters for the reranking service
-   */
-  public CollectionRerankDef(
-      boolean enabled,
-      String provider,
-      String modelName,
-      Map<String, String> authentication,
-      Map<String, Object> parameters) {
-    // Clear out any reranking settings if not enabled (but don't fail)
-    this(
-        enabled,
-        enabled ? new RerankServiceDef(provider, modelName, authentication, parameters) : null);
+    this.rerankServiceDef =
+        enabled
+            ? Objects.requireNonNull(
+                rerankServiceDef,
+                "Rerank service configuration must not be null when reranking is enabled")
+            : null;
   }
 
   /** Returns whether reranking is enabled for this collection. */
@@ -120,6 +117,7 @@ public class CollectionRerankDef {
             .findFirst();
     // If no default provider exists, disable reranking
     if (defaultProviderEntry.isEmpty()) {
+      LOGGER.debug("No default reranking provider found, disabling reranking for new collections");
       return DISABLED_RERANKING_CONFIG;
     }
 
@@ -129,23 +127,37 @@ public class CollectionRerankDef {
         defaultProviderEntry.get().getValue();
 
     // Find the model marked as default for this provider
-    Optional<String> defaultModelName =
+    var defaultModel =
         providerConfig.models().stream()
             .filter(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::isDefault)
-            .map(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::name)
             .findFirst();
 
-    // If no default model exists, disable reranking
-    if (defaultModelName.isEmpty()) {
-      return DISABLED_RERANKING_CONFIG;
+    // The default provider must have a default model, otherwise it's config bug
+    if (defaultModel.isEmpty()) {
+      throw new IllegalStateException(
+          "Default reranking provider '%s' does not have a default model".formatted(providerName));
     }
+
+    // Check if the default provider supports the 'NONE' authentication type
+    // If not, it's a config bug
+    if (!providerConfig
+        .supportedAuthentications()
+        .containsKey(RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType.NONE)) {
+      throw new IllegalStateException(
+          "Default reranking provider '%s' does not support 'NONE' authentication type"
+              .formatted(providerName));
+    }
+
+    // TODO(Hazel): Check if there is any parameter for the default model and if there is default
+    // value for it
+    // No parameters in the configuration now, leave it to the next PR
 
     // Create reranking service config with default provider and model
     // Authentication and parameters are intentionally null for default configs
     var defaultRerankingService =
         new RerankServiceDef(
             providerName,
-            defaultModelName.get(),
+            defaultModel.get().name(),
             null, // No authentication for default configuration
             null // No parameters for default configuration
             );
@@ -255,7 +267,8 @@ public class CollectionRerankDef {
     parameters = validateParameters(provider, parameters, providerConfig);
 
     // Create validated configuration
-    return new CollectionRerankDef(enabled, provider, modelName, authentication, parameters);
+    return new CollectionRerankDef(
+        enabled, new RerankServiceDef(provider, modelName, authentication, parameters));
   }
 
   /**
