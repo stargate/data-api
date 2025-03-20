@@ -27,12 +27,6 @@ public interface HttpConstants {
   /** Bearer prefix for the API key. */
   String BEARER_PREFIX_FOR_API_KEY = "Bearer ";
 
-  /** Content type header for http request/response */
-  String CONTENT_TYPE_HEADER = "Content-Type";
-
-  /** Content type application/json value for http request/response */
-  String CONTENT_TYPE_APPLICATION_JSON = "application/json";
-
   /**
    * @return Embedding service header name for token.
    */

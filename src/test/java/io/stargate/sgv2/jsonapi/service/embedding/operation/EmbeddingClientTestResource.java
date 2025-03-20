@@ -5,7 +5,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.junit.QuarkusTest;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import java.util.Map;
 
 @QuarkusTest
@@ -23,9 +24,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .withRequestBody(matchingJsonPath("$.input", containing("429")))
             .willReturn(
                 aResponse()
-                    .withHeader(
-                        HttpConstants.CONTENT_TYPE_HEADER,
-                        HttpConstants.CONTENT_TYPE_APPLICATION_JSON)
+                    .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                     .withBody("{\"object\": \"list\"}")
                     .withStatus(429)
                     .withStatusMessage("Too Many Requests")));
@@ -35,9 +34,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .withRequestBody(matchingJsonPath("$.input", containing("400")))
             .willReturn(
                 aResponse()
-                    .withHeader(
-                        HttpConstants.CONTENT_TYPE_HEADER,
-                        HttpConstants.CONTENT_TYPE_APPLICATION_JSON)
+                    .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                     .withBody("{\"object\": \"list\"}")
                     .withStatus(400)
                     .withStatusMessage("Bad Request")));
@@ -47,9 +44,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .withRequestBody(matchingJsonPath("$.input", containing("503")))
             .willReturn(
                 aResponse()
-                    .withHeader(
-                        HttpConstants.CONTENT_TYPE_HEADER,
-                        HttpConstants.CONTENT_TYPE_APPLICATION_JSON)
+                    .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                     .withBody("{\"object\": \"list\"}")
                     .withStatus(503)
                     .withStatusMessage("Service Unavailable")));
@@ -59,9 +54,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .withRequestBody(matchingJsonPath("$.input", containing("408")))
             .willReturn(
                 aResponse()
-                    .withHeader(
-                        HttpConstants.CONTENT_TYPE_HEADER,
-                        HttpConstants.CONTENT_TYPE_APPLICATION_JSON)
+                    .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                     .withBody("{\"object\": \"list\"}")
                     .withStatus(408)
                     .withStatusMessage("Request Timeout")));
@@ -71,23 +64,17 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .withRequestBody(matchingJsonPath("$.input", containing("301")))
             .willReturn(
                 aResponse()
-                    .withHeader(
-                        HttpConstants.CONTENT_TYPE_HEADER,
-                        HttpConstants.CONTENT_TYPE_APPLICATION_JSON)
+                    .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                     .withBody("{\"object\": \"list\"}")
                     .withStatus(301)
                     .withStatusMessage("Moved Permanently")));
 
     wireMockServer.stubFor(
         post(urlEqualTo("/v1/embeddings"))
-            .withRequestBody(
-                matchingJsonPath(
-                    "$.input", containing(HttpConstants.CONTENT_TYPE_APPLICATION_JSON)))
+            .withRequestBody(matchingJsonPath("$.input", containing(MediaType.APPLICATION_JSON)))
             .willReturn(
                 aResponse()
-                    .withHeader(
-                        HttpConstants.CONTENT_TYPE_HEADER,
-                        HttpConstants.CONTENT_TYPE_APPLICATION_JSON)
+                    .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                     .withBody(
                         """
                            {
@@ -116,7 +103,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .withRequestBody(matchingJsonPath("$.input", containing("application/xml")))
             .willReturn(
                 aResponse()
-                    .withHeader(HttpConstants.CONTENT_TYPE_HEADER, "application/xml")
+                    .withHeader(HttpHeaders.CONTENT_TYPE, "application/xml")
                     .withBody("<object>list</object>")));
 
     wireMockServer.stubFor(
@@ -124,7 +111,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .withRequestBody(matchingJsonPath("$.input", containing("text/plain;charset=UTF-8")))
             .willReturn(
                 aResponse()
-                    .withHeader(HttpConstants.CONTENT_TYPE_HEADER, "text/plain;charset=UTF-8")
+                    .withHeader(HttpHeaders.CONTENT_TYPE, "text/plain;charset=UTF-8")
                     .withBody("Not Found")
                     .withStatus(500)));
 
@@ -132,19 +119,14 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
         post(urlEqualTo("/v1/embeddings"))
             .withRequestBody(matchingJsonPath("$.input", containing("no json body")))
             .willReturn(
-                aResponse()
-                    .withHeader(
-                        HttpConstants.CONTENT_TYPE_HEADER,
-                        HttpConstants.CONTENT_TYPE_APPLICATION_JSON)));
+                aResponse().withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)));
 
     wireMockServer.stubFor(
         post(urlEqualTo("/v1/embeddings"))
             .withRequestBody(matchingJsonPath("$.input", containing("empty json body")))
             .willReturn(
                 aResponse()
-                    .withHeader(
-                        HttpConstants.CONTENT_TYPE_HEADER,
-                        HttpConstants.CONTENT_TYPE_APPLICATION_JSON)
+                    .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                     .withBody("{}")));
 
     wireMockServer.stubFor(
@@ -153,9 +135,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .withHeader("OpenAI-Project", equalTo("project-id"))
             .willReturn(
                 aResponse()
-                    .withHeader(
-                        HttpConstants.CONTENT_TYPE_HEADER,
-                        HttpConstants.CONTENT_TYPE_APPLICATION_JSON)
+                    .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                     .withBody(
                         """
                                     {
@@ -184,9 +164,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .withHeader("OpenAI-Organization", equalTo("invalid org"))
             .willReturn(
                 aResponse()
-                    .withHeader(
-                        HttpConstants.CONTENT_TYPE_HEADER,
-                        HttpConstants.CONTENT_TYPE_APPLICATION_JSON)
+                    .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                     .withBody("{\"object\": \"list\"}")
                     .withStatus(401)
                     .withStatusMessage("Unauthorized")));
@@ -196,9 +174,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .withHeader("OpenAI-Project", equalTo("invalid proj"))
             .willReturn(
                 aResponse()
-                    .withHeader(
-                        HttpConstants.CONTENT_TYPE_HEADER,
-                        HttpConstants.CONTENT_TYPE_APPLICATION_JSON)
+                    .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                     .withBody("{\"object\": \"list\"}")
                     .withStatus(401)
                     .withStatusMessage("Unauthorized")));

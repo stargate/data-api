@@ -6,12 +6,12 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Nested;
@@ -149,7 +149,7 @@ public class EmbeddingProviderErrorMessageTest {
                   null)
               .vectorize(
                   1,
-                  List.of(HttpConstants.CONTENT_TYPE_APPLICATION_JSON),
+                  List.of(MediaType.APPLICATION_JSON),
                   embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
