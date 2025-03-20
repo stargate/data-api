@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -9,6 +11,7 @@ import static org.hamcrest.Matchers.is;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -217,7 +220,7 @@ public class FindCollectionWithLexicalSortIntegrationTest
   @Order(10)
   class HappyCasesFindOneAndUpdate {
     @Test
-    void findOneAndUpdate() {
+    void findOneAndUpdateWithSort() {
       final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-updated");
       givenHeadersPostJsonThenOkNoErrors(
               keyspaceName,
@@ -257,7 +260,7 @@ public class FindCollectionWithLexicalSortIntegrationTest
   @Order(11)
   class HappyCasesUpdateOne {
     @Test
-    void updateOne() {
+    void updateOneWithSort() {
       final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-updated-2");
       givenHeadersPostJsonThenOkNoErrors(
               keyspaceName,
@@ -294,7 +297,7 @@ public class FindCollectionWithLexicalSortIntegrationTest
   @Order(12)
   class HappyCasesFindOneAndReplace {
     @Test
-    void findOneAndReplace() {
+    void findOneAndReplaceWithSort() {
       final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-replaced");
       givenHeadersPostJsonThenOkNoErrors(
               keyspaceName,
@@ -335,7 +338,7 @@ public class FindCollectionWithLexicalSortIntegrationTest
   @Order(13)
   class HappyCasesFindOneAndDelete {
     @Test
-    void findOneAndDelete() {
+    void findOneAndDeleteWithSort() {
       givenHeadersPostJsonThenOkNoErrors(
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
@@ -350,25 +353,69 @@ public class FindCollectionWithLexicalSortIntegrationTest
           .body("status.deletedCount", is(1))
           .body("data.document", jsonEquals(DOC2_JSON));
 
-      // Plus query to check that the document was deleted
+      // Since "lexical-2" deleted, should only have 4 documents left
       givenHeadersPostJsonThenOkNoErrors(
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
-              "{ \"find\": { \"filter\" : {\"_id\" : \"lexical-2\"} } }")
+              """
+          {
+            "find": {
+              "projection": {"_id": 1, "value": 0 }
+            }
+          }
+          """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(0));
-
-      // And thus should only have 4 documents left
-      givenHeadersPostJsonThenOkNoErrors(keyspaceName, COLLECTION_WITH_LEXICAL, "{ \"find\": { } }")
-          .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(4));
+          .body(
+              "data.documents",
+              containsInAnyOrder(
+                  Map.of("_id", "lexical-1"),
+                  Map.of("_id", "lexical-3"),
+                  Map.of("_id", "lexical-4"),
+                  Map.of("_id", "lexical-5")));
     }
   }
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
   @Order(14)
-  class HappyCasesDeleteOne {}
+  class HappyCasesDeleteOne {
+    @Test
+    void deleteOneWithSort() {
+      // delete doc "lexical-3":
+      givenHeadersPostJsonThenOkNoErrors(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                      {
+                        "deleteOne": {
+                          "filter": { },
+                          "sort": { "$lexical": "biking" }
+                        }
+                      }
+                      """)
+          .body("$", responseIsStatusOnly())
+          .body("status.deletedCount", is(1));
+
+      // Should now delete "lexical-1", leaving 3 documents
+      givenHeadersPostJsonThenOkNoErrors(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+          {
+            "find": {
+              "projection": {"_id": 1, "value": 0 }
+            }
+          }
+          """)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents",
+              containsInAnyOrder(
+                  Map.of("_id", "lexical-1"),
+                  Map.of("_id", "lexical-4"),
+                  Map.of("_id", "lexical-5")));
+    }
+  }
 
   static String lexicalDoc(int id, String keywords, String value) {
     return
