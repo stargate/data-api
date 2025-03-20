@@ -196,7 +196,8 @@ public class CollectionRerankingConfig {
     }
 
     // Get the service configuration node
-    JsonNode serviceNode = rerankingJsonNode.get(RerankingConstants.CollectionRerankingOptions.SERVICE);
+    JsonNode serviceNode =
+        rerankingJsonNode.get(RerankingConstants.CollectionRerankingOptions.SERVICE);
     // sanity check
     Objects.requireNonNull(
         serviceNode, "Reranking service configuration in the collection comment must not be null");
