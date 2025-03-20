@@ -17,6 +17,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
+/**
+ * Tests for the Lexical sort feature in the JSON API, for:
+ *
+ * <p>- "find" and "findOne" commands
+ */
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
@@ -28,11 +33,11 @@ public class FindCollectionWithLexicalSortIntegrationTest
   static final String COLLECTION_WITHOUT_LEXICAL =
       "coll_no_lexical_sort_" + RandomStringUtils.randomNumeric(16);
 
-  static final String DOC1_JSON = lexicalDoc(1, "monkey banana");
-  static final String DOC2_JSON = lexicalDoc(2, "monkey");
-  static final String DOC3_JSON = lexicalDoc(3, "biking fun");
-  static final String DOC4_JSON = lexicalDoc(4, "banana");
-  static final String DOC5_JSON = lexicalDoc(5, "fun");
+  static final String DOC1_JSON = lexicalDoc(1, "monkey banana", "value1");
+  static final String DOC2_JSON = lexicalDoc(2, "monkey", "value2");
+  static final String DOC3_JSON = lexicalDoc(3, "biking fun", "value3");
+  static final String DOC4_JSON = lexicalDoc(4, "banana bread with butter", "value4");
+  static final String DOC5_JSON = lexicalDoc(5, "fun", "value5");
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
@@ -98,8 +103,8 @@ public class FindCollectionWithLexicalSortIntegrationTest
                           """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(2))
-          .body("data.documents[0]._id", is("lexical-4"))
-          .body("data.documents[1]._id", is("lexical-1"));
+          .body("data.documents[0]._id", is("lexical-1"))
+          .body("data.documents[1]._id", is("lexical-4"));
     }
   }
 
@@ -147,7 +152,7 @@ public class FindCollectionWithLexicalSortIntegrationTest
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
   @Order(3)
-  class FailingCases {
+  class FailingCasesFindMany {
     @Test
     void failIfLexicalDisabledForCollection() {
       givenHeadersPostJsonThenOk(
@@ -207,14 +212,15 @@ public class FindCollectionWithLexicalSortIntegrationTest
     }
   }
 
-  static String lexicalDoc(int id, String keywords) {
+  static String lexicalDoc(int id, String keywords, String value) {
     return
         """
             {
               "_id": "lexical-%d",
-              "$lexical": "%s"
+              "$lexical": "%s",
+              "value": "%s"
             }
         """
-        .formatted(id, keywords);
+        .formatted(id, keywords, value);
   }
 }
