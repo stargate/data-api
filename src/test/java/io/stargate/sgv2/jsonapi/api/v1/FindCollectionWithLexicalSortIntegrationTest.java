@@ -255,7 +255,39 @@ public class FindCollectionWithLexicalSortIntegrationTest
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
   @Order(11)
-  class HappyCasesUpdateOne {}
+  class HappyCasesUpdateOne {
+    @Test
+    void updateOne() {
+      final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-updated-2");
+      givenHeadersPostJsonThenOkNoErrors(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+           {
+             "updateOne": {
+               "sort": { "$lexical": "banana" },
+               "update" : {"$set" : {"value": "value1-updated-2"}}
+             }
+           }
+           """)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+      // Plus query to check that the document was updated
+      givenHeadersPostJsonThenOkNoErrors(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+          {
+            "findOne": {
+              "filter" : {"_id" : "lexical-1"},
+              "projection": {"*": 1 }
+            }
+          }
+          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(expectedAfterChange));
+    }
+  }
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
