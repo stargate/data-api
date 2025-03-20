@@ -21,9 +21,13 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 /**
- * Tests for the Lexical sort feature in the JSON API, for:
+ * Tests for the Lexical sort feature in the JSON API, with the following commands:
  *
- * <p>- "find" and "findOne" commands
+ * <ul>
+ *   <li>"find" and "findOne"
+ *   <li>"findOneAndUpdate", "findOneAndReplace", "findOneAndDelete"
+ *   <li>"updateOne" and "deleteOne"
+ * </ul>
  */
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
