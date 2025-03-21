@@ -22,6 +22,18 @@ public interface DocumentConstants {
 
     /** Field name used in projection clause to get similarity score in response. */
     String VECTOR_FUNCTION_SIMILARITY_FIELD = "$similarity";
+
+    /**
+     * Document field used DOCUMENT_RESPONSE of a findAndRerank scores, so not actually allowed in a
+     * document .
+     */
+    String RERANK_FIELD = "$rerank";
+
+    /** Document field used DOCUMENT_RESPONSE of a findAndRerank scores, sorting, and inserting */
+    String HYBRID_FIELD = "$hybrid";
+
+    /** Document field used DOCUMENT_RESPONSE of a findAndRerank scores */
+    String SCORES_FIELD = "scores";
   }
 
   /** Names of columns in Document-containing Tables */
@@ -37,6 +49,18 @@ public interface DocumentConstants {
 
     /** Physical table column name that stores the vector field. */
     String VECTOR_SEARCH_INDEX_COLUMN_NAME = "query_vector_value";
+
+    /** Document field name to which vector data is stored. */
+    String VECTOR_EMBEDDING_FIELD = "$vector";
+
+    /** Document field name that will have text value for which vectorize method in called */
+    String VECTOR_EMBEDDING_TEXT_FIELD = "$vectorize";
+
+    /** Document field name that will have text value for which vectorize method in called */
+    String BINARY_VECTOR_TEXT_FIELD = "$binary";
+
+    /** Field name used in projection clause to get similarity score in response. */
+    String VECTOR_FUNCTION_SIMILARITY_FIELD = "$similarity";
 
     /** Physical table column name that stores the lexical content. */
     String LEXICAL_INDEX_COLUMN_NAME = "query_lexical_value";

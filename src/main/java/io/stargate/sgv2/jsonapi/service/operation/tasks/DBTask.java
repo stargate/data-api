@@ -5,18 +5,15 @@ import static io.stargate.sgv2.jsonapi.util.CqlPrintUtil.trimmedPositionalValues
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
-import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
-import io.stargate.sgv2.jsonapi.service.cqldriver.AccumulatingAsyncResultSet;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.DBTraceMessages;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,59 +94,15 @@ public abstract class DBTask<SchemaT extends SchemaObject>
     @Override
     public Uni<AsyncResultSet> get() {
 
-      // statement can null for metadata tasks
-      commandContext
-          .requestTracing()
-          .maybeTrace(
-              () ->
-                  new TraceMessage(
-                      "Executing statement for task %s".formatted(task.taskDesc()),
-                      Recordable.copyOf(
-                          Map.of(
-                              "cql",
-                              statement == null ? "null" : trimmedCql(statement),
-                              "params",
-                              statement == null ? "null" : trimmedPositionalValues(statement)))));
+      DBTraceMessages.executingStatement(commandContext.requestTracing(), statement, task);
 
       return supplier
           .get()
           .onItem()
           .call(
-              asyncResultset -> {
-                // aaron 10 march 2025 - this is still experimental and I think sometimes it is
-                // called after
-                // the result set has completed and the executionInfo is null
-                // The AccumulatingAsyncResultSet will not have the execution info, and will throw
-                // UnsupportedOperationException - because the interface says the return from
-                // getExecutionInfo
-                // cannot be null
-                // aaron - NOTE - improved in later PR
-                try {
-                  if (asyncResultset.getExecutionInfo() == null
-                      || asyncResultset.getExecutionInfo().getTracingId() == null) {
-                    return Uni.createFrom().voidItem();
-                  }
-                } catch (UnsupportedOperationException e) {
-                  if (asyncResultset instanceof AccumulatingAsyncResultSet) {
-                    return Uni.createFrom().voidItem();
-                  }
-                  throw e;
-                }
-
-                return Uni.createFrom()
-                    .completionStage(() -> asyncResultset.getExecutionInfo().getQueryTraceAsync())
-                    .onItem()
-                    .invoke(
-                        trace -> {
-                          commandContext
-                              .requestTracing()
-                              .maybeTrace(
-                                  (objectMapper) ->
-                                      new TraceMessage(
-                                          "Statement trace for task %s".formatted(task.taskDesc()),
-                                          objectMapper.convertValue(trace, JsonNode.class)));
-                        });
-              });
+              asyncResultSet ->
+                  DBTraceMessages.maybeCqlTrace(
+                      commandContext.requestTracing(), asyncResultSet, task));
     }
   }
 

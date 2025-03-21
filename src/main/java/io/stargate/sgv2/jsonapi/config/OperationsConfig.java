@@ -307,4 +307,14 @@ public interface OperationsConfig {
     @WithDefault("1000")
     int maxDocumentInsertCount();
   }
+
+  @NotNull
+  @WithDefault("0,50,100")
+  @WithConverter(IntConfigWithBoundsConverter.class)
+  IntConfigWithBounds hybridSearchVectorLimit();
+
+  @NotNull
+  @WithDefault("0,50,100")
+  @WithConverter(IntConfigWithBoundsConverter.class)
+  IntConfigWithBounds hybridSearchLexicalLimit();
 }

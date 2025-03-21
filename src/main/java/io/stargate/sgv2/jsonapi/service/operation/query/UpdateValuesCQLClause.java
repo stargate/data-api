@@ -24,7 +24,7 @@ import java.util.function.BiFunction;
  * and adding the value second param as the positional value to bind.
  *
  * <p>Supports {@link Deferrable} so that the vectorize values can be deferred until execution time.
- * See {@link #deferredValues()} for docs.
+ * See {@link #deferred()} for docs.
  */
 public interface UpdateValuesCQLClause
     extends BiFunction<OngoingAssignment, List<Object>, UpdateWithAssignments>,

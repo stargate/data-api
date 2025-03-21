@@ -10,6 +10,8 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.core.servererrors.TruncateException;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.DBTraceMessages;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -33,12 +35,44 @@ public class QueryExecutor {
   /** CQLSession cache. */
   private final CQLSessionCache cqlSessionCache;
 
+  private final RequestTracing requestTracing;
+
   @Inject
   public QueryExecutor(CQLSessionCache cqlSessionCache, OperationsConfig operationsConfig) {
+    this(cqlSessionCache, operationsConfig, RequestTracing.NO_OP);
+  }
+
+  public QueryExecutor(
+      CQLSessionCache cqlSessionCache,
+      OperationsConfig operationsConfig,
+      RequestTracing requestTracing) {
     this.cqlSessionCache =
         Objects.requireNonNull(cqlSessionCache, "cqlSessionCache must not be null");
     this.operationsConfig =
         Objects.requireNonNull(operationsConfig, "operationsConfig must not be null");
+    this.requestTracing = Objects.requireNonNull(requestTracing, "requestTracing must not be null");
+  }
+
+  private Uni<AsyncResultSet> executeAsync(
+      RequestContext requestContext, SimpleStatement statement) {
+
+    var stmtWithTracing =
+        requestTracing.enabled() != statement.isTracing()
+            ? statement.setTracing(requestTracing.enabled())
+            : statement;
+
+    DBTraceMessages.executingStatement(
+        requestTracing, stmtWithTracing, "Executing statement for non task based operation");
+
+    return Uni.createFrom()
+        .completionStage(cqlSessionCache.getSession(requestContext).executeAsync(stmtWithTracing))
+        .onItem()
+        .call(
+            asyncResultSet ->
+                DBTraceMessages.maybeCqlTrace(
+                    requestTracing,
+                    asyncResultSet,
+                    "Statement trace for non task based operation"));
   }
 
   /**
@@ -64,8 +98,11 @@ public class QueryExecutor {
       simpleStatement =
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
-    return Uni.createFrom()
-        .completionStage(cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement));
+
+    return executeAsync(requestContext, simpleStatement);
+    //    return Uni.createFrom()
+    //
+    // .completionStage(cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement));
   }
 
   /**
@@ -122,8 +159,11 @@ public class QueryExecutor {
       simpleStatement =
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
-    return Uni.createFrom()
-        .completionStage(cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement));
+
+    return executeAsync(requestContext, simpleStatement);
+    //    return Uni.createFrom()
+    //
+    // .completionStage(cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement));
   }
 
   /**

@@ -22,7 +22,7 @@ import java.util.Objects;
  * @param <NameT> The type of the name of the value
  * @param <ValueT> The type of the value
  */
-public abstract class NamedValue<NameT, ValueT, RawValueT> implements Recordable {
+public abstract class NamedValue<NameT, ValueT, RawValueT> implements Deferred, Recordable {
 
   public enum NamedValueState implements Recordable {
     INITIAL(false, false, false),
@@ -62,7 +62,7 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements Recordable
 
   protected final NameT name;
   protected ValueT value;
-  protected ValueAction valueAction;
+  protected DeferredAction deferredValue;
 
   protected NamedValue(NameT name) {
     this.name = name;
@@ -118,7 +118,7 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements Recordable
     }
 
     if (decodeResult.valueAction() != null) {
-      valueAction = decodeResult.valueAction();
+      deferredValue = decodeResult.valueAction();
       setState(NamedValueState.DEFERRED);
     } else {
       setDecodedValue(decodeResult.value());
@@ -184,9 +184,10 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements Recordable
     return value;
   }
 
-  public ValueAction valueAction() {
-    checkIsState(NamedValueState.DEFERRED, "valueAction()");
-    return valueAction;
+  @Override
+  public DeferredAction deferredAction() {
+    checkIsState(NamedValueState.DEFERRED, "deferredValue()");
+    return deferredValue;
   }
 
   public NamedValueState state() {
@@ -236,7 +237,7 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements Recordable
     setState(errorState);
   }
 
-  protected record DecodeResult<ValueT>(ValueT value, ValueAction valueAction) {}
+  protected record DecodeResult<ValueT>(ValueT value, DeferredAction valueAction) {}
 
   @Override
   public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
@@ -245,7 +246,7 @@ public abstract class NamedValue<NameT, ValueT, RawValueT> implements Recordable
         .append("state", state)
         .append("errorCode", errorCode)
         .append("columnDef", columnDef)
-        .append("valueAction", valueAction)
+        .append("deferredValue", deferredValue)
         .append(
             "value.class",
             value == null ? Objects.toString(null) : value.getClass().getSimpleName())

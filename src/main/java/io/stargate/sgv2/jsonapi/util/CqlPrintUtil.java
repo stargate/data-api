@@ -31,8 +31,7 @@ public abstract class CqlPrintUtil {
                 }
                 if (trimmedList.size() < vectorSize) {
                   trimmedList.add(
-                      "<vector<%s> trimmed, log at trace to get full value>"
-                          .formatted(vector.size()));
+                      "<vector<%s> trimmed>".formatted(vector.size()));
                 }
                 return trimmedList;
               }

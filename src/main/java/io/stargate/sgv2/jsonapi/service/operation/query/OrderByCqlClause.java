@@ -24,7 +24,7 @@ import java.util.function.Function;
  *
  * <p>Supports {@link Deferrable} so that the value needed for ANN or BM25 sorting can be deferred
  * until execution time. Regular sorting (just ASC / DESC) will not use deferred values, they can
- * just return an empty list. See {@link #deferredValues()} for docs.
+ * just return an empty list. See {@link #deferred()} for docs.
  */
 public interface OrderByCqlClause extends Function<Select, Select>, CQLClause, Deferrable {
 
@@ -32,7 +32,7 @@ public interface OrderByCqlClause extends Function<Select, Select>, CQLClause, D
   OrderByCqlClause NO_OP =
       new OrderByCqlClause() {
         @Override
-        public List<NamedValue<?, ?, ?>> deferredValues() {
+        public List<NamedValue<?, ?, ?>> deferred() {
           return List.of();
         }
 

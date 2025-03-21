@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.util.recordable;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * Recordable objects provide a snapshot of their data, that is intended to be used in logs,
@@ -60,8 +61,16 @@ public interface Recordable {
     return new RecordableCollection(values);
   }
 
+  static Supplier<Recordable> collectionSupplier(Supplier<Collection<?>> values) {
+    return () -> copyOf(values.get());
+  }
+
   static Recordable copyOf(Map<?, ?> values) {
     return new RecordableMap(values);
+  }
+
+  static Supplier<Recordable> mapSupplier(Supplier<Map<?, ?>> values) {
+    return () -> copyOf(values.get());
   }
 
   /**

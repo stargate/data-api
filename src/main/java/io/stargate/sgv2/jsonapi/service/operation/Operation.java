@@ -41,6 +41,8 @@ public interface Operation<SchemaT extends SchemaObject> {
     return execute(
         commandContext.requestContext(),
         new QueryExecutor(
-            commandContext.cqlSessionCache(), commandContext.config().get(OperationsConfig.class)));
+            commandContext.cqlSessionCache(),
+            commandContext.config().get(OperationsConfig.class),
+            commandContext.requestTracing()));
   }
 }

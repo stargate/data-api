@@ -43,7 +43,7 @@ public class RequestException extends APIException {
   public enum Code implements ErrorCode<RequestException> {
     UNSUPPORTED_TABLE_COMMAND,
     UNSUPPORTED_COLLECTION_COMMAND,
-    ;
+    UNSUPPORTED_RERANKING_COMMAND;
 
     private final ErrorTemplate<RequestException> template;
 
