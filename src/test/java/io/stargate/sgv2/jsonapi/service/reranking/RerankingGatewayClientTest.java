@@ -34,7 +34,7 @@ public class RerankingGatewayClientTest {
   public static final String TESTING_COMMAND_NAME = "test_command";
 
   private static final RerankingCredentials RERANK_CREDENTIALS =
-      new RerankingCredentials("mocked data api token", Optional.empty());
+      new RerankingCredentials(Optional.of("mocked reranking api key"));
 
   @Test
   void handleValidResponse() {

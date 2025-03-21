@@ -51,16 +51,23 @@ public class RequestContext {
       SecurityContext securityContext,
       Instance<DataApiTenantResolver> tenantResolver,
       Instance<DataApiTokenResolver> tokenResolver,
-      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver,
-      Instance<RerankingCredentialsResolver> rerankingCredentialsResolver) {
+      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
     this.embeddingCredentials =
         embeddingCredentialsResolver.get().resolveEmbeddingCredentials(routingContext);
-    this.rerankingCredentials =
-        rerankingCredentialsResolver.get().resolveRerankingCredentials(routingContext);
     this.tenantId = (tenantResolver.get()).resolve(routingContext, securityContext);
     this.cassandraToken = (tokenResolver.get()).resolve(routingContext, securityContext);
     httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
     requestId = generateRequestId();
+
+    Optional<String> rerankingApiKeyFromHeader =
+        HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext);
+    this.rerankingCredentials =
+        rerankingApiKeyFromHeader
+            .map(apiKey -> new RerankingCredentials(Optional.of(apiKey)))
+            .orElse(
+                this.cassandraToken
+                    .map(cassandraToken -> new RerankingCredentials(Optional.of(cassandraToken)))
+                    .orElse(new RerankingCredentials(Optional.empty())));
   }
 
   private static String generateRequestId() {
