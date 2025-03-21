@@ -89,8 +89,8 @@ public class CollectionRerankDef {
   /** Returns the reranking service configuration for this collection. */
   @JsonProperty("service")
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  public RerankServiceDef rerankingProviderConfig() {
-    return rerankServiceDef;
+  public Optional<RerankServiceDef> rerankingProviderConfig() {
+    return Optional.ofNullable(rerankServiceDef);
   }
 
   /**
@@ -245,28 +245,21 @@ public class CollectionRerankDef {
     }
 
     // Case 5: Full configuration - validate all components
-    // Extract values from API config
-    String provider = rerankingDesc.rerankServiceDesc().provider();
-    String modelName = rerankingDesc.rerankServiceDesc().modelName();
-    Map<String, String> authentication = rerankingDesc.rerankServiceDesc().authentication();
-    Map<String, Object> parameters = rerankingDesc.rerankServiceDesc().parameters();
-
-    // Validate against the yaml  configuration
+    var provider = rerankingDesc.rerankServiceDesc().provider();
     var providerConfig = getAndValidateProviderConfig(provider, providerConfigs);
-    modelName = validateModel(provider, modelName, providerConfig);
-    authentication = validateAuthentication(provider, authentication, providerConfig);
-    parameters = validateParameters(provider, parameters, providerConfig);
 
     // Create validated configuration
     return new CollectionRerankDef(
-        enabled, new RerankServiceDef(provider, modelName, authentication, parameters));
+        enabled,
+        new RerankServiceDef(
+            provider,
+            validateModel(provider, serviceConfig.modelName(), providerConfig),
+            validateAuthentication(provider, serviceConfig.authentication(), providerConfig),
+            validateParameters(provider, serviceConfig.parameters(), providerConfig)));
   }
 
   /**
-   * Validates and retrieves the configuration for a reranking provider. This method performs two
-   * validations:<br>
-   * 1. Ensures the provider name is specified (not null)<br>
-   * 2. Verifies the provider exists in configuration and is enabled (includes null and empty check)
+   * Validates and retrieves the configuration for a reranking provider.
    *
    * @param provider The reranking provider name.
    * @param rerankingProvidersConfig The configuration containing all available reranking providers.
@@ -275,11 +268,14 @@ public class CollectionRerankDef {
    */
   private static RerankingProvidersConfig.RerankingProviderConfig getAndValidateProviderConfig(
       String provider, RerankingProvidersConfig rerankingProvidersConfig) {
+    // 1. Ensures the provider name is specified (not null)
     if (provider == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "Provider name is required for reranking service configuration");
     }
 
+    // 2. Verifies the provider exists in configuration and is enabled (includes null and empty
+    // check)
     var providerConfig = rerankingProvidersConfig.providers().get(provider);
     if (providerConfig == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
@@ -328,8 +324,8 @@ public class CollectionRerankDef {
   /**
    * Validates authentication parameters for reranking models when creating a collection. Currently,
    * this method enforces that no authentication details are provided, as all supported reranking
-   * providers use the 'NONE' authentication type. Add more verifications if more authentication
-   * types are supported in the future.
+   * providers use the 'NONE' or 'HEADER' authentication type. Add more verifications if more
+   * authentication types are supported in the future.
    *
    * @param provider The reranking provider name.
    * @param authentication The reranking authentication details.
@@ -341,12 +337,21 @@ public class CollectionRerankDef {
       String provider,
       Map<String, String> authentication,
       RerankingProvidersConfig.RerankingProviderConfig rerankingProviderConfig) {
-    // Currently, all supported reranking providers use the 'NONE' authentication type,
+    // Currently, all supported reranking providers use the 'NONE' or 'HEADER' authentication type,
     // so the authentication map must be null or empty
     if (authentication != null && !authentication.isEmpty()) {
-      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "Reranking provider '%s' currently supports only the 'NONE' authentication type. No authentication parameters should be provided.",
-          provider);
+      // Check if the provider supports 'NONE' or 'HEADER' authentication
+      Map<RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType, ?> supportedAuth =
+          rerankingProviderConfig.supportedAuthentications();
+
+      if (supportedAuth.containsKey(
+              RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType.NONE)
+          || supportedAuth.containsKey(
+              RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType.HEADER)) {
+        throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+            "Reranking provider '%s' currently only supports 'NONE' or 'HEADER' authentication types. No authentication parameters should be provided.",
+            provider);
+      }
     }
     return authentication;
   }

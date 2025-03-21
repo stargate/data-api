@@ -404,7 +404,7 @@ public class CreateCollectionWithRerankingIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: Reranking provider 'nvidia' currently supports only the 'NONE' authentication type. No authentication parameters should be provided."));
+                  "The provided options are invalid: Reranking provider 'nvidia' currently only supports 'NONE' or 'HEADER' authentication types. No authentication parameters should be provided."));
     }
 
     @Test
