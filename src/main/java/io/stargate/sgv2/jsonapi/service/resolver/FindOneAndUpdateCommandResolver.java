@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
@@ -126,18 +125,13 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
     // BM25 search / sort?
     SortExpression bm25Expr = SortClauseUtil.resolveBM25Search(sortClause);
     if (bm25Expr != null) {
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-          "BM25 search is not yet supported for this command");
-      // Likely implementation of [data-api#1939] to support BM25 sort
-      /*
       return FindCollectionOperation.bm25Single(
-              commandContext,
-              dbLogicalExpression,
-              DocumentProjector.includeAllProjector(),
-              CollectionReadType.DOCUMENT,
-              objectMapper,
-              bm25Expr);
-       */
+          commandContext,
+          dbLogicalExpression,
+          DocumentProjector.includeAllProjector(),
+          CollectionReadType.DOCUMENT,
+          objectMapper,
+          bm25Expr);
     }
     List<FindCollectionOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
     // If orderBy present
