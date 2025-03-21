@@ -137,12 +137,14 @@ public class NvidiaRerankingProvider extends RerankingProvider {
             passages.stream().map(RerankingRequest.TextWrapper::new).toList(),
             TRUNCATE_PASSAGE);
 
-    // Note, Nvidia self-host reranker service use Astra token to authenticate the request.
-    // So we use token in rerankingCredentials, not apiKey in rerankingCredentials.
+    if (rerankingCredentials.apiKey().isEmpty()) {
+      throw ErrorCodeV1.RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
+          "In order to rerank, please provide the reranking API key.");
+    }
+
     Uni<RerankingResponse> response =
         applyRetry(
-            nvidiaRerankingClient.rerank(
-                "Bearer " + resolveRerankingKey(rerankingCredentials), request));
+            nvidiaRerankingClient.rerank("Bearer " + rerankingCredentials.apiKey().get(), request));
 
     return response
         .onItem()
@@ -155,22 +157,5 @@ public class NvidiaRerankingProvider extends RerankingProvider {
               Usage usage = new Usage(resp.usage().prompt_tokens(), resp.usage().total_tokens());
               return RerankingBatchResponse.of(batchId, ranks, usage);
             });
-  }
-
-  /**
-   * For Astra self-hosted Nvidia reranking in the GPU plane, it requires the AstraCS token to
-   * access. So Data API in Astra will resolve the AstraCS token from the request header. For Data
-   * API in non-astra environment, since the token is also used for backend authentication, so the
-   * user needs to pass the reranking API key in the request header 'x-reranking-api-key'.
-   */
-  private String resolveRerankingKey(RerankingCredentials rerankingCredentials) {
-    if (rerankingCredentials.token().startsWith("AstraCS")) {
-      return rerankingCredentials.token();
-    }
-    if (rerankingCredentials.apiKey().isEmpty()) {
-      throw ErrorCodeV1.RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
-          "In order to reranking, please add the reranking API key in the request header 'x-reranking-api-key' for non-astra environment.");
-    }
-    return rerankingCredentials.apiKey().get();
   }
 }
