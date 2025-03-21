@@ -89,8 +89,8 @@ public class CollectionRerankDef {
   /** Returns the reranking service configuration for this collection. */
   @JsonProperty("service")
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  public Optional<RerankServiceDef> rerankingProviderConfig() {
-    return Optional.ofNullable(rerankServiceDef);
+  public RerankServiceDef rerankingProviderConfig() {
+    return rerankServiceDef;
   }
 
   /**

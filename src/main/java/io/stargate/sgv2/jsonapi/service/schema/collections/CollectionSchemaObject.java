@@ -397,17 +397,17 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     CollectionRerankDef rerankingConfig = collectionSetting.rerankingConfig;
     CreateCollectionCommand.Options.RerankServiceDesc rerankServiceDesc = null;
     if (rerankingConfig.enabled()) {
-      if (rerankingConfig.rerankingProviderConfig().isEmpty()) {
+      if (rerankingConfig.rerankingProviderConfig() == null) {
         throw new IllegalStateException(
             "Reranking is enabled but rerankingProviderConfig is empty. The comment in the collection '%s' has some problems."
                 .formatted(collectionSetting.name().table()));
       }
       rerankServiceDesc =
           new CreateCollectionCommand.Options.RerankServiceDesc(
-              rerankingConfig.rerankingProviderConfig().get().provider(),
-              rerankingConfig.rerankingProviderConfig().get().modelName(),
-              rerankingConfig.rerankingProviderConfig().get().authentication(),
-              rerankingConfig.rerankingProviderConfig().get().parameters());
+              rerankingConfig.rerankingProviderConfig().provider(),
+              rerankingConfig.rerankingProviderConfig().modelName(),
+              rerankingConfig.rerankingProviderConfig().authentication(),
+              rerankingConfig.rerankingProviderConfig().parameters());
     }
     var rerankingDef =
         new CreateCollectionCommand.Options.RerankDesc(
