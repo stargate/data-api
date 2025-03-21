@@ -139,7 +139,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
 
     if (rerankingCredentials.apiKey().isEmpty()) {
       throw ErrorCodeV1.RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
-          "In order to reranking, please provide the reranking API key.");
+          "In order to rerank, please provide the reranking API key.");
     }
 
     Uni<RerankingResponse> response =
