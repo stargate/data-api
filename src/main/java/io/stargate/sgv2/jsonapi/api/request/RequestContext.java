@@ -60,18 +60,17 @@ public class RequestContext {
     httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
     requestId = generateRequestId();
 
-
     // rerankingCredentials will be resolved from the request header 'reranking-api-key'
     // if it is not present, then we will use the cassandra token as the reranking api key.
     Optional<String> rerankingApiKeyFromHeader =
-            rerankingKeyResolver.resolveRerankingKey(routingContext);
+        rerankingKeyResolver.resolveRerankingKey(routingContext);
     this.rerankingCredentials =
-            rerankingApiKeyFromHeader
-                    .map(apiKey -> new RerankingCredentials(Optional.of(apiKey)))
-                    .orElse(
-                            this.cassandraToken
-                                    .map(cassandraToken -> new RerankingCredentials(Optional.of(cassandraToken)))
-                                    .orElse(new RerankingCredentials(Optional.empty())));
+        rerankingApiKeyFromHeader
+            .map(apiKey -> new RerankingCredentials(Optional.of(apiKey)))
+            .orElse(
+                this.cassandraToken
+                    .map(cassandraToken -> new RerankingCredentials(Optional.of(cassandraToken)))
+                    .orElse(new RerankingCredentials(Optional.empty())));
   }
 
   private static String generateRequestId() {
