@@ -141,8 +141,11 @@ public class NvidiaRerankingProvider extends RerankingProvider {
             passages.stream().map(RerankingRequest.TextWrapper::new).toList(),
             TRUNCATE_PASSAGE);
 
-    // Note, Nvidia self-host reranker service use Astra token to authenticate the request.
-    // So we use token in rerankingCredentials, not apiKey in rerankingCredentials.
+    if (rerankingCredentials.apiKey().isEmpty()) {
+      throw ErrorCodeV1.RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
+          "In order to rerank, please provide the reranking API key.");
+    }
+
     Uni<RerankingResponse> response =
         applyRetry(
             nvidiaRerankingClient.rerank(

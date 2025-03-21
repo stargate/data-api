@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 public class NvidiaRerankingClientTest {
 
   private static final RerankingCredentials RERANK_CREDENTIALS =
-      new RerankingCredentials("mocked data api token", Optional.empty());
+      new RerankingCredentials(Optional.of("mocked data api token"));
 
   @Test
   void handleValidResponse() {
