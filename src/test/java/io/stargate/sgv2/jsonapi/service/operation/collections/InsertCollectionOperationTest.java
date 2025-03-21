@@ -121,7 +121,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                             null))),
                 null,
                 CollectionLexicalConfig.configForDisabled(),
-                CollectionRerankDef.configForPreRerankingCollections()),
+                CollectionRerankDef.configForPreRerankingCollection()),
             jsonProcessingMetricsReporter,
             null);
   }

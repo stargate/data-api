@@ -107,7 +107,7 @@ public class CommandResolverWithVectorizerTest {
                               null))),
                   null,
                   CollectionLexicalConfig.configForDisabled(),
-                  CollectionRerankDef.configForPreRerankingCollections()),
+                  CollectionRerankDef.configForPreRerankingCollection()),
               null,
               null);
     }

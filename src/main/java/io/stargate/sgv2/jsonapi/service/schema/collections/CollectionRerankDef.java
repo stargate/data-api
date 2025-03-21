@@ -35,16 +35,16 @@ import org.slf4j.LoggerFactory;
  * metadata comment.
  */
 public class CollectionRerankDef {
-  private static final Logger LOGGER = LoggerFactory.getLogger(CollectionRerankDef.class);
-  private final boolean enabled;
-  private final RerankServiceDef rerankServiceDef;
-
   /**
    * Singleton instance for disabled reranking configuration. It can be used for disabled reranking
    * collections, existing pre-reranking collections, and missing collections.
    */
-  private static final CollectionRerankDef DISABLED_RERANKING_CONFIG =
-      new CollectionRerankDef(false, null);
+  public static final CollectionRerankDef DISABLED = new CollectionRerankDef(false, null);
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(CollectionRerankDef.class);
+
+  private final boolean enabled;
+  private final RerankServiceDef rerankServiceDef;
 
   /**
    * Constructs a reranking configuration with the specified enabled state and service
@@ -118,7 +118,7 @@ public class CollectionRerankDef {
     // If no default provider exists, disable reranking
     if (defaultProviderEntry.isEmpty()) {
       LOGGER.debug("No default reranking provider found, disabling reranking for new collections");
-      return DISABLED_RERANKING_CONFIG;
+      return DISABLED;
     }
 
     // Extract provider information
@@ -174,17 +174,8 @@ public class CollectionRerankDef {
    *
    * @return A singleton CollectionRerankDef instance with reranking disabled
    */
-  public static CollectionRerankDef configForPreRerankingCollections() {
-    return DISABLED_RERANKING_CONFIG;
-  }
-
-  /**
-   * Factory method for creating a configuration when a collection definition is missing.
-   *
-   * @return A singleton CollectionRerankDef instance with reranking disabled
-   */
-  public static CollectionRerankDef configForMissingCollection() {
-    return DISABLED_RERANKING_CONFIG;
+  public static CollectionRerankDef configForPreRerankingCollection() {
+    return DISABLED;
   }
 
   /**
@@ -244,7 +235,7 @@ public class CollectionRerankDef {
 
     // Case 3: Reranking disabled - return simple disabled config
     if (!enabled) {
-      return DISABLED_RERANKING_CONFIG;
+      return DISABLED;
     }
 
     // Case 4: Enabled but no service config - use defaults

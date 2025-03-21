@@ -45,7 +45,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           VectorConfig.NOT_ENABLED_CONFIG,
           null,
           CollectionLexicalConfig.configForDisabled(),
-          CollectionRerankDef.configForMissingCollection());
+          CollectionRerankDef.DISABLED);
 
   private final IdConfig idConfig;
   private final VectorConfig vectorConfig;
@@ -263,7 +263,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       // If no "comment", must assume Legacy (no Lexical) config
       CollectionLexicalConfig lexicalConfig = CollectionLexicalConfig.configForDisabled();
       // If no "comment", must assume Legacy (no Reranking) config
-      CollectionRerankDef rerankingConfig = CollectionRerankDef.configForPreRerankingCollections();
+      CollectionRerankDef rerankingConfig = CollectionRerankDef.configForPreRerankingCollection();
       if (vectorEnabled) {
         return new CollectionSchemaObject(
             keyspaceName,

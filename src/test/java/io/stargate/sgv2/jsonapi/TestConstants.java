@@ -72,7 +72,7 @@ public class TestConstants {
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
             CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankDef.configForPreRerankingCollections());
+            CollectionRerankDef.configForPreRerankingCollection());
 
     VECTOR_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -89,7 +89,7 @@ public class TestConstants {
                         null))),
             null,
             CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankDef.configForPreRerankingCollections());
+            CollectionRerankDef.configForPreRerankingCollection());
 
     KEYSPACE_SCHEMA_OBJECT = KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
     DATABASE_SCHEMA_OBJECT = new DatabaseSchemaObject();

@@ -100,7 +100,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
                             null))),
                 null,
                 CollectionLexicalConfig.configForDisabled(),
-                CollectionRerankDef.configForPreRerankingCollections()),
+                CollectionRerankDef.configForPreRerankingCollection()),
             jsonProcessingMetricsReporter,
             null);
   }
