@@ -72,50 +72,69 @@ public class QueryBuilderTest {
               .limit(1)
               .build(),
           "SELECT \"FirstName\", b, c FROM ks.tbl LIMIT 1",
-          EMPTY_VALUES,
-          arguments(
-              new QueryBuilder()
-                  .select()
-                  .column("a", "b", "c")
-                  .from("ks", "tbl")
-                  .limit(1)
-                  .vsearch(VECTOR_COLUMN, TEST_VECTOR)
-                  .build(),
-              "SELECT a, b, c FROM ks.tbl ORDER BY query_vector_value ANN OF ? LIMIT 1",
-              List.of(TEST_CQL_VECTOR)),
-          arguments(
-              new QueryBuilder()
-                  .select()
-                  .column("a", "b", "c")
-                  .similarityFunction("query_vector_value", SimilarityFunction.COSINE)
-                  .from("ks", "tbl")
-                  .limit(1)
-                  .vsearch(VECTOR_COLUMN, TEST_VECTOR)
-                  .build(),
-              "SELECT a, b, c, SIMILARITY_COSINE(query_vector_value, ?) FROM ks.tbl ORDER BY query_vector_value ANN OF ? LIMIT 1",
-              List.of(TEST_CQL_VECTOR, TEST_CQL_VECTOR)),
-          arguments(
-              new QueryBuilder()
-                  .select()
-                  .column("a", "b", "c")
-                  .similarityFunction("query_vector_value", SimilarityFunction.DOT_PRODUCT)
-                  .from("ks", "tbl")
-                  .limit(1)
-                  .vsearch(VECTOR_COLUMN, TEST_VECTOR)
-                  .build(),
-              "SELECT a, b, c, SIMILARITY_DOT_PRODUCT(query_vector_value, ?) FROM ks.tbl ORDER BY query_vector_value ANN OF ? LIMIT 1",
-              List.of(TEST_CQL_VECTOR, TEST_CQL_VECTOR)),
-          arguments(
-              new QueryBuilder()
-                  .select()
-                  .column("a", "b", "c")
-                  .similarityFunction(VECTOR_COLUMN, SimilarityFunction.EUCLIDEAN)
-                  .from("ks", "tbl")
-                  .limit(1)
-                  .vsearch("query_vector_value", TEST_VECTOR)
-                  .build(),
-              "SELECT a, b, c, SIMILARITY_EUCLIDEAN(query_vector_value, ?) FROM ks.tbl ORDER BY query_vector_value ANN OF ? LIMIT 1",
-              List.of(TEST_CQL_VECTOR, TEST_CQL_VECTOR)))
+          EMPTY_VALUES),
+      arguments(
+          new QueryBuilder()
+              .select()
+              .column("a", "b", "c")
+              .from("ks", "tbl")
+              .limit(1)
+              .vsearch(VECTOR_COLUMN, TEST_VECTOR)
+              .build(),
+          "SELECT a, b, c FROM ks.tbl ORDER BY query_vector_value ANN OF ? LIMIT 1",
+          List.of(TEST_CQL_VECTOR)),
+      arguments(
+          new QueryBuilder()
+              .select()
+              .column("a", "b", "c")
+              .similarityFunction("query_vector_value", SimilarityFunction.COSINE)
+              .from("ks", "tbl")
+              .limit(1)
+              .vsearch(VECTOR_COLUMN, TEST_VECTOR)
+              .build(),
+          "SELECT a, b, c, SIMILARITY_COSINE(query_vector_value, ?) FROM ks.tbl ORDER BY query_vector_value ANN OF ? LIMIT 1",
+          List.of(TEST_CQL_VECTOR, TEST_CQL_VECTOR)),
+      arguments(
+          new QueryBuilder()
+              .select()
+              .column("a", "b", "c")
+              .similarityFunction("query_vector_value", SimilarityFunction.DOT_PRODUCT)
+              .from("ks", "tbl")
+              .limit(1)
+              .vsearch(VECTOR_COLUMN, TEST_VECTOR)
+              .build(),
+          "SELECT a, b, c, SIMILARITY_DOT_PRODUCT(query_vector_value, ?) FROM ks.tbl ORDER BY query_vector_value ANN OF ? LIMIT 1",
+          List.of(TEST_CQL_VECTOR, TEST_CQL_VECTOR)),
+      arguments(
+          new QueryBuilder()
+              .select()
+              .column("a", "b", "c")
+              .similarityFunction(VECTOR_COLUMN, SimilarityFunction.EUCLIDEAN)
+              .from("ks", "tbl")
+              .limit(1)
+              .vsearch("query_vector_value", TEST_VECTOR)
+              .build(),
+          "SELECT a, b, c, SIMILARITY_EUCLIDEAN(query_vector_value, ?) FROM ks.tbl ORDER BY query_vector_value ANN OF ? LIMIT 1",
+          List.of(TEST_CQL_VECTOR, TEST_CQL_VECTOR)),
+      arguments(
+          new QueryBuilder()
+              .select()
+              .column("a", "b", "c")
+              .from("ks", "tbl")
+              .bm25Sort("query_lexical_value", "monkey bananas")
+              .limit(20)
+              .build(),
+          "SELECT a, b, c FROM ks.tbl ORDER BY query_lexical_value BM25 OF ? LIMIT 20",
+          List.of("monkey bananas")),
+      arguments(
+          new QueryBuilder()
+              .select()
+              .column("a", "b", "c")
+              .from("ks", "tbl")
+              .bm25Sort("query_lexical_value", "tags")
+              .build(),
+          "SELECT a, b, c FROM ks.tbl ORDER BY query_lexical_value BM25 OF ? LIMIT 100",
+          List.of("tags"))
     };
   }
 

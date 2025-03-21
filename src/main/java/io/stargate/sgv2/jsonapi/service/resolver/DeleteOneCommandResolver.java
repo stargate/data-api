@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -131,6 +132,18 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
           false);
     }
 
+    // BM25 search / sort?
+    SortExpression bm25Expr = SortClauseUtil.resolveBM25Search(sortClause);
+    if (bm25Expr != null) {
+      return FindCollectionOperation.bm25Single(
+          commandContext,
+          dbLogicalExpression,
+          DocumentProjector.includeAllProjector(),
+          CollectionReadType.KEY,
+          objectMapper,
+          bm25Expr);
+    }
+
     List<FindCollectionOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
     // If orderBy present
     if (orderBy != null) {
@@ -148,14 +161,14 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
           // documentConfig.defaultPageSize() as limit
           operationsConfig.maxDocumentSortCount(),
           false);
-    } else {
-      return FindCollectionOperation.unsortedSingle(
-          commandContext,
-          dbLogicalExpression,
-          DocumentProjector.includeAllProjector(),
-          CollectionReadType.KEY,
-          objectMapper,
-          false);
     }
+    // Otherwise non-sorted
+    return FindCollectionOperation.unsortedSingle(
+        commandContext,
+        dbLogicalExpression,
+        DocumentProjector.includeAllProjector(),
+        CollectionReadType.KEY,
+        objectMapper,
+        false);
   }
 }

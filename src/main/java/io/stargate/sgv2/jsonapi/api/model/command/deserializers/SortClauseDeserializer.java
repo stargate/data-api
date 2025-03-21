@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,25 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
     int totalFields = sortNode.size();
     List<SortExpression> sortExpressions = new ArrayList<>(sortNode.size());
 
+    // $lexical is only allowed alone: handle first
+    JsonNode lexicalValue = sortNode.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
+    if (lexicalValue != null) {
+      if (sortNode.size() > 1) {
+        throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
+            "if sorting by '%s' no other sort expressions allowed",
+            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
+      }
+      if (!lexicalValue.isTextual()) {
+        throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
+            "if sorting by '%s' value must be STRING, not %s",
+            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, lexicalValue.getNodeType());
+      }
+      // We cannot yet determine if lexical sort supported by the collection, just
+      // construct clause
+      return new SortClause(
+          Collections.singletonList(SortExpression.bm25Search(lexicalValue.textValue())));
+    }
+
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> inner = fieldIter.next();
       final String path = inner.getKey().trim();
@@ -80,7 +100,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
           // is a vector then need to check on table pathway that the sort is correct.
           // NOTE: does not check if there are more than one sort expression, the
           // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
-          // this is also why we do not break the look here
+          // this is also why we do not break the loop here
           sortExpressions.add(
               SortExpression.tableVectorSort(
                   path, arrayNodeToVector((ArrayNode) inner.getValue())));
