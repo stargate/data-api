@@ -4,6 +4,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -18,7 +19,7 @@ import java.util.UUID;
  * @param <SchemaT> The type of the schema object that the task works on
  */
 public interface Task<SchemaT extends SchemaObject>
-    extends Comparable<Task<SchemaT>>, WithWarnings.WarningsSink {
+    extends Comparable<Task<SchemaT>>, WithWarnings.WarningsSink, Recordable {
 
   enum TaskStatus {
     /** Initial state, the task is not configured and will not run. */
@@ -126,12 +127,13 @@ public interface Task<SchemaT extends SchemaObject>
    * interface: the task may add a failure during processing, or other classes may add one before
    * calling execute.
    *
-   * @param throwable An error that happened when trying to process the attempt, ok to pass <code>
-   *     null</code> it will be ignored. If a non-null failure has already been added this call will
-   *     be ignored.
+   * @param runtimeException An error that happened when trying to process the attempt, ok to pass
+   *     <code>
+   *                         null</code> it will be ignored. If a non-null failure has already been
+   *     added this call will be ignored.
    * @return This task
    */
-  Task<SchemaT> maybeAddFailure(Throwable throwable);
+  Task<SchemaT> maybeAddFailure(Throwable runtimeException);
 
   /**
    * The <b>first</b> error that happened when trying to process the task.
@@ -140,6 +142,17 @@ public interface Task<SchemaT extends SchemaObject>
    * run.
    */
   Optional<Throwable> failure();
+
+  /** Helper method to build a string with the position and taskId, used in logging. */
+  default String taskDesc() {
+
+    return String.format(
+        "class=%s, position=%d, taskId=%s, status=%s",
+        getClass().getSimpleName().isBlank() ? getClass().getName() : getClass().getSimpleName(),
+        position(),
+        taskId(),
+        status());
+  }
 
   /**
    * Compares tasks based on their {@link #position()}, lower values are first.

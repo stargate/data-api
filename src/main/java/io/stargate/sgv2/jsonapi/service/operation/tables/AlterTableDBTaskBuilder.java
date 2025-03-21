@@ -10,7 +10,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /** Builder for a {@link AlterTableDBTask}. */
-public class AlterTableDBTaskBuilder extends TaskBuilder<AlterTableDBTask, TableSchemaObject> {
+public class AlterTableDBTaskBuilder
+    extends TaskBuilder<AlterTableDBTask, TableSchemaObject, AlterTableDBTaskBuilder> {
 
   private TaskRetryPolicy retryPolicy = null;
 

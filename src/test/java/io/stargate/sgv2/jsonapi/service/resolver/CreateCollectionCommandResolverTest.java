@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
 import jakarta.inject.Inject;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +29,14 @@ class CreateCollectionCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject CreateCollectionCommandResolver resolver;
 
-  CommandContext<KeyspaceSchemaObject> commandContext = TestConstants.keyspaceContext();
+  private TestConstants testConstants = new TestConstants();
+
+  CommandContext<KeyspaceSchemaObject> commandContext;
+
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.keyspaceContext();
+  }
 
   @Nested
   class CreateCollectionSuccess {

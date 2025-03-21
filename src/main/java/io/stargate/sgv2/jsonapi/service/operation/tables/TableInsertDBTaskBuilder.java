@@ -1,59 +1,107 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.InsertDBTask;
+import io.stargate.sgv2.jsonapi.service.operation.InsertDBTaskPage;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
-import java.util.Objects;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
+import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Builds a {@link TableInsertDBTask}.
  *
  * <p>Create an instance and then call {@link #build(JsonNode)} for each task you want to create.
  *
- * <p>NOTE: Uses the {@link RowShredder} and {@link WriteableTableRowBuilder} which both check the
- * data is valid, the first that the document does not exceed the limits, and the second that the
- * data is valid for the table.
+ * <p>NOTE: Uses the {@link JsonNamedValueContainerFactory} and {@link WriteableTableRowBuilder}
+ * which both check the data is valid, the first that the document does not exceed the limits, and
+ * the second that the data is valid for the table.
  */
 public class TableInsertDBTaskBuilder
-    extends TaskBuilder<InsertDBTask<TableSchemaObject>, TableSchemaObject> {
+    extends TaskBuilder<
+        InsertDBTask<TableSchemaObject>, TableSchemaObject, TableInsertDBTaskBuilder> {
 
-  private RowShredder rowShredder = null;
+  private static final Logger LOGGER = LoggerFactory.getLogger(TableInsertDBTaskBuilder.class);
 
-  public TableInsertDBTaskBuilder(TableSchemaObject tableSchemaObject) {
-    super(tableSchemaObject);
+  private final CommandContext<TableSchemaObject> commandContext;
+  private JsonNamedValueContainerFactory jsonNamedValueFactory = null;
+  private Boolean ordered = null;
+  private Boolean returnDocumentResponses = null;
+
+  public TableInsertDBTaskBuilder(CommandContext<TableSchemaObject> commandContext) {
+    super(commandContext.schemaObject());
+    this.commandContext = commandContext;
   }
 
-  public TableInsertDBTaskBuilder withRowShredder(RowShredder rowShredder) {
-    this.rowShredder = rowShredder;
+  public TableInsertDBTaskBuilder withOrdered(Boolean ordered) {
+    this.ordered = ordered;
     return this;
   }
 
-  public TableInsertDBTask build(JsonNode jsonNode) {
-    Objects.requireNonNull(jsonNode, "jsonNode cannot be null");
-    Objects.requireNonNull(rowShredder, "rowShredder cannot be null");
+  public TableInsertDBTaskBuilder withReturnDocumentResponses(Boolean returnDocumentResponses) {
+    this.returnDocumentResponses = returnDocumentResponses;
+    return this;
+  }
+
+  public TableInsertDBTaskBuilder withJsonNamedValueFactory(
+      JsonNamedValueContainerFactory jsonNamedValueFactory) {
+    this.jsonNamedValueFactory = jsonNamedValueFactory;
+    return this;
+  }
+
+  public TaskGroupAndDeferrables<InsertDBTask<TableSchemaObject>, TableSchemaObject> build(
+      List<JsonNode> jsonNodes) {
+    Objects.requireNonNull(jsonNodes, "jsonNodes cannot be null");
+    Objects.requireNonNull(jsonNamedValueFactory, "jsonNamedValueFactory cannot be null");
+    Objects.requireNonNull(ordered, "ordered cannot be null");
+    Objects.requireNonNull(returnDocumentResponses, "returnDocumentResponses cannot be null");
+
+    List<JsonNamedValueContainerFactory.ParsedJsonDocument> parsedDocuments =
+        jsonNamedValueFactory.create(jsonNodes);
+
+    commandContext
+        .requestTracing()
+        .maybeTrace("Parsed Insert JSON Documents", Recordable.copyOf(parsedDocuments));
 
     var writeableTableRowBuilder =
-        new WriteableTableRowBuilder(schemaObject, JSONCodecRegistries.DEFAULT_REGISTRY);
+        new WriteableTableRowBuilder(commandContext, JSONCodecRegistries.DEFAULT_REGISTRY);
 
-    WriteableTableRow writeableRow = null;
-    Exception exception = null;
-    try {
-      var jsonContainer = rowShredder.shred(jsonNode);
-      writeableRow = writeableTableRowBuilder.build(jsonContainer);
-    } catch (RuntimeException e) {
-      exception = e;
+    var tasksAndDeferrables =
+        new TaskGroupAndDeferrables<>(
+            new TaskGroup<>(ordered),
+            InsertDBTaskPage.accumulator(commandContext)
+                .returnDocumentResponses(returnDocumentResponses),
+            new ArrayList<>());
+
+    for (var parsedDocument : parsedDocuments) {
+
+      WriteableTableRow writeableRow = null;
+      Exception exception = null;
+      // build the named values can result in errors like unknown columns or codec errors
+      try {
+        writeableRow = writeableTableRowBuilder.build(parsedDocument.namedValues());
+      } catch (RuntimeException e) {
+        exception = e;
+      }
+
+      var rowId = writeableRow == null ? null : writeableRow.rowId();
+      var task =
+          new TableInsertDBTask(
+              nextPosition(), schemaObject, getExceptionHandlerFactory(), rowId, writeableRow);
+      // ok to always add the failure, if it is null it will be ignored
+      task.maybeAddFailure(exception);
+
+      tasksAndDeferrables.taskGroup().add(task);
+      if (writeableRow != null) {
+        tasksAndDeferrables.deferrables().add(writeableRow);
+      }
     }
-
-    var rowId = writeableRow == null ? null : writeableRow.rowId();
-    var task =
-        new TableInsertDBTask(
-            nextPosition(), schemaObject, getExceptionHandlerFactory(), rowId, writeableRow);
-    // ok to always add the failure, if it is null it will be ignored
-    task.maybeAddFailure(exception);
-    return task;
+    return tasksAndDeferrables;
   }
 }

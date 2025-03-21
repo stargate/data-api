@@ -5,6 +5,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.core.servererrors.QueryExecutionException;
 import com.datastax.oss.driver.api.core.servererrors.TruncateException;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -37,13 +38,14 @@ public abstract class SchemaDBTask<SchemaT extends SchemaObject> extends DBTask<
 
   /** {@inheritDoc} */
   @Override
-  protected AsyncResultSetSupplier buildDBResultSupplier(CommandQueryExecutor queryExecutor) {
+  protected AsyncResultSetSupplier buildDBResultSupplier(
+      CommandContext<SchemaT> commandContext, CommandQueryExecutor queryExecutor) {
 
     var statement = buildStatement();
 
     logStatement(LOGGER, "buildResultSupplier()", statement);
     return new AsyncResultSetSupplier(
-        statement, () -> queryExecutor.executeCreateSchema(statement));
+        commandContext, this, statement, () -> queryExecutor.executeCreateSchema(statement));
   }
 
   // =================================================================================================

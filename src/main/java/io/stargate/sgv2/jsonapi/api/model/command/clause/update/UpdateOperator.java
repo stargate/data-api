@@ -94,26 +94,26 @@ public enum UpdateOperator {
 
   PULL_ALL("$pullAll");
 
-  private String operator;
+  private String apiName;
 
-  UpdateOperator(String operator) {
-    this.operator = operator;
+  UpdateOperator(String apiName) {
+    this.apiName = apiName;
   }
 
-  public String operator() {
-    return operator;
+  public String apiName() {
+    return apiName;
   }
 
   public UpdateOperation resolveOperation(ObjectNode arguments) {
     throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION.toApiException(
-        "Unsupported update operator '%s'", operator);
+        "Unsupported update operator '%s'", apiName);
   }
 
   private static Map<String, UpdateOperator> operatorMap = new HashMap<>();
 
   static {
     for (UpdateOperator updateOperator : UpdateOperator.values()) {
-      operatorMap.put(updateOperator.operator, updateOperator);
+      operatorMap.put(updateOperator.apiName, updateOperator);
     }
   }
 

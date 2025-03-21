@@ -4,7 +4,9 @@ import io.smallrye.mutiny.Multi;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 
 /**
- * Provides a base implementation for accumulating {@link OperationAttempt}s that the {@link
+ * TODO: aaron 19 march 2025 - remove OperationAttempt and related code once Tasks are solid
+ *
+ * <p>Provides a base implementation for accumulating {@link OperationAttempt}s that the {@link
  * GenericOperation} calls when using hte {@link Multi#collect()} method.
  *
  * <p>This is here so the {@link GenericOperation} has a generic way to accumulate the attempts that

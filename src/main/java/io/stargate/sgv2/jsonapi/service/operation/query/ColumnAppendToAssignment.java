@@ -2,26 +2,26 @@ package io.stargate.sgv2.jsonapi.service.operation.query;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdatePushResolver;
-import java.util.function.BiFunction;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
+import java.util.List;
 
 /**
- * Converts a column append operation to an assignment.
+ * CQL Column assignment that appends the value to a list or set CQL type.
  *
- * <p>This is a {@link BiFunction} that takes an {@link OngoingAssignment} and a {@link
- * CqlIdentifier} and returns an {@link UpdateWithAssignments} that represents to append of the
- * column value.
- *
- * <p>Currently resolved from by API operator $push, see {@link TableUpdatePushResolver}.
+ * <p>Currently resolved from API operator $push, see {@link TableUpdatePushResolver}.
  */
-public class ColumnAppendToAssignment
-    implements BiFunction<OngoingAssignment, CqlIdentifier, UpdateWithAssignments> {
+public class ColumnAppendToAssignment extends ColumnAssignment {
+
+  public ColumnAppendToAssignment(CqlNamedValue namedValue) {
+    super(namedValue);
+  }
 
   @Override
-  public UpdateWithAssignments apply(OngoingAssignment ongoingAssignment, CqlIdentifier column) {
-    return ongoingAssignment.append(column, bindMarker());
+  public UpdateWithAssignments apply(OngoingAssignment ongoingAssignment, List<Object> objects) {
+    addPositionalValues(objects);
+    return ongoingAssignment.append(namedValue.name(), bindMarker());
   }
 }

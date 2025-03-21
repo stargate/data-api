@@ -89,14 +89,16 @@ public record CollectionRerankingConfig(
   public static CollectionRerankingConfig fromJson(
       JsonNode rerankingJsonNode, ObjectMapper objectMapper) {
     boolean enabled =
-        rerankingJsonNode.path(RerankingConstants.RerankingColumn.ENABLED).asBoolean(false);
+        rerankingJsonNode
+            .path(RerankingConstants.CollectionRerankingOptions.ENABLED)
+            .asBoolean(false);
 
     if (!enabled) {
       return new CollectionRerankingConfig(enabled, null);
     }
 
     JsonNode rerankingServiceNode =
-        rerankingJsonNode.get(RerankingConstants.RerankingColumn.SERVICE);
+        rerankingJsonNode.get(RerankingConstants.CollectionRerankingOptions.SERVICE);
 
     // provider, modelName, must exist
     // TODO: WHAT HAPPENS IF THEY DONT ? JSON props on VectorizeConfig say model is not
