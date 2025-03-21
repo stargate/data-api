@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import jakarta.validation.Valid;
@@ -30,9 +31,11 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public record FindAndRerankCommand(
     @Valid @JsonProperty("filter") FilterSpec filterSpec,
     @JsonProperty("projection") JsonNode projectionDefinition,
-    @Valid @JsonProperty("sort") SortClause sortClause,
+    @Valid @JsonProperty("sort") FindAndRerankSort sortClause,
     @Valid @Nullable Options options)
-    implements ReadCommand, Filterable, Projectable, Windowable, VectorSortable {
+    implements ReadCommand, Filterable, Projectable, Windowable {
+
+  // NOTE: is not VectorSortable because it has its own sort clause.
 
   /** {@inheritDoc} */
   @Override
@@ -45,7 +48,6 @@ public record FindAndRerankCommand(
     return options() == null ? Optional.empty() : Optional.of(options().limit());
   }
 
-  @Override
   public Optional<Boolean> includeSortVector() {
     return options() == null ? Optional.empty() : Optional.of(options().includeSortVector);
   }

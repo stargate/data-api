@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingDeferredAction;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
@@ -13,11 +15,13 @@ public class DeferredVectorize implements Deferrable, Deferred {
 
   private float[] vector = null;
   private RuntimeException exception;
+  private final SortClause sortClause;
 
   private final EmbeddingDeferredAction deferredAction;
 
+  // HACK: AARON: Passing in the sort clause here is a hack to make it work quickly
   public DeferredVectorize(
-      String vectorizeText, int dimension, VectorizeDefinition vectorizeDefinition) {
+      String vectorizeText, int dimension, VectorizeDefinition vectorizeDefinition, SortClause sortClause) {
 
     this.deferredAction =
         new EmbeddingDeferredAction(
@@ -26,6 +30,7 @@ public class DeferredVectorize implements Deferrable, Deferred {
             vectorizeDefinition,
             this::consumeEmbeddingSuccess,
             this::consumeEmbeddingFailure);
+    this.sortClause = sortClause;
   }
 
   public float[] getVector() {
@@ -41,6 +46,9 @@ public class DeferredVectorize implements Deferrable, Deferred {
   private void consumeEmbeddingSuccess(float[] vector) {
     isComplete = maybeCompleted(isComplete, "consumeEmbeddingSuccess()");
     this.vector = vector;
+
+    sortClause.sortExpressions().clear();
+    sortClause.sortExpressions().add(SortExpression.vsearch(vector));
   }
 
   private void consumeEmbeddingFailure(RuntimeException exception) {

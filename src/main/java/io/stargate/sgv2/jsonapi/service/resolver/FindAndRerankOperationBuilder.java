@@ -158,7 +158,7 @@ class FindAndRerankOperationBuilder {
             commandContext.schemaObject(),
             TaskRetryPolicy.NO_RETRY,
             rerankingProvider,
-            hybridQuery(),
+            rerankQuery(),
             VECTOR_EMBEDDING_TEXT_FIELD,
             command.buildProjector(),
             deferredCommandResults,
@@ -205,7 +205,7 @@ class FindAndRerankOperationBuilder {
 
     // The BM25 read
     // TODO: get the BM 25 sort from the findAndReRank command
-    var bm25SortTerm = "cows milk cheese";
+    var bm25SortTerm = command.sortClause().lexicalSort();
     var bm25SortClause =
         new SortClause(List.of(new SortExpression("$lexical", true, null, bm25SortTerm)));
     var bm25ReadCommand =
@@ -226,27 +226,31 @@ class FindAndRerankOperationBuilder {
 
     // The Vector read
     // TODO: get the vectorize sort term from the findAndReRank command
-    var vectorizeText = "I like cheese";
+    var vectorizeText = command.sortClause().vectorizeSort();
     VectorColumnDefinition vectorDef =
         commandContext
             .schemaObject()
             .vectorConfig()
             .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
             .orElseThrow();
+
+    // pass the vector sort through so it will be updated when we get the vector
+    var vectorSort = new SortClause(new ArrayList<>());
     var deferredVectorize =
         new DeferredVectorize(
-            vectorizeText, vectorDef.vectorSize(), vectorDef.vectorizeDefinition());
-    // The intermedia task will set the sort when we give it the deferred vectorize
+            vectorizeText, vectorDef.vectorSize(), vectorDef.vectorizeDefinition(), vectorSort);
+
+    // The intermediate task will set the sort when we give it the deferred vectorize
     var vectorReadCommand =
         new FindCommand(
             command.filterSpec(),
             INCLUDE_ALL_PROJECTION,
-            new SortClause(new ArrayList<>()), // TODO: VECTOR SORT !
+            vectorSort,
             findCommandOptions);
 
     var vectorIntermediateReadTask =
         new IntermediateCollectionReadTask(
-            0,
+            1,
             commandContext.schemaObject(),
             TaskRetryPolicy.NO_RETRY,
             findCommandResolver,
@@ -264,13 +268,12 @@ class FindAndRerankOperationBuilder {
     return new TaskGroupAndDeferrables<>(taskGroup, null, List.of(deferredVectorize));
   }
 
-  private String hybridQuery() {
+  private String rerankQuery() {
 
-    for (var sortExpression : command.sortClause().sortExpressions()) {
-      if (sortExpression.path().equals(DocumentConstants.Fields.HYBRID_FIELD)) {
-        return sortExpression.vectorize();
-      }
+    var query = command.sortClause().vectorizeSort();
+    if (query == null || query.isBlank()) {
+      throw new IllegalArgumentException(" rerankQuery() - XXX TODO - Better error message");
     }
-    throw new IllegalArgumentException("XXX TODO - Better error message");
+    return query;
   }
 }
