@@ -6,6 +6,7 @@ import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.RerankingResponseErrorMessageMapper;
@@ -101,9 +102,8 @@ public class NvidiaRerankingProvider extends RerankingProvider {
       // Get the whole response body
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
-      logger.info(
-          String.format(
-              "Error response from reranking provider '%s': %s", providerId, rootNode.toString()));
+      logger.error(
+          "Error response from reranking provider '{}': {}", providerId, rootNode.toString());
       JsonNode messageNode = rootNode.path("message");
       // Return the text of the "message" node, or the whole response body if it is missing
       return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
@@ -113,6 +113,10 @@ public class NvidiaRerankingProvider extends RerankingProvider {
   /** reranking request to the Nvidia Reranking Service */
   private record RerankingRequest(
       String model, TextWrapper query, List<TextWrapper> passages, String truncate) {
+    /**
+     * query and passage string needs to be wrapped in with text key for request to the Nvidia
+     * Reranking Service. E.G. { "text": "which way should i go?" }
+     */
     private record TextWrapper(String text) {}
   }
 
@@ -144,7 +148,9 @@ public class NvidiaRerankingProvider extends RerankingProvider {
 
     Uni<RerankingResponse> response =
         applyRetry(
-            nvidiaRerankingClient.rerank("Bearer " + rerankingCredentials.apiKey().get(), request));
+            nvidiaRerankingClient.rerank(
+                HttpConstants.BEARER_PREFIX_FOR_API_KEY + resolveRerankingKey(rerankingCredentials),
+                request));
 
     return response
         .onItem()
@@ -157,5 +163,22 @@ public class NvidiaRerankingProvider extends RerankingProvider {
               Usage usage = new Usage(resp.usage().prompt_tokens(), resp.usage().total_tokens());
               return RerankingBatchResponse.of(batchId, ranks, usage);
             });
+  }
+
+  /**
+   * For Astra self-hosted Nvidia reranking in the GPU plane, it requires the AstraCS token to
+   * access. So Data API in Astra will resolve the AstraCS token from the request header. For Data
+   * API in non-astra environment, since the token is also used for backend authentication, so the
+   * user needs to pass the reranking API key in the request header 'x-reranking-api-key'.
+   */
+  private String resolveRerankingKey(RerankingCredentials rerankingCredentials) {
+    if (rerankingCredentials.token().startsWith("AstraCS")) {
+      return rerankingCredentials.token();
+    }
+    if (rerankingCredentials.apiKey().isEmpty()) {
+      throw ErrorCodeV1.RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
+          "In order to reranking, please add the reranking API key in the request header 'x-reranking-api-key' for non-astra environment.");
+    }
+    return rerankingCredentials.apiKey().get();
   }
 }

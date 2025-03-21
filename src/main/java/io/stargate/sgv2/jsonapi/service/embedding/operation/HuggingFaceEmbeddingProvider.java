@@ -5,6 +5,7 @@ import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
@@ -77,9 +78,8 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
       // Get the whole response body
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
-      logger.info(
-          String.format(
-              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
+      logger.error(
+          "Error response from embedding provider '{}': {}", providerId, rootNode.toString());
       // Extract the "error" node
       JsonNode errorNode = rootNode.path("error");
       // Return the text of the "message" node, or the whole response body if it is missing
@@ -102,7 +102,9 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
 
     return applyRetry(
             huggingFaceEmbeddingProviderClient.embed(
-                "Bearer " + embeddingCredentials.apiKey().get(), modelName, request))
+                HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get(),
+                modelName,
+                request))
         .onItem()
         .transform(
             resp -> {
