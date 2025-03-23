@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
 
+import static io.stargate.sgv2.jsonapi.util.JsonUtil.arrayNodeToVector;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -157,23 +159,6 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         // TODO: aaron 17-oct-2024 - this break seems unneeded as above it checks if there is only 1
         // field, leaving for now
         break;
-      } else if (DocumentConstants.Fields.HYBRID_FIELD.equals(path)) {
-        // Hybrid search can't be used with other sort clause
-        if (totalFields > 1) {
-          throw new IllegalArgumentException("XXX TODO - add error message");
-        }
-        if (!inner.getValue().isTextual()) {
-          throw new IllegalArgumentException("XXX TODO - add error message");
-        }
-
-        String hybridQuery = inner.getValue().textValue();
-        if (hybridQuery.isBlank()) {
-          throw new IllegalArgumentException("XXX TODO - add error message");
-        }
-        SortExpression exp = new SortExpression(path, false, null, hybridQuery);
-        sortExpressions.clear();
-        sortExpressions.add(exp);
-        break;
       } else if (inner.getValue().isArray()) {
         // TODO: HACK: quick support for tables, if the value is an array we will assume the column
         // is a vector then need to check on table pathway that the sort is correct.
@@ -206,27 +191,6 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       }
     }
     return new SortClause(sortExpressions);
-  }
-
-  /**
-   * TODO: this almost duplicates code in WriteableShreddedDocument.shredVector() but that does not
-   * check the array elements, we MUST stop duplicating code like this
-   */
-  private static float[] arrayNodeToVector(ArrayNode arrayNode) {
-
-    float[] arrayVals = new float[arrayNode.size()];
-    if (arrayNode.isEmpty()) {
-      throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
-    }
-
-    for (int i = 0; i < arrayNode.size(); i++) {
-      JsonNode element = arrayNode.get(i);
-      if (!element.isNumber()) {
-        throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
-      }
-      arrayVals[i] = element.floatValue();
-    }
-    return arrayVals;
   }
 
   private String validateSortClausePath(String path) {

@@ -1,16 +1,21 @@
 package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
+import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
+
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.ResponseData;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,10 +97,15 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     commandContext
         .requestTracing()
         .maybeTrace(
-            "De-duplicated %s documents from inner reads to %s documents for reranking"
-                .formatted(dedupResult.totalDocuments(), dedupResult.deduplicatedDocuments.size()));
+            "De-duplicated for reranking, reads=%s, total documents=%s, dropped documents=%s, deduplicated documents=%s"
+                .formatted(
+                    dedupResult.totalReads(),
+                    dedupResult.totalDocuments(),
+                    dedupResult.droppedDocuments(),
+                    dedupResult.deduplicatedDocuments.size()));
 
     return new RerankingResultSupplier(
+        commandContext.requestTracing(),
         rerankingProvider,
         commandContext.requestContext().getRerankingCredentials(),
         query,
@@ -118,7 +128,11 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
   @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {
-    return super.recordTo(dataRecorder);
+    return super.recordTo(dataRecorder)
+        .append("rerankingProvider", rerankingProvider)
+        .append("query", query)
+        .append("passageField", passageField)
+        .append("limit", limit);
   }
 
   // =================================================================================================
@@ -135,7 +149,10 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   }
 
   private record DeduplicationResult(
-      int totalDocuments, List<ScoredDocument> deduplicatedDocuments) {}
+      int totalReads,
+      int totalDocuments,
+      int droppedDocuments,
+      List<ScoredDocument> deduplicatedDocuments) {}
 
   private DeduplicationResult deduplicateResults(List<CommandResult> rawReadResults) {
 
@@ -148,10 +165,11 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     // Keyed on the _id as a JsonNode
 
     ScoredDocumentMerger merger = null;
+    int totalReads = 0;
 
     for (var commandResult : rawReadResults) {
       var multiDocResponse = (ResponseData.MultiResponseData) commandResult.data();
-
+      totalReads++;
       if (merger == null) {
         merger =
             new ScoredDocumentMerger(
@@ -162,10 +180,12 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
     var deduplicatedDocuments = merger.mergedDocuments();
     LOGGER.debug(
-        "deduplicateResults() - totalDocuments={}, deduplicatedDocuments.size()={}",
+        "deduplicateResults() - seenDocuments={}, droppedDocuments={}, deduplicatedDocuments.size()={}",
         merger.seenDocuments(),
+        merger.droppedDocuments(),
         deduplicatedDocuments.size());
-    return new DeduplicationResult(merger.seenDocuments(), deduplicatedDocuments);
+    return new DeduplicationResult(
+        totalReads, merger.seenDocuments(), merger.droppedDocuments(), deduplicatedDocuments);
   }
 
   /**
@@ -175,6 +195,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
    */
   public static class RerankingResultSupplier implements UniSupplier<RerankingTaskResult> {
 
+    private final RequestTracing requestTracing;
     private final RerankingProvider rerankingProvider;
     private final RerankingCredentials credentials;
     private final String query;
@@ -183,12 +204,14 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     private final int limit;
 
     RerankingResultSupplier(
+        RequestTracing requestTracing,
         RerankingProvider rerankingProvider,
         RerankingCredentials credentials,
         String query,
         String passageField,
         List<ScoredDocument> unrankedDocs,
         int limit) {
+      this.requestTracing = requestTracing;
       this.rerankingProvider = rerankingProvider;
       this.credentials = credentials;
       this.query = query;
@@ -205,12 +228,52 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
         passages.add(scoredDoc.passage());
       }
 
+      if (unrankedDocs.isEmpty()) {
+        // avoid making a call we don't need to
+        requestTracing.maybeTrace(
+            () ->
+                new TraceMessage(
+                    "Reranking call skipped because 0 passages to rerank using %s with model %s"
+                        .formatted(
+                            classSimpleName(rerankingProvider.getClass()),
+                            rerankingProvider.modelName()),
+                    Recordable.copyOf(
+                        Map.of(
+                            "query", query,
+                            "limit", limit,
+                            "passages", passageField))));
+
+        return Uni.createFrom()
+            .item(
+                RerankingTaskResult.create(
+                    requestTracing,
+                    rerankingProvider,
+                    new RerankingProvider.RerankingResponse(List.of()),
+                    unrankedDocs,
+                    limit));
+      }
+
+      requestTracing.maybeTrace(
+          () ->
+              new TraceMessage(
+                  "Reranking %s passages using %s with model %s"
+                      .formatted(
+                          unrankedDocs.size(),
+                          classSimpleName(rerankingProvider.getClass()),
+                          rerankingProvider.modelName()),
+                  Recordable.copyOf(
+                      Map.of(
+                          "query", query,
+                          "limit", limit,
+                          "passages", passageField))));
+
       return rerankingProvider
           .rerank(query, passages, credentials)
           .onItem()
           .transform(
               rerankingResponse ->
-                  RerankingTaskResult.create(rerankingResponse, unrankedDocs, limit));
+                  RerankingTaskResult.create(
+                      requestTracing, rerankingProvider, rerankingResponse, unrankedDocs, limit));
     }
   }
 
@@ -230,9 +293,21 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
     /** */
     static RerankingTaskResult create(
+        RequestTracing requestTracing,
+        RerankingProvider rerankingProvider,
         RerankingProvider.RerankingResponse rerankingResponse,
         List<ScoredDocument> unrankedDocuments,
         int limit) {
+
+      requestTracing.maybeTrace(
+          () ->
+              new TraceMessage(
+                  "Processing reranking response with %s scores using %s with model %s"
+                      .formatted(
+                          rerankingResponse.ranks().size(),
+                          classSimpleName(rerankingProvider.getClass()),
+                          rerankingProvider.modelName()),
+                  Recordable.copyOf(Map.of("scores", rerankingResponse.ranks()))));
 
       // in a factory to avoid too much work in a ctor
       var ranks = rerankingResponse.ranks();

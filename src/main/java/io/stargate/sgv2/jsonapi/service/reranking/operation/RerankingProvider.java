@@ -30,6 +30,10 @@ public abstract class RerankingProvider {
     this.requestProperties = requestProperties;
   }
 
+  public String modelName() {
+    return modelName;
+  }
+
   /**
    * Gather the results from all batch reranking calls, adjust the indices, so they refer to the
    * original passages list, and return a final RerankingResponse as the original order of the

@@ -65,8 +65,6 @@ public class IntermediateCollectionReadTask
   protected IntermediateReadResultSupplier buildResultSupplier(
       CommandContext<CollectionSchemaObject> commandContext) {
 
-    LOGGER.warn("XXX buildResultSupplier() called ");
-
     // If we have a deferred vectroize, we should use it to update the sort clause on the find
     // command
     if (deferredVectorize != null) {
@@ -104,7 +102,11 @@ public class IntermediateCollectionReadTask
 
   @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {
-    return super.recordTo(dataRecorder);
+    return super.recordTo(dataRecorder)
+        .append("deferredVectorize isNull", deferredVectorize == null)
+        .append(
+            "sortClause.sortExpression.paths",
+            findCommand.sortClause().sortExpressions().stream().map(SortExpression::path).toList());
   }
 
   // =================================================================================================
@@ -126,7 +128,6 @@ public class IntermediateCollectionReadTask
 
     @Override
     public Uni<IntermediateReadResults> get() {
-      LOGGER.warn("XXX IntermediateReadResultSupplier.get called ");
       return opResultSupplier
           .get()
           .onItem()

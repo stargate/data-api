@@ -6,15 +6,17 @@ import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class ScoredDocumentMerger {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(ScoredDocumentMerger.class);
+
   private final Map<JsonNode, ScoredDocument> mergedDocuments;
   private int seenDocumentsCount = 0;
+  private int droppedDocumentsCount = 0;
   private final String passageField;
   private final DocumentProjector userProjection;
 
@@ -29,11 +31,17 @@ class ScoredDocumentMerger {
     return seenDocumentsCount;
   }
 
+  int droppedDocuments() {
+    return droppedDocumentsCount;
+  }
+
   List<ScoredDocument> mergedDocuments() {
     return new ArrayList<>(mergedDocuments.values());
   }
 
   void merge(JsonNode document) {
+
+    seenDocumentsCount++;
 
     var thisDocScore =
         switch (document.get(DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD)) {
@@ -57,12 +65,26 @@ class ScoredDocumentMerger {
 
     var passage =
         switch (document.get(passageField)) {
+          case null -> {
+            // undefined in the document, default to empty string for passage
+            yield null;
+          }
           case TextNode textNode -> textNode.textValue();
+          case NullNode ignored -> {
+            // explicit {$vectorize : null} treat same as undefined, empty passage to rerank on
+            yield null;
+          }
           default ->
               throw new IllegalStateException(
                   "Passage field %s not a text node in document _id=%s"
                       .formatted(passageField, documentId));
         };
+
+    LOGGER.debug("XXX merge() ID {} passage '{}'", documentId, Objects.toString(passage));
+    if (passage == null || passage.isBlank()) {
+      droppedDocumentsCount++;
+      return;
+    }
 
     // We ran a projection for the inner reads that was a combination of what the user asked for,
     // and
@@ -76,7 +98,6 @@ class ScoredDocumentMerger {
 
   private void mergeScoredDocument(ScoredDocument scoredDocument) {
 
-    seenDocumentsCount++;
     var prevScoredDoc = mergedDocuments.putIfAbsent(scoredDocument.id(), scoredDocument);
 
     if (prevScoredDoc != null) {

@@ -7,7 +7,8 @@ import com.fasterxml.uuid.NoArgGenerator;
 import com.google.common.base.Stopwatch;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
-import java.text.DateFormat;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -23,7 +24,8 @@ import java.util.concurrent.TimeUnit;
 public class TraceSession implements Recordable {
 
   private static final NoArgGenerator UUID_V7_GENERATOR = Generators.timeBasedEpochGenerator();
-  private static final DateFormat DATE_FORMAT = DateFormat.getDateInstance();
+  private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_INSTANT;
+
   private static final TextNode DATA_OMITTED =
       new TextNode(
           "Data Omitted - for full data use header: %s=true"
@@ -33,7 +35,7 @@ public class TraceSession implements Recordable {
   private final String tenantId;
 
   private final Stopwatch watch;
-  private final Date startedAt;
+  private final Instant startedAt;
   private final List<TraceEvent> events = new ArrayList<>();
 
   private final boolean includeData;
@@ -44,7 +46,7 @@ public class TraceSession implements Recordable {
     this.includeData = includeData;
 
     watch = Stopwatch.createStarted();
-    startedAt = new Date();
+    startedAt = Instant.now();
   }
 
   /**
@@ -79,7 +81,7 @@ public class TraceSession implements Recordable {
     var event =
         new TraceEvent(
             UUID_V7_GENERATOR.generate(),
-            new Date(),
+            Instant.now(),
             elapsedMicroseconds(),
             traceMessage.message(),
             includeData ? traceMessage.dataOrRecordable() : DATA_OMITTED);
@@ -96,7 +98,7 @@ public class TraceSession implements Recordable {
       return dataRecorder
           .append("requestId", requestId)
           .append("tenantId", tenantId)
-          .append("startedAt", DATE_FORMAT.format(startedAt))
+          .append("startedAt", ISO_FORMATTER.format(startedAt))
           .append("durationMicroseconds", elapsedMicroseconds())
           .append("events", events);
     }
@@ -107,13 +109,13 @@ public class TraceSession implements Recordable {
    * happened.
    */
   record TraceEvent(
-      UUID eventId, Date timestamp, int elapsedMicroseconds, String message, JsonNode data)
+      UUID eventId, Instant timestamp, int elapsedMicroseconds, String message, JsonNode data)
       implements Recordable {
     @Override
     public DataRecorder recordTo(DataRecorder dataRecorder) {
       return dataRecorder
           .append("eventId", eventId)
-          .append("timestamp", DATE_FORMAT.format(timestamp))
+          .append("timestamp", ISO_FORMATTER.format(timestamp))
           .append("elapsedMicroseconds", elapsedMicroseconds)
           .append("message", message)
           .append("data", data);

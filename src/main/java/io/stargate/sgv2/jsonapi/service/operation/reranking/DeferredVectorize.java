@@ -21,7 +21,10 @@ public class DeferredVectorize implements Deferrable, Deferred {
 
   // HACK: AARON: Passing in the sort clause here is a hack to make it work quickly
   public DeferredVectorize(
-      String vectorizeText, int dimension, VectorizeDefinition vectorizeDefinition, SortClause sortClause) {
+      String vectorizeText,
+      int dimension,
+      VectorizeDefinition vectorizeDefinition,
+      SortClause sortClause) {
 
     this.deferredAction =
         new EmbeddingDeferredAction(

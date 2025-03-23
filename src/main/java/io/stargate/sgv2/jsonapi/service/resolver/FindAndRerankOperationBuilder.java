@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -19,10 +18,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingDeferredAction;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.*;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.CompositeTaskOperationBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroupAndDeferrables;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
@@ -81,25 +77,30 @@ class FindAndRerankOperationBuilder {
 
     // Step 2 - we need to read the data from the collections, we are wrapping the old collections
     // in the
-    // new tasks so we do not change the collectionc ode
+    // new tasks so we do not change the collection code
     var readTasksAndDeferrables = readTasks(rerankTasksAndDeferrables.deferrables());
 
-    // Step 3 - we now need an embedding task, lets get one of those :)
+    // Step 3 - we may need an embedding task, lets get one of those :)
+    var embeddingActions =
+        DeferredAction.filtered(
+            EmbeddingDeferredAction.class,
+            Deferrable.deferred(readTasksAndDeferrables.deferrables()));
     var embeddingTaskGroup =
-        new EmbeddingTaskGroupBuilder<CollectionSchemaObject>()
-            .withCommandContext(commandContext)
-            .withRequestType(EmbeddingProvider.EmbeddingRequestType.SEARCH)
-            .withEmbeddingActions(
-                DeferredAction.filtered(
-                    EmbeddingDeferredAction.class,
-                    Deferrable.deferred(readTasksAndDeferrables.deferrables())))
-            .build();
+        embeddingActions.isEmpty()
+            ? null
+            : new EmbeddingTaskGroupBuilder<CollectionSchemaObject>()
+                .withCommandContext(commandContext)
+                .withRequestType(EmbeddingProvider.EmbeddingRequestType.SEARCH)
+                .withEmbeddingActions(embeddingActions)
+                .build();
 
     // Step 4 - build the composite tasks and wrap them in an operation
     // we had to build from the last to the first steps, now add them in the order we want them to
-    // run
+    // run, we will only have an embedding task if we needed to do a vectorize
     var compositeBuilder = new CompositeTaskOperationBuilder<>(commandContext);
-    compositeBuilder.withIntermediateTasks(embeddingTaskGroup, TaskRetryPolicy.NO_RETRY);
+    if (embeddingTaskGroup != null) {
+      compositeBuilder.withIntermediateTasks(embeddingTaskGroup, TaskRetryPolicy.NO_RETRY);
+    }
     compositeBuilder.withIntermediateTasks(
         readTasksAndDeferrables.taskGroup(), TaskRetryPolicy.NO_RETRY);
 
@@ -159,7 +160,7 @@ class FindAndRerankOperationBuilder {
             TaskRetryPolicy.NO_RETRY,
             rerankingProvider,
             rerankQuery(),
-            VECTOR_EMBEDDING_TEXT_FIELD,
+            rerankOn(),
             command.buildProjector(),
             deferredCommandResults,
             commandLimit);
@@ -183,7 +184,11 @@ class FindAndRerankOperationBuilder {
   private TaskGroupAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject> readTasks(
       List<Deferrable> deferredCommandResults) {
 
-    // these are the actions the read should call when done, to pass the command result into the
+    // we can run these tasks in parallel
+    TaskGroup<IntermediateCollectionReadTask, CollectionSchemaObject> taskGroup =
+        new TaskGroup<>(false);
+
+    // these are the actions the reads should call when done, to pass the command result into the
     // next tasks
     var deferredCommandActions =
         DeferredAction.filtered(
@@ -191,64 +196,79 @@ class FindAndRerankOperationBuilder {
     var deferredBM25ReadAction = deferredCommandActions.get(0);
     var deferredVectorReadAction = deferredCommandActions.get(1);
 
-    // We build a fake FindCommand, the final step for the IntermediateCollectionReadTask will be to
-    // get the vector for the sort if needed
-    var findCommandOptions =
-        new FindCommand.Options(
-            getOrDefault(command.options(), FindAndRerankCommand.Options::limit, 10),
-            0,
-            null,
-            command.options().includeScores(), // pass through, then pull $similarity from the doc
-            command
-                .options()
-                .includeSortVector()); // pass through, then pull from intermediate result
-
     // The BM25 read
-    // TODO: get the BM 25 sort from the findAndReRank command
+    var bm25Read = buildBm25Read(deferredBM25ReadAction);
+    if (bm25Read != null) {
+      taskGroup.add(bm25Read);
+    }
+
+    // always a vector or vectorize read
+    var vectorReadAndDeferrables = buildVectorRead(deferredVectorReadAction);
+    taskGroup.add(vectorReadAndDeferrables.task());
+
+    // No accumulator, this will be wrapped in an intermediate composite task
+    return new TaskGroupAndDeferrables<>(taskGroup, null, vectorReadAndDeferrables.deferrables());
+  }
+
+  private IntermediateCollectionReadTask buildBm25Read(DeferredCommandResultAction deferredAction) {
+
+    if (!isLexicalSort()) {
+      // we can fake it now, the value will be waiting when the rerank command comes to get it
+      deferredAction.setEmptyMultiDocumentResponse();
+      return null;
+    }
+
     var bm25SortTerm = command.sortClause().lexicalSort();
-    var bm25SortClause =
-        new SortClause(List.of(new SortExpression("$lexical", true, null, bm25SortTerm)));
+    var bm25SortClause = new SortClause(List.of(SortExpression.bm25Search(bm25SortTerm)));
     var bm25ReadCommand =
         new FindCommand(
-            command.filterSpec(),
-            INCLUDE_ALL_PROJECTION,
-            new SortClause(new ArrayList<>()), // TODO: LEXICAL SORT !,
-            findCommandOptions);
-    var bm25IntermediateReadTask =
-        new IntermediateCollectionReadTask(
-            0,
-            commandContext.schemaObject(),
-            TaskRetryPolicy.NO_RETRY,
-            findCommandResolver,
-            bm25ReadCommand,
-            null,
-            deferredBM25ReadAction);
+            command.filterSpec(), INCLUDE_ALL_PROJECTION, bm25SortClause, buildFindOptions(false));
 
-    // The Vector read
-    // TODO: get the vectorize sort term from the findAndReRank command
-    var vectorizeText = command.sortClause().vectorizeSort();
-    VectorColumnDefinition vectorDef =
-        commandContext
-            .schemaObject()
-            .vectorConfig()
-            .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
-            .orElseThrow();
+    return new IntermediateCollectionReadTask(
+        0,
+        commandContext.schemaObject(),
+        TaskRetryPolicy.NO_RETRY,
+        findCommandResolver,
+        bm25ReadCommand,
+        null,
+        deferredAction);
+  }
 
-    // pass the vector sort through so it will be updated when we get the vector
-    var vectorSort = new SortClause(new ArrayList<>());
-    var deferredVectorize =
-        new DeferredVectorize(
-            vectorizeText, vectorDef.vectorSize(), vectorDef.vectorizeDefinition(), vectorSort);
+  /** Builder either a vectorize or BYO vector read. */
+  private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject>
+      buildVectorRead(DeferredCommandResultAction deferredAction) {
+
+    // we can sort with either vectorize OR a BYO vector
+    var sortClause = new SortClause(new ArrayList<>());
+    DeferredVectorize deferredVectorize = null;
+
+    if (isVectorizeSort()) {
+
+      VectorColumnDefinition vectorDef =
+          commandContext
+              .schemaObject()
+              .vectorConfig()
+              .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
+              .orElseThrow();
+
+      // pass the vector sort clause through so it will be updated when we get the vector
+      deferredVectorize =
+          new DeferredVectorize(
+              command.sortClause().vectorizeSort(),
+              vectorDef.vectorSize(),
+              vectorDef.vectorizeDefinition(),
+              sortClause);
+    } else if (isVectorSort()) {
+      sortClause.sortExpressions().add(SortExpression.vsearch(command.sortClause().vectorSort()));
+    } else {
+      throw new IllegalArgumentException("buildVectorRead() - XXX TODO - no vector or vectorize");
+    }
 
     // The intermediate task will set the sort when we give it the deferred vectorize
     var vectorReadCommand =
         new FindCommand(
-            command.filterSpec(),
-            INCLUDE_ALL_PROJECTION,
-            vectorSort,
-            findCommandOptions);
-
-    var vectorIntermediateReadTask =
+            command.filterSpec(), INCLUDE_ALL_PROJECTION, sortClause, buildFindOptions(true));
+    var readTask =
         new IntermediateCollectionReadTask(
             1,
             commandContext.schemaObject(),
@@ -256,24 +276,72 @@ class FindAndRerankOperationBuilder {
             findCommandResolver,
             vectorReadCommand,
             deferredVectorize,
-            deferredVectorReadAction);
+            deferredAction);
 
-    // we can run these tasks in parallel
-    TaskGroup<IntermediateCollectionReadTask, CollectionSchemaObject> taskGroup =
-        new TaskGroup<>(false);
-    taskGroup.add(bm25IntermediateReadTask);
-    taskGroup.add(vectorIntermediateReadTask);
+    return deferredVectorize == null
+        ? new TaskAndDeferrables<>(readTask)
+        : new TaskAndDeferrables<>(readTask, deferredVectorize);
+  }
 
-    // No accumulator, this will be wrapped in an intermediate composite task
-    return new TaskGroupAndDeferrables<>(taskGroup, null, List.of(deferredVectorize));
+  private FindCommand.Options buildFindOptions(boolean forVectorRead) {
+
+    var hybridLimits =
+        getOrDefault(
+            command.options(),
+            FindAndRerankCommand.Options::hybridLimits,
+            FindAndRerankCommand.HybridLimits.DEFAULT);
+
+    var findLimit = forVectorRead ? hybridLimits.vectorLimit() : hybridLimits.lexicalLimit();
+
+    return new FindCommand.Options(
+        findLimit,
+        0,
+        null,
+        getOrDefault(command.options(), FindAndRerankCommand.Options::includeScores, false),
+        getOrDefault(command.options(), FindAndRerankCommand.Options::includeSortVector, false));
+  }
+
+  private String rerankOn() {
+
+    var rerankOn = getOrDefault(command.options(), FindAndRerankCommand.Options::rerankOn, "");
+    var isRerankOn = rerankOn != null && !rerankOn.isBlank();
+
+    if (isVectorizeSort()) {
+      // use the vectorize field, unless the user has overridden
+      return isRerankOn ? rerankOn : VECTOR_EMBEDDING_TEXT_FIELD;
+    }
+
+    // user has to provide a field to rererank on
+    if (isRerankOn) {
+      return rerankOn;
+    }
+
+    throw new IllegalArgumentException("XXX rerankOn() - rerankOn required and not specified");
   }
 
   private String rerankQuery() {
 
-    var query = command.sortClause().vectorizeSort();
-    if (query == null || query.isBlank()) {
-      throw new IllegalArgumentException(" rerankQuery() - XXX TODO - Better error message");
+    if (command.sortClause().vectorizeSort() != null) {
+      return command.sortClause().vectorizeSort();
     }
-    return query;
+    var rerankQuery =
+        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankQuery, "");
+    if (rerankQuery != null && !rerankQuery.isBlank()) {
+      return rerankQuery;
+    }
+
+    throw new IllegalArgumentException(("XXX rerankQuery() - no rerank query"));
+  }
+
+  private boolean isLexicalSort() {
+    return command.sortClause().lexicalSort() != null;
+  }
+
+  private boolean isVectorizeSort() {
+    return command.sortClause().vectorizeSort() != null;
+  }
+
+  private boolean isVectorSort() {
+    return command.sortClause().vectorSort() != null;
   }
 }

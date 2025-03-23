@@ -184,15 +184,17 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
       commandContext
           .requestTracing()
           .maybeTrace(
-              () ->
-                  new TraceMessage(
-                      "Received %s vectors using %s to vectorize with '%s/%s' for task %s"
-                          .formatted(
-                              providerResponse.embeddings().size(),
-                              embeddingTask.embeddingProvider.getClass().getSimpleName(),
-                              actions.getFirst().groupKey().vectorizeDefinition().provider(),
-                              actions.getFirst().groupKey().vectorizeDefinition().modelName(),
-                              embeddingTask.taskDesc())));
+              () -> {
+                var msg =
+                    "Received %s vectors using %s to vectorize with '%s/%s' for task %s"
+                        .formatted(
+                            providerResponse.embeddings().size(),
+                            embeddingTask.embeddingProvider.getClass().getSimpleName(),
+                            actions.getFirst().groupKey().vectorizeDefinition().provider(),
+                            actions.getFirst().groupKey().vectorizeDefinition().modelName(),
+                            embeddingTask.taskDesc());
+                return new TraceMessage(msg, Recordable.copyOf(providerResponse.embeddings()));
+              });
 
       // defensive to make sure the order cannot change
       var vectors = List.copyOf(providerResponse.embeddings());
