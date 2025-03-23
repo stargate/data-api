@@ -20,12 +20,10 @@ import java.util.*;
  * {@link StdDeserializer} for the {@link FindAndRerankSort}.
  *
  * <p>Note: There is no validation, this is handled when resolving the command to an operation.
- *
- * <p>See {@link #deserialise(ObjectNode)} for examples of the JSON we support.
  */
 public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAndRerankSort> {
 
-  private static final String ERROR_CONTEXT = "sort clause";
+  private static final String ERROR_CONTEXT = "`sort` clause";
 
   // the only field we accept at top level is $hybrid
   // can be string or object
@@ -47,7 +45,6 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           List.of(),
           List.of(LEXICAL_CONTENT_FIELD, VECTOR_EMBEDDING_TEXT_FIELD, VECTOR_EMBEDDING_FIELD));
 
-  /** No-arg constructor explicitly needed. */
   public FindAndRerankSortClauseDeserializer() {
     super(FindAndRerankSort.class);
   }
@@ -61,7 +58,9 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       case NullNode ignored -> // this is {"sort" : null}
           FindAndRerankSort.NO_ARG_SORT;
       case ObjectNode objectNode -> deserialise(jsonParser, objectNode);
-      default -> throw new JsonMappingException(jsonParser, "sort clause must be an object");
+      default ->
+          throw new JsonMappingException(
+              jsonParser, "sort clause must be an object", jsonParser.currentLocation());
     };
   }
 
@@ -84,7 +83,8 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
 
     return switch (hybridMatch.matched().get(HYBRID_FIELD)) {
       case TextNode textNode -> // using the same text for vectorize and for lexical, no vector
-          new FindAndRerankSort(textNode.asText(), textNode.asText(), null);
+          new FindAndRerankSort(
+              normalizedText(textNode.asText()), normalizedText(textNode.asText()), null);
       case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
       case JsonNode node ->
           throw JsonFieldMatcher.errorForWrongType(
@@ -112,7 +112,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           }
           case TextNode textNode -> {
             // { "sort" : { "$hybrid" : { "$vectorize" : "I like cheese",
-            yield normaliseString(textNode.asText().trim());
+            yield normalizedText(textNode.asText().trim());
           }
           case JsonNode node ->
               throw JsonFieldMatcher.errorForWrongType(
@@ -138,7 +138,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           }
           case TextNode textNode -> {
             // { "sort" : { "$hybrid" : { "$lexical" : "cheese",
-            yield normaliseString(textNode.asText().trim());
+            yield normalizedText(textNode.asText().trim());
           }
           case JsonNode node ->
               throw JsonFieldMatcher.errorForWrongType(
@@ -170,7 +170,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
               throw JsonFieldMatcher.errorForWrongType(
                   jsonParser,
                   ERROR_CONTEXT,
-                  LEXICAL_CONTENT_FIELD,
+                  VECTOR_EMBEDDING_FIELD,
                   node,
                   NullNode.class,
                   ArrayNode.class);
@@ -185,7 +185,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
    * @param value Nullable string value from the user.
    * @return null, if the user provided null, or a blank string, otherwise the trimmed value.
    */
-  private static String normaliseString(String value) {
+  private static String normalizedText(String value) {
     return switch (value) {
       case null -> null;
       case String s when s.isBlank() -> null;

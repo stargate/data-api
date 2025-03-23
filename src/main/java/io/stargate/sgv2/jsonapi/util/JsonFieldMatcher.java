@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.util;
 
+import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -63,8 +65,10 @@ public record JsonFieldMatcher<T extends JsonNode>(
             .formatted(
                 context,
                 fieldName,
-                String.join(",", Arrays.stream(allowedTypes).map(Class::getSimpleName).toList()),
-                invalidNode.getNodeType()));
+                String.join(", ", Arrays.stream(allowedTypes).map(Class::getSimpleName).toList()),
+                classSimpleName(
+                    invalidNode.getClass())), // the type ENUM is different to the class names above
+        jsonParser.currentLocation());
   }
 
   /**
@@ -200,7 +204,8 @@ public record JsonFieldMatcher<T extends JsonNode>(
             jsonParser,
             "%s contained unexpected fields. Expected fields: %s. Unexpected fields: %s"
                 .formatted(
-                    context, String.join(",", expectedFields), String.join(",", invalidFields())));
+                    context, String.join(", ", expectedFields), String.join(", ", invalidFields())),
+            jsonParser.currentLocation());
       }
 
       if (!wrongType().isEmpty()) {
@@ -209,9 +214,10 @@ public record JsonFieldMatcher<T extends JsonNode>(
             "%s contained fields with the wrong type. Expected fields: %s to all be of type: %s. Wrong type fields: %s"
                 .formatted(
                     context,
-                    String.join(",", expectedFields),
+                    String.join(", ", expectedFields),
                     getClass().getSimpleName(),
-                    String.join(",", wrongType.keySet())));
+                    String.join(", ", wrongType.keySet())),
+            jsonParser.currentLocation());
       }
 
       if (!missingFields.isEmpty()) {
@@ -219,7 +225,8 @@ public record JsonFieldMatcher<T extends JsonNode>(
             jsonParser,
             "%s has missing fields. Expected fields: %s. Missing fields: %s"
                 .formatted(
-                    context, String.join(",", expectedFields), String.join(",", missingFields)));
+                    context, String.join(", ", expectedFields), String.join(", ", missingFields)),
+            jsonParser.currentLocation());
       }
       return this;
     }

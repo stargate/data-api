@@ -1,7 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.util.Map;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
+import java.util.*;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -21,11 +22,39 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     implementation = Map.class,
     example =
         """
-              {"$hybrid" : "Same query for vectorize and bm25 sorting"}
-              {"$hybrid" : {"$vectorize" : "vectorize sort query" , "$lexical": "lexical sort" }}
-              {"$hybrid" : {"$vector" : [1,2,3] , "$lexical": "lexical sort" }}
+              {"$sort" : {"$hybrid" : "Same query for vectorize and bm25 sorting"}}}
+              {"$sort" : {"$hybrid" : {"$vectorize" : "vectorize sort query" , "$lexical": "lexical sort" }}}
+              {"$sort" : {"$hybrid" : {"$vector" : [1,2,3] , "$lexical": "lexical sort" }}}
       """)
-public record FindAndRerankSort(String vectorizeSort, String lexicalSort, float[] vectorSort) {
+public record FindAndRerankSort(String vectorizeSort, String lexicalSort, float[] vectorSort)
+    implements Recordable {
 
   static final FindAndRerankSort NO_ARG_SORT = new FindAndRerankSort(null, null, null);
+
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return dataRecorder
+        .append("vectorizeSort", vectorizeSort)
+        .append("lexicalSort", lexicalSort)
+        .append("vectorSort", Arrays.toString(vectorSort));
+  }
+
+  /**
+   * Override to do a value equality check on the vector
+   *
+   * @param obj the reference object with which to compare.
+   * @return
+   */
+  @Override
+  public boolean equals(Object obj) {
+    return Objects.equals(vectorizeSort, ((FindAndRerankSort) obj).vectorizeSort)
+        && Objects.equals(lexicalSort, ((FindAndRerankSort) obj).lexicalSort)
+        && Arrays.equals(vectorSort, ((FindAndRerankSort) obj).vectorSort);
+  }
+
+  /** Override to do a value equality hash on the vector */
+  @Override
+  public int hashCode() {
+    return Objects.hash(vectorizeSort, lexicalSort, Arrays.hashCode(vectorSort));
+  }
 }
