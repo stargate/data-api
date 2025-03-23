@@ -60,7 +60,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       case ObjectNode objectNode -> deserialise(jsonParser, objectNode);
       default ->
           throw new JsonMappingException(
-              jsonParser, "sort clause must be an object", jsonParser.currentLocation());
+              jsonParser, "sort clause must be an object or null", jsonParser.currentLocation());
     };
   }
 

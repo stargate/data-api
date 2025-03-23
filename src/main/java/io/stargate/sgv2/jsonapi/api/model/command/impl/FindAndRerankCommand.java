@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import java.io.IOException;
@@ -45,32 +46,27 @@ public record FindAndRerankCommand(
     return CommandName.FIND_AND_RERANK;
   }
 
-  //  @Override
-  //  public Optional<Integer> limit() {
-  //    return options() == null ? Optional.empty() : Optional.of(options().limit());
-  //  }
-  //
-  //  public Optional<Boolean> includeSortVector() {
-  //    return options() == null ? Optional.empty() : Optional.of(options().includeSortVector);
-  //  }
-
   public record Options(
       @Positive(message = "limit should be greater than `0`")
           @Schema(
-              description =
-                  "The maximum number of documents to return after the reranking service has ranked them.",
+              description = "The maximum number of documents to return after reranking.",
               type = SchemaType.INTEGER,
               implementation = Integer.class)
           Integer limit,
       /** ---- */
       @Schema(
               description =
-                  "The maximum number of documents to read for the vector and lexical queries that feed into the reranking.")
+                  "The maximum number of documents to read for the vector and lexical queries that feed into the reranking. May be an number or an object with $vector and $lexical fields.",
+              example =
+                  """
+                {"hybridLimits" : 100}
+                {"hybridLimits" : {"$vector" : 100, "$lexical" : 10}}
+                """)
           HybridLimits hybridLimits,
       /** ---- */
       @Schema(
               description =
-                  "Query to pass to the reranking model, defaults to the text used for the $vectorize query, required if $vectorize is not used.",
+                  "Query to pass to the reranking model, defaults to the text used for the $vectorize sort, required if $vectorize is not used.",
               type = SchemaType.STRING)
           String rerankQuery,
       /** ---- */
@@ -99,28 +95,17 @@ public record FindAndRerankCommand(
   public record HybridLimits(
       @JsonProperty(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) int vectorLimit,
       /** ---- */
-      @JsonProperty(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) int lexicalLimit) {
-    public static final HybridLimits DEFAULT = new HybridLimits(100, 100);
+      @JsonProperty(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) int lexicalLimit)
+      implements Recordable {
+    public static final HybridLimits DEFAULT = new HybridLimits(50, 50);
+
+    @Override
+    public DataRecorder recordTo(DataRecorder dataRecorder) {
+      return dataRecorder.append("vectorLimit", vectorLimit).append("lexicalLimit", lexicalLimit);
+    }
   }
 
-  /**
-   * Deserializer for the `hybridLimits` option, the limits for the inner reads.
-   *
-   * <p>The limit can be:
-   *
-   * <pre>
-   *   {
-   *     "options" : {
-   *       // same limit for the vector and lexical reads
-   *       "hybridLimits" : 100
-   *       // different limits for the vector and lexical reads
-   *       "hybridLimits" : {
-   *          "$vector" : 100,
-   *          "$lexical" : 10
-   *     }
-   *   }
-   * </pre>
-   */
+  /** Deserializer for the `hybridLimits` option, the limits for the inner reads. */
   public static class HybridLimitsDeserializer extends StdDeserializer<HybridLimits> {
 
     private static final String ERROR_CONTEXT = "hybridLimits";
@@ -129,7 +114,7 @@ public record FindAndRerankCommand(
     // this is macher for the later
     //
     // {"options": {"hybridLimits" : 100}}
-    // or, both are required
+    // or, both fields are required
     // {"options": {"hybridLimits" : {"$vector" : 100, "$lexical" : 10}}
     private static final JsonFieldMatcher<NumericNode> MATCH_LIMIT_FIELDS =
         new JsonFieldMatcher<>(
@@ -145,7 +130,7 @@ public record FindAndRerankCommand(
         throws IOException, JsonProcessingException {
 
       return switch (deserializationContext.readTree(jsonParser)) {
-        case NumericNode number -> new HybridLimits(number.asInt(), number.asInt());
+        case NumericNode number -> deserialise(jsonParser, number);
         case ObjectNode object -> deserialise(jsonParser, object);
         case JsonNode node ->
             throw new JsonMappingException(
@@ -155,14 +140,36 @@ public record FindAndRerankCommand(
       };
     }
 
+    private HybridLimits deserialise(JsonParser jsonParser, NumericNode limitsNumber)
+        throws JsonMappingException {
+
+      return new HybridLimits(
+          normaliseLimit(jsonParser, limitsNumber, VECTOR_EMBEDDING_FIELD),
+          normaliseLimit(jsonParser, limitsNumber, LEXICAL_CONTENT_FIELD));
+    }
+
     private HybridLimits deserialise(JsonParser jsonParser, ObjectNode limitsObject)
         throws JsonMappingException {
 
       var limitMatch = MATCH_LIMIT_FIELDS.matchAndThrow(limitsObject, jsonParser, ERROR_CONTEXT);
 
       return new HybridLimits(
-          limitMatch.matched().get(VECTOR_EMBEDDING_FIELD).asInt(),
-          limitMatch.matched().get(LEXICAL_CONTENT_FIELD).asInt());
+          normaliseLimit(
+              jsonParser, limitMatch.matched().get(VECTOR_EMBEDDING_FIELD), VECTOR_EMBEDDING_FIELD),
+          normaliseLimit(
+              jsonParser, limitMatch.matched().get(LEXICAL_CONTENT_FIELD), LEXICAL_CONTENT_FIELD));
+    }
+
+    private int normaliseLimit(JsonParser jsonParser, NumericNode limitNode, String fieldName)
+        throws JsonMappingException {
+      int limit = limitNode.asInt();
+
+      if (limit < 0) {
+        throw new JsonMappingException(
+            jsonParser,
+            "hybridLimits must be zero or greater, got %s for %s".formatted(limit, fieldName));
+      }
+      return limit;
     }
   }
 }
