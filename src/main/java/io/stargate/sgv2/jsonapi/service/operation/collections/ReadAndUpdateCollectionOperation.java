@@ -265,14 +265,18 @@ public record ReadAndUpdateCollectionOperation(
 
   private String buildUpdateQuery(boolean vectorEnabled) {
     final boolean lexicalEnabled = commandContext().schemaObject().lexicalConfig().enabled();
-    StringBuilder updateQuery = new StringBuilder(200);
     final SchemaObjectName tableName = commandContext.schemaObject().name();
+    return buildUpdateQuery(tableName.keyspace(), tableName.table(), vectorEnabled, lexicalEnabled);
+  }
 
+  protected static String buildUpdateQuery(
+      String keyspaceName, String collectionName, boolean vectorEnabled, boolean lexicalEnabled) {
+    StringBuilder updateQuery = new StringBuilder(200);
     updateQuery
         .append("UPDATE \"")
-        .append(tableName.keyspace())
+        .append(keyspaceName)
         .append("\".\"")
-        .append(tableName.table())
+        .append(collectionName)
         .append("\" SET ")
         .append(
             """

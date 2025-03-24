@@ -74,43 +74,6 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
   @Inject DataVectorizerService dataVectorizerService;
   private TestConstants testConstants = new TestConstants();
 
-  private static String UPDATE =
-      "UPDATE \"%s\".\"%s\" "
-          + "        SET"
-          + "            tx_id = now(),"
-          + "            exist_keys = ?,"
-          + "            array_size = ?,"
-          + "            array_contains = ?,"
-          + "            query_bool_values = ?,"
-          + "            query_dbl_values = ?,"
-          + "            query_text_values = ?,"
-          + "            query_null_values = ?,"
-          + "            query_timestamp_values = ?,"
-          + "            doc_json  = ?"
-          + "        WHERE "
-          + "            key = ?"
-          + "        IF "
-          + "            tx_id = ?";
-
-  private static String UPDATE_VECTOR =
-      "UPDATE \"%s\".\"%s\" "
-          + "        SET"
-          + "            tx_id = now(),"
-          + "            exist_keys = ?,"
-          + "            array_size = ?,"
-          + "            array_contains = ?,"
-          + "            query_bool_values = ?,"
-          + "            query_dbl_values = ?,"
-          + "            query_text_values = ?,"
-          + "            query_null_values = ?,"
-          + "            query_timestamp_values = ?,"
-          + "            query_vector_value = ?,"
-          + "            doc_json  = ?"
-          + "        WHERE "
-          + "            key = ?"
-          + "        IF "
-          + "            tx_id = ?";
-
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
           TestColumn.keyColumn(), TestColumn.ofUuid("tx_id"), TestColumn.ofVarchar("doc_json"));
@@ -159,7 +122,9 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
   private SimpleStatement nonVectorUpdateStatement(
       WritableShreddedDocument shredDocument, UUID tx_id) {
-    String updateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+    String updateCql =
+        ReadAndUpdateCollectionOperation.buildUpdateQuery(
+            KEYSPACE_NAME, COLLECTION_NAME, false, false);
     return SimpleStatement.newInstance(
         updateCql,
         CQLBindValues.getSetValue(shredDocument.existKeys()),
@@ -177,7 +142,9 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
   private SimpleStatement vectorUpdateStatement(
       WritableShreddedDocument shredDocument, UUID tx_id) {
-    String updateCql = UPDATE_VECTOR.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+    String updateCql =
+        ReadAndUpdateCollectionOperation.buildUpdateQuery(
+            KEYSPACE_NAME, COLLECTION_NAME, true, false);
     return SimpleStatement.newInstance(
         updateCql,
         CQLBindValues.getSetValue(shredDocument.existKeys()),
