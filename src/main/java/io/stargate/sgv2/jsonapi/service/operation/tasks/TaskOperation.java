@@ -111,7 +111,7 @@ public class TaskOperation<TaskT extends Task<SchemaT>, SchemaT extends SchemaOb
               if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(
                     "execute() - all task completed, taskGroup={}",
-                    PrettyPrintable.pprint(taskGroup));
+                    PrettyPrintable.print(taskGroup));
               }
             })
         .onItem()

@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeCreator;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -285,5 +286,22 @@ public class JsonUtil {
       }
     }
     return OptionalInt.empty();
+  }
+
+  public static float[] arrayNodeToVector(ArrayNode arrayNode) {
+
+    float[] arrayVals = new float[arrayNode.size()];
+    if (arrayNode.isEmpty()) {
+      throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+    }
+
+    for (int i = 0; i < arrayNode.size(); i++) {
+      JsonNode element = arrayNode.get(i);
+      if (!element.isNumber()) {
+        throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
+      }
+      arrayVals[i] = element.floatValue();
+    }
+    return arrayVals;
   }
 }

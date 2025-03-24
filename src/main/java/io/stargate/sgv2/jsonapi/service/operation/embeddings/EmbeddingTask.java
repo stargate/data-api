@@ -26,7 +26,7 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
   private static final Logger LOGGER = LoggerFactory.getLogger(EmbeddingTask.class);
 
   private final EmbeddingProvider embeddingProvider;
-  private final List<EmbeddingAction> embeddingActions;
+  private final List<EmbeddingDeferredAction> embeddingActions;
   private final EmbeddingProvider.EmbeddingRequestType requestType;
 
   protected EmbeddingTask(
@@ -34,7 +34,7 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
       SchemaT schemaObject,
       TaskRetryPolicy retryPolicy,
       EmbeddingProvider embeddingProvider,
-      List<EmbeddingAction> embeddingActions,
+      List<EmbeddingDeferredAction> embeddingActions,
       EmbeddingProvider.EmbeddingRequestType requestType) {
     super(position, schemaObject, retryPolicy);
 
@@ -64,7 +64,9 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
   protected EmbeddingTask.EmbeddingResultSupplier buildResultSupplier(
       CommandContext<SchemaT> commandContext) {
 
-    var vectorizeTexts = embeddingActions.stream().map(EmbeddingAction::startEmbedding).toList();
+    var vectorizeTexts =
+        embeddingActions.stream().map(EmbeddingDeferredAction::startEmbedding).toList();
+
     return new EmbeddingResultSupplier(
         this,
         commandContext,
@@ -107,14 +109,14 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
     protected final EmbeddingTask<?> embeddingTask;
     protected final CommandContext<?> commandContext;
     protected final BaseTask.UniSupplier<EmbeddingProvider.Response> supplier;
-    protected final List<EmbeddingAction> actions;
+    protected final List<EmbeddingDeferredAction> actions;
     private final List<String> vectorizeTexts;
 
     EmbeddingResultSupplier(
         EmbeddingTask<?> embeddingTask,
         CommandContext<?> commandContext,
         BaseTask.UniSupplier<EmbeddingProvider.Response> supplier,
-        List<EmbeddingAction> actions,
+        List<EmbeddingDeferredAction> actions,
         List<String> vectorizeTexts) {
       this.embeddingTask = embeddingTask;
       this.commandContext = commandContext;
@@ -129,20 +131,16 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
       commandContext
           .requestTracing()
           .maybeTrace(
-              () -> {
-                var vectorizeDef =
-                    actions.getFirst().groupKey().vectorType().getVectorizeDefinition();
-
-                return new TraceMessage(
-                    "Requesting %s vectors using %s to vectorize with '%s/%s' for task %s"
-                        .formatted(
-                            vectorizeTexts.size(),
-                            embeddingTask.embeddingProvider.getClass().getSimpleName(),
-                            vectorizeDef.provider(),
-                            vectorizeDef.modelName(),
-                            embeddingTask.taskDesc()),
-                    Recordable.copyOf(vectorizeTexts));
-              });
+              () ->
+                  new TraceMessage(
+                      "Requesting %s vectors using %s to vectorize with '%s/%s' for task %s"
+                          .formatted(
+                              vectorizeTexts.size(),
+                              embeddingTask.embeddingProvider.getClass().getSimpleName(),
+                              actions.getFirst().groupKey().vectorizeDefinition().provider(),
+                              actions.getFirst().groupKey().vectorizeDefinition().modelName(),
+                              embeddingTask.taskDesc()),
+                      Recordable.copyOf(vectorizeTexts)));
 
       // The EmbeddingProviders use EmbeddingProviderErrorMapper and turn errors from the providers
       // into Error V1 JsonApiException structure, this will be attached to the task if we let it
@@ -159,45 +157,43 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
 
   /**
    * The result calling the Embedding Provider, this class is responsible for delivering the vectors
-   * to the {@link EmbeddingAction} so they end up in the {@link
+   * to the {@link EmbeddingDeferredAction} so they end up in the {@link
    * io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue}s waiting for them.
    */
   public static class EmbeddingTaskResult {
 
     protected final List<float[]> rawVectors;
-    protected final List<EmbeddingAction> actions;
+    protected final List<EmbeddingDeferredAction> actions;
 
-    private EmbeddingTaskResult(List<float[]> rawVectors, List<EmbeddingAction> actions) {
+    private EmbeddingTaskResult(List<float[]> rawVectors, List<EmbeddingDeferredAction> actions) {
       this.rawVectors = rawVectors;
       this.actions = actions;
     }
 
     /**
      * Create a new {@link EmbeddingTaskResult} which involves passing the vectors returned from the
-     * provider to the {@link EmbeddingAction}s so they can set the values into the deferred {@link
-     * io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue}s.
+     * provider to the {@link EmbeddingDeferredAction}s so they can set the values into the deferred
+     * {@link io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue}s.
      */
     static EmbeddingTaskResult create(
         EmbeddingTask<?> embeddingTask,
         CommandContext<?> commandContext,
         EmbeddingProvider.Response providerResponse,
-        List<EmbeddingAction> actions) {
+        List<EmbeddingDeferredAction> actions) {
 
       commandContext
           .requestTracing()
           .maybeTrace(
               () -> {
-                var vectorizeDef =
-                    actions.getFirst().groupKey().vectorType().getVectorizeDefinition();
-                // TODO: include the vectors in the trace, but trim to 5 like we do with CQL
-                return new TraceMessage(
+                var msg =
                     "Received %s vectors using %s to vectorize with '%s/%s' for task %s"
                         .formatted(
                             providerResponse.embeddings().size(),
                             embeddingTask.embeddingProvider.getClass().getSimpleName(),
-                            vectorizeDef.provider(),
-                            vectorizeDef.modelName(),
-                            embeddingTask.taskDesc()));
+                            actions.getFirst().groupKey().vectorizeDefinition().provider(),
+                            actions.getFirst().groupKey().vectorizeDefinition().modelName(),
+                            embeddingTask.taskDesc());
+                return new TraceMessage(msg, Recordable.copyOf(providerResponse.embeddings()));
               });
 
       // defensive to make sure the order cannot change

@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
@@ -112,6 +113,7 @@ public class TestConstants {
         .withCqlSessionCache(mock(CQLSessionCache.class))
         .withCommandConfig(new CommandConfig())
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
+        .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
         .getBuilder(schema)
         .withEmbeddingProvider(embeddingProvider)
         .withCommandName(commandName)
@@ -135,6 +137,7 @@ public class TestConstants {
         .withCqlSessionCache(mock(CQLSessionCache.class))
         .withCommandConfig(new CommandConfig())
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
+        .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
         .getBuilder(schema)
         .withCommandName(commandName)
         .withRequestContext(new RequestContext(Optional.of("test-tenant")))
@@ -147,6 +150,7 @@ public class TestConstants {
         .withCqlSessionCache(mock(CQLSessionCache.class))
         .withCommandConfig(new CommandConfig())
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
+        .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
         .getBuilder(DATABASE_SCHEMA_OBJECT)
         .withCommandName(TEST_COMMAND_NAME)
         .withRequestContext(new RequestContext(Optional.of("test-tenant")))

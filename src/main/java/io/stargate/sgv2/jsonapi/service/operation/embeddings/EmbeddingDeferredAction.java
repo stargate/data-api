@@ -2,19 +2,19 @@ package io.stargate.sgv2.jsonapi.service.operation.embeddings;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
 
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
-import io.stargate.sgv2.jsonapi.service.shredding.ValueAction;
+import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public class EmbeddingAction implements ValueAction, Recordable {
+public class EmbeddingDeferredAction implements DeferredAction, Recordable {
 
   private final String vectorizeText;
-  private final ApiColumnDef columnDef;
-  private final ApiVectorType vectorType;
+  private final int dimension;
+  private final VectorizeDefinition vectorizeDefinition;
   private final Consumer<float[]> successConsumer;
   private final Consumer<RuntimeException> failureConsumer;
 
@@ -22,9 +22,23 @@ public class EmbeddingAction implements ValueAction, Recordable {
 
   private RuntimeException failure;
 
-  public EmbeddingAction(
+  public EmbeddingDeferredAction(
       String vectorizeText,
-      ApiColumnDef columnDef,
+      ApiVectorType vectorType,
+      Consumer<float[]> successConsumer,
+      Consumer<RuntimeException> failureConsumer) {
+    this(
+        vectorizeText,
+        Objects.requireNonNull(vectorType, "vectorType must not be null").getDimension(),
+        Objects.requireNonNull(vectorType, "vectorType must not be null").getVectorizeDefinition(),
+        successConsumer,
+        failureConsumer);
+  }
+
+  public EmbeddingDeferredAction(
+      String vectorizeText,
+      Integer dimension,
+      VectorizeDefinition vectorizeDefinition,
       Consumer<float[]> successConsumer,
       Consumer<RuntimeException> failureConsumer) {
     // TODO: AAron - you are going to need an error conumser, but the NamedValue is currently
@@ -34,23 +48,10 @@ public class EmbeddingAction implements ValueAction, Recordable {
     this.successConsumer = successConsumer;
     this.failureConsumer = failureConsumer;
 
-    this.columnDef = Objects.requireNonNull(columnDef, "columnDef must not be null");
-    if (this.columnDef.type() instanceof ApiVectorType vt) {
-      // we use this in multiple places, get the cast done once
-      this.vectorType = vt;
-      if (vt.getVectorizeDefinition() == null) {
-        throw new IllegalArgumentException(
-            String.format(
-                "Vector column does not have vectorize Definition, name: %s type: %s",
-                columnDef.name(), columnDef.type()));
-      }
-      this.groupKey = new EmbeddingActionGroupKey(vt);
-    } else {
-      throw new IllegalArgumentException(
-          String.format(
-              "columnDef.type() not a ApiVectorType, name: %s type: %s",
-              columnDef.name(), columnDef.type()));
-    }
+    this.dimension = dimension;
+    this.vectorizeDefinition =
+        Objects.requireNonNull(vectorizeDefinition, "vectorizeDefinition must not be null");
+    this.groupKey = new EmbeddingActionGroupKey(dimension, vectorizeDefinition);
   }
 
   public EmbeddingActionGroupKey groupKey() {
@@ -94,43 +95,47 @@ public class EmbeddingAction implements ValueAction, Recordable {
 
     // TODO: Move to a V2 error
 
-    if (vector.length != vectorType.getDimension()) {
+    if (vector.length != dimension) {
       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
           "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-          vectorType.getVectorizeDefinition().provider(), vectorType.getDimension(), vector.length);
+          vectorizeDefinition.provider(), dimension, vector.length);
     }
   }
 
   @Override
   public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
     dataRecorder
-        .append("vectorizeDefinition.provider", vectorType.getVectorizeDefinition().provider())
-        .append("vectorizeDefinition.modelName", vectorType.getVectorizeDefinition().modelName())
-        .append("vectorizeDefinition.parameters", vectorType.getVectorizeDefinition().parameters())
-        .append(
-            "vectorizeDefinition.authentication",
-            vectorType.getVectorizeDefinition().authentication())
-        .append("vectorType.dimension", vectorType.getDimension());
+        .append("vectorizeDefinition.provider", vectorizeDefinition.provider())
+        .append("vectorizeDefinition.modelName", vectorizeDefinition.modelName())
+        .append("vectorizeDefinition.parameters", vectorizeDefinition.parameters())
+        .append("vectorizeDefinition.authentication", vectorizeDefinition.authentication())
+        .append("dimension", dimension);
     return dataRecorder;
   }
 
   public static class EmbeddingActionGroupKey implements Recordable {
 
-    private final ApiVectorType vectorType;
+    private final int dimension;
+    private final VectorizeDefinition vectorizeDefinition;
 
-    EmbeddingActionGroupKey(ApiVectorType vectorType) {
-      this.vectorType = vectorType;
+    EmbeddingActionGroupKey(int dimension, VectorizeDefinition vectorizeDefinition) {
+      this.dimension = dimension;
+      this.vectorizeDefinition = vectorizeDefinition;
     }
 
-    public ApiVectorType vectorType() {
-      return vectorType;
+    public int dimension() {
+      return dimension;
+    }
+
+    public VectorizeDefinition vectorizeDefinition() {
+      return vectorizeDefinition;
     }
 
     @Override
     public DataRecorder recordTo(DataRecorder dataRecorder) {
       return dataRecorder
-          .append("vectorizeDefinition", vectorType.getVectorizeDefinition())
-          .append("dimension", vectorType.getDimension());
+          .append("vectorizeDefinition", vectorizeDefinition)
+          .append("dimension", dimension);
     }
 
     @Override
@@ -140,7 +145,7 @@ public class EmbeddingAction implements ValueAction, Recordable {
 
     @Override
     public int hashCode() {
-      return Objects.hash(vectorType.getDimension(), vectorType.getVectorizeDefinition());
+      return Objects.hash(dimension, vectorizeDefinition);
     }
 
     @Override
@@ -148,9 +153,8 @@ public class EmbeddingAction implements ValueAction, Recordable {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       EmbeddingActionGroupKey that = (EmbeddingActionGroupKey) o;
-      return Objects.equals(vectorType.getDimension(), that.vectorType.getDimension())
-          && Objects.equals(
-              vectorType.getVectorizeDefinition(), that.vectorType.getVectorizeDefinition());
+      return Objects.equals(dimension, that.dimension)
+          && Objects.equals(vectorizeDefinition, that.vectorizeDefinition);
     }
   }
 }
