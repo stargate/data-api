@@ -3,38 +3,42 @@ package io.stargate.sgv2.jsonapi.testresource;
 import com.google.common.collect.ImmutableMap;
 import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Test resource for Cassandra-via-Docket -backed Integration Tests. Note that "Dse" in name is not
  * strictly accurate, but kept for backwards compatibility: may run HCD as the backend for example.
  */
 public class DseTestResource extends StargateTestResource {
-  // set default props if not set, so we launch DSE
-  // this is only needed for tests run from the IDE
+  private static final Logger LOG = LoggerFactory.getLogger(DseTestResource.class);
+
+  // Need some additional pre-configuration when NOT running under Maven
   public DseTestResource() {
     super();
 
-    if (null == System.getProperty("testing.containers.cassandra-image")) {
-      // 14-Mar-2025, tatu: Change from custom "dse-next" to the official DSE image
-      //  even for IDE tests
-      // 17-Mar-2025, tatu: and then to HCD to get BM25 implementation
-      System.setProperty(
-          "testing.containers.cassandra-image",
-          // "stargateio/dse-next:4.0.11-591d171ac9c9"
-          // "datastax/dse-server:6.9.7"
-          "559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/staging/hcd:1.2.1-early-preview");
-      // MUST set one of these to get DS_LICENSE env var set
-      // System.setProperty("testing.containers.cluster-dse", "true");
-      System.setProperty("testing.containers.cluster-hcd", "true");
+    if (isRunningUnderMaven()) {
+      LOG.info("Running under Maven, no need to overwrite integration test properties");
+      return;
     }
+
+    LOG.info("NOT Running under Maven, will overwrite integration test properties");
+
+    // 14-Mar-2025, tatu: Change from custom "dse-next" to the official DSE image
+    //  even for IDE tests
+    // 17-Mar-2025, tatu: and then to HCD to get BM25 implementation
+    final String cassandraImage =
+        // "stargateio/dse-next:4.0.11-591d171ac9c9"
+        // "datastax/dse-server:6.9.7"
+        "559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/staging/hcd:1.2.1-early-preview";
+
+    System.setProperty("testing.containers.cassandra-image", cassandraImage);
+
+    // MUST set one of these to get DS_LICENSE env var set
+    // System.setProperty("testing.containers.cluster-dse", "true");
+    System.setProperty("testing.containers.cluster-hcd", "true");
 
     // 14-Mar-2025, tatu: We no longer run Stargate Coordinator for ITs set up removed
-
-    if (null == System.getProperty("cassandra.sai.max_string_term_size_kb")) {
-      System.setProperty(
-          "cassandra.sai.max_string_term_size_kb",
-          String.valueOf(DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB));
-    }
   }
 
   // Many tests create more than 5 collections so default to 10
