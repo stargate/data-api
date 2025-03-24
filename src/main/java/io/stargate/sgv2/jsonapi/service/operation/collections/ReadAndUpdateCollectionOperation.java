@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
@@ -263,52 +264,44 @@ public record ReadAndUpdateCollectionOperation(
   }
 
   private String buildUpdateQuery(boolean vectorEnabled) {
+    final boolean lexicalEnabled = commandContext().schemaObject().lexicalConfig().enabled();
+    StringBuilder updateQuery = new StringBuilder(200);
+    final SchemaObjectName tableName = commandContext.schemaObject().name();
+
+    updateQuery
+        .append("UPDATE \"")
+        .append(tableName.keyspace())
+        .append("\".\"")
+        .append(tableName.table())
+        .append("\" SET ")
+        .append(
+            """
+tx_id = now(),
+exist_keys = ?,
+array_size = ?,
+array_contains = ?,
+query_bool_values = ?,
+query_dbl_values = ?,
+query_text_values = ?,
+query_null_values = ?,
+query_timestamp_values = ?,
+""");
     if (vectorEnabled) {
-      String update =
-          "UPDATE \"%s\".\"%s\" "
-              + "        SET"
-              + "            tx_id = now(),"
-              + "            exist_keys = ?,"
-              + "            array_size = ?,"
-              + "            array_contains = ?,"
-              + "            query_bool_values = ?,"
-              + "            query_dbl_values = ?,"
-              + "            query_text_values = ?,"
-              + "            query_null_values = ?,"
-              + "            query_timestamp_values = ?,"
-              + "            query_vector_value = ?,"
-              + "            doc_json  = ?"
-              + "        WHERE "
-              + "            key = ?"
-              + "        IF "
-              + "            tx_id = ?";
-      return String.format(
-          update,
-          commandContext.schemaObject().name().keyspace(),
-          commandContext.schemaObject().name().table());
-    } else {
-      String update =
-          "UPDATE \"%s\".\"%s\" "
-              + "        SET"
-              + "            tx_id = now(),"
-              + "            exist_keys = ?,"
-              + "            array_size = ?,"
-              + "            array_contains = ?,"
-              + "            query_bool_values = ?,"
-              + "            query_dbl_values = ?,"
-              + "            query_text_values = ?,"
-              + "            query_null_values = ?,"
-              + "            query_timestamp_values = ?,"
-              + "            doc_json  = ?"
-              + "        WHERE "
-              + "            key = ?"
-              + "        IF "
-              + "            tx_id = ?";
-      return String.format(
-          update,
-          commandContext.schemaObject().name().keyspace(),
-          commandContext.schemaObject().name().table());
+      updateQuery.append("\nquery_vector_value = ?,");
     }
+    if (lexicalEnabled) {
+      // !!! TODO
+      // updateQuery.append("\nquery_lexical_value = ?,");
+    }
+    updateQuery.append(
+        """
+query_vector_value = ?,
+doc_json  = ?
+WHERE key = ?
+IF tx_id = ?
+""");
+
+    return updateQuery.toString();
   }
 
   protected static SimpleStatement bindUpdateValues(
