@@ -1,13 +1,14 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
+import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -21,8 +22,9 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class UpdateOneWithLexicalCollectionIntegrationTest
     extends AbstractCollectionIntegrationTestBase {
-  static final String COLLECTION_WITH_LEXICAL =
-      "coll_lexical_operations_" + RandomStringUtils.randomNumeric(16);
+  protected UpdateOneWithLexicalCollectionIntegrationTest() {
+    super("col_lexical_operations_");
+  }
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
@@ -43,7 +45,7 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
                               }
                             }
                             """
-              .formatted(COLLECTION_WITH_LEXICAL));
+              .formatted(collectionName));
     }
   }
 
@@ -54,30 +56,70 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
     @Test
     @Order(1)
     void setupDocuments() {
-      insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(1, "monkey banana"));
-      insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(2, "monkey"));
-      insertDoc(COLLECTION_WITH_LEXICAL, lexicalDoc(3, null));
+      insertDoc(lexicalDoc(1, "monkey banana"));
+      insertDoc(lexicalDoc(2, "monkey"));
+      insertDoc(lexicalDoc(3, null));
 
-      // and then verify that we can read them back as expected
+      // and then verify that we can read them back as expected. First, all:
+      givenHeadersPostJsonThenOkNoErrors("{ \"find\": {} }")
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(3));
+
+      // and then by sort
       givenHeadersPostJsonThenOkNoErrors(
-              keyspaceName,
-              COLLECTION_WITH_LEXICAL,
               """
                                 {
                                   "find": {
+                                    "projection": { "_id": 1 },
                                     "sort" : {"$lexical": "monkey" }
                                   }
                                 }
                                 """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(2))
-          .body("data.documents[0]._id", is("lexical-2"))
-          .body("data.documents[1]._id", is("lexical-1"));
+          .body(
+              "data.documents",
+              jsonEquals(
+                  """
+                [{"_id": "lexical-2"},
+                {"_id": "lexical-1"}]
+            """));
     }
 
     @Test
     @Order(2)
-    void testOverwriteEmpty() {}
+    void testOverwriteEmpty() throws Exception {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+        {
+          "updateOne": {
+            "filter" : {"_id": "lexical-3"},
+            "update" : {"$set" : {"$lexical": "monkey bread is so tasty"}}
+          }
+        }
+        """)
+          .body("$", responseIsStatusOnly())
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                                {
+                                  "find": {
+                                    "projection": { "_id": 1 },
+                                    "sort" : {"$lexical": "monkey" }
+                                  }
+                                }
+                                """)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents",
+              jsonEquals(
+                  """
+                [{"_id": "lexical-2"},
+                {"_id": "lexical-1"},
+                {"_id": "lexical-3"}]
+            """));
+    }
 
     @Test
     @Order(3)

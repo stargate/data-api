@@ -22,8 +22,16 @@ public abstract class AbstractCollectionIntegrationTestBase
     extends AbstractKeyspaceIntegrationTestBase {
   protected static final String TEST_PROP_LEXICAL_DISABLED = "testing.db.lexical-disabled";
 
-  // collection name automatically created in this test
-  protected final String collectionName = "col" + RandomStringUtils.randomAlphanumeric(16);
+  // Base collection name automatically created in this test
+  protected final String collectionName;
+
+  protected AbstractCollectionIntegrationTestBase() {
+    this("col");
+  }
+
+  protected AbstractCollectionIntegrationTestBase(String collectionNamePrefix) {
+    collectionName = collectionNamePrefix + RandomStringUtils.randomAlphanumeric(16);
+  }
 
   @BeforeAll
   public void createSimpleCollection() {
