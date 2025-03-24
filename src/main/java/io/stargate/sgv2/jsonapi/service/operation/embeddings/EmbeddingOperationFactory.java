@@ -6,13 +6,13 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
-import io.stargate.sgv2.jsonapi.service.shredding.ValueAction;
+import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Encapsulates the logic created a {@link CompositeTask} pipline when there are tasks that may need
- * embedding done via the {@link EmbeddingAction}.
+ * embedding done via the {@link EmbeddingDeferredAction}.
  *
  * <p>We do this in the Insert, Read, and Update paths
  */
@@ -28,7 +28,7 @@ public abstract class EmbeddingOperationFactory {
    *
    * @param commandContext The command context
    * @param tasksAndDeferrables The group of tasks that have deferrable values, if the deferrables
-   *     are waiting for {@link EmbeddingAction} we create Embedding Tasks for those.
+   *     are waiting for {@link EmbeddingDeferredAction} we create Embedding Tasks for those.
    * @return The operation to run
    * @param <TaskT> The type of original task to run.
    */
@@ -40,8 +40,8 @@ public abstract class EmbeddingOperationFactory {
     // Deferrables may or may not have DeferredValues and those DeferredValues may or maynot be
     // waiting for EmbeddingActions to be resolved.
     var embeddingActions =
-        ValueAction.filteredActions(
-            EmbeddingAction.class, Deferrable.deferredValues(tasksAndDeferrables.deferrables()));
+        DeferredAction.filtered(
+            EmbeddingDeferredAction.class, Deferrable.deferred(tasksAndDeferrables.deferrables()));
 
     if (embeddingActions.isEmpty()) {
       if (LOGGER.isDebugEnabled()) {

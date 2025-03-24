@@ -14,6 +14,8 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.NotSupportedException;
@@ -39,7 +41,14 @@ public final class ThrowableToErrorMapper {
 
   private static final BiFunction<Throwable, String, CommandResult.Error> MAPPER_WITH_MESSAGE =
       (throwable, message) -> {
-        // if our own exception, shortcut
+
+        // V2 error, normally handled in the Task processing but can be in other places
+        if (throwable instanceof APIException apiException) {
+          return CommandResult.statusOnlyBuilder(true, false, RequestTracing.NO_OP)
+              .throwableToCommandError(apiException);
+        }
+
+        // if our own V1 exception, shortcut
         if (throwable instanceof JsonApiException jae) {
           if (jae.getErrorCode().equals(ErrorCodeV1.SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE)) {
             // 30-Aug-2021: [data-api#1383] Why is this special case here?
