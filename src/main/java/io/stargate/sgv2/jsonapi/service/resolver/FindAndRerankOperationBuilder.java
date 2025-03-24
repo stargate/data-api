@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,7 +12,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -116,11 +119,38 @@ class FindAndRerankOperationBuilder {
    */
   private void checkSupported() {
 
-    // TODO: Check vector if that is used
+    if (isVectorSort() || isVectorizeSort()) {
+      if (!commandContext.schemaObject().vectorConfig().vectorEnabled()) {
+        throw SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION.get(
+            errVars(commandContext.schemaObject()));
+      }
+    }
 
-    // TODO: Check vectorize if that is used
+    if (isVectorizeSort()) {
+      // the service definition is on the $vectorize field, not $vector
+      var vectorizeEnabled =
+          commandContext
+              .schemaObject()
+              .vectorConfig()
+              .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
+              .map(VectorColumnDefinition::vectorizeDefinition)
+              .isPresent();
 
-    // TODO: check lexical if that is used
+      if (!vectorizeEnabled) {
+        throw SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION.get(
+            errVars(commandContext.schemaObject()));
+      }
+    }
+
+    if (isLexicalSort()) {
+      if (!commandContext.schemaObject().lexicalConfig().enabled()) {
+        // NOTE: using V1 error to be compatible with how we handle lexical for non findAndRerank
+        // See SortClause.validate()
+        throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
+            "Lexical search is not enabled for collection '%s'",
+            commandContext.schemaObject().name().table());
+      }
+    }
 
     if (!commandContext.schemaObject().rerankingConfig().enabled()) {
       // TODO: more info in the error
