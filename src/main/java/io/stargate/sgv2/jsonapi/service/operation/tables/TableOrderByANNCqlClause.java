@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.service.operation.query.OrderByCqlClause;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.CqlVectorNamedValue;
-import io.stargate.sgv2.jsonapi.service.shredding.NamedValue;
+import io.stargate.sgv2.jsonapi.service.shredding.Deferred;
 import java.util.List;
 import java.util.Objects;
 
@@ -49,7 +49,7 @@ public class TableOrderByANNCqlClause implements OrderByCqlClause {
   }
 
   @Override
-  public List<? extends NamedValue<?, ?, ?>> deferredValues() {
+  public List<? extends Deferred> deferred() {
     return new CqlNamedValueContainer(List.of(sortVector)).deferredValues();
   }
 }

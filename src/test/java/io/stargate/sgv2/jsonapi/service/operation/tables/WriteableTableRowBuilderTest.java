@@ -26,6 +26,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.ArrayList;
@@ -61,6 +62,7 @@ public class WriteableTableRowBuilderTest {
             .withCqlSessionCache(mock(CQLSessionCache.class))
             .withCommandConfig(new CommandConfig())
             .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
+            .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
             .getBuilder(fixture.cqlFixture().tableSchemaObject())
             .withEmbeddingProvider(mock(EmbeddingProvider.class))
             .withCommandName("testCommand")

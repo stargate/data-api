@@ -26,7 +26,7 @@ public abstract class AbstractCollectionIntegrationTestBase
   protected final String collectionName = "col" + RandomStringUtils.randomAlphanumeric(16);
 
   @BeforeAll
-  public final void createSimpleCollection() {
+  public void createSimpleCollection() {
     createSimpleCollection(this.collectionName);
   }
 
