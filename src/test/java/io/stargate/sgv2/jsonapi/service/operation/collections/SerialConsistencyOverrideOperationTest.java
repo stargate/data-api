@@ -293,22 +293,9 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
           ReadAndUpdateCollectionOperation.buildUpdateQuery(
               KEYSPACE_NAME, COLLECTION_NAME, false, false);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-
+      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode, tx_id);
       SimpleStatement updateStmt =
-          SimpleStatement.newInstance(
-              updateCql.formatted(KEYSPACE_NAME, COLLECTION_NAME),
-              CQLBindValues.getSetValue(shredDocument.existKeys()),
-              CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
-              shredDocument.arrayContains(),
-              CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
-              CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
-              CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
-              CQLBindValues.getSetValue(shredDocument.queryNullValues()),
-              CQLBindValues.getTimestampMapValues(shredDocument.queryTimestampValues()),
-              shredDocument.docJson(),
-              CQLBindValues.getDocumentIdValue(shredDocument.id()),
-              tx_id);
+          ReadAndUpdateCollectionOperation.bindUpdateValues(updateCql, shredDocument, false);
 
       List<Row> resultRows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, byteBufferFrom(true)));
       AsyncResultSet updateResults = new MockAsyncResultSet(COLUMNS_APPLIED, resultRows, null);

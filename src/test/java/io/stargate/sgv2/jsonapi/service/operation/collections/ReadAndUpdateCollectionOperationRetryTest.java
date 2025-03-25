@@ -20,7 +20,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
@@ -84,24 +83,11 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
   private final ColumnDefinitions COLUMNS_APPLIED =
       buildColumnDefs(OperationTestBase.TestColumn.ofBoolean("[applied]"));
 
-  private SimpleStatement nonVectorUpdateStatement(
-      WritableShreddedDocument shredDocument, UUID tx_id) {
+  private SimpleStatement nonVectorUpdateStatement(WritableShreddedDocument shredDocument) {
     final String updateCql =
         ReadAndUpdateCollectionOperation.buildUpdateQuery(
             KEYSPACE_NAME, COLLECTION_NAME, false, false);
-    return SimpleStatement.newInstance(
-        updateCql,
-        CQLBindValues.getSetValue(shredDocument.existKeys()),
-        CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
-        CQLBindValues.getStringSetValue(shredDocument.arrayContains()),
-        CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
-        CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
-        CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
-        CQLBindValues.getSetValue(shredDocument.queryNullValues()),
-        CQLBindValues.getTimestampMapValues(shredDocument.queryTimestampValues()),
-        shredDocument.docJson(),
-        CQLBindValues.getDocumentIdValue(shredDocument.id()),
-        tx_id);
+    return ReadAndUpdateCollectionOperation.bindUpdateValues(updateCql, shredDocument, false);
   }
 
   @Test
@@ -166,8 +152,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
             }
             """;
     JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-    WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-    SimpleStatement stmt3 = nonVectorUpdateStatement(shredDocument, tx_id1);
+    SimpleStatement stmt3 = nonVectorUpdateStatement(documentShredder.shred(jsonNode, tx_id1));
     List<Row> rows3 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results3 = new MockAsyncResultSet(COLUMNS_APPLIED, rows3, null);
     final AtomicInteger failedUpdateQueryAssert = new AtomicInteger();
@@ -178,7 +163,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
               return Uni.createFrom().item(results3);
             });
 
-    SimpleStatement stmt4 = nonVectorUpdateStatement(shredDocument, tx_id2);
+    SimpleStatement stmt4 = nonVectorUpdateStatement(documentShredder.shred(jsonNode, tx_id2));
     List<Row> rows4 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
     AsyncResultSet results4 = new MockAsyncResultSet(COLUMNS_APPLIED, rows4, null);
     final AtomicInteger updateQueryAssert = new AtomicInteger();
@@ -308,8 +293,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
             }
             """;
     JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-    WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-    SimpleStatement stmt3 = nonVectorUpdateStatement(shredDocument, tx_id1);
+    SimpleStatement stmt3 = nonVectorUpdateStatement(documentShredder.shred(jsonNode, tx_id1));
     List<Row> rows3 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results3 = new MockAsyncResultSet(COLUMNS_APPLIED, rows3, null);
     final AtomicInteger updateFailedQueryAssert = new AtomicInteger();
@@ -320,7 +304,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
               return Uni.createFrom().item(results3);
             });
 
-    SimpleStatement stmt4 = nonVectorUpdateStatement(shredDocument, tx_id2);
+    SimpleStatement stmt4 = nonVectorUpdateStatement(documentShredder.shred(jsonNode, tx_id2));
     List<Row> rows4 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results4 = new MockAsyncResultSet(COLUMNS_APPLIED, rows4, null);
     final AtomicInteger updateRetryFailedQueryAssert = new AtomicInteger();
@@ -458,8 +442,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
             }
             """;
     JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-    WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-    SimpleStatement stmt3 = nonVectorUpdateStatement(shredDocument, tx_id1);
+    SimpleStatement stmt3 = nonVectorUpdateStatement(documentShredder.shred(jsonNode, tx_id1));
     List<Row> rows3 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results3 = new MockAsyncResultSet(COLUMNS_APPLIED, rows3, null);
     final AtomicInteger updateFailedQueryAssert = new AtomicInteger();
@@ -470,7 +453,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
               return Uni.createFrom().item(results3);
             });
 
-    SimpleStatement stmt4 = nonVectorUpdateStatement(shredDocument, tx_id2);
+    SimpleStatement stmt4 = nonVectorUpdateStatement(documentShredder.shred(jsonNode, tx_id2));
     List<Row> rows4 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results4 = new MockAsyncResultSet(COLUMNS_APPLIED, rows4, null);
     final AtomicInteger updateRetryFailedQueryAssert = new AtomicInteger();
@@ -626,8 +609,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
             });
 
     JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-    WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-    SimpleStatement stmt3 = nonVectorUpdateStatement(shredDocument, tx_id1);
+    SimpleStatement stmt3 = nonVectorUpdateStatement(documentShredder.shred(jsonNode, tx_id1));
     List<Row> rows3 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results3 = new MockAsyncResultSet(COLUMNS_APPLIED, rows3, null);
     final AtomicInteger failedUpdateFirstQueryAssert = new AtomicInteger();
@@ -638,7 +620,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
               return Uni.createFrom().item(results3);
             });
 
-    SimpleStatement stmt4 = nonVectorUpdateStatement(shredDocument, tx_id2);
+    SimpleStatement stmt4 = nonVectorUpdateStatement(documentShredder.shred(jsonNode, tx_id2));
     List<Row> rows4 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results4 = new MockAsyncResultSet(COLUMNS_APPLIED, rows4, null);
     final AtomicInteger failedUpdateRetryFirstQueryAssert = new AtomicInteger();
@@ -650,9 +632,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
             });
 
     jsonNode = objectMapper.readTree(doc2Updated);
-    shredDocument = documentShredder.shred(jsonNode);
-
-    SimpleStatement stmt5 = nonVectorUpdateStatement(shredDocument, tx_id3);
+    SimpleStatement stmt5 = nonVectorUpdateStatement(documentShredder.shred(jsonNode, tx_id3));
     List<Row> rows5 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
     AsyncResultSet results5 = new MockAsyncResultSet(COLUMNS_APPLIED, rows5, null);
     final AtomicInteger updateSecondQueryAssert = new AtomicInteger();
@@ -825,8 +805,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
             });
 
     JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-    WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-    SimpleStatement stmt4 = nonVectorUpdateStatement(shredDocument, tx_id1);
+    SimpleStatement stmt4 = nonVectorUpdateStatement(documentShredder.shred(jsonNode, tx_id1));
     List<Row> rows4 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results4 = new MockAsyncResultSet(COLUMNS_APPLIED, rows4, null);
     final AtomicInteger updateQueryDoc1Assert = new AtomicInteger();
@@ -837,7 +816,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
               return Uni.createFrom().item(results4);
             });
 
-    SimpleStatement stmt5 = nonVectorUpdateStatement(shredDocument, tx_id2);
+    SimpleStatement stmt5 = nonVectorUpdateStatement(documentShredder.shred(jsonNode, tx_id2));
     List<Row> rows5 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results5 = new MockAsyncResultSet(COLUMNS_APPLIED, rows5, null);
     final AtomicInteger updateRetryQueryDoc1Assert = new AtomicInteger();
@@ -849,9 +828,8 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
             });
 
     jsonNode = objectMapper.readTree(doc2Updated);
-    shredDocument = documentShredder.shred(jsonNode);
 
-    SimpleStatement stmt6 = nonVectorUpdateStatement(shredDocument, tx_id3);
+    SimpleStatement stmt6 = nonVectorUpdateStatement(documentShredder.shred(jsonNode, tx_id3));
     List<Row> rows6 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results6 = new MockAsyncResultSet(COLUMNS_APPLIED, rows6, null);
     final AtomicInteger updateQueryDoc2Assert = new AtomicInteger();
@@ -862,7 +840,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
               return Uni.createFrom().item(results6);
             });
 
-    SimpleStatement stmt7 = nonVectorUpdateStatement(shredDocument, tx_id4);
+    SimpleStatement stmt7 = nonVectorUpdateStatement(documentShredder.shred(jsonNode, tx_id4));
     List<Row> rows7 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.FALSE));
     AsyncResultSet results7 = new MockAsyncResultSet(COLUMNS_APPLIED, rows7, null);
     final AtomicInteger updateRetryQueryDoc2Assert = new AtomicInteger();
