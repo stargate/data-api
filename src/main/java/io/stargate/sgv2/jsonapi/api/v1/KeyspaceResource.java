@@ -21,7 +21,9 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
@@ -63,7 +65,9 @@ public class KeyspaceResource {
   public KeyspaceResource(
       MeteredCommandProcessor meteredCommandProcessor,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      CQLSessionCache cqlSessionCache) {
+      CQLSessionCache cqlSessionCache,
+      EmbeddingProviderFactory embeddingProviderFactory,
+      RerankingProviderFactory rerankingProviderFactory) {
     this.meteredCommandProcessor = meteredCommandProcessor;
 
     contextBuilderSupplier =
@@ -71,7 +75,9 @@ public class KeyspaceResource {
             // old code did not pass a jsonProcessingMetricsReporter not sure why - Aaron Feb 10
             .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
             .withCqlSessionCache(cqlSessionCache)
-            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty());
+            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
+            .withEmbeddingProviderFactory(embeddingProviderFactory)
+            .withRerankingProviderFactory(rerankingProviderFactory);
   }
 
   @Operation(

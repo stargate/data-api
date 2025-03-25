@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 
 /**
@@ -20,7 +21,7 @@ import java.util.*;
  *
  * <p>Created by the factories {@link #FROM_TABLE_DESC_FACTORY} and {@link #FROM_CQL_FACTORY}.
  */
-public class ApiTableDef {
+public class ApiTableDef implements Recordable {
 
   public static final FromTableDescFactory FROM_TABLE_DESC_FACTORY = new FromTableDescFactory();
   public static final FromCqlFactory FROM_CQL_FACTORY = new FromCqlFactory();
@@ -159,6 +160,16 @@ public class ApiTableDef {
   /** Gets all the indexes on the table that are supported and unsupported by the API. */
   public ApiIndexDefContainer indexesIncludingUnsupported() {
     return indexesIncludingUnsupported;
+  }
+
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return dataRecorder
+        .append("name", name)
+        .append("partitionKeys", partitionkeys)
+        .append("clusteringDefs", clusteringDefs)
+        .append("nonPKColumns", nonPKColumns)
+        .append("supportedIndexes", supportedIndexes);
   }
 
   /**

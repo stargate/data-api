@@ -56,7 +56,7 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
                 if (prevType != null) {
                   throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
                       "update operators '%s' and '%s' must not refer to same path: '%s'",
-                      prevType.operator(), type.operator(), action.locator());
+                      prevType.apiName(), type.apiName(), action.locator());
                 }
               }
             });
@@ -78,7 +78,7 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
         if (currLoc.isSubPathOf(prevLoc)) {
           throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
               "Update operator path conflict due to overlap: '%s' (%s) vs '%s' (%s)",
-              prevLoc, prev.getValue().operator(), currLoc, curr.getValue().operator());
+              prevLoc, prev.getValue().apiName(), currLoc, curr.getValue().apiName());
         }
       }
     }

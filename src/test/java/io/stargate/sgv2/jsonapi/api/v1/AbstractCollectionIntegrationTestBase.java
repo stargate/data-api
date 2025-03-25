@@ -20,12 +20,21 @@ import org.junit.jupiter.api.BeforeAll;
  */
 public abstract class AbstractCollectionIntegrationTestBase
     extends AbstractKeyspaceIntegrationTestBase {
+  protected static final String TEST_PROP_LEXICAL_DISABLED = "testing.db.lexical-disabled";
 
-  // collection name automatically created in this test
-  protected final String collectionName = "col" + RandomStringUtils.randomAlphanumeric(16);
+  // Base collection name automatically created in this test
+  protected final String collectionName;
+
+  protected AbstractCollectionIntegrationTestBase() {
+    this("col");
+  }
+
+  protected AbstractCollectionIntegrationTestBase(String collectionNamePrefix) {
+    collectionName = collectionNamePrefix + RandomStringUtils.randomAlphanumeric(16);
+  }
 
   @BeforeAll
-  public final void createSimpleCollection() {
+  public void createSimpleCollection() {
     createSimpleCollection(this.collectionName);
   }
 
@@ -54,6 +63,11 @@ public abstract class AbstractCollectionIntegrationTestBase
 
   /** Utility to delete all documents from the test collection. */
   protected void deleteAllDocuments() {
+    deleteAllDocuments(keyspaceName, collectionName);
+  }
+
+  /** Utility to delete all documents from the specified collection. */
+  protected void deleteAllDocuments(String ks, String collection) {
     String json =
         """
         {
@@ -69,7 +83,7 @@ public abstract class AbstractCollectionIntegrationTestBase
               .contentType(ContentType.JSON)
               .body(json)
               .when()
-              .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+              .post(CollectionResource.BASE_PATH, ks, collection)
               .then()
               .statusCode(200)
               .body("$", responseIsWriteSuccess())
@@ -137,19 +151,35 @@ public abstract class AbstractCollectionIntegrationTestBase
 
   /** Utility method for reducing boilerplate code for sending JSON commands */
   protected ValidatableResponse givenHeadersPostJsonThen(String json) {
+    return givenHeadersPostJsonThen(keyspaceName, collectionName, json);
+  }
+
+  protected ValidatableResponse givenHeadersPostJsonThen(
+      String keyspace, String collectionName, String json) {
     return givenHeadersAndJson(json)
         .when()
-        .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+        .post(CollectionResource.BASE_PATH, keyspace, collectionName)
         .then();
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */
   protected ValidatableResponse givenHeadersPostJsonThenOk(String json) {
-    return givenHeadersPostJsonThen(json).statusCode(200);
+    return givenHeadersPostJsonThenOk(keyspaceName, collectionName, json);
+  }
+
+  protected ValidatableResponse givenHeadersPostJsonThenOk(
+      String keyspace, String collectionName, String json) {
+    return givenHeadersPostJsonThen(keyspace, collectionName, json).statusCode(200);
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */
   protected ValidatableResponse givenHeadersPostJsonThenOkNoErrors(String json) {
-    return givenHeadersPostJsonThenOk(json).body("errors", is(nullValue()));
+    return givenHeadersPostJsonThenOkNoErrors(keyspaceName, collectionName, json);
+  }
+
+  protected ValidatableResponse givenHeadersPostJsonThenOkNoErrors(
+      String keyspace, String collectionName, String json) {
+    return givenHeadersPostJsonThenOk(keyspace, collectionName, json)
+        .body("errors", is(nullValue()));
   }
 }

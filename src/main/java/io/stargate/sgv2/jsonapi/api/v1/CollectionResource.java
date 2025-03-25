@@ -38,6 +38,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinitio
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
@@ -74,7 +75,7 @@ public class CollectionResource {
 
   @Inject private SchemaCache schemaCache;
 
-  @Inject private EmbeddingProviderFactory embeddingProviderFactory;
+  private EmbeddingProviderFactory embeddingProviderFactory;
 
   @Inject private RequestContext requestContext;
 
@@ -89,14 +90,19 @@ public class CollectionResource {
   public CollectionResource(
       MeteredCommandProcessor meteredCommandProcessor,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      CQLSessionCache cqlSessionCache) {
+      CQLSessionCache cqlSessionCache,
+      EmbeddingProviderFactory embeddingProviderFactory,
+      RerankingProviderFactory rerankingProviderFactory) {
+    this.embeddingProviderFactory = embeddingProviderFactory;
     this.meteredCommandProcessor = meteredCommandProcessor;
 
     contextBuilderSupplier =
         CommandContext.builderSupplier()
             .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
             .withCqlSessionCache(cqlSessionCache)
-            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty());
+            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
+            .withEmbeddingProviderFactory(embeddingProviderFactory)
+            .withRerankingProviderFactory(rerankingProviderFactory);
   }
 
   @Operation(

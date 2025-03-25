@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.keyspaces.DropKeyspaceOperation;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -23,7 +24,13 @@ class DropKeyspaceCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject DropNamespaceCommandResolver resolver;
 
-  CommandContext<DatabaseSchemaObject> commandContext = TestConstants.databaseContext();
+  private TestConstants testConstants = new TestConstants();
+  CommandContext<DatabaseSchemaObject> commandContext;
+
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.databaseContext();
+  }
 
   @Nested
   class ResolveCommand {

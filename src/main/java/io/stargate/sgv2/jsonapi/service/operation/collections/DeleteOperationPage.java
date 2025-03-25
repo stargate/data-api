@@ -7,6 +7,7 @@ import io.smallrye.mutiny.tuples.Tuple3;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.util.ExceptionUtil;
 import java.util.ArrayList;
@@ -44,18 +45,18 @@ public record DeleteOperationPage(
       // aaron - this is a giant hack 21 oct 2024
       if (returnDocument()) {
         if (singleDocument()) {
-          return CommandResult.singleDocumentBuilder(false, false)
+          return CommandResult.singleDocumentBuilder(false, false, RequestTracing.NO_OP)
               .addStatus(CommandStatus.DELETED_COUNT, 0)
               .addDocument(null)
               .build();
         } else {
-          return CommandResult.multiDocumentBuilder(false, false)
+          return CommandResult.multiDocumentBuilder(false, false, RequestTracing.NO_OP)
               .addStatus(CommandStatus.DELETED_COUNT, 0)
               .addDocument(null)
               .build();
         }
       } else {
-        return CommandResult.statusOnlyBuilder(false, false)
+        return CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
             .addStatus(CommandStatus.DELETED_COUNT, -1)
             .build();
       }
@@ -107,16 +108,16 @@ public record DeleteOperationPage(
     CommandResultBuilder builder = null;
     if (returnDocument()) {
       if (singleDocument()) {
-        builder = CommandResult.singleDocumentBuilder(false, false);
+        builder = CommandResult.singleDocumentBuilder(false, false, RequestTracing.NO_OP);
       } else {
-        builder = CommandResult.multiDocumentBuilder(false, false);
+        builder = CommandResult.multiDocumentBuilder(false, false, RequestTracing.NO_OP);
       }
       // aaron - ok to add the list to the builder as I assume there will only be one id single doc
       // return.
       // the builder will fail if we created single doc and then added more than one
       builder.addDocuments(deletedDoc);
     } else {
-      builder = CommandResult.statusOnlyBuilder(false, false);
+      builder = CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP);
     }
 
     builder.addStatus(CommandStatus.DELETED_COUNT, deletedCount).addCommandResultError(errors);

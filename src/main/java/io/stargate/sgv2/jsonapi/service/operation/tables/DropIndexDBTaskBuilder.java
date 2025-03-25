@@ -10,7 +10,8 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
 import java.util.Objects;
 
 /** Builds a {@link DropIndexDBTask}. */
-public class DropIndexDBTaskBuilder extends TaskBuilder<DropIndexDBTask, KeyspaceSchemaObject> {
+public class DropIndexDBTaskBuilder
+    extends TaskBuilder<DropIndexDBTask, KeyspaceSchemaObject, DropIndexDBTaskBuilder> {
 
   private final CQLOptions.BuildableCQLOptions<Drop> cqlOptions =
       new CQLOptions.BuildableCQLOptions<>();

@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.embeddings;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
@@ -13,7 +14,7 @@ import java.util.stream.Collectors;
 
 /**
  * Operation that list all available and enabled vector providers into the {@link
- * CommandStatus#EXISTING_VECTOR_PROVIDERS} command status.
+ * CommandStatus#EXISTING_EMBEDDING_PROVIDERS} command status.
  */
 public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
     implements Operation {
@@ -41,8 +42,8 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
     @Override
     public CommandResult get() {
 
-      return CommandResult.statusOnlyBuilder(false, false)
-          .addStatus(CommandStatus.EXISTING_VECTOR_PROVIDERS, embeddingProviders)
+      return CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+          .addStatus(CommandStatus.EXISTING_EMBEDDING_PROVIDERS, embeddingProviders)
           .build();
     }
   }

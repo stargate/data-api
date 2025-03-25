@@ -13,6 +13,8 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstant
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.ProviderHttpResponseErrorMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,7 +57,7 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
   public interface VoyageAIEmbeddingProviderClient {
     @POST
     // no path specified, as it is already included in the baseUri
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 

@@ -2,8 +2,8 @@ package io.stargate.sgv2.jsonapi.service.shredding.tables;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.*;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -22,7 +22,7 @@ import java.util.Objects;
  *   <li>All types have been converted to what he driver expects.
  * </ul>
  */
-public class WriteableTableRow implements PrettyPrintable {
+public class WriteableTableRow implements Deferrable, Recordable {
 
   private final TableSchemaObject tableSchemaObject;
   private final CqlNamedValueContainer keyColumns;
@@ -76,31 +76,21 @@ public class WriteableTableRow implements PrettyPrintable {
     return allColumns;
   }
 
+  @Override
+  public List<? extends Deferred> deferred() {
+    return allColumns.deferredValues();
+  }
+
   public RowId rowId() {
     return id;
   }
 
   @Override
-  public String toString() {
-    return toString(false);
-  }
-
-  public String toString(boolean pretty) {
-    return toString(new PrettyToStringBuilder(getClass(), pretty)).toString();
-  }
-
-  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-    prettyToStringBuilder
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return dataRecorder
         .append("keyspace", tableSchemaObject.tableMetadata().getKeyspace())
         .append("table", tableSchemaObject.tableMetadata().getName())
         .append("keyColumns", keyColumns)
         .append("nonKeyColumns", nonKeyColumns);
-    return prettyToStringBuilder;
-  }
-
-  @Override
-  public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
-    var sb = prettyToStringBuilder.beginSubBuilder(getClass());
-    return toString(sb).endSubBuilder();
   }
 }

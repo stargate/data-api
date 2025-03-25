@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.request;
 
+import com.fasterxml.uuid.Generators;
+import com.fasterxml.uuid.NoArgGenerator;
 import io.stargate.sgv2.jsonapi.api.request.tenant.DataApiTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
 import io.vertx.ext.web.RoutingContext;
@@ -18,11 +20,15 @@ import java.util.Optional;
  */
 @RequestScoped
 public class RequestContext {
+
+  private static final NoArgGenerator UUID_V7_GENERATOR = Generators.timeBasedEpochGenerator();
+
   private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
   private final EmbeddingCredentials embeddingCredentials;
   private final RerankingCredentials rerankingCredentials;
   private final HttpHeaderAccess httpHeaders;
+  private final String requestId;
 
   /**
    * Constructor that will be useful in the offline library mode, where only the tenant will be set
@@ -36,6 +42,7 @@ public class RequestContext {
     this.embeddingCredentials = null;
     this.rerankingCredentials = null;
     httpHeaders = null;
+    requestId = generateRequestId();
   }
 
   @Inject
@@ -44,15 +51,31 @@ public class RequestContext {
       SecurityContext securityContext,
       Instance<DataApiTenantResolver> tenantResolver,
       Instance<DataApiTokenResolver> tokenResolver,
-      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver,
-      Instance<RerankingCredentialsResolver> rerankingCredentialsResolver) {
+      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
     this.embeddingCredentials =
         embeddingCredentialsResolver.get().resolveEmbeddingCredentials(routingContext);
-    this.rerankingCredentials =
-        rerankingCredentialsResolver.get().resolveRerankingCredentials(routingContext);
     this.tenantId = (tenantResolver.get()).resolve(routingContext, securityContext);
     this.cassandraToken = (tokenResolver.get()).resolve(routingContext, securityContext);
     httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
+    requestId = generateRequestId();
+
+    Optional<String> rerankingApiKeyFromHeader =
+        HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext);
+    this.rerankingCredentials =
+        rerankingApiKeyFromHeader
+            .map(apiKey -> new RerankingCredentials(Optional.of(apiKey)))
+            .orElse(
+                this.cassandraToken
+                    .map(cassandraToken -> new RerankingCredentials(Optional.of(cassandraToken)))
+                    .orElse(new RerankingCredentials(Optional.empty())));
+  }
+
+  private static String generateRequestId() {
+    return UUID_V7_GENERATOR.generate().toString();
+  }
+
+  public String getRequestId() {
+    return requestId;
   }
 
   public Optional<String> getTenantId() {

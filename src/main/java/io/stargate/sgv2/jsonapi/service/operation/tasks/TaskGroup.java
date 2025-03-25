@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 
 /**
@@ -15,7 +16,7 @@ import java.util.*;
  * @param <SchemaT> Schema object type
  */
 public class TaskGroup<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject>
-    extends ArrayList<TaskT> {
+    extends ArrayList<TaskT> implements Recordable {
 
   private boolean sequentialProcessing = false;
   private final UUID groupId = UUID.randomUUID();
@@ -90,24 +91,50 @@ public class TaskGroup<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject
     if (!sequentialProcessing) {
       return false;
     }
-    return stream().anyMatch(task -> task.status() == Task.TaskStatus.ERROR);
+    return stream().anyMatch(task -> task.status() == BaseTask.TaskStatus.ERROR);
   }
 
   @Override
   public String toString() {
-    Map<Task.TaskStatus, Integer> statusCount = new HashMap<>(size());
+    return "TaskGroup{"
+        + "groupId="
+        + groupId
+        + ", sequentialProcessing="
+        + sequentialProcessing
+        + ", size="
+        + size()
+        + ", statusCount="
+        + statusCount()
+        + ", taskType="
+        + taskClassName()
+        + '}';
+  }
+
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    Map<BaseTask.TaskStatus, Integer> statusCount = new HashMap<>(size());
     forEach(task -> statusCount.merge(task.status(), 1, Math::addExact));
 
-    return new StringBuilder("TaskGroup{")
-        .append("groupId=")
-        .append(groupId)
-        .append(", sequentialProcessing=")
-        .append(sequentialProcessing)
-        .append(", count=")
-        .append(size())
-        .append(", statusCount=")
-        .append(statusCount)
-        .append('}')
-        .toString();
+    return dataRecorder
+        .append("groupId", groupId)
+        .append("taskType", taskClassName())
+        .append("sequentialProcessing", sequentialProcessing)
+        .append("size", size())
+        .append("statusCount", statusCount())
+        .append("tasks", List.copyOf(this));
+  }
+
+  public Map<BaseTask.TaskStatus, Integer> statusCount() {
+    Map<BaseTask.TaskStatus, Integer> statusCount = new HashMap<>(size());
+    forEach(task -> statusCount.merge(task.status(), 1, Math::addExact));
+    return statusCount;
+  }
+
+  public String taskClassName() {
+    if (size() == 0) {
+      return "<TaskListEmpty>";
+    }
+    var simpleName = get(0).getClass().getSimpleName();
+    return simpleName.isBlank() ? get(0).getClass().getName() : simpleName;
   }
 }

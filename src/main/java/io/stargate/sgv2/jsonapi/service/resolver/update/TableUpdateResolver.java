@@ -5,18 +5,22 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.CQL_IDENTIFIER_COM
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.ColumnAssignment;
 import io.stargate.sgv2.jsonapi.service.operation.query.DefaultUpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.CqlNamedValueContainerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,22 +38,27 @@ import java.util.stream.Collectors;
 public class TableUpdateResolver<CmdT extends Command & Updatable>
     extends UpdateResolver<CmdT, TableSchemaObject> {
 
-  // Using map here so we can expose the list of supported operators for validation to check.
-  // Keep this immutable, we return the key set in a property below.
-  private static final Map<UpdateOperator, TableUpdateOperatorResolver> SUPPORTED_OPERATORS_MAP =
-      Map.of(
-          UpdateOperator.SET, new TableUpdateSetResolver(),
-          UpdateOperator.UNSET, new TableUpdateUnsetResolver(),
-          UpdateOperator.PUSH, new TableUpdatePushResolver(),
-          UpdateOperator.PULL_ALL, new TableUpdatePullAllResolver());
+  private static final Map<UpdateOperator, TableUpdateOperatorResolver>
+      SUPPORTED_OPERATION_RESOLVERS =
+          Map.of(
+              UpdateOperator.SET, new TableUpdateSetResolver(),
+              UpdateOperator.UNSET, new TableUpdateUnsetResolver(),
+              UpdateOperator.PUSH, new TableUpdatePushResolver(),
+              UpdateOperator.PULL_ALL, new TableUpdatePullAllResolver());
 
-  private static final List<String> SUPPORTED_OPERATORS_STRING_LIST =
-      SUPPORTED_OPERATORS_MAP.keySet().stream().map(UpdateOperator::operator).toList();
+  private static final List<String> SUPPORTED_OPERATION_API_NAMES =
+      SUPPORTED_OPERATION_RESOLVERS.keySet().stream().map(UpdateOperator::apiName).toList();
 
+  /**
+   * Creates a new resolver that will use the given config.
+   *
+   * @param operationsConfig the config to use
+   */
   public TableUpdateResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
   }
 
+  /** {@inheritDoc} */
   @Override
   public WithWarnings<UpdateValuesCQLClause> resolve(
       CommandContext<TableSchemaObject> commandContext, CmdT command) {
@@ -58,25 +67,30 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
 
     List<ColumnAssignment> assignments = new ArrayList<>();
     List<String> usedUnsupportedOperators = new ArrayList<>();
+
     // we check if there are no operations below, so the check also looks at empty operations
-    EnumMap<UpdateOperator, ObjectNode> updateOperationDefs =
+    EnumMap<UpdateOperator, ObjectNode> updateOperations =
         updateClause != null
             ? updateClause.updateOperationDefs()
             : new EnumMap<>(UpdateOperator.class);
 
-    for (var updateOperationDef : updateOperationDefs.entrySet()) {
+    for (var updateOperationDef : updateOperations.entrySet()) {
+
       UpdateOperator updateOperator = updateOperationDef.getKey();
       ObjectNode arguments = updateOperationDef.getValue();
 
-      var operatorResolver = SUPPORTED_OPERATORS_MAP.get(updateOperator);
+      var operatorResolver = SUPPORTED_OPERATION_RESOLVERS.get(updateOperator);
       if (operatorResolver == null) {
-        usedUnsupportedOperators.add(updateOperator.operator());
+        usedUnsupportedOperators.add(updateOperator.apiName());
       } else if (!arguments.isEmpty()) {
         // For empty assignment operator, we won't add it to assignments result list
         // e.g. "$set": {}, "$unset": {}
-        assignments.addAll(operatorResolver.resolve(commandContext.schemaObject(), arguments));
+        assignments.addAll(
+            operatorResolver.resolve(
+                commandContext.schemaObject(), new ErrorStrategy(updateOperator), arguments));
       }
     }
+
     // Collect all used unsupported operator and throw Update exception
     if (!usedUnsupportedOperators.isEmpty()) {
       throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATIONS_FOR_TABLE.get(
@@ -84,7 +98,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
               commandContext.schemaObject(),
               map -> {
                 map.put("usedUnsupportedUpdateOperations", errFmtJoin(usedUnsupportedOperators));
-                map.put("supportedUpdateOperations", errFmtJoin(SUPPORTED_OPERATORS_STRING_LIST));
+                map.put("supportedUpdateOperations", errFmtJoin(SUPPORTED_OPERATION_API_NAMES));
               }));
     }
 
@@ -95,19 +109,19 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
           errVars(
               commandContext.schemaObject(),
               map -> {
-                map.put("supportedUpdateOperations", errFmtJoin(SUPPORTED_OPERATORS_STRING_LIST));
+                map.put("supportedUpdateOperations", errFmtJoin(SUPPORTED_OPERATION_API_NAMES));
               }));
     }
 
     // Duplicate column assignments is invalid
     // e.g. {"update": {"$set": {"description": "123"},"$unset": {"description": "456"}}}
-    List<CqlIdentifier> assignmentColumns =
-        assignments.stream().map(columnAssignment -> columnAssignment.column).toList();
-    Set<CqlIdentifier> allItems = new HashSet<>();
+    Set<CqlIdentifier> allAssignments = new HashSet<>();
     Set<CqlIdentifier> duplicates =
-        assignmentColumns.stream()
-            .filter(column -> !allItems.add(column))
+        assignments.stream()
+            .map(ColumnAssignment::name)
+            .filter(column -> !allAssignments.add(column))
             .collect(Collectors.toSet());
+
     if (!duplicates.isEmpty()) {
       throw UpdateException.Code.UNSUPPORTED_OVERLAPPING_UPDATE_OPERATIONS.get(
           errVars(
@@ -115,17 +129,92 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
               map -> {
                 map.put(
                     "duplicateAssignmentColumns",
-                    errFmtJoin(
-                        duplicates.stream()
-                            .sorted(CQL_IDENTIFIER_COMPARATOR)
-                            .map(CqlIdentifierUtil::cqlIdentifierToMessageString)
-                            .toList()));
+                    errFmtCqlIdentifier(
+                        duplicates.stream().sorted(CQL_IDENTIFIER_COMPARATOR).toList()));
               }));
     }
 
     // Analyze table update columnAssignments before create CQLClause
+    // this checks if the update is doing things it should not be
     new TableUpdateAnalyzer(commandContext.schemaObject()).analyze(assignments);
 
     return WithWarnings.of(new DefaultUpdateValuesCQLClause(assignments));
   }
+
+  /**
+   * Error strategy to use with {@link CqlNamedValueContainerFactory} for updates.
+   *
+   * <p>
+   */
+  @VisibleForTesting
+  static class ErrorStrategy implements CqlNamedValue.ErrorStrategy<UpdateException> {
+
+    private final UpdateOperator updateOperator;
+
+    @VisibleForTesting
+    ErrorStrategy(UpdateOperator updateOperator) {
+      this.updateOperator = updateOperator;
+    }
+
+    @Override
+    public ErrorCode<UpdateException> codeForUnknownColumn() {
+      return UpdateException.Code.UNKNOWN_TABLE_COLUMNS;
+    }
+
+    @Override
+    public ErrorCode<UpdateException> codeForMissingVectorize() {
+      return UpdateException.Code.UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION;
+    }
+
+    @Override
+    public ErrorCode<UpdateException> codeForMissingCodec() {
+      return UpdateException.Code.UNSUPPORTED_COLUMN_TYPES;
+    }
+
+    @Override
+    public ErrorCode<UpdateException> codeForCodecError() {
+      return UpdateException.Code.INVALID_UPDATE_COLUMN_VALUES;
+    }
+
+    @Override
+    public void allChecks(TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
+      checkUnknownColumns(tableSchemaObject, allColumns);
+      checkApiSupport(tableSchemaObject, allColumns);
+      checkMissingCodec(tableSchemaObject, allColumns);
+      checkCodecError(tableSchemaObject, allColumns);
+      checkMissingVectorize(tableSchemaObject, allColumns);
+    }
+
+    private void checkApiSupport(
+        TableSchemaObject tableSchemaObject, CqlNamedValueContainer allColumns) {
+
+      var unsupportedColumns =
+          allColumns.values().stream()
+              .filter(
+                  namedValue ->
+                      !namedValue
+                          .apiColumnDef()
+                          .type()
+                          .apiSupport()
+                          .update()
+                          .supports(updateOperator))
+              .sorted(CqlNamedValue.NAME_COMPARATOR)
+              .toList();
+
+      if (!unsupportedColumns.isEmpty()) {
+        throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR.get(
+            errVars(
+                tableSchemaObject,
+                map -> {
+                  map.put(
+                      "allColumns",
+                      errFmtColumnMetadata(
+                          tableSchemaObject.tableMetadata().getColumns().values()));
+                  map.put("operator", updateOperator.apiName());
+                  map.put("unsupportedColumns", errFmtCqlNamedValue(unsupportedColumns));
+                }));
+      }
+    }
+  }
+  ;
 }

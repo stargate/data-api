@@ -123,7 +123,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
                   """
                 .formatted(collectionToCreate))
         .when()
-        .post(KeyspaceResource.BASE_PATH, keyspaceName)
+        .post(KeyspaceResource.BASE_PATH, keyspace)
         .then()
         .statusCode(200)
         .body("$", responseIsDDLSuccess());

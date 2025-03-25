@@ -12,6 +12,8 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstant
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.ProviderHttpResponseErrorMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -52,7 +54,7 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
   public interface JinaAIEmbeddingProviderClient {
     @POST
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 

@@ -20,8 +20,8 @@ import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.ErrorTemplate;
 import io.stargate.sgv2.jsonapi.util.CqlPrintUtil;
-import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
-import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -54,8 +54,8 @@ public class DefaultDriverExceptionHandlerTest {
 
     var handledEx = assertDoesNotThrow(() -> TEST_DATA.DRIVER_HANDLER.maybeHandle(originalEx));
 
-    var prettyString = new TestResult(originalEx, handledEx).toString(true);
-    LOGGER.info("Handled Exception: \n{}", prettyString);
+    LOGGER.info(
+        "Handled Exception: \n{}", PrettyPrintable.pprint(new TestResult(originalEx, handledEx)));
 
     assertThat(handledEx).as("Handled exceptions is not null").isNotNull();
 
@@ -73,16 +73,15 @@ public class DefaultDriverExceptionHandlerTest {
   }
 
   public record TestResult(DriverException originalException, RuntimeException handledException)
-      implements PrettyPrintable {
+      implements Recordable {
 
     @Override
-    public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
-      prettyToStringBuilder
+    public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+      return dataRecorder
           .append("originalException.simpleClass", originalException.getClass().getSimpleName())
           .append("originalException.message", originalException.getMessage())
           .append("originalException.cause", originalException.getCause())
           .append("handledException", handledException);
-      return prettyToStringBuilder;
     }
   }
 

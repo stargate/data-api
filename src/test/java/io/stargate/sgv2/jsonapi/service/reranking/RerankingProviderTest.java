@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 public class RerankingProviderTest {
 
   private static final RerankingCredentials RERANK_CREDENTIALS =
-      new RerankingCredentials("mocked data api token", Optional.empty());
+      new RerankingCredentials(Optional.of("mocked reranking api key"));
 
   @Test
   void microBatchingTest() {

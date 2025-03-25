@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
 
+import static io.stargate.sgv2.jsonapi.util.JsonUtil.arrayNodeToVector;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +54,25 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
     int totalFields = sortNode.size();
     List<SortExpression> sortExpressions = new ArrayList<>(sortNode.size());
 
+    // $lexical is only allowed alone: handle first
+    JsonNode lexicalValue = sortNode.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
+    if (lexicalValue != null) {
+      if (sortNode.size() > 1) {
+        throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
+            "if sorting by '%s' no other sort expressions allowed",
+            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
+      }
+      if (!lexicalValue.isTextual()) {
+        throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
+            "if sorting by '%s' value must be STRING, not %s",
+            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, lexicalValue.getNodeType());
+      }
+      // We cannot yet determine if lexical sort supported by the collection, just
+      // construct clause
+      return new SortClause(
+          Collections.singletonList(SortExpression.bm25Search(lexicalValue.textValue())));
+    }
+
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> inner = fieldIter.next();
       final String path = inner.getKey().trim();
@@ -80,7 +102,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
           // is a vector then need to check on table pathway that the sort is correct.
           // NOTE: does not check if there are more than one sort expression, the
           // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
-          // this is also why we do not break the look here
+          // this is also why we do not break the loop here
           sortExpressions.add(
               SortExpression.tableVectorSort(
                   path, arrayNodeToVector((ArrayNode) inner.getValue())));
@@ -169,27 +191,6 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       }
     }
     return new SortClause(sortExpressions);
-  }
-
-  /**
-   * TODO: this almost duplicates code in WriteableShreddedDocument.shredVector() but that does not
-   * check the array elements, we MUST stop duplicating code like this
-   */
-  private static float[] arrayNodeToVector(ArrayNode arrayNode) {
-
-    float[] arrayVals = new float[arrayNode.size()];
-    if (arrayNode.isEmpty()) {
-      throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
-    }
-
-    for (int i = 0; i < arrayNode.size(); i++) {
-      JsonNode element = arrayNode.get(i);
-      if (!element.isNumber()) {
-        throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
-      }
-      arrayVals[i] = element.floatValue();
-    }
-    return arrayVals;
   }
 
   private String validateSortClausePath(String path) {

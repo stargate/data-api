@@ -303,20 +303,6 @@ public record CreateCollectionCommand(
             @JsonProperty(RerankingConstants.RerankingService.PARAMETERS)
             @JsonInclude(JsonInclude.Include.NON_NULL)
             Map<String, Object> parameters) {}
-
-    public Options(
-        IdConfig idConfig,
-        VectorSearchConfig vector,
-        IndexingConfig indexing,
-        LexicalConfigDefinition lexical,
-        RerankingConfigDefinition rerank) {
-      // idConfig could be null, will resolve idType to empty string in table comment
-      this.idConfig = idConfig;
-      this.vector = vector;
-      this.indexing = indexing;
-      this.lexical = lexical;
-      this.rerank = rerank;
-    }
   }
 
   /** {@inheritDoc} */

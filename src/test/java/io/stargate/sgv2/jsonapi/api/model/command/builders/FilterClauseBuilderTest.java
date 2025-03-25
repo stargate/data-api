@@ -32,6 +32,8 @@ public class FilterClauseBuilderTest {
   @Inject ObjectMapper objectMapper;
   @Inject OperationsConfig operationsConfig;
 
+  private TestConstants testConstants = new TestConstants();
+
   @Nested
   class Deserialize {
 
@@ -1439,7 +1441,7 @@ public class FilterClauseBuilderTest {
   }
 
   FilterClause readFilterClause(String json) throws IOException {
-    return FilterClauseBuilder.builderFor(TestConstants.COLLECTION_SCHEMA_OBJECT)
+    return FilterClauseBuilder.builderFor(testConstants.COLLECTION_SCHEMA_OBJECT)
         .build(operationsConfig, objectMapper.readTree(json));
   }
 }

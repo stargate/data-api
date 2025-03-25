@@ -6,14 +6,13 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionInsertAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingOperationFactory;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTask;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertDBTaskBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.shredding.JsonNodeDecoder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -23,12 +22,10 @@ import java.util.List;
 public class InsertOneCommandResolver implements CommandResolver<InsertOneCommand> {
 
   private final DocumentShredder documentShredder;
-  private final RowShredder rowShredder;
 
   @Inject
-  public InsertOneCommandResolver(DocumentShredder documentShredder, RowShredder rowShredder) {
+  public InsertOneCommandResolver(DocumentShredder documentShredder) {
     this.documentShredder = documentShredder;
-    this.rowShredder = rowShredder;
   }
 
   @Override
@@ -51,19 +48,16 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, InsertOneCommand command) {
 
-    TableInsertDBTaskBuilder taskBuilder =
-        TableInsertDBTask.builder(commandContext.schemaObject())
-            .withRowShredder(rowShredder)
-            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+    var tasksAndDeferrables =
+        TableInsertDBTask.builder(commandContext)
+            .withOrdered(false)
+            .withReturnDocumentResponses(false) // never for insertOne
+            .withJsonNamedValueFactory(
+                new JsonNamedValueContainerFactory(
+                    commandContext.schemaObject(), JsonNodeDecoder.DEFAULT))
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new)
+            .build(List.of(command.document()));
 
-    var taskGroup =
-        new TaskGroup<InsertDBTask<TableSchemaObject>, TableSchemaObject>(
-            taskBuilder.build(command.document()));
-
-    var accumulator =
-        InsertDBTaskPage.accumulator(commandContext)
-            .returnDocumentResponses(false); // never for insertOne
-
-    return new TaskOperation<>(taskGroup, accumulator);
+    return EmbeddingOperationFactory.createOperation(commandContext, tasksAndDeferrables);
   }
 }

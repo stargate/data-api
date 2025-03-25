@@ -11,7 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An {@link Operation} for running any type of {@link OperationAttempt} grouped into a {@link
+ * TODO: aaron 19 march 2025 - remove OperationAttempt and related code once Tasks are solid An
+ * {@link Operation} for running any type of {@link OperationAttempt} grouped into a {@link
  * OperationAttemptContainer}.
  *
  * <p>
@@ -95,7 +96,8 @@ public class GenericOperation<
             commandContext.cqlSessionCache(),
             new CommandQueryExecutor.DBRequestContext(
                 commandContext.requestContext().getTenantId(),
-                commandContext.requestContext().getCassandraToken()),
+                commandContext.requestContext().getCassandraToken(),
+                commandContext.requestTracing().enabled()),
             CommandQueryExecutor.QueryTarget.TABLE);
 
     // Common start pattern for all operations

@@ -2,26 +2,26 @@ package io.stargate.sgv2.jsonapi.service.operation.query;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
 import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdatePullAllResolver;
-import java.util.function.BiFunction;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
+import java.util.List;
 
 /**
- * Converts a column remove operation to an assignment.
+ * CQL Column assignment that removes the value to a list or set CQL type.
  *
- * <p>This is a {@link BiFunction} that takes an {@link OngoingAssignment} and a {@link
- * CqlIdentifier} and returns an {@link UpdateWithAssignments} that represents the removal of the
- * column value.
- *
- * <p>Currently resolved from by API operator $pullAll, see {@link TableUpdatePullAllResolver}.
+ * <p>Currently resolved from API operator $pullAll, see {@link TableUpdatePullAllResolver}.
  */
-public class ColumnRemoveToAssignment
-    implements BiFunction<OngoingAssignment, CqlIdentifier, UpdateWithAssignments> {
+public class ColumnRemoveToAssignment extends ColumnAssignment {
+
+  public ColumnRemoveToAssignment(CqlNamedValue namedValue) {
+    super(namedValue);
+  }
 
   @Override
-  public UpdateWithAssignments apply(OngoingAssignment ongoingAssignment, CqlIdentifier column) {
-    return ongoingAssignment.remove(column, bindMarker());
+  public UpdateWithAssignments apply(OngoingAssignment ongoingAssignment, List<Object> objects) {
+    addPositionalValues(objects);
+    return ongoingAssignment.remove(namedValue.name(), bindMarker());
   }
 }
