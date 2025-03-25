@@ -73,15 +73,16 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
               "supportedTypes",
                   // Notice, supported map/set/list types are not included in the error message
                   // They will be validated before in the desc factory
-                  // This deserves another refactor for the table definition
                   errFmtJoin(
                       ApiDataTypeDefs.filterBySupportToList(ApiSupportDef::createTable).stream()
                           .map(e -> e.typeName().apiName())
+                          .sorted(String::compareTo)
                           .toList()),
               "unsupportedTypes",
                   errFmtJoin(
                       unsupportedColumnsCreateTable.stream()
                           .map(e -> e.type().columnDesc().getApiName())
+                          .sorted(String::compareTo)
                           .toList())));
     }
 
