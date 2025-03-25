@@ -205,13 +205,75 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   @Order(3)
-  class UnsetOperation {}
+  class UnsetOperation {
+    @Test
+    @Order(1)
+    public void setupDocuments() {
+      deleteAllDocuments();
 
-  @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
-  @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  @Order(4)
-  class UnsupportedOperations {}
+      insertDoc(lexicalDoc(1, "biking"));
+      insertDoc(lexicalDoc(2, "banana bread is good"));
+      insertDoc(lexicalDoc(3, "banana"));
+
+      // and then verify that we can read them back as expected. First, all:
+      givenHeadersPostJsonThenOkNoErrors("{ \"find\": {} }")
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(3));
+
+      // and then by sort
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                {
+                  "find": {
+                    "projection": {"*": 1},
+                    "sort" : {"$lexical": "banana" }
+                  }
+                }
+                """)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents",
+              jsonEquals(
+                  """
+                            [{"_id": "lexical-3", "$lexical": "banana"},
+                            {"_id": "lexical-2", "$lexical": "banana bread is good"}],
+                        """));
+    }
+
+    @Test
+    @Order(1)
+    public void unsetOneToRemoveFromResults() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+        {
+          "updateOne": {
+            "filter" : {"_id": "lexical-2"},
+            "update" : {"$unset" : {"$lexical": 1}}
+          }
+        }
+        """)
+          .body("$", responseIsStatusOnly())
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                                {
+                                  "find": {
+                                    "projection": {"*": 1},
+                                    "sort" : {"$lexical": "banana" }
+                                  }
+                                }
+                                """)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents",
+              jsonEquals(
+                  """
+                            [{"_id": "lexical-3", "$lexical": "banana"}]
+                        """));
+    }
+  }
 
   static String lexicalDoc(int id, String keywords) {
     String keywordsStr = (keywords == null) ? "null" : String.format("\"%s\"", keywords);
