@@ -124,14 +124,15 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
     String updateCql =
         ReadAndUpdateCollectionOperation.buildUpdateQuery(
             KEYSPACE_NAME, COLLECTION_NAME, false, false);
-    return ReadAndUpdateCollectionOperation.bindUpdateValues(updateCql, shredDocument, false);
+    return ReadAndUpdateCollectionOperation.bindUpdateValues(
+        updateCql, shredDocument, false, false);
   }
 
   private SimpleStatement vectorUpdateStatement(WritableShreddedDocument shredDocument) {
     String updateCql =
         ReadAndUpdateCollectionOperation.buildUpdateQuery(
             KEYSPACE_NAME, COLLECTION_NAME, true, false);
-    return ReadAndUpdateCollectionOperation.bindUpdateValues(updateCql, shredDocument, true);
+    return ReadAndUpdateCollectionOperation.bindUpdateValues(updateCql, shredDocument, true, false);
   }
 
   @Nested

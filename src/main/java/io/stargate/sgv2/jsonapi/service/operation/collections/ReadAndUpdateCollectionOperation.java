@@ -246,11 +246,15 @@ public record ReadAndUpdateCollectionOperation(
       RequestContext dataApiRequestInfo,
       QueryExecutor queryExecutor,
       WritableShreddedDocument writableShreddedDocument) {
+    final boolean vectorEnabled = commandContext().schemaObject().vectorConfig().vectorEnabled();
+    final boolean lexicalEnabled = commandContext().schemaObject().lexicalConfig().enabled();
+
     final SimpleStatement updateQuery =
         bindUpdateValues(
-            buildUpdateQuery(commandContext().schemaObject().vectorConfig().vectorEnabled()),
+            buildUpdateQuery(vectorEnabled, lexicalEnabled),
             writableShreddedDocument,
-            commandContext().schemaObject().vectorConfig().vectorEnabled());
+            vectorEnabled,
+            lexicalEnabled);
     return queryExecutor
         .executeWrite(dataApiRequestInfo, updateQuery)
         .onItem()
@@ -264,8 +268,7 @@ public record ReadAndUpdateCollectionOperation(
             });
   }
 
-  private String buildUpdateQuery(boolean vectorEnabled) {
-    final boolean lexicalEnabled = commandContext().schemaObject().lexicalConfig().enabled();
+  private String buildUpdateQuery(boolean vectorEnabled, boolean lexicalEnabled) {
     final SchemaObjectName tableName = commandContext.schemaObject().name();
     return buildUpdateQuery(tableName.keyspace(), tableName.table(), vectorEnabled, lexicalEnabled);
   }
@@ -297,8 +300,7 @@ query_timestamp_values = ?,
       updateQuery.append("\nquery_vector_value = ?,");
     }
     if (lexicalEnabled) {
-      // !!! TODO: add support for lexical value update
-      // updateQuery.append("\nquery_lexical_value = ?,");
+      updateQuery.append("\nquery_lexical_value = ?,");
     }
     updateQuery.append(
         """
@@ -311,7 +313,10 @@ IF tx_id = ?
   }
 
   protected static SimpleStatement bindUpdateValues(
-      String builtQuery, WritableShreddedDocument doc, boolean vectorEnabled) {
+      String builtQuery,
+      WritableShreddedDocument doc,
+      boolean vectorEnabled,
+      boolean lexicalEnabled) {
     // Note: must match the order in query string constructed with `buildUpdateQuery()`
     // Build dynamically due to number of permutations
     List<Object> positional = new ArrayList<>(16); // from 12 to 14 entries currently
@@ -326,6 +331,9 @@ IF tx_id = ?
     positional.add(CQLBindValues.getTimestampMapValues(doc.queryTimestampValues()));
     if (vectorEnabled) {
       positional.add(CQLBindValues.getVectorValue(doc.queryVectorValues()));
+    }
+    if (lexicalEnabled) {
+      positional.add(doc.queryLexicalValue());
     }
     positional.add(doc.docJson());
     positional.add(CQLBindValues.getDocumentIdValue(doc.id()));

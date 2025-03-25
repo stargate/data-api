@@ -51,6 +51,7 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
+  @TestClassOrder(ClassOrderer.OrderAnnotation.class)
   @Order(2)
   class SetOperation {
     @Test
@@ -70,7 +71,7 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
               """
                                 {
                                   "find": {
-                                    "projection": { "_id": 1 },
+                                    "projection": {"*": 1},
                                     "sort" : {"$lexical": "monkey" }
                                   }
                                 }
@@ -80,14 +81,14 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
               "data.documents",
               jsonEquals(
                   """
-                [{"_id": "lexical-2"},
-                {"_id": "lexical-1"}]
+                [{"_id": "lexical-2", "$lexical": "monkey"},
+                {"_id": "lexical-1", "$lexical": "monkey banana"}]
             """));
     }
 
     @Test
     @Order(2)
-    void testOverwriteEmpty() throws Exception {
+    void testOverwrite1_Empty() {
       givenHeadersPostJsonThenOkNoErrors(
               """
         {
@@ -105,7 +106,7 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
               """
                                 {
                                   "find": {
-                                    "projection": { "_id": 1 },
+                                    "projection": {"*": 1},
                                     "sort" : {"$lexical": "monkey" }
                                   }
                                 }
@@ -115,29 +116,92 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
               "data.documents",
               jsonEquals(
                   """
-                [{"_id": "lexical-2"},
-                {"_id": "lexical-1"},
-                {"_id": "lexical-3"}]
+                [{"_id": "lexical-2", "$lexical": "monkey"},
+                {"_id": "lexical-1", "$lexical": "monkey banana"},
+                {"_id": "lexical-3", "$lexical": "monkey bread is so tasty"}]
             """));
     }
 
     @Test
     @Order(3)
-    void testOverwriteNonEmpty() {}
+    void testOverwrite2_NonEmptyWithDiffValue() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+        {
+          "updateOne": {
+            "filter" : {"_id": "lexical-2"},
+            "update" : {"$set" : {"$lexical": "biking"}}
+          }
+        }
+        """)
+          .body("$", responseIsStatusOnly())
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                {
+                  "find": {
+                    "projection": {"*": 1},
+                    "sort" : {"$lexical": "monkey" }
+                  }
+                }
+                """)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents",
+              jsonEquals(
+                  """
+                            [{"_id": "lexical-1", "$lexical": "monkey banana"},
+                            {"_id": "lexical-3", "$lexical": "monkey bread is so tasty" }]
+                        """));
+    }
 
     @Test
     @Order(4)
-    void testOverwriteNonEmptyWithNull() {}
+    void testOverwrite3_NonEmptyWithNull() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+        {
+          "updateOne": {
+            "filter" : {"_id": "lexical-1"},
+            "update" : {"$set" : {"$lexical": null}}
+          }
+        }
+        """)
+          .body("$", responseIsStatusOnly())
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                                {
+                                  "find": {
+                                    "projection": {"*": 1},
+                                    "sort" : {"$lexical": "monkey" }
+                                  }
+                                }
+                                """)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents",
+              jsonEquals(
+                  """
+                            [{"_id": "lexical-3", "$lexical": "monkey bread is so tasty"}]"
+                        """));
+    }
   }
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
+  @TestClassOrder(ClassOrderer.OrderAnnotation.class)
   @Order(3)
   class UnsetOperation {}
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
-  @Order(3)
+  @TestClassOrder(ClassOrderer.OrderAnnotation.class)
+  @Order(4)
   class UnsupportedOperations {}
 
   static String lexicalDoc(int id, String keywords) {

@@ -87,7 +87,8 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     final String updateCql =
         ReadAndUpdateCollectionOperation.buildUpdateQuery(
             KEYSPACE_NAME, COLLECTION_NAME, false, false);
-    return ReadAndUpdateCollectionOperation.bindUpdateValues(updateCql, shredDocument, false);
+    return ReadAndUpdateCollectionOperation.bindUpdateValues(
+        updateCql, shredDocument, false, false);
   }
 
   @Test

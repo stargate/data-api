@@ -295,7 +295,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
       WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode, tx_id);
       SimpleStatement updateStmt =
-          ReadAndUpdateCollectionOperation.bindUpdateValues(updateCql, shredDocument, false);
+          ReadAndUpdateCollectionOperation.bindUpdateValues(updateCql, shredDocument, false, false);
 
       List<Row> resultRows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, byteBufferFrom(true)));
       AsyncResultSet updateResults = new MockAsyncResultSet(COLUMNS_APPLIED, resultRows, null);
