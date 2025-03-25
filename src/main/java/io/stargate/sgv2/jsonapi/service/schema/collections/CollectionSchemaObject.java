@@ -445,7 +445,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     return lexicalConfig;
   }
 
-  public CollectionRerankingConfig rerankingConfig() {
+  public CollectionRerankDef rerankingConfig() {
     return rerankingConfig;
   }
 
