@@ -19,6 +19,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -297,7 +298,7 @@ query_timestamp_values = ?,
     }
     if (lexicalEnabled) {
       // !!! TODO: add support for lexical value update
-      // updateQuery.append("\nquery_lexical_value = ?,");
+      //updateQuery.append("\nquery_lexical_value = ?,");
     }
     updateQuery.append(
         """
@@ -312,36 +313,24 @@ IF tx_id = ?
   protected static SimpleStatement bindUpdateValues(
       String builtQuery, WritableShreddedDocument doc, boolean vectorEnabled) {
     // Note: must match the order in query string constructed with `buildUpdateQuery()`
+    // Build dynamically due to number of permutations
+    List<Object> positional = new ArrayList<>(16); // from 12 to 14 entries currently
+
+    positional.add(CQLBindValues.getSetValue(doc.existKeys()));
+    positional.add(CQLBindValues.getIntegerMapValues(doc.arraySize()));
+    positional.add(CQLBindValues.getStringSetValue(doc.arrayContains()));
+    positional.add(CQLBindValues.getBooleanMapValues(doc.queryBoolValues()));
+    positional.add(CQLBindValues.getDoubleMapValues(doc.queryNumberValues()));
+    positional.add(CQLBindValues.getStringMapValues(doc.queryTextValues()));
+    positional.add(CQLBindValues.getSetValue(doc.queryNullValues()));
+    positional.add(CQLBindValues.getTimestampMapValues(doc.queryTimestampValues()));
     if (vectorEnabled) {
-      return SimpleStatement.newInstance(
-          builtQuery,
-          CQLBindValues.getSetValue(doc.existKeys()),
-          CQLBindValues.getIntegerMapValues(doc.arraySize()),
-          CQLBindValues.getStringSetValue(doc.arrayContains()),
-          CQLBindValues.getBooleanMapValues(doc.queryBoolValues()),
-          CQLBindValues.getDoubleMapValues(doc.queryNumberValues()),
-          CQLBindValues.getStringMapValues(doc.queryTextValues()),
-          CQLBindValues.getSetValue(doc.queryNullValues()),
-          CQLBindValues.getTimestampMapValues(doc.queryTimestampValues()),
-          CQLBindValues.getVectorValue(doc.queryVectorValues()),
-          doc.docJson(),
-          CQLBindValues.getDocumentIdValue(doc.id()),
-          doc.txID());
-    } else {
-      return SimpleStatement.newInstance(
-          builtQuery,
-          CQLBindValues.getSetValue(doc.existKeys()),
-          CQLBindValues.getIntegerMapValues(doc.arraySize()),
-          CQLBindValues.getStringSetValue(doc.arrayContains()),
-          CQLBindValues.getBooleanMapValues(doc.queryBoolValues()),
-          CQLBindValues.getDoubleMapValues(doc.queryNumberValues()),
-          CQLBindValues.getStringMapValues(doc.queryTextValues()),
-          CQLBindValues.getSetValue(doc.queryNullValues()),
-          CQLBindValues.getTimestampMapValues(doc.queryTimestampValues()),
-          doc.docJson(),
-          CQLBindValues.getDocumentIdValue(doc.id()),
-          doc.txID());
+      positional.add(CQLBindValues.getVectorValue(doc.queryVectorValues()));
     }
+    positional.add(doc.docJson());
+    positional.add(CQLBindValues.getDocumentIdValue(doc.id()));
+    positional.add(doc.txID());
+    return SimpleStatement.newInstance(builtQuery, positional.toArray(new Object[0]));
   }
 
   /**
