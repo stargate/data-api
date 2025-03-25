@@ -58,7 +58,7 @@ public abstract class StargateTestResource
       boolean reuse = false;
       ImmutableMap.Builder propsBuilder;
       if (this.containerNetworkId.isPresent()) {
-        String networkId = (String) this.containerNetworkId.get();
+        String networkId = this.containerNetworkId.get();
         propsBuilder = this.startWithContainerNetwork(networkId, reuse);
       } else {
         propsBuilder = this.startWithoutContainerNetwork(reuse);
@@ -282,6 +282,12 @@ public abstract class StargateTestResource
   public static boolean isHcd() {
     String dse = System.getProperty("testing.containers.cluster-hcd", null);
     return "true".equals(dse);
+  }
+
+  public static boolean isRunningUnderMaven() {
+    // Running under Maven if surefire test class path is set
+    // (note: also set up by Failsafe plugin (integ tests))
+    return System.getProperty("surefire.test.class.path") != null;
   }
 
   /**

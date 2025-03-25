@@ -116,6 +116,13 @@ public abstract class RequestTracing {
     maybeTrace(() -> new TraceMessage(message, recordable));
   }
 
+  public void maybeTrace(String message, Supplier<Recordable> recordable) {
+    if (!enabled) {
+      return;
+    }
+    maybeTrace(() -> new TraceMessage(message, recordable.get()));
+  }
+
   // ==================================================================================================================
   // Subclass API and implementation
   // ==================================================================================================================

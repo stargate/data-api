@@ -35,6 +35,7 @@ public record SortExpression(
   }
 
   public static SortExpression bm25Search(String bm25Query) {
+    Objects.requireNonNull(bm25Query, "BM25 query cannot be null");
     return new SortExpression(LEXICAL_CONTENT_FIELD, false, null, null, bm25Query);
   }
 
