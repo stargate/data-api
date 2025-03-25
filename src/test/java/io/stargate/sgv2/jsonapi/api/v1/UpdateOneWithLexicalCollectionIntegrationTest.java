@@ -10,10 +10,12 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 /** Tests for update operation for Collection Documents with Lexical (BM25) sort. */
@@ -51,12 +53,12 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
-  @TestClassOrder(ClassOrderer.OrderAnnotation.class)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   @Order(2)
   class SetOperation {
     @Test
     @Order(1)
-    void setupDocuments() {
+    public void setupDocuments() {
       insertDoc(lexicalDoc(1, "monkey banana"));
       insertDoc(lexicalDoc(2, "monkey"));
       insertDoc(lexicalDoc(3, null));
@@ -88,7 +90,7 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
 
     @Test
     @Order(2)
-    void testOverwrite1_Empty() {
+    public void testOverwrite1_Empty() {
       givenHeadersPostJsonThenOkNoErrors(
               """
         {
@@ -124,7 +126,7 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
 
     @Test
     @Order(3)
-    void testOverwrite2_NonEmptyWithDiffValue() {
+    public void testOverwrite2_NonEmptyWithDiffValue() {
       givenHeadersPostJsonThenOkNoErrors(
               """
         {
@@ -159,7 +161,7 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
 
     @Test
     @Order(4)
-    void testOverwrite3_NonEmptyWithNull() {
+    public void testOverwrite3_NonEmptyWithNull() {
       givenHeadersPostJsonThenOkNoErrors(
               """
         {
@@ -194,13 +196,13 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
-  @TestClassOrder(ClassOrderer.OrderAnnotation.class)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   @Order(3)
   class UnsetOperation {}
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
-  @TestClassOrder(ClassOrderer.OrderAnnotation.class)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   @Order(4)
   class UnsupportedOperations {}
 
