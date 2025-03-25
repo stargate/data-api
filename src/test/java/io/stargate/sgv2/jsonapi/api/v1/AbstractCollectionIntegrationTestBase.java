@@ -22,8 +22,16 @@ public abstract class AbstractCollectionIntegrationTestBase
     extends AbstractKeyspaceIntegrationTestBase {
   protected static final String TEST_PROP_LEXICAL_DISABLED = "testing.db.lexical-disabled";
 
-  // collection name automatically created in this test
-  protected final String collectionName = "col" + RandomStringUtils.randomAlphanumeric(16);
+  // Base collection name automatically created in this test
+  protected final String collectionName;
+
+  protected AbstractCollectionIntegrationTestBase() {
+    this("col");
+  }
+
+  protected AbstractCollectionIntegrationTestBase(String collectionNamePrefix) {
+    collectionName = collectionNamePrefix + RandomStringUtils.randomAlphanumeric(16);
+  }
 
   @BeforeAll
   public void createSimpleCollection() {
@@ -55,6 +63,11 @@ public abstract class AbstractCollectionIntegrationTestBase
 
   /** Utility to delete all documents from the test collection. */
   protected void deleteAllDocuments() {
+    deleteAllDocuments(keyspaceName, collectionName);
+  }
+
+  /** Utility to delete all documents from the specified collection. */
+  protected void deleteAllDocuments(String ks, String collection) {
     String json =
         """
         {
@@ -70,7 +83,7 @@ public abstract class AbstractCollectionIntegrationTestBase
               .contentType(ContentType.JSON)
               .body(json)
               .when()
-              .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+              .post(CollectionResource.BASE_PATH, ks, collection)
               .then()
               .statusCode(200)
               .body("$", responseIsWriteSuccess())
