@@ -6,6 +6,7 @@ import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.RerankingResponseErrorMessageMapper;
@@ -147,7 +148,9 @@ public class NvidiaRerankingProvider extends RerankingProvider {
 
     Uni<RerankingResponse> response =
         applyRetry(
-            nvidiaRerankingClient.rerank("Bearer " + rerankingCredentials.apiKey().get(), request));
+            nvidiaRerankingClient.rerank(
+                HttpConstants.BEARER_PREFIX_FOR_API_KEY + rerankingCredentials.apiKey().get(),
+                request));
 
     return response
         .onItem()
