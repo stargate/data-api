@@ -103,7 +103,7 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
     // First things first: BM25 search may or may not be available
     SortExpression bm25Expr = bm25SearchExpression();
     if (bm25Expr != null) {
-      if (!collection.lexicalEnabled()) {
+      if (!collection.lexicalConfig().enabled()) {
         throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
             "Lexical search is not enabled for collection '%s'", collection.name());
       }

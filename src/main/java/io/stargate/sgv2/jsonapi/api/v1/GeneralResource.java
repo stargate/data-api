@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -51,7 +52,8 @@ public class GeneralResource {
       MeteredCommandProcessor meteredCommandProcessor,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CQLSessionCache cqlSessionCache,
-      EmbeddingProviderFactory embeddingProviderFactory) {
+      EmbeddingProviderFactory embeddingProviderFactory,
+      RerankingProviderFactory rerankingProviderFactory) {
     this.meteredCommandProcessor = meteredCommandProcessor;
 
     contextBuilderSupplier =
@@ -60,7 +62,8 @@ public class GeneralResource {
             .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
             .withCqlSessionCache(cqlSessionCache)
             .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
-            .withEmbeddingProviderFactory(embeddingProviderFactory);
+            .withEmbeddingProviderFactory(embeddingProviderFactory)
+            .withRerankingProviderFactory(rerankingProviderFactory);
   }
 
   // TODO: add example for findEmbeddingProviders

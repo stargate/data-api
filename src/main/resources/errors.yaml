@@ -149,7 +149,16 @@ request-errors:
       The unsupported command was: ${unsupportedCommand}.
       
       Resend using one of the supported commands. 
+
+  - scope:
+    code: UNSUPPORTED_RERANKING_COMMAND
+    title: Reranking not enabled for Collection
+    body: |-
+      The `findAndRerank` is not enabled for the Collection.
       
+      The Command is only supported for Collections that are configured with `vector`, `lexical`, and `rerank` configurations. They additionally require a vectorize configuration if `$vectorize` is used.
+      
+      Resend using a supported Collection. 
 
 # ================================================================================================================
 # Family: REQUEST         Scope: DOCUMENT
@@ -1353,7 +1362,30 @@ request-errors:
       
       Resend the command without pagination.    
 
+  - scope: SORT
+    code: UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION
+    title: Vector sorting not supported by the Collection
+    body: |-
+      The command attempted to vector sort against a Collection that does not have vectors enabled. 
 
+      Vector sorting is enabled when creating a collection via the `vector` configuration option. It must be defined at creation time as all vectors have the same dimension.
+      
+      The Collection ${keyspace}.${table} does not have vectors enabled.
+      
+      Resend the command using a Collection with vectors enabled, or create a new Collection.
+
+
+  - scope: SORT
+    code: UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION
+    title: Vectorize sorting not supported by the Collection
+    body: |-
+      The command attempted to vectorize sort against a Collection that does not have vectorize enabled. 
+
+      Vectorize allows the Collection to calculate the sort vector for a text value server side. Vectorize is enabled when creating a collection via the `vector` configuration option, it must be defined at creation time as all vectors have the same dimension and model.
+      
+      The Collection ${keyspace}.${table} does not have vectorize enabled.
+      
+      Resend the command using a Collection with vectorize enabled, or create a new Collection.
 # ================================================================================================================
 # ================================================================================================================
 #                                           Server Errors

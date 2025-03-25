@@ -21,6 +21,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -116,6 +117,16 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   @Override
   public IndexUsage newIndexUsage() {
     return newCollectionIndexUsage();
+  }
+
+  @Override
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return super.recordTo(dataRecorder)
+        .append("idConfig", idConfig)
+        .append("vectorConfig", vectorConfig)
+        .append("indexingConfig", indexingConfig)
+        .append("lexicalConfig", lexicalConfig)
+        .append("rerankingConfig", rerankingConfig);
   }
 
   /**
@@ -430,14 +441,12 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     return indexingConfig;
   }
 
-  /**
-   * Accessor for checking whether this Collection has support for "$lexical" sort (has analyzed
-   * text column "query_lexical_value")
-   *
-   * @return True if "lexical" sort is supported by this Collection; false if not.
-   */
-  public boolean lexicalEnabled() {
-    return lexicalConfig.enabled();
+  public CollectionLexicalConfig lexicalConfig() {
+    return lexicalConfig;
+  }
+
+  public CollectionRerankingConfig rerankingConfig() {
+    return rerankingConfig;
   }
 
   // TODO: these helper functions break encapsulation for very little benefit

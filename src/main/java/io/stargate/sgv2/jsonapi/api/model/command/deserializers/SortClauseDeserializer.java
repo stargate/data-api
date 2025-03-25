@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
 
+import static io.stargate.sgv2.jsonapi.util.JsonUtil.arrayNodeToVector;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -189,27 +191,6 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       }
     }
     return new SortClause(sortExpressions);
-  }
-
-  /**
-   * TODO: this almost duplicates code in WriteableShreddedDocument.shredVector() but that does not
-   * check the array elements, we MUST stop duplicating code like this
-   */
-  private static float[] arrayNodeToVector(ArrayNode arrayNode) {
-
-    float[] arrayVals = new float[arrayNode.size()];
-    if (arrayNode.isEmpty()) {
-      throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
-    }
-
-    for (int i = 0; i < arrayNode.size(); i++) {
-      JsonNode element = arrayNode.get(i);
-      if (!element.isNumber()) {
-        throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
-      }
-      arrayVals[i] = element.floatValue();
-    }
-    return arrayVals;
   }
 
   private String validateSortClausePath(String path) {
