@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.*;
 import java.util.*;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,4 +108,9 @@ public abstract class ApiDataTypeDefs {
       List.of(
           ASCII, BIGINT, BOOLEAN, BINARY, COUNTER, DATE, DECIMAL, DOUBLE, DURATION, FLOAT, INT,
           SMALLINT, TEXT, TIME, TIMESTAMP, TINYINT, VARINT, INET, UUID, TIMEUUID);
+
+  public static List<PrimitiveApiDataTypeDef> filterBySupportToList(
+      Predicate<ApiSupportDef> matcher) {
+    return PRIMITIVE_TYPES.stream().filter(type -> matcher.test(type.apiSupport())).toList();
+  }
 }
