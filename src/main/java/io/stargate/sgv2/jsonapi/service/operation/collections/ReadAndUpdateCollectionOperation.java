@@ -269,6 +269,8 @@ public record ReadAndUpdateCollectionOperation(
     return buildUpdateQuery(tableName.keyspace(), tableName.table(), vectorEnabled, lexicalEnabled);
   }
 
+  // NOTE: This method is used in the test code (to avoid having to copy query Strings verbatim),
+  // so it should not be changed to private or non-static
   protected static String buildUpdateQuery(
       String keyspaceName, String collectionName, boolean vectorEnabled, boolean lexicalEnabled) {
     StringBuilder updateQuery = new StringBuilder(200);
@@ -294,12 +296,11 @@ query_timestamp_values = ?,
       updateQuery.append("\nquery_vector_value = ?,");
     }
     if (lexicalEnabled) {
-      // !!! TODO
+      // !!! TODO: add support for lexical value update
       // updateQuery.append("\nquery_lexical_value = ?,");
     }
     updateQuery.append(
         """
-query_vector_value = ?,
 doc_json  = ?
 WHERE key = ?
 IF tx_id = ?
@@ -310,7 +311,7 @@ IF tx_id = ?
 
   protected static SimpleStatement bindUpdateValues(
       String builtQuery, WritableShreddedDocument doc, boolean vectorEnabled) {
-    // respect the order in the DocsApiConstants.ALL_COLUMNS_NAMES
+    // Note: must match the order in query string constructed with `buildUpdateQuery()`
     if (vectorEnabled) {
       return SimpleStatement.newInstance(
           builtQuery,
