@@ -289,24 +289,9 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
                           }
                           """;
 
-      String update =
-          "UPDATE \"%s\".\"%s\" "
-              + "        SET"
-              + "            tx_id = now(),"
-              + "            exist_keys = ?,"
-              + "            array_size = ?,"
-              + "            array_contains = ?,"
-              + "            query_bool_values = ?,"
-              + "            query_dbl_values = ?,"
-              + "            query_text_values = ?,"
-              + "            query_null_values = ?,"
-              + "            query_timestamp_values = ?,"
-              + "            doc_json  = ?"
-              + "        WHERE "
-              + "            key = ?"
-              + "        IF "
-              + "            tx_id = ?";
-      String updateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      final String updateCql =
+          ReadAndUpdateCollectionOperation.buildUpdateQuery(
+              KEYSPACE_NAME, COLLECTION_NAME, false, false);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
       WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
 
