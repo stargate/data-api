@@ -298,7 +298,7 @@ query_timestamp_values = ?,
     }
     if (lexicalEnabled) {
       // !!! TODO: add support for lexical value update
-      //updateQuery.append("\nquery_lexical_value = ?,");
+      // updateQuery.append("\nquery_lexical_value = ?,");
     }
     updateQuery.append(
         """
