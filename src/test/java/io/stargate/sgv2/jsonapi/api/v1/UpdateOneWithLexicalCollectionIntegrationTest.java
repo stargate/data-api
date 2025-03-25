@@ -88,9 +88,11 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
             """));
     }
 
+    // First change: add $lexical to entry that didn't have it -- but one that
+    // has lower score (longer text)
     @Test
     @Order(2)
-    public void testOverwrite1_Empty() {
+    public void testOverwrite1_EmptyWithNonEmpty() {
       givenHeadersPostJsonThenOkNoErrors(
               """
         {
@@ -124,6 +126,8 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
             """));
     }
 
+    // Second change: overwrite existing value with a different one -- one with
+    // higher matching ("more monkeys")
     @Test
     @Order(3)
     public void testOverwrite2_NonEmptyWithDiffValue() {
@@ -131,8 +135,8 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
               """
         {
           "updateOne": {
-            "filter" : {"_id": "lexical-2"},
-            "update" : {"$set" : {"$lexical": "biking"}}
+            "filter" : {"_id": "lexical-1"},
+            "update" : {"$set" : {"$lexical": "monkey monkey monkey"}}
           }
         }
         """)
@@ -154,11 +158,13 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
               "data.documents",
               jsonEquals(
                   """
-                            [{"_id": "lexical-1", "$lexical": "monkey banana"},
+                            [{"_id": "lexical-1", "$lexical": "monkey monkey monkey"},
+                            {"_id": "lexical-2", "$lexical": "monkey"},
                             {"_id": "lexical-3", "$lexical": "monkey bread is so tasty" }]
                         """));
     }
 
+    // Third change: remove $lexical from existing value, to drop from results
     @Test
     @Order(4)
     public void testOverwrite3_NonEmptyWithNull() {
@@ -166,7 +172,7 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
               """
         {
           "updateOne": {
-            "filter" : {"_id": "lexical-1"},
+            "filter" : {"_id": "lexical-2"},
             "update" : {"$set" : {"$lexical": null}}
           }
         }
@@ -189,8 +195,9 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
               "data.documents",
               jsonEquals(
                   """
-                            [{"_id": "lexical-3", "$lexical": "monkey bread is so tasty"}]"
-                        """));
+                                [{"_id": "lexical-1", "$lexical": "monkey monkey monkey"},
+                                {"_id": "lexical-3", "$lexical": "monkey bread is so tasty" }]
+                            """));
     }
   }
 
