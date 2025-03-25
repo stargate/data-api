@@ -86,7 +86,9 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
   private SimpleStatement nonVectorUpdateStatement(
       WritableShreddedDocument shredDocument, UUID tx_id) {
-    String updateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+    final String updateCql =
+        ReadAndUpdateCollectionOperation.buildUpdateQuery(
+            KEYSPACE_NAME, COLLECTION_NAME, false, false);
     return SimpleStatement.newInstance(
         updateCql,
         CQLBindValues.getSetValue(shredDocument.existKeys()),
@@ -101,27 +103,6 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
         CQLBindValues.getDocumentIdValue(shredDocument.id()),
         tx_id);
   }
-
-  // TODO: as part of https://github.com/stargate/jsonapi/issues/214
-  //  - non-lwt failure partial, full
-  //  - non-lwt failure on retry
-  private static String UPDATE =
-      "UPDATE \"%s\".\"%s\" "
-          + "        SET"
-          + "            tx_id = now(),"
-          + "            exist_keys = ?,"
-          + "            array_size = ?,"
-          + "            array_contains = ?,"
-          + "            query_bool_values = ?,"
-          + "            query_dbl_values = ?,"
-          + "            query_text_values = ?,"
-          + "            query_null_values = ?,"
-          + "            query_timestamp_values = ?,"
-          + "            doc_json  = ?"
-          + "        WHERE "
-          + "            key = ?"
-          + "        IF "
-          + "            tx_id = ?";
 
   @Test
   public void findOneAndUpdateWithRetry() throws Exception {
