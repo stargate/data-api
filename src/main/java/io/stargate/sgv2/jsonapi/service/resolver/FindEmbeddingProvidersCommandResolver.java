@@ -5,9 +5,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindEmbeddingProvidersCom
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.FindEmbeddingProvidersOperation;
+import io.stargate.sgv2.jsonapi.service.provider.embedding.configuration.EmbeddingProvidersConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 

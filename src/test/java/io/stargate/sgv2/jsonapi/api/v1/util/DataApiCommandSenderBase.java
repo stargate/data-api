@@ -10,7 +10,7 @@ import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.provider.embedding.operation.test.CustomITEmbeddingProvider;
 import jakarta.ws.rs.core.Response;
 import java.util.Base64;
 import java.util.LinkedHashMap;
