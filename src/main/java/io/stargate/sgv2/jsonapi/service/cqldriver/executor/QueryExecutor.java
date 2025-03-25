@@ -9,7 +9,6 @@ import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.core.servererrors.TruncateException;
-import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.DBTraceMessages;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
@@ -95,16 +94,11 @@ public class QueryExecutor {
         simpleStatement
             .setPageSize(pageSize)
             .setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
-    Log.error("Executing read query: {}" + simpleStatement.getQuery());
     if (pagingState.isPresent()) {
       simpleStatement =
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
-
     return executeAsync(requestContext, simpleStatement);
-    //    return Uni.createFrom()
-    //
-    // .completionStage(cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement));
   }
 
   /**
