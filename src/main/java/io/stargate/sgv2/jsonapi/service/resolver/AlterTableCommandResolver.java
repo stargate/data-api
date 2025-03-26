@@ -110,6 +110,27 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
         ApiColumnDefContainer.FROM_COLUMN_DESC_FACTORY.create(
             addColumnsOperation.columns(), validateVectorize);
 
+    // alter table can not add columns with unsupported API data type
+    var unsupportedColumns = addedColumns.filterBySupportToList(x -> !x.createTable());
+    if (!unsupportedColumns.isEmpty()) {
+      throw SchemaException.Code.CANNOT_ADD_UNSUPPORTED_DATA_TYPE_COLUMNS.get(
+          Map.of(
+              "supportedTypes",
+              // Notice, supported map/set/list types are not included in the error message
+              // They will be validated before in the desc factory
+              errFmtJoin(
+                  ApiDataTypeDefs.filterBySupportToList(ApiSupportDef::createTable).stream()
+                      .map(e -> e.typeName().apiName())
+                      .sorted(String::compareTo)
+                      .toList()),
+              "unsupportedTypes",
+              errFmtJoin(
+                  unsupportedColumns.stream()
+                      .map(e -> e.type().columnDesc().getApiName())
+                      .sorted(String::compareTo)
+                      .toList())));
+    }
+
     // TODO: move this to the attempt taskBuilder / factory
     var duplicateColumns =
         addedColumns.values().stream()
@@ -126,8 +147,6 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
                 map.put("duplicateColumns", errFmtApiColumnDef(duplicateColumns));
               }));
     }
-
-    // TODO: WHERE are unsupported columns checked ?
 
     var addedVectorizeDef = addedColumns.getVectorizeDefs();
     // if there is some vectorize config we need to write it, to write it we need to get the

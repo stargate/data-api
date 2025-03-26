@@ -1106,6 +1106,17 @@ request-errors:
       Resend the command using a table name that does not exist in the keyspace.
 
   - scope: SCHEMA
+    code: CANNOT_ADD_UNSUPPORTED_DATA_TYPE_COLUMNS
+    title: Alter table trying to add columns with unsupported data type
+    body: |-
+      The command attempted to add columns with unsupported data types to the table schema.
+      
+      The supported data types for adding columns are: ${supportedTypes}.
+      The command attempted to add columns with unsupported data types: ${unsupportedTypes}.
+      
+      Resend the command using supported data types to alter table.
+
+  - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_INDEX
     title: Index with the same name exists in the keyspace schema
     body: |-

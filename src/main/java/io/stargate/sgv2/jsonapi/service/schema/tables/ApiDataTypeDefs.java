@@ -109,6 +109,10 @@ public abstract class ApiDataTypeDefs {
           ASCII, BIGINT, BOOLEAN, BINARY, COUNTER, DATE, DECIMAL, DOUBLE, DURATION, FLOAT, INT,
           SMALLINT, TEXT, TIME, TIMESTAMP, TINYINT, VARINT, INET, UUID, TIMEUUID);
 
+  /**
+   * This static method is to filter out all the {@link PrimitiveApiDataTypeDef} that check the
+   * given ApiSupport matcher.
+   */
   public static List<PrimitiveApiDataTypeDef> filterBySupportToList(
       Predicate<ApiSupportDef> matcher) {
     return PRIMITIVE_TYPES.stream().filter(type -> matcher.test(type.apiSupport())).toList();
