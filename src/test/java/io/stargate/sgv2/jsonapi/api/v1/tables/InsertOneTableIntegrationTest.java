@@ -6,7 +6,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ProviderException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistryTestData;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
@@ -1724,8 +1724,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                   }
                                   """)
           .hasSingleApiError(
-              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.name(),
-              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: Incorrect API key provided: test_emb");
+              ProviderException.Code.CLIENT_ERROR,
+              ProviderException.class,
+              "Provider: openai; HTTP Status: 401; Error Message: Incorrect API key provided: test_emb");
     }
 
     @Test
@@ -1771,8 +1772,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                     }
                                     """)
           .hasSingleApiError(
-              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.name(),
-              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: Incorrect API key provided: test_emb");
+              ProviderException.Code.CLIENT_ERROR,
+              ProviderException.class,
+              "Provider: openai; HTTP Status: 401; Error Message: Incorrect API key provided: test_emb");
     }
 
     @Test
@@ -1817,7 +1819,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                   }
                                   """)
           .hasSingleApiError(
-              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.name(),
+              ProviderException.Code.CLIENT_ERROR,
+              ProviderException.class,
               "Provider: openai; HTTP Status: 401; Error Message: Incorrect API key provided: test_emb");
     }
   }

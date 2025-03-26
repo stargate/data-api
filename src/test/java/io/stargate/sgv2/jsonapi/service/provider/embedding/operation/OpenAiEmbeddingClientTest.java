@@ -6,8 +6,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.ProviderException;
 import io.stargate.sgv2.jsonapi.service.provider.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.embedding.configuration.EmbeddingProvidersConfig;
 import jakarta.inject.Inject;
@@ -106,11 +105,10 @@ public class OpenAiEmbeddingClientTest {
               .awaitFailure()
               .getFailure();
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");
+          .isInstanceOf(ProviderException.class)
+          .hasFieldOrPropertyWithValue("code", ProviderException.Code.CLIENT_ERROR.name())
+          .hasMessageStartingWith(
+              "Embedding Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -133,11 +131,10 @@ public class OpenAiEmbeddingClientTest {
               .awaitFailure()
               .getFailure();
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");
+          .isInstanceOf(ProviderException.class)
+          .hasFieldOrPropertyWithValue("code", ProviderException.Code.CLIENT_ERROR.name())
+          .hasMessageStartingWith(
+              "Embedding Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");
     }
   }
 }
