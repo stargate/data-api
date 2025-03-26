@@ -18,7 +18,7 @@ import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.TenantAwareCqlSessionBuilder;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.provider.embedding.operation.test.CustomITEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.testresource.StargateTestResource;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
