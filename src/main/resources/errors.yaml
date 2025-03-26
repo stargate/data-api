@@ -1626,15 +1626,43 @@ server-errors:
       
       ${SNIPPET.RETRY}
 
-  # EMBEDDING scope server errors
-  - scope: EMBEDDING_PROVIDER
+  # Provider scope server errors
+  - scope: PROVIDER
     code: CLIENT_ERROR
-    title: The Embedding Provider returned a HTTP client error
+    title: The Provider returned a HTTP client error
     body: |-
-      Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
+      ${providerType} Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
 
-  - scope: EMBEDDING_PROVIDER
+      ${SNIPPET.RETRY}
+
+  - scope: PROVIDER
     code: SERVER_ERROR
-    title: The Embedding Provider returned a HTTP client error
+    title: The Provider returned a HTTP server error
     body: |-
-      Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
+      ${providerType} Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
+
+      ${SNIPPET.RETRY}
+
+  - scope: PROVIDER
+    code: TIMEOUT
+    title: The Provider timed out
+    body: |-
+      ${providerType} Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
+
+      ${SNIPPET.RETRY}
+
+  - scope: PROVIDER
+    code: TOO_MANY_REQUESTS
+    title: The Provider rate limited the request
+    body: |-
+      ${providerType} Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
+
+      ${SNIPPET.RETRY}    
+
+  - scope: PROVIDER
+    code: UNEXPECTED_RESPONSE
+    title: The Provider returned an unexpected response
+    body: |-
+      ${providerType} Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
+
+      ${SNIPPET.RETRY}

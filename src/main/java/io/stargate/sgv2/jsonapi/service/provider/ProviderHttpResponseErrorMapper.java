@@ -1,9 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.provider;
 
+import static jakarta.ws.rs.core.Response.Status.*;
 import static jakarta.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
+import static jakarta.ws.rs.core.Response.Status.Family.SERVER_ERROR;
 
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ProviderException;
 import jakarta.ws.rs.core.Response;
+import java.util.Map;
 
 /**
  * Maps HTTP responses from external providers to appropriate internal API exceptions. This unified
@@ -42,53 +45,53 @@ public class ProviderHttpResponseErrorMapper {
    */
   public static RuntimeException mapToAPIException(
       ProviderType providerType, String providerName, Response response, String message) {
+    Map<String, String> errorContext =
+        createErrorContext(providerType, providerName, response, message);
+    ProviderException.Code errorCode = determineErrorCode(response);
 
-    // Format string used for all error messages with specific provider type
-    String errorFormat =
-        providerType.apiName() + " Provider: %s; HTTP Status: %s; Error Message: %s";
+    // Create and return the appropriate exception
+    return errorCode.get(errorContext);
+  }
+
+  /** Creates a context map with common error information. */
+  private static Map<String, String> createErrorContext(
+      ProviderType providerType, String providerName, Response response, String message) {
+    return Map.of(
+        "providerType",
+        providerType.apiName(),
+        "provider",
+        providerName,
+        "httpStatus",
+        Integer.toString(response.getStatus()),
+        "errorMessage",
+        message);
+  }
+
+  /** Determines the appropriate error code based on the HTTP response. */
+  private static ProviderException.Code determineErrorCode(Response response) {
+    Response.StatusType status = response.getStatusInfo();
 
     // Timeout errors: 408 or 504
-    if (response.getStatus() == Response.Status.REQUEST_TIMEOUT.getStatusCode()
-        || response.getStatus() == Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {
-      return (providerType == ProviderType.EMBEDDING)
-          ? ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(
-              errorFormat, providerName, response.getStatus(), message)
-          : ErrorCodeV1.RERANKING_PROVIDER_TIMEOUT.toApiException(
-              errorFormat, providerName, response.getStatus(), message);
+    if (status == REQUEST_TIMEOUT || status == GATEWAY_TIMEOUT) {
+      return ProviderException.Code.TIMEOUT;
     }
 
     // Rate limiting: 429
-    if (response.getStatus() == Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {
-      return (providerType == ProviderType.EMBEDDING)
-          ? ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED.toApiException(
-              errorFormat, providerName, response.getStatus(), message)
-          : ErrorCodeV1.RERANKING_PROVIDER_RATE_LIMITED.toApiException(
-              errorFormat, providerName, response.getStatus(), message);
+    if (status == TOO_MANY_REQUESTS) {
+      return ProviderException.Code.TOO_MANY_REQUESTS;
     }
 
-    // Client errors: 4xx (except 429)
-    if (response.getStatusInfo().getFamily() == CLIENT_ERROR) {
-      return (providerType == ProviderType.EMBEDDING)
-          ? ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.toApiException(
-              errorFormat, providerName, response.getStatus(), message)
-          : ErrorCodeV1.RERANKING_PROVIDER_CLIENT_ERROR.toApiException(
-              errorFormat, providerName, response.getStatus(), message);
+    // Client errors: 4xx (except those already handled)
+    if (status.getFamily() == CLIENT_ERROR) {
+      return ProviderException.Code.CLIENT_ERROR;
     }
 
     // Server errors: 5xx
-    if (response.getStatusInfo().getFamily() == Response.Status.Family.SERVER_ERROR) {
-      return (providerType == ProviderType.EMBEDDING)
-          ? ErrorCodeV1.EMBEDDING_PROVIDER_SERVER_ERROR.toApiException(
-              errorFormat, providerName, response.getStatus(), message)
-          : ErrorCodeV1.RERANKING_PROVIDER_SERVER_ERROR.toApiException(
-              errorFormat, providerName, response.getStatus(), message);
+    if (status.getFamily() == SERVER_ERROR) {
+      return ProviderException.Code.SERVER_ERROR;
     }
 
-    // // Unexpected errors (should never happen as all status codes are covered above)
-    return (providerType == ProviderType.EMBEDDING)
-        ? ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-            errorFormat, providerName, response.getStatus(), message)
-        : ErrorCodeV1.RERANKING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-            errorFormat, providerName, response.getStatus(), message);
+    // Default: unexpected response
+    return ProviderException.Code.UNEXPECTED_RESPONSE;
   }
 }
