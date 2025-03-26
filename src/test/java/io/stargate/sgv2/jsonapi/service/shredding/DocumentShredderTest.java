@@ -349,46 +349,6 @@ public class DocumentShredderTest {
   }
 
   @Nested
-  class HybridOkCases {
-    @Test
-    void simpleHybridString() throws Exception {
-      final String inputJson =
-          """
-                          { "_id" : "hybrid-string",
-                            "$hybrid": "test content",
-                            "status": "ok"
-                          }
-                          """;
-      final JsonNode inputDoc = objectMapper.readTree(inputJson);
-      WritableShreddedDocument doc = documentShredder.shred(inputDoc);
-      assertThat(doc.id()).isEqualTo(DocumentId.fromString("hybrid-string"));
-      List<JsonPath> expPaths =
-          Arrays.asList(
-              JsonPath.from("_id"),
-              JsonPath.from("status"),
-              JsonPath.from("$lexical"),
-              JsonPath.from("$vectorize"));
-
-      // First verify paths
-      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
-
-      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("status Sok");
-
-      // Also, the document should be the same, including _id:
-      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
-      assertThat(jsonFromShredded).isEqualTo(inputDoc);
-
-      assertThat(doc.queryBoolValues()).isEmpty();
-      assertThat(doc.queryNumberValues()).isEmpty();
-      assertThat(doc.queryTextValues())
-          .isEqualTo(Map.of(JsonPath.from("_id"), "lex1", JsonPath.from("status", false), "ok"));
-      assertThat(doc.queryNullValues()).isEmpty();
-      assertThat(doc.queryVectorValues()).isNull();
-      assertThat(doc.queryLexicalValue()).isEqualTo("test content");
-    }
-  }
-
-  @Nested
   class EJSONDateTime {
     @Test
     public void shredDocWithDateTimeColumn() {

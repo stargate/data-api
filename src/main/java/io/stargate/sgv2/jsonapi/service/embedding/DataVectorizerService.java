@@ -50,7 +50,6 @@ public class DataVectorizerService {
   /**
    * This will vectorize the sort clause, update clause and the document with `$vectorize` field
    *
-   * @param dataApiRequestInfo
    * @param commandContext
    * @param command
    * @return
