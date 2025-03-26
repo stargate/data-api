@@ -17,7 +17,6 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingDeferredAc
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import java.util.*;
 import org.slf4j.Logger;
@@ -280,11 +279,7 @@ public class CqlNamedValue extends NamedValue<CqlIdentifier, Object, JsonNamedVa
 
       if (!missingVectorizeColumns.isEmpty()) {
         var vectorizeColumns =
-            tableSchemaObject
-                .apiTableDef()
-                .allColumns()
-                .filterByApiTypeNameToList(ApiTypeName.VECTOR)
-                .stream()
+            tableSchemaObject.apiTableDef().allColumns().filterVectorColumnsToList().stream()
                 .filter(
                     columnDef ->
                         ((ApiVectorType) columnDef.type()).getVectorizeDefinition() != null)
