@@ -98,11 +98,7 @@ public class QueryExecutor {
       simpleStatement =
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
-
     return executeAsync(requestContext, simpleStatement);
-    //    return Uni.createFrom()
-    //
-    // .completionStage(cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement));
   }
 
   /**
