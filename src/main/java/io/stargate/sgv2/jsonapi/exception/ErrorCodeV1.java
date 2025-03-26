@@ -171,6 +171,8 @@ public enum ErrorCodeV1 {
   LEXICAL_NOT_AVAILABLE_FOR_DATABASE("Lexical search is not available on this database"),
   LEXICAL_NOT_ENABLED_FOR_COLLECTION("Lexical search is not enabled for the collection"),
 
+  HYBRID_FIELD_VALUE_TYPE_UNSUPPORTED("Unsupported JSON value type for '$hybrid' field"),
+
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   COLLECTION_CREATION_ERROR(
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),

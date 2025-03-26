@@ -31,25 +31,44 @@ public class InsertLexicalInCollectionIntegrationTest
     super("col_insert_lexical_");
   }
 
+  // Let's prevent creation of default Collection, and only create one when
+  // Lexical enabled
+  @Override
+  public void createDefaultCollection() {}
+
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
   @Order(1)
   class SetupCollection {
     @Test
-    void createCollectionWithLexical() {
+    void createCollectionWithLexicalAndVectorize() {
       // Create a Collection with default Lexical settings
       createComplexCollection(
               """
-                                  {
-                                    "name": "%s",
-                                    "options" : {
-                                      "lexical": {
-                                        "enabled": true,
-                                        "analyzer": "standard"
-                                      }
+                        {
+                          "name": "%s",
+                          "options" : {
+                            "lexical": {
+                              "enabled": true,
+                              "analyzer": "standard"
+                            },
+                            "vector": {
+                                "metric": "cosine",
+                                "dimension": 5,
+                                "service": {
+                                    "provider": "custom",
+                                    "modelName": "text-embedding-ada-002",
+                                    "authentication": {
+                                        "providerKey" : "shared_creds.providerKey"
+                                    },
+                                    "parameters": {
+                                        "projectId": "test project"
                                     }
-                                  }
-                                  """
+                                }
+                            }
+                          }
+                        }
+                        """
               .formatted(collectionName));
     }
   }

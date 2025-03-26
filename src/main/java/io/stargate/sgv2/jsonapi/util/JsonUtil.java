@@ -23,6 +23,21 @@ public class JsonUtil {
   private static final String EJSON_VALUE_KEY_DATE = JsonExtensionType.EJSON_DATE.encodedName();
 
   /**
+   * Helper method for producing "pretty" type description for given {@link JsonNode} value.
+   *
+   * @param node JSON value to describe
+   * @return Capitalized type name like "Object", "Array", "String", "Number" etc.
+   */
+  public static String nodeTypeAsString(JsonNode node) {
+    if (node == null) {
+      return "<null>";
+    }
+    String desc = node.toString();
+    // We know all are longer than 1 character, upper case, so:
+    return desc.substring(0, 1) + desc.substring(1).toLowerCase();
+  }
+
+  /**
    * Method that compares to JSON values for equality using Mongo semantics which are otherwise same
    * as for JSON but additionally require exact ordering of Object (sub-document) values.
    *
