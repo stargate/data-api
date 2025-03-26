@@ -877,6 +877,17 @@ request-errors:
       Resend the command using a known primitive data type.
 
   - scope: SCHEMA
+    code: UNSUPPORTED_DATA_TYPE_TABLE_CREATION
+    title: Table creation with unsupported data types
+    body: |-
+      The column definition used unsupported data types for the table creation.
+      
+      The supported data types for table creation are: ${supportedTypes}.
+      The command used the unsupported data types for table creation : ${unsupportedTypes}.
+      
+      Resend the command using supported data types for table creation.
+
+  - scope: SCHEMA
     code: UNSUPPORTED_MAP_DEFINITION
     title: Map definition contains unsupported data types
     body: |-
@@ -1093,6 +1104,17 @@ request-errors:
       The command attempted to add the existing table: ${existingTable}.
       
       Resend the command using a table name that does not exist in the keyspace.
+
+  - scope: SCHEMA
+    code: CANNOT_ADD_UNSUPPORTED_DATA_TYPE_COLUMNS
+    title: Alter table trying to add columns with unsupported data type
+    body: |-
+      The command attempted to add columns with unsupported data types to the table schema.
+      
+      The supported data types for adding columns are: ${supportedTypes}.
+      The command attempted to add columns with unsupported data types: ${unsupportedTypes}.
+      
+      Resend the command using supported data types to alter table.
 
   - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_INDEX

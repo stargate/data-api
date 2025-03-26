@@ -110,6 +110,27 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
         ApiColumnDefContainer.FROM_COLUMN_DESC_FACTORY.create(
             addColumnsOperation.columns(), validateVectorize);
 
+    // alter table can not add columns with unsupported API data type
+    var unsupportedColumns = addedColumns.filterBySupportToList(x -> !x.createTable());
+    if (!unsupportedColumns.isEmpty()) {
+      throw SchemaException.Code.CANNOT_ADD_UNSUPPORTED_DATA_TYPE_COLUMNS.get(
+          Map.of(
+              "supportedTypes",
+              // Notice, supported map/set/list types are not included in the error message
+              // They will be validated before in the desc factory
+              errFmtJoin(
+                  ApiDataTypeDefs.filterBySupportToList(ApiSupportDef::createTable).stream()
+                      .map(e -> e.typeName().apiName())
+                      .sorted(String::compareTo)
+                      .toList()),
+              "unsupportedTypes",
+              errFmtJoin(
+                  unsupportedColumns.stream()
+                      .map(e -> e.type().columnDesc().getApiName())
+                      .sorted(String::compareTo)
+                      .toList())));
+    }
+
     // TODO: move this to the attempt taskBuilder / factory
     var duplicateColumns =
         addedColumns.values().stream()
@@ -126,8 +147,6 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
                 map.put("duplicateColumns", errFmtApiColumnDef(duplicateColumns));
               }));
     }
-
-    // TODO: WHERE are unsupported columns checked ?
 
     var addedVectorizeDef = addedColumns.getVectorizeDefs();
     // if there is some vectorize config we need to write it, to write it we need to get the
@@ -300,16 +319,10 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
               }));
     }
 
-    // TODO: This is a hack, we need to refactor these methods in ApiColumnDefContainer.
-    // Currently, this matcher is just for match vector columns, and then to avoid hit the
-    // typeName() placeholder exception in UnsupportedApiDataType
-    var matcher =
-        ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true);
-    var vectorColumns =
-        apiTableDef.allColumns().filterBySupport(matcher).filterByApiTypeName(ApiTypeName.VECTOR);
+    var vectorColumnsContainer = apiTableDef.allColumns().filterVectorColumnsToContainer();
     var nonVectorColumns =
         addedVectorizeDesc.keySet().stream()
-            .filter(identifier -> !vectorColumns.containsKey(identifier))
+            .filter(identifier -> !vectorColumnsContainer.containsKey(identifier))
             .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
     if (!nonVectorColumns.isEmpty()) {
@@ -318,7 +331,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
               tableSchemaObject,
               map -> {
                 map.put("allColumns", errFmtApiColumnDef(apiTableDef.allColumns().values()));
-                map.put("vectorColumns", errFmtApiColumnDef(vectorColumns.values()));
+                map.put("vectorColumns", errFmtApiColumnDef(vectorColumnsContainer.values()));
                 map.put("nonVectorColumns", errFmtCqlIdentifier(nonVectorColumns));
               }));
     }
@@ -330,7 +343,8 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
                 Collectors.toMap(
                     Map.Entry::getKey,
                     entry -> {
-                      var apiType = (ApiVectorType) vectorColumns.get(entry.getKey()).type();
+                      var apiType =
+                          (ApiVectorType) vectorColumnsContainer.get(entry.getKey()).type();
                       return VectorizeDefinition.from(
                           entry.getValue(), apiType.getDimension(), validateVectorize);
                     }));
@@ -370,13 +384,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
             .map(CqlIdentifierUtil::cqlIdentifierFromUserInput)
             .toList();
 
-    // TODO. This is a hack, we need to refactor these methods in ApiColumnDefContainer.
-    // Currently, this matcher is just for match vector columns, and then to avoid hit the
-    // typeName() placeholder exception in UnsupportedApiDataType
-    var matcher =
-        ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true);
-    var vectorColumns =
-        apiTableDef.allColumns().filterBySupport(matcher).filterByApiTypeName(ApiTypeName.VECTOR);
+    var vectorColumnsContainer = apiTableDef.allColumns().filterVectorColumnsToContainer();
 
     var unknownColumns =
         droppedColumns.stream()
@@ -389,14 +397,14 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
               tableSchemaObject,
               map -> {
                 map.put("allColumns", errFmtApiColumnDef(apiTableDef.allColumns().values()));
-                map.put("vectorColumns", errFmtApiColumnDef(vectorColumns.values()));
+                map.put("vectorColumns", errFmtApiColumnDef(vectorColumnsContainer.values()));
                 map.put("unknownColumns", errFmtCqlIdentifier(unknownColumns));
               }));
     }
 
     var nonVectorColumns =
         droppedColumns.stream()
-            .filter(identifier -> !vectorColumns.containsKey(identifier))
+            .filter(identifier -> !vectorColumnsContainer.containsKey(identifier))
             .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
     if (!nonVectorColumns.isEmpty()) {
@@ -405,7 +413,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
               tableSchemaObject,
               map -> {
                 map.put("allColumns", errFmtApiColumnDef(apiTableDef.allColumns().values()));
-                map.put("vectorColumns", errFmtApiColumnDef(vectorColumns.values()));
+                map.put("vectorColumns", errFmtApiColumnDef(vectorColumnsContainer.values()));
                 map.put("nonVectorColumns", errFmtCqlIdentifier(nonVectorColumns));
               }));
     }
@@ -420,7 +428,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     }
 
     if (!updateVectorize) {
-      // Nothing to do, there was no vecorize def for the column :)
+      // Nothing to do, there was no vectorize def for the column :)
       return List.of();
     }
 

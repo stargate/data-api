@@ -102,7 +102,7 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
         table
             .apiTableDef()
             .allColumns()
-            .filterBy(columns.stream().map(ColumnMetadata::getName).toList());
+            .filterByIdentifiers(columns.stream().map(ColumnMetadata::getName).toList());
 
     var unsupportedColumns = readApiColumns.filterBySupportToList(MATCH_READ_UNSUPPORTED);
     if (!unsupportedColumns.isEmpty()) {

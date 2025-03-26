@@ -22,7 +22,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.provider.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.provider.embedding.operation.MeteredEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiSupportDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -174,16 +173,7 @@ public class DataVectorizerService {
           T tableSchemaObject, List<JsonNode> documents, ErrorCode<E> noVectorizeDefinitionCode) {
 
     var apiTableDef = tableSchemaObject.apiTableDef();
-    // TODO: This is a hack, we need to refactor these methods in ApiColumnDefContainer.
-    // Currently, this matcher is just for match vector columns, and then to avoid hit the
-    // typeName() placeholder exception in UnsupportedApiDataType
-    var matcher =
-        ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true);
-    var vectorColumnDefs =
-        apiTableDef
-            .allColumns()
-            .filterBySupport(matcher)
-            .filterByApiTypeNameToList(ApiTypeName.VECTOR);
+    var vectorColumnDefs = apiTableDef.allColumns().filterVectorColumnsToList();
 
     if (vectorColumnDefs.isEmpty()) {
       return List.of();
