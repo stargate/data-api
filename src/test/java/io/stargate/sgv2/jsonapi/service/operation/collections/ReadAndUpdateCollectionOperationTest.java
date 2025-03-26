@@ -74,43 +74,6 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
   @Inject DataVectorizerService dataVectorizerService;
   private TestConstants testConstants = new TestConstants();
 
-  private static String UPDATE =
-      "UPDATE \"%s\".\"%s\" "
-          + "        SET"
-          + "            tx_id = now(),"
-          + "            exist_keys = ?,"
-          + "            array_size = ?,"
-          + "            array_contains = ?,"
-          + "            query_bool_values = ?,"
-          + "            query_dbl_values = ?,"
-          + "            query_text_values = ?,"
-          + "            query_null_values = ?,"
-          + "            query_timestamp_values = ?,"
-          + "            doc_json  = ?"
-          + "        WHERE "
-          + "            key = ?"
-          + "        IF "
-          + "            tx_id = ?";
-
-  private static String UPDATE_VECTOR =
-      "UPDATE \"%s\".\"%s\" "
-          + "        SET"
-          + "            tx_id = now(),"
-          + "            exist_keys = ?,"
-          + "            array_size = ?,"
-          + "            array_contains = ?,"
-          + "            query_bool_values = ?,"
-          + "            query_dbl_values = ?,"
-          + "            query_text_values = ?,"
-          + "            query_null_values = ?,"
-          + "            query_timestamp_values = ?,"
-          + "            query_vector_value = ?,"
-          + "            doc_json  = ?"
-          + "        WHERE "
-          + "            key = ?"
-          + "        IF "
-          + "            tx_id = ?";
-
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
           TestColumn.keyColumn(), TestColumn.ofUuid("tx_id"), TestColumn.ofVarchar("doc_json"));
@@ -157,41 +120,19 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
   private final ColumnDefinitions COLUMNS_APPLIED =
       buildColumnDefs(TestColumn.ofBoolean("[applied]"));
 
-  private SimpleStatement nonVectorUpdateStatement(
-      WritableShreddedDocument shredDocument, UUID tx_id) {
-    String updateCql = UPDATE.formatted(KEYSPACE_NAME, COLLECTION_NAME);
-    return SimpleStatement.newInstance(
-        updateCql,
-        CQLBindValues.getSetValue(shredDocument.existKeys()),
-        CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
-        CQLBindValues.getStringSetValue(shredDocument.arrayContains()),
-        CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
-        CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
-        CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
-        CQLBindValues.getSetValue(shredDocument.queryNullValues()),
-        CQLBindValues.getTimestampMapValues(shredDocument.queryTimestampValues()),
-        shredDocument.docJson(),
-        CQLBindValues.getDocumentIdValue(shredDocument.id()),
-        tx_id);
+  private SimpleStatement nonVectorUpdateStatement(WritableShreddedDocument shredDocument) {
+    String updateCql =
+        ReadAndUpdateCollectionOperation.buildUpdateQuery(
+            KEYSPACE_NAME, COLLECTION_NAME, false, false);
+    return ReadAndUpdateCollectionOperation.bindUpdateValues(
+        updateCql, shredDocument, false, false);
   }
 
-  private SimpleStatement vectorUpdateStatement(
-      WritableShreddedDocument shredDocument, UUID tx_id) {
-    String updateCql = UPDATE_VECTOR.formatted(KEYSPACE_NAME, COLLECTION_NAME);
-    return SimpleStatement.newInstance(
-        updateCql,
-        CQLBindValues.getSetValue(shredDocument.existKeys()),
-        CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
-        CQLBindValues.getStringSetValue(shredDocument.arrayContains()),
-        CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
-        CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
-        CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
-        CQLBindValues.getSetValue(shredDocument.queryNullValues()),
-        CQLBindValues.getTimestampMapValues(shredDocument.queryTimestampValues()),
-        CQLBindValues.getVectorValue(shredDocument.queryVectorValues()),
-        shredDocument.docJson(),
-        CQLBindValues.getDocumentIdValue(shredDocument.id()),
-        tx_id);
+  private SimpleStatement vectorUpdateStatement(WritableShreddedDocument shredDocument) {
+    String updateCql =
+        ReadAndUpdateCollectionOperation.buildUpdateQuery(
+            KEYSPACE_NAME, COLLECTION_NAME, true, false);
+    return ReadAndUpdateCollectionOperation.bindUpdateValues(updateCql, shredDocument, true, false);
   }
 
   @Nested
@@ -249,8 +190,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
             """;
 
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = vectorUpdateStatement(shredDocument, tx_id);
+      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode, tx_id);
+      SimpleStatement stmt2 = vectorUpdateStatement(shredDocument);
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
@@ -612,8 +553,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               }
               """;
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, tx_id1);
+      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode, tx_id1);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
 
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
@@ -858,9 +799,9 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 }
                 """;
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
+      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode, tx_id);
 
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, tx_id);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
@@ -958,8 +899,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       // update
       JsonNode jsonNode = objectMapper.readTree(doc1_select_update);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, null);
+      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode, null);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
@@ -1104,8 +1045,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               """;
 
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, tx_id1);
+      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode, tx_id1);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
 
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
@@ -1270,8 +1211,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 }
                 """;
       JsonNode jsonNode = objectMapper.readTree(doc2Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, tx_id2);
+      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode, tx_id2);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
 
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
@@ -1386,8 +1327,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 """;
 
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, null);
+      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode, null);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
@@ -1580,8 +1521,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       // update
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, tx_id1);
+      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode, tx_id1);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
@@ -1593,8 +1534,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               });
 
       jsonNode = objectMapper.readTree(doc2Updated);
-      shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt3 = nonVectorUpdateStatement(shredDocument, tx_id2);
+      shredDocument = documentShredder.shred(jsonNode, tx_id2);
+      SimpleStatement stmt3 = nonVectorUpdateStatement(shredDocument);
       List<Row> rows3 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results3 = new MockAsyncResultSet(COLUMNS_APPLIED, rows3, null);
       final AtomicInteger callCount3 = new AtomicInteger();
@@ -1691,8 +1632,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                   }
                   """;
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument, null);
+      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode, null);
+      SimpleStatement stmt2 = nonVectorUpdateStatement(shredDocument);
       List<Row> rows2 = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results2 = new MockAsyncResultSet(COLUMNS_APPLIED, rows2, null);
       final AtomicInteger callCount2 = new AtomicInteger();
