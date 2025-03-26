@@ -73,12 +73,13 @@ public class DocumentShredder {
 
   public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
     // TODO - why does this have "testCommand" for a command name ? Should it be a constant ?
+    // We do have "TestConstants.TEST_COMMAND_NAME"... but it's test dep cannot access here
     return shred(
         doc,
         txId,
         IndexingProjector.identityProjector(),
         "testCommand",
-        CollectionSchemaObject.MISSING,
+        CollectionSchemaObject.MISSING_WITH_LEXICAL,
         null);
   }
 

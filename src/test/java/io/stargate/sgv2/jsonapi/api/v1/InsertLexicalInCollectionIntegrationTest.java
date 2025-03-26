@@ -100,23 +100,23 @@ public class InsertLexicalInCollectionIntegrationTest
               "data.documents[0]",
               jsonEquals(
                   """
-                                                    {
-                                                        "_id": "lexical1",
-                                                        "username": "user-lexical",
-                                                        "extra": 123
-                                                    }
-                                                    """));
+                            {
+                                "_id": "lexical1",
+                                "username": "user-lexical",
+                                "extra": 123
+                            }
+                            """));
 
       // But can explicitly include: either via "include-it-all"
       givenHeadersPostJsonThenOkNoErrors(
               """
-                            {
-                              "find": {
-                                "filter" : {"_id" : "lexical1"},
-                                "projection": { "*": 1 }
-                              }
-                            }
-                            """)
+                {
+                  "find": {
+                    "filter" : {"_id" : "lexical1"},
+                    "projection": { "*": 1 }
+                  }
+                }
+                """)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(DOC_WITH_LEXICAL));
 
@@ -190,7 +190,47 @@ public class InsertLexicalInCollectionIntegrationTest
   @Order(2)
   class InsertHybridOk {
     @Test
-    public void insertSimpleHybrid() {}
+    public void insertSimpleHybrid() {
+      final String HYBRID_DOC =
+          """
+                      {
+                        "_id": "hybrid-1",
+                        "$hybrid": "monkeys and bananas"
+                      }
+                      """;
+      givenHeadersPostJsonThenOkNoErrors(
+                  """
+                {
+                  "insertOne": {
+                    "document": %s
+                  }
+                }
+                """
+                  .formatted(HYBRID_DOC))
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("hybrid-1"));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                            {
+                              "find": {
+                                "filter" : {"_id" : "hybrid-1"}
+                              }
+                            }
+                            """)
+          .body("$", responseIsFindSuccess())
+          // NOTE: "$lexical" is not included in the response by default, ensure
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                      {
+                        "_id": "hybrid-1",
+                        "$lexical": "monkeys and bananas",
+                        "$vectorize": "monkeys and bananas"
+                      }
+                      """));
+    }
   }
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")

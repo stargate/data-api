@@ -264,6 +264,131 @@ public class DocumentShredderTest {
   }
 
   @Nested
+  class LexicalOkCases {
+    @Test
+    void simpleLexicalString() throws Exception {
+      final String inputJson =
+          """
+                          { "_id" : "lex1",
+                            "$lexical": "bag of words",
+                            "value": 3
+                          }
+                          """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc = documentShredder.shred(inputDoc);
+      assertThat(doc.id()).isEqualTo(DocumentId.fromString("lex1"));
+      List<JsonPath> expPaths =
+          Arrays.asList(JsonPath.from("_id"), JsonPath.from("$lexical"), JsonPath.from("value"));
+
+      // First verify paths
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+
+      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("value N3");
+
+      // Also, the document should be the same, including _id:
+      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+
+      assertThat(doc.queryBoolValues()).isEmpty();
+      Map<JsonPath, BigDecimal> expNums =
+          Map.of(JsonPath.from("value", false), BigDecimal.valueOf(3));
+      assertThat(doc.queryNumberValues()).isEqualTo(expNums);
+      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("_id"), "lex1"));
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryVectorValues()).isNull();
+      assertThat(doc.queryLexicalValue()).isEqualTo("bag of words");
+    }
+
+    @Test
+    void simpleLexicalNull() throws Exception {
+      final String inputJson =
+          """
+                          { "_id" : "lex-null",
+                            "$lexical": null
+                          }
+                          """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc = documentShredder.shred(inputDoc);
+      assertThat(doc.id()).isEqualTo(DocumentId.fromString("lex-null"));
+
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(Arrays.asList(JsonPath.from("_id"))));
+
+      assertThat(doc.arrayContains()).isEmpty();
+
+      // Also, the document should be the same, including _id:
+      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNumberValues()).isEmpty();
+      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("_id"), "lex-null"));
+      // $lexical not like everything else hence:
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryVectorValues()).isNull();
+      assertThat(doc.queryLexicalValue()).isNull();
+    }
+  }
+
+  @Nested
+  class LexicalFailCases {
+    @Test
+    void badLexicalObject() throws Exception {
+      final String inputJson =
+          """
+                      { "_id" : "lex1",
+                        "$lexical": { "value": "bag of words" }
+                      }
+                      """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      Throwable t = catchThrowable(() -> documentShredder.shred(inputDoc));
+      assertThat(t)
+          .isNotNull()
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCUMENT_LEXICAL_TYPE)
+          .hasMessageContaining("the value for field '$lexical' must be a STRING, was: OBJECT");
+    }
+  }
+
+  @Nested
+  class HybridOkCases {
+    @Test
+    void simpleHybridString() throws Exception {
+      final String inputJson =
+          """
+                          { "_id" : "hybrid-string",
+                            "$hybrid": "test content",
+                            "status": "ok"
+                          }
+                          """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc = documentShredder.shred(inputDoc);
+      assertThat(doc.id()).isEqualTo(DocumentId.fromString("hybrid-string"));
+      List<JsonPath> expPaths =
+          Arrays.asList(
+              JsonPath.from("_id"),
+              JsonPath.from("status"),
+              JsonPath.from("$lexical"),
+              JsonPath.from("$vectorize"));
+
+      // First verify paths
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+
+      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("status Sok");
+
+      // Also, the document should be the same, including _id:
+      JsonNode jsonFromShredded = objectMapper.readTree(doc.docJson());
+      assertThat(jsonFromShredded).isEqualTo(inputDoc);
+
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNumberValues()).isEmpty();
+      assertThat(doc.queryTextValues())
+          .isEqualTo(Map.of(JsonPath.from("_id"), "lex1", JsonPath.from("status", false), "ok"));
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryVectorValues()).isNull();
+      assertThat(doc.queryLexicalValue()).isEqualTo("test content");
+    }
+  }
+
+  @Nested
   class EJSONDateTime {
     @Test
     public void shredDocWithDateTimeColumn() {
