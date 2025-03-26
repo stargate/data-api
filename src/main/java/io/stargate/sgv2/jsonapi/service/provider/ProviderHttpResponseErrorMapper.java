@@ -72,12 +72,12 @@ public class ProviderHttpResponseErrorMapper {
     Response.StatusType status = response.getStatusInfo();
 
     // Timeout errors: 408 or 504
-    if (status == REQUEST_TIMEOUT || status == GATEWAY_TIMEOUT) {
+    if (status.toEnum() == REQUEST_TIMEOUT || status.toEnum() == GATEWAY_TIMEOUT) {
       return ProviderException.Code.TIMEOUT;
     }
 
     // Rate limiting: 429
-    if (status == TOO_MANY_REQUESTS) {
+    if (status.toEnum() == TOO_MANY_REQUESTS) {
       return ProviderException.Code.TOO_MANY_REQUESTS;
     }
 

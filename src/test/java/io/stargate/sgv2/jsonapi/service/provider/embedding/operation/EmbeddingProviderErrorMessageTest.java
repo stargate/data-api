@@ -8,6 +8,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.ProviderException;
 import io.stargate.sgv2.jsonapi.service.provider.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.embedding.configuration.EmbeddingProvidersConfig;
 import jakarta.inject.Inject;
@@ -48,11 +49,10 @@ public class EmbeddingProviderErrorMessageTest {
               .awaitFailure()
               .getFailure();
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider rate limited the request: Provider: nvidia; HTTP Status: 429; Error Message: {\"object\":\"list\"}");
+          .isInstanceOf(ProviderException.class)
+          .hasFieldOrPropertyWithValue("code", ProviderException.Code.TOO_MANY_REQUESTS.name())
+          .hasMessageStartingWith(
+              "Embedding Provider: nvidia; HTTP Status: 429; Error Message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -75,11 +75,10 @@ public class EmbeddingProviderErrorMessageTest {
               .awaitFailure()
               .getFailure();
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned a HTTP client error: Provider: nvidia; HTTP Status: 400; Error Message: {\"object\":\"list\"}");
+          .isInstanceOf(ProviderException.class)
+          .hasFieldOrPropertyWithValue("code", ProviderException.Code.CLIENT_ERROR.name())
+          .hasMessageStartingWith(
+              "Embedding Provider: nvidia; HTTP Status: 400; Error Message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -102,11 +101,10 @@ public class EmbeddingProviderErrorMessageTest {
               .awaitFailure()
               .getFailure();
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_SERVER_ERROR)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider returned a HTTP server error: Provider: nvidia; HTTP Status: 503; Error Message: {\"object\":\"list\"}");
+          .isInstanceOf(ProviderException.class)
+          .hasFieldOrPropertyWithValue("code", ProviderException.Code.SERVER_ERROR.name())
+          .hasMessageStartingWith(
+              "Embedding Provider: nvidia; HTTP Status: 503; Error Message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -129,11 +127,10 @@ public class EmbeddingProviderErrorMessageTest {
               .awaitFailure()
               .getFailure();
       assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The Embedding Provider timed out: Provider: nvidia; HTTP Status: 408; Error Message: {\"object\":\"list\"}");
+          .isInstanceOf(ProviderException.class)
+          .hasFieldOrPropertyWithValue("code", ProviderException.Code.TIMEOUT.name())
+          .hasMessageStartingWith(
+              "Embedding Provider: nvidia; HTTP Status: 408; Error Message: {\"object\":\"list\"}");
     }
 
     @Test
