@@ -22,6 +22,7 @@ import io.stargate.sgv2.jsonapi.util.JsonUtil;
  */
 public class HybridFieldExpander {
   public static void expandHybridField(CommandContext context, Command command) {
+
     // Only support for Collections
     if (context.isCollectionContext()) {
       // and just for Insert commands, in particular
@@ -45,7 +46,7 @@ public class HybridFieldExpander {
     final JsonNode hybridField;
 
     if (!(docNode instanceof ObjectNode doc)
-        || (hybridField = doc.get(DocumentConstants.Fields.HYBRID_FIELD)) == null) {
+        || (hybridField = doc.remove(DocumentConstants.Fields.HYBRID_FIELD)) == null) {
       return;
     }
 

@@ -230,23 +230,26 @@ public class InsertLexicalInCollectionIntegrationTest
           .body("status.insertedIds[0]", is("hybrid-1"));
 
       givenHeadersPostJsonThenOkNoErrors(
+              // NOTE: "$lexical" is not included in the response by default, use projection
               """
                             {
                               "find": {
-                                "filter" : {"_id" : "hybrid-1"}
+                                "filter" : {"_id" : "hybrid-1"},
+                                "projection": { "*": 1 }
                               }
                             }
                             """)
           .body("$", responseIsFindSuccess())
-          // NOTE: "$lexical" is not included in the response by default, ensure
           .body(
               "data.documents[0]",
+              // NOTE: vectorization uses bogus values for easier testing
               jsonEquals(
                   """
                       {
                         "_id": "hybrid-1",
                         "$lexical": "monkeys and bananas",
-                        "$vectorize": "monkeys and bananas"
+                        "$vectorize": "monkeys and bananas",
+                        "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
                       }
                       """));
     }
