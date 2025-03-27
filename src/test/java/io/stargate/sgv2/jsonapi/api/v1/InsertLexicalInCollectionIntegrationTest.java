@@ -61,7 +61,7 @@ public class InsertLexicalInCollectionIntegrationTest
                                         "providerKey" : "shared_creds.providerKey"
                                     },
                                     "parameters": {
-                                        "projectId": "test project"
+                                        "projectId": "test lexical project"
                                     }
                                 }
                             }
