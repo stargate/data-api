@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsWritePartialSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsWriteSuccess;
@@ -268,7 +269,7 @@ public class InsertLexicalInCollectionIntegrationTest
               }
             }
             """)
-          .body("$", responseIsWritePartialSuccess())
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("HYBRID_FIELD_VALUE_TYPE_UNSUPPORTED"))
           .body(
