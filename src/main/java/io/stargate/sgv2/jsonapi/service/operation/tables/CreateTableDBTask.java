@@ -53,7 +53,7 @@ public class CreateTableDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
     if (ifNotExists) {
       create = create.ifNotExists();
     }
-    // Add all primary keys and colunms
+    // Add all primary keys and columns
     CreateTable createTable = addColumnsAndKeys(create);
 
     var extensions = TableExtensions.toExtensions(customProperties);

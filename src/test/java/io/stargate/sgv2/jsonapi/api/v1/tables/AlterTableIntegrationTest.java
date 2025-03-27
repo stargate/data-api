@@ -117,6 +117,52 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
               SchemaException.class,
               "The request included the following duplicate columns: age(int).");
     }
+
+    @Test
+    public void addColumnUnsupportedDataTypes() {
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable("add", Map.ofEntries(Map.entry("timeuuidColumn", Map.of("type", "timeuuid"))))
+          .hasSingleApiError(
+              SchemaException.Code.CANNOT_ADD_UNSUPPORTED_DATA_TYPE_COLUMNS,
+              SchemaException.class,
+              "The command attempted to add columns with unsupported data types: timeuuid");
+    }
+
+    @Test
+    public void addColumnUnsupportedCollectionTypes() {
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable(
+              "add",
+              Map.ofEntries(
+                  Map.entry("listColumn", Map.of("type", "list", "valueType", "counter"))))
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_LIST_DEFINITION,
+              SchemaException.class,
+              "The command used the value type: counter.");
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable(
+              "add",
+              Map.ofEntries(Map.entry("setColumn", Map.of("type", "set", "valueType", "timeuuid"))))
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_SET_DEFINITION,
+              SchemaException.class,
+              "The command used the value type: timeuuid.");
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable(
+              "add",
+              Map.ofEntries(
+                  Map.entry(
+                      "mapColumn",
+                      Map.of("type", "map", "keyType", "counter", "valueType", "text"))))
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_MAP_DEFINITION,
+              SchemaException.class,
+              "The command used the key type: counter.");
+    }
   }
 
   @Nested

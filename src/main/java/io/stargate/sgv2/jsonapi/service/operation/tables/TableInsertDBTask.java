@@ -55,7 +55,7 @@ public class TableInsertDBTask extends InsertDBTask<TableSchemaObject> {
       return Optional.empty();
     }
     var apiColumns = schemaObject.apiTableDef().primaryKeys();
-    var unsupported = apiColumns.filterBySupport(x -> !x.insert());
+    var unsupported = apiColumns.filterBySupportToList(x -> !x.insert());
     if (!unsupported.isEmpty()) {
       throw new IllegalStateException("Unsupported columns primary key: %s" + unsupported);
     }
