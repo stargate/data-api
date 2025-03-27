@@ -15,7 +15,7 @@ import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFac
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankingConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import java.util.List;
@@ -59,9 +59,9 @@ public class TestConstants {
             null,
             CollectionLexicalConfig.configForEnabledStandard(),
             // Use default reranking config - hardcode the value to avoid reading config
-            new CollectionRerankingConfig(
+            new CollectionRerankDef(
                 true,
-                new CollectionRerankingConfig.RerankingProviderConfig(
+                new CollectionRerankDef.RerankServiceDef(
                     "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null)));
 
     // Schema object for testing with legacy (pre-lexical-config) defaults
@@ -73,7 +73,7 @@ public class TestConstants {
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
             CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankingConfig.configForLegacyCollections());
+            CollectionRerankDef.configForPreRerankingCollection());
 
     VECTOR_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -90,7 +90,7 @@ public class TestConstants {
                         null))),
             null,
             CollectionLexicalConfig.configForDisabled(),
-            CollectionRerankingConfig.configForLegacyCollections());
+            CollectionRerankDef.configForPreRerankingCollection());
 
     KEYSPACE_SCHEMA_OBJECT = KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
     DATABASE_SCHEMA_OBJECT = new DatabaseSchemaObject();

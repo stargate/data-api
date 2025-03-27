@@ -63,7 +63,7 @@ public class EmbeddingProvidersConfigProducer {
       EmbeddingProvidersConfig.CustomConfig customConfig) {
     Map<String, EmbeddingProvidersConfig.EmbeddingProviderConfig> providerMap = new HashMap<>();
 
-    // traverse EmbeddingProviderConfig in Grpc GetSupportedProvidersResponse
+    // traverse EmbeddingProvidersConfig in Grpc GetSupportedProvidersResponse
     for (Map.Entry<String, EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig> entry :
         getSupportedProvidersResponse.getSupportedProvidersMap().entrySet()) {
 
@@ -136,7 +136,7 @@ public class EmbeddingProvidersConfigProducer {
           new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
               grpcProviderConfigProperties);
 
-      // construct embeddingProviderConfig
+      // construct EmbeddingProvidersConfig
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig =
           new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
               grpcProviderConfig.getDisplayName(),
