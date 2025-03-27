@@ -166,7 +166,11 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                         String numericPart =
                             parts[parts.length - 1]; // Get the last part which should be the number
                         double value = Double.parseDouble(numericPart);
-                        assertThat(value).isEqualTo(1.0);
+                        assertThat(value)
+                            .withFailMessage(
+                                "Expected count to be 1.0, but was [%s], full line: '%s'",
+                                value, line)
+                            .isEqualTo(1.0);
                       }
                     });
               });
