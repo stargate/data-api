@@ -89,7 +89,7 @@ public class CollectionRerankDef {
   /** Returns the reranking service configuration for this collection. */
   @JsonProperty("service")
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  public RerankServiceDef rerankingProviderConfig() {
+  public RerankServiceDef rerankServiceDef() {
     return rerankServiceDef;
   }
 
@@ -127,16 +127,16 @@ public class CollectionRerankDef {
         defaultProviderEntry.get().getValue();
 
     // Find the model marked as default for this provider
+    // The default provider must have a default model, otherwise it's config bug
     var defaultModel =
         providerConfig.models().stream()
             .filter(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::isDefault)
-            .findFirst();
-
-    // The default provider must have a default model, otherwise it's config bug
-    if (defaultModel.isEmpty()) {
-      throw new IllegalStateException(
-          "Default reranking provider '%s' does not have a default model".formatted(providerName));
-    }
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "Default reranking provider '%s' does not have a default model"
+                            .formatted(providerName)));
 
     // Check if the default provider supports the 'NONE' authentication type
     // If not, it's a config bug
@@ -157,7 +157,7 @@ public class CollectionRerankDef {
     var defaultRerankingService =
         new RerankServiceDef(
             providerName,
-            defaultModel.get().name(),
+            defaultModel.name(),
             null, // No authentication for default configuration
             null // No parameters for default configuration
             );
@@ -256,6 +256,29 @@ public class CollectionRerankDef {
             validateModel(provider, serviceConfig.modelName(), providerConfig),
             validateAuthentication(provider, serviceConfig.authentication(), providerConfig),
             validateParameters(provider, serviceConfig.parameters(), providerConfig)));
+  }
+
+  /**
+   * Converts this internal reranking representation to the external API representation. This method
+   * is used in {@link CollectionSchemaObject} and FindCollection command, it converts collection
+   * comments -> CollectionSchemaObject -> CreateCollectionCommand
+   */
+  public CreateCollectionCommand.Options.RerankDesc toRerankDesc() {
+    if (!enabled) {
+      return new CreateCollectionCommand.Options.RerankDesc(false, null);
+    }
+    if (rerankServiceDef == null) {
+      throw new IllegalStateException(
+          "Collection rerankServiceDef should not be null while rerank is enabled");
+    }
+    CreateCollectionCommand.Options.RerankServiceDesc rerankServiceDesc =
+        new CreateCollectionCommand.Options.RerankServiceDesc(
+            rerankServiceDef.provider(),
+            rerankServiceDef.modelName(),
+            rerankServiceDef.authentication(),
+            rerankServiceDef.parameters());
+
+    return new CreateCollectionCommand.Options.RerankDesc(true, rerankServiceDesc);
   }
 
   /**

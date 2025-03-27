@@ -162,7 +162,7 @@ class FindAndRerankOperationBuilder {
       rerankTasks() {
 
     // Previous code will check reranking is supported
-    var providerConfig = commandContext.schemaObject().rerankingConfig().rerankingProviderConfig();
+    var providerConfig = commandContext.schemaObject().rerankingConfig().rerankServiceDef();
     RerankingProvider rerankingProvider =
         commandContext
             .rerankingProviderFactory()

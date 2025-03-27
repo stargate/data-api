@@ -53,7 +53,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   private final CollectionIndexingConfig indexingConfig;
   private final TableMetadata tableMetadata;
   private final CollectionLexicalConfig lexicalConfig;
-  private final CollectionRerankDef rerankingConfig;
+  private final CollectionRerankDef rerankDef;
 
   /**
    * @param vectorConfig
@@ -67,7 +67,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       VectorConfig vectorConfig,
       CollectionIndexingConfig indexingConfig,
       CollectionLexicalConfig lexicalConfig,
-      CollectionRerankDef rerankingConfig) {
+      CollectionRerankDef rerankDef) {
     this(
         new SchemaObjectName(keypaceName, name),
         tableMetadata,
@@ -75,7 +75,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         vectorConfig,
         indexingConfig,
         lexicalConfig,
-        rerankingConfig);
+        rerankDef);
   }
 
   public CollectionSchemaObject(
@@ -85,7 +85,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       VectorConfig vectorConfig,
       CollectionIndexingConfig indexingConfig,
       CollectionLexicalConfig lexicalConfig,
-      CollectionRerankDef rerankingConfig) {
+      CollectionRerankDef rerankDef) {
     super(TYPE, name, tableMetadata);
 
     this.idConfig = idConfig;
@@ -93,7 +93,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     this.indexingConfig = indexingConfig;
     this.tableMetadata = tableMetadata;
     this.lexicalConfig = Objects.requireNonNull(lexicalConfig);
-    this.rerankingConfig = Objects.requireNonNull(rerankingConfig);
+    this.rerankDef = Objects.requireNonNull(rerankDef);
   }
 
   // TODO: remove this, it is just here for testing and can be handled by creating test data
@@ -106,7 +106,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         vectorConfig,
         indexingConfig,
         lexicalConfig,
-        rerankingConfig);
+        rerankDef);
   }
 
   @Override
@@ -126,7 +126,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         .append("vectorConfig", vectorConfig)
         .append("indexingConfig", indexingConfig)
         .append("lexicalConfig", lexicalConfig)
-        .append("rerankingConfig", rerankingConfig);
+        .append("rerankDef", rerankDef);
   }
 
   /**
@@ -404,29 +404,13 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         new CreateCollectionCommand.Options.LexicalConfigDefinition(
             lexicalConfig.enabled(), lexicalConfig.analyzerDefinition());
 
-    // construct the CreateCollectionCommand.options.rerankingConfig
-    CollectionRerankDef rerankingConfig = collectionSetting.rerankingConfig;
-    CreateCollectionCommand.Options.RerankServiceDesc rerankServiceDesc = null;
-    if (rerankingConfig.enabled()) {
-      if (rerankingConfig.rerankingProviderConfig() == null) {
-        throw new IllegalStateException(
-            "Reranking is enabled but rerankingProviderConfig is empty. The comment in the collection '%s' has some problems."
-                .formatted(collectionSetting.name().table()));
-      }
-      rerankServiceDesc =
-          new CreateCollectionCommand.Options.RerankServiceDesc(
-              rerankingConfig.rerankingProviderConfig().provider(),
-              rerankingConfig.rerankingProviderConfig().modelName(),
-              rerankingConfig.rerankingProviderConfig().authentication(),
-              rerankingConfig.rerankingProviderConfig().parameters());
-    }
-    var rerankingDef =
-        new CreateCollectionCommand.Options.RerankDesc(
-            rerankingConfig.enabled(), rerankServiceDesc);
+    // construct the CreateCollectionCommand.options.rerankDef
+    CollectionRerankDef rerankDef = collectionSetting.rerankDef;
+    CreateCollectionCommand.Options.RerankDesc rerankDesc = rerankDef.toRerankDesc();
 
     options =
         new CreateCollectionCommand.Options(
-            idConfig, vectorSearchConfig, indexingConfig, lexicalDef, rerankingDef);
+            idConfig, vectorSearchConfig, indexingConfig, lexicalDef, rerankDesc);
 
     // CreateCollectionCommand object is created for convenience to generate json
     // response. The code is not creating a collection here.
@@ -446,7 +430,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   }
 
   public CollectionRerankDef rerankingConfig() {
-    return rerankingConfig;
+    return rerankDef;
   }
 
   // TODO: these helper functions break encapsulation for very little benefit
@@ -470,7 +454,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         && Objects.equals(this.vectorConfig, that.vectorConfig)
         && Objects.equals(this.indexingConfig, that.indexingConfig)
         && Objects.equals(this.lexicalConfig, that.lexicalConfig)
-        && Objects.equals(this.rerankingConfig, that.rerankingConfig);
+        && Objects.equals(this.rerankDef, that.rerankDef);
   }
 
   @Override
@@ -496,8 +480,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         + "lexicalConfig="
         + lexicalConfig
         + ", "
-        + "rerankingConfig="
-        + rerankingConfig
+        + "rerankDef="
+        + rerankDef
         + ']';
   }
 }

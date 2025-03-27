@@ -47,7 +47,7 @@ public record CreateCollectionOperation(
     // if true, deny all indexing option is set and no indexes will be created
     boolean indexingDenyAll,
     CollectionLexicalConfig lexicalConfig,
-    CollectionRerankDef rerankingConfig)
+    CollectionRerankDef rerankDef)
     implements Operation {
   private static final Logger logger = LoggerFactory.getLogger(CreateCollectionOperation.class);
 
@@ -68,7 +68,7 @@ public record CreateCollectionOperation(
       boolean tooManyIndexesRollbackEnabled,
       boolean indexingDenyAll,
       CollectionLexicalConfig lexicalConfig,
-      CollectionRerankDef rerankingConfig) {
+      CollectionRerankDef rerankDef) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -84,7 +84,7 @@ public record CreateCollectionOperation(
         tooManyIndexesRollbackEnabled,
         indexingDenyAll,
         Objects.requireNonNull(lexicalConfig),
-        Objects.requireNonNull(rerankingConfig));
+        Objects.requireNonNull(rerankDef));
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
@@ -98,7 +98,7 @@ public record CreateCollectionOperation(
       boolean tooManyIndexesRollbackEnabled,
       boolean indexingDenyAll,
       CollectionLexicalConfig lexicalConfig,
-      CollectionRerankDef rerankingConfig) {
+      CollectionRerankDef rerankDef) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -114,7 +114,7 @@ public record CreateCollectionOperation(
         tooManyIndexesRollbackEnabled,
         indexingDenyAll,
         Objects.requireNonNull(lexicalConfig),
-        Objects.requireNonNull(rerankingConfig));
+        Objects.requireNonNull(rerankDef));
   }
 
   @Override

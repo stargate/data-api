@@ -76,7 +76,7 @@ public record CreateCollectionCommand(
                   "Optional configuration defining if and how to support use of 'rerank' field",
               type = SchemaType.OBJECT,
               implementation = RerankDesc.class)
-          CreateCollectionCommand.Options.RerankDesc rerank) {
+          RerankDesc rerank) {
 
     public record IdConfig(
         @Nullable
