@@ -13,12 +13,10 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.ClassOrderer;
-import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
-import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 /** Tests for update operation for Collection Documents with Lexical (BM25) sort. */
@@ -89,8 +87,6 @@ public class InsertLexicalInCollectionIntegrationTest
                         }
                         """;
 
-    // NOTE: Relies on default settings allowing insertion of "$lexical" content
-    // (that is: by default Collection created has "$lexical" enabled)
     @Test
     public void insertDocWithLexicalOk() {
       givenHeadersPostJsonThenOkNoErrors(
@@ -257,11 +253,28 @@ public class InsertLexicalInCollectionIntegrationTest
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   @Order(3)
   class InsertHybridFail {
     @Test
-    @Order(1)
-    public void setupDocuments() {}
+    public void failForWrongNodeType() {
+      givenHeadersPostJsonThenOk(
+              """
+            {
+              "insertOne": {
+                "document": {
+                    "_id": "hybrid-fail-array",
+                    "$hybrid": [ 1, 2, 3]
+                }
+              }
+            }
+            """)
+          .body("$", responseIsWritePartialSuccess())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("HYBRID_FIELD_VALUE_TYPE_UNSUPPORTED"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Unsupported JSON value type for '$hybrid' field: expected String, null or Object but received Array"));
+    }
   }
 }

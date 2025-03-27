@@ -56,7 +56,7 @@ public class HybridFieldExpander {
         // case ObjectNode ob ->
       default -> {
         throw ErrorCodeV1.HYBRID_FIELD_VALUE_TYPE_UNSUPPORTED.toApiException(
-            "expected String, Null or Object but received %s",
+            "expected String, null or Object but received %s",
             JsonUtil.nodeTypeAsString(hybridField));
       }
     }
