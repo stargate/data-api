@@ -277,5 +277,30 @@ public class InsertLexicalInCollectionIntegrationTest
               containsString(
                   "Unsupported JSON value type for '$hybrid' field: expected String, null or Object but received Array"));
     }
+
+    @Test
+    public void failForWrongProperties() {
+      givenHeadersPostJsonThenOk(
+              """
+            {
+              "insertOne": {
+                "document": {
+                    "_id": "hybrid-fail-unknown-props",
+                    "$hybrid": {
+                      "$lexical": "monkeys bananas",
+                      "extra": "cannot have this"
+                     }
+                }
+              }
+            }
+            """)
+          .body("$", responseIsError())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("HYBRID_FIELD_VALUE_TYPE_UNSUPPORTED"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Unsupported JSON value type for '$hybrid' field: expected String, null or Object but received Array"));
+    }
   }
 }
