@@ -58,7 +58,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           VectorConfig.NOT_ENABLED_CONFIG,
           null,
           CollectionLexicalConfig.configForEnabledStandard(),
-          CollectionRerankingConfig.configForMissingCollection());
+          CollectionRerankDef.DISABLED);
 
   private final IdConfig idConfig;
   private final VectorConfig vectorConfig;
