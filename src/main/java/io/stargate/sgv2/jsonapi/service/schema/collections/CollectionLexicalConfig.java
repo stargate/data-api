@@ -19,12 +19,31 @@ public record CollectionLexicalConfig(
   private static final JsonNode DEFAULT_NAMED_ANALYZER_NODE =
       JsonNodeFactory.instance.textNode(DEFAULT_NAMED_ANALYZER);
 
+  /**
+   * Constructs a lexical configuration with the specified enabled state and analyzer definition.
+   *
+   * <p>Validation behavior:
+   *
+   * <ul>
+   *   <li>If lexical search is enabled (enabled = true), the analyzer definition must not be null
+   *   <li>If lexical search is disabled (enabled = false), the analyzer definition must be null
+   * </ul>
+   *
+   * @param enabled Whether lexical search is enabled for this collection
+   * @param analyzerDefinition The JSON configuration for the analyzer, must not be null if lexical
+   *     search is enabled and must be null if lexical search is disabled
+   * @throws NullPointerException if lexical search is enabled and analyzerDefinition is null
+   * @throws IllegalStateException if lexical search is disabled and analyzerDefinition is not null
+   */
   public CollectionLexicalConfig(boolean enabled, JsonNode analyzerDefinition) {
     this.enabled = enabled;
-    // Clear out any analyzer settings if not enabled (but don't fail)
     if (enabled) {
       this.analyzerDefinition = Objects.requireNonNull(analyzerDefinition);
     } else {
+      if (analyzerDefinition != null && !analyzerDefinition.isEmpty()) {
+        throw new IllegalStateException(
+            "Analyzer definition should not be set if lexical is disabled");
+      }
       this.analyzerDefinition = null;
     }
   }
@@ -39,21 +58,42 @@ public record CollectionLexicalConfig(
       ObjectMapper mapper,
       boolean lexicalAvailableForDB,
       CreateCollectionCommand.Options.LexicalConfigDefinition lexicalConfig) {
-    // If not defined, enable if available, otherwise disable
+    // Case 1: No lexical body provided - use defaults if available, otherwise disable
     if (lexicalConfig == null) {
       return lexicalAvailableForDB ? configForEnabledStandard() : configForDisabled();
     }
-    // Otherwise validate and construct
+
+    // Case 2: Validate 'enabled' flag is present
     Boolean enabled = lexicalConfig.enabled();
     if (enabled == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "'enabled' is required property for 'lexical' Object value");
     }
-    // Can only enable if feature is available
+
+    // Case 3: Lexical is disabled - ensure no analyzer is provided
+    if (!enabled) {
+      if (lexicalConfig.analyzerDef() != null) {
+        if (lexicalConfig.analyzerDef().isTextual()) {
+          throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+              "'lexical' is disabled, but 'lexical.analyzer' property is provided with value: '%s'",
+              lexicalConfig.analyzerDef().asText());
+        }
+        if (lexicalConfig.analyzerDef().isObject() && !lexicalConfig.analyzerDef().isEmpty()) {
+          throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+              "'lexical' is disabled, but 'lexical.analyzer' property is provided with non-empty JSON Object");
+        }
+        throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+            "'lexical' is disabled, but 'lexical.analyzer' property is provided");
+      }
+      return configForDisabled();
+    }
+
+    // Case 4: Can only enable if feature is available
     if (enabled && !lexicalAvailableForDB) {
       throw ErrorCodeV1.LEXICAL_NOT_AVAILABLE_FOR_DATABASE.toApiException();
     }
 
+    // Case 5: Enabled and analyzer provided - validate and use
     JsonNode analyzer = lexicalConfig.analyzerDef();
     if (analyzer == null) {
       analyzer = mapper.getNodeFactory().textNode(CollectionLexicalConfig.DEFAULT_NAMED_ANALYZER);
@@ -62,7 +102,7 @@ public record CollectionLexicalConfig(
           "'analyzer' property of 'lexical' must be either String or JSON Object, is: %s",
           analyzer.getNodeType());
     }
-    return new CollectionLexicalConfig(enabled.booleanValue(), analyzer);
+    return new CollectionLexicalConfig(true, analyzer);
   }
 
   /**

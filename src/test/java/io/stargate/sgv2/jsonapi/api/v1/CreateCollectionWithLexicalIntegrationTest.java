@@ -2,8 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -94,11 +93,74 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
           .body("status.ok", is(1));
       deleteCollection(collectionName);
     }
+
+    @Test
+    void createLexicalDisabledWithEmptyAnalyzerObject() {
+      // Fine regardless of whether Lexical available for DB or not
+
+      final String collectionName =
+          "coll_lexical_disabled_empty" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(collectionName, "{\"enabled\": false, \"analyzer\": {}}");
+
+      givenHeadersPostJsonThenOkNoErrors(json)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+      deleteCollection(collectionName);
+    }
   }
 
   @Nested
   @Order(2)
   class CreateLexicalFail {
+    @Test
+    void failCreateLexicalWithDisabledAndAnalyzerString() {
+      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                            {
+                              "enabled": false,
+                              "analyzer": ""
+                            }
+                            """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "The provided options are invalid: 'lexical' is disabled, but 'lexical.analyzer' property is provided with value: ''"));
+    }
+
+    @Test
+    void failCreateLexicalWithDisabledAndAnalyzerObject() {
+      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                            {
+                              "enabled": false,
+                              "analyzer": {
+                                "tokenizer": {
+                                  "name": "whitespace"
+                                }
+                              }
+                            }
+                            """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "The provided options are invalid: 'lexical' is disabled, but 'lexical.analyzer' property is provided with non-empty JSON Object"));
+    }
+
     @Test
     void failCreateLexicalMissingEnabled() {
       final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
