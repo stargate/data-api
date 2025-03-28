@@ -10,6 +10,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -127,6 +128,16 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
             }
             """;
 
+      // verify starting metrics (we cannot assume clean slate)
+      final double initialCallCount;
+      {
+        final String allMetrics = getAllMetrics();
+        List<String> vectorizeCallMetrics =
+            getVectorizeCallDurationMetrics("InsertOneCommand", allMetrics, -1);
+        // Usually get 0.0 if no earlier calls, but maybe something else
+        initialCallCount = findEmbeddingCountFromMetrics(vectorizeCallMetrics);
+      }
+
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -139,44 +150,18 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("status.insertedIds[0]", is("1"));
 
       // verify the metrics
-      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-      List<String> vectorizeCallDurationMetrics =
-          metrics
-              .lines()
-              .filter(
-                  line ->
-                      line.startsWith("vectorize_call_duration_seconds")
-                          && !line.startsWith("vectorize_call_duration_seconds_bucket")
-                          && !line.contains("quantile")
-                          && line.contains("command=\"InsertOneCommand\""))
-              .toList();
-
-      assertThat(vectorizeCallDurationMetrics)
-          .satisfies(
-              lines -> {
-                assertThat(lines.size()).isEqualTo(3);
-                lines.forEach(
-                    line -> {
-                      assertThat(line).contains("embedding_provider=\"CustomITEmbeddingProvider\"");
-                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
-
-                      if (line.contains("_count")) {
-                        String[] parts = line.split(" ");
-                        String numericPart =
-                            parts[parts.length - 1]; // Get the last part which should be the number
-                        double value = Double.parseDouble(numericPart);
-                        assertThat(value)
-                            .withFailMessage(
-                                "Expected count to be 1.0, but was [%s], full line: '%s'",
-                                value, line)
-                            .isEqualTo(1.0);
-                      }
-                    });
-              });
+      final String allMetrics = getAllMetrics();
+      List<String> vectorizeCallMetrics =
+          getVectorizeCallDurationMetrics("InsertOneCommand", allMetrics, 3);
+      double afterCallCount = findEmbeddingCountFromMetrics(vectorizeCallMetrics);
+      assertThat(afterCallCount - initialCallCount)
+          .withFailMessage(
+              "Expected after (%s) to be 1.0 bigger than before (%s)",
+              afterCallCount, initialCallCount)
+          .isEqualTo(1.0);
 
       List<String> vectorizeInputBytesMetrics =
-          metrics.lines().filter(line -> line.startsWith("vectorize_input_bytes")).toList();
+          allMetrics.lines().filter(line -> line.startsWith("vectorize_input_bytes")).toList();
       assertThat(vectorizeInputBytesMetrics)
           .satisfies(
               lines -> {
@@ -349,17 +334,9 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("status.insertedIds[1]", is("3"));
 
       // verify the metrics
-      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+      final String allMetrics = getAllMetrics();
       List<String> vectorizeCallDurationMetrics =
-          metrics
-              .lines()
-              .filter(
-                  line ->
-                      line.startsWith("vectorize_call_duration_seconds")
-                          && !line.startsWith("vectorize_call_duration_seconds_bucket")
-                          && !line.contains("quantile")
-                          && line.contains("command=\"InsertManyCommand\""))
-              .toList();
+          getVectorizeCallDurationMetrics("InsertManyCommand", allMetrics, 3);
 
       assertThat(vectorizeCallDurationMetrics)
           .satisfies(
@@ -381,7 +358,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
               });
 
       List<String> vectorizeInputBytesMetrics =
-          metrics
+          allMetrics
               .lines()
               .filter(
                   line ->
@@ -1387,5 +1364,69 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
               containsString(
                   "Model random is deprecated, supported models for provider 'nvidia' are"));
     }
+  }
+
+  private String getAllMetrics() {
+    return given().when().get("/metrics").then().statusCode(200).extract().asString();
+  }
+
+  private List<String> getVectorizeCallDurationMetrics(
+      String commandName, String metrics, int expectedLines) {
+    List<String> matches =
+        metrics
+            .lines()
+            .filter(
+                line ->
+                    line.startsWith("vectorize_call_duration_seconds")
+                        && !line.startsWith("vectorize_call_duration_seconds_bucket")
+                        && !line.contains("quantile")
+                        && line.contains("command=\"" + commandName + "\""))
+            .toList();
+    // Allow -1 to be passed for "ok to not find any lines" which is acceptable starting state
+    if (expectedLines >= 0) {
+      assertThat(matches)
+          .withFailMessage(
+              "Expected to find %d vectorize_call_duration_seconds metrics for command '%s', but found %s.",
+              expectedLines, commandName, matches.size())
+          .hasSize(expectedLines);
+    }
+    return matches;
+  }
+
+  private static double findEmbeddingCountFromMetrics(List<String> metrics) {
+    return findCountFromMetrics(
+        metrics,
+        Arrays.asList(
+            "embedding_provider=\"CustomITEmbeddingProvider\"",
+            "module=\"sgv2-jsonapi\"",
+            "tenant=\"unknown\""));
+  }
+
+  private static double findCountFromMetrics(List<String> metrics, List<String> matches) {
+    String countLine =
+        metrics.stream()
+            .filter(str -> matches.stream().allMatch(str::contains) && str.contains("_count"))
+            .findFirst()
+            .orElse(null);
+    if (countLine == null) {
+      return 0;
+    }
+    String[] parts = countLine.split(" ");
+    String numericPart = parts[parts.length - 1]; // Get the last part which should be the number
+    return Double.parseDouble(numericPart);
+  }
+
+  private static double findSumFromMetrics(List<String> metrics, List<String> matches) {
+    String countLine =
+        metrics.stream()
+            .filter(str -> matches.stream().allMatch(str::contains) && str.contains("_sum"))
+            .findFirst()
+            .orElse(null);
+    if (countLine == null) {
+      return 0;
+    }
+    String[] parts = countLine.split(" ");
+    String numericPart = parts[parts.length - 1]; // Get the last part which should be the number
+    return Double.parseDouble(numericPart);
   }
 }

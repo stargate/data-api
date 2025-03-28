@@ -156,10 +156,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
     return schemaObject().type() == CollectionSchemaObject.TYPE;
   }
 
-  public boolean isTableContext() {
-    return schemaObject().type() == TableSchemaObject.TYPE;
-  }
-
   @SuppressWarnings("unchecked")
   public CommandContext<CollectionSchemaObject> asCollectionContext() {
     checkSchemaObjectType(CollectionSchemaObject.TYPE);
