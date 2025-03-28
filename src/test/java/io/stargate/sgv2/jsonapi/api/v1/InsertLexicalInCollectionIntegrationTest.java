@@ -206,23 +206,18 @@ public class InsertLexicalInCollectionIntegrationTest
   @Order(2)
   class InsertHybridOk {
     @Test
-    public void insertSimpleHybrid() {
-      final String HYBRID_DOC =
-          """
-                      {
+    public void insertSimpleHybridString() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                {
+                  "insertOne": {
+                    "document": {
                         "_id": "hybrid-1",
                         "$hybrid": "monkeys and bananas"
                       }
-                      """;
-      givenHeadersPostJsonThenOkNoErrors(
-                  """
-                {
-                  "insertOne": {
-                    "document": %s
                   }
                 }
-                """
-                  .formatted(HYBRID_DOC))
+                """)
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is("hybrid-1"));
 
@@ -250,6 +245,49 @@ public class InsertLexicalInCollectionIntegrationTest
                       }
                       """));
     }
+
+    @Test
+    public void insertSimpleHybridObject() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+            {
+              "insertOne": {
+                "document": {
+                    "_id": "hybrid-2",
+                    "$hybrid": {
+                       "$lexical": "monkey banana",
+                        "$vectorize": "monkeys like bananas!"
+                     }
+                  }
+              }
+            }
+            """)
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("hybrid-2"));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              // NOTE: "$lexical" is not included in the response by default, use projection
+              """
+                            {
+                              "find": {
+                                "filter" : {"_id" : "hybrid-2"},
+                                "projection": { "*": 1 }
+                              }
+                            }
+                            """)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                                  {
+                                    "_id": "hybrid-2",
+                                    "$lexical": "monkey banana",
+                                    "$vectorize": "monkeys like bananas!",
+                                    "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
+                                  }
+                                  """));
+    }
   }
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
@@ -271,24 +309,25 @@ public class InsertLexicalInCollectionIntegrationTest
             """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("HYBRID_FIELD_VALUE_TYPE_UNSUPPORTED"))
+          .body("errors[0].errorCode", is("HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE"))
           .body(
               "errors[0].message",
               containsString(
-                  "Unsupported JSON value type for '$hybrid' field: expected String, null or Object but received Array"));
+                  "Unsupported JSON value type for '$hybrid' field: expected String, Object or `null` but received Array"));
     }
 
     @Test
-    public void failForWrongProperties() {
+    public void failForUnknownSubFields() {
       givenHeadersPostJsonThenOk(
               """
             {
               "insertOne": {
                 "document": {
-                    "_id": "hybrid-fail-unknown-props",
+                    "_id": "hybrid-fail-unknown-fields",
                     "$hybrid": {
                       "$lexical": "monkeys bananas",
-                      "extra": "cannot have this"
+                      "extra": "cannot have this",
+                      "stuff": "or this"
                      }
                 }
               }
@@ -296,11 +335,35 @@ public class InsertLexicalInCollectionIntegrationTest
             """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("HYBRID_FIELD_VALUE_TYPE_UNSUPPORTED"))
+          .body("errors[0].errorCode", is("HYBRID_FIELD_UNKNOWN_SUBFIELDS"))
           .body(
               "errors[0].message",
               containsString(
-                  "Unsupported JSON value type for '$hybrid' field: expected String, null or Object but received Array"));
+                  "Unrecognized sub-field(s) for '$hybrid' Object: expected '$lexical' and/or '$vectorize' but encountered: 'extra', 'stuff' (Document 1 of 1)"));
+    }
+
+    @Test
+    public void failForInvalidSubFields() {
+      givenHeadersPostJsonThenOk(
+              """
+            {
+              "insertOne": {
+                "document": {
+                  "_id": "hybrid-fail-bad-subfield-types",
+                  "$hybrid": {
+                    "$lexical": 145
+                   }
+                }
+              }
+            }
+            """)
+          .body("$", responseIsError())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Unsupported JSON value type for '$hybrid' sub-field: expected String or `null` for '$lexical' but received Number (Document 1 of 1)"));
     }
   }
 }
