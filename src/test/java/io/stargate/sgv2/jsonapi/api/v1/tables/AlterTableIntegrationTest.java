@@ -297,7 +297,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL,
               SchemaException.class,
-              "The model NV-Embed-QA is at deprecated status");
+              "The model NV-Embed-QA is at DEPRECATED status");
     }
   }
 

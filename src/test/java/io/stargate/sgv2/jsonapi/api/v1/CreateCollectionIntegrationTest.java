@@ -901,7 +901,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
         .then()
         .statusCode(200)
         .body("$", responseIsError())
-        .body("errors[0].message", containsString("The model NV-Embed-QA is at deprecated status"))
+        .body("errors[0].message", containsString("The model NV-Embed-QA is at DEPRECATED status"))
         .body("errors[0].errorCode", is("UNSUPPORTED_PROVIDER_MODEL"));
   }
 

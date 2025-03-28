@@ -316,13 +316,6 @@ stargate:
               vector-dimension: 1024
               properties:
                 max-tokens: 512
-            - name: NV-Embed-QA111
-              model-support:
-                status: END_OF_LIFE
-                message: This model has been endOfLifed, it will be removed in a future release. It is not supported for new collection or table.
-              vector-dimension: 1024
-              properties:
-                max-tokens: 512
             - name: nvidia/llama-3.2-nv-embedqa-1b-v2
               vector-dimension: 2048
               service-url-override: http://llama-3-2-nv-embedqa-1b-v2.nemo:8000/v1/embeddings

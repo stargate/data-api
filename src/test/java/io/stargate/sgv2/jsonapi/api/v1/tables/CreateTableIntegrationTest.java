@@ -929,7 +929,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   "deprecatedEmbedModel",
                   true,
                   SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.name(),
-                  "The model NV-Embed-QA is at deprecated status.")));
+                  "The model NV-Embed-QA is at DEPRECATED status.")));
 
       // vector type with dimension mismatch
       testCases.add(
