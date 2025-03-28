@@ -220,17 +220,16 @@ public class CollectionResource {
                 }
                 // otherwise use generic for now
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
-
               } else {
-
                 // TODO No need for the else clause here, simplify
-                var apiFeatures =
-                    ApiFeatures.fromConfigAndRequest(
-                        apiFeatureConfig, requestContext.getHttpHeaders());
-                if ((schemaObject.type() == SchemaObject.SchemaObjectType.TABLE)
-                    && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
-                  return Uni.createFrom()
-                      .failure(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException());
+                if (schemaObject.type() == SchemaObject.SchemaObjectType.TABLE) {
+                  var apiFeatures =
+                      ApiFeatures.fromConfigAndRequest(
+                          apiFeatureConfig, requestContext.getHttpHeaders());
+                  if (!apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
+                    return Uni.createFrom()
+                        .failure(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException());
+                  }
                 }
 
                 // TODO: This needs to change, currently it is only checking if there is vectorize

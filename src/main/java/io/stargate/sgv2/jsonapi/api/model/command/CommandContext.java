@@ -152,6 +152,10 @@ public class CommandContext<SchemaT extends SchemaObject> {
     return embeddingProviderFactory;
   }
 
+  public boolean isCollectionContext() {
+    return schemaObject().type() == CollectionSchemaObject.TYPE;
+  }
+
   @SuppressWarnings("unchecked")
   public CommandContext<CollectionSchemaObject> asCollectionContext() {
     checkSchemaObjectType(CollectionSchemaObject.TYPE);

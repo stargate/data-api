@@ -530,16 +530,16 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
         WarningException.Code expectedWarningException,
         Map<String, String> docIdPerComparisonOperator) {
 
-      for (Map.Entry<String, String> comparsionDocEntry : docIdPerComparisonOperator.entrySet()) {
-        LOGGER.info(
+      for (Map.Entry<String, String> comparisonDocEntry : docIdPerComparisonOperator.entrySet()) {
+        LOGGER.debug(
             "Testing comparison filter %s against column datatype %s"
-                .formatted(comparsionDocEntry.getKey(), columnType));
+                .formatted(comparisonDocEntry.getKey(), columnType));
 
         var expectedDocId =
-            comparsionDocEntry.getValue().equals(NO_DOC_FOUND)
+            comparisonDocEntry.getValue().equals(NO_DOC_FOUND)
                 ? null
-                : comparsionDocEntry.getValue();
-        var filter = generateComparisonFilter(columnType, comparsionDocEntry.getKey());
+                : comparisonDocEntry.getValue();
+        var filter = generateComparisonFilter(columnType, comparisonDocEntry.getKey());
 
         // Target column has no index.
         checkFilterOnNoIndexColumn(filter, expectedFilterException, expectedDocId);

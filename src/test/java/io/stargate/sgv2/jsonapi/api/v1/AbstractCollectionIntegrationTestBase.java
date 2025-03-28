@@ -34,15 +34,19 @@ public abstract class AbstractCollectionIntegrationTestBase
   }
 
   @BeforeAll
-  public void createSimpleCollection() {
+  public void createDefaultCollection() {
+    createSimpleCollection();
+  }
+
+  protected final void createSimpleCollection() {
     createSimpleCollection(this.collectionName);
   }
 
-  protected void createSimpleCollection(String collectionToCreate) {
+  protected final void createSimpleCollection(String collectionToCreate) {
     createCollection(this.keyspaceName, collectionToCreate);
   }
 
-  protected void createComplexCollection(String collectionSetting) {
+  protected final void createComplexCollection(String collectionSetting) {
     given()
         .port(getTestPort())
         .headers(getHeaders())

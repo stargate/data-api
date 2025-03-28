@@ -73,6 +73,10 @@ public class CommandProcessor {
                             command.commandName().getApiName(),
                             PrettyPrintable.print(commandContext.schemaObject().name())),
                     commandContext.schemaObject()));
+
+    // First bit of pre-processing: possible expansion of "$hybrid" alias
+    HybridFieldExpander.expandHybridField(commandContext, command);
+
     // vectorize the data
     return dataVectorizerService
         .vectorize(commandContext, command)
