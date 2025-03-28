@@ -819,10 +819,10 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                },
                                                "content": {
                                                  "type": "vector",
-                                                 "dimension": 1024,
+                                                 "dimension": 1536,
                                                  "service": {
-                                                   "provider": "nvidia",
-                                                   "modelName": "NV-Embed-QA"
+                                                   "provider": "openai",
+                                                   "modelName": "text-embedding-3-small"
                                                  }
                                                }
                                            },
@@ -900,6 +900,36 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   true,
                   ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
                   "The provided options are invalid: Model name 'mistral-embed-invalid' for provider 'mistral' is not supported")));
+
+      // vector type with deprecated model
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                          {
+                                             "name": "deprecatedEmbedModel",
+                                             "definition": {
+                                                 "columns": {
+                                                     "id": {
+                                                         "type": "text"
+                                                     },
+                                                     "content": {
+                                                       "type": "vector",
+                                                       "dimension": 123,
+                                                       "service": {
+                                                        "provider": "nvidia",
+                                                        "modelName": "NV-Embed-QA"
+                                                      }
+                                                     }
+                                                 },
+                                                 "primaryKey": "id"
+                                             }
+                                          }
+                                          """,
+                  "deprecatedEmbedModel",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.name(),
+                  "The model NV-Embed-QA is at deprecated status.")));
 
       // vector type with dimension mismatch
       testCases.add(

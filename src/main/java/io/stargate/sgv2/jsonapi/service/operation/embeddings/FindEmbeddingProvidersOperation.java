@@ -74,7 +74,7 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
           embeddingProviderConfig.models()) {
         ModelConfigResponse returnModel =
             ModelConfigResponse.returnModelConfigResponse(
-                model.name(), model.vectorDimension(), model.parameters());
+                model.name(), model.modelSupport(), model.vectorDimension(), model.parameters());
         modelsRemoveProperties.add(returnModel);
       }
       return new EmbeddingProviderResponse(
@@ -96,9 +96,13 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
    * @param parameters Parameters for customizing the model.
    */
   private record ModelConfigResponse(
-      String name, Optional<Integer> vectorDimension, List<ParameterConfigResponse> parameters) {
+      String name,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelSupport modelSupport,
+      Optional<Integer> vectorDimension,
+      List<ParameterConfigResponse> parameters) {
     private static ModelConfigResponse returnModelConfigResponse(
         String name,
+        EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelSupport modelSupport,
         Optional<Integer> vectorDimension,
         List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters) {
       // reconstruct each parameter for lowercase parameter type
@@ -116,7 +120,7 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
         parametersResponse.add(returnParameter);
       }
 
-      return new ModelConfigResponse(name, vectorDimension, parametersResponse);
+      return new ModelConfigResponse(name, modelSupport, vectorDimension, parametersResponse);
     }
   }
 

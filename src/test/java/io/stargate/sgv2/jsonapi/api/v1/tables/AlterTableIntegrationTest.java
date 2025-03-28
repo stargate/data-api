@@ -71,9 +71,9 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
                           "type",
                           "vector",
                           "dimension",
-                          1024,
+                          1536,
                           "service",
-                          Map.of("provider", "nvidia", "modelName", "NV-Embed-QA"))),
+                          Map.of("provider", "openai", "modelName", "text-embedding-3-small"))),
                   Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1024))))
           .wasSuccessful();
 
@@ -94,10 +94,10 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .body("status.tables[0].definition.columns.vector_type_1.dimension", equalTo(1024))
           .body(
               "status.tables[0].definition.columns.vector_type_1.service.provider",
-              equalTo("nvidia"))
+              equalTo("openai"))
           .body(
               "status.tables[0].definition.columns.vector_type_1.service.modelName",
-              equalTo("NV-Embed-QA"))
+              equalTo("text-embedding-3-small"))
           .body("status.tables[0].definition.columns.vector_type_2.type", equalTo("vector"))
           .body("status.tables[0].definition.columns.vector_type_2.dimension", equalTo(1024));
     }
@@ -242,10 +242,10 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .wasSuccessful()
           .body(
               "status.tables[0].definition.columns.vector_type_1.service.provider",
-              equalTo("nvidia"))
+              equalTo("openai"))
           .body(
               "status.tables[0].definition.columns.vector_type_1.service.modelName",
-              equalTo("NV-Embed-QA"))
+              equalTo("text-embedding-3-small"))
           .body(
               "status.tables[0].definition.columns.vector_type_2.service.provider",
               equalTo("mistral"))
@@ -284,6 +284,20 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
               SchemaException.Code.CANNOT_VECTORIZE_NON_VECTOR_COLUMNS,
               SchemaException.class,
               "The command attempted to vectorize the non-vector columns: age.");
+    }
+
+    @Test
+    public void deprecatedModel() {
+
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable(
+              "addVectorize",
+              Map.of("vector_type_1", Map.of("provider", "nvidia", "modelName", "NV-Embed-QA")))
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL,
+              SchemaException.class,
+              "The model NV-Embed-QA is at deprecated status");
     }
   }
 

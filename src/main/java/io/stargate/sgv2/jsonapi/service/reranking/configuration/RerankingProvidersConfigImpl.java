@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.reranking.configuration;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public record RerankingProvidersConfigImpl(Map<String, RerankingProviderConfig> providers)
     implements RerankingProvidersConfig {
@@ -21,8 +22,15 @@ public record RerankingProvidersConfigImpl(Map<String, RerankingProviderConfig> 
     }
 
     public record ModelConfigImpl(
-        String name, boolean isDefault, String url, RequestProperties properties)
+        String name,
+        ModelSupport modelSupport,
+        boolean isDefault,
+        String url,
+        RequestProperties properties)
         implements ModelConfig {
+
+      public record ModelSupportImpl(ModelSupport.SupportStatus status, Optional<String> message)
+          implements ModelSupport {}
 
       public record RequestPropertiesImpl(
           int atMostRetries,

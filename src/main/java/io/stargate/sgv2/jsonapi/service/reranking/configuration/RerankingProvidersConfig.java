@@ -1,9 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.reranking.configuration;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.smallrye.config.WithDefault;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public interface RerankingProvidersConfig {
   Map<String, RerankingProviderConfig> providers();
@@ -52,6 +54,13 @@ public interface RerankingProvidersConfig {
       @JsonProperty
       String name();
 
+      /**
+       * modelSupport marks the support status of the model and optional message for the
+       * deprecation, EOL etc.
+       */
+      @JsonProperty
+      ModelSupport modelSupport();
+
       @JsonProperty
       @WithDefault("false")
       boolean isDefault();
@@ -61,6 +70,37 @@ public interface RerankingProvidersConfig {
 
       @JsonProperty
       RequestProperties properties();
+
+      /**
+       * By default, model is supporting and has no message. So if model-support is not configured
+       * in the config source, it will be supporting by default.
+       *
+       * <p>If the model is deprecated or EOF, it will be marked in the config source and been
+       * mapped.
+       *
+       * <p>If message is not configured in config source, it will be Optional.empty().
+       */
+      interface ModelSupport {
+        @JsonProperty
+        @WithDefault("SUPPORTING")
+        SupportStatus status();
+
+        @JsonProperty
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        Optional<String> message();
+
+        enum SupportStatus {
+          SUPPORTING("SUPPORTING"),
+          DEPRECATED("DEPRECATED"),
+          END_OF_LIFE("END_OF_LIFE");
+
+          public final String status;
+
+          SupportStatus(String status) {
+            this.status = status;
+          }
+        }
+      }
 
       interface RequestProperties {
         /**

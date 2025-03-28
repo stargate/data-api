@@ -806,13 +806,25 @@ request-errors:
       Resend the command without dropping the indexed columns.
 
   - scope: SCHEMA
+    code: UNSUPPORTED_PROVIDER_MODEL
+    title: The model is not supported by Data API
+    body: |-
+      The model ${model} is at ${modelStatus} status.
+      ${message}
+      
+      For deprecated model, it can not be used for collection or table creation, but can be used for existing collection or table until the model is endOfLife.
+      For endOfLife model, it can not be used for collection or table creation, and can not be used for existing collection or table.
+      
+      Resend the command using supporting model.
+
+  - scope: SCHEMA
     code: CANNOT_VECTORIZE_UNKNOWN_COLUMNS
     title: Columns cannot be vectorized if they are not defined in the table schema
     body: |-
       The command attempted to vectorize columns that are not in the table schema.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      The command attempted to drop the unknown columns: ${unknownColumns}.  
+      The command attempted to vectorize the unknown columns: ${unknownColumns}.  
       
       Resend the command using only columns defined in the table schema.
 

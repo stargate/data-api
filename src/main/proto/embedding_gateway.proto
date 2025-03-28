@@ -159,13 +159,19 @@ message GetSupportedProvidersResponse {
       int32 max_batch_size = 9;
     }
 
-    // ModelConfig message represents configuration for a specific model.
+    // ModelConfig message represents configuration for a specific embedding model.
     message ModelConfig {
       string name = 1;
-      optional int32 vector_dimension = 2;
-      repeated ParameterConfig parameters = 3;
-      map<string, string> properties = 4;
-      optional string service_url_override = 5;
+      ModelSupport modelSupport = 2;
+      optional int32 vector_dimension = 3;
+      repeated ParameterConfig parameters = 4;
+      map<string, string> properties = 5;
+      optional string service_url_override = 6;
+
+      message ModelSupport{
+        string status = 1;
+        optional string message = 2;
+      }
     }
   }
 
@@ -280,9 +286,15 @@ message GetSupportedRerankingProvidersResponse {
     // ModelConfig message represents configuration for a specific reranking model.
     message ModelConfig {
       string name = 1;
-      bool isDefault = 2;
-      string url = 3;
-      RequestProperties properties = 4;
+      ModelSupport modelSupport = 2;
+      bool isDefault = 3;
+      string url = 4;
+      RequestProperties properties = 5;
+
+      message ModelSupport{
+        string status = 1;
+        optional string message = 2;
+      }
 
       message RequestProperties {
         int32 at_most_retries = 1;

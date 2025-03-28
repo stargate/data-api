@@ -1,9 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -306,8 +309,17 @@ public class VectorizeConfigValidator {
   }
 
   /**
-   * Validates the model name and vector dimension provided in the user configuration against the
-   * specified embedding provider configuration.
+   * Validate the model support first. see {@link
+   * EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelSupport}
+   *
+   * <ul>
+   *   <li>SUPPORTING: validation pass
+   *   <li>DEPRECATED: can not create new collection/table>, prompt support message
+   *   <li>END_OF_LIFE: can not create new collection/table>, prompt support message
+   * </ul>
+   *
+   * Then Validates the model name and vector dimension provided in the user configuration against
+   * the specified embedding provider configuration.
    *
    * @param userConfig the user-specified vectorization configuration
    * @param providerConfig the configuration of the embedding provider
@@ -343,6 +355,25 @@ public class VectorizeConfigValidator {
                     ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
                         "Model name '%s' for provider '%s' is not supported",
                         userConfig.modelName(), userConfig.provider()));
+
+    // validate model support
+    if (model.modelSupport().status()
+        != EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelSupport.SupportStatus.SUPPORTING) {
+      //      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+      //          "V2 TODO model is deprecated ",
+      //          userConfig.modelName(),
+      //          userConfig.provider(),
+      //          model.modelSupport().status(),
+      //          model.modelSupport().message().orElse(""));
+      throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
+          Map.of(
+              "model",
+              userConfig.modelName(),
+              "modelStatus",
+              model.modelSupport().status().status,
+              "message",
+              model.modelSupport().message().orElse("The model is not supported.")));
+    }
 
     // Handle models with a fixed vector dimension
     if (model.vectorDimension().isPresent() && model.vectorDimension().get() != 0) {

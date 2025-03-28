@@ -873,6 +873,38 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     }
   }
 
+  @Test
+  public void failDeprecatedEmbedModel() {
+    given()
+        .headers(getHeaders())
+        .contentType(ContentType.JSON)
+        .body(
+            """
+
+                            {
+                            "createCollection": {
+                                "name": "deprecated_nvidia_model",
+                                "options": {
+                                    "vector": {
+                                        "dimension": 123,
+                                        "service": {
+                                            "provider": "nvidia",
+                                            "modelName": "NV-Embed-QA"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        """)
+        .when()
+        .post(KeyspaceResource.BASE_PATH, keyspaceName)
+        .then()
+        .statusCode(200)
+        .body("$", responseIsError())
+        .body("errors[0].message", containsString("The model NV-Embed-QA is at deprecated status"))
+        .body("errors[0].errorCode", is("UNSUPPORTED_PROVIDER_MODEL"));
+  }
+
   @Nested
   @Order(4)
   class CreateCollectionWithEmbeddingServiceTestDimension {
@@ -887,8 +919,8 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                       "vector": {
                                           "metric": "cosine",
                                           "service": {
-                                              "provider": "nvidia",
-                                              "modelName": "NV-Embed-QA"
+                                              "provider": "openai",
+                                              "modelName": "text-embedding-3-small"
                                           }
                                       }
                                   }
@@ -903,10 +935,10 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                   "options": {
                                       "vector": {
                                           "metric": "cosine",
-                                          "dimension": 1024,
+                                          "dimension": 1536,
                                           "service": {
-                                              "provider": "nvidia",
-                                              "modelName": "NV-Embed-QA"
+                                              "provider": "openai",
+                                              "modelName": "text-embedding-3-small"
                                           }
                                       }
                                   }
@@ -1012,10 +1044,10 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     "options": {
                                         "vector": {
                                             "metric": "cosine",
-                                            "dimension": 123,
+                                            "dimension": 5000,
                                             "service": {
-                                                "provider": "nvidia",
-                                                "modelName": "NV-Embed-QA"
+                                                "provider": "openai",
+                                                "modelName": "text-embedding-3-small"
                                             }
                                         }
                                     }
