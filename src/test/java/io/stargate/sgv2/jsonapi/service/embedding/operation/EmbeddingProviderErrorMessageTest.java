@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Nested;
@@ -148,7 +149,7 @@ public class EmbeddingProviderErrorMessageTest {
                   null)
               .vectorize(
                   1,
-                  List.of("application/json"),
+                  List.of(MediaType.APPLICATION_JSON),
                   embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
