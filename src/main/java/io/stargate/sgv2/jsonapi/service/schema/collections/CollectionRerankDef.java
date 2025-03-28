@@ -127,15 +127,21 @@ public class CollectionRerankDef {
         defaultProviderEntry.get().getValue();
 
     // Find the model marked as default for this provider
-    // The default provider must have a default model, otherwise it's config bug
+    // The default provider must have a default model that is at SUPPORTING status, otherwise it's
+    // config bug
     var defaultModel =
         providerConfig.models().stream()
             .filter(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::isDefault)
+            .filter(
+                modelConfig ->
+                    modelConfig.modelSupport().status()
+                        == RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport
+                            .SupportStatus.SUPPORTING)
             .findFirst()
             .orElseThrow(
                 () ->
                     new IllegalStateException(
-                        "Default reranking provider '%s' does not have a default model"
+                        "Default reranking provider '%s' does not have a default supporting model"
                             .formatted(providerName)));
 
     // Check if the default provider supports the 'NONE' authentication type

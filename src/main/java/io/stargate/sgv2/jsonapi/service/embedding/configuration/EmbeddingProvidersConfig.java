@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
@@ -33,8 +34,6 @@ public interface EmbeddingProvidersConfig {
     /**
      * A map of supported authentications. HEADER, SHARED_SECRET and NONE are the only techniques
      * the DataAPI supports (i.e. the key of map can only be HEADER, SHARED_SECRET or NONE).
-     *
-     * @return
      */
     @JsonProperty
     Map<AuthenticationType, AuthenticationConfig> supportedAuthentications();
@@ -106,10 +105,15 @@ public interface EmbeddingProvidersConfig {
       String name();
 
       /**
+       * modelSupport marks the support status of the model and optional message for the
+       * deprecation, EOL etc.
+       */
+      @JsonProperty
+      ModelSupport modelSupport();
+
+      /**
        * vectorDimension is not null if the model supports a single dimension value. It will be null
        * if the model supports different dimensions. A parameter called vectorDimension is included.
-       *
-       * @return
        */
       @Nullable
       @JsonProperty
@@ -130,6 +134,36 @@ public interface EmbeddingProvidersConfig {
       @Nullable
       @JsonProperty
       Optional<String> serviceUrlOverride();
+    }
+
+    /**
+     * By default, model is supporting and has no message. So if model-support is not configured in
+     * the config source, it will be supporting by default.
+     *
+     * <p>If the model is deprecated or EOF, it will be marked in the config source and been mapped.
+     *
+     * <p>If message is not configured in config source, it will be Optional.empty().
+     */
+    interface ModelSupport {
+      @JsonProperty
+      @WithDefault("SUPPORTING")
+      SupportStatus status();
+
+      @JsonProperty
+      @JsonInclude(JsonInclude.Include.NON_EMPTY)
+      Optional<String> message();
+
+      enum SupportStatus {
+        SUPPORTING("SUPPORTING"),
+        DEPRECATED("DEPRECATED"),
+        END_OF_LIFE("END_OF_LIFE");
+
+        public final String status;
+
+        SupportStatus(String status) {
+          this.status = status;
+        }
+      }
     }
 
     interface ParameterConfig {

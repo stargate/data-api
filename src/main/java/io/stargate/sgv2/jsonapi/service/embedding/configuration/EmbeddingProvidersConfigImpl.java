@@ -26,6 +26,7 @@ public record EmbeddingProvidersConfigImpl(
 
     public record ModelConfigImpl(
         String name,
+        ModelSupport modelSupport,
         Optional<Integer> vectorDimension,
         List<ParameterConfig> parameters,
         Map<String, String> properties,
@@ -37,6 +38,9 @@ public record EmbeddingProvidersConfigImpl(
           List<ParameterConfig> modelParameterList) {
         this(
             grpcModelConfig.getName(),
+            new ModelSupportImpl(
+                ModelSupport.SupportStatus.valueOf(grpcModelConfig.getModelSupport().getStatus()),
+                Optional.of(grpcModelConfig.getModelSupport().getMessage())),
             grpcModelConfig.hasVectorDimension()
                 ? Optional.of(grpcModelConfig.getVectorDimension())
                 : Optional.empty(),
@@ -47,6 +51,9 @@ public record EmbeddingProvidersConfigImpl(
                 : Optional.empty());
       }
     }
+
+    public record ModelSupportImpl(ModelSupport.SupportStatus status, Optional<String> message)
+        implements ModelSupport {}
 
     public record ParameterConfigImpl(
         String name,
