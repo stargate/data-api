@@ -290,6 +290,7 @@ public class InsertLexicalInCollectionIntegrationTest
     }
   }
 
+  // A subset of failing cases: bigger set in "HybridFieldExpanderTest"
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
   @Order(3)
@@ -340,30 +341,6 @@ public class InsertLexicalInCollectionIntegrationTest
               "errors[0].message",
               containsString(
                   "Unrecognized sub-field(s) for '$hybrid' Object: expected '$lexical' and/or '$vectorize' but encountered: 'extra', 'stuff' (Document 1 of 1)"));
-    }
-
-    @Test
-    public void failForInvalidSubFields() {
-      givenHeadersPostJsonThenOk(
-              """
-            {
-              "insertOne": {
-                "document": {
-                  "_id": "hybrid-fail-bad-subfield-types",
-                  "$hybrid": {
-                    "$lexical": 145
-                   }
-                }
-              }
-            }
-            """)
-          .body("$", responseIsError())
-          .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE"))
-          .body(
-              "errors[0].message",
-              containsString(
-                  "Unsupported JSON value type for '$hybrid' sub-field: expected String or `null` for '$lexical' but received Number (Document 1 of 1)"));
     }
   }
 }

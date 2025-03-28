@@ -23,7 +23,7 @@ import java.util.Iterator;
  */
 public class HybridFieldExpander {
   public static void expandHybridField(CommandContext context, Command command) {
-    // Only support for Collections
+    // Only support expansion for Collections
     if (context.isCollectionContext()) {
       // and just for Insert commands, in particular
       switch (command) {
