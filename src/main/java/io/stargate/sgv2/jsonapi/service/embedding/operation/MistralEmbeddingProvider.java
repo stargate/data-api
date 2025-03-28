@@ -100,7 +100,8 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
       String id, String object, Data[] data, String model, Usage usage) {
     private record Data(String object, int index, float[] embedding) {}
 
-    private record Usage(int prompt_tokens, int total_tokens, int completion_tokens) {}
+    private record Usage(
+        int prompt_tokens, int total_tokens, int completion_tokens, int request_count) {}
   }
 
   @Override
