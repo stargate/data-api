@@ -129,13 +129,18 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
             """;
 
       // verify starting metrics (we cannot assume clean slate)
-      final double initialCallCount;
+      final double initialCallCount, initialInputByteSum;
       {
         final String allMetrics = getAllMetrics();
         List<String> vectorizeCallMetrics =
             getVectorizeCallDurationMetrics("InsertOneCommand", allMetrics, -1);
         // Usually get 0.0 if no earlier calls, but maybe something else
         initialCallCount = findEmbeddingCountFromMetrics(vectorizeCallMetrics);
+
+        List<String> vectorizeInputBytesMetrics =
+            allMetrics.lines().filter(line -> line.startsWith("vectorize_input_bytes")).toList();
+        // same here, may get 0.0 if no earlier calls
+        initialInputByteSum = findEmbeddingSumFromMetrics(vectorizeInputBytesMetrics);
       }
 
       given()
@@ -154,41 +159,20 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
       List<String> vectorizeCallMetrics =
           getVectorizeCallDurationMetrics("InsertOneCommand", allMetrics, 3);
       double afterCallCount = findEmbeddingCountFromMetrics(vectorizeCallMetrics);
-      assertThat(afterCallCount - initialCallCount)
+      assertThat(Math.round(afterCallCount - initialCallCount))
           .withFailMessage(
-              "Expected after (%s) to be 1.0 bigger than before (%s)",
+              "Expected after (%s) call count to be 1.0 higher than before (%s)",
               afterCallCount, initialCallCount)
-          .isEqualTo(1.0);
+          .isEqualTo(1L);
 
       List<String> vectorizeInputBytesMetrics =
           allMetrics.lines().filter(line -> line.startsWith("vectorize_input_bytes")).toList();
-      assertThat(vectorizeInputBytesMetrics)
-          .satisfies(
-              lines -> {
-                assertThat(lines.size()).isEqualTo(3);
-                lines.forEach(
-                    line -> {
-                      assertThat(line).contains("embedding_provider=\"CustomITEmbeddingProvider\"");
-                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
-
-                      if (line.contains("_count")) {
-                        String[] parts = line.split(" ");
-                        String numericPart =
-                            parts[parts.length - 1]; // Get the last part which should be the number
-                        double value = Double.parseDouble(numericPart);
-                        assertThat(value).isEqualTo(1.0);
-                      }
-
-                      if (line.contains("_sum")) {
-                        String[] parts = line.split(" ");
-                        String numericPart =
-                            parts[parts.length - 1]; // Get the last part which should be the number
-                        double value = Double.parseDouble(numericPart);
-                        assertThat(value).isEqualTo(44.0);
-                      }
-                    });
-              });
+      double afterCallInputByteSum = findEmbeddingSumFromMetrics(vectorizeInputBytesMetrics);
+      assertThat(Math.round(afterCallInputByteSum - initialInputByteSum))
+          .withFailMessage(
+              "Expected after (%s) input bytes to be 44.0 higher than before (%s)",
+              afterCallInputByteSum, initialInputByteSum)
+          .isEqualTo(44L);
 
       given()
           .headers(getHeaders())
@@ -1414,6 +1398,15 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     String[] parts = countLine.split(" ");
     String numericPart = parts[parts.length - 1]; // Get the last part which should be the number
     return Double.parseDouble(numericPart);
+  }
+
+  private static double findEmbeddingSumFromMetrics(List<String> metrics) {
+    return findSumFromMetrics(
+        metrics,
+        Arrays.asList(
+            "embedding_provider=\"CustomITEmbeddingProvider\"",
+            "module=\"sgv2-jsonapi\"",
+            "tenant=\"unknown\""));
   }
 
   private static double findSumFromMetrics(List<String> metrics, List<String> matches) {
