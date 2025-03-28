@@ -598,7 +598,7 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
   private void insertDefaultRows() {
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
         .templated()
-        .insertMany(DEFAULT_ROWS)
+        .insertMany(DEFAULT_ROWS, false)
         .wasSuccessful();
   }
 

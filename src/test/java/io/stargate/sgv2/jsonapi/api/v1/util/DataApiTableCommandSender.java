@@ -31,6 +31,10 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     return postCommand(CommandName.DELETE_MANY, jsonClause);
   }
 
+  public DataApiResponseValidator postDeleteManyTruncate() {
+    return postCommand(CommandName.DELETE_MANY, "{}");
+  }
+
   public DataApiResponseValidator postDeleteOne(String jsonClause) {
     return postCommand(CommandName.DELETE_ONE, jsonClause);
   }

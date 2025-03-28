@@ -101,17 +101,41 @@ public class OperationAttemptContainer<
   }
 
   /**
-   * Checks if, given the config of the container and the current state of the attempts, the
-   * container should fail fast and stop processing any further attempts.
+   * Since container is arrayList that preserves order, if any attempt prior to or including the
+   * targetAttempt has an error status, then targetAttempt should failFast. Container should fail
+   * fast and stop processing any further following attempts.
    *
-   * @return <code>true</code> if the container is configured for sequential processing and there is
-   *     at least one error
+   * <p>
+   *
+   * <pre>
+   * E.G.
+   * If there are 5 attempts in the batch, they are 'a','b','c','d','e'. Attempt 'c' is in error status.
+   * shouldFailFast(a) -> false
+   * shouldFailFast(b) -> false
+   * shouldFailFast(c) -> true
+   * shouldFailFast(d) -> true
+   * shouldFailFast(e) -> true
+   * As a result, attempts 'a' and 'b' will be executed, other three will fail fast.
+   * </pre>
+   *
+   * @param targetAttempt the target attempt that we want to examine if a fail-fast is needed in the
+   *     batch
+   * @return <code>true</code> if the container is configured for sequential processing and at least
+   *     one attempt prior to or including targetAttempt is in error status.
    */
-  public boolean shouldFailFast() {
+  public boolean shouldFailFast(AttemptT targetAttempt) {
     if (!sequentialProcessing) {
       return false;
     }
-    return stream().anyMatch(attempt -> attempt.status() == OperationAttempt.OperationStatus.ERROR);
+    for (AttemptT attempt : this) {
+      if (attempt == targetAttempt) {
+        return targetAttempt.status() == OperationAttempt.OperationStatus.ERROR;
+      }
+      if (attempt.status() == OperationAttempt.OperationStatus.ERROR) {
+        return true; // Fail fast if any prior attempt is an error
+      }
+    }
+    return false;
   }
 
   @Override
