@@ -126,13 +126,19 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
       limit =
           Math.min(
               limit, operationsConfig.maxVectorSearchLimit()); // Max vector search support is 1000
+
+      // Hack: See https://github.com/stargate/data-api/issues/1961
+      int pageSize = commandContext.getHybridLimits() == null ?
+          operationsConfig.defaultPageSize()
+          :
+          commandContext.getHybridLimits().vectorLimit();
       return FindCollectionOperation.vsearch(
           commandContext,
           resolvedDbLogicalExpression,
           command.buildProjector(includeSimilarity),
           pageState,
           limit,
-          operationsConfig.defaultPageSize(),
+          pageSize,
           CollectionReadType.DOCUMENT,
           objectMapper,
           vector,
@@ -142,13 +148,18 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     // BM25 search / sort?
     SortExpression bm25Expr = SortClauseUtil.resolveBM25Search(sortClause);
     if (bm25Expr != null) {
+      // Hack: See https://github.com/stargate/data-api/issues/1961
+      int pageSize = commandContext.getHybridLimits() == null ?
+          operationsConfig.defaultPageSize()
+          :
+          commandContext.getHybridLimits().lexicalLimit();
       return FindCollectionOperation.bm25Multi(
           commandContext,
           resolvedDbLogicalExpression,
           command.buildProjector(),
           pageState,
           limit,
-          operationsConfig.defaultPageSize(),
+          pageSize,
           CollectionReadType.DOCUMENT,
           objectMapper,
           bm25Expr);
@@ -157,6 +168,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     List<FindCollectionOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
     // if orderBy present
     if (orderBy != null) {
+      // Hack: See https://github.com/stargate/data-api/issues/1961
+      // not commandContext.getHybridLimits() becuase there is no limit for a non ANN or BM25 query
       return FindCollectionOperation.sorted(
           commandContext,
           resolvedDbLogicalExpression,
@@ -174,6 +187,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           operationsConfig.maxDocumentSortCount(),
           includeSortVector);
     }
+    // Hack: See https://github.com/stargate/data-api/issues/1961
+    // not commandContext.getHybridLimits() becuase there is no limit for a non ANN or BM25 query
     return FindCollectionOperation.unsorted(
         commandContext,
         resolvedDbLogicalExpression,
