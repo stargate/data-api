@@ -62,15 +62,18 @@ public class DocumentShredder {
   }
 
   /**
-   * Test-only version of the shred-method that does not require a {@link CommandContext}
+   * Test-only shred-method that does not require a {@link CommandContext} and passes in a
+   * hard-coded command name and indexing projector. This is only used for testing: ideally should
+   * be refactored away: named specifically to avoid confusion with the actual production code. MUST
+   * NOT be called by non-test code.
    *
    * @param doc Document to shred.
    * @return Shredded document
    */
-  public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
+  public WritableShreddedDocument testShred(JsonNode doc, UUID txId) {
     // "testCommand" is a placeholder for the command name in the context of testing.
     // Cannot refer to a constant as this is not a test class, hence hard-coded here.
-    return shred(
+    return testShred(
         doc,
         txId,
         IndexingProjector.identityProjector(),
@@ -80,9 +83,9 @@ public class DocumentShredder {
   }
 
   /** Shred method that takes a {@link CommandContext} and shreds the provided JSON document. */
-  public WritableShreddedDocument shred(
+  public WritableShreddedDocument testShred(
       CommandContext<CollectionSchemaObject> ctx, JsonNode doc, UUID txId) {
-    return shred(
+    return testShred(
         doc,
         txId,
         ctx.schemaObject().indexingProjector(),
@@ -102,12 +105,12 @@ public class DocumentShredder {
    *     even if exception is thrown (set as soon as id is known)
    * @return Shredded document
    */
-  public WritableShreddedDocument shred(
+  public WritableShreddedDocument testShred(
       CommandContext<CollectionSchemaObject> ctx,
       JsonNode doc,
       UUID txId,
       AtomicReference<DocumentId> docIdToReturn) {
-    return shred(
+    return testShred(
         doc,
         txId,
         ctx.schemaObject().indexingProjector(),
@@ -116,7 +119,7 @@ public class DocumentShredder {
         docIdToReturn);
   }
 
-  public WritableShreddedDocument shred(
+  public WritableShreddedDocument testShred(
       JsonNode doc,
       UUID txId,
       IndexingProjector indexProjector,

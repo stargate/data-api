@@ -42,7 +42,7 @@ public class CollectionInsertAttemptBuilder
 
     try {
       shreddedDocument =
-          documentShredder.shred(
+          documentShredder.testShred(
               jsonNode,
               null,
               collectionSchemaObject.indexingProjector(),
