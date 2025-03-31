@@ -26,7 +26,11 @@ public class RerankingResponseErrorMessageMapper {
     }
 
     // Status code == 429
-    // TODO reranking EmbeddingGateway rate limiting
+    if (response.getStatus() == Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {
+      return ErrorCodeV1.RERANKING_PROVIDER_RATE_LIMITED.toApiException(
+          "Provider: %s; HTTP Status: %s; Error Message: %s",
+          providerName, response.getStatus(), message);
+    }
 
     // Status code in 4XX other than 429
     if (response.getStatusInfo().getFamily() == CLIENT_ERROR) {
