@@ -25,30 +25,40 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
       String json =
           """
                     {
-                      "findEmbeddingProviders": {
+                      "findRerankingProviders": {
                       }
                     }
                     """;
 
-      given()
-          .port(getTestPort())
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(GeneralResource.BASE_PATH)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsStatusOnly())
-          .body("status.embeddingProviders", notNullValue())
+          .body("status.rerankingProviders", notNullValue())
           .body(
-              "status.embeddingProviders.nvidia.models[0].name",
+              "status.rerankingProviders.nvidia.models[0].name",
               equalTo("nvidia/llama-3.2-nv-rerankqa-1b-v2"))
           .body(
-              "status.embeddingProviders.nvidia.models[0].modelSupport.status",
+              "status.rerankingProviders.nvidia.models[0].modelSupport.status",
               equalTo(
                   RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport
                       .SupportStatus.SUPPORTING
+                      .status))
+          .body(
+              "status.rerankingProviders.nvidia.models[1].name",
+              equalTo("nvidia/a-random-deprecated-model"))
+          .body(
+              "status.rerankingProviders.nvidia.models[1].modelSupport.status",
+              equalTo(
+                  RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport
+                      .SupportStatus.DEPRECATED
+                      .status))
+          .body(
+              "status.rerankingProviders.nvidia.models[2].name",
+              equalTo("nvidia/a-random-EOL-model"))
+          .body(
+              "status.rerankingProviders.nvidia.models[2].modelSupport.status",
+              equalTo(
+                  RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport
+                      .SupportStatus.END_OF_LIFE
                       .status));
     }
   }

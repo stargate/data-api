@@ -310,6 +310,9 @@ stargate:
             max-batch-size: 8
           models:
             - name: NV-Embed-QA
+              model-support:
+                status: DEPRECATED
+                message: This model has been deprecated, it will be removed in a future release. It is not supported for new collection or table.
               vector-dimension: 1024
               properties:
                 max-tokens: 512

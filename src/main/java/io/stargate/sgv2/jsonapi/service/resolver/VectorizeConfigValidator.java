@@ -359,12 +359,6 @@ public class VectorizeConfigValidator {
     // validate model support
     if (model.modelSupport().status()
         != EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelSupport.SupportStatus.SUPPORTING) {
-      //      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-      //          "V2 TODO model is deprecated ",
-      //          userConfig.modelName(),
-      //          userConfig.provider(),
-      //          model.modelSupport().status(),
-      //          model.modelSupport().message().orElse(""));
       throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
           Map.of(
               "model",
