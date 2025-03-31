@@ -99,11 +99,12 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
       String model,
       @JsonInclude(JsonInclude.Include.NON_NULL) Boolean truncation) {}
 
-  @JsonIgnoreProperties({"object"})
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
   record EmbeddingResponse(Data[] data, String model, Usage usage) {
-    @JsonIgnoreProperties({"object"})
+    @JsonIgnoreProperties(ignoreUnknown = true)
     record Data(int index, float[] embedding) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     record Usage(int total_tokens) {}
   }
 
