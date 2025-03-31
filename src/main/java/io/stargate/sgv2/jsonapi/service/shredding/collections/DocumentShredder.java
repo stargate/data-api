@@ -62,18 +62,24 @@ public class DocumentShredder {
   }
 
   /**
-   * Shreds a single JSON node into a {@link WritableShreddedDocument} representation.
+   * Test-only version of the shred-method that does not require a {@link CommandContext}
    *
-   * @param document {@link JsonNode} to shred.
-   * @return WritableShreddedDocument
+   * @param doc Document to shred.
+   * @return Shredded document
    */
-  public WritableShreddedDocument shred(JsonNode document) {
-    return shred(document, null);
+  public WritableShreddedDocument shred(JsonNode doc) {
+    return shred(doc, null);
   }
 
+  /**
+   * Test-only version of the shred-method that does not require a {@link CommandContext}
+   *
+   * @param doc Document to shred.
+   * @return Shredded document
+   */
   public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
-    // TODO - why does this have "testCommand" for a command name ? Should it be a constant ?
-    // We do have "TestConstants.TEST_COMMAND_NAME"... but it's test dep cannot access here
+    // "testCommand" is a placeholder for the command name in the context of testing.
+    // Cannot refer to a constant as this is not a test class, hence hard-coded here.
     return shred(
         doc,
         txId,
@@ -83,6 +89,7 @@ public class DocumentShredder {
         null);
   }
 
+  /** Shred method that takes a {@link CommandContext} and shreds the provided JSON document. */
   public WritableShreddedDocument shred(
       CommandContext<CollectionSchemaObject> ctx, JsonNode doc, UUID txId) {
     return shred(
@@ -95,6 +102,8 @@ public class DocumentShredder {
   }
 
   /**
+   * Shred method that takes a {@link CommandContext} and shreds the provided JSON document.
+   *
    * @param ctx Command context for processing, used for accessing Collection settings and indexing
    *     projector
    * @param doc Document to shred
