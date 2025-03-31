@@ -67,16 +67,6 @@ public class DocumentShredder {
    * @param doc Document to shred.
    * @return Shredded document
    */
-  public WritableShreddedDocument shred(JsonNode doc) {
-    return shred(doc, null);
-  }
-
-  /**
-   * Test-only version of the shred-method that does not require a {@link CommandContext}
-   *
-   * @param doc Document to shred.
-   * @return Shredded document
-   */
   public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
     // "testCommand" is a placeholder for the command name in the context of testing.
     // Cannot refer to a constant as this is not a test class, hence hard-coded here.
