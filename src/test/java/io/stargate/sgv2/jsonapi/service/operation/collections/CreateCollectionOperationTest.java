@@ -125,8 +125,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               10,
               false,
               false,
-              LEXICAL_CONFIG,
-              RERANKING_CONFIG);
+              LEXICAL_CONFIG);
 
       Supplier<CommandResult> execute =
           operation
@@ -188,8 +187,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               10,
               false,
               false,
-              LEXICAL_CONFIG,
-              RERANKING_CONFIG);
+              LEXICAL_CONFIG);
 
       Supplier<CommandResult> execute =
           operation
@@ -248,8 +246,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               10,
               false,
               true,
-              LEXICAL_CONFIG,
-              RERANKING_CONFIG);
+              LEXICAL_CONFIG);
 
       Supplier<CommandResult> execute =
           operation
@@ -311,8 +308,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               10,
               false,
               true,
-              LEXICAL_CONFIG,
-              RERANKING_CONFIG);
+              LEXICAL_CONFIG);
 
       Supplier<CommandResult> execute =
           operation
@@ -396,8 +392,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               10,
               true,
               false,
-              LEXICAL_CONFIG,
-              RERANKING_CONFIG);
+              LEXICAL_CONFIG);
 
       Supplier<CommandResult> execute =
           operation

@@ -90,8 +90,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
           false,
-          lexicalConfig,
-          rerankDef); // Since the options is null
+          lexicalConfig); // Since the options is null
     }
 
     boolean hasIndexing = options.indexing() != null;
@@ -100,8 +99,11 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     final CollectionLexicalConfig lexicalConfig =
         CollectionLexicalConfig.validateAndConstruct(
             objectMapper, lexicalAvailableForDB, options.lexical());
+
+    boolean isRerankingEnabledForAPI = ctx.apiFeatures().isFeatureEnabled(ApiFeature.RERANKING);
     final CollectionRerankDef rerankDef =
-        CollectionRerankDef.fromApiDesc(options.rerank(), rerankingProvidersConfig);
+        CollectionRerankDef.fromApiDesc(
+            isRerankingEnabledForAPI, options.rerank(), rerankingProvidersConfig);
 
     boolean indexingDenyAll = false;
     // handling indexing options
@@ -143,8 +145,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
           indexingDenyAll,
-          lexicalConfig,
-          rerankDef);
+          lexicalConfig);
     } else {
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
@@ -156,8 +157,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
           indexingDenyAll,
-          lexicalConfig,
-          rerankDef);
+          lexicalConfig);
     }
   }
 

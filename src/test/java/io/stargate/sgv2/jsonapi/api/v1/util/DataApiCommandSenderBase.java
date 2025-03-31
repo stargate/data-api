@@ -22,14 +22,12 @@ import org.eclipse.microprofile.config.ConfigProvider;
  * (usually integration tests).
  */
 public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBase> {
-  protected final String keyspace;
 
   protected Response.Status expectedHttpStatus = Response.Status.OK;
 
   protected final Map<String, String> headers;
 
-  protected DataApiCommandSenderBase(String keyspace) {
-    this.keyspace = keyspace;
+  protected DataApiCommandSenderBase() {
     headers = DefaultHeaders.mutableCopy();
   }
 

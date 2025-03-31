@@ -219,8 +219,20 @@ public class CollectionRerankDef {
    * @throws JsonApiException if the configuration is invalid
    */
   public static CollectionRerankDef fromApiDesc(
+      boolean isRerankingEnabledForAPI,
       CreateCollectionCommand.Options.RerankDesc rerankingDesc,
       RerankingProvidersConfig providerConfigs) {
+
+    // If reranking is not enabled for the API, error out if user provides desc or return disabled
+    // configuration.
+    if (!isRerankingEnabledForAPI) {
+      if (rerankingDesc != null) {
+        throw ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED.toApiException(
+            "Reranking feature is not enabled.");
+      }
+      return DISABLED;
+    }
+
     // Case 1: No configuration provided - use defaults
     if (rerankingDesc == null) {
       return configForNewCollections(providerConfigs);
