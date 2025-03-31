@@ -73,7 +73,7 @@ public class DocumentShredder {
   public WritableShreddedDocument testShred(JsonNode doc, UUID txId) {
     // "testCommand" is a placeholder for the command name in the context of testing.
     // Cannot refer to a constant as this is not a test class, hence hard-coded here.
-    return testShred(
+    return shred(
         doc,
         txId,
         IndexingProjector.identityProjector(),
@@ -83,9 +83,9 @@ public class DocumentShredder {
   }
 
   /** Shred method that takes a {@link CommandContext} and shreds the provided JSON document. */
-  public WritableShreddedDocument testShred(
+  public WritableShreddedDocument shred(
       CommandContext<CollectionSchemaObject> ctx, JsonNode doc, UUID txId) {
-    return testShred(
+    return shred(
         doc,
         txId,
         ctx.schemaObject().indexingProjector(),
@@ -105,12 +105,12 @@ public class DocumentShredder {
    *     even if exception is thrown (set as soon as id is known)
    * @return Shredded document
    */
-  public WritableShreddedDocument testShred(
+  public WritableShreddedDocument shred(
       CommandContext<CollectionSchemaObject> ctx,
       JsonNode doc,
       UUID txId,
       AtomicReference<DocumentId> docIdToReturn) {
-    return testShred(
+    return shred(
         doc,
         txId,
         ctx.schemaObject().indexingProjector(),
@@ -119,7 +119,7 @@ public class DocumentShredder {
         docIdToReturn);
   }
 
-  public WritableShreddedDocument testShred(
+  public WritableShreddedDocument shred(
       JsonNode doc,
       UUID txId,
       IndexingProjector indexProjector,

@@ -198,7 +198,7 @@ public class DocumentShredderWithExtendedTypesTest {
       final String inputJson = "{\"value\": 42}";
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc =
-          documentShredder.testShred(
+          documentShredder.shred(
               inputDoc,
               null,
               IndexingProjector.identityProjector(),
@@ -238,7 +238,7 @@ public class DocumentShredderWithExtendedTypesTest {
       final String inputJson = "{\"value\": 42}";
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc =
-          documentShredder.testShred(
+          documentShredder.shred(
               inputDoc,
               null,
               IndexingProjector.identityProjector(),
@@ -294,7 +294,7 @@ public class DocumentShredderWithExtendedTypesTest {
       final String inputJson = "{\"value\": 42}";
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       WritableShreddedDocument doc =
-          documentShredder.testShred(
+          documentShredder.shred(
               inputDoc,
               null,
               IndexingProjector.identityProjector(),

@@ -138,7 +138,7 @@ public class DocumentShredderDocLimitsTest {
       IndexingProjector indexProjector =
           IndexingProjector.createForIndexing(null, Collections.singleton("no_index"));
       assertThat(
-              documentShredder.testShred(
+              documentShredder.shred(
                   doc, null, indexProjector, "testCommand", CollectionSchemaObject.MISSING, null))
           .isNotNull();
     }
@@ -219,7 +219,7 @@ public class DocumentShredderDocLimitsTest {
       IndexingProjector indexProjector =
           IndexingProjector.createForIndexing(null, Collections.singleton("no_index"));
       assertThat(
-              documentShredder.testShred(
+              documentShredder.shred(
                   doc, null, indexProjector, "testCommand", CollectionSchemaObject.MISSING, null))
           .isNotNull();
     }

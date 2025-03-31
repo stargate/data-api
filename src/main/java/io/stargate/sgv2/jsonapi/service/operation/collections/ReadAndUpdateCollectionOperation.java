@@ -196,7 +196,7 @@ public record ReadAndUpdateCollectionOperation(
 
                         final WritableShreddedDocument writableShreddedDocument =
                             documentShredder()
-                                .testShred(
+                                .shred(
                                     commandContext(),
                                     vectorizedDocumentUpdaterResponse.document(),
                                     readDocument
