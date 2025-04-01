@@ -162,7 +162,7 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
   private record EmbeddingRequest(
       String inputText, @JsonInclude(value = JsonInclude.Include.NON_DEFAULT) int dimensions) {}
 
-  @JsonIgnoreProperties({"embeddingsByType"})
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
   private record EmbeddingResponse(float[] embedding, int inputTextTokenCount) {}
 
   @Override
