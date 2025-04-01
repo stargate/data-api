@@ -103,7 +103,8 @@ public class CohereEmbeddingProvider extends EmbeddingProvider {
 
   private record EmbeddingRequest(String[] texts, String model, String input_type) {}
 
-  @JsonIgnoreProperties({"id", "texts", "meta", "response_type"})
+  // @JsonIgnoreProperties({"id", "texts", "meta", "response_type"})
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
   private static class EmbeddingResponse {
 
     protected EmbeddingResponse() {}
