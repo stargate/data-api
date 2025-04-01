@@ -45,9 +45,9 @@ public enum ApiFeature {
    *
    * If disabled, those operations will fail with {@link ErrorCodeV1#RERANKING_FEATURE_NOT_ENABLED}.
    *
-   * <p>Disabled by default.
+   * <p>Enabled by default.
    */
-  RERANKING("reranking", false),
+  RERANKING("reranking", true),
 
   /**
    * The request will return a trace of the processing that includes a message of the steps taken,
