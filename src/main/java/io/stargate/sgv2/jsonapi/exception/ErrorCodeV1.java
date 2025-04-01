@@ -96,7 +96,7 @@ public enum ErrorCodeV1 {
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
 
   RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),
-  RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable : "),
+  RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable"),
   RERANKING_PROVIDER_UNEXPECTED_RESPONSE("The Reranking Provider returned an unexpected response"),
   RERANKING_PROVIDER_CLIENT_ERROR("The Reranking Provider returned a HTTP client error"),
   RERANKING_PROVIDER_SERVER_ERROR("The Reranking Provider returned a HTTP server error"),
