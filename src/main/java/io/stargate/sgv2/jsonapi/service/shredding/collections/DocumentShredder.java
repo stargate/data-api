@@ -15,10 +15,15 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIdType;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
+import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -41,6 +46,17 @@ import org.bson.types.ObjectId;
  */
 @ApplicationScoped
 public class DocumentShredder {
+  // Collection Schema to use for testing: most settings missing, but $lexical
+  private static final CollectionSchemaObject TEST_COLLECTION_SCHEMA_WITH_LEXICAL =
+      new CollectionSchemaObject(
+          SchemaObjectName.MISSING,
+          null,
+          IdConfig.defaultIdConfig(),
+          VectorConfig.NOT_ENABLED_CONFIG,
+          null,
+          CollectionLexicalConfig.configForEnabledStandard(),
+          CollectionRerankDef.DISABLED);
+
   private static final NoArgGenerator UUID_V4_GENERATOR = Generators.randomBasedGenerator();
   private static final NoArgGenerator UUID_V6_GENERATOR = Generators.timeBasedReorderedGenerator();
   private static final NoArgGenerator UUID_V7_GENERATOR = Generators.timeBasedEpochGenerator();
@@ -78,7 +94,7 @@ public class DocumentShredder {
         txId,
         IndexingProjector.identityProjector(),
         "testCommand",
-        CollectionSchemaObject.MISSING_WITH_LEXICAL,
+        TEST_COLLECTION_SCHEMA_WITH_LEXICAL,
         null);
   }
 

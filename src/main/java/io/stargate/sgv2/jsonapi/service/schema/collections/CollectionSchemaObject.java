@@ -48,18 +48,6 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           CollectionLexicalConfig.configForDisabled(),
           CollectionRerankDef.DISABLED);
 
-  // Collection Schema to use for testing: most settings missing, but $lexical
-  // config enabled
-  public static final CollectionSchemaObject MISSING_WITH_LEXICAL =
-      new CollectionSchemaObject(
-          SchemaObjectName.MISSING,
-          null,
-          IdConfig.defaultIdConfig(),
-          VectorConfig.NOT_ENABLED_CONFIG,
-          null,
-          CollectionLexicalConfig.configForEnabledStandard(),
-          CollectionRerankDef.DISABLED);
-
   private final IdConfig idConfig;
   private final VectorConfig vectorConfig;
   private final CollectionIndexingConfig indexingConfig;
