@@ -101,7 +101,8 @@ public class DseTestResource extends StargateTestResource {
     // Integration tests load provider yaml files from test resources folder.
     // This is to help with testing non-prod provider configuration. E.G. model deprecation.
     propsBuilder.put(
-        "RERANKING_CONFIG_PATH", "target/test-classes/test-reranking-providers-config.yaml");
+        "RERANKING_CONFIG_PATH",
+        "test-provider-configurations/test-reranking-providers-config.yaml");
 
     propsBuilder.put(
         "stargate.jsonapi.custom.embedding.clazz",
