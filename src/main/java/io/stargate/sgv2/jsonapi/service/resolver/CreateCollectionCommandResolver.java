@@ -71,6 +71,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
     final var name = validateSchemaName(command.name(), NamingRules.COLLECTION);
     final CreateCollectionCommand.Options options = command.options();
+    boolean isRerankingEnabledForAPI = ctx.apiFeatures().isFeatureEnabled(ApiFeature.RERANKING);
 
     if (options == null) {
       final CollectionLexicalConfig lexicalConfig =
@@ -78,7 +79,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
               ? CollectionLexicalConfig.configForEnabledStandard()
               : CollectionLexicalConfig.configForDisabled();
       final CollectionRerankDef rerankDef =
-          CollectionRerankDef.configForNewCollections(rerankingProvidersConfig);
+          CollectionRerankDef.configForNewCollections(
+              isRerankingEnabledForAPI, rerankingProvidersConfig);
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
           dbLimitsConfig,
@@ -100,7 +102,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         CollectionLexicalConfig.validateAndConstruct(
             objectMapper, lexicalAvailableForDB, options.lexical());
 
-    boolean isRerankingEnabledForAPI = ctx.apiFeatures().isFeatureEnabled(ApiFeature.RERANKING);
     final CollectionRerankDef rerankDef =
         CollectionRerankDef.fromApiDesc(
             isRerankingEnabledForAPI, options.rerank(), rerankingProvidersConfig);
