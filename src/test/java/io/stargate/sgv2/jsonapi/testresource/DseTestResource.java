@@ -105,7 +105,7 @@ public class DseTestResource extends StargateTestResource {
 
     // 31-Mar-2025, yuqi: [data-api#1904] Reranking feature flag:
     String featureFlagReranking = getFeatureFlagReranking();
-    if (tableFeatureSetting != null) {
+    if (featureFlagReranking != null) {
       propsBuilder.put("stargate.feature.flags.reranking", featureFlagReranking);
     }
 
