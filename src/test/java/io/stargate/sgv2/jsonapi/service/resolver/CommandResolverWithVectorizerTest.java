@@ -78,8 +78,8 @@ public class CommandResolverWithVectorizerTest {
   @Inject InsertOneCommandResolver insertOneCommandResolver;
 
   @Inject DataVectorizerService dataVectorizerService;
-  private TestConstants testConstants = new TestConstants();
-  private TestEmbeddingProvider testEmbeddingProvider = new TestEmbeddingProvider();
+  private final TestConstants testConstants = new TestConstants();
+  private final TestEmbeddingProvider testEmbeddingProvider = new TestEmbeddingProvider();
 
   @Nested
   class Resolve {
@@ -491,10 +491,10 @@ public class CommandResolverWithVectorizerTest {
               op -> {
                 WritableShreddedDocument first =
                     documentShredder.shred(
-                        testConstants.collectionContext(), command.documents().get(0), null);
+                        VECTOR_COMMAND_CONTEXT, command.documents().get(0), null);
                 WritableShreddedDocument second =
                     documentShredder.shred(
-                        testConstants.collectionContext(), command.documents().get(1), null);
+                        VECTOR_COMMAND_CONTEXT, command.documents().get(1), null);
                 assertThat(first.queryVectorValues().length).isEqualTo(3);
                 assertThat(first.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
                 assertThat(second.queryVectorValues().length).isEqualTo(3);
@@ -580,8 +580,7 @@ public class CommandResolverWithVectorizerTest {
               InsertCollectionOperation.class,
               op -> {
                 WritableShreddedDocument expected =
-                    documentShredder.shred(
-                        testConstants.collectionContext(), command.document(), null);
+                    documentShredder.shred(VECTOR_COMMAND_CONTEXT, command.document(), null);
                 assertThat(expected.queryVectorValues().length).isEqualTo(3);
                 assertThat(expected.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
                 assertThat(op.commandContext()).isEqualTo(commandContext);
