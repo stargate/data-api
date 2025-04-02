@@ -293,7 +293,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
           ReadAndUpdateCollectionOperation.buildUpdateQuery(
               KEYSPACE_NAME, COLLECTION_NAME, false, false);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode, tx_id);
+      WritableShreddedDocument shredDocument = documentShredder.testShred(jsonNode, tx_id);
       SimpleStatement updateStmt =
           ReadAndUpdateCollectionOperation.bindUpdateValues(updateCql, shredDocument, false, false);
 

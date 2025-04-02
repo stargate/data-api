@@ -15,10 +15,15 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIdType;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
+import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -41,6 +46,17 @@ import org.bson.types.ObjectId;
  */
 @ApplicationScoped
 public class DocumentShredder {
+  // Collection Schema to use for testing: most settings missing, but $lexical
+  private static final CollectionSchemaObject TEST_COLLECTION_SCHEMA_WITH_LEXICAL =
+      new CollectionSchemaObject(
+          SchemaObjectName.MISSING,
+          null,
+          IdConfig.defaultIdConfig(),
+          VectorConfig.NOT_ENABLED_CONFIG,
+          null,
+          CollectionLexicalConfig.configForEnabledStandard(),
+          CollectionRerankDef.DISABLED);
+
   private static final NoArgGenerator UUID_V4_GENERATOR = Generators.randomBasedGenerator();
   private static final NoArgGenerator UUID_V6_GENERATOR = Generators.timeBasedReorderedGenerator();
   private static final NoArgGenerator UUID_V7_GENERATOR = Generators.timeBasedEpochGenerator();
@@ -62,26 +78,27 @@ public class DocumentShredder {
   }
 
   /**
-   * Shreds a single JSON node into a {@link WritableShreddedDocument} representation.
+   * Test-only shred-method that does not require a {@link CommandContext} and passes in a
+   * hard-coded command name and indexing projector. This is only used for testing: ideally should
+   * be refactored away: named specifically to avoid confusion with the actual production code. MUST
+   * NOT be called by non-test code.
    *
-   * @param document {@link JsonNode} to shred.
-   * @return WritableShreddedDocument
+   * @param doc Document to shred.
+   * @return Shredded document
    */
-  public WritableShreddedDocument shred(JsonNode document) {
-    return shred(document, null);
-  }
-
-  public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
-    // TODO - why does this have "testCommand" for a command name ? Should it be a constant ?
+  public WritableShreddedDocument testShred(JsonNode doc, UUID txId) {
+    // "testCommand" is a placeholder for the command name in the context of testing.
+    // Cannot refer to a constant as this is not a test class, hence hard-coded here.
     return shred(
         doc,
         txId,
         IndexingProjector.identityProjector(),
         "testCommand",
-        CollectionSchemaObject.MISSING,
+        TEST_COLLECTION_SCHEMA_WITH_LEXICAL,
         null);
   }
 
+  /** Shred method that takes a {@link CommandContext} and shreds the provided JSON document. */
   public WritableShreddedDocument shred(
       CommandContext<CollectionSchemaObject> ctx, JsonNode doc, UUID txId) {
     return shred(
@@ -94,6 +111,8 @@ public class DocumentShredder {
   }
 
   /**
+   * Shred method that takes a {@link CommandContext} and shreds the provided JSON document.
+   *
    * @param ctx Command context for processing, used for accessing Collection settings and indexing
    *     projector
    * @param doc Document to shred
