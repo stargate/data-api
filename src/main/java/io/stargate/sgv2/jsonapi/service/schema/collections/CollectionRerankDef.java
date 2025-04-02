@@ -104,12 +104,17 @@ public class CollectionRerankDef {
    * collections. Similarly, if the default provider doesn't have a default model, reranking will be
    * disabled.
    *
+   * @param isRerankingEnabledForAPI
    * @param rerankingProvidersConfig The configuration for all available reranking providers
    * @return A default-configured CollectionRerankDef
    */
   public static CollectionRerankDef configForNewCollections(
-      RerankingProvidersConfig rerankingProvidersConfig) {
+      boolean isRerankingEnabledForAPI, RerankingProvidersConfig rerankingProvidersConfig) {
     Objects.requireNonNull(rerankingProvidersConfig, "Reranking providers config cannot be null");
+    // If reranking is not enabled for the API, return disabled configuration
+    if (!isRerankingEnabledForAPI) {
+      return DISABLED;
+    }
     // Find the provider marked as default
     var defaultProviderEntry =
         rerankingProvidersConfig.providers().entrySet().stream()
@@ -219,11 +224,22 @@ public class CollectionRerankDef {
    * @throws JsonApiException if the configuration is invalid
    */
   public static CollectionRerankDef fromApiDesc(
+      boolean isRerankingEnabledForAPI,
       CreateCollectionCommand.Options.RerankDesc rerankingDesc,
       RerankingProvidersConfig providerConfigs) {
+
+    // If reranking is not enabled for the API, error out if user provides desc or return disabled
+    // configuration.
+    if (!isRerankingEnabledForAPI) {
+      if (rerankingDesc != null) {
+        throw ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED.toApiException();
+      }
+      return DISABLED;
+    }
+
     // Case 1: No configuration provided - use defaults
     if (rerankingDesc == null) {
-      return configForNewCollections(providerConfigs);
+      return configForNewCollections(isRerankingEnabledForAPI, providerConfigs);
     }
 
     // Case 2: Validate 'enabled' flag is present
@@ -241,7 +257,7 @@ public class CollectionRerankDef {
     // Case 4: Enabled but no service config - use defaults
     var serviceConfig = rerankingDesc.rerankServiceDesc();
     if (serviceConfig == null) {
-      return configForNewCollections(providerConfigs);
+      return configForNewCollections(isRerankingEnabledForAPI, providerConfigs);
     }
 
     // Case 5: Full configuration - validate all components
