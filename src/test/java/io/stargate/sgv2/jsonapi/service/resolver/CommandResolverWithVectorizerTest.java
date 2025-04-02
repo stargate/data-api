@@ -490,9 +490,11 @@ public class CommandResolverWithVectorizerTest {
               InsertCollectionOperation.class,
               op -> {
                 WritableShreddedDocument first =
-                    documentShredder.testShred(command.documents().get(0), null);
+                    documentShredder.shred(
+                        testConstants.collectionContext(), command.documents().get(0), null);
                 WritableShreddedDocument second =
-                    documentShredder.testShred(command.documents().get(1), null);
+                    documentShredder.shred(
+                        testConstants.collectionContext(), command.documents().get(1), null);
                 assertThat(first.queryVectorValues().length).isEqualTo(3);
                 assertThat(first.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
                 assertThat(second.queryVectorValues().length).isEqualTo(3);
@@ -578,7 +580,8 @@ public class CommandResolverWithVectorizerTest {
               InsertCollectionOperation.class,
               op -> {
                 WritableShreddedDocument expected =
-                    documentShredder.testShred(command.document(), null);
+                    documentShredder.shred(
+                        testConstants.collectionContext(), command.document(), null);
                 assertThat(expected.queryVectorValues().length).isEqualTo(3);
                 assertThat(expected.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
                 assertThat(op.commandContext()).isEqualTo(commandContext);
