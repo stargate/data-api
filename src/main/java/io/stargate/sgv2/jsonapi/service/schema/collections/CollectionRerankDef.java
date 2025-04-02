@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import java.util.*;
 import org.slf4j.Logger;
@@ -127,15 +128,21 @@ public class CollectionRerankDef {
         defaultProviderEntry.get().getValue();
 
     // Find the model marked as default for this provider
-    // The default provider must have a default model, otherwise it's config bug
+    // The default provider must have a default model that is at SUPPORTING status, otherwise it's
+    // config bug
     var defaultModel =
         providerConfig.models().stream()
             .filter(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::isDefault)
+            .filter(
+                modelConfig ->
+                    modelConfig.modelSupport().status()
+                        == RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport
+                            .SupportStatus.SUPPORTING)
             .findFirst()
             .orElseThrow(
                 () ->
                     new IllegalStateException(
-                        "Default reranking provider '%s' does not have a default model"
+                        "Default reranking provider '%s' does not have a default supporting model"
                             .formatted(providerName)));
 
     // Check if the default provider supports the 'NONE' authentication type
@@ -334,13 +341,30 @@ public class CollectionRerankDef {
           "Model name is required for reranking provider '%s'", provider);
     }
 
-    boolean isModelSupported =
-        rerankingProviderConfig.models().stream().anyMatch(m -> m.name().equals(modelName));
+    var rerankModel =
+        rerankingProviderConfig.models().stream()
+            .filter(modelConfig -> modelConfig.name().equals(modelName))
+            .findFirst();
 
-    if (!isModelSupported) {
+    if (rerankModel.isEmpty()) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "Model '%s' is not supported by reranking provider '%s'", modelName, provider);
     }
+
+    var model = rerankModel.get();
+    if (model.modelSupport().status()
+        != RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport.SupportStatus
+            .SUPPORTING) {
+      throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
+          Map.of(
+              "model",
+              model.name(),
+              "modelStatus",
+              model.modelSupport().status().status,
+              "message",
+              model.modelSupport().message().orElse("The model is not supported.")));
+    }
+
     return modelName;
   }
 

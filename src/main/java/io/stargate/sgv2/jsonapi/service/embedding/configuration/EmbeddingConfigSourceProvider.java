@@ -12,8 +12,18 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 
 /**
- * Loading the YAML configuration file from the resource folder or env variable and making the
- * config available to the application.
+ * Loading the YAML configuration file from the resource folder or env/system_property variable and
+ * making the config available to the application.
+ *
+ * <p>variable are: {@link EmbeddingConfigSourceProvider#RERANKING_CONFIG_ENV} and {@link
+ * EmbeddingConfigSourceProvider#EMBEDDING_CONFIG_ENV}
+ *
+ * <ul>
+ *   <li>With env variable set, Data API loads provider config from specified resource location.
+ *   <li>With system property set, Data API loads provider config from specified resource location.
+ *   <li>Without env variable or system property set, Data API loads provider config from resource
+ *       folder.
+ * </ul>
  */
 @StaticInitSafe
 public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
@@ -24,17 +34,25 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
 
   @Override
   public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
+
+    var embeddingSource =
+        System.getenv(EMBEDDING_CONFIG_ENV) == null
+            ? System.getProperty(EMBEDDING_CONFIG_ENV)
+            : System.getenv(EMBEDDING_CONFIG_ENV);
+    var rerankingSource =
+        System.getenv(RERANKING_CONFIG_ENV) == null
+            ? System.getProperty(RERANKING_CONFIG_ENV)
+            : System.getenv(RERANKING_CONFIG_ENV);
+
     List<ConfigSource> configSources = new ArrayList<>();
     try {
       // Add embedding config source
       configSources.add(
-          loadConfigSource(
-              System.getenv(EMBEDDING_CONFIG_ENV), EMBEDDING_CONFIG_RESOURCE, forClassLoader));
+          loadConfigSource(embeddingSource, EMBEDDING_CONFIG_RESOURCE, forClassLoader));
 
       // Add reranking config source
       configSources.add(
-          loadConfigSource(
-              System.getenv(RERANKING_CONFIG_ENV), RERANKING_CONFIG_RESOURCE, forClassLoader));
+          loadConfigSource(rerankingSource, RERANKING_CONFIG_RESOURCE, forClassLoader));
 
       return configSources;
     } catch (IOException e) {

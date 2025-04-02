@@ -73,7 +73,7 @@ public record FindRerankingProvidersOperation(RerankingProvidersConfig config)
           .map(
               model ->
                   new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
-                      model.name(), model.isDefault(), model.url(), null))
+                      model.name(), model.modelSupport(), model.isDefault(), model.url(), null))
           .collect(Collectors.toList());
     }
   }
