@@ -35,6 +35,20 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
   @Override
   public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
 
+    if (System.getProperty(RERANKING_CONFIG_ENV) != null) {
+      try {
+        // Fall back to resource path
+        URL resourceURL =
+            forClassLoader.getResource("src/test/resources/test-reranking-providers-config.yaml");
+        if (resourceURL == null) {
+          throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException("Resource not found: %s", "xxx");
+        }
+        return List.of(new YamlConfigSource(resourceURL));
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
     var embeddingSource =
         System.getenv(EMBEDDING_CONFIG_ENV) == null
             ? System.getProperty(EMBEDDING_CONFIG_ENV)
