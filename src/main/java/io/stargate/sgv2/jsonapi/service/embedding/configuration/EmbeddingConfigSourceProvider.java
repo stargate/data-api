@@ -12,18 +12,18 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 
 /**
- * Loading the YAML configuration file from the resource folder or env variable and making the
- * config available to the application.
+ * Loading the YAML configuration file from the resource folder or env/system_property variable and
+ * making the config available to the application.
+ *
+ * <p>variable are: {@link EmbeddingConfigSourceProvider#RERANKING_CONFIG_ENV} and {@link
+ * EmbeddingConfigSourceProvider#EMBEDDING_CONFIG_ENV}
  *
  * <ul>
- *   <li>With env variables set, Data API loads provider config from specified resource location.
- *   <li>With system properties set, Data API loads provider config from specified resource
- *       location.
- *   <li>Without env variables or system properties set, Data API loads provider config from
- *       resource folder.
+ *   <li>With env variable set, Data API loads provider config from specified resource location.
+ *   <li>With system property set, Data API loads provider config from specified resource location.
+ *   <li>Without env variable or system property set, Data API loads provider config from resource
+ *       folder.
  * </ul>
- *
- * >
  */
 @StaticInitSafe
 public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {

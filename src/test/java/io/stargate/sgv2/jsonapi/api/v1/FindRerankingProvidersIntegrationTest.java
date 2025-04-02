@@ -1,11 +1,13 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
@@ -28,7 +30,15 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
                     }
                     """;
 
-      givenHeadersPostJsonThenOk(json)
+      given()
+          .port(getTestPort())
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
           .body("$", responseIsStatusOnly())
           .body("status.rerankingProviders", notNullValue())
           .body(

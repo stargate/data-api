@@ -3,8 +3,11 @@ package io.stargate.sgv2.jsonapi.service.reranking.configuration;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.smallrye.config.WithDefault;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Optional;
 
 public interface RerankingProvidersConfig {
@@ -152,5 +155,33 @@ public interface RerankingProvidersConfig {
         int maxBatchSize();
       }
     }
+  }
+
+  /**
+   * Helper method to filter out the model configuration by the rerank service definition.
+   *
+   * <p>E.G. This could be used for validating the reranking model in the existing collection/table,
+   * the method takes the rerank service definition and returns the model configuration. Then caller
+   * checks the support status and handle accordingly.
+   *
+   * <p>NOTE, Data API keeps all the provider and model in the configuration, so internal
+   * rerankServiceDef always match a provider and a model.
+   */
+  default RerankingProviderConfig.ModelConfig filterByRerankServiceDef(
+      CollectionRerankDef.RerankServiceDef rerankServiceDef) {
+    RerankingProviderConfig providerConfig = providers().get(rerankServiceDef.provider());
+    Objects.requireNonNull(
+        providerConfig, "providerConfig filtered from rerankServiceDef must not be null");
+    RerankingProviderConfig.ModelConfig modelConfig = null;
+    for (var model : providerConfig.models()) {
+      if (model.name().equals(rerankServiceDef.modelName())) {
+        modelConfig = model;
+        break;
+      }
+    }
+    Objects.requireNonNull(
+        modelConfig, "modelConfig filtered from rerankServiceDef must not be null");
+
+    return modelConfig;
   }
 }
