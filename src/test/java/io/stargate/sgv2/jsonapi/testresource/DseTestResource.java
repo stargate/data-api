@@ -79,6 +79,11 @@ public class DseTestResource extends StargateTestResource {
     return "true";
   }
 
+  // By default, we enable the feature flag for reranking
+  public String getFeatureFlagReranking() {
+    return "true";
+  }
+
   @Override
   public Map<String, String> start() {
     Map<String, String> env = super.start();
@@ -96,6 +101,12 @@ public class DseTestResource extends StargateTestResource {
     String tableFeatureSetting = getFeatureFlagTables();
     if (tableFeatureSetting != null) {
       propsBuilder.put("stargate.feature.flags.tables", tableFeatureSetting);
+    }
+
+    // 31-Mar-2025, yuqi: [data-api#1904] Reranking feature flag:
+    String featureFlagReranking = getFeatureFlagReranking();
+    if (featureFlagReranking != null) {
+      propsBuilder.put("stargate.feature.flags.reranking", featureFlagReranking);
     }
 
     // Integration tests load provider yaml files from test resources folder.
