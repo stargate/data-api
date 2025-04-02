@@ -232,8 +232,7 @@ public class CollectionRerankDef {
     // configuration.
     if (!isRerankingEnabledForAPI) {
       if (rerankingDesc != null) {
-        throw ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED.toApiException(
-            "Reranking feature is not enabled.");
+        throw ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED.toApiException();
       }
       return DISABLED;
     }

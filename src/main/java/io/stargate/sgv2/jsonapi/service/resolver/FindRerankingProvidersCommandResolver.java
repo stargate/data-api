@@ -31,8 +31,7 @@ public class FindRerankingProvidersCommandResolver
 
     boolean isRerankingEnabledForAPI = ctx.apiFeatures().isFeatureEnabled(ApiFeature.RERANKING);
     if (!isRerankingEnabledForAPI) {
-      throw ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED.toApiException(
-          "Reranking feature is not enabled.");
+      throw ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED.toApiException();
     }
 
     return new FindRerankingProvidersOperation(rerankingProvidersConfig);

@@ -52,8 +52,7 @@ public class FindAndRerankCommandResolver implements CommandResolver<FindAndRera
     boolean isRerankingEnabledForAPI =
         commandContext.apiFeatures().isFeatureEnabled(ApiFeature.RERANKING);
     if (!isRerankingEnabledForAPI) {
-      throw ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED.toApiException(
-          "Reranking feature is not enabled.");
+      throw ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED.toApiException();
     }
 
     return new FindAndRerankOperationBuilder(commandContext)

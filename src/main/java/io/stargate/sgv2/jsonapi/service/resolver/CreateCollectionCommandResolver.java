@@ -92,7 +92,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
           false,
-          lexicalConfig); // Since the options is null
+          lexicalConfig);
     }
 
     boolean hasIndexing = options.indexing() != null;
