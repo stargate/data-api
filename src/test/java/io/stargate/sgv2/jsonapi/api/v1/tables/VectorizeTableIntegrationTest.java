@@ -107,7 +107,10 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
     if (commandName.equals(CommandName.INSERT_ONE)) {
       assertTableCommand(keyspaceName, TABLE_NAME).templated().insertOne(json).wasSuccessful();
     } else {
-      assertTableCommand(keyspaceName, TABLE_NAME).templated().insertMany(json).wasSuccessful();
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .insertMany(List.of(json), false)
+          .wasSuccessful();
     }
   }
 
@@ -133,7 +136,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
     } else {
       assertTableCommand(keyspaceName, TABLE_NAME)
           .templated()
-          .insertMany(json)
+          .insertMany(List.of(json), false)
           .hasSingleApiError(
               DocumentException.Code.UNSUPPORTED_VECTORIZE_WHEN_MISSING_VECTORIZE_DEFINITION,
               DocumentException.class);
