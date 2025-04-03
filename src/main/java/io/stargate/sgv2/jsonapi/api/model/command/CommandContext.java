@@ -102,10 +102,11 @@ public class CommandContext<SchemaT extends SchemaObject> {
   }
 
   /**
-   * HACK: for https://github.com/stargate/data-api/issues/1961
-   * This is a temporary work around for needing to pass the page size to the FindCollectionOperation
-   * when doing the inner finds for findAndRerank because they will only run the command once, and not
-   * multiple times to exhaust the cursor.
+   * HACK: for https://github.com/stargate/data-api/issues/1961 This is a temporary work around for
+   * needing to pass the page size to the FindCollectionOperation when doing the inner finds for
+   * findAndRerank because they will only run the command once, and not multiple times to exhaust
+   * the cursor.
+   *
    * @return
    */
   public FindAndRerankCommand.HybridLimits getHybridLimits() {

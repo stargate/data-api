@@ -128,10 +128,10 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
               limit, operationsConfig.maxVectorSearchLimit()); // Max vector search support is 1000
 
       // Hack: See https://github.com/stargate/data-api/issues/1961
-      int pageSize = commandContext.getHybridLimits() == null ?
-          operationsConfig.defaultPageSize()
-          :
-          commandContext.getHybridLimits().vectorLimit();
+      int pageSize =
+          commandContext.getHybridLimits() == null
+              ? operationsConfig.defaultPageSize()
+              : commandContext.getHybridLimits().vectorLimit();
       return FindCollectionOperation.vsearch(
           commandContext,
           resolvedDbLogicalExpression,
@@ -149,10 +149,10 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     SortExpression bm25Expr = SortClauseUtil.resolveBM25Search(sortClause);
     if (bm25Expr != null) {
       // Hack: See https://github.com/stargate/data-api/issues/1961
-      int pageSize = commandContext.getHybridLimits() == null ?
-          operationsConfig.defaultPageSize()
-          :
-          commandContext.getHybridLimits().lexicalLimit();
+      int pageSize =
+          commandContext.getHybridLimits() == null
+              ? operationsConfig.defaultPageSize()
+              : commandContext.getHybridLimits().lexicalLimit();
       return FindCollectionOperation.bm25Multi(
           commandContext,
           resolvedDbLogicalExpression,
