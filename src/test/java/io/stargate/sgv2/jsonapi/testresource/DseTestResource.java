@@ -89,6 +89,13 @@ public class DseTestResource extends StargateTestResource {
     Map<String, String> env = super.start();
     ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
     propsBuilder.putAll(env);
+
+    // 02-April-2025, yuqi: [data-api#1972] Set the system property/env variable to indicate
+    // integration test
+    // This is helpful with testing customized provider configuration. E.G. model deprecation. See
+    // EmbeddingConfigSourceProvider.java
+    propsBuilder.put("DATA_API_INTEGRATION_TEST", "true");
+
     propsBuilder.put("stargate.jsonapi.custom.embedding.enabled", "true");
 
     // 17-Mar-2025, tatu: [data-api#1903] Lexical search/sort feature flag
@@ -108,10 +115,6 @@ public class DseTestResource extends StargateTestResource {
     if (featureFlagReranking != null) {
       propsBuilder.put("stargate.feature.flags.reranking", featureFlagReranking);
     }
-
-    // Integration tests load provider yaml files from test resources folder.
-    // This is to help with testing customized provider configuration. E.G. model deprecation.
-    propsBuilder.put("RERANKING_CONFIG_PATH", "test-reranking-providers-config.yaml");
 
     propsBuilder.put(
         "stargate.jsonapi.custom.embedding.clazz",

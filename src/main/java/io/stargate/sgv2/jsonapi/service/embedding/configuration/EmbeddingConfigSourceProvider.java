@@ -42,6 +42,7 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
     try {
       configSources.add(getEmbeddingConfigSources(forClassLoader));
       configSources.add(getRerankingConfigSources(forClassLoader));
+      Log.error("successfully loaded config sources");
       return configSources;
     } catch (IOException e) {
       throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
@@ -74,16 +75,18 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
     Log.error("rerank resourceUrlFromSystemProperty: " + resourceUrlFromSystemProperty);
     // 3. If both are not set, use the default config from the resources folder.
 
+    String isIt = System.getProperty("DATA_API_INTEGRATION_TEST");
     if (filePathFromEnv != null) {
       Log.info(
           "Loading reranking config from environment variable RERANKING_CONFIG_PATH : "
               + filePathFromEnv);
       return loadConfigSourceFromFile(filePathFromEnv);
-    } else if (resourceUrlFromSystemProperty != null) {
+    } else if (isIt != null) {
       Log.info(
           "Loading reranking config from system property RERANKING_CONFIG_PATH : "
               + resourceUrlFromSystemProperty);
-      return loadConfigSourceFromResource(resourceUrlFromSystemProperty, forClassLoader);
+      return loadConfigSourceFromResource(
+          "test-" + DEFAULT_RERANKING_CONFIG_RESOURCE, forClassLoader);
     } else {
       return loadConfigSourceFromResource(DEFAULT_RERANKING_CONFIG_RESOURCE, forClassLoader);
     }
@@ -123,10 +126,12 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
   private YamlConfigSource loadConfigSourceFromResource(String resource, ClassLoader classLoader)
       throws IOException {
     URL resourceURL = classLoader.getResource(resource);
+    Log.error("Loading reranking config from xxx resource: " + resource);
     if (resourceURL == null) {
       Log.error("Resource not found: " + resource);
       throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException("Resource not found in: %s", resource);
     }
+    Log.error("Loading reranking config from xxx resource111: " + resource);
     return new YamlConfigSource(resourceURL);
   }
 }
