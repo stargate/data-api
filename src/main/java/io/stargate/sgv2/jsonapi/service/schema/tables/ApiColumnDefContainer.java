@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
-import static io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName.VECTOR;
-
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
@@ -17,7 +15,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,50 +100,41 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     return keySet().stream().toList();
   }
 
-  private Stream<ApiColumnDef> streamBySupport(Predicate<ApiSupportDef> matcher) {
-    // TODO: this is not properly filtering by supported but is used in a way that expects this
-    // behaviour, should be fixed
-    return values().stream().filter(columnDef -> matcher.test(columnDef.type().apiSupport()));
-  }
-
+  /** Filter the columns by support matcher to a list */
   public List<ApiColumnDef> filterBySupportToList(Predicate<ApiSupportDef> matcher) {
-    return streamBySupport(matcher).toList();
+    return values().stream()
+        .filter(columnDef -> matcher.test(columnDef.type().apiSupport()))
+        .toList();
   }
 
-  public ApiColumnDefContainer filterBySupport(Predicate<ApiSupportDef> matcher) {
+  /** Filter the columns by support matcher to an ApiColumnDefContainer */
+  public ApiColumnDefContainer filterBySupportToContainer(Predicate<ApiSupportDef> matcher) {
     return new ApiColumnDefContainer(filterBySupportToList(matcher));
   }
 
-  public List<ApiColumnDef> filterByApiTypeNameToList(ApiTypeName type) {
-    return values().stream().filter(columnDef -> columnDef.type().typeName() == type).toList();
-  }
-
-  public ApiColumnDefContainer filterByApiTypeName(ApiTypeName type) {
-    return new ApiColumnDefContainer(filterByApiTypeNameToList(type));
-  }
-
-  /**
-   * Filterings the columns without checking the support
-   *
-   * @param identifiers
-   * @return
-   */
-  public ApiColumnDefContainer filterBy(Collection<CqlIdentifier> identifiers) {
+  /** Filter the columns by identifiers without checking the support */
+  public ApiColumnDefContainer filterByIdentifiers(Collection<CqlIdentifier> identifiers) {
     return new ApiColumnDefContainer(
         values().stream().filter(columnDef -> identifiers.contains(columnDef.name())).toList());
   }
 
-  public ApiColumnDefContainer filterByUnsupported() {
-    return new ApiColumnDefContainer(streamBySupport(ApiSupportDef.MATCH_ANY_UNSUPPORTED).toList());
+  /** Filter the vector columns by support matcher to a list */
+  public List<ApiColumnDef> filterVectorColumnsToList() {
+    return filterBySupportToContainer(
+            ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true))
+        .values()
+        .stream()
+        .filter(columnDef -> columnDef.type().typeName() == ApiTypeName.VECTOR)
+        .toList();
+  }
+
+  /** Filter the vector columns by support matcher to an ApiColumnDefContainer */
+  public ApiColumnDefContainer filterVectorColumnsToContainer() {
+    return new ApiColumnDefContainer(filterVectorColumnsToList());
   }
 
   public Map<CqlIdentifier, VectorizeDefinition> getVectorizeDefs() {
-    // TODO: This is a hack, we need to refactor these methods in ApiColumnDefContainer.
-    // Currently, this matcher is just for match vector columns, and then to avoid hit the
-    // typeName() placeholder exception in UnsupportedApiDataType
-    var matcher =
-        ApiSupportDef.Matcher.NO_MATCHES.withCreateTable(true).withInsert(true).withRead(true);
-    return filterBySupport(matcher).filterByApiTypeNameToList(VECTOR).stream()
+    return filterVectorColumnsToList().stream()
         .filter(
             columnDef ->
                 columnDef.type() instanceof ApiVectorType vt && vt.getVectorizeDefinition() != null)

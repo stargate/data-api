@@ -412,7 +412,30 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   true,
                   ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH.name(),
                   "The Long Form type definition must be a JSON Object with at least a `type` field that is a String (value is null)")));
-
+      // unsupported primitive api types: timeuuid, counter
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                          {
+                                           "name": "unsupportedPrimitiveApiTypes",
+                                           "definition": {
+                                               "columns": {
+                                                   "id": {
+                                                       "type": "text"
+                                                   },
+                                                   "timeuuid": {
+                                                       "type": "timeuuid"
+                                                   }
+                                               },
+                                               "primaryKey": "id"
+                                           }
+                                          }
+                                          """,
+                  "unsupportedPrimitiveApiTypes",
+                  true,
+                  SchemaException.Code.UNSUPPORTED_DATA_TYPE_TABLE_CREATION.name(),
+                  "The command used the unsupported data types for table creation : timeuuid")));
       // Map type tests
       testCases.add(
           Arguments.of(

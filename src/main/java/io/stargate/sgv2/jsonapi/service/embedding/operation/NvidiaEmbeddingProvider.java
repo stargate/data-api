@@ -90,7 +90,7 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
 
   private record EmbeddingRequest(String[] input, String model, String input_type) {}
 
-  @JsonIgnoreProperties(ignoreUnknown = true)
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
   private record EmbeddingResponse(Data[] data, String model, Usage usage) {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record Data(int index, float[] embedding) {}

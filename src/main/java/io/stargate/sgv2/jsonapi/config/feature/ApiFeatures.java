@@ -40,7 +40,6 @@ public class ApiFeatures {
   public boolean isFeatureEnabled(ApiFeature flag) {
     // First check if there is definition from configuration
     Boolean b = fromConfig.get(flag);
-
     if (b == null) {
       // and only if not, allow per-request specification
       if (httpHeaders != null) {

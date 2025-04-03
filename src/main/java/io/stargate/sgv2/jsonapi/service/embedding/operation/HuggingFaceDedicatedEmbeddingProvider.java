@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
@@ -92,9 +93,12 @@ public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
   // https://huggingface.github.io/text-embeddings-inference/#/Text%20Embeddings%20Inference/openai_embed
   private record EmbeddingRequest(String[] input) {}
 
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
   private record EmbeddingResponse(String object, Data[] data, String model, Usage usage) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record Data(String object, int index, float[] embedding) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record Usage(int prompt_tokens, int total_tokens) {}
   }
 

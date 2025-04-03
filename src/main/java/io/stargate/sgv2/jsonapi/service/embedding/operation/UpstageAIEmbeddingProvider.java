@@ -110,11 +110,12 @@ public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
   // NOTE: "input" is a single String, not array of Constants!
   record EmbeddingRequest(String input, String model) {}
 
-  @JsonIgnoreProperties({"object"})
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
   record EmbeddingResponse(Data[] data, String model, Usage usage) {
-    @JsonIgnoreProperties({"object"})
+    @JsonIgnoreProperties(ignoreUnknown = true)
     record Data(int index, float[] embedding) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     record Usage(int prompt_tokens, int total_tokens) {}
   }
 

@@ -27,7 +27,7 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
   private String cleanupCollectionName = null;
 
   @BeforeAll
-  public final void createSimpleCollection() {
+  public final void createDefaultCollection() {
     // override, we do not want the basic collection from the base class.
   }
 

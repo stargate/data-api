@@ -35,6 +35,21 @@ public enum ApiFeature {
   TABLES("tables", false),
 
   /**
+   * API Reranking feature flag: if enabled, the API will expose:
+   *
+   * <ul>
+   *   <li>CreateCollection and CreateTable commands with reranking config.
+   *   <li>FindRerankingProviders command.
+   *   <li>FindAndRerank command.
+   * </ul>
+   *
+   * If disabled, those operations will fail with {@link ErrorCodeV1#RERANKING_FEATURE_NOT_ENABLED}.
+   *
+   * <p>Disabled by default.
+   */
+  RERANKING("reranking", false),
+
+  /**
    * The request will return a trace of the processing that includes a message of the steps taken,
    * but excludes the data of the message which can be large.
    */
