@@ -54,7 +54,7 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
     // mounted to the pod.
     String filePathFromEnv = System.getenv(EMBEDDING_CONFIG_PATH);
     // 2. If env is not set, use the default config from the resources folder.
-
+    Log.error("embedding filePathFromEnv: " + filePathFromEnv);
     if (filePathFromEnv != null) {
       return loadConfigSourceFromFile(filePathFromEnv);
     } else {
@@ -67,12 +67,17 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
     // 1. Astra Data API deployment, an environment variable is set to load the config from the file
     // mounted to the pod.
     String filePathFromEnv = System.getenv(RERANKING_CONFIG_PATH);
+    Log.error("rerank filePathFromEnv: " + filePathFromEnv);
     // 2. Data API integration test, a system property is set to load the config from the test
     // resources folder.
     String resourceUrlFromSystemProperty = System.getProperty(RERANKING_CONFIG_PATH);
+    Log.error("rerank resourceUrlFromSystemProperty: " + resourceUrlFromSystemProperty);
     // 3. If both are not set, use the default config from the resources folder.
 
     if (filePathFromEnv != null) {
+      Log.info(
+          "Loading reranking config from environment variable RERANKING_CONFIG_PATH : "
+              + filePathFromEnv);
       return loadConfigSourceFromFile(filePathFromEnv);
     } else if (resourceUrlFromSystemProperty != null) {
       Log.info(
@@ -91,8 +96,11 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
    * @return The loaded YamlConfigSource
    */
   private YamlConfigSource loadConfigSourceFromFile(String envPath) throws IOException {
+    Log.error(
+        "Loading reranking config from environment variable RERANKING_CONFIG_PATH : " + envPath);
     File file = new File(envPath);
     if (!file.exists()) {
+      Log.error("Config file does not exist at the path: " + file.getCanonicalPath());
       throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
           "Config file does not exist at the path: %s", file.getCanonicalPath());
     }
