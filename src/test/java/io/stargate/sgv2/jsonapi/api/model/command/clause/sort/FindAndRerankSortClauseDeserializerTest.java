@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
+import static io.stargate.sgv2.jsonapi.util.Base64Util.encodeAsMimeBase64;
+import static io.stargate.sgv2.jsonapi.util.CqlVectorUtil.floatsToBytes;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -84,6 +86,12 @@ public class FindAndRerankSortClauseDeserializerTest {
   }
 
   private static Stream<Arguments> validSortsTestCases() {
+
+    float[] emptyVector = new float[] {};
+    String emptyVectorBase64 = encodeAsMimeBase64(floatsToBytes(emptyVector));
+    float[] vector = new float[] {1.1f, 2.2f, 3.3f};
+    String vectorBase64 = encodeAsMimeBase64(floatsToBytes(vector));
+
     return Stream.of(
         Arguments.of(
             """
@@ -166,7 +174,24 @@ public class FindAndRerankSortClauseDeserializerTest {
             """
             { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : null} }
             """,
-            new FindAndRerankSort("vectorize", "lexical", null)));
+            new FindAndRerankSort("vectorize", "lexical", null)),
+        Arguments.of(
+            """
+            { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : [0.1, 0.2, 0.3]} }
+            """,
+            new FindAndRerankSort("vectorize", "lexical", new float[] {0.1f, 0.2f, 0.3f})),
+        Arguments.of(
+                """
+            { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : {"$binary": "%s"}} }
+            """
+                .formatted(emptyVectorBase64),
+            new FindAndRerankSort("vectorize", "lexical", emptyVector)),
+        Arguments.of(
+                """
+            { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : {"$binary": "%s"}} }
+            """
+                .formatted(vectorBase64),
+            new FindAndRerankSort("vectorize", "lexical", vector)));
   }
 
   @ParameterizedTest
@@ -228,6 +253,11 @@ public class FindAndRerankSortClauseDeserializerTest {
             """
             { "$hybrid" : { "$vector" : "", "$lexical" : "", "$vector" : 1} }
             """,
-            "Field $vector may only be of types NullNode, ArrayNode, but got: IntNode"));
+            "Field $vector may only be of types NullNode, ArrayNode, ObjectNode, but got: IntNode"),
+        Arguments.of(
+            """
+            { "$hybrid" : { "$vector" : "", "$lexical" : "", "$vector" : {"$date": "2023-01-01"}} }
+            """,
+            "`sort` clause (binary vector) contained fields with the wrong type. Field $vector may only be of types NullNode, ArrayNode, ObjectNode, but got: ObjectNode"));
   }
 }
