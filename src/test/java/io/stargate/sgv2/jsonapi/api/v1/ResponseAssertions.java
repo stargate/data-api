@@ -68,6 +68,15 @@ public class ResponseAssertions {
         "responseIsCountSuccess", Presence.FORBIDDEN, Presence.REQUIRED, Presence.FORBIDDEN);
   }
 
+  // A FindRerankingProviders/FindEmbeddingProviders success should only have status field required
+  public static TypeSafeMatcher<Map<String, ?>> responseIsFindProvidersSuccess() {
+    return envelopeChecker(
+        "responseIsFindProvidersSuccess",
+        Presence.FORBIDDEN,
+        Presence.REQUIRED,
+        Presence.FORBIDDEN);
+  }
+
   private static TypeSafeMatcher<Map<String, ?>> envelopeChecker(
       String message, Presence hasData, Presence hasStatus, Presence hasErrors) {
 

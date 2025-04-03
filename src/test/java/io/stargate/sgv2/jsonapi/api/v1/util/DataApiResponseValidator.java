@@ -36,7 +36,7 @@ public class DataApiResponseValidator {
         };
     this.responseIsSuccess =
         switch (commandName) {
-          case FIND_ONE, FIND -> responseIsFindSuccessOptionalStatus();
+          case FIND_ONE, FIND, FIND_AND_RERANK -> responseIsFindSuccessOptionalStatus();
           case INSERT_ONE, INSERT_MANY, UPDATE_ONE, UPDATE_MANY, DELETE_ONE, DELETE_MANY ->
               responseIsWriteSuccess();
           case ALTER_TABLE,
@@ -50,6 +50,8 @@ public class DataApiResponseValidator {
               responseIsDDLSuccess();
           case CREATE_COLLECTION -> responseIsDDLSuccess();
           case COUNT_DOCUMENTS -> responseIsCountSuccess();
+          case FIND_EMBEDDING_PROVIDERS, FIND_RERANKING_PROVIDERS ->
+              responseIsFindProvidersSuccess();
           default ->
               throw new IllegalArgumentException(
                   "DataApiResponseValidator: Unexpected command name: " + commandName);
@@ -113,6 +115,9 @@ public class DataApiResponseValidator {
         return hasNoErrors().hasStatusOK();
       }
       case UPDATE_ONE -> {
+        return hasNoErrors();
+      }
+      case FIND_EMBEDDING_PROVIDERS, FIND_RERANKING_PROVIDERS -> {
         return hasNoErrors();
       }
       default ->

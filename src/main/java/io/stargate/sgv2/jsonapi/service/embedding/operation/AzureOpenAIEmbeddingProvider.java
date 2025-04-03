@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
@@ -105,9 +106,12 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
       String model,
       @JsonInclude(value = JsonInclude.Include.NON_DEFAULT) int dimensions) {}
 
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
   private record EmbeddingResponse(String object, Data[] data, String model, Usage usage) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record Data(String object, int index, float[] embedding) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record Usage(int prompt_tokens, int total_tokens) {}
   }
 

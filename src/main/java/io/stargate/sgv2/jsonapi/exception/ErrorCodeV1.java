@@ -95,10 +95,12 @@ public enum ErrorCodeV1 {
 
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
 
-  RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable : "),
+  RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),
+  RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable"),
   RERANKING_PROVIDER_UNEXPECTED_RESPONSE("The Reranking Provider returned an unexpected response"),
   RERANKING_PROVIDER_CLIENT_ERROR("The Reranking Provider returned a HTTP client error"),
   RERANKING_PROVIDER_SERVER_ERROR("The Reranking Provider returned a HTTP server error"),
+  RERANKING_PROVIDER_RATE_LIMITED("The Reranking Provider rate limited the request"),
   RERANKING_PROVIDER_TIMEOUT("The Reranking Provider timed out"),
   RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED(
       "The reranking provider authentication key is not provided"),
@@ -170,6 +172,11 @@ public enum ErrorCodeV1 {
 
   LEXICAL_NOT_AVAILABLE_FOR_DATABASE("Lexical search is not available on this database"),
   LEXICAL_NOT_ENABLED_FOR_COLLECTION("Lexical search is not enabled for the collection"),
+
+  HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE("Unsupported JSON value type for '$hybrid' field"),
+  HYBRID_FIELD_UNKNOWN_SUBFIELDS("Unrecognized sub-field(s) for '$hybrid' Object"),
+  HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
+      "Unsupported JSON value type for '$hybrid' sub-field"),
 
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   COLLECTION_CREATION_ERROR(

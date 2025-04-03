@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
@@ -89,6 +90,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
     public record Content(String content) {}
   }
 
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
   private static class EmbeddingResponse {
     public EmbeddingResponse() {}
 
@@ -112,6 +114,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
       this.metadata = metadata;
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     protected static class Prediction {
       public Prediction() {}
 
@@ -125,6 +128,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
         this.embeddings = embeddings;
       }
 
+      @JsonIgnoreProperties(ignoreUnknown = true)
       protected static class Embeddings {
         public Embeddings() {}
 
