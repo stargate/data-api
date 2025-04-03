@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
+import io.quarkus.logging.Log;
 import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.smallrye.config.source.yaml.YamlConfigSource;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -74,6 +75,9 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
     if (filePathFromEnv != null) {
       return loadConfigSourceFromFile(filePathFromEnv);
     } else if (resourceUrlFromSystemProperty != null) {
+      Log.info(
+          "Loading reranking config from system property RERANKING_CONFIG_PATH : "
+              + resourceUrlFromSystemProperty);
       return loadConfigSourceFromResource(resourceUrlFromSystemProperty, forClassLoader);
     } else {
       return loadConfigSourceFromResource(DEFAULT_RERANKING_CONFIG_RESOURCE, forClassLoader);
@@ -112,6 +116,7 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
       throws IOException {
     URL resourceURL = classLoader.getResource(resource);
     if (resourceURL == null) {
+      Log.error("Resource not found: " + resource);
       throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException("Resource not found in: %s", resource);
     }
     return new YamlConfigSource(resourceURL);
