@@ -133,7 +133,7 @@ public class CollectionRerankDef {
         defaultProviderEntry.get().getValue();
 
     // Find the model marked as default for this provider
-    // The default provider must have a default model that is at SUPPORTING status, otherwise it's
+    // The default provider must have a default model that is at SUPPORTED status, otherwise it's
     // config bug
     var defaultModel =
         providerConfig.models().stream()
@@ -142,12 +142,12 @@ public class CollectionRerankDef {
                 modelConfig ->
                     modelConfig.modelSupport().status()
                         == RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport
-                            .SupportStatus.SUPPORTING)
+                            .SupportStatus.SUPPORTED)
             .findFirst()
             .orElseThrow(
                 () ->
                     new IllegalStateException(
-                        "Default reranking provider '%s' does not have a default supporting model"
+                        "Default reranking provider '%s' does not have a default supported model"
                             .formatted(providerName)));
 
     // Check if the default provider supports the 'NONE' authentication type
@@ -370,7 +370,7 @@ public class CollectionRerankDef {
     var model = rerankModel.get();
     if (model.modelSupport().status()
         != RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport.SupportStatus
-            .SUPPORTING) {
+            .SUPPORTED) {
       throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
           Map.of(
               "model",

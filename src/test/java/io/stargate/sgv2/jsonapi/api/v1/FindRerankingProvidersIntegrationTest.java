@@ -22,7 +22,7 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
 
     @Test
     public final void defaultSupportModels() {
-      // without option specified, only return supporting models
+      // without option specified, only return supported models
       String json =
           """
                     {
@@ -50,7 +50,7 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
               "status.rerankingProviders.nvidia.models[0].modelSupport.status",
               equalTo(
                   RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport
-                      .SupportStatus.SUPPORTING
+                      .SupportStatus.SUPPORTED
                       .status));
     }
 
@@ -131,7 +131,7 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
           .body(
               "errors[0].message",
               containsString(
-                  "not one of the values accepted for Enum class: [END_OF_LIFE, SUPPORTING, DEPRECATED]"));
+                  "not one of the values accepted for Enum class: [END_OF_LIFE, SUPPORTED, DEPRECATED]"));
     }
   }
 

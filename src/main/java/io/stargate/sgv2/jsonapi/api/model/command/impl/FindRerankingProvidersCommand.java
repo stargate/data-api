@@ -18,7 +18,7 @@ public record FindRerankingProvidersCommand(
     implements GeneralCommand {
 
   public record Options(
-      // By default, if includeModelStatus is not provided, only model in supporting status will be
+      // By default, if includeModelStatus is not provided, only model in supported status will be
       // returned.
       @Schema(
               description = "Use the option to include models as in target support status.",

@@ -815,7 +815,7 @@ request-errors:
       For DEPRECATED model, it can not be used for collection or table creation, but can be used for existing collection or table until the model is END_OF_LIFE.
       For END_OF_LIFE model, it can not be used for collection or table creation, and can not be used for existing collection or table.
       
-      Resend the command using supporting model.
+      Resend the command using supported model.
 
   - scope: SCHEMA
     code: CANNOT_VECTORIZE_UNKNOWN_COLUMNS

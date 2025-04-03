@@ -41,7 +41,7 @@ public record FindRerankingProvidersOperation(
             });
   }
 
-  // By default, if includeModelStatus is not provided in command option, only model in supporting
+  // By default, if includeModelStatus is not provided in command option, only model in supported
   // status will be listed.
   private Set<
           RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport.SupportStatus>
@@ -49,7 +49,7 @@ public record FindRerankingProvidersOperation(
     var includeModelStatus =
         Set.of(
             RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport.SupportStatus
-                .SUPPORTING);
+                .SUPPORTED);
     if (command.options() != null && command.options().includeModelStatus() != null) {
       includeModelStatus = command.options().includeModelStatus();
     }

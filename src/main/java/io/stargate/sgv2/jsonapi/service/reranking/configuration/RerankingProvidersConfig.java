@@ -74,8 +74,8 @@ public interface RerankingProvidersConfig {
       RequestProperties properties();
 
       /**
-       * By default, model is supporting and has no message. So if model-support is not configured
-       * in the config source, it will be supporting by default.
+       * By default, model is supported and has no message. So if model-support is not configured in
+       * the config source, it will be supported by default.
        *
        * <p>If the model is deprecated or EOF, it will be marked in the config source and been
        * mapped.
@@ -84,7 +84,7 @@ public interface RerankingProvidersConfig {
        */
       interface ModelSupport {
         @JsonProperty
-        @WithDefault("SUPPORTING")
+        @WithDefault("SUPPORTED")
         SupportStatus status();
 
         @JsonProperty
@@ -92,7 +92,7 @@ public interface RerankingProvidersConfig {
         Optional<String> message();
 
         enum SupportStatus {
-          SUPPORTING("SUPPORTING"),
+          SUPPORTED("SUPPORTED"),
           DEPRECATED("DEPRECATED"),
           END_OF_LIFE("END_OF_LIFE");
 
