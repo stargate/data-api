@@ -265,7 +265,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                       Map.of(
                           "query", query,
                           "limit", limit,
-                          "passages", passageField))));
+                          "passages", passages))));
 
       return rerankingProvider
           .rerank(query, passages, credentials)
