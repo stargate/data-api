@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
-import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import jakarta.validation.Valid;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -23,10 +23,7 @@ public record FindRerankingProvidersCommand(
       @Schema(
               description = "Use the option to include models as in target support status.",
               type = SchemaType.ARRAY)
-          Set<
-                  RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport
-                      .SupportStatus>
-              includeModelStatus) {}
+          Set<ModelSupport.SupportStatus> includeModelStatus) {}
 
   /** {@inheritDoc} */
   @Override

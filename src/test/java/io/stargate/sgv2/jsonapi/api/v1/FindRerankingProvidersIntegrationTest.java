@@ -8,7 +8,7 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
@@ -48,10 +48,7 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
               equalTo("nvidia/llama-3.2-nv-rerankqa-1b-v2"))
           .body(
               "status.rerankingProviders.nvidia.models[0].modelSupport.status",
-              equalTo(
-                  RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport
-                      .SupportStatus.SUPPORTED
-                      .status));
+              equalTo(ModelSupport.SupportStatus.SUPPORTED.name()));
     }
 
     @Test
@@ -87,19 +84,13 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
               equalTo("nvidia/a-random-deprecated-model"))
           .body(
               "status.rerankingProviders.nvidia.models[0].modelSupport.status",
-              equalTo(
-                  RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport
-                      .SupportStatus.DEPRECATED
-                      .status))
+              equalTo(ModelSupport.SupportStatus.DEPRECATED.name()))
           .body(
               "status.rerankingProviders.nvidia.models[1].name",
               equalTo("nvidia/a-random-EOL-model"))
           .body(
               "status.rerankingProviders.nvidia.models[1].modelSupport.status",
-              equalTo(
-                  RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport
-                      .SupportStatus.END_OF_LIFE
-                      .status));
+              equalTo(ModelSupport.SupportStatus.END_OF_LIFE.name()));
     }
 
     @Test

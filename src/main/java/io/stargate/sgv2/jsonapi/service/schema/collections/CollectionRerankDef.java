@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import java.util.*;
 import org.slf4j.Logger;
@@ -128,36 +129,33 @@ public class CollectionRerankDef {
     }
 
     // Extract provider information
-    String providerName = defaultProviderEntry.get().getKey();
-    RerankingProvidersConfig.RerankingProviderConfig providerConfig =
-        defaultProviderEntry.get().getValue();
+    String defaultProviderName = defaultProviderEntry.get().getKey();
+    var defaultProviderConfig = defaultProviderEntry.get().getValue();
 
     // Find the model marked as default for this provider
-    // The default provider must have a default model that is at SUPPORTED status, otherwise it's
+    // The default provider must have a default model that has SUPPORTED status, otherwise it's
     // config bug
     var defaultModel =
-        providerConfig.models().stream()
+        defaultProviderConfig.models().stream()
             .filter(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::isDefault)
             .filter(
                 modelConfig ->
-                    modelConfig.modelSupport().status()
-                        == RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport
-                            .SupportStatus.SUPPORTED)
+                    modelConfig.modelSupport().status() == ModelSupport.SupportStatus.SUPPORTED)
             .findFirst()
             .orElseThrow(
                 () ->
                     new IllegalStateException(
                         "Default reranking provider '%s' does not have a default supported model"
-                            .formatted(providerName)));
+                            .formatted(defaultProviderName)));
 
     // Check if the default provider supports the 'NONE' authentication type
     // If not, it's a config bug
-    if (!providerConfig
+    if (!defaultProviderConfig
         .supportedAuthentications()
         .containsKey(RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType.NONE)) {
       throw new IllegalStateException(
           "Default reranking provider '%s' does not support 'NONE' authentication type"
-              .formatted(providerName));
+              .formatted(defaultProviderName));
     }
 
     // TODO(Hazel): Check if there is any parameter for the default model and if there is default
@@ -168,7 +166,7 @@ public class CollectionRerankDef {
     // Authentication and parameters are intentionally null for default configs
     var defaultRerankingService =
         new RerankServiceDef(
-            providerName,
+            defaultProviderName,
             defaultModel.name(),
             null, // No authentication for default configuration
             null // No parameters for default configuration
@@ -368,15 +366,13 @@ public class CollectionRerankDef {
     }
 
     var model = rerankModel.get();
-    if (model.modelSupport().status()
-        != RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport.SupportStatus
-            .SUPPORTED) {
+    if (model.modelSupport().status() != ModelSupport.SupportStatus.SUPPORTED) {
       throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
           Map.of(
               "model",
               model.name(),
               "modelStatus",
-              model.modelSupport().status().status,
+              model.modelSupport().status().name(),
               "message",
               model.modelSupport().message().orElse("The model is not supported.")));
     }

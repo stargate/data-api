@@ -18,7 +18,7 @@ stargate:
             - name: nvidia/a-random-deprecated-model
               model-support:
                 status: DEPRECATED
-                message: This model has been deprecated, it will be removed in a future release. It is not supported for new collection or table.
+                message: This model has been deprecated, it will be removed in a future release. It is not supported for new Collections or Tables.
               url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
               properties:
                 max-batch-size: 10

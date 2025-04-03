@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
-import io.quarkus.logging.Log;
 import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.smallrye.config.source.yaml.YamlConfigSource;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -11,32 +10,42 @@ import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Loading the YAML configuration file from the resource folder or file path and making the config
  * available to the application.
  *
  * <ol>
- *   <li>With env {@link EmbeddingConfigSourceProvider#EMBEDDING_CONFIG_PATH},{@link
- *       EmbeddingConfigSourceProvider#RERANKING_CONFIG_PATH} variable set, Data API loads provider
- *       config from specified file location. E.G. Astra Data API.
- *   <li>With system property {@link EmbeddingConfigSourceProvider#DATA_API_INTEGRATION_TEST} set,
- *       Data API loads test provider config resource. E.G. Data API integration test.
+ *   <li>With env {@link EmbeddingConfigSourceProvider#EMBEDDING_CONFIG_FILE_PATH},{@link
+ *       EmbeddingConfigSourceProvider#RERANKING_CONFIG_FILE_PATH} variable set, Data API loads
+ *       provider config from specified file location. E.G. Astra Data API.
+ *   <li>With system property {@link
+ *       EmbeddingConfigSourceProvider#DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE} set, it will
+ *       override the provider config resource. E.G. Data API integration test.
  *   <li>With none set, Data API loads default provider config from resource folder. E.G. Local
  *       development.
  * </ol>
  */
 @StaticInitSafe
 public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
-  private static final String EMBEDDING_CONFIG_PATH = "EMBEDDING_CONFIG_PATH";
-  private static final String RERANKING_CONFIG_PATH = "RERANKING_CONFIG_PATH";
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(EmbeddingConfigSourceProvider.class);
+
+  // Environment variable name to load embedding config from a file path
+  private static final String EMBEDDING_CONFIG_FILE_PATH = "EMBEDDING_CONFIG_PATH";
+  // Environment variable name to load reranking config from a file path
+  private static final String RERANKING_CONFIG_FILE_PATH = "RERANKING_CONFIG_PATH";
+
+  // Default embedding config resource.
   private static final String DEFAULT_EMBEDDING_CONFIG_RESOURCE = "embedding-providers-config.yaml";
+  // Default reranking config resource.
   private static final String DEFAULT_RERANKING_CONFIG_RESOURCE = "reranking-providers-config.yaml";
-  private static final String TEST_RERANKING_CONFIG_RESOURCE =
-      "test-reranking-providers-config.yaml";
-
-  public static final String DATA_API_INTEGRATION_TEST = "DATA_API_INTEGRATION_TEST";
+  // System property name to override reranking config resource. Could be set by integration test
+  // resource.
+  private static final String DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE =
+      "DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE";
 
   @Override
   public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
@@ -55,16 +64,21 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
    * Method to load the reranking config source.
    *
    * <ol>
-   *   <li>With env variable {@link EmbeddingConfigSourceProvider#RERANKING_CONFIG_PATH} set, Data
-   *       API loads provider config from specified file location. E.G. Data API astra deployment.
+   *   <li>With env variable {@link EmbeddingConfigSourceProvider#EMBEDDING_CONFIG_FILE_PATH} set,
+   *       Data API loads provider config from specified file location. E.G. Data API astra
+   *       deployment.
    *   <li>If the env is not set, use the default config from the resources folder.
    * </ol>
    */
   private ConfigSource getEmbeddingConfigSources(ClassLoader forClassLoader) throws IOException {
-    String filePathFromEnv = System.getenv(EMBEDDING_CONFIG_PATH);
+    String filePathFromEnv = System.getenv(EMBEDDING_CONFIG_FILE_PATH);
     if (filePathFromEnv != null) {
+      LOGGER.info("Loading embedding config from file path: {}", filePathFromEnv);
       return loadConfigSourceFromFile(filePathFromEnv);
     } else {
+      LOGGER.info(
+          "Loading embedding config from default resource file : {}",
+          DEFAULT_EMBEDDING_CONFIG_RESOURCE);
       return loadConfigSourceFromResource(DEFAULT_EMBEDDING_CONFIG_RESOURCE, forClassLoader);
     }
   }
@@ -73,24 +87,30 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
    * Method to load the embedding config source.
    *
    * <ol>
-   *   <li>With env variable {@link EmbeddingConfigSourceProvider#EMBEDDING_CONFIG_PATH} set, Data
-   *       API loads provider config from specified file location. E.G. Data API astra deployment.
-   *   <li>With system property {@link EmbeddingConfigSourceProvider#DATA_API_INTEGRATION_TEST} set,
-   *       it indicated Data API is running for integration tests, then load the test config file
+   *   <li>With env variable {@link EmbeddingConfigSourceProvider#RERANKING_CONFIG_FILE_PATH} set,
+   *       Data API loads provider config from specified file location. E.G. Data API astra
+   *       deployment.
+   *   <li>With system property {@link
+   *       EmbeddingConfigSourceProvider#DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE} set, it
+   *       indicated Data API is running for integration tests, then override the default config
    *       resource.
    *   <li>If none is set, use the default config from the resources folder. E.G. Local development
    *       mode.
    * </ol>
    */
   private ConfigSource getRerankingConfigSources(ClassLoader forClassLoader) throws IOException {
-    String filePathFromEnv = System.getenv(RERANKING_CONFIG_PATH);
-    String isIT = System.getProperty(DATA_API_INTEGRATION_TEST);
+    String filePathFromEnv = System.getenv(RERANKING_CONFIG_FILE_PATH);
+    String resourceOverride = System.getProperty(DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE);
 
     if (filePathFromEnv != null) {
+      LOGGER.info("Loading reranking config from file path: {}", filePathFromEnv);
       return loadConfigSourceFromFile(filePathFromEnv);
-    } else if (isIT != null) {
-      return loadConfigSourceFromResource(TEST_RERANKING_CONFIG_RESOURCE, forClassLoader);
+    } else if (resourceOverride != null) {
+      LOGGER.info("Loading reranking config from override resource: {}", resourceOverride);
+      return loadConfigSourceFromResource(resourceOverride, forClassLoader);
     } else {
+      LOGGER.info(
+          "Loading reranking config from default resource : {}", DEFAULT_RERANKING_CONFIG_RESOURCE);
       return loadConfigSourceFromResource(DEFAULT_RERANKING_CONFIG_RESOURCE, forClassLoader);
     }
   }
@@ -104,7 +124,7 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
   private YamlConfigSource loadConfigSourceFromFile(String envPath) throws IOException {
     File file = new File(envPath);
     if (!file.exists()) {
-      Log.error("Config file does not exist at the path: " + file.getCanonicalPath());
+      LOGGER.error("Config file does not exist at the path: {}", file.getCanonicalPath());
       throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
           "Config file does not exist at the path: %s", file.getCanonicalPath());
     }
@@ -122,7 +142,7 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
       throws IOException {
     URL resourceURL = classLoader.getResource(resource);
     if (resourceURL == null) {
-      Log.error("Resource not found: " + resource);
+      LOGGER.error("Resource not found: {}", resource);
       throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException("Resource not found in: %s", resource);
     }
     return new YamlConfigSource(resourceURL);

@@ -23,7 +23,7 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingDeferredAc
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
-import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
@@ -164,15 +164,13 @@ class FindAndRerankOperationBuilder {
     var modelConfig =
         rerankingProvidersConfig.filterByRerankServiceDef(
             commandContext.schemaObject().rerankingConfig().rerankServiceDef());
-    if (modelConfig.modelSupport().status()
-        == RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport.SupportStatus
-            .END_OF_LIFE) {
+    if (modelConfig.modelSupport().status() == ModelSupport.SupportStatus.END_OF_LIFE) {
       throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
           Map.of(
               "model",
               modelConfig.name(),
               "modelStatus",
-              modelConfig.modelSupport().status().status,
+              modelConfig.modelSupport().status().name(),
               "message",
               modelConfig.modelSupport().message().orElse("The model is not supported.")));
     }

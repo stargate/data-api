@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.testresource;
 
 import com.google.common.collect.ImmutableMap;
 import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingConfigSourceProvider;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,12 +90,12 @@ public class DseTestResource extends StargateTestResource {
     ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
     propsBuilder.putAll(env);
 
-    // 02-April-2025, yuqi: [data-api#1972] Set the system property variable to indicate
-    // integration test.
-    // This is helpful with testing customized provider configuration. E.G. model deprecation. See
-    // detail in
+    // 02-April-2025, yuqi: [data-api#1972] Set the system property variable to override the
+    // provider config file resource.
+    // This is helpful with testing customized provider configuration. See detail in
     // EmbeddingConfigSourceProvider.java
-    propsBuilder.put(EmbeddingConfigSourceProvider.DATA_API_INTEGRATION_TEST, "true");
+    propsBuilder.put(
+        "DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE", "test-reranking-providers-config.yaml");
 
     propsBuilder.put("stargate.jsonapi.custom.embedding.enabled", "true");
 

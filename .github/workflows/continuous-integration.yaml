@@ -178,8 +178,3 @@ jobs:
       - name: Integration Test
         run: |
           ./mvnw -B -ntp clean verify -DskipUnitTests -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} -Drun-create-index-parallel=true ${{ matrix.profile }}
-          
-
-      - name: Display Quarkus Log
-        if: failure()
-        run: cat /home/runner/work/data-api/data-api/target/quarkus.log
