@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Loading the YAML configuration file from the resource folder or file path and making the config
@@ -28,6 +30,8 @@ import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
  */
 @StaticInitSafe
 public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
+  private static final Logger LOGGER = LoggerFactory.getLogger(EmbeddingConfigSourceProvider.class);
+
   private static final String EMBEDDING_CONFIG_PATH = "EMBEDDING_CONFIG_PATH";
   private static final String RERANKING_CONFIG_PATH = "RERANKING_CONFIG_PATH";
 
@@ -87,10 +91,17 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
     String isIT = System.getProperty(DATA_API_INTEGRATION_TEST);
 
     if (filePathFromEnv != null) {
+      LOGGER.info("Loading reranking config from file path: {}", filePathFromEnv);
+
       return loadConfigSourceFromFile(filePathFromEnv);
     } else if (isIT != null) {
+      LOGGER.info(
+          "Loading reranking config from override resource: {}", TEST_RERANKING_CONFIG_RESOURCE);
+
       return loadConfigSourceFromResource(TEST_RERANKING_CONFIG_RESOURCE, forClassLoader);
     } else {
+      LOGGER.info(
+          "Loading reranking config from default resource: {}", DEFAULT_RERANKING_CONFIG_RESOURCE);
       return loadConfigSourceFromResource(DEFAULT_RERANKING_CONFIG_RESOURCE, forClassLoader);
     }
   }
