@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.DefaultRequestTracing;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
