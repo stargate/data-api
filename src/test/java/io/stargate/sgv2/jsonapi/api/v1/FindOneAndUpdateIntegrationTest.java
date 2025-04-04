@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.any;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -584,8 +585,10 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           """;
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_DOC_ID"))
-          .body("errors[0].message", is("Cannot use operator with '_id' field: $unset"));
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID"))
+          .body(
+              "errors[0].message",
+              containsString("_id field cannot be updated using update operators"));
 
       // And finally verify also that nothing was changed:
       json =
@@ -623,8 +626,10 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           """;
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_DOC_ID"))
-          .body("errors[0].message", is("Cannot use operator with '_id' field: $set"));
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID"))
+          .body(
+              "errors[0].message",
+              containsString("_id field cannot be updated using update operators"));
 
       // And finally verify also that nothing was changed:
       json =
