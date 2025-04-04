@@ -402,6 +402,7 @@
                 <testing.db.lexical-disabled>${stargate.int-test.lexical-disabled}</testing.db.lexical-disabled>
                 <maven.home>${maven.home}</maven.home>
                 <testing.containers.use-coordinator>${stargate.int-test.use-coordinator}</testing.containers.use-coordinator>
+                <DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE>test-reranking-providers-config.yaml</DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE>
               </systemPropertyVariables>
               <includes>
                 <include>**/*IntegrationTest.*</include>

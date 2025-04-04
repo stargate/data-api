@@ -94,8 +94,8 @@ public class DseTestResource extends StargateTestResource {
     // provider config file resource.
     // This is helpful with testing customized provider configuration. See detail in
     // EmbeddingAndRerankingConfigSourceProvider.java
-    propsBuilder.put(
-        "DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE", "test-reranking-providers-config.yaml");
+    //    propsBuilder.put(
+    //        "DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE", "test-reranking-providers-config.yaml");
 
     propsBuilder.put("stargate.jsonapi.custom.embedding.enabled", "true");
 
