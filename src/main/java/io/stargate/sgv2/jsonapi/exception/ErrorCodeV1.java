@@ -142,11 +142,6 @@ public enum ErrorCodeV1 {
 
   UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),
 
-  // UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field"),
-  UNSUPPORTED_UPDATE_FOR_LEXICAL("Cannot use operator with '$lexical' field"),
-  UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' field"),
-  UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' field"),
-
   VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
 
   VECTOR_SEARCH_USAGE_ERROR("Vector search can't be used with other sort clause"),

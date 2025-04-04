@@ -417,7 +417,7 @@ request-errors:
     title: Update operator cannot be used on $lexical field
     body: |-
       The command used the update operator: ${operator}.
-      Supported operators are: $set, $setOnInsert, $unset.
+      Supported operators for $lexical field are: $set, $setOnInsert, $unset.
       
       Resend the command using only supported update operators.
 
@@ -426,7 +426,7 @@ request-errors:
     title: Update operator cannot be used on $vector field
     body: |-
       The command used the update operator: ${operator}.
-      Supported operators are: $set, $setOnInsert, $unset.
+      Supported operators for $vector field are: $set, $setOnInsert, $unset.
       
       Resend the command using only supported update operators.
 
@@ -435,7 +435,7 @@ request-errors:
     title: Update operator cannot be used on $vectorize field
     body: |-
       The command used the update operator: ${operator}.
-      Supported operators are: $set, $setOnInsert, $unset.
+      Supported operators for $vectorize field are: $set, $setOnInsert, $unset.
       
       Resend the command using only supported update operators.
 
