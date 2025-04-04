@@ -32,6 +32,7 @@ public class FindEmbeddingProvidersCommandResolver
     if (!operationsConfig.vectorizeEnabled()) {
       throw ErrorCodeV1.VECTORIZE_FEATURE_NOT_AVAILABLE.toApiException();
     }
-    return new FindEmbeddingProvidersOperation(embeddingProvidersConfig);
+    return new FindEmbeddingProvidersOperation(
+        embeddingProvidersConfig, operationsConfig.returnDeprecatedModels());
   }
 }
