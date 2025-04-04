@@ -216,7 +216,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     RerankingResultSupplier(
         RequestTracing requestTracing,
         MeterRegistry meterRegistry,
-        RequestContext requestContext, // needed for credentials
+        RequestContext requestContext,
         RerankingProvider rerankingProvider,
         RerankingCredentials credentials,
         String query,
