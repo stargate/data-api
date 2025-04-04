@@ -442,14 +442,14 @@ public class CreateCollectionWithRerankingIntegrationTest
           createRequestWithReranking(
               collectionName,
               """
-                                        {
-                                          "enabled": true,
-                                          "service": {
-                                              "provider": "nvidia",
-                                              "modelName": "nvidia/a-random-deprecated-model"
-                                          }
-                                        }
-                                        """);
+                            {
+                              "enabled": true,
+                              "service": {
+                                  "provider": "nvidia",
+                                  "modelName": "nvidia/a-random-deprecated-model"
+                              }
+                            }
+                            """);
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())

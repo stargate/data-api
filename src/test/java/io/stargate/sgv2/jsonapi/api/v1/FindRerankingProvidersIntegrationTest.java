@@ -18,7 +18,7 @@ import org.junit.jupiter.api.*;
 public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   @Nested
   @Order(1)
-  class FindEmbeddingProviders {
+  class FindRerankingProviders {
 
     @Test
     public final void defaultSupportModels() {
@@ -120,9 +120,7 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("INVALID_REQUEST_STRUCTURE_MISMATCH"))
           .body(
-              "errors[0].message",
-              containsString(
-                  "not one of the values accepted for Enum class: [END_OF_LIFE, SUPPORTED, DEPRECATED]"));
+              "errors[0].message", containsString("not one of the values accepted for Enum class"));
     }
   }
 

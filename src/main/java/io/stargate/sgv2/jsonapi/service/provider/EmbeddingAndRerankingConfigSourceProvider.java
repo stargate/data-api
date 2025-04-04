@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.embedding.configuration;
+package io.stargate.sgv2.jsonapi.service.provider;
 
 import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.smallrye.config.source.yaml.YamlConfigSource;
@@ -18,20 +18,22 @@ import org.slf4j.LoggerFactory;
  * available to the application.
  *
  * <ol>
- *   <li>With env {@link EmbeddingConfigSourceProvider#EMBEDDING_CONFIG_FILE_PATH},{@link
- *       EmbeddingConfigSourceProvider#RERANKING_CONFIG_FILE_PATH} variable set, Data API loads
- *       provider config from specified file location. E.G. Astra Data API.
+ *   <li>With env {@link
+ *       EmbeddingAndRerankingConfigSourceProvider#EMBEDDING_CONFIG_FILE_PATH},{@link
+ *       EmbeddingAndRerankingConfigSourceProvider#RERANKING_CONFIG_FILE_PATH} variable set, Data
+ *       API loads provider config from specified file location. E.G. Astra Data API.
  *   <li>With system property {@link
- *       EmbeddingConfigSourceProvider#DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE} set, it will
- *       override the provider config resource. E.G. Data API integration test.
+ *       EmbeddingAndRerankingConfigSourceProvider#DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE} set,
+ *       it will override the provider config resource. E.G. Data API integration test.
  *   <li>With none set, Data API loads default provider config from resource folder. E.G. Local
  *       development.
  * </ol>
  */
 @StaticInitSafe
-public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
+public class EmbeddingAndRerankingConfigSourceProvider implements ConfigSourceProvider {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(EmbeddingConfigSourceProvider.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(EmbeddingAndRerankingConfigSourceProvider.class);
 
   // Environment variable name to load embedding config from a file path
   private static final String EMBEDDING_CONFIG_FILE_PATH = "EMBEDDING_CONFIG_PATH";
@@ -64,9 +66,9 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
    * Method to load the reranking config source.
    *
    * <ol>
-   *   <li>With env variable {@link EmbeddingConfigSourceProvider#EMBEDDING_CONFIG_FILE_PATH} set,
-   *       Data API loads provider config from specified file location. E.G. Data API astra
-   *       deployment.
+   *   <li>With env variable {@link
+   *       EmbeddingAndRerankingConfigSourceProvider#EMBEDDING_CONFIG_FILE_PATH} set, Data API loads
+   *       provider config from specified file location. E.G. Data API astra deployment.
    *   <li>If the env is not set, use the default config from the resources folder.
    * </ol>
    */
@@ -87,13 +89,13 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
    * Method to load the embedding config source.
    *
    * <ol>
-   *   <li>With env variable {@link EmbeddingConfigSourceProvider#RERANKING_CONFIG_FILE_PATH} set,
-   *       Data API loads provider config from specified file location. E.G. Data API astra
-   *       deployment.
+   *   <li>With env variable {@link
+   *       EmbeddingAndRerankingConfigSourceProvider#RERANKING_CONFIG_FILE_PATH} set, Data API loads
+   *       provider config from specified file location. E.G. Data API astra deployment.
    *   <li>With system property {@link
-   *       EmbeddingConfigSourceProvider#DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE} set, it
-   *       indicated Data API is running for integration tests, then override the default config
-   *       resource.
+   *       EmbeddingAndRerankingConfigSourceProvider#DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE}
+   *       set, it indicated Data API is running for integration tests, then override the default
+   *       config resource.
    *   <li>If none is set, use the default config from the resources folder. E.G. Local development
    *       mode.
    * </ol>
