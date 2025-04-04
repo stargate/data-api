@@ -1,8 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
@@ -241,7 +243,7 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
     }
 
     @Test
-    @Order(1)
+    @Order(2)
     public void unsetOneToRemoveFromResults() {
       givenHeadersPostJsonThenOkNoErrors(
               """
@@ -272,6 +274,41 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
                   """
                             [{"_id": "lexical-3", "$lexical": "banana"}]
                         """));
+    }
+  }
+
+  /**
+   * Tests to ensure only allowed operations for $lexical are $set and $unset, rest are not allowed.
+   * Will not do exhaustive coverage, just spot checks.
+   */
+  @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  @Order(10)
+  class NotAllowedOperations {
+    @Test
+    @Order(1)
+    public void setupDocuments() {
+      deleteAllDocuments();
+      insertDoc(lexicalDoc(10, "key words"));
+    }
+
+    @Test
+    @Order(2)
+    public void failForPush() {
+      givenHeadersPostJsonThenOk(
+              """
+                      {
+                        "updateOne": {
+                          "filter" : {"_id" : "lexical-10"},
+                          "update" : {"$push" : {"$lexical": "token" }}
+                        }
+                      }
+                      """)
+          .body("$", responseIsError())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_LEXICAL"))
+          .body("errors[0].message", containsString("Cannot use operator with '$lexical' field"));
     }
   }
 

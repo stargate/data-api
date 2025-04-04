@@ -50,22 +50,33 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
    * specifically Document's primary id, {@code _id}.
    */
   protected static String validateUpdatePath(UpdateOperator oper, String path) {
-    if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)
-        && !(oper.apiName().equals("$set")
-            || oper.apiName().equals("$unset")
-            || oper.apiName().equals("$setOnInsert"))) {
-      throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_VECTOR.toApiException("%s", oper.apiName());
-    }
-
-    if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)
-        && !(oper.apiName().equals("$set")
-            || oper.apiName().equals("$unset")
-            || oper.apiName().equals("$setOnInsert"))) {
-      throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_VECTORIZE.toApiException("%s", oper.apiName());
-    }
-
-    if (DocumentConstants.Fields.DOC_ID.equals(path)) {
-      throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.toApiException("%s", oper.apiName());
+    switch (path) {
+      case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD:
+        switch (oper.apiName()) {
+          case "$set", "$unset", "$setOnInsert" -> {}
+          default ->
+              throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_VECTOR.toApiException(
+                  "%s: only '$set', '$setOnInsert' and '$unset' supported", oper.apiName());
+        }
+        break;
+      case DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD:
+        switch (oper.apiName()) {
+          case "$set", "$unset", "$setOnInsert" -> {}
+          default ->
+              throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_VECTORIZE.toApiException(
+                  "%s: only '$set', '$setOnInsert' and '$unset' supported", oper.apiName());
+        }
+        break;
+      case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD:
+        switch (oper.apiName()) {
+          case "$set", "$unset", "$setOnInsert" -> {}
+          default ->
+              throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_LEXICAL.toApiException(
+                  "%s: only '$set', '$setOnInsert' and '$unset' supported", oper.apiName());
+        }
+        break;
+      case DocumentConstants.Fields.DOC_ID:
+        throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.toApiException("%s", oper.apiName());
     }
     return path;
   }

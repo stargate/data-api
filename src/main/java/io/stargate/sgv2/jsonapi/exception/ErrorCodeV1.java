@@ -138,14 +138,14 @@ public enum ErrorCodeV1 {
 
   UNSUPPORTED_UPDATE_OPERATION_PARAM("Unsupported update operation parameter"),
 
-  UNSUPPORTED_UPDATE_OPERATION_PATH("Invalid update operation path"),
+  UNSUPPORTED_UPDATE_OPERATION_PATH("Unsupported update operation path"),
 
   UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),
 
-  UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' property"),
-
-  UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' property"),
-  UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' property"),
+  UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field"),
+  UNSUPPORTED_UPDATE_FOR_LEXICAL("Cannot use operator with '$lexical' field"),
+  UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' field"),
+  UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' field"),
 
   VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
 
