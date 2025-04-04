@@ -296,19 +296,39 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
     @Test
     @Order(2)
     public void failForPush() {
-      givenHeadersPostJsonThenOk(
-              """
-                      {
-                        "updateOne": {
-                          "filter" : {"_id" : "lexical-10"},
-                          "update" : {"$push" : {"$lexical": "token" }}
-                        }
-                      }
-                      """)
+      givenHeadersPostJsonThenOk(updateQuery("{\"$push\" : {\"$lexical\": \"token\" }}"))
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_LEXICAL"))
-          .body("errors[0].message", containsString("Cannot use operator with '$lexical' field"));
+          .body(
+              "errors[0].message",
+              containsString("Cannot use operator with '$lexical' field: $push"));
+    }
+
+    @Test
+    @Order(3)
+    public void failForPop() {
+      givenHeadersPostJsonThenOk(updateQuery("{\"$pop\" : {\"$lexical\": 1 }}"))
+          .body("$", responseIsError())
+          .body("errors", hasSize(1))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_LEXICAL"))
+          .body(
+              "errors[0].message",
+              containsString("Cannot use operator with '$lexical' field: $pop"));
+    }
+
+    static String updateQuery(String updateOperation) {
+      return
+          """
+              {
+                "updateOne": {
+                  "filter" : {"_id" : "lexical-10"},
+                  "update" : %s
+                }
+              }
+              """
+          .formatted(updateOperation);
     }
   }
 

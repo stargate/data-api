@@ -732,7 +732,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_DOC_ID"))
-          .body("errors[0].message", is("Cannot use operator with '_id' property: $unset"));
+          .body("errors[0].message", is("Cannot use operator with '_id' field: $unset"));
 
       // And finally verify also that nothing was changed:
       json =
@@ -785,7 +785,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_DOC_ID"))
-          .body("errors[0].message", is("Cannot use operator with '_id' property: $set"));
+          .body("errors[0].message", is("Cannot use operator with '_id' field: $set"));
 
       // And finally verify also that nothing was changed:
       json =
@@ -842,7 +842,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .body(
               "errors[0].message",
               is(
-                  "Invalid update operation path: cannot create field ('name') in path 'subdoc.array.name'; only OBJECT nodes have properties (got ARRAY)"));
+                  "Unsupported update operation path: cannot create field ('name') in path 'subdoc.array.name'; only OBJECT nodes have properties (got ARRAY)"));
 
       // And finally verify also that nothing was changed:
       json =
