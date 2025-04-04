@@ -52,24 +52,24 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
   protected static String validateUpdatePath(UpdateOperator oper, String path) {
     switch (path) {
       case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD:
-        switch (oper.apiName()) {
-          case "$set", "$unset", "$setOnInsert" -> {}
+        switch (oper) {
+          case SET, SET_ON_INSERT, UNSET -> {}
           default ->
               throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_VECTOR.toApiException(
                   "%s: only '$set', '$setOnInsert' and '$unset' supported", oper.apiName());
         }
         break;
       case DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD:
-        switch (oper.apiName()) {
-          case "$set", "$unset", "$setOnInsert" -> {}
+        switch (oper) {
+          case SET, SET_ON_INSERT, UNSET -> {}
           default ->
               throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_VECTORIZE.toApiException(
                   "%s: only '$set', '$setOnInsert' and '$unset' supported", oper.apiName());
         }
         break;
       case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD:
-        switch (oper.apiName()) {
-          case "$set", "$unset", "$setOnInsert" -> {}
+        switch (oper) {
+          case SET, SET_ON_INSERT, UNSET -> {}
           default ->
               throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_LEXICAL.toApiException(
                   "%s: only '$set', '$setOnInsert' and '$unset' supported", oper.apiName());
