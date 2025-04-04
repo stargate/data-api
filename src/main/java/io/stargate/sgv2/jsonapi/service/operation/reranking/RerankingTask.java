@@ -279,7 +279,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                       Map.of(
                           "query", query,
                           "limit", limit,
-                          "passages", passageField))));
+                          "passages", passages))));
 
       // Create metrics recorder instance
       MetricsRecorder metricsRecorder =

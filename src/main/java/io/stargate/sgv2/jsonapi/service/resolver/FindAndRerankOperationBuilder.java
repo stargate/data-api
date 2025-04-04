@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -22,12 +23,14 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingDeferredAc
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,6 +159,21 @@ class FindAndRerankOperationBuilder {
       // TODO: more info in the error
       throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
     }
+    // Read is not supported for rerank model at END_OF_LIFE support status.
+    var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
+    var modelConfig =
+        rerankingProvidersConfig.filterByRerankServiceDef(
+            commandContext.schemaObject().rerankingConfig().rerankServiceDef());
+    if (modelConfig.modelSupport().status() == ModelSupport.SupportStatus.END_OF_LIFE) {
+      throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
+          Map.of(
+              "model",
+              modelConfig.name(),
+              "modelStatus",
+              modelConfig.modelSupport().status().name(),
+              "message",
+              modelConfig.modelSupport().message().orElse("The model is not supported.")));
+    }
   }
 
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
@@ -217,6 +235,15 @@ class FindAndRerankOperationBuilder {
     // we can run these tasks in parallel
     TaskGroup<IntermediateCollectionReadTask, CollectionSchemaObject> taskGroup =
         new TaskGroup<>(false);
+
+    // Hack: See https://github.com/stargate/data-api/issues/1961
+    // copying the hybrid limits on the command context so the find command resolver can pick it up
+    // when the command runs later, so we can set the page size to be the same as the limit
+    commandContext.setHybridLimits(
+        getOrDefault(
+            command.options(),
+            FindAndRerankCommand.Options::hybridLimits,
+            FindAndRerankCommand.HybridLimits.DEFAULT));
 
     // these are the actions the reads should call when done, to pass the command result into the
     // next tasks

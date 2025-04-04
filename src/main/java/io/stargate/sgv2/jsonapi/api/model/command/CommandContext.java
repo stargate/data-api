@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.DefaultRequestTracing;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
@@ -51,6 +51,9 @@ public class CommandContext<SchemaT extends SchemaObject> {
   private final String commandName; // TODO: remove the command name, but it is used in 14 places
   private final RequestContext requestContext;
   private RequestTracing requestTracing;
+
+  // see accessors
+  private FindAndRerankCommand.HybridLimits hybridLimits;
 
   // created on demand or set via builder, otherwise we need to read from config too early when
   // running tests, See the {@link Builder#withApiFeatures}
@@ -100,6 +103,22 @@ public class CommandContext<SchemaT extends SchemaObject> {
   /** See doc comments for {@link CommandContext} */
   public static BuilderSupplier builderSupplier() {
     return new BuilderSupplier();
+  }
+
+  /**
+   * HACK: for https://github.com/stargate/data-api/issues/1961 This is a temporary work around for
+   * needing to pass the page size to the FindCollectionOperation when doing the inner finds for
+   * findAndRerank because they will only run the command once, and not multiple times to exhaust
+   * the cursor.
+   *
+   * @return
+   */
+  public FindAndRerankCommand.HybridLimits getHybridLimits() {
+    return hybridLimits;
+  }
+
+  public void setHybridLimits(FindAndRerankCommand.HybridLimits hybridLimits) {
+    this.hybridLimits = hybridLimits;
   }
 
   public SchemaT schemaObject() {
@@ -271,7 +290,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
       private RequestContext requestContext;
       private ApiFeatures apiFeatures;
       private MeterRegistry meterRegistry;
-      private JsonApiMetricsConfig jsonApiMetricsConfig;
 
       Builder(SchemaT schemaObject) {
         this.schemaObject = schemaObject;
