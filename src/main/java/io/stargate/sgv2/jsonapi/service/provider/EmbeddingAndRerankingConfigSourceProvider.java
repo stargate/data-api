@@ -43,7 +43,8 @@ public class EmbeddingAndRerankingConfigSourceProvider implements ConfigSourcePr
   // Default embedding config resource.
   private static final String DEFAULT_EMBEDDING_CONFIG_RESOURCE = "embedding-providers-config.yaml";
   // Default reranking config resource.
-  private static final String DEFAULT_RERANKING_CONFIG_RESOURCE = "reranking-providers-config.yaml";
+  //  private static final String DEFAULT_RERANKING_CONFIG_RESOURCE =
+  // "reranking-providers-config.yaml";
   // System property name to override reranking config resource. Could be set by integration test
   // resource.
   private static final String DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE =
@@ -112,8 +113,9 @@ public class EmbeddingAndRerankingConfigSourceProvider implements ConfigSourcePr
       return loadConfigSourceFromResource(resourceOverride, forClassLoader);
     } else {
       LOGGER.info(
-          "Loading reranking config from default resource : {}", DEFAULT_RERANKING_CONFIG_RESOURCE);
-      return loadConfigSourceFromResource(DEFAULT_RERANKING_CONFIG_RESOURCE, forClassLoader);
+          "Loading reranking config from default resource test!!! : {}",
+          "test-reranking-providers-config.yaml");
+      return loadConfigSourceFromResource("test-reranking-providers-config.yaml", forClassLoader);
     }
   }
 
