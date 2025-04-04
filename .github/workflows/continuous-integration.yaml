@@ -176,5 +176,6 @@ jobs:
 
       # run the int tests
       - name: Integration Test
+        # -DDEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE=test-reranking-providers-config.yaml is to override the reranking config to customized one
         run: |
-          ./mvnw -B -ntp clean verify -DskipUnitTests -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} -Drun-create-index-parallel=true ${{ matrix.profile }}
+          ./mvnw -B -ntp clean verify -DskipUnitTests -DDEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE=test-reranking-providers-config.yaml -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} -Drun-create-index-parallel=true ${{ matrix.profile }}
