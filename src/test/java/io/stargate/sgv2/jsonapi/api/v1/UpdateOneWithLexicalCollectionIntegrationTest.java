@@ -295,30 +295,40 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
 
     @Test
     @Order(2)
-    public void failForPush() {
-      givenHeadersPostJsonThenOk(updateQuery("{\"$push\" : {\"$lexical\": \"token\" }}"))
-          .body("$", responseIsError())
-          .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_LEXICAL"))
-          .body(
-              "errors[0].message",
-              containsString("Cannot use operator with '$lexical' field: $push"));
+    public void failForAddToSet() {
+      failUpdateFor("$addToSet", "{\"$addToSet\" : {\"$lexical\": \"token\" }}");
     }
 
     @Test
     @Order(3)
+    public void failForPush() {
+      failUpdateFor("$push", "{\"$push\" : {\"$lexical\": \"token\" }}");
+    }
+
+    @Test
+    @Order(4)
     public void failForPop() {
-      givenHeadersPostJsonThenOk(updateQuery("{\"$pop\" : {\"$lexical\": 1 }}"))
+      failUpdateFor("$pop", "{\"$pop\" : {\"$lexical\": 1 }}");
+    }
+
+    @Test
+    @Order(5)
+    public void failForRename() {
+      failUpdateFor("$rename", "{\"$rename\" : {\"$lexical\": \"stuff\" }}");
+    }
+
+    private void failUpdateFor(String opName, String updateOperation) {
+      givenHeadersPostJsonThenOk(updateQuery(updateOperation))
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_LEXICAL"))
           .body(
               "errors[0].message",
-              containsString("Cannot use operator with '$lexical' field: $pop"));
+              containsString("Cannot use operator with '$lexical' field: " + opName));
     }
 
-    static String updateQuery(String updateOperation) {
+    private String updateQuery(String updateOperation) {
       return
           """
               {
