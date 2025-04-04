@@ -81,16 +81,16 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
           .body("status.rerankingProviders.nvidia.models", hasSize(2))
           .body(
               "status.rerankingProviders.nvidia.models[0].name",
-              equalTo("nvidia/a-random-deprecated-model"))
-          .body(
-              "status.rerankingProviders.nvidia.models[0].modelSupport.status",
-              equalTo(ModelSupport.SupportStatus.DEPRECATED.name()))
-          .body(
-              "status.rerankingProviders.nvidia.models[1].name",
               equalTo("nvidia/a-random-EOL-model"))
           .body(
+              "status.rerankingProviders.nvidia.models[0].modelSupport.status",
+              equalTo(ModelSupport.SupportStatus.END_OF_LIFE.name()))
+          .body(
+              "status.rerankingProviders.nvidia.models[1].name",
+              equalTo("nvidia/a-random-deprecated-model"))
+          .body(
               "status.rerankingProviders.nvidia.models[1].modelSupport.status",
-              equalTo(ModelSupport.SupportStatus.END_OF_LIFE.name()));
+              equalTo(ModelSupport.SupportStatus.DEPRECATED.name()));
     }
 
     @Test
