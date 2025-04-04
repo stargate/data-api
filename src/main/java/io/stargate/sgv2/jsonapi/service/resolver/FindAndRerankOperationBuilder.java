@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -22,12 +23,14 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingDeferredAc
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -155,6 +158,23 @@ class FindAndRerankOperationBuilder {
     if (!commandContext.schemaObject().rerankingConfig().enabled()) {
       // TODO: more info in the error
       throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
+    }
+    // Read is not supported for rerank model at END_OF_LIFE support status.
+    var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
+    var modelConfig =
+        rerankingProvidersConfig.filterByRerankServiceDef(
+            commandContext.schemaObject().rerankingConfig().rerankServiceDef());
+    if (modelConfig.modelSupport().status()
+        == RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport.SupportStatus
+            .END_OF_LIFE) {
+      throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
+          Map.of(
+              "model",
+              modelConfig.name(),
+              "modelStatus",
+              modelConfig.modelSupport().status().status,
+              "message",
+              modelConfig.modelSupport().message().orElse("The model is not supported.")));
     }
   }
 

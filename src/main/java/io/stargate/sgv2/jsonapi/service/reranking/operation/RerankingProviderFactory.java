@@ -80,4 +80,8 @@ public class RerankingProviderFactory {
 
     return ctor.create(modelConfig.url(), modelConfig.name(), modelConfig.properties());
   }
+
+  public RerankingProvidersConfig getRerankingConfig() {
+    return rerankingConfig;
+  }
 }

@@ -12,6 +12,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.slf4j.Logger;
@@ -108,6 +109,12 @@ public class RerankingProviderConfigProducer {
                 model ->
                     new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
                         model.getName(),
+                        new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
+                            .ModelSupportImpl(
+                            RerankingProvidersConfig.RerankingProviderConfig.ModelConfig
+                                .ModelSupport.SupportStatus.valueOf(
+                                model.getModelSupport().getStatus()),
+                            Optional.of(model.getModelSupport().getMessage())),
                         model.getIsDefault(),
                         model.getUrl(),
                         new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl

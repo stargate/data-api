@@ -34,6 +34,6 @@ public class FindRerankingProvidersCommandResolver
       throw ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED.toApiException();
     }
 
-    return new FindRerankingProvidersOperation(rerankingProvidersConfig);
+    return new FindRerankingProvidersOperation(command, rerankingProvidersConfig);
   }
 }
