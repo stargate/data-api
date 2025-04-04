@@ -2,6 +2,11 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -9,6 +14,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.ResponseData;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
@@ -106,6 +112,8 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
     return new RerankingResultSupplier(
         commandContext.requestTracing(),
+        commandContext.meterRegistry(),
+        commandContext.requestContext(),
         rerankingProvider,
         commandContext.requestContext().getRerankingCredentials(),
         query,
@@ -196,6 +204,8 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   public static class RerankingResultSupplier implements UniSupplier<RerankingTaskResult> {
 
     private final RequestTracing requestTracing;
+    private final MeterRegistry meterRegistry;
+    private final RequestContext requestContext;
     private final RerankingProvider rerankingProvider;
     private final RerankingCredentials credentials;
     private final String query;
@@ -205,6 +215,8 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
     RerankingResultSupplier(
         RequestTracing requestTracing,
+        MeterRegistry meterRegistry,
+        RequestContext requestContext, // needed for credentials
         RerankingProvider rerankingProvider,
         RerankingCredentials credentials,
         String query,
@@ -212,6 +224,8 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
         List<ScoredDocument> unrankedDocs,
         int limit) {
       this.requestTracing = requestTracing;
+      this.meterRegistry = meterRegistry;
+      this.requestContext = requestContext;
       this.rerankingProvider = rerankingProvider;
       this.credentials = credentials;
       this.query = query;
@@ -267,10 +281,22 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                           "limit", limit,
                           "passages", passageField))));
 
+      // Create metrics recorder instance
+      MetricsRecorder metricsRecorder =
+          new MetricsRecorder(meterRegistry, rerankingProvider, requestContext);
+      // Record input sizes before making the call
+      metricsRecorder.recordInputSizes(passages);
+
+      // Start timing the operation
+      Timer.Sample sample = metricsRecorder.startTimer();
+
       return rerankingProvider
           .rerank(query, passages, credentials)
           .onItem()
-          .transform(
+          .invoke(response -> metricsRecorder.stopTimer(sample)) // Stop timer on success
+          .onFailure()
+          .invoke(error -> metricsRecorder.stopTimer(sample)) // Stop timer on failure too
+          .map(
               rerankingResponse ->
                   RerankingTaskResult.create(
                       requestTracing, rerankingProvider, rerankingResponse, unrankedDocs, limit));
@@ -347,6 +373,55 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
     public List<ScoredDocument> rerankedDocuments() {
       return rerankedDocuments;
+    }
+  }
+
+  // Inner class to handle metrics
+  private static class MetricsRecorder {
+    final String RERANK_INPUT_BYTES_METRICS = "reranking.input.bytes";
+    final String RERANKING_CALL_DURATION_METRICS = "reranking.call.duration";
+    final String RERANKING_PROVIDER_METRICS_TAG = "reranking.provider";
+    final String RERANKING_PROVIDER_MODEL_METRICS_TAG = "reranking.model";
+    final String TENANT_TAG = "tenant";
+    final String UNKNOWN_VALUE = "unknown";
+    private final MeterRegistry meterRegistry;
+    private final RerankingProvider rerankingProvider;
+    private final RequestContext requestContext;
+
+    public MetricsRecorder(
+        MeterRegistry meterRegistry,
+        RerankingProvider rerankingProvider,
+        RequestContext requestContext) {
+      this.meterRegistry = meterRegistry;
+      this.rerankingProvider = rerankingProvider;
+      this.requestContext = requestContext;
+    }
+
+    void recordInputSizes(List<String> passages) {
+      DistributionSummary ds =
+          DistributionSummary.builder(RERANK_INPUT_BYTES_METRICS)
+              .tags(getCustomTags())
+              .register(meterRegistry);
+      passages.stream().mapToInt(String::length).forEach(ds::record);
+    }
+
+    Timer.Sample startTimer() {
+      return Timer.start(meterRegistry);
+    }
+
+    void stopTimer(Timer.Sample sample) {
+      sample.stop(meterRegistry.timer(RERANKING_CALL_DURATION_METRICS, getCustomTags()));
+    }
+
+    private Tags getCustomTags() {
+      Tag tenantTag = Tag.of(TENANT_TAG, requestContext.getTenantId().orElse(UNKNOWN_VALUE));
+      Tag rerankingProviderTag =
+          Tag.of(RERANKING_PROVIDER_METRICS_TAG, classSimpleName(rerankingProvider.getClass()));
+      Tag rerankingModelTag =
+          Tag.of(
+              RERANKING_PROVIDER_MODEL_METRICS_TAG,
+              Optional.ofNullable(rerankingProvider.modelName()).orElse(UNKNOWN_VALUE));
+      return Tags.of(tenantTag, rerankingProviderTag, rerankingModelTag);
     }
   }
 }
