@@ -1,0 +1,10 @@
+{"_id":1,"name":"John Doe","dob":{"$date":631152000000},"livingInUSA":true}
+{"_id":2,"name":"Jane Smith","dob":{"$date":484396400000},"livingInUSA":false}
+{"_id":3,"name":"Michael Johnson","dob":{"$date":400554000000},"livingInUSA":true}
+{"_id":4,"name":"Emily Brown","dob":{"$date":818784000000},"livingInUSA":false}
+{"_id":5,"name":"David Williams","dob":{"$date":270036000000},"livingInUSA":true}
+{"_id":6,"name":"Sarah Martinez","dob":{"$date":574704000000},"livingInUSA":false}
+{"_id":7,"name":"James Lee","dob":{"$date":722868000000},"livingInUSA":true}
+{"_id":8,"name":"Olivia Taylor","dob":{"$date":320515200000},"livingInUSA":false}
+{"_id":9,"name":"William Garcia","dob":{"$date":212688000000},"livingInUSA":true}
+{"_id":10,"name":"Emma Rodriguez","dob":{"$date":887414400000},"livingInUSA":false}

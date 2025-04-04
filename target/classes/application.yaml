@@ -1,0 +1,187 @@
+---
+# please keep properties in the alphabetical order
+
+stargate:
+  # security and authentication configuration
+  # see io.stargate.sgv2.jsonapi.config.AuthConfig for all config properties and options
+  auth:
+    # header-based security by default
+    # if changed, adapt token resolver type
+    header-based:
+      enabled: true
+
+    # Cassandra token resolver from principal
+    token-resolver:
+      type: principal
+
+  database:
+    limits:
+      max-collections: 5
+
+  debug:
+    enabled: false
+
+  # disable all sgv2 exception mappers, handled differently
+  exception-mappers:
+    enabled: false
+
+  feature: # See io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig
+    flags:  # Ok to leave out features that have no default value (enabled or disabled)
+      lexical:
+      tables:
+
+  # custom grpc settings
+  grpc:
+
+    # default client timeout 2x from max server side timeout
+    # see https://docs.datastax.com/en/dse/6.8/dse-dev/datastax_enterprise/config/configCassandra_yaml.html#Networktimeoutsettings
+    call-deadline: PT20S
+
+    # retries use custom policy, see io.stargate.sgv2.jsonapi.grpc.retries.impl.JsonApiGrpcRetryPolicy
+    retries:
+      enabled: true
+      max-attempts: 1
+      policy: custom
+
+  # metrics properties
+  metrics:
+    global-tags:
+      module: sgv2-jsonapi
+
+  # multi tenancy settings
+  # see io.stargate.sgv2.jsonapi.config.MultiTenancyConfig  for all config properties and options
+  multi-tenancy:
+    enabled: false
+
+quarkus:
+  # general app properties
+  application:
+    name: Stargate DATA API
+    ui-header: ${quarkus.application.name} (powered by DataStax)
+
+  # banner for the startup
+  banner:
+    path: banner/banner.txt
+
+  # properties for the gRPC clients
+  grpc:
+    # all the clients' setup, only embedding gateway
+    clients:
+      embedding:
+        host: 0.0.0.0
+        port: 9000
+
+    # force no grpc server start in dev as we have no grpc service
+    dev-mode:
+      force-server-start: false
+
+  # HTTP settings
+  http:
+    # access log format, must be explicitly enabled
+    access-log:
+      enabled: true
+      pattern: "%h %l %t \"%r\" %s %b"
+
+    # every /v1 path is authenticated by default
+    # adapt if changing the authentication mechanism
+    auth:
+      # disable basic auth completely
+      basic: false
+      proactive: false
+      permission:
+        default:
+          paths: /v1/*
+          policy: authenticated
+
+    limits:
+      # Let's limit low-level maximum HTTP request size to 20 megs: stricter
+      # limit (4 meg per document) is applied at the JSON API level.
+      # Low-level limits may result in EPIPE/413 errors
+      # whereas at higher level we can use regular JSON API error responses
+      max-body-size: 20M
+
+    # non-application path to /stargate, used for readiness and health check
+    non-application-root-path: stargate
+
+    port: 8181
+
+  log:
+    console:
+      format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %F:%L - %m%n"
+
+    level: WARN
+
+    category:
+      # silent caffeine cache warnings
+      'com.github.benmanes.caffeine.cache':
+        level: ERROR
+      'com.datastax.oss.driver':
+        level: WARN
+      'io.quarkus.http.access-log':
+        level: INFO
+      'io.stargate':
+        level: DEBUG
+
+    min-level: trace
+
+  # built-in micrometer properties
+  micrometer:
+    # exports at prometheus default path
+    export:
+      prometheus:
+        path: /metrics
+    binder:
+      http-server:
+        # ignore all non-application uris, as well as the custom set
+        suppress-non-application-uris: true
+        ignore-patterns: /,/metrics,/swagger-ui.*,.*\.html
+
+        # due to the https://github.com/quarkusio/quarkus/issues/24938
+        # we need to define uri templating on our own for now
+        # note that order is important
+        match-patterns: |
+          /v1/[^/]+=/v1/{keyspace},
+          /v1/.+/.+=/v1/{keyspace}/{collection}
+
+  native:
+    # Adding com.datastax.oss.driver.internal.core.metadata.MetadataManager to the list of classes that are initialized
+    # at run time while building the native image. This is for the issue https://github.com/stargate/jsonapi/issues/597
+    additional-build-args: --initialize-at-run-time=com.datastax.oss.driver.internal.core.metadata.MetadataManager
+
+  # adapt path of the open api definitions
+  smallrye-openapi:
+    path: /api/json/openapi
+    info-title: ${quarkus.application.name}
+    info-version: ${quarkus.application.version:}
+    info-description:
+    info-terms-of-service:
+    info-contact-name: Stargate
+    info-contact-url: https://stargate.io
+    info-license-name: Apache 2.0
+    info-license-url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+  # Enable an embedded Swagger UI
+  swagger-ui:
+    path: /swagger-ui
+    always-include: true
+    title: ${quarkus.application.name}
+    # function below enables pre-populating the authentication token in the Swagger UI
+    # it's reading the value of the token from the sg-swagger-token cookie, if existing
+    # cookie extraction copied from: https://stackoverflow.com/questions/10730362/get-cookie-by-name
+    # Swagger configuration reference: https://swagger.io/docs/open-source-tools/swagger-ui/usage/configuration/
+    on-complete: |
+      function() {
+        const value = '; ' + document.cookie;
+        const parts = value.split('; sg-swagger-token=');
+        if (parts.length === 2) { 
+          const token = parts.pop().split(';').shift();
+          ui.preauthorizeApiKey('Token', token);
+        }
+      }
+
+
+"%dev":
+   quarkus:
+     log:
+       console:
+         json: false

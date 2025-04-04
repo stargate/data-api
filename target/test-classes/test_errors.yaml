@@ -1,0 +1,40 @@
+# Define some errors just for testing
+
+snippets:
+  - name: CONTACT_SUPPORT
+    body: |-
+      Please contact support if the issue persists.
+
+request-errors:
+  - scope: TEST_REQUEST_SCOPE
+    code: SCOPED_REQUEST_ERROR
+    title: A scoped request error
+    body: |-
+      long body with ${name} and ${value} in it
+
+  - scope: MISSING_CTOR
+    code: EXCEPTION_MISSING_CTOR
+    title: test for exception class missing the ctor needed for templating
+    body: |-
+      Scopes are represented by Exception classes, so needs a new scope 
+
+  - scope:
+    code: UNSCOPED_REQUEST_ERROR
+    title: An unscoped request error
+    body: |-
+      Multi line with ${name} and ${value} in it.
+      And a snippet below:
+      ${SNIPPET.CONTACT_SUPPORT}
+
+  - scope:
+    code: NO_VARIABLES_TEMPLATE
+    title: A body with no template variables
+    body: |-
+      Body with no variables.
+
+  - scope:
+    code: HTTP_OVERRIDE
+    http-status-override: 500
+    title: An error that overrides the HTTP response
+    body: |-
+      body with ${name} and ${value} in it
