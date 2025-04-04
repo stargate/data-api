@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
@@ -85,6 +86,8 @@ public class CollectionResource {
   @Inject private FeaturesConfig apiFeatureConfig;
 
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
+
+  @Inject MeterRegistry meterRegistry;
 
   @Inject
   public CollectionResource(
@@ -268,6 +271,7 @@ public class CollectionResource {
                         .withEmbeddingProvider(embeddingProvider)
                         .withCommandName(command.getClass().getSimpleName())
                         .withRequestContext(requestContext)
+                        .withMeterRegistry(meterRegistry)
                         .build();
 
                 return meteredCommandProcessor.processCommand(commandContext, command);
