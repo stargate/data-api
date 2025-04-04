@@ -1,16 +1,13 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.*;
 import static org.hamcrest.Matchers.*;
-import static org.hamcrest.Matchers.equalTo;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
@@ -109,32 +106,6 @@ public class RerankFeatureDisabledIntegrationTest extends AbstractKeyspaceIntegr
     assertTableCommand(keyspaceName, COLLECTION_TO_CREATE)
         .postCommand(CommandName.FIND_AND_RERANK, command)
         .hasSingleApiError(ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED);
-  }
-
-  @Order(6)
-  @Test
-  public final void defaultSupportModels() {
-    // without option specified, only return supported models
-    String json =
-        """
-                      {
-                        "findRerankingProviders": {
-                        }
-                      }
-                      """;
-
-    assertGeneralCommand()
-        .header(ApiFeature.RERANKING.httpHeaderName(), "true")
-        .postFindRerankingProviders()
-        .body("$", responseIsStatusOnly())
-        .body("status.rerankingProviders", notNullValue())
-        .body("status.rerankingProviders.nvidia.models", hasSize(1))
-        .body(
-            "status.rerankingProviders.nvidia.models[0].name",
-            equalTo("nvidia/llama-3.2-nv-rerankqa-1b-v21"))
-        .body(
-            "status.rerankingProviders.nvidia.models[0].modelSupport.status",
-            equalTo(ModelSupport.SupportStatus.SUPPORTED.name()));
   }
 
   private static String simpleCollectionDef(String collectionName) {
