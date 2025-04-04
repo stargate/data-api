@@ -175,7 +175,11 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
             new ScoredDocumentMerger(
                 multiDocResponse.documents().size() * 2, passageField, userProjection);
       }
-      multiDocResponse.documents().forEach(merger::merge);
+      // rank must start at 1
+      int rank = 1;
+      for (var doc : multiDocResponse.documents()) {
+        merger.merge(rank++, doc);
+      }
     }
 
     var deduplicatedDocuments = merger.mergedDocuments();
@@ -318,7 +322,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       List<ScoredDocument> rerankedDocuments = new ArrayList<>(unrankedDocuments.size());
       for (var rank : ranks) {
 
-        var rerankScore = DocumentScores.withRerankScore(rank.score());
+        var rerankScore = DocumentScores.fromReranking(rank.score());
         ScoredDocument unrankedDoc;
         try {
           unrankedDoc = unrankedDocuments.get(rank.index());

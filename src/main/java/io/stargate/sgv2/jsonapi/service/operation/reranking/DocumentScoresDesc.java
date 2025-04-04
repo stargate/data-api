@@ -9,8 +9,9 @@ public class DocumentScoresDesc {
 
   private final Scores scores;
 
-  public DocumentScoresDesc(float vector, float rerank) {
-    this.scores = new Scores(vector, rerank);
+  public DocumentScoresDesc(
+      float rerank, float vector, Integer vectorRank, Integer bm25Rank, float rrfScore) {
+    this.scores = new Scores(rerank, vector, vectorRank, bm25Rank, rrfScore);
   }
 
   @JsonProperty(DocumentConstants.Fields.SCORES_FIELD)
@@ -23,6 +24,9 @@ public class DocumentScoresDesc {
     DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD
   })
   public record Scores(
+      @JsonProperty(DocumentConstants.Fields.RERANK_FIELD) float rerank,
       @JsonProperty(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) float vector,
-      @JsonProperty(DocumentConstants.Fields.RERANK_FIELD) float rerank) {}
+      @JsonProperty("$vectorRank") Integer vectorRank,
+      @JsonProperty("$bm25Rank")Integer bm25Rank,
+      @JsonProperty("$rrfScore")float rrfScore) {}
 }

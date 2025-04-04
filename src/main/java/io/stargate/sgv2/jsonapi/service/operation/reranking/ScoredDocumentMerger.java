@@ -39,14 +39,15 @@ class ScoredDocumentMerger {
     return new ArrayList<>(mergedDocuments.values());
   }
 
-  void merge(JsonNode document) {
+  void merge(int rank, JsonNode document) {
 
     seenDocumentsCount++;
 
-    var thisDocScore =
+    var vectorScored =
         switch (document.get(DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD)) {
           case null -> DocumentScores.EMPTY;
-          case NumericNode numberNode -> DocumentScores.withVectorScore(numberNode.floatValue());
+          case NumericNode numberNode ->
+              DocumentScores.fromVectorRead(numberNode.floatValue(), rank);
           default ->
               throw new IllegalStateException(
                   "%s document field is not a number for doc _id %s"
@@ -54,6 +55,10 @@ class ScoredDocumentMerger {
                           DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD,
                           document.get(DocumentConstants.Fields.DOC_ID)));
         };
+
+    // if we dont have a vector score, then use the rank as the bm25 rank
+    var bm25Scored =
+        vectorScored.vector().exists() ? DocumentScores.EMPTY : DocumentScores.fromBm25Read(rank);
 
     var documentId =
         switch (document.get(DocumentConstants.Fields.DOC_ID)) {
@@ -80,7 +85,6 @@ class ScoredDocumentMerger {
                       .formatted(passageField, documentId));
         };
 
-    LOGGER.debug("XXX merge() ID {} passage '{}'", documentId, Objects.toString(passage));
     if (passage == null || passage.isBlank()) {
       droppedDocumentsCount++;
       return;
@@ -93,7 +97,8 @@ class ScoredDocumentMerger {
     // NOTE:  this mutates the document
     userProjection.applyProjection(document);
 
-    mergeScoredDocument(new ScoredDocument(documentId, document, passage, thisDocScore));
+    mergeScoredDocument(
+        new ScoredDocument(documentId, document, passage, vectorScored.merge(bm25Scored)));
   }
 
   private void mergeScoredDocument(ScoredDocument scoredDocument) {

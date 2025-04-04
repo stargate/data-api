@@ -52,6 +52,11 @@ public class ScoredDocument implements Comparable<ScoredDocument> {
 
   @Override
   public int compareTo(ScoredDocument o) {
-    return scores.compareTo(o.scores);
+    var scoresCompare = scores.compareTo(o.scores);
+    if (scoresCompare != 0) {
+      return scoresCompare;
+    }
+    // TODO: XXX : HACK - need to do a deep compare of the JSON objects
+    return id.asText().compareTo(o.id.asText());
   }
 }
