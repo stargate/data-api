@@ -142,7 +142,7 @@ public enum ErrorCodeV1 {
 
   UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),
 
-  UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field"),
+  // UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' field"),
   UNSUPPORTED_UPDATE_FOR_LEXICAL("Cannot use operator with '$lexical' field"),
   UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' field"),
   UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' field"),

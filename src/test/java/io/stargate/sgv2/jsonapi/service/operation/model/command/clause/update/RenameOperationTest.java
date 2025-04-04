@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -151,10 +152,11 @@ public class RenameOperationTest extends UpdateOperationTestBase {
           catchException(
               () -> UpdateOperator.RENAME.resolveOperation(objectFromJson("{ \"_id\": \"id\" }")));
       assertThat(e)
-          .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID)
-          .hasMessage(ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $rename");
+          .isInstanceOf(UpdateException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID.name())
+          .hasFieldOrPropertyWithValue("title", "Update operators cannot be used on _id field")
+          .hasMessageContaining("The command used the update operator: $rename");
     }
 
     @Test
@@ -164,10 +166,11 @@ public class RenameOperationTest extends UpdateOperationTestBase {
               () -> UpdateOperator.RENAME.resolveOperation(objectFromJson("{ \"id\": \"_id\" }")));
 
       assertThat(e)
-          .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID)
-          .hasMessage(ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $rename");
+          .isInstanceOf(UpdateException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID.name())
+          .hasFieldOrPropertyWithValue("title", "Update operators cannot be used on _id field")
+          .hasMessageContaining("The command used the update operator: $rename");
     }
   }
 }
