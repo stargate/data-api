@@ -55,12 +55,6 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
       TypeIdResolver idResolver,
       String failureMsg)
       throws JsonApiException {
-    //            interface io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand ->
-    // NamespaceCommand
-    //            interface io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand ->
-    // CollectionCommand
-    //            interface io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand ->
-    // GeneralCommand
     final String rawCommandClassString = baseType.getRawClass().getName();
     final String baseCommand =
         rawCommandClassString.substring(rawCommandClassString.lastIndexOf('.') + 1);

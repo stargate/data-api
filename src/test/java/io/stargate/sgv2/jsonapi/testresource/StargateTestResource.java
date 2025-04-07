@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -188,7 +190,7 @@ public abstract class StargateTestResource
     final String JVM_EXTRA_OPTS =
         "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8"
             // 18-Mar-2025, tatu: to work around [https://github.com/riptano/cndb/issues/13330],
-            // need to temporarily add this:
+            // need to temporarily add this for HCD:
             + " -Dcassandra.cluster_version_provider.min_stable_duration_ms=-1";
     container
         .withEnv("HEAP_NEWSIZE", "512M")
@@ -315,7 +317,7 @@ public abstract class StargateTestResource
       HttpRequest request =
           HttpRequest.newBuilder()
               .uri(authUri)
-              .header("Content-Type", "application/json")
+              .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
               .POST(BodyPublishers.ofString(json))
               .build();
       HttpResponse<String> response =

@@ -95,7 +95,8 @@ public enum ErrorCodeV1 {
 
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
 
-  RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable : "),
+  RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),
+  RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable"),
   RERANKING_PROVIDER_UNEXPECTED_RESPONSE("The Reranking Provider returned an unexpected response"),
   RERANKING_PROVIDER_CLIENT_ERROR("The Reranking Provider returned a HTTP client error"),
   RERANKING_PROVIDER_SERVER_ERROR("The Reranking Provider returned a HTTP server error"),
@@ -137,14 +138,9 @@ public enum ErrorCodeV1 {
 
   UNSUPPORTED_UPDATE_OPERATION_PARAM("Unsupported update operation parameter"),
 
-  UNSUPPORTED_UPDATE_OPERATION_PATH("Invalid update operation path"),
+  UNSUPPORTED_UPDATE_OPERATION_PATH("Unsupported update operation path"),
 
   UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),
-
-  UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' property"),
-
-  UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' property"),
-  UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' property"),
 
   VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
 
@@ -171,6 +167,11 @@ public enum ErrorCodeV1 {
 
   LEXICAL_NOT_AVAILABLE_FOR_DATABASE("Lexical search is not available on this database"),
   LEXICAL_NOT_ENABLED_FOR_COLLECTION("Lexical search is not enabled for the collection"),
+
+  HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE("Unsupported JSON value type for '$hybrid' field"),
+  HYBRID_FIELD_UNKNOWN_SUBFIELDS("Unrecognized sub-field(s) for '$hybrid' Object"),
+  HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
+      "Unsupported JSON value type for '$hybrid' sub-field"),
 
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   COLLECTION_CREATION_ERROR(

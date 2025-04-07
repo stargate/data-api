@@ -7,10 +7,12 @@ import io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource;
 public class DataApiKeyspaceCommandSender
     extends DataApiCommandSenderBase<DataApiKeyspaceCommandSender> {
 
+  private final String keyspace;
+
   private KeyspaceTemplates keyspaceTemplates;
 
   protected DataApiKeyspaceCommandSender(String keyspace) {
-    super(keyspace);
+    this.keyspace = keyspace;
     this.keyspaceTemplates = new KeyspaceTemplates(this);
   }
 

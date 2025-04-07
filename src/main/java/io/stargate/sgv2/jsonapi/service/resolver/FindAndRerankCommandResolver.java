@@ -6,6 +6,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -46,6 +48,12 @@ public class FindAndRerankCommandResolver implements CommandResolver<FindAndRera
       CommandContext<CollectionSchemaObject> commandContext, FindAndRerankCommand command) {
 
     // TODO: add to metrics
+
+    boolean isRerankingEnabledForAPI =
+        commandContext.apiFeatures().isFeatureEnabled(ApiFeature.RERANKING);
+    if (!isRerankingEnabledForAPI) {
+      throw ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED.toApiException();
+    }
 
     return new FindAndRerankOperationBuilder(commandContext)
         .withCommand(command)

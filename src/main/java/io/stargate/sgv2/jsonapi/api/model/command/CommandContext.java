@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.DefaultRequestTracing;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
@@ -49,6 +50,9 @@ public class CommandContext<SchemaT extends SchemaObject> {
   private final RequestContext requestContext;
   private RequestTracing requestTracing;
 
+  // see accessors
+  private FindAndRerankCommand.HybridLimits hybridLimits;
+
   // created on demand or set via builder, otherwise we need to read from config too early when
   // running tests, See the {@link Builder#withApiFeatures}
   // access via {@link CommandContext#apiFeatures()}
@@ -95,6 +99,22 @@ public class CommandContext<SchemaT extends SchemaObject> {
   /** See doc comments for {@link CommandContext} */
   public static BuilderSupplier builderSupplier() {
     return new BuilderSupplier();
+  }
+
+  /**
+   * HACK: for https://github.com/stargate/data-api/issues/1961 This is a temporary work around for
+   * needing to pass the page size to the FindCollectionOperation when doing the inner finds for
+   * findAndRerank because they will only run the command once, and not multiple times to exhaust
+   * the cursor.
+   *
+   * @return
+   */
+  public FindAndRerankCommand.HybridLimits getHybridLimits() {
+    return hybridLimits;
+  }
+
+  public void setHybridLimits(FindAndRerankCommand.HybridLimits hybridLimits) {
+    this.hybridLimits = hybridLimits;
   }
 
   public SchemaT schemaObject() {
@@ -150,6 +170,10 @@ public class CommandContext<SchemaT extends SchemaObject> {
 
   public EmbeddingProviderFactory embeddingProviderFactory() {
     return embeddingProviderFactory;
+  }
+
+  public boolean isCollectionContext() {
+    return schemaObject().type() == CollectionSchemaObject.TYPE;
   }
 
   @SuppressWarnings("unchecked")

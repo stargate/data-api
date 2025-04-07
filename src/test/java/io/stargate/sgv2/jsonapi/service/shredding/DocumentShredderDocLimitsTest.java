@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -41,6 +43,8 @@ public class DocumentShredderDocLimitsTest {
 
   @InjectMock protected RequestContext dataApiRequestInfo;
 
+  private final TestConstants testConstants = new TestConstants();
+
   // Tests for Document size/depth violations
   @Nested
   class ValidationDocSizeViolations {
@@ -49,11 +53,11 @@ public class DocumentShredderDocLimitsTest {
       // Given we fail at 4 meg
       // let's try 600k (8 x 5 x 7.5k)
       final ObjectNode bigDoc = createBigDoc(8, 5);
-      assertThat(documentShredder.shred(bigDoc)).isNotNull();
+      assertThat(documentShredder.shred(commandContext(), bigDoc, null)).isNotNull();
 
       // let's also try 1m (12 x 12 x 7.5k)
       final ObjectNode bigDoc1m = createBigDoc(12, 12);
-      assertThat(documentShredder.shred(bigDoc1m)).isNotNull();
+      assertThat(documentShredder.shred(commandContext(), bigDoc1m, null)).isNotNull();
     }
 
     @Test
@@ -62,7 +66,7 @@ public class DocumentShredderDocLimitsTest {
       // (12x45) x 7.5k String values, divided in 12 sub documents of 45 properties
       final ObjectNode bigDoc = createBigDoc(12, 45);
 
-      Exception e = catchException(() -> documentShredder.shred(bigDoc));
+      Exception e = catchException(() -> documentShredder.shred(commandContext(), bigDoc, null));
       assertThat(e)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
@@ -94,7 +98,7 @@ public class DocumentShredderDocLimitsTest {
         ob = ob.putObject("sub");
       }
 
-      assertThat(documentShredder.shred(deepDoc)).isNotNull();
+      assertThat(documentShredder.shred(commandContext(), deepDoc, null)).isNotNull();
     }
 
     @Test
@@ -110,7 +114,7 @@ public class DocumentShredderDocLimitsTest {
         obNode = array.addObject();
       }
 
-      Exception e = catchException(() -> documentShredder.shred(deepDoc));
+      Exception e = catchException(() -> documentShredder.shred(commandContext(), deepDoc, null));
       assertThat(e)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
@@ -128,7 +132,7 @@ public class DocumentShredderDocLimitsTest {
     public void allowDocWithManyObjectProps() {
       // Max allowed is 1,000
       final ObjectNode doc = docWithNProps("subdoc", docLimits.maxObjectProperties());
-      assertThat(documentShredder.shred(doc)).isNotNull();
+      assertThat(documentShredder.shred(commandContext(), doc, null)).isNotNull();
     }
 
     @Test
@@ -150,7 +154,7 @@ public class DocumentShredderDocLimitsTest {
       final int tooManyProps = maxObProps + 1;
       final ObjectNode doc = docWithNProps("subdoc", tooManyProps);
 
-      Exception e = catchException(() -> documentShredder.shred(doc));
+      Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
@@ -179,7 +183,7 @@ public class DocumentShredderDocLimitsTest {
       // Max allowed 2000, create one with bit more
       final ObjectNode doc = docWithNestedProps(50, 41);
 
-      Exception e = catchException(() -> documentShredder.shred(doc));
+      Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
@@ -208,7 +212,7 @@ public class DocumentShredderDocLimitsTest {
     public void allowDocWithManyArrayElements() {
       // Max allowed 1000, test:
       final ObjectNode doc = docWithNArrayElems("arr", docLimits.maxArrayLength());
-      assertThat(documentShredder.shred(doc)).isNotNull();
+      assertThat(documentShredder.shred(commandContext(), doc, null)).isNotNull();
     }
 
     // Test to verify that max-array-size limit only imposed on indexable properties
@@ -228,7 +232,7 @@ public class DocumentShredderDocLimitsTest {
     public void catchTooManyArrayElements() {
       final int arraySizeAboveMax = docLimits.maxArrayLength() + 1;
       final ObjectNode doc = docWithNArrayElems("arr", arraySizeAboveMax);
-      Exception e = catchException(() -> documentShredder.shred(doc));
+      Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
@@ -247,7 +251,7 @@ public class DocumentShredderDocLimitsTest {
       // Let's add 120 elements (max allowed normally: 100)
       final ObjectNode doc =
           docWithNArrayElems(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, 120);
-      assertThat(documentShredder.shred(doc)).isNotNull();
+      assertThat(documentShredder.shred(commandContext(), doc, null)).isNotNull();
     }
   }
 
@@ -259,7 +263,7 @@ public class DocumentShredderDocLimitsTest {
       final ObjectNode doc = objectMapper.createObjectNode();
       doc.put("_id", 123);
       doc.put("prop_123456789_123456789_123456789_123456789", true);
-      assertThat(documentShredder.shred(doc)).isNotNull();
+      assertThat(documentShredder.shred(commandContext(), doc, null)).isNotNull();
     }
 
     @Test
@@ -271,7 +275,7 @@ public class DocumentShredderDocLimitsTest {
       ObjectNode ob3 = ob2.putObject("hijkl".repeat(60));
       // and then one short one, for 992 char total path
       ob3.put("xyz".repeat(30), 123);
-      assertThat(documentShredder.shred(doc)).isNotNull();
+      assertThat(documentShredder.shred(commandContext(), doc, null)).isNotNull();
     }
 
     @Test
@@ -284,7 +288,7 @@ public class DocumentShredderDocLimitsTest {
       final String lastSegment = "a1234".repeat(20);
       ob3.put(lastSegment, 123);
 
-      Exception e = catchException(() -> documentShredder.shred(doc));
+      Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
@@ -305,7 +309,7 @@ public class DocumentShredderDocLimitsTest {
       doc.put("_id", 123);
       // Use ASCII to keep chars == bytes, use length of just slight below max allowed
       doc.put("text", RandomStringUtils.randomAscii(docLimits.maxStringLengthInBytes() - 100));
-      assertThat(documentShredder.shred(doc)).isNotNull();
+      assertThat(documentShredder.shred(commandContext(), doc, null)).isNotNull();
     }
 
     @Test
@@ -318,7 +322,7 @@ public class DocumentShredderDocLimitsTest {
       String str = RandomStringUtils.randomAscii(tooLongLength);
       arr.add(str);
 
-      Exception e = catchException(() -> documentShredder.shred(doc));
+      Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
@@ -350,7 +354,7 @@ public class DocumentShredderDocLimitsTest {
       assertThat(tooLongString.getBytes(StandardCharsets.UTF_8))
           .hasSizeGreaterThan(docLimits.maxStringLengthInBytes());
 
-      Exception e = catchException(() -> documentShredder.shred(doc));
+      Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
@@ -413,7 +417,7 @@ public class DocumentShredderDocLimitsTest {
       doc.put(validName, 123456);
 
       // Enough to verify that shredder does not throw exception
-      assertThat(documentShredder.shred(doc)).isNotNull();
+      assertThat(documentShredder.shred(commandContext(), doc, null)).isNotNull();
     }
 
     // formerly invalid names that now are allowed
@@ -425,7 +429,7 @@ public class DocumentShredderDocLimitsTest {
       doc.put(validName, 123456);
 
       // Enough to verify that shredder does not throw exception
-      assertThat(documentShredder.shred(doc)).isNotNull();
+      assertThat(documentShredder.shred(commandContext(), doc, null)).isNotNull();
     }
 
     @ParameterizedTest
@@ -438,7 +442,8 @@ public class DocumentShredderDocLimitsTest {
           "{\"root\": { \" \": 12 }}",
         })
     public void allowUnusualNestedFieldNames(String json) throws IOException {
-      assertThat(documentShredder.shred(objectMapper.readTree(json))).isNotNull();
+      assertThat(documentShredder.shred(commandContext(), objectMapper.readTree(json), null))
+          .isNotNull();
     }
 
     @ParameterizedTest
@@ -454,7 +459,7 @@ public class DocumentShredderDocLimitsTest {
       doc.put(invalidName, 123456);
 
       // First check at root level
-      Exception e = catchException(() -> documentShredder.shred(doc));
+      Exception e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
@@ -466,7 +471,7 @@ public class DocumentShredderDocLimitsTest {
       ObjectNode leaf = doc2.putObject("root");
       leaf.put(invalidName, 13);
 
-      e = catchException(() -> documentShredder.shred(doc));
+      e = catchException(() -> documentShredder.shred(commandContext(), doc, null));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
@@ -483,5 +488,9 @@ public class DocumentShredderDocLimitsTest {
       arr.add(i);
     }
     return doc;
+  }
+
+  private CommandContext<CollectionSchemaObject> commandContext() {
+    return testConstants.collectionContext();
   }
 }

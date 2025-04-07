@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindRerankingProvidersCommand;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.FindRerankingProvidersOperation;
@@ -26,6 +28,12 @@ public class FindRerankingProvidersCommandResolver
   @Override
   public Operation<DatabaseSchemaObject> resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, FindRerankingProvidersCommand command) {
-    return new FindRerankingProvidersOperation(rerankingProvidersConfig);
+
+    boolean isRerankingEnabledForAPI = ctx.apiFeatures().isFeatureEnabled(ApiFeature.RERANKING);
+    if (!isRerankingEnabledForAPI) {
+      throw ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED.toApiException();
+    }
+
+    return new FindRerankingProvidersOperation(command, rerankingProvidersConfig);
   }
 }

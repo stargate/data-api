@@ -61,27 +61,7 @@ public class DocumentShredder {
     this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
   }
 
-  /**
-   * Shreds a single JSON node into a {@link WritableShreddedDocument} representation.
-   *
-   * @param document {@link JsonNode} to shred.
-   * @return WritableShreddedDocument
-   */
-  public WritableShreddedDocument shred(JsonNode document) {
-    return shred(document, null);
-  }
-
-  public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
-    // TODO - why does this have "testCommand" for a command name ? Should it be a constant ?
-    return shred(
-        doc,
-        txId,
-        IndexingProjector.identityProjector(),
-        "testCommand",
-        CollectionSchemaObject.MISSING,
-        null);
-  }
-
+  /** Shred method that takes a {@link CommandContext} and shreds the provided JSON document. */
   public WritableShreddedDocument shred(
       CommandContext<CollectionSchemaObject> ctx, JsonNode doc, UUID txId) {
     return shred(
@@ -94,6 +74,8 @@ public class DocumentShredder {
   }
 
   /**
+   * Shred method that takes a {@link CommandContext} and shreds the provided JSON document.
+   *
    * @param ctx Command context for processing, used for accessing Collection settings and indexing
    *     projector
    * @param doc Document to shred

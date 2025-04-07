@@ -280,9 +280,15 @@ message GetSupportedRerankingProvidersResponse {
     // ModelConfig message represents configuration for a specific reranking model.
     message ModelConfig {
       string name = 1;
-      bool isDefault = 2;
-      string url = 3;
-      RequestProperties properties = 4;
+      ModelSupport modelSupport = 2;
+      bool isDefault = 3;
+      string url = 4;
+      RequestProperties properties = 5;
+
+      message ModelSupport{
+        string status = 1;
+        optional string message = 2;
+      }
 
       message RequestProperties {
         int32 at_most_retries = 1;
