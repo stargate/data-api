@@ -69,14 +69,14 @@ public class ScoredDocument implements Comparable<ScoredDocument> {
    * <p>Compares the scores using {@link DocumentScores#compareTo(DocumentScores)} if the scores are
    * equal we need something to sort on that is unique and stable. The text value of the id JsonNode
    * returns null for array and objects, text otherwise include numbers. So we check for array and
-   * object types int he ctore, they are not allowed as _id in a document.
+   * object types in the store, they are not allowed as _id in a document.
    *
    * <p>However, it is possible to have two different documents in a collection with the same
    * <b>text</b> representation for their _id. e.g. "100" as a text node and 100 as a number node So
    * we sort on both the {@link JsonNodeType} and then the text representation of the _id
    *
    * <p>This means documents are first sorted on the node type, in the order they are defined in
-   * JsonNodeType and then on the id. Sof or example, all numbers occur before all text nodes, even
+   * JsonNodeType and then on the id. So for example, all numbers occur before all text nodes, even
    * if they have the same text representation. See tests.
    *
    * @param other the object to be compared.

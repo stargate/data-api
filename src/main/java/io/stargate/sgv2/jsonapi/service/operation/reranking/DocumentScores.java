@@ -103,7 +103,7 @@ public class DocumentScores implements Comparable<DocumentScores> {
   }
 
   /**
-   * Sorts based on the {@linl #rerank} score and then using the {@link #rrf} score if they are they
+   * Sorts based on the {@link #rerank} score and then using the {@link #rrf} score if they are they
    * same.
    *
    * <p>NOTE: this sorts in descending order, larger scores are better
