@@ -204,7 +204,6 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   public static class RerankingResultSupplier implements UniSupplier<RerankingTaskResult> {
 
     private final RequestTracing requestTracing;
-    private final MeterRegistry meterRegistry;
     private final RequestContext requestContext;
     private final RerankingProvider rerankingProvider;
     private final RerankingCredentials credentials;
@@ -212,6 +211,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     private final String passageField;
     private final List<ScoredDocument> unrankedDocs;
     private final int limit;
+    private final MetricsRecorder metricsRecorder;
 
     RerankingResultSupplier(
         RequestTracing requestTracing,
@@ -224,7 +224,6 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
         List<ScoredDocument> unrankedDocs,
         int limit) {
       this.requestTracing = requestTracing;
-      this.meterRegistry = meterRegistry;
       this.requestContext = requestContext;
       this.rerankingProvider = rerankingProvider;
       this.credentials = credentials;
@@ -232,6 +231,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       this.passageField = passageField;
       this.unrankedDocs = unrankedDocs;
       this.limit = limit;
+      this.metricsRecorder = new MetricsRecorder(meterRegistry, rerankingProvider, requestContext);
     }
 
     @Override
@@ -281,9 +281,6 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                           "limit", limit,
                           "passages", passages))));
 
-      // Create metrics recorder instance
-      MetricsRecorder metricsRecorder =
-          new MetricsRecorder(meterRegistry, rerankingProvider, requestContext);
       // Record input sizes before making the call
       metricsRecorder.recordInputSizes(passages);
 
@@ -398,6 +395,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     }
 
     void recordInputSizes(List<String> passages) {
+      Objects.requireNonNull(passages);
       DistributionSummary ds =
           DistributionSummary.builder(RERANK_INPUT_BYTES_METRICS)
               .tags(getCustomTags())
