@@ -404,6 +404,42 @@ request-errors:
       Resend the command using only supported update operators.
 
   - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID
+    title: Update operators cannot be used on _id field
+    body: |-
+      The command used the update operator: ${operator}.
+      _id field cannot be updated using update operators.
+      
+      Resend the command without trying to update _id field.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATOR_FOR_LEXICAL
+    title: Update operator cannot be used on $lexical field
+    body: |-
+      The command used the update operator: ${operator}.
+      Supported operators for $lexical field are: $set, $setOnInsert, $unset.
+      
+      Resend the command using only supported update operators.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATOR_FOR_VECTOR
+    title: Update operator cannot be used on $vector field
+    body: |-
+      The command used the update operator: ${operator}.
+      Supported operators for $vector field are: $set, $setOnInsert, $unset.
+      
+      Resend the command using only supported update operators.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATOR_FOR_VECTORIZE
+    title: Update operator cannot be used on $vectorize field
+    body: |-
+      The command used the update operator: ${operator}.
+      Supported operators for $vectorize field are: $set, $setOnInsert, $unset.
+      
+      Resend the command using only supported update operators.
+
+  - scope: UPDATE
     code: INVALID_PUSH_OPERATOR_USAGE
     title: The command has invalid usage of $push operator
     body: |-
@@ -804,6 +840,18 @@ request-errors:
       The command attempted to drop the indexed columns: ${droppedIndexedColumns}.
       
       Resend the command without dropping the indexed columns.
+
+  - scope: SCHEMA
+    code: UNSUPPORTED_PROVIDER_MODEL
+    title: The model is not supported by Data API
+    body: |-
+      The model ${model} is at ${modelStatus} status.
+      ${message}
+      
+      DEPRECATED model cannot be used for creation of new Collections or Tables, but can be used for existing Collections or Tables until model status is changed to END_OF_LIFE.
+      END_OF_LIFE model cannot be used for creation of new Collections or Tables, and can not be used for existing Collections or Tables.
+      
+      Resend the command using supported model.
 
   - scope: SCHEMA
     code: CANNOT_VECTORIZE_UNKNOWN_COLUMNS

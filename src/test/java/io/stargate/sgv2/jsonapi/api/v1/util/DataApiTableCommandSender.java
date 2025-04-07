@@ -6,10 +6,11 @@ import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
 
 public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiTableCommandSender> {
   private final String tableName;
+  private final String keyspace;
   private TableTemplates templated;
 
   protected DataApiTableCommandSender(String keyspace, String tableName) {
-    super(keyspace);
+    this.keyspace = keyspace;
     this.tableName = tableName;
     this.templated = new TableTemplates(this);
   }

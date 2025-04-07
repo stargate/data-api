@@ -24,6 +24,9 @@ public interface HttpConstants {
   /** Data API reranking service Authentication token header name. */
   String RERANKING_AUTHENTICATION_TOKEN_HEADER_NAME = "reranking-api-key";
 
+  /** Bearer prefix for the API key. */
+  String BEARER_PREFIX_FOR_API_KEY = "Bearer ";
+
   /**
    * @return Embedding service header name for token.
    */

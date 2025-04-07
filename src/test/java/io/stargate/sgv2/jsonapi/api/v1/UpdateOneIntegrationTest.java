@@ -543,7 +543,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .body(
               "errors[0].message",
               containsString(
-                  "Invalid update operation path: update path ('price&usd') is not a valid path."));
+                  "Unsupported update operation path: update path ('price&usd') is not a valid path."));
     }
   }
 

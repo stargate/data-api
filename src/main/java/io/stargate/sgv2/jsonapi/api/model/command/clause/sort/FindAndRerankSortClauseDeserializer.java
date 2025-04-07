@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
 import java.io.IOException;
 import java.util.*;
@@ -166,6 +167,25 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
             // { "sort" : { "$hybrid" : { "vector" : [1,2,3],
             yield arrayNodeToVector(arrayNode);
           }
+          case ObjectNode objectNode -> {
+            // binary vector
+            // { "sort" : { "$hybrid" : { "$vector" : {"$binary": "c3VyZS4="},
+            var ejson = EJSONWrapper.maybeFrom(objectNode);
+            if (ejson == null || ejson.type() != EJSONWrapper.EJSONType.BINARY) {
+              // not the best error, wont tell people how to do a binary vector
+              // and it will say it got an object node and that is not supported
+              // TODO: better error message
+              throw JsonFieldMatcher.errorForWrongType(
+                  jsonParser,
+                  ERROR_CONTEXT + " (binary vector)",
+                  VECTOR_EMBEDDING_FIELD,
+                  objectNode,
+                  NullNode.class,
+                  ArrayNode.class,
+                  ObjectNode.class);
+            }
+            yield ejson.getVectorValueForBinary();
+          }
           case JsonNode node ->
               throw JsonFieldMatcher.errorForWrongType(
                   jsonParser,
@@ -173,7 +193,8 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   VECTOR_EMBEDDING_FIELD,
                   node,
                   NullNode.class,
-                  ArrayNode.class);
+                  ArrayNode.class,
+                  ObjectNode.class);
         };
 
     return new FindAndRerankSort(vectorizeText, lexicalText, vector);

@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import java.util.*;
 import org.slf4j.Logger;
@@ -111,12 +113,17 @@ public class CollectionRerankDef {
    * collections. Similarly, if the default provider doesn't have a default model, reranking will be
    * disabled.
    *
+   * @param isRerankingEnabledForAPI
    * @param rerankingProvidersConfig The configuration for all available reranking providers
    * @return A default-configured CollectionRerankDef
    */
   public static CollectionRerankDef configForNewCollections(
-      RerankingProvidersConfig rerankingProvidersConfig) {
+      boolean isRerankingEnabledForAPI, RerankingProvidersConfig rerankingProvidersConfig) {
     Objects.requireNonNull(rerankingProvidersConfig, "Reranking providers config cannot be null");
+    // If reranking is not enabled for the API, return disabled configuration
+    if (!isRerankingEnabledForAPI) {
+      return DISABLED;
+    }
     // Find the provider marked as default
     var defaultProviderEntry =
         rerankingProvidersConfig.providers().entrySet().stream()
@@ -129,30 +136,33 @@ public class CollectionRerankDef {
     }
 
     // Extract provider information
-    String providerName = defaultProviderEntry.get().getKey();
-    RerankingProvidersConfig.RerankingProviderConfig providerConfig =
-        defaultProviderEntry.get().getValue();
+    String defaultProviderName = defaultProviderEntry.get().getKey();
+    var defaultProviderConfig = defaultProviderEntry.get().getValue();
 
     // Find the model marked as default for this provider
-    // The default provider must have a default model, otherwise it's config bug
+    // The default provider must have a default model that has SUPPORTED status, otherwise it's
+    // config bug
     var defaultModel =
-        providerConfig.models().stream()
+        defaultProviderConfig.models().stream()
             .filter(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::isDefault)
+            .filter(
+                modelConfig ->
+                    modelConfig.modelSupport().status() == ModelSupport.SupportStatus.SUPPORTED)
             .findFirst()
             .orElseThrow(
                 () ->
                     new IllegalStateException(
-                        "Default reranking provider '%s' does not have a default model"
-                            .formatted(providerName)));
+                        "Default reranking provider '%s' does not have a default supported model"
+                            .formatted(defaultProviderName)));
 
     // Check if the default provider supports the 'NONE' authentication type
     // If not, it's a config bug
-    if (!providerConfig
+    if (!defaultProviderConfig
         .supportedAuthentications()
         .containsKey(RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType.NONE)) {
       throw new IllegalStateException(
           "Default reranking provider '%s' does not support 'NONE' authentication type"
-              .formatted(providerName));
+              .formatted(defaultProviderName));
     }
 
     // TODO(Hazel): Check if there is any parameter for the default model and if there is default
@@ -163,7 +173,7 @@ public class CollectionRerankDef {
     // Authentication and parameters are intentionally null for default configs
     var defaultRerankingService =
         new RerankServiceDef(
-            providerName,
+            defaultProviderName,
             defaultModel.name(),
             null, // No authentication for default configuration
             null // No parameters for default configuration
@@ -226,11 +236,22 @@ public class CollectionRerankDef {
    * @throws JsonApiException if the configuration is invalid
    */
   public static CollectionRerankDef fromApiDesc(
+      boolean isRerankingEnabledForAPI,
       CreateCollectionCommand.Options.RerankDesc rerankingDesc,
       RerankingProvidersConfig providerConfigs) {
+
+    // If reranking is not enabled for the API, error out if user provides desc or return disabled
+    // configuration.
+    if (!isRerankingEnabledForAPI) {
+      if (rerankingDesc != null) {
+        throw ErrorCodeV1.RERANKING_FEATURE_NOT_ENABLED.toApiException();
+      }
+      return DISABLED;
+    }
+
     // Case 1: No configuration provided - use defaults
     if (rerankingDesc == null) {
-      return configForNewCollections(providerConfigs);
+      return configForNewCollections(isRerankingEnabledForAPI, providerConfigs);
     }
 
     // Case 2: Validate 'enabled' flag is present
@@ -252,7 +273,7 @@ public class CollectionRerankDef {
 
     // Case 4: Enabled but no service config - use defaults
     if (serviceConfig == null) {
-      return configForNewCollections(providerConfigs);
+      return configForNewCollections(isRerankingEnabledForAPI, providerConfigs);
     }
 
     // Case 5: Full configuration - validate all components
@@ -345,13 +366,28 @@ public class CollectionRerankDef {
           "Model name is required for reranking provider '%s'", provider);
     }
 
-    boolean isModelSupported =
-        rerankingProviderConfig.models().stream().anyMatch(m -> m.name().equals(modelName));
+    var rerankModel =
+        rerankingProviderConfig.models().stream()
+            .filter(modelConfig -> modelConfig.name().equals(modelName))
+            .findFirst();
 
-    if (!isModelSupported) {
+    if (rerankModel.isEmpty()) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "Model '%s' is not supported by reranking provider '%s'", modelName, provider);
     }
+
+    var model = rerankModel.get();
+    if (model.modelSupport().status() != ModelSupport.SupportStatus.SUPPORTED) {
+      throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
+          Map.of(
+              "model",
+              model.name(),
+              "modelStatus",
+              model.modelSupport().status().name(),
+              "message",
+              model.modelSupport().message().orElse("The model is not supported.")));
+    }
+
     return modelName;
   }
 

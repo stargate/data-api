@@ -2,8 +2,11 @@ package io.stargate.sgv2.jsonapi.service.reranking.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.smallrye.config.WithDefault;
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public interface RerankingProvidersConfig {
   Map<String, RerankingProviderConfig> providers();
@@ -51,6 +54,13 @@ public interface RerankingProvidersConfig {
     interface ModelConfig {
       @JsonProperty
       String name();
+
+      /**
+       * modelSupport marks the support status of the model and optional message for the
+       * deprecation, EOL etc.
+       */
+      @JsonProperty
+      ModelSupport modelSupport();
 
       @JsonProperty
       @WithDefault("false")
@@ -112,5 +122,34 @@ public interface RerankingProvidersConfig {
         int maxBatchSize();
       }
     }
+  }
+
+  /**
+   * This is the helper method to match a model configuration by the provided RerankServiceDef.
+   * Specifically, it will get target provider and filter down to the target model.
+   *
+   * <p>E.G. This could be used for validating the reranking model in the existing collection/table,
+   * the method takes the rerank service definition and returns the model configuration. Then caller
+   * checks the support status and handles accordingly.
+   *
+   * <p>NOTE, Data API keeps all the provider and model(supported, deprecated, end_of_life) in the
+   * configuration, so internal rerankServiceDef always matches a provider and a model.
+   */
+  default RerankingProviderConfig.ModelConfig filterByRerankServiceDef(
+      CollectionRerankDef.RerankServiceDef rerankServiceDef) {
+    RerankingProviderConfig providerConfig = providers().get(rerankServiceDef.provider());
+    Objects.requireNonNull(
+        providerConfig, "providerConfig filtered from rerankServiceDef must not be null");
+    RerankingProviderConfig.ModelConfig modelConfig = null;
+    for (var model : providerConfig.models()) {
+      if (model.name().equals(rerankServiceDef.modelName())) {
+        modelConfig = model;
+        break;
+      }
+    }
+    Objects.requireNonNull(
+        modelConfig, "modelConfig filtered from rerankServiceDef must not be null");
+
+    return modelConfig;
   }
 }

@@ -7,6 +7,7 @@ import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
@@ -83,9 +84,8 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
       // Get the whole response body
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
-      logger.info(
-          String.format(
-              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
+      logger.error(
+          "Error response from embedding provider '{}': {}", providerId, rootNode.toString());
       // Extract the "detail" node
       JsonNode detailNode = rootNode.path("detail");
       // Return the text of the "detail" node, or the full response body if it is missing
@@ -99,11 +99,12 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
       String model,
       @JsonInclude(JsonInclude.Include.NON_NULL) Boolean truncation) {}
 
-  @JsonIgnoreProperties({"object"})
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
   record EmbeddingResponse(Data[] data, String model, Usage usage) {
-    @JsonIgnoreProperties({"object"})
+    @JsonIgnoreProperties(ignoreUnknown = true)
     record Data(int index, float[] embedding) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     record Usage(int total_tokens) {}
   }
 
@@ -123,7 +124,8 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
     Uni<EmbeddingResponse> response =
         applyRetry(
             voyageAIEmbeddingProviderClient.embed(
-                "Bearer " + embeddingCredentials.apiKey().get(), request));
+                HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get(),
+                request));
 
     return response
         .onItem()

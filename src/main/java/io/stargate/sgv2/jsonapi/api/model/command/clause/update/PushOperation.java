@@ -27,6 +27,7 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
     List<Action> updates = new ArrayList<>();
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
+      // First verify update operation allowed for path (not for _id, $lexical/$vector/$vectorize)
       final String name = validateUpdatePath(UpdateOperator.PUSH, entry.getKey());
       // At main level we must have field name (no modifiers)
       if (looksLikeModifier(name)) {

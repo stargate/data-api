@@ -22,7 +22,6 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.time.Duration;
@@ -46,8 +45,7 @@ public record CreateCollectionOperation(
     boolean tooManyIndexesRollbackEnabled,
     // if true, deny all indexing option is set and no indexes will be created
     boolean indexingDenyAll,
-    CollectionLexicalConfig lexicalConfig,
-    CollectionRerankDef rerankDef)
+    CollectionLexicalConfig lexicalConfig)
     implements Operation {
   private static final Logger logger = LoggerFactory.getLogger(CreateCollectionOperation.class);
 
@@ -67,8 +65,7 @@ public record CreateCollectionOperation(
       int ddlDelayMillis,
       boolean tooManyIndexesRollbackEnabled,
       boolean indexingDenyAll,
-      CollectionLexicalConfig lexicalConfig,
-      CollectionRerankDef rerankDef) {
+      CollectionLexicalConfig lexicalConfig) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -83,8 +80,7 @@ public record CreateCollectionOperation(
         ddlDelayMillis,
         tooManyIndexesRollbackEnabled,
         indexingDenyAll,
-        Objects.requireNonNull(lexicalConfig),
-        Objects.requireNonNull(rerankDef));
+        Objects.requireNonNull(lexicalConfig));
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
@@ -97,8 +93,7 @@ public record CreateCollectionOperation(
       int ddlDelayMillis,
       boolean tooManyIndexesRollbackEnabled,
       boolean indexingDenyAll,
-      CollectionLexicalConfig lexicalConfig,
-      CollectionRerankDef rerankDef) {
+      CollectionLexicalConfig lexicalConfig) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -113,8 +108,7 @@ public record CreateCollectionOperation(
         ddlDelayMillis,
         tooManyIndexesRollbackEnabled,
         indexingDenyAll,
-        Objects.requireNonNull(lexicalConfig),
-        Objects.requireNonNull(rerankDef));
+        Objects.requireNonNull(lexicalConfig));
   }
 
   @Override

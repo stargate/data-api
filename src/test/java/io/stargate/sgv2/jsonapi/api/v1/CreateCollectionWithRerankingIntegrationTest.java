@@ -456,6 +456,55 @@ public class CreateCollectionWithRerankingIntegrationTest
               containsString(
                   "Reranking provider 'nvidia' currently doesn't support any parameters. No parameters should be provided."));
     }
+
+    @Test
+    void failDeprecatedModel() {
+      final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithReranking(
+              collectionName,
+              """
+                            {
+                              "enabled": true,
+                              "service": {
+                                  "provider": "nvidia",
+                                  "modelName": "nvidia/a-random-deprecated-model"
+                              }
+                            }
+                            """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("UNSUPPORTED_PROVIDER_MODEL"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "The model nvidia/a-random-deprecated-model is at DEPRECATED status."));
+    }
+
+    @Test
+    void failEOLModel() {
+      final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithReranking(
+              collectionName,
+              """
+                                        {
+                                          "enabled": true,
+                                          "service": {
+                                              "provider": "nvidia",
+                                              "modelName": "nvidia/a-random-EOL-model"
+                                          }
+                                        }
+                                        """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("UNSUPPORTED_PROVIDER_MODEL"))
+          .body(
+              "errors[0].message",
+              containsString("The model nvidia/a-random-EOL-model is at END_OF_LIFE status."));
+    }
   }
 
   private String createRequestWithReranking(String collectionName, String rerankingDef) {
