@@ -1,10 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.MissingNode;
-import com.fasterxml.jackson.databind.node.NullNode;
-import com.fasterxml.jackson.databind.node.NumericNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
@@ -22,7 +18,7 @@ class ScoredDocumentMerger {
   private final PathMatchLocator passageLocator;
   private final DocumentProjector userProjection;
 
-  ScoredDocumentMerger(
+  protected ScoredDocumentMerger(
       int initialCapacity, PathMatchLocator passageLocator, DocumentProjector userProjection) {
     mergedDocuments = new HashMap<>(initialCapacity);
 
@@ -42,54 +38,13 @@ class ScoredDocumentMerger {
     return new ArrayList<>(mergedDocuments.values());
   }
 
-  void merge(int rank, JsonNode document) {
+  void merge(int rank, Rank.RankSource rankSource, JsonNode document) {
 
     seenDocumentsCount++;
 
-    var vectorScored =
-        switch (document.get(DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD)) {
-          case null -> DocumentScores.EMPTY;
-          case NumericNode numberNode ->
-              DocumentScores.fromVectorRead(numberNode.floatValue(), rank);
-          default ->
-              throw new IllegalStateException(
-                  "%s document field is not a number for doc _id %s"
-                      .formatted(
-                          DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD,
-                          document.get(DocumentConstants.Fields.DOC_ID)));
-        };
+    var scoredDocument = ScoredDocument.create(rank, rankSource, document, passageLocator);
 
-    // if we dont have a vector score, then use the rank as the bm25 rank (it is one or the other)
-    // if we have a vector score, then the BM25 is Empty
-    var bm25Scored =
-        vectorScored.vector().exists() ? DocumentScores.EMPTY : DocumentScores.fromBm25Read(rank);
-
-    var documentId =
-        switch (document.get(DocumentConstants.Fields.DOC_ID)) {
-          case null -> throw new IllegalArgumentException("Document id cannot be a null");
-          case NullNode ignored ->
-              throw new IllegalArgumentException("Document id cannot be a NullNode");
-          case JsonNode jsonNode -> jsonNode;
-        };
-
-    var passage =
-        switch (passageLocator.findValueIn(document)) {
-          case MissingNode ignored -> {
-            // undefined in the document, default to empty string for passage
-            yield null;
-          }
-          case TextNode textNode -> textNode.textValue();
-          case NullNode ignored -> {
-            // explicit {$vectorize : null} treat same as undefined, empty passage to rerank on
-            yield null;
-          }
-          default ->
-              throw new IllegalStateException(
-                  "Passage field %s not a text node in document _id=%s"
-                      .formatted(passageLocator.path(), documentId));
-        };
-
-    if (passage == null || passage.isBlank()) {
+    if (scoredDocument.passage().isEmpty()) {
       droppedDocumentsCount++;
       return;
     }
@@ -99,11 +54,10 @@ class ScoredDocumentMerger {
     // what we needed for the reranking (_id and reranking field), so we now need to run the users
     // projection on that raw document so they get what they asked for
     // NOTE:  this mutates the document
-    userProjection.applyProjection(document);
+    userProjection.applyProjection(scoredDocument.document());
 
     // we will have one or the other of the vector or bm25 scores, merging handles this.
-    mergeScoredDocument(
-        new ScoredDocument(documentId, document, passage, vectorScored.merge(bm25Scored)));
+    mergeScoredDocument(scoredDocument);
   }
 
   private void mergeScoredDocument(ScoredDocument scoredDocument) {

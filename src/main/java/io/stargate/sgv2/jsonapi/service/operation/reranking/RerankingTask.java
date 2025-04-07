@@ -4,7 +4,6 @@ import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.ResponseData;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
@@ -31,7 +30,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   private final String query;
   private final PathMatchLocator passageLocator;
   private final DocumentProjector userProjection;
-  private final List<DeferredCommandResult> deferredReads;
+  private final List<DeferredCommandWithSource> deferredReads;
   private final int limit;
 
   private float[] sortVector = null;
@@ -46,7 +45,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       String query,
       PathMatchLocator passageLocator,
       DocumentProjector userProjection,
-      List<DeferredCommandResult> deferredReads,
+      List<DeferredCommandWithSource> deferredReads,
       int limit) {
     super(position, schemaObject, retryPolicy);
 
@@ -72,14 +71,15 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   @Override
   protected RerankingResultSupplier buildResultSupplier(CommandContext<SchemaT> commandContext) {
 
-    // If we are being called to run, the deferred reads we were waiting for should be completed.
-    // This will throw if that is not the case.
-    List<CommandResult> rawReadResults =
-        deferredReads.stream().map(DeferredCommandResult::commandResult).toList();
+    // TODO: add a flag to know if we need to do this ?
 
     // Find the sort vector that was used for the inner query, if any
     // For now there should only ever be one sort vector included
-    for (CommandResult rawReadResult : rawReadResults) {
+    for (var deferredAndSource : deferredReads) {
+
+      // If we are being called to run, the deferred reads we were waiting for should be completed.
+      // This will throw if that is not the case.
+      var rawReadResult = deferredAndSource.deferredRead.commandResult();
 
       float[] candidateSortVector = (float[]) rawReadResult.status().get(CommandStatus.SORT_VECTOR);
       if (candidateSortVector != null) {
@@ -93,7 +93,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       }
     }
 
-    var dedupResult = deduplicateResults(rawReadResults);
+    var dedupResult = deduplicateResults();
 
     commandContext
         .requestTracing()
@@ -149,26 +149,33 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     return sortVector;
   }
 
+  public record DeferredCommandWithSource(
+      Rank.RankSource rankSource, DeferredCommandResult deferredRead) {}
+
   private record DeduplicationResult(
       int totalReads,
       int totalDocuments,
       int droppedDocuments,
       List<ScoredDocument> deduplicatedDocuments) {}
 
-  private DeduplicationResult deduplicateResults(List<CommandResult> rawReadResults) {
+  private DeduplicationResult deduplicateResults() {
 
-    if (rawReadResults.isEmpty()) {
-      throw new IllegalArgumentException("rawReadResults must not be empty");
+    if (deferredReads.isEmpty()) {
+      throw new IllegalArgumentException("deferredReads must not be empty");
     }
 
     // This code relies on working with collections where the documents all have _id
     // will need to change for tables and rows
-    // Keyed on the _id as a JsonNode
-
     ScoredDocumentMerger merger = null;
     int totalReads = 0;
 
-    for (var commandResult : rawReadResults) {
+    for (var deferredAndSource : deferredReads) {
+      var commandResult =
+          Objects.requireNonNull(
+              deferredAndSource.deferredRead().commandResult(),
+              "Deferred read from source %s returned null commandResult"
+                  .formatted(deferredAndSource.rankSource()));
+
       var multiDocResponse = (ResponseData.MultiResponseData) commandResult.data();
       totalReads++;
       if (merger == null) {
@@ -179,7 +186,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       // rank must start at 1
       int rank = 1;
       for (var doc : multiDocResponse.documents()) {
-        merger.merge(rank++, doc);
+        merger.merge(rank++, deferredAndSource.rankSource(), doc);
       }
     }
 
@@ -226,7 +233,18 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     @Override
     public Uni<RerankingTaskResult> get() {
 
-      var passages = unrankedDocs.stream().map(ScoredDocument::passage).toList();
+      var passages =
+          unrankedDocs.stream()
+              .map(
+                  scored ->
+                      scored
+                          .passage()
+                          .orElseThrow(
+                              () ->
+                                  new IllegalArgumentException(
+                                      "ScoredDocument passage isEmpty() document=%s"
+                                          .formatted(scored))))
+              .toList();
 
       if (passages.isEmpty()) {
         // avoid making a call we don't need to

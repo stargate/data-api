@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,12 +81,19 @@ class FindAndRerankOperationBuilder {
     checkSupported();
 
     // Step 1 - we need a reranking task and the deferrable actions to do the intermediate reads
-    var rerankTasksAndDeferrables = rerankTasks();
+    // Making the deferrables here so we can associate them with read types that will fill them
+    var deferredVectorRead =
+        new RerankingTask.DeferredCommandWithSource(
+            Rank.RankSource.VECTOR, new DeferredCommandResult());
+    var deferredBM25Read =
+        new RerankingTask.DeferredCommandWithSource(
+            Rank.RankSource.BM25, new DeferredCommandResult());
+
+    var rerankTasksAndDeferrables = rerankTasks(List.of(deferredBM25Read, deferredVectorRead));
 
     // Step 2 - we need to read the data from the collections, we are wrapping the old collections
-    // in the
-    // new tasks so we do not change the collection code
-    var readTasksAndDeferrables = readTasks(rerankTasksAndDeferrables.deferrables());
+    // in the new tasks so we do not change the collection code
+    var readTasksAndDeferrables = readTasks(deferredVectorRead, deferredBM25Read);
 
     // Step 3 - we may need an embedding task, lets get one of those :)
     var embeddingActions =
@@ -178,7 +186,7 @@ class FindAndRerankOperationBuilder {
   }
 
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
-      rerankTasks() {
+      rerankTasks(List<RerankingTask.DeferredCommandWithSource> deferredCommandResults) {
 
     // Previous code will check reranking is supported
     var providerConfig = commandContext.schemaObject().rerankingConfig().rerankServiceDef();
@@ -192,12 +200,6 @@ class FindAndRerankOperationBuilder {
                 providerConfig.modelName(),
                 providerConfig.authentication(),
                 commandContext.commandName());
-
-    // we need a deferred action for each read
-    // at the moment we dont
-    List<DeferredCommandResult> deferredCommandResults =
-        List.of(new DeferredCommandResult(), new DeferredCommandResult());
-    List<Deferrable> deferrables = new ArrayList<>(deferredCommandResults);
 
     // todo: move to a builder pattern, mosty to make it eaier to manage the task position and retry
     // policy
@@ -227,11 +229,17 @@ class FindAndRerankOperationBuilder {
                 getOrDefault(
                     command.options(), FindAndRerankCommand.Options::includeSortVector, false));
 
-    return new TaskGroupAndDeferrables<>(taskGroup, rerankAccumulator, deferrables);
+    return new TaskGroupAndDeferrables<>(
+        taskGroup,
+        rerankAccumulator,
+        deferredCommandResults.stream()
+            .map(RerankingTask.DeferredCommandWithSource::deferredRead)
+            .collect(Collectors.toUnmodifiableList()));
   }
 
   private TaskGroupAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject> readTasks(
-      List<Deferrable> deferredCommandResults) {
+      RerankingTask.DeferredCommandWithSource deferredVectorRead,
+      RerankingTask.DeferredCommandWithSource deferredBM25Read) {
 
     // we can run these tasks in parallel
     TaskGroup<IntermediateCollectionReadTask, CollectionSchemaObject> taskGroup =
@@ -248,11 +256,16 @@ class FindAndRerankOperationBuilder {
 
     // these are the actions the reads should call when done, to pass the command result into the
     // next tasks
-    var deferredCommandActions =
+    var deferredBM25ReadAction =
         DeferredAction.filtered(
-            DeferredCommandResultAction.class, Deferrable.deferred(deferredCommandResults));
-    var deferredBM25ReadAction = deferredCommandActions.get(0);
-    var deferredVectorReadAction = deferredCommandActions.get(1);
+                DeferredCommandResultAction.class,
+                Deferrable.deferred(deferredBM25Read.deferredRead()))
+            .getFirst();
+    var deferredVectorReadAction =
+        DeferredAction.filtered(
+                DeferredCommandResultAction.class,
+                Deferrable.deferred(deferredVectorRead.deferredRead()))
+            .getFirst();
 
     // The BM25 read
     var bm25Read = buildBm25Read(deferredBM25ReadAction);
