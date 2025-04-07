@@ -21,6 +21,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 import org.slf4j.Logger;
@@ -34,7 +35,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
   private final RerankingProvider rerankingProvider;
   private final String query;
-  private final String passageField;
+  private final PathMatchLocator passageLocator;
   private final DocumentProjector userProjection;
   private final List<DeferredCommandResult> deferredReads;
   private final int limit;
@@ -49,7 +50,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       TaskRetryPolicy retryPolicy,
       RerankingProvider rerankingProvider,
       String query,
-      String passageField,
+      PathMatchLocator passageLocator,
       DocumentProjector userProjection,
       List<DeferredCommandResult> deferredReads,
       int limit) {
@@ -57,7 +58,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
     this.rerankingProvider = rerankingProvider;
     this.query = query;
-    this.passageField = passageField;
+    this.passageLocator = Objects.requireNonNull(passageLocator, "passageLocator must not be null");
     this.userProjection = userProjection;
     this.deferredReads = deferredReads;
     this.limit = limit;
@@ -117,7 +118,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
         rerankingProvider,
         commandContext.requestContext().getRerankingCredentials(),
         query,
-        passageField,
+        passageLocator,
         dedupResult.deduplicatedDocuments(),
         limit);
   }
@@ -139,7 +140,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     return super.recordTo(dataRecorder)
         .append("rerankingProvider", rerankingProvider)
         .append("query", query)
-        .append("passageField", passageField)
+        .append("passageLocator", passageLocator)
         .append("limit", limit);
   }
 
@@ -181,9 +182,13 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       if (merger == null) {
         merger =
             new ScoredDocumentMerger(
-                multiDocResponse.documents().size() * 2, passageField, userProjection);
+                multiDocResponse.documents().size() * 2, passageLocator, userProjection);
       }
-      multiDocResponse.documents().forEach(merger::merge);
+      // rank must start at 1
+      int rank = 1;
+      for (var doc : multiDocResponse.documents()) {
+        merger.merge(rank++, doc);
+      }
     }
 
     var deduplicatedDocuments = merger.mergedDocuments();
@@ -208,7 +213,6 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     private final RerankingProvider rerankingProvider;
     private final RerankingCredentials credentials;
     private final String query;
-    private final String passageField;
     private final List<ScoredDocument> unrankedDocs;
     private final int limit;
     private final MetricsRecorder metricsRecorder;
@@ -220,7 +224,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
         RerankingProvider rerankingProvider,
         RerankingCredentials credentials,
         String query,
-        String passageField,
+        PathMatchLocator passageLocator,
         List<ScoredDocument> unrankedDocs,
         int limit) {
       this.requestTracing = requestTracing;
@@ -228,7 +232,6 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       this.rerankingProvider = rerankingProvider;
       this.credentials = credentials;
       this.query = query;
-      this.passageField = passageField;
       this.unrankedDocs = unrankedDocs;
       this.limit = limit;
       this.metricsRecorder = new MetricsRecorder(meterRegistry, rerankingProvider, requestContext);
@@ -237,12 +240,9 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     @Override
     public Uni<RerankingTaskResult> get() {
 
-      List<String> passages = new ArrayList<>(unrankedDocs.size());
-      for (var scoredDoc : unrankedDocs) {
-        passages.add(scoredDoc.passage());
-      }
+      var passages = unrankedDocs.stream().map(ScoredDocument::passage).toList();
 
-      if (unrankedDocs.isEmpty()) {
+      if (passages.isEmpty()) {
         // avoid making a call we don't need to
         requestTracing.maybeTrace(
             () ->
@@ -255,7 +255,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                         Map.of(
                             "query", query,
                             "limit", limit,
-                            "passages", passageField))));
+                            "passages", passages))));
 
         return Uni.createFrom()
             .item(
@@ -341,7 +341,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       List<ScoredDocument> rerankedDocuments = new ArrayList<>(unrankedDocuments.size());
       for (var rank : ranks) {
 
-        var rerankScore = DocumentScores.withRerankScore(rank.score());
+        var rerankScore = DocumentScores.fromReranking(rank.score());
         ScoredDocument unrankedDoc;
         try {
           unrankedDoc = unrankedDocuments.get(rank.index());

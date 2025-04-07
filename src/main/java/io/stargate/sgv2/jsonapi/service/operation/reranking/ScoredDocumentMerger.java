@@ -1,11 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.MissingNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,14 +19,15 @@ class ScoredDocumentMerger {
   private final Map<JsonNode, ScoredDocument> mergedDocuments;
   private int seenDocumentsCount = 0;
   private int droppedDocumentsCount = 0;
-  private final String passageField;
+  private final PathMatchLocator passageLocator;
   private final DocumentProjector userProjection;
 
-  ScoredDocumentMerger(int initialCapacity, String passageField, DocumentProjector userProjection) {
+  ScoredDocumentMerger(
+      int initialCapacity, PathMatchLocator passageLocator, DocumentProjector userProjection) {
     mergedDocuments = new HashMap<>(initialCapacity);
 
     this.userProjection = userProjection;
-    this.passageField = passageField;
+    this.passageLocator = passageLocator;
   }
 
   int seenDocuments() {
@@ -39,14 +42,15 @@ class ScoredDocumentMerger {
     return new ArrayList<>(mergedDocuments.values());
   }
 
-  void merge(JsonNode document) {
+  void merge(int rank, JsonNode document) {
 
     seenDocumentsCount++;
 
-    var thisDocScore =
+    var vectorScored =
         switch (document.get(DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD)) {
           case null -> DocumentScores.EMPTY;
-          case NumericNode numberNode -> DocumentScores.withVectorScore(numberNode.floatValue());
+          case NumericNode numberNode ->
+              DocumentScores.fromVectorRead(numberNode.floatValue(), rank);
           default ->
               throw new IllegalStateException(
                   "%s document field is not a number for doc _id %s"
@@ -54,6 +58,11 @@ class ScoredDocumentMerger {
                           DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD,
                           document.get(DocumentConstants.Fields.DOC_ID)));
         };
+
+    // if we dont have a vector score, then use the rank as the bm25 rank (it is one or the other)
+    // if we have a vector score, then the BM25 is Empty
+    var bm25Scored =
+        vectorScored.vector().exists() ? DocumentScores.EMPTY : DocumentScores.fromBm25Read(rank);
 
     var documentId =
         switch (document.get(DocumentConstants.Fields.DOC_ID)) {
@@ -64,8 +73,8 @@ class ScoredDocumentMerger {
         };
 
     var passage =
-        switch (document.get(passageField)) {
-          case null -> {
+        switch (passageLocator.findValueIn(document)) {
+          case MissingNode ignored -> {
             // undefined in the document, default to empty string for passage
             yield null;
           }
@@ -77,10 +86,9 @@ class ScoredDocumentMerger {
           default ->
               throw new IllegalStateException(
                   "Passage field %s not a text node in document _id=%s"
-                      .formatted(passageField, documentId));
+                      .formatted(passageLocator.path(), documentId));
         };
 
-    LOGGER.debug("XXX merge() ID {} passage '{}'", documentId, Objects.toString(passage));
     if (passage == null || passage.isBlank()) {
       droppedDocumentsCount++;
       return;
@@ -93,7 +101,9 @@ class ScoredDocumentMerger {
     // NOTE:  this mutates the document
     userProjection.applyProjection(document);
 
-    mergeScoredDocument(new ScoredDocument(documentId, document, passage, thisDocScore));
+    // we will have one or the other of the vector or bm25 scores, merging handles this.
+    mergeScoredDocument(
+        new ScoredDocument(documentId, document, passage, vectorScored.merge(bm25Scored)));
   }
 
   private void mergeScoredDocument(ScoredDocument scoredDocument) {

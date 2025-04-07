@@ -1,8 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
@@ -241,7 +243,7 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
     }
 
     @Test
-    @Order(1)
+    @Order(2)
     public void unsetOneToRemoveFromResults() {
       givenHeadersPostJsonThenOkNoErrors(
               """
@@ -272,6 +274,70 @@ public class UpdateOneWithLexicalCollectionIntegrationTest
                   """
                             [{"_id": "lexical-3", "$lexical": "banana"}]
                         """));
+    }
+  }
+
+  /**
+   * Tests to ensure only allowed operations for $lexical are $set and $unset, rest are not allowed.
+   * Will not do exhaustive coverage, just spot checks.
+   */
+  @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  @Order(10)
+  class NotAllowedOperations {
+    @Test
+    @Order(1)
+    public void setupDocuments() {
+      deleteAllDocuments();
+      insertDoc(lexicalDoc(10, "key words"));
+    }
+
+    @Test
+    @Order(2)
+    public void failForAddToSet() {
+      failUpdateFor("$addToSet", "{\"$addToSet\" : {\"$lexical\": \"token\" }}");
+    }
+
+    @Test
+    @Order(3)
+    public void failForPush() {
+      failUpdateFor("$push", "{\"$push\" : {\"$lexical\": \"token\" }}");
+    }
+
+    @Test
+    @Order(4)
+    public void failForPop() {
+      failUpdateFor("$pop", "{\"$pop\" : {\"$lexical\": 1 }}");
+    }
+
+    @Test
+    @Order(5)
+    public void failForRename() {
+      failUpdateFor("$rename", "{\"$rename\" : {\"$lexical\": \"stuff\" }}");
+    }
+
+    private void failUpdateFor(String opName, String updateOperation) {
+      givenHeadersPostJsonThenOk(updateQuery(updateOperation))
+          .body("$", responseIsError())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATOR_FOR_LEXICAL"))
+          .body("errors[0].exceptionClass", is("UpdateException"))
+          .body("errors[0].title", is("Update operator cannot be used on $lexical field"))
+          .body("errors[0].message", containsString("command used the update operator: " + opName));
+    }
+
+    private String updateQuery(String updateOperation) {
+      return
+          """
+              {
+                "updateOne": {
+                  "filter" : {"_id" : "lexical-10"},
+                  "update" : %s
+                }
+              }
+              """
+          .formatted(updateOperation);
     }
   }
 

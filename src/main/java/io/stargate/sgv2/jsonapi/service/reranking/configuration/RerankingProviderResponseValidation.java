@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.reranking.configuration;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
 import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.RERANKING_PROVIDER_UNEXPECTED_RESPONSE;
 
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -64,7 +63,7 @@ public class RerankingProviderResponseValidation implements ClientResponseFilter
         logger.error(
             "Cannot convert the provider's error response to string: {}", e.getMessage(), e);
       }
-      throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
+      throw RERANKING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
           "Expected response Content-Type ('application/json' or 'text/json') from the reranking provider but found '%s'; HTTP Status: %s; The response body is: '%s'.",
           contentType, responseContext.getStatus(), responseBody);
     }

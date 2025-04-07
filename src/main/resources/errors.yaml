@@ -404,6 +404,42 @@ request-errors:
       Resend the command using only supported update operators.
 
   - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID
+    title: Update operators cannot be used on _id field
+    body: |-
+      The command used the update operator: ${operator}.
+      _id field cannot be updated using update operators.
+      
+      Resend the command without trying to update _id field.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATOR_FOR_LEXICAL
+    title: Update operator cannot be used on $lexical field
+    body: |-
+      The command used the update operator: ${operator}.
+      Supported operators for $lexical field are: $set, $setOnInsert, $unset.
+      
+      Resend the command using only supported update operators.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATOR_FOR_VECTOR
+    title: Update operator cannot be used on $vector field
+    body: |-
+      The command used the update operator: ${operator}.
+      Supported operators for $vector field are: $set, $setOnInsert, $unset.
+      
+      Resend the command using only supported update operators.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATOR_FOR_VECTORIZE
+    title: Update operator cannot be used on $vectorize field
+    body: |-
+      The command used the update operator: ${operator}.
+      Supported operators for $vectorize field are: $set, $setOnInsert, $unset.
+      
+      Resend the command using only supported update operators.
+
+  - scope: UPDATE
     code: INVALID_PUSH_OPERATOR_USAGE
     title: The command has invalid usage of $push operator
     body: |-
