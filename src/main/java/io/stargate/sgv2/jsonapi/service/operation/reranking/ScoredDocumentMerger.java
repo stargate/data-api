@@ -1,11 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.MissingNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,14 +19,15 @@ class ScoredDocumentMerger {
   private final Map<JsonNode, ScoredDocument> mergedDocuments;
   private int seenDocumentsCount = 0;
   private int droppedDocumentsCount = 0;
-  private final String passageField;
+  private final PathMatchLocator passageLocator;
   private final DocumentProjector userProjection;
 
-  ScoredDocumentMerger(int initialCapacity, String passageField, DocumentProjector userProjection) {
+  ScoredDocumentMerger(
+      int initialCapacity, PathMatchLocator passageLocator, DocumentProjector userProjection) {
     mergedDocuments = new HashMap<>(initialCapacity);
 
     this.userProjection = userProjection;
-    this.passageField = passageField;
+    this.passageLocator = passageLocator;
   }
 
   int seenDocuments() {
@@ -64,8 +67,8 @@ class ScoredDocumentMerger {
         };
 
     var passage =
-        switch (document.get(passageField)) {
-          case null -> {
+        switch (passageLocator.findValueIn(document)) {
+          case MissingNode ignored -> {
             // undefined in the document, default to empty string for passage
             yield null;
           }
@@ -77,10 +80,9 @@ class ScoredDocumentMerger {
           default ->
               throw new IllegalStateException(
                   "Passage field %s not a text node in document _id=%s"
-                      .formatted(passageField, documentId));
+                      .formatted(passageLocator.path(), documentId));
         };
 
-    LOGGER.debug("XXX merge() ID {} passage '{}'", documentId, Objects.toString(passage));
     if (passage == null || passage.isBlank()) {
       droppedDocumentsCount++;
       return;

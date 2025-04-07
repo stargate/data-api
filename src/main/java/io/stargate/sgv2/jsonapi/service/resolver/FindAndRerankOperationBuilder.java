@@ -28,6 +28,7 @@ import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -208,7 +209,7 @@ class FindAndRerankOperationBuilder {
             TaskRetryPolicy.NO_RETRY,
             rerankingProvider,
             rerankQuery(),
-            rerankOn(),
+            passageLocator(),
             command.buildProjector(),
             deferredCommandResults,
             commandLimit);
@@ -358,22 +359,26 @@ class FindAndRerankOperationBuilder {
         getOrDefault(command.options(), FindAndRerankCommand.Options::includeSortVector, false));
   }
 
-  private String rerankOn() {
+  private PathMatchLocator passageLocator() {
 
-    var rerankOn = getOrDefault(command.options(), FindAndRerankCommand.Options::rerankOn, "");
+    var rerankOn = getOrDefault(command.options(), FindAndRerankCommand.Options::rerankOn, null);
     var isRerankOn = rerankOn != null && !rerankOn.isBlank();
+
+    String finalRerankField = null;
 
     if (isVectorizeSort()) {
       // use the vectorize field, unless the user has overridden
-      return isRerankOn ? rerankOn : VECTOR_EMBEDDING_TEXT_FIELD;
+      finalRerankField = isRerankOn ? rerankOn : VECTOR_EMBEDDING_TEXT_FIELD;
+    } else if (isRerankOn) {
+      // user has to provide a field to rererank on
+      finalRerankField = rerankOn;
+
+    } else {
+      throw new IllegalArgumentException(
+          "TODO XXX rerankOn() - rerankOn required and not specified");
     }
 
-    // user has to provide a field to rererank on
-    if (isRerankOn) {
-      return rerankOn;
-    }
-
-    throw new IllegalArgumentException("XXX rerankOn() - rerankOn required and not specified");
+    return PathMatchLocator.forPath(finalRerankField);
   }
 
   private String rerankQuery() {
