@@ -27,6 +27,6 @@ public class DocumentScoresDesc {
       @JsonProperty(DocumentConstants.Fields.RERANK_FIELD) float rerank,
       @JsonProperty(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) float vector,
       @JsonProperty("$vectorRank") Integer vectorRank,
-      @JsonProperty("$bm25Rank")Integer bm25Rank,
-      @JsonProperty("$rrfScore")float rrfScore) {}
+      @JsonProperty("$bm25Rank") Integer bm25Rank,
+      @JsonProperty("$rrf") float rrf) {}
 }

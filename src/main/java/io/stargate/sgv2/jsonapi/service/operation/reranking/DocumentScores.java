@@ -73,12 +73,12 @@ public class DocumentScores implements Comparable<DocumentScores> {
   /**
    * Returns the {@link DocumentScoresDesc} to describe the scores in the response of an API call
    */
-  DocumentScoresDesc scoresDesc() {
+  public DocumentScoresDesc scoresDesc() {
     return new DocumentScoresDesc(
         rerankScore.score(),
         vectorScore.score(),
-        vectorRank.exists() ?  vectorRank.rank() : null,
-        bm25Rank.exists() ?  bm25Rank.rank() : null,
+        vectorRank.exists() ? vectorRank.rank() : null,
+        bm25Rank.exists() ? bm25Rank.rank() : null,
         rrfScore.score());
   }
 
@@ -101,13 +101,16 @@ public class DocumentScores implements Comparable<DocumentScores> {
   Score.RRFScore rrf() {
     return rrfScore;
   }
+
   /**
-   * Sorts based on the rerank score, other scores are ignored.
+   * Sorts based on the {@linl #rerank} score and then using the {@link #rrf} score if they are they
+   * same.
    *
    * <p>NOTE: this sorts in descending order, larger scores are better
    */
   @Override
   public int compareTo(DocumentScores other) {
+
     Objects.requireNonNull(other, "Other must not be null");
     var rerankCompare = rerankScore.compareTo(other.rerankScore);
     if (rerankCompare != 0) {
@@ -115,5 +118,21 @@ public class DocumentScores implements Comparable<DocumentScores> {
     }
 
     return rrfScore.compareTo(other.rrfScore);
+  }
+
+  @Override
+  public String toString() {
+    return "DocumentScores{"
+        + "rerankScore="
+        + rerankScore
+        + ", vectorScore="
+        + vectorScore
+        + ", rrfScore="
+        + rrfScore
+        + ", vectorRank="
+        + vectorRank
+        + ", bm25Rank="
+        + bm25Rank
+        + '}';
   }
 }

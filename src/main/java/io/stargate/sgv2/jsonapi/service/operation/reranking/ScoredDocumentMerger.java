@@ -56,7 +56,8 @@ class ScoredDocumentMerger {
                           document.get(DocumentConstants.Fields.DOC_ID)));
         };
 
-    // if we dont have a vector score, then use the rank as the bm25 rank
+    // if we dont have a vector score, then use the rank as the bm25 rank (it is one or the other)
+    // if we have a vector score, then the BM25 is Empty
     var bm25Scored =
         vectorScored.vector().exists() ? DocumentScores.EMPTY : DocumentScores.fromBm25Read(rank);
 
@@ -97,6 +98,7 @@ class ScoredDocumentMerger {
     // NOTE:  this mutates the document
     userProjection.applyProjection(document);
 
+    // we will have one or the other of the vector or bm25 scores, merging handles this.
     mergeScoredDocument(
         new ScoredDocument(documentId, document, passage, vectorScored.merge(bm25Scored)));
   }
