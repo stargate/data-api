@@ -56,7 +56,7 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
       lexicalConfig = CollectionLexicalConfig.configForDisabled();
     } else {
       boolean enabled = lexicalNode.path("enabled").asBoolean(false);
-      JsonNode analyzerNode = lexicalNode.path("analyzer");
+      JsonNode analyzerNode = lexicalNode.get("analyzer");
       lexicalConfig = new CollectionLexicalConfig(enabled, analyzerNode);
     }
 
