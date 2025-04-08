@@ -373,7 +373,7 @@ class SortClauseDeserializerTest {
     }
 
     @Test
-    public void invalidPathName() {
+    public void invalidPathNameOperator() {
       String json =
           """
               {"$gt": 1}
@@ -383,6 +383,41 @@ class SortClauseDeserializerTest {
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable)
           .hasMessageContaining("Invalid sort clause path: path ('$gt') cannot start with `$`");
+    }
+
+    // [data-api#1967] - Not allowed to use "$hybrid"; either with 1/-1 or with String
+    @Test
+    public void invalidPathNameHybridWithNumber() {
+      // First test with regular 1/-1 value
+      Throwable t =
+          catchThrowable(
+              () ->
+                  objectMapper.readValue(
+                      """
+                          {"$hybrid": 1}
+                      """,
+                      SortClause.class));
+
+      assertThat(t).isInstanceOf(JsonApiException.class);
+      assertThat(t)
+          .hasMessageContaining("Invalid sort clause path: path ('$hybrid') cannot start with `$`");
+    }
+
+    // [data-api#1967] - Not allowed to use "$hybrid"; either with 1/-1 or with String
+    @Test
+    public void invalidPathNameHybridWithString() {
+      Throwable t =
+          catchThrowable(
+              () ->
+                  objectMapper.readValue(
+                      """
+                  {"$hybrid": "tokens are tasty"}
+              """,
+                      SortClause.class));
+
+      assertThat(t).isInstanceOf(JsonApiException.class);
+      assertThat(t)
+          .hasMessageContaining("Invalid sort clause path: path ('$hybrid') cannot start with `$`");
     }
 
     @Test

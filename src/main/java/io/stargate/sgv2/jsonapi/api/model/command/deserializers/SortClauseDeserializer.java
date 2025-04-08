@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -64,8 +65,9 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       }
       if (!lexicalValue.isTextual()) {
         throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-            "if sorting by '%s' value must be STRING, not %s",
-            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, lexicalValue.getNodeType());
+            "if sorting by '%s' value must be String, not %s",
+            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
+            JsonUtil.nodeTypeAsString(lexicalValue));
       }
       // We cannot yet determine if lexical sort supported by the collection, just
       // construct clause
