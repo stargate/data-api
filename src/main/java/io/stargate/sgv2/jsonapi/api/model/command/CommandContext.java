@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
-import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.DefaultRequestTracing;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
@@ -42,7 +41,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
   private final CommandConfig commandConfig;
   private final EmbeddingProviderFactory embeddingProviderFactory;
   private final RerankingProviderFactory rerankingProviderFactory;
-  private final MeterRegistry meterRegistry;
 
   // Request specific
   private final SchemaT schemaObject;
@@ -70,8 +68,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
       CommandConfig commandConfig,
       ApiFeatures apiFeatures,
       EmbeddingProviderFactory embeddingProviderFactory,
-      RerankingProviderFactory rerankingProviderFactory,
-      MeterRegistry meterRegistry) {
+      RerankingProviderFactory rerankingProviderFactory) {
 
     this.schemaObject = schemaObject;
     this.embeddingProvider = embeddingProvider;
@@ -85,7 +82,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
     this.rerankingProviderFactory = rerankingProviderFactory;
 
     this.apiFeatures = apiFeatures;
-    this.meterRegistry = meterRegistry;
 
     var anyTracing =
         apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING)
@@ -174,10 +170,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
 
   public EmbeddingProviderFactory embeddingProviderFactory() {
     return embeddingProviderFactory;
-  }
-
-  public MeterRegistry meterRegistry() {
-    return meterRegistry;
   }
 
   public boolean isCollectionContext() {
@@ -289,7 +281,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
       private String commandName;
       private RequestContext requestContext;
       private ApiFeatures apiFeatures;
-      private MeterRegistry meterRegistry;
 
       Builder(SchemaT schemaObject) {
         this.schemaObject = schemaObject;
@@ -319,11 +310,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
         return this;
       }
 
-      public Builder<SchemaT> withMeterRegistry(MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
-        return this;
-      }
-
       public CommandContext<SchemaT> build() {
         // embeddingProvider may be null, e.g. a keyspace command this will change when we pass in
         // all the providers
@@ -340,8 +326,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
             commandConfig,
             apiFeatures,
             embeddingProviderFactory,
-            rerankingProviderFactory,
-            meterRegistry);
+            rerankingProviderFactory);
       }
     }
   }
