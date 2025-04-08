@@ -27,7 +27,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   private static final Logger LOGGER = LoggerFactory.getLogger(RerankingTask.class);
 
   private final RerankingProvider rerankingProvider;
-  private final String query;
+  private final RerankingQuery query;
   private final PathMatchLocator passageLocator;
   private final DocumentProjector userProjection;
   private final List<DeferredCommandWithSource> deferredReads;
@@ -42,7 +42,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       SchemaT schemaObject,
       TaskRetryPolicy retryPolicy,
       RerankingProvider rerankingProvider,
-      String query,
+      RerankingQuery query,
       PathMatchLocator passageLocator,
       DocumentProjector userProjection,
       List<DeferredCommandWithSource> deferredReads,
@@ -50,7 +50,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     super(position, schemaObject, retryPolicy);
 
     this.rerankingProvider = rerankingProvider;
-    this.query = query;
+    this.query = Objects.requireNonNull(query, "query must not be null");
     this.passageLocator = Objects.requireNonNull(passageLocator, "passageLocator must not be null");
     this.userProjection = userProjection;
     this.deferredReads = deferredReads;
@@ -210,7 +210,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     private final RequestTracing requestTracing;
     private final RerankingProvider rerankingProvider;
     private final RerankingCredentials credentials;
-    private final String query;
+    private final RerankingQuery query;
     private final List<ScoredDocument> unrankedDocs;
     private final int limit;
 
@@ -218,7 +218,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
         RequestTracing requestTracing,
         RerankingProvider rerankingProvider,
         RerankingCredentials credentials,
-        String query,
+        RerankingQuery query,
         PathMatchLocator passageLocator,
         List<ScoredDocument> unrankedDocs,
         int limit) {
@@ -286,7 +286,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                           "passages", passages))));
 
       return rerankingProvider
-          .rerank(query, passages, credentials)
+          .rerank(query.query(), passages, credentials)
           .onItem()
           .transform(
               rerankingResponse ->
