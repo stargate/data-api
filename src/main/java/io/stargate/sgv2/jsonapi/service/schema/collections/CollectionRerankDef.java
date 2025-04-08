@@ -71,7 +71,7 @@ public class CollectionRerankDef {
    * @throws IllegalArgumentException if reranking is disabled and rerankServiceDef is not null
    */
   @JsonCreator
-  private CollectionRerankDef(
+  public CollectionRerankDef(
       @JsonProperty("enabled") boolean enabled,
       @JsonProperty("service") RerankServiceDef rerankServiceDef) {
     this.enabled = enabled;
