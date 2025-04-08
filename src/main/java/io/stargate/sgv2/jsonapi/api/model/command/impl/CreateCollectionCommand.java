@@ -1,9 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
@@ -302,7 +299,16 @@ public record CreateCollectionCommand(
                 type = SchemaType.OBJECT)
             @JsonProperty(RerankingConstants.RerankingService.PARAMETERS)
             @JsonInclude(JsonInclude.Include.NON_NULL)
-            Map<String, Object> parameters) {}
+            Map<String, Object> parameters) {
+
+      @JsonIgnore
+      public boolean isEmpty() {
+        return (provider == null)
+            && (modelName == null)
+            && (authentication == null)
+            && (parameters == null);
+      }
+    }
   }
 
   /** {@inheritDoc} */
