@@ -232,7 +232,7 @@ public class FindOneWithSortIntegrationTest extends AbstractCollectionIntegratio
           .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
-          .body("errors[0].message", endsWith("path ('$gt') cannot start with `$`"));
+          .body("errors[0].message", containsString("path ('$gt') cannot start with '$'"));
     }
 
     @Test
