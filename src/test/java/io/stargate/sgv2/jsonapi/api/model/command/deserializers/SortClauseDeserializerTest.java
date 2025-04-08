@@ -382,7 +382,7 @@ class SortClauseDeserializerTest {
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable)
-          .hasMessageContaining("Invalid sort clause path: path ('$gt') cannot start with `$`");
+          .hasMessageContaining("Invalid sort clause path: path ('$gt') cannot start with '$'");
     }
 
     // [data-api#1967] - Not allowed to use "$hybrid"; either with 1/-1 or with String
@@ -400,7 +400,7 @@ class SortClauseDeserializerTest {
 
       assertThat(t).isInstanceOf(JsonApiException.class);
       assertThat(t)
-          .hasMessageContaining("Invalid sort clause path: path ('$hybrid') cannot start with `$`");
+          .hasMessageContaining("Invalid sort clause path: path ('$hybrid') cannot start with '$'");
     }
 
     // [data-api#1967] - Not allowed to use "$hybrid"; either with 1/-1 or with String
@@ -417,7 +417,7 @@ class SortClauseDeserializerTest {
 
       assertThat(t).isInstanceOf(JsonApiException.class);
       assertThat(t)
-          .hasMessageContaining("Invalid sort clause path: path ('$hybrid') cannot start with `$`");
+          .hasMessageContaining("Invalid sort clause path: path ('$hybrid') cannot start with '$'");
     }
 
     @Test

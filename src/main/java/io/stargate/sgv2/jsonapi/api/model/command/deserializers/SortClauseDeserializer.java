@@ -27,7 +27,7 @@ import java.util.Map;
 public class SortClauseDeserializer extends StdDeserializer<SortClause> {
 
   /** No-arg constructor explicitly needed. */
-  public SortClauseDeserializer() {
+  protected SortClauseDeserializer() {
     super(SortClause.class);
   }
 
@@ -202,7 +202,8 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
             "path must be represented as a non-empty string");
       }
       throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-          "path ('%s') cannot start with `$`", path);
+          "path ('%s') cannot start with '$' (except for pseudo-fields '$lexical', '$vector' and '$vectorize')",
+          path);
     }
 
     try {
