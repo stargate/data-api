@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DOC_ID;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD;
+import static io.stargate.sgv2.jsonapi.util.JsonUtil.nodeTypeAsString;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.*;
@@ -66,7 +67,7 @@ public class ScoredDocument implements Comparable<ScoredDocument> {
   }
 
   /**
-   * Factory to create ane instance based on a document.
+   * Factory to create an instance based on a document.
    *
    * @param rank Rank of this document, the order it appeared in the result set.
    * @param rankSource The source of the rank
@@ -95,8 +96,11 @@ public class ScoredDocument implements Comparable<ScoredDocument> {
         vectorScores = DocumentScores.fromVectorRead(numberNode.floatValue(), rank);
       } else {
         throw new IllegalArgumentException(
-            "%s document field is not a number or is missing for doc _id %s"
-                .formatted(VECTOR_FUNCTION_SIMILARITY_FIELD, documentId.asText()));
+            "%s document field is not a number or is missing type=%s _id=%s"
+                .formatted(
+                    VECTOR_FUNCTION_SIMILARITY_FIELD,
+                    nodeTypeAsString(similarityField),
+                    documentId.asText()));
       }
     } else {
       if (similarityField != null) {

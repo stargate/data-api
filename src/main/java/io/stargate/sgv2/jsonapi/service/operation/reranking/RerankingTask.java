@@ -170,12 +170,12 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     int totalReads = 0;
 
     for (var deferredAndSource : deferredReads) {
-      var commandResult =
-          Objects.requireNonNull(
-              deferredAndSource.deferredRead().commandResult(),
-              "Deferred read from source %s returned null commandResult"
-                  .formatted(deferredAndSource.rankSource()));
-
+      var commandResult = deferredAndSource.deferredRead().commandResult();
+      if (commandResult == null) {
+        throw new IllegalStateException(
+            "Deferred read from source %s returned null commandResult"
+                .formatted(deferredAndSource.rankSource()));
+      }
       var multiDocResponse = (ResponseData.MultiResponseData) commandResult.data();
       totalReads++;
       if (merger == null) {
