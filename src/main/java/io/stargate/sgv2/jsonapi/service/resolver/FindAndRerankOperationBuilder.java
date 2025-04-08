@@ -210,7 +210,7 @@ class FindAndRerankOperationBuilder {
             commandContext.schemaObject(),
             TaskRetryPolicy.NO_RETRY,
             rerankingProvider,
-            rerankQuery(),
+            RerankingQuery.create(command),
             passageLocator(),
             command.buildProjector(),
             deferredCommandResults,
@@ -392,20 +392,6 @@ class FindAndRerankOperationBuilder {
     }
 
     return PathMatchLocator.forPath(finalRerankField);
-  }
-
-  private String rerankQuery() {
-
-    if (command.sortClause().vectorizeSort() != null) {
-      return command.sortClause().vectorizeSort();
-    }
-    var rerankQuery =
-        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankQuery, "");
-    if (rerankQuery != null && !rerankQuery.isBlank()) {
-      return rerankQuery;
-    }
-
-    throw new IllegalArgumentException(("XXX rerankQuery() - no rerank query"));
   }
 
   private boolean isLexicalSort() {
