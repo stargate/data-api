@@ -1,11 +1,26 @@
 package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DOC_ID;
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD;
+import static io.stargate.sgv2.jsonapi.util.JsonUtil.nodeTypeAsString;
+
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeType;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.*;
+import com.google.common.annotations.VisibleForTesting;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.Optional;
 
+/**
+ * A document for scoring, with a passage and scores. The passage is used for reranking, the scores
+ * are then used to sort the documents.
+ *
+ * <p>Create using {@link #create(int, Rank.RankSource, JsonNode, PathMatchLocator)} and then merge
+ * the scores using {@link #mergeScore(DocumentScores)}.
+ *
+ * <p>TODO: more tests for the create function, only covering the passage extraction
+ */
 public class ScoredDocument implements Comparable<ScoredDocument> {
 
   // see compareTo()
@@ -14,10 +29,12 @@ public class ScoredDocument implements Comparable<ScoredDocument> {
 
   private final JsonNode id;
   private final ObjectNode document;
-  private final String passage;
+  private final Optional<String> passage;
   private DocumentScores scores;
 
-  ScoredDocument(JsonNode id, JsonNode document, String passage, DocumentScores scores) {
+  /** Package protected so we can test with explicit scores */
+  @VisibleForTesting
+  protected ScoredDocument(JsonNode id, JsonNode document, String passage, DocumentScores scores) {
     this(id, checkCast(document), passage, scores);
   }
 
@@ -25,11 +42,13 @@ public class ScoredDocument implements Comparable<ScoredDocument> {
     if (document instanceof ObjectNode on) {
       return on;
     }
+    Objects.requireNonNull(document, "document cannot be null");
     throw new IllegalArgumentException(
-        "Expected an ObjectNode, got document.getNodeType()=%s".formatted(document.getNodeType()));
+        "Expected document to be ObjectNode, got document.getNodeType()=%s"
+            .formatted(document.getNodeType()));
   }
 
-  ScoredDocument(JsonNode id, ObjectNode document, String passage, DocumentScores scores) {
+  private ScoredDocument(JsonNode id, ObjectNode document, String passage, DocumentScores scores) {
 
     this.id = Objects.requireNonNull(id);
     if (!id.isValueNode()) {
@@ -38,16 +57,104 @@ public class ScoredDocument implements Comparable<ScoredDocument> {
           "id must be a value node, got id.getNodeType()=%s".formatted(id.getNodeType()));
     }
 
-    this.passage = Objects.requireNonNull(passage, "passage cannot be null");
+    if (passage != null && passage.isBlank()) {
+      throw new IllegalArgumentException("passage cannot be blank");
+    }
+
+    this.passage = Optional.ofNullable(passage);
     this.document = Objects.requireNonNull(document, "document cannot be null");
     this.scores = Objects.requireNonNull(scores, "scores cannot be null");
+  }
+
+  /**
+   * Factory to create an instance based on a document.
+   *
+   * @param rank Rank of this document, the order it appeared in the result set.
+   * @param rankSource The source of the rank
+   * @param document Document to extract the id and passage from.
+   * @param passageLocator Locator to find the passage in the document.
+   * @return A new instance of ScoredDocument.
+   */
+  static ScoredDocument create(
+      int rank, Rank.RankSource rankSource, JsonNode document, PathMatchLocator passageLocator) {
+
+    Objects.requireNonNull(document, "document cannot be null");
+    Objects.requireNonNull(passageLocator, "passageLocator cannot be null");
+
+    var documentId =
+        switch (document.get(DOC_ID)) {
+          case null -> throw new IllegalArgumentException("Document id cannot be missing");
+          case NullNode ignored ->
+              throw new IllegalArgumentException("Document id cannot be a NullNode");
+          case JsonNode jsonNode -> jsonNode;
+        };
+
+    DocumentScores vectorScores;
+    var similarityField = document.get(VECTOR_FUNCTION_SIMILARITY_FIELD);
+    if (rankSource == Rank.RankSource.VECTOR) {
+      if (similarityField instanceof NumericNode numberNode) {
+        vectorScores = DocumentScores.fromVectorRead(numberNode.floatValue(), rank);
+      } else {
+        throw new IllegalArgumentException(
+            "%s document field is not a number or is missing type=%s _id=%s"
+                .formatted(
+                    VECTOR_FUNCTION_SIMILARITY_FIELD,
+                    nodeTypeAsString(similarityField),
+                    documentId.asText()));
+      }
+    } else {
+      if (similarityField != null) {
+        throw new IllegalArgumentException(
+            "rankSource is %s but the document with id '%s' has %s field=%s"
+                .formatted(
+                    rankSource, documentId, VECTOR_FUNCTION_SIMILARITY_FIELD, similarityField));
+      }
+      vectorScores = DocumentScores.EMPTY;
+    }
+
+    // if we dont have a vector score, then use the rank as the bm25 rank (it is one or the other)
+    // if we have a vector score, then the BM25 is Empty
+    var bm25Scores =
+        rankSource == Rank.RankSource.BM25
+            ? DocumentScores.fromBm25Read(rank)
+            : DocumentScores.EMPTY;
+
+    var passageNode = passageLocator.findValueIn(document);
+    var passage =
+        switch (passageNode) {
+          case MissingNode ignored -> {
+            // undefined in the document, default to null so it is dropped
+            yield null;
+          }
+          case NullNode ignored -> {
+            // explicit {$vectorize : null} treat same as undefined, empty passage to rerank on
+            yield null;
+          }
+          case ValueNode valueNode -> {
+            // could be text, number, boolean, but not array or object
+            yield valueNode.asText();
+          }
+          default ->
+              throw new IllegalArgumentException(
+                  "Passage field %s is present but not null or a valueNode _id=%s , passageField=%s"
+                      .formatted(passageLocator.path(), documentId, passageNode));
+        };
+
+    // we will have one or the other of the vector or bm25 scores, merging handles this.
+    // normalise passage to null, to make it easier to use optional.
+    // cannot rerank on a blank passage
+    return new ScoredDocument(
+        documentId,
+        document,
+        passage == null || passage.isBlank() ? null : passage,
+        vectorScores.merge(bm25Scores));
   }
 
   public JsonNode id() {
     return id;
   }
 
-  public String passage() {
+  public Optional<String> passage() {
     return passage;
   }
 
