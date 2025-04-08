@@ -194,7 +194,9 @@ public class RerankingProviderConfigProducer {
                         model.getName(),
                         new ModelSupport.ModelSupportImpl(
                             ModelSupport.SupportStatus.valueOf(model.getModelSupport().getStatus()),
-                            Optional.of(model.getModelSupport().getMessage())),
+                            model.getModelSupport().hasMessage()
+                                ? Optional.of(model.getModelSupport().getMessage())
+                                : Optional.empty()),
                         model.getIsDefault(),
                         model.getUrl(),
                         new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
