@@ -2,19 +2,12 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
-import io.micrometer.core.instrument.DistributionSummary;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
-import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.Timer;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.ResponseData;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
-import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
@@ -37,7 +30,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   private final String query;
   private final PathMatchLocator passageLocator;
   private final DocumentProjector userProjection;
-  private final List<DeferredCommandResult> deferredReads;
+  private final List<DeferredCommandWithSource> deferredReads;
   private final int limit;
 
   private float[] sortVector = null;
@@ -52,7 +45,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       String query,
       PathMatchLocator passageLocator,
       DocumentProjector userProjection,
-      List<DeferredCommandResult> deferredReads,
+      List<DeferredCommandWithSource> deferredReads,
       int limit) {
     super(position, schemaObject, retryPolicy);
 
@@ -78,14 +71,15 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   @Override
   protected RerankingResultSupplier buildResultSupplier(CommandContext<SchemaT> commandContext) {
 
-    // If we are being called to run, the deferred reads we were waiting for should be completed.
-    // This will throw if that is not the case.
-    List<CommandResult> rawReadResults =
-        deferredReads.stream().map(DeferredCommandResult::commandResult).toList();
+    // TODO: add a flag to know if we need to do this ?
 
     // Find the sort vector that was used for the inner query, if any
     // For now there should only ever be one sort vector included
-    for (CommandResult rawReadResult : rawReadResults) {
+    for (var deferredAndSource : deferredReads) {
+
+      // If we are being called to run, the deferred reads we were waiting for should be completed.
+      // This will throw if that is not the case.
+      var rawReadResult = deferredAndSource.deferredRead.commandResult();
 
       float[] candidateSortVector = (float[]) rawReadResult.status().get(CommandStatus.SORT_VECTOR);
       if (candidateSortVector != null) {
@@ -99,7 +93,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       }
     }
 
-    var dedupResult = deduplicateResults(rawReadResults);
+    var dedupResult = deduplicateResults();
 
     commandContext
         .requestTracing()
@@ -113,8 +107,6 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
     return new RerankingResultSupplier(
         commandContext.requestTracing(),
-        commandContext.meterRegistry(),
-        commandContext.requestContext(),
         rerankingProvider,
         commandContext.requestContext().getRerankingCredentials(),
         query,
@@ -157,26 +149,33 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     return sortVector;
   }
 
+  public record DeferredCommandWithSource(
+      Rank.RankSource rankSource, DeferredCommandResult deferredRead) {}
+
   private record DeduplicationResult(
       int totalReads,
       int totalDocuments,
       int droppedDocuments,
       List<ScoredDocument> deduplicatedDocuments) {}
 
-  private DeduplicationResult deduplicateResults(List<CommandResult> rawReadResults) {
+  private DeduplicationResult deduplicateResults() {
 
-    if (rawReadResults.isEmpty()) {
-      throw new IllegalArgumentException("rawReadResults must not be empty");
+    if (deferredReads.isEmpty()) {
+      throw new IllegalArgumentException("deferredReads must not be empty");
     }
 
     // This code relies on working with collections where the documents all have _id
     // will need to change for tables and rows
-    // Keyed on the _id as a JsonNode
-
     ScoredDocumentMerger merger = null;
     int totalReads = 0;
 
-    for (var commandResult : rawReadResults) {
+    for (var deferredAndSource : deferredReads) {
+      var commandResult = deferredAndSource.deferredRead().commandResult();
+      if (commandResult == null) {
+        throw new IllegalStateException(
+            "Deferred read from source %s returned null commandResult"
+                .formatted(deferredAndSource.rankSource()));
+      }
       var multiDocResponse = (ResponseData.MultiResponseData) commandResult.data();
       totalReads++;
       if (merger == null) {
@@ -187,7 +186,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       // rank must start at 1
       int rank = 1;
       for (var doc : multiDocResponse.documents()) {
-        merger.merge(rank++, doc);
+        merger.merge(rank++, deferredAndSource.rankSource(), doc);
       }
     }
 
@@ -209,18 +208,14 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   public static class RerankingResultSupplier implements UniSupplier<RerankingTaskResult> {
 
     private final RequestTracing requestTracing;
-    private final RequestContext requestContext;
     private final RerankingProvider rerankingProvider;
     private final RerankingCredentials credentials;
     private final String query;
     private final List<ScoredDocument> unrankedDocs;
     private final int limit;
-    private final MetricsRecorder metricsRecorder;
 
     RerankingResultSupplier(
         RequestTracing requestTracing,
-        MeterRegistry meterRegistry,
-        RequestContext requestContext,
         RerankingProvider rerankingProvider,
         RerankingCredentials credentials,
         String query,
@@ -228,19 +223,28 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
         List<ScoredDocument> unrankedDocs,
         int limit) {
       this.requestTracing = requestTracing;
-      this.requestContext = requestContext;
       this.rerankingProvider = rerankingProvider;
       this.credentials = credentials;
       this.query = query;
       this.unrankedDocs = unrankedDocs;
       this.limit = limit;
-      this.metricsRecorder = new MetricsRecorder(meterRegistry, rerankingProvider, requestContext);
     }
 
     @Override
     public Uni<RerankingTaskResult> get() {
 
-      var passages = unrankedDocs.stream().map(ScoredDocument::passage).toList();
+      var passages =
+          unrankedDocs.stream()
+              .map(
+                  scored ->
+                      scored
+                          .passage()
+                          .orElseThrow(
+                              () ->
+                                  new IllegalArgumentException(
+                                      "ScoredDocument passage isEmpty() document=%s"
+                                          .formatted(scored))))
+              .toList();
 
       if (passages.isEmpty()) {
         // avoid making a call we don't need to
@@ -281,19 +285,10 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                           "limit", limit,
                           "passages", passages))));
 
-      // Record input sizes before making the call
-      metricsRecorder.recordInputSizes(passages);
-
-      // Start timing the operation
-      Timer.Sample sample = metricsRecorder.startTimer();
-
       return rerankingProvider
           .rerank(query, passages, credentials)
           .onItem()
-          .invoke(response -> metricsRecorder.stopTimer(sample)) // Stop timer on success
-          .onFailure()
-          .invoke(error -> metricsRecorder.stopTimer(sample)) // Stop timer on failure too
-          .map(
+          .transform(
               rerankingResponse ->
                   RerankingTaskResult.create(
                       requestTracing, rerankingProvider, rerankingResponse, unrankedDocs, limit));
@@ -370,56 +365,6 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
     public List<ScoredDocument> rerankedDocuments() {
       return rerankedDocuments;
-    }
-  }
-
-  // Inner class to handle metrics
-  private static class MetricsRecorder {
-    final String RERANK_INPUT_BYTES_METRICS = "reranking.input.bytes";
-    final String RERANKING_CALL_DURATION_METRICS = "reranking.call.duration";
-    final String RERANKING_PROVIDER_METRICS_TAG = "reranking.provider";
-    final String RERANKING_PROVIDER_MODEL_METRICS_TAG = "reranking.model";
-    final String TENANT_TAG = "tenant";
-    final String UNKNOWN_VALUE = "unknown";
-    private final MeterRegistry meterRegistry;
-    private final RerankingProvider rerankingProvider;
-    private final RequestContext requestContext;
-
-    public MetricsRecorder(
-        MeterRegistry meterRegistry,
-        RerankingProvider rerankingProvider,
-        RequestContext requestContext) {
-      this.meterRegistry = meterRegistry;
-      this.rerankingProvider = rerankingProvider;
-      this.requestContext = requestContext;
-    }
-
-    void recordInputSizes(List<String> passages) {
-      Objects.requireNonNull(passages);
-      DistributionSummary ds =
-          DistributionSummary.builder(RERANK_INPUT_BYTES_METRICS)
-              .tags(getCustomTags())
-              .register(meterRegistry);
-      passages.stream().mapToInt(String::length).forEach(ds::record);
-    }
-
-    Timer.Sample startTimer() {
-      return Timer.start(meterRegistry);
-    }
-
-    void stopTimer(Timer.Sample sample) {
-      sample.stop(meterRegistry.timer(RERANKING_CALL_DURATION_METRICS, getCustomTags()));
-    }
-
-    private Tags getCustomTags() {
-      Tag tenantTag = Tag.of(TENANT_TAG, requestContext.getTenantId().orElse(UNKNOWN_VALUE));
-      Tag rerankingProviderTag =
-          Tag.of(RERANKING_PROVIDER_METRICS_TAG, classSimpleName(rerankingProvider.getClass()));
-      Tag rerankingModelTag =
-          Tag.of(
-              RERANKING_PROVIDER_MODEL_METRICS_TAG,
-              Optional.ofNullable(rerankingProvider.modelName()).orElse(UNKNOWN_VALUE));
-      return Tags.of(tenantTag, rerankingProviderTag, rerankingModelTag);
     }
   }
 }
