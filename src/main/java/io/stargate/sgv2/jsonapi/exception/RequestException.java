@@ -41,6 +41,7 @@ public class RequestException extends APIException {
   }
 
   public enum Code implements ErrorCode<RequestException> {
+    MISSING_RERANK_QUERY_TEXT,
     UNSUPPORTED_TABLE_COMMAND,
     UNSUPPORTED_COLLECTION_COMMAND,
     UNSUPPORTED_RERANKING_COMMAND;

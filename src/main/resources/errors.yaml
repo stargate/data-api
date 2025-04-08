@@ -160,6 +160,23 @@ request-errors:
       
       Resend using a supported Collection. 
 
+  # unscoped because this touches both the sort and the options
+  - scope:
+    code: MISSING_RERANK_QUERY_TEXT
+    title: Rerank query text is missing
+    body: |-
+      The findAndRerank command is missing the text to use as the query with the reranking model.
+
+      Reranking involves using a model to compare passages of text to a user query. 
+      
+      The query can be specified using either: 
+      * `$hybrid` field in the sort clause, e.g. `{"$hybrid": "query text"}`.
+      * `$vectorize` field in the sort clause, when using different sorting for vectorize and lexical, e.g. `{"$hybrid":  {"$vectorize": "query text"}}`.
+      * `rerankQuery` field in the options clause, e.g. `{"rerankQuery": "query text"}`.
+      
+      When specified the `rerankQuery` option takes priority. In all cases the query text must be a non blank text value. 
+      
+      Resend the command including the query text for reranking.
 # ================================================================================================================
 # Family: REQUEST         Scope: DOCUMENT
 # ================================================================================================================
