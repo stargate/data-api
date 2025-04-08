@@ -42,15 +42,12 @@ public record CollectionLexicalConfig(
     if (enabled) {
       this.analyzerDefinition = Objects.requireNonNull(analyzerDefinition);
     } else {
-      if (analyzerDefinition != null) {
-        if (analyzerDefinition.isTextual()) {
-          throw new IllegalArgumentException(
-              "Analyzer definition should not have string if lexical is disabled");
-        }
-        if (analyzerDefinition.isObject() && !analyzerDefinition.isEmpty()) {
-          throw new IllegalArgumentException(
-              "Analyzer definition should be null or empty JSON if lexical is disabled");
-        }
+      boolean isAcceptableWhenDisabled =
+          analyzerDefinition.isNull()
+              || (analyzerDefinition.isObject() && analyzerDefinition.isEmpty());
+      if (!isAcceptableWhenDisabled) {
+        throw new IllegalArgumentException(
+            "Analyzer definition should be omitted, JSON null, or an empty JSON object {} if if lexical is disabled.");
       }
       this.analyzerDefinition = null;
     }

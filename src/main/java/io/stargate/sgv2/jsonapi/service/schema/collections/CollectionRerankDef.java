@@ -54,8 +54,8 @@ public class CollectionRerankDef {
    *
    * <p>This constructor is annotated with {@link JsonCreator} to enable Jackson deserialization.
    * {@link JsonProperty} annotations on parameters allow Jackson to map JSON properties to
-   * constructor parameters during deserialization. This constructor is public primarily to support
-   * Jackson deserialization - please use the appropriate factory method to create instances.
+   * constructor parameters during deserialization. This constructor is private - please use the
+   * appropriate factory method to create instances.
    *
    * <p>Validation behavior:
    *
@@ -71,7 +71,7 @@ public class CollectionRerankDef {
    * @throws IllegalArgumentException if reranking is disabled and rerankServiceDef is not null
    */
   @JsonCreator
-  public CollectionRerankDef(
+  private CollectionRerankDef(
       @JsonProperty("enabled") boolean enabled,
       @JsonProperty("service") RerankServiceDef rerankServiceDef) {
     this.enabled = enabled;
