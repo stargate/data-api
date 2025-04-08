@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,7 +27,7 @@ import java.util.Map;
 public class SortClauseDeserializer extends StdDeserializer<SortClause> {
 
   /** No-arg constructor explicitly needed. */
-  public SortClauseDeserializer() {
+  protected SortClauseDeserializer() {
     super(SortClause.class);
   }
 
@@ -64,8 +65,9 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       }
       if (!lexicalValue.isTextual()) {
         throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-            "if sorting by '%s' value must be STRING, not %s",
-            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, lexicalValue.getNodeType());
+            "if sorting by '%s' value must be String, not %s",
+            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
+            JsonUtil.nodeTypeAsString(lexicalValue));
       }
       // We cannot yet determine if lexical sort supported by the collection, just
       // construct clause
@@ -76,6 +78,9 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> inner = fieldIter.next();
       final String path = inner.getKey().trim();
+      // Validation will check against invalid paths, as well as decode "amp-escaping"
+      final String validatedPath = validateSortClausePath(path);
+
       float[] vectorFloats = null;
       if (inner.getValue().isObject()) {
         var ejsonWrapped = EJSONWrapper.maybeFrom((ObjectNode) inner.getValue());
@@ -176,8 +181,6 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         // this is also why we do not break the look here
         sortExpressions.add(SortExpression.tableVectorizeSort(path, inner.getValue().textValue()));
       } else {
-        String validatedPath = validateSortClausePath(path);
-
         if (!inner.getValue().isInt()
             || !(inner.getValue().intValue() == 1 || inner.getValue().intValue() == -1)) {
           throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
@@ -199,8 +202,16 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
             "path must be represented as a non-empty string");
       }
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-          "path ('%s') cannot start with `$`", path);
+      // But allow "well-known" fields
+      switch (path) {
+        case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
+            DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
+            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD -> {}
+        default ->
+            throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
+                "path ('%s') cannot start with '$' (except for pseudo-fields '$lexical', '$vector' and '$vectorize')",
+                path);
+      }
     }
 
     try {
