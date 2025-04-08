@@ -21,7 +21,7 @@ import org.apache.commons.lang3.tuple.Pair;
 public class MeteredEmbeddingProvider extends EmbeddingProvider {
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
-  private final RequestContext dataApiRequestInfo;
+  private final RequestContext requestContext;
   private static final String UNKNOWN_VALUE = "unknown";
   private final EmbeddingProvider embeddingProvider;
   private final String commandName;
@@ -29,12 +29,12 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
   public MeteredEmbeddingProvider(
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig,
-      RequestContext dataApiRequestInfo,
+      RequestContext requestContext,
       EmbeddingProvider embeddingProvider,
       String commandName) {
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
-    this.dataApiRequestInfo = dataApiRequestInfo;
+    this.requestContext = requestContext;
     this.embeddingProvider = embeddingProvider;
     this.commandName = commandName;
   }
@@ -119,7 +119,7 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
    */
   private Tags getCustomTags() {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
-    Tag tenantTag = Tag.of("tenant", dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
+    Tag tenantTag = Tag.of("tenant", requestContext.getTenantId().orElse(UNKNOWN_VALUE));
     Tag embeddingProviderTag =
         Tag.of(
             jsonApiMetricsConfig.embeddingProvider(), embeddingProvider.getClass().getSimpleName());
