@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.Objects;
 
 /** Validated configuration Object for Lexical (BM-25) indexing configuration for Collections. */
@@ -77,17 +78,23 @@ public record CollectionLexicalConfig(
           "'enabled' is required property for 'lexical' Object value");
     }
 
-    // Case 3: Lexical is disabled - ensure no analyzer is provided
+    // Case 3: Lexical is disabled - ensure analyzer is absent, JSON null, or empty object {}
     if (!enabled) {
       if (lexicalConfig.analyzerDef() != null) {
-        if (lexicalConfig.analyzerDef().isTextual()) {
+        // Define the acceptable states when lexical is disabled:
+        // 1. The JSON value itself is null (`null`)
+        // 2. The JSON value is an empty object (`{}`)
+        boolean isAcceptableWhenDisabled =
+            lexicalConfig.analyzerDef().isNull()
+                || (lexicalConfig.analyzerDef().isObject()
+                    && lexicalConfig.analyzerDef().isEmpty());
+
+        if (!isAcceptableWhenDisabled) {
+          String nodeType = JsonUtil.nodeTypeAsString(lexicalConfig.analyzerDef());
           throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-              "'lexical' is disabled, but 'lexical.analyzer' property is provided with value: '%s'",
-              lexicalConfig.analyzerDef().asText());
-        }
-        if (lexicalConfig.analyzerDef().isObject() && !lexicalConfig.analyzerDef().isEmpty()) {
-          throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-              "'lexical' is disabled, but 'lexical.analyzer' property is provided with non-empty JSON Object");
+              "'lexical' is disabled, but 'lexical.analyzer' property was provided with an unexpected type: %s. "
+                  + "When 'lexical' is disabled, 'lexical.analyzer' must either be omitted, JSON null, or an empty JSON object {}.",
+              nodeType);
         }
       }
       return configForDisabled();

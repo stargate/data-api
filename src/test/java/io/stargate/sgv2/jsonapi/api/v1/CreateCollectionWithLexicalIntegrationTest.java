@@ -132,7 +132,51 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: 'lexical' is disabled, but 'lexical.analyzer' property is provided with value: ''"));
+                  "'lexical' is disabled, but 'lexical.analyzer' property was provided with an unexpected type: String"));
+    }
+
+    @Test
+    void failCreateLexicalWithDisabledAndArrayInAnalyzer() {
+      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                            {
+                              "enabled": false,
+                              "analyzer": []
+                            }
+                            """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "'lexical' is disabled, but 'lexical.analyzer' property was provided with an unexpected type: Array."));
+    }
+
+    @Test
+    void failCreateLexicalWithDisabledAndNumberInAnalyzer() {
+      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                              {
+                                "enabled": false,
+                                "analyzer": 1
+                              }
+                              """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "'lexical' is disabled, but 'lexical.analyzer' property was provided with an unexpected type: Number."));
     }
 
     @Test
@@ -158,7 +202,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
           .body(
               "errors[0].message",
               containsString(
-                  "The provided options are invalid: 'lexical' is disabled, but 'lexical.analyzer' property is provided with non-empty JSON Object"));
+                  "When 'lexical' is disabled, 'lexical.analyzer' must either be omitted, JSON null, or an empty JSON object {}."));
     }
 
     @Test
