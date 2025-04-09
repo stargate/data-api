@@ -92,7 +92,11 @@ public class ScoredDocument implements Comparable<ScoredDocument> {
     DocumentScores vectorScores;
     var similarityField = document.get(VECTOR_FUNCTION_SIMILARITY_FIELD);
     if (rankSource == Rank.RankSource.VECTOR) {
-      if (similarityField instanceof NumericNode numberNode) {
+      if (similarityField == null) {
+        // this can happen when the scores are not going to be returned, OK we only need the rank
+        // for RRF
+        vectorScores = DocumentScores.fromVectorRead(rank);
+      } else if (similarityField instanceof NumericNode numberNode) {
         vectorScores = DocumentScores.fromVectorRead(numberNode.floatValue(), rank);
       } else {
         throw new IllegalArgumentException(
@@ -105,7 +109,7 @@ public class ScoredDocument implements Comparable<ScoredDocument> {
     } else {
       if (similarityField != null) {
         throw new IllegalArgumentException(
-            "rankSource is %s but the document with id '%s' has %s field=%s"
+            "rankSource is %s but the document has similarity score id=%s has %s=%s"
                 .formatted(
                     rankSource, documentId, VECTOR_FUNCTION_SIMILARITY_FIELD, similarityField));
       }

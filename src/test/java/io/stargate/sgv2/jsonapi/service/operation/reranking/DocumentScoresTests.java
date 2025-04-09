@@ -37,6 +37,18 @@ public class DocumentScoresTests {
   }
 
   @Test
+  public void testComparisonSameRerankingWithVectorRankOnly() {
+    // duplicate scores tend to be negative
+    // testing what happens with duplicates and only a vector read
+    // note only the RANK of the vector is used with the RRF
+    var score1 = DocumentScores.fromReranking(-18.765f).merge(DocumentScores.fromVectorRead(1));
+    var score2 = DocumentScores.fromReranking(-18.765f).merge(DocumentScores.fromVectorRead(5));
+    var score3 = DocumentScores.fromReranking(-18.765f).merge(DocumentScores.fromVectorRead(10));
+
+    ScoreTests.threewayScoreComparison(score1, score2, score3);
+  }
+
+  @Test
   public void testComparisonSameRerankingWithBM25Only() {
     // duplicate scores tend to be negative
     // testing what happens with duplicates and only a BM25 read
