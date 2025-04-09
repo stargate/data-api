@@ -168,6 +168,8 @@ public enum ErrorCodeV1 {
   LEXICAL_NOT_AVAILABLE_FOR_DATABASE("Lexical search is not available on this database"),
   LEXICAL_NOT_ENABLED_FOR_COLLECTION("Lexical search is not enabled for the collection"),
 
+  HYBRID_FIELD_CONFLICT(
+      "Conflict between '$hybrid' field and '$vector' and/or '$vectorize' field(s): can only use one or the other(s)"),
   HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE("Unsupported JSON value type for '$hybrid' field"),
   HYBRID_FIELD_UNKNOWN_SUBFIELDS("Unrecognized sub-field(s) for '$hybrid' Object"),
   HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
