@@ -152,7 +152,7 @@ public class HybridFieldExpanderTest {
                     }
                     """,
             ErrorCodeV1.HYBRID_FIELD_CONFLICT,
-            "Conflict between '$hybrid' sub-field and '$vector' and/or '$vectorize' field(s)"),
+            ErrorCodeV1.HYBRID_FIELD_CONFLICT.getMessage()),
         // Conflict reported even if individual (sub-)fields do not overlap
         Arguments.of(
             """
@@ -165,7 +165,7 @@ public class HybridFieldExpanderTest {
                     }
                     """,
             ErrorCodeV1.HYBRID_FIELD_CONFLICT,
-            "Conflict between '$hybrid' sub-field and '$vector' and/or '$vectorize' field(s)"));
+            ErrorCodeV1.HYBRID_FIELD_CONFLICT.getMessage()));
   }
 
   @ParameterizedTest
