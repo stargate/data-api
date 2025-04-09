@@ -106,12 +106,20 @@ public record CollectionLexicalConfig(
 
     // Case 5: Enabled and analyzer provided - validate and use
     JsonNode analyzer = lexicalConfig.analyzerDef();
-    if (analyzer == null) {
+    // Case 5a: missing/null/Empty Object - use default analyzer
+    if (analyzer == null || analyzer.isNull() || (analyzer.isObject() && analyzer.isEmpty())) {
       analyzer = mapper.getNodeFactory().textNode(CollectionLexicalConfig.DEFAULT_NAMED_ANALYZER);
-    } else if (!analyzer.isTextual() && !analyzer.isObject()) {
+    } else if (analyzer.isTextual()) {
+      // Case 5b: JSON String - use as-is -- Could/should we try to validate analyzer name?
+      ;
+    } else if (analyzer.isObject()) {
+      // Case 5c: JSON Object - use as-is  -- TODO? validate analyzer wrt required fields?
+      ;
+    } else {
+      // Otherwise, invalid definition
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'analyzer' property of 'lexical' must be either String or JSON Object, is: %s",
-          analyzer.getNodeType());
+          "'analyzer' property of 'lexical' must be either JSON String or Object, is: %s",
+          JsonUtil.nodeTypeAsString(analyzer));
     }
     return new CollectionLexicalConfig(true, analyzer);
   }
