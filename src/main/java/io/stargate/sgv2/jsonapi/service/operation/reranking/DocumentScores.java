@@ -50,6 +50,16 @@ public class DocumentScores implements Comparable<DocumentScores> {
         Score.RRFScore.create(rank));
   }
 
+  /** When we did a ANN read, but do not have the similarity score */
+  static DocumentScores fromVectorRead(int rank) {
+    return new DocumentScores(
+        Score.EMPTY_RERANK_SCORE,
+        Score.EMPTY_VECTOR_SCORE,
+        Rank.vectorRank(rank),
+        Rank.EMPTY_BM25_RANK,
+        Score.RRFScore.create(rank));
+  }
+
   static DocumentScores fromReranking(float rerank) {
     return new DocumentScores(
         Score.rerankScore(rerank),
