@@ -291,7 +291,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
             .body(
                 "errors[0].message",
                 containsString(
-                    "'analyzer' property of 'lexical' must be either String or JSON Object, is: ARRAY"));
+                    "'analyzer' property of 'lexical' must be either JSON Object or String, is: Array"));
       } else {
         givenHeadersPostJsonThenOk(json)
             .body("$", responseIsError())

@@ -118,7 +118,7 @@ public record CollectionLexicalConfig(
     } else {
       // Otherwise, invalid definition
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'analyzer' property of 'lexical' must be either JSON String or Object, is: %s",
+          "'analyzer' property of 'lexical' must be either JSON Object or String, is: %s",
           JsonUtil.nodeTypeAsString(analyzer));
     }
     return new CollectionLexicalConfig(true, analyzer);
