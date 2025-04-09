@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.any;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -55,14 +56,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
@@ -85,14 +79,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
@@ -120,14 +107,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
         }
         """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
@@ -145,14 +125,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindAndSuccess())
           .body("data.documents", is(nullValue()))
           .body("status.matchedCount", is(0))
@@ -171,14 +144,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindAndSuccess())
           .body("data.documents", is(nullValue()))
           .body("status.matchedCount", is(0))
@@ -203,10 +169,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             "active_user":false
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                 {
                   "findOneAndUpdate": {
@@ -216,20 +179,13 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                   }
                 }
           """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(expected))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
 
       // assert state after update
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                 {
                   "find": {
@@ -237,10 +193,6 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                   }
                 }
           """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
@@ -265,10 +217,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                 "hits": 1
               }
               """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                 {
                   "findOneAndUpdate": {
@@ -281,20 +230,13 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                   }
                 }
           """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(docBefore))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
 
       // assert state after update
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                 {
                   "find": {
@@ -302,10 +244,6 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                   }
                 }
           """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(docAfter));
     }
@@ -323,14 +261,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", is(notNullValue()))
           .body("data.document._id", any(String.class))
@@ -381,14 +312,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(expected))
           .body("status.upsertedId", is("afterDoc4"))
@@ -404,14 +328,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
@@ -436,14 +353,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
@@ -466,14 +376,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
@@ -499,14 +402,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
              }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
@@ -527,14 +423,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
@@ -584,14 +473,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             "add_me" : false
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(expected))
           .body("status.matchedCount", is(1))
@@ -606,14 +488,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
         }
         """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
@@ -663,14 +538,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             "add_me" : false
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(expected))
           .body("status.matchedCount", is(1))
@@ -685,14 +553,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
@@ -722,17 +583,12 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_DOC_ID"))
-          .body("errors[0].message", is("Cannot use operator with '_id' property: $unset"));
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID"))
+          .body(
+              "errors[0].message",
+              containsString("_id field cannot be updated using update operators"));
 
       // And finally verify also that nothing was changed:
       json =
@@ -743,14 +599,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(inputDoc));
     }
@@ -775,17 +624,12 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_DOC_ID"))
-          .body("errors[0].message", is("Cannot use operator with '_id' property: $set"));
+          .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID"))
+          .body(
+              "errors[0].message",
+              containsString("_id field cannot be updated using update operators"));
 
       // And finally verify also that nothing was changed:
       json =
@@ -796,14 +640,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(inputDoc));
     }
@@ -829,20 +666,13 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_PATH"))
           .body(
               "errors[0].message",
               is(
-                  "Invalid update operation path: cannot create field ('name') in path 'subdoc.array.name'; only OBJECT nodes have properties (got ARRAY)"));
+                  "Unsupported update operation path: cannot create field ('name') in path 'subdoc.array.name'; only OBJECT nodes have properties (got ARRAY)"));
 
       // And finally verify also that nothing was changed:
       json =
@@ -853,14 +683,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(inputDoc));
     }
@@ -887,14 +710,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_TARGET"))
           .body(
@@ -911,14 +727,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(inputDoc));
     }
@@ -944,14 +753,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_TARGET"))
           .body(
@@ -968,14 +770,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(inputDoc));
     }
@@ -1002,14 +797,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                       }
                       """
               .formatted(tooLongNumStr);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(
@@ -1066,14 +854,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindAndSuccess())
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
@@ -1100,14 +881,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
@@ -1147,14 +921,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
              }
            }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindAndSuccess())
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
@@ -1185,14 +952,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
@@ -1227,14 +987,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             "active_user":true
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(expected))
           .body("status.upsertedId", is("setOnInsertDoc1"))
@@ -1242,10 +995,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .body("status.modifiedCount", is(0));
 
       // assert state on insert
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
               {
                 "find": {
@@ -1253,10 +1003,6 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                 }
               }
               """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
 
@@ -1282,14 +1028,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             "active_user":true
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(expected))
           .body("status.matchedCount", is(1))
@@ -1305,14 +1044,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
             }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
@@ -1349,14 +1081,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                         "extra": 13
                       }
                       """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(expected))
           .body("status.upsertedId", is("setOnInsertDoc2"))
@@ -1364,10 +1089,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .body("status.modifiedCount", is(0));
 
       // And verify that the document was inserted as expected:
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                               {
                                 "find": {
@@ -1375,10 +1097,6 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                                 }
                               }
                               """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
@@ -1432,14 +1150,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                     }
                   }
                   """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(updateQuery)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(updateQuery)
           .body("$", responseIsFindAndSuccess())
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
@@ -1457,12 +1168,9 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                     "c": 6
                 }
               }
-                  """;
+              """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                   {
                     "find": {
@@ -1470,10 +1178,6 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                     }
                   }
               """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expectedUpdated));
     }
@@ -1525,14 +1229,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                         }
                       }
                       """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(updateQuery)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(updateQuery)
           .body("$", responseIsFindAndSuccess())
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
@@ -1551,10 +1248,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                         }
                       }
                       """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                           {
                             "find": {
@@ -1562,10 +1256,6 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                             }
                           }
                       """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expectedUpdated));
     }
@@ -1584,10 +1274,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                 }
                 """;
       insertDoc(document);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                 {
                   "findOneAndUpdate": {
@@ -1597,10 +1284,6 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                   }
                 }
                 """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
@@ -1615,10 +1298,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                         "date": { "$date": 1234567890 }
                       }
                       """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                       {
                         "find": {
@@ -1626,10 +1306,6 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                         }
                       }
                       """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
@@ -1646,10 +1322,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                     }
                     """;
       insertDoc(document);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                         {
                           "findOneAndUpdate": {
@@ -1658,10 +1331,6 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                           }
                         }
                         """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
@@ -1674,10 +1343,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                         "_id": "doc1"
                       }
                       """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                               {
                                 "find": {
@@ -1685,10 +1351,6 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                                 }
                               }
                               """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
@@ -1714,14 +1376,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                 }
               }
               """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("SHRED_BAD_EJSON_VALUE"))
           .body(
@@ -1749,10 +1404,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                     }
                     """;
       insertDoc(document);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                         {
                           "findOneAndUpdate": {
@@ -1766,20 +1418,13 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                           }
                         }
                         """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
 
       String json =
-          given()
-              .headers(getHeaders())
-              .contentType(ContentType.JSON)
-              .body(
+          givenHeadersPostJsonThenOk(
                   """
                               {
                                 "find": {
@@ -1787,10 +1432,6 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                                 }
                               }
                               """)
-              .when()
-              .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-              .then()
-              .statusCode(200)
               .body("$", responseIsFindSuccess())
               .body("data.documents", hasSize(1))
               .extract()
@@ -1822,14 +1463,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                     }
                   }
                   """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_PARAM"))
           .body(

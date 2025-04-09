@@ -160,7 +160,6 @@ public class IntermediateCollectionReadTask
         CommandResult commandResult, List<DeferredCommandResultAction> actions) {
       // factory that exits just to avoid doing work that may throw in the constructor
 
-      LOGGER.warn("XXX GOT RESULT {}", commandResult.toString());
       actions.forEach(action -> action.onSuccess(commandResult));
       return new IntermediateReadResults(commandResult, actions);
     }

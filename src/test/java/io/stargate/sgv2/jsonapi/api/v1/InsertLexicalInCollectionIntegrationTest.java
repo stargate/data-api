@@ -11,6 +11,7 @@ import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.ClassOrderer;
@@ -341,6 +342,29 @@ public class InsertLexicalInCollectionIntegrationTest
               "errors[0].message",
               containsString(
                   "Unrecognized sub-field(s) for '$hybrid' Object: expected '$lexical' and/or '$vectorize' but encountered: 'extra', 'stuff' (Document 1 of 1)"));
+    }
+
+    @Test
+    public void failForConflictWithVectorize() {
+      givenHeadersPostJsonThenOk(
+              """
+            {
+              "insertOne": {
+                "document": {
+                    "_id": "hybrid-fail-conflict",
+                    "$vectorize": "monkeys eat bananas",
+                    "$hybrid": {
+                      "$vectorize": "monkeys like bananas"
+                     }
+                }
+              }
+            }
+            """)
+          .body("$", responseIsError())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is(ErrorCodeV1.HYBRID_FIELD_CONFLICT.name()))
+          .body(
+              "errors[0].message", containsString(ErrorCodeV1.HYBRID_FIELD_CONFLICT.getMessage()));
     }
   }
 }

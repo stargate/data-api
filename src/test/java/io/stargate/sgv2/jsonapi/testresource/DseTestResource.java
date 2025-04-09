@@ -29,7 +29,7 @@ public class DseTestResource extends StargateTestResource {
     // 17-Mar-2025, tatu: and then to HCD to get BM25 implementation
     final String cassandraImage =
         // "stargateio/dse-next:4.0.11-591d171ac9c9"
-        // "datastax/dse-server:6.9.7"
+        // "datastax/dse-server:6.9.8"
         "559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/staging/hcd:1.2.1-early-preview";
 
     System.setProperty("testing.containers.cassandra-image", cassandraImage);

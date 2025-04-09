@@ -54,32 +54,39 @@ public class CollectionRerankDef {
    *
    * <p>This constructor is annotated with {@link JsonCreator} to enable Jackson deserialization.
    * {@link JsonProperty} annotations on parameters allow Jackson to map JSON properties to
-   * constructor parameters during deserialization.
+   * constructor parameters during deserialization. This constructor is private - please use the
+   * appropriate factory method to create instances.
    *
    * <p>Validation behavior:
    *
    * <ul>
    *   <li>If reranking is enabled (enabled = true), the service definition must not be null
-   *   <li>If reranking is disabled (enabled = false), the service definition is set to null
-   *       regardless of the input value to ensure consistency
+   *   <li>If reranking is disabled (enabled = false), the service definition must be null
    * </ul>
    *
    * @param enabled Whether reranking is enabled for this collection
    * @param rerankServiceDef The service configuration for reranking, must not be null if reranking
-   *     is enabled
-   * @throws NullPointerException if reranking is enabled and rerankingServiceConfig is null
+   *     is enabled and must be null if reranking is disabled
+   * @throws NullPointerException if reranking is enabled and rerankServiceDef is null
+   * @throws IllegalArgumentException if reranking is disabled and rerankServiceDef is not null
    */
   @JsonCreator
   public CollectionRerankDef(
       @JsonProperty("enabled") boolean enabled,
       @JsonProperty("service") RerankServiceDef rerankServiceDef) {
     this.enabled = enabled;
-    this.rerankServiceDef =
-        enabled
-            ? Objects.requireNonNull(
-                rerankServiceDef,
-                "Rerank service configuration must not be null when reranking is enabled")
-            : null;
+    if (enabled) {
+      this.rerankServiceDef =
+          Objects.requireNonNull(
+              rerankServiceDef,
+              "Rerank service configuration must not be null when reranking is enabled");
+    } else {
+      if (rerankServiceDef != null) {
+        throw new IllegalArgumentException(
+            "Rerank service configuration must be null when reranking is disabled");
+      }
+      this.rerankServiceDef = null;
+    }
   }
 
   /** Returns whether reranking is enabled for this collection. */
@@ -249,18 +256,22 @@ public class CollectionRerankDef {
 
     // Case 2: Validate 'enabled' flag is present
     Boolean enabled = rerankingDesc.enabled();
+    var serviceConfig = rerankingDesc.rerankServiceDesc();
     if (enabled == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "'enabled' is required property for 'rerank' Object value");
     }
 
-    // Case 3: Reranking disabled - return simple disabled config
+    // Case 3: Reranking disabled - ensure no service configuration is provided
     if (!enabled) {
+      if (serviceConfig != null && !serviceConfig.isEmpty()) {
+        throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+            "'rerank' is disabled, but 'rerank.service' configuration is provided");
+      }
       return DISABLED;
     }
 
     // Case 4: Enabled but no service config - use defaults
-    var serviceConfig = rerankingDesc.rerankServiceDesc();
     if (serviceConfig == null) {
       return configForNewCollections(isRerankingEnabledForAPI, providerConfigs);
     }
