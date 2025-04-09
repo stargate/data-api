@@ -139,6 +139,7 @@ public class HybridFieldExpanderTest {
                 """,
             ErrorCodeV1.HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE,
             "Unsupported JSON value type for '$hybrid' sub-field: expected String or `null` for '$lexical' but received Number (Document 1 of 1)"),
+        // Conflict reported for actual collisions, even if values identical
         Arguments.of(
             """
                     {
@@ -147,11 +148,12 @@ public class HybridFieldExpanderTest {
                         "$lexical": "bananas",
                         "$vectorize": "monkeys like bananas"
                        },
-                       "$lexical": "monkeys"
+                       "$lexical": "bananas"
                     }
                     """,
             ErrorCodeV1.HYBRID_FIELD_CONFLICT,
             "Conflict between '$hybrid' sub-field and '$vector' and/or '$vectorize' field(s)"),
+        // Conflict reported even if individual (sub-)fields do not overlap
         Arguments.of(
             """
                     {
