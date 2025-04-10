@@ -2,10 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
-import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
-import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -222,7 +219,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     private final RerankingQuery query;
     private final List<ScoredDocument> unrankedDocs;
     private final int limit;
-    private final MetricsRecorder metricsRecorder;
+    private final RerankingMetrics rerankingMetrics;
 
     RerankingResultSupplier(
         RequestTracing requestTracing,
@@ -241,7 +238,8 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       this.query = query;
       this.unrankedDocs = unrankedDocs;
       this.limit = limit;
-      this.metricsRecorder = new MetricsRecorder(meterRegistry, rerankingProvider, requestContext);
+      this.rerankingMetrics =
+          new RerankingMetrics(meterRegistry, rerankingProvider, requestContext);
     }
 
     @Override
@@ -299,18 +297,21 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                           "limit", limit,
                           "passages", passages))));
 
-      // Record input sizes before making the call
-      metricsRecorder.recordInputSizes(passages);
+      // Record the total number of passages that will proceed
+      rerankingMetrics.recordTotalNumberOfPassages(passages);
 
-      // Start timing the operation
-      Timer.Sample sample = metricsRecorder.startTimer();
+      // This executes the internal sync prep - no actual network call yet
+      Uni<RerankingProvider.RerankingResponse> rerankResponseUni =
+          rerankingProvider.rerank(query.query(), passages, credentials);
 
-      return rerankingProvider
-          .rerank(query.query(), passages, credentials)
+      // Start the timer after the internal prep is done to get more accurate reranking call latency
+      Timer.Sample sample = rerankingMetrics.startTimer();
+
+      return rerankResponseUni
           .onItem()
-          .invoke(response -> metricsRecorder.stopTimer(sample)) // Stop timer on success
+          .invoke(response -> rerankingMetrics.stopTimer(sample)) // Stop timer on success
           .onFailure()
-          .invoke(error -> metricsRecorder.stopTimer(sample)) // Stop timer on failure too
+          .invoke(error -> rerankingMetrics.stopTimer(sample)) // Stop timer on failure too
           .map(
               rerankingResponse ->
                   RerankingTaskResult.create(
@@ -388,56 +389,6 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
     public List<ScoredDocument> rerankedDocuments() {
       return rerankedDocuments;
-    }
-  }
-
-  // Inner class to handle metrics
-  private static class MetricsRecorder {
-    final String RERANK_INPUT_BYTES_METRICS = "reranking.input.bytes";
-    final String RERANKING_CALL_DURATION_METRICS = "reranking.call.duration";
-    final String RERANKING_PROVIDER_METRICS_TAG = "reranking.provider";
-    final String RERANKING_PROVIDER_MODEL_METRICS_TAG = "reranking.model";
-    final String TENANT_TAG = "tenant";
-    final String UNKNOWN_VALUE = "unknown";
-    private final MeterRegistry meterRegistry;
-    private final RerankingProvider rerankingProvider;
-    private final RequestContext requestContext;
-
-    public MetricsRecorder(
-        MeterRegistry meterRegistry,
-        RerankingProvider rerankingProvider,
-        RequestContext requestContext) {
-      this.meterRegistry = meterRegistry;
-      this.rerankingProvider = rerankingProvider;
-      this.requestContext = requestContext;
-    }
-
-    void recordInputSizes(List<String> passages) {
-      Objects.requireNonNull(passages);
-      DistributionSummary ds =
-          DistributionSummary.builder(RERANK_INPUT_BYTES_METRICS)
-              .tags(getCustomTags())
-              .register(meterRegistry);
-      passages.stream().mapToInt(String::length).forEach(ds::record);
-    }
-
-    Timer.Sample startTimer() {
-      return Timer.start(meterRegistry);
-    }
-
-    void stopTimer(Timer.Sample sample) {
-      sample.stop(meterRegistry.timer(RERANKING_CALL_DURATION_METRICS, getCustomTags()));
-    }
-
-    private Tags getCustomTags() {
-      Tag tenantTag = Tag.of(TENANT_TAG, requestContext.getTenantId().orElse(UNKNOWN_VALUE));
-      Tag rerankingProviderTag =
-          Tag.of(RERANKING_PROVIDER_METRICS_TAG, classSimpleName(rerankingProvider.getClass()));
-      Tag rerankingModelTag =
-          Tag.of(
-              RERANKING_PROVIDER_MODEL_METRICS_TAG,
-              Optional.ofNullable(rerankingProvider.modelName()).orElse(UNKNOWN_VALUE));
-      return Tags.of(tenantTag, rerankingProviderTag, rerankingModelTag);
     }
   }
 }
