@@ -56,6 +56,28 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
       deleteCollection(collectionName);
     }
 
+    // [data-api#2001]: Empty Analyzer object should be fine
+    @Test
+    void createLexicalSimpleEnabledEmptyObject() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+      final String collectionName = "coll_lexical_emptyob" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                                {
+                                  "enabled": true,
+                                  "analyzer": { }
+                                }
+                          """);
+
+      givenHeadersPostJsonThenOkNoErrors(json)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+      deleteCollection(collectionName);
+    }
+
     @Test
     void createLexicalSimpleEnabledCustom() {
       Assumptions.assumeTrue(isLexicalAvailableForDB());
@@ -269,7 +291,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
             .body(
                 "errors[0].message",
                 containsString(
-                    "'analyzer' property of 'lexical' must be either String or JSON Object, is: ARRAY"));
+                    "'analyzer' property of 'lexical' must be either JSON Object or String, is: Array"));
       } else {
         givenHeadersPostJsonThenOk(json)
             .body("$", responseIsError())

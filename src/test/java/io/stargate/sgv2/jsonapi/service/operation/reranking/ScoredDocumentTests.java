@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test;
  */
 public class ScoredDocumentTests {
 
+  private static final float SIMILARITY_SCORE = 0.75f;
+
   private static final JsonNode ID_1 = JsonNodeFactory.instance.textNode("id1");
   private static final JsonNode ID_2 = JsonNodeFactory.instance.textNode("id2");
   private static final JsonNode ID_3 = JsonNodeFactory.instance.textNode("id3");
@@ -32,7 +34,7 @@ public class ScoredDocumentTests {
     return JsonNodeFactory.instance
         .objectNode()
         .put(VECTOR_EMBEDDING_TEXT_FIELD, PASSAGE)
-        .put(VECTOR_FUNCTION_SIMILARITY_FIELD, 0.75f)
+        .put(VECTOR_FUNCTION_SIMILARITY_FIELD, SIMILARITY_SCORE)
         .set(DOC_ID, ID_1);
   }
 
@@ -174,6 +176,61 @@ public class ScoredDocumentTests {
     assertThatThrownBy(() -> new ScoredDocument(ID_1, DOCUMENT, PASSAGE, null))
         .isInstanceOf(NullPointerException.class)
         .hasMessage("scores cannot be null");
+  }
+
+  /**
+   * testing the $similarity field being present or not, this happens when the scores are present or
+   * not in the response
+   */
+  @Test
+  public void testSimilarityFieldPresence() {
+
+    var docWithSimilarity = baseDocument();
+    var withSimilarity =
+        ScoredDocument.create(2, Rank.RankSource.VECTOR, docWithSimilarity, VECTORIZE_LOCATOR);
+
+    assertThat(withSimilarity.scores().vector().score())
+        .as("vector score matches when similarity in document")
+        .isEqualTo(SIMILARITY_SCORE);
+    assertThat(withSimilarity.scores().vector().exists())
+        .as("vector score exists when similarity in document")
+        .isTrue();
+    assertThat(withSimilarity.scores().vectorRank().rank())
+        .as("vector rank matches when similarity in document")
+        .isEqualTo(2);
+    assertThat(withSimilarity.scores().vectorRank().exists())
+        .as("vector rank exists when similarity in document")
+        .isTrue();
+
+    var docNoSimilarity = baseDocument();
+    docNoSimilarity.remove(VECTOR_FUNCTION_SIMILARITY_FIELD);
+    var noSimilarity =
+        ScoredDocument.create(3, Rank.RankSource.VECTOR, docNoSimilarity, VECTORIZE_LOCATOR);
+
+    assertThat(noSimilarity.scores().vector().exists())
+        .as("vector score does not exist when similarity not in  document")
+        .isFalse();
+    assertThat(noSimilarity.scores().vectorRank().rank())
+        .as("vector rank matches when similarity not in  document")
+        .isEqualTo(3);
+    assertThat(noSimilarity.scores().vectorRank().exists())
+        .as("vector rank exists when similarity not in  document")
+        .isTrue();
+
+    var docWrongType = baseDocument();
+    docWrongType.put(VECTOR_FUNCTION_SIMILARITY_FIELD, "wrong type");
+    assertThatThrownBy(
+            () -> ScoredDocument.create(4, Rank.RankSource.VECTOR, docWrongType, VECTORIZE_LOCATOR))
+        .as("vector score is not a number when similarity in document")
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("$similarity document field is not a number or is missing type=String _id=id1");
+
+    assertThatThrownBy(
+            () -> ScoredDocument.create(4, Rank.RankSource.BM25, DOCUMENT, VECTORIZE_LOCATOR))
+        .as("vector score present when a BM25 ranking")
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "rankSource is BM25 but the document has similarity score id=\"id1\" has $similarity=0.75");
   }
 
   /** Testing the various ways the passage is extracted */
