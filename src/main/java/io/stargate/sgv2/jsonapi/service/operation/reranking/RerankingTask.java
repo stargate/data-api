@@ -2,12 +2,15 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.ResponseData;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
@@ -107,6 +110,8 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
     return new RerankingResultSupplier(
         commandContext.requestTracing(),
+        commandContext.meterRegistry(),
+        commandContext.requestContext(),
         rerankingProvider,
         commandContext.requestContext().getRerankingCredentials(),
         query,
@@ -208,14 +213,18 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   public static class RerankingResultSupplier implements UniSupplier<RerankingTaskResult> {
 
     private final RequestTracing requestTracing;
+    private final RequestContext requestContext;
     private final RerankingProvider rerankingProvider;
     private final RerankingCredentials credentials;
     private final RerankingQuery query;
     private final List<ScoredDocument> unrankedDocs;
     private final int limit;
+    private final RerankingMetrics rerankingMetrics;
 
     RerankingResultSupplier(
         RequestTracing requestTracing,
+        MeterRegistry meterRegistry,
+        RequestContext requestContext,
         RerankingProvider rerankingProvider,
         RerankingCredentials credentials,
         RerankingQuery query,
@@ -223,11 +232,14 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
         List<ScoredDocument> unrankedDocs,
         int limit) {
       this.requestTracing = requestTracing;
+      this.requestContext = requestContext;
       this.rerankingProvider = rerankingProvider;
       this.credentials = credentials;
       this.query = query;
       this.unrankedDocs = unrankedDocs;
       this.limit = limit;
+      this.rerankingMetrics =
+          new RerankingMetrics(meterRegistry, rerankingProvider, requestContext);
     }
 
     @Override
@@ -285,10 +297,22 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                           "limit", limit,
                           "passages", passages))));
 
-      return rerankingProvider
-          .rerank(query.query(), passages, credentials)
+      // Record the total number of passages that will proceed
+      rerankingMetrics.recordTotalNumberOfPassages(passages);
+
+      // This executes the internal sync prep - no actual network call yet
+      Uni<RerankingProvider.RerankingResponse> rerankResponseUni =
+          rerankingProvider.rerank(query.query(), passages, credentials);
+
+      // Start the timer after the internal prep is done to get more accurate reranking call latency
+      Timer.Sample sample = rerankingMetrics.startTimer();
+
+      return rerankResponseUni
           .onItem()
-          .transform(
+          .invoke(response -> rerankingMetrics.stopTimer(sample)) // Stop timer on success
+          .onFailure()
+          .invoke(error -> rerankingMetrics.stopTimer(sample)) // Stop timer on failure too
+          .map(
               rerankingResponse ->
                   RerankingTaskResult.create(
                       requestTracing, rerankingProvider, rerankingResponse, unrankedDocs, limit));
