@@ -1,5 +1,38 @@
 # Changelog
 
+## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.24...HEAD)
+
+**Fixed bugs:**
+
+- Setting lexical.analyzer={} in createCollection returns error "Analzyer config requires at least a tokenizer, a filter, or a charFilter, but none found. config={}"  [\#2001](https://github.com/stargate/data-api/issues/2001)
+
+**Closed issues:**
+
+- \(Tables\) Error inserting empty association lists as a map [\#1998](https://github.com/stargate/data-api/issues/1998)
+
+## [v1.0.24](https://github.com/stargate/data-api/tree/v1.0.24) (2025-04-10)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.23...v1.0.24)
+
+**Fixed bugs:**
+
+- HTTP 500 error with "$similarity document field is not a number or is missing type" includeScores = false for findAndRerank [\#2000](https://github.com/stargate/data-api/issues/2000)
+- Insertion with both $hybrid and $vectorize/$lexical at root level mask each other [\#1988](https://github.com/stargate/data-api/issues/1988)
+
+**Closed issues:**
+
+- Update to DSE 6.9.8 [\#1990](https://github.com/stargate/data-api/issues/1990)
+
+**Merged pull requests:**
+
+- Fixes \#2001 \(limited\) [\#2006](https://github.com/stargate/data-api/pull/2006) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- fixes \#2000 support $includeScores=false [\#2004](https://github.com/stargate/data-api/pull/2004) ([amorton](https://github.com/amorton))
+- Fixes \#1988: validate $hybrid not overlapping with $lexical/$vectorize [\#2002](https://github.com/stargate/data-api/pull/2002) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#1997](https://github.com/stargate/data-api/pull/1997) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Fixes \#1990: update to DSE-6.9.8 [\#1996](https://github.com/stargate/data-api/pull/1996) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+
 ## [v1.0.23](https://github.com/stargate/data-api/tree/v1.0.23) (2025-04-08)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.22...v1.0.23)
