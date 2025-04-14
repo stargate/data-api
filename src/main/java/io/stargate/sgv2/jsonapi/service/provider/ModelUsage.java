@@ -12,10 +12,18 @@ public class ModelUsage {
   public final String provider;
   public final String model;
 
+  /** The number of bytes sent in the request. */
   private int requestBytes = 0;
+
+  /** The number of bytes received in the response. Use content-length if present */
   private int responseBytes = 0;
 
+  /** The number of tokens in the prompt, will be set if provider returned in the response. */
   private int promptTokens = 0;
+
+  /**
+   * The total number of tokens in the request, will be set if provider returned in the response.
+   */
   private int totalTokens = 0;
 
   public ModelUsage(ProviderType providerType, String provider, String model) {
