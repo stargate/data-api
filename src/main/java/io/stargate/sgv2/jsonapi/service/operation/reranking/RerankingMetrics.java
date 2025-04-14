@@ -4,55 +4,189 @@ import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import io.micrometer.core.instrument.*;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 public class RerankingMetrics {
-  private static final String RERANKING_PASSAGE_COUNT_METRICS = "reranking.passage.count";
-  private static final String RERANKING_CALL_DURATION_METRICS = "reranking.call.duration";
-  private static final String RERANKING_PROVIDER_METRICS_TAG = "reranking.provider";
-  private static final String RERANKING_PROVIDER_MODEL_METRICS_TAG = "reranking.model";
+  // --- Metric Names ---
+  private static final String TENANT_PASSAGE_COUNT_METRIC = "rerank.tenant.passage.count";
+  private static final String ALL_PASSAGE_COUNT_METRIC = "rerank.all.passage.count";
+  private static final String TENANT_CALL_DURATION_METRIC = "rerank.tenant.call.duration";
+  private static final String ALL_CALL_DURATION_METRIC = "rerank.all.call.duration";
+
+  // --- Tag Keys ---
   private static final String TENANT_TAG = "tenant";
+  private static final String TABLE_TAG = "table";
+  private static final String PROVIDER_TAG = "provider";
+  private static final String MODEL_TAG = "model";
+
+  // --- Default Values ---
   private static final String UNKNOWN_VALUE = "unknown";
+
+  // --- Instance Variables ---
   private final MeterRegistry meterRegistry;
   private final RerankingProvider rerankingProvider;
   private final RequestContext requestContext;
+  private final SchemaObject schemaObject;
 
   public RerankingMetrics(
       MeterRegistry meterRegistry,
       RerankingProvider rerankingProvider,
-      RequestContext requestContext) {
+      RequestContext requestContext,
+      SchemaObject schemaObject) {
     this.meterRegistry = Objects.requireNonNull(meterRegistry, "meterRegistry cannot be null");
     this.rerankingProvider =
         Objects.requireNonNull(rerankingProvider, "rerankingProvider cannot be null");
     this.requestContext = Objects.requireNonNull(requestContext, "requestContext cannot be null");
+    this.schemaObject = Objects.requireNonNull(schemaObject, "schemaObject cannot be null");
   }
 
-  void recordTotalNumberOfPassages(List<String> passages) {
-    Objects.requireNonNull(passages);
-    DistributionSummary ds =
-        meterRegistry.summary(RERANKING_PASSAGE_COUNT_METRICS, getCustomTags());
-    ds.record(passages.size());
+  /**
+   * Creates a new tag builder instance initialized with context information. Use this builder to
+   * construct the desired set of tags for a metric.
+   *
+   * @return A new {@link RerankingTagsBuilder} instance.
+   */
+  private RerankingTagsBuilder tagsBuilder() {
+    return new RerankingTagsBuilder();
   }
 
+  /**
+   * Records the number of passages being reranked for a specific tenant and table. Metric: {@code
+   * rerank.tenant.passage.count} Tags: {@code tenant}, {@code table}
+   *
+   * @param passageCount The number of passages.
+   */
+  public void recordTenantPassageCount(int passageCount) {
+    Tags tags =
+        tagsBuilder()
+            .withTenant(requestContext.getTenantId().orElse(UNKNOWN_VALUE))
+            .withTable(schemaObject.name().keyspace() + "." + schemaObject.name().table())
+            .build();
+    DistributionSummary ds = meterRegistry.summary(TENANT_PASSAGE_COUNT_METRIC, tags);
+    ds.record(passageCount);
+  }
+
+  /**
+   * Records the number of passages being reranked across all tenants, tagged by provider and model.
+   * Metric: {@code rerank.all.passage.count} Tags: {@code provider}, {@code model}
+   *
+   * @param passageCount The number of passages.
+   */
+  void recordAllPassageCount(int passageCount) {
+    Tags tags =
+        tagsBuilder()
+            .withProvider(classSimpleName(rerankingProvider.getClass()))
+            .withModel(rerankingProvider.modelName())
+            .build();
+    DistributionSummary ds = meterRegistry.summary(ALL_PASSAGE_COUNT_METRIC, tags);
+    ds.record(passageCount);
+  }
+
+  /**
+   * Starts a timer sample to measure duration. This sample should be used with both {@link
+   * #stopTenantTimer} and {@link #stopAllTimer}.
+   *
+   * @return A {@link Timer.Sample} instance.
+   */
   Timer.Sample startTimer() {
     return Timer.start(meterRegistry);
   }
 
-  void stopTimer(Timer.Sample sample) {
-    sample.stop(meterRegistry.timer(RERANKING_CALL_DURATION_METRICS, getCustomTags()));
+  /**
+   * Stops the timer and records the duration for the specific tenant and table. Metric: {@code
+   * rerank.tenant.call.duration} Tags: {@code tenant}, {@code table} (Expected to be configured for
+   * P98 percentile via MeterFilter)
+   *
+   * @param sample The {@link Timer.Sample} started by {@link #startTimer()}. Must not be null.
+   */
+  void stopTenantTimer(Timer.Sample sample) {
+    Tags tags =
+        tagsBuilder()
+            .withTenant(requestContext.getTenantId().orElse(UNKNOWN_VALUE))
+            .withTable(schemaObject.name().keyspace() + "." + schemaObject.name().table())
+            .build();
+
+    // Record per-tenant timer (P98 only)
+    Timer tenantTimer =
+        Timer.builder(TENANT_CALL_DURATION_METRIC)
+            .description("Duration of rerank call for a specific tenant and table")
+            .tags(tags)
+            .publishPercentiles(0.98) // Only publish p98
+            .register(meterRegistry);
+    sample.stop(tenantTimer);
   }
 
-  private Tags getCustomTags() {
-    Tag tenantTag = Tag.of(TENANT_TAG, requestContext.getTenantId().orElse(UNKNOWN_VALUE));
-    Tag rerankingProviderTag =
-        Tag.of(RERANKING_PROVIDER_METRICS_TAG, classSimpleName(rerankingProvider.getClass()));
-    Tag rerankingModelTag =
-        Tag.of(
-            RERANKING_PROVIDER_MODEL_METRICS_TAG,
-            Optional.ofNullable(rerankingProvider.modelName()).orElse(UNKNOWN_VALUE));
-    return Tags.of(tenantTag, rerankingProviderTag, rerankingModelTag);
+  /**
+   * Stops the timer and records the duration across all tenants, tagged by provider and model.
+   * Metric: {@code rerank.all.call.duration} Tags: {@code provider}, {@code model} (Expected to be
+   * configured for P80, P95, P98 percentiles via MeterFilter)
+   *
+   * @param sample The {@link Timer.Sample} started by {@link #startTimer()}. Must not be null.
+   */
+  void stopAllTimer(Timer.Sample sample) {
+    Tags tags =
+        tagsBuilder()
+            .withProvider(classSimpleName(rerankingProvider.getClass()))
+            .withModel(rerankingProvider.modelName())
+            .build();
+    // Re-stop the same sample for the provider/model aggregated timer (P80, P95, P98)
+    // Note: Calling stop multiple times on the same sample works fine with Micrometer's default
+    // Clock.
+    Timer allTimer =
+        Timer.builder(ALL_CALL_DURATION_METRIC)
+            .description("Duration of rerank call across all tenants for a specific provider/model")
+            .tags(tags)
+            .publishPercentiles(0.80, 0.95, 0.98) // Publish p80, p95, p98
+            .register(meterRegistry);
+    sample.stop(allTimer); // Stop the same sample against the second timer config
+  }
+
+  // --- Static Inner Tag Builder Class ---
+
+  /**
+   * Builder for creating {@link Tags} specific to reranking metrics. Allows flexible combination of
+   * common reranking-related tags. Use {@link RerankingMetrics#tagsBuilder()} to get an instance.
+   */
+  public static class RerankingTagsBuilder {
+    private final List<Tag> currentTags;
+
+    /** Private constructor. Use {@link RerankingMetrics#tagsBuilder()} to get an instance. */
+    private RerankingTagsBuilder() {
+      this.currentTags = new ArrayList<>();
+    }
+
+    public RerankingTagsBuilder withTenant(String tenantId) {
+      currentTags.add(Tag.of(TENANT_TAG, tenantId));
+      return this;
+    }
+
+    public RerankingTagsBuilder withTable(String table) {
+      currentTags.add(Tag.of(TABLE_TAG, table));
+      return this;
+    }
+
+    public RerankingTagsBuilder withProvider(String provider) {
+      currentTags.add(Tag.of(PROVIDER_TAG, provider));
+      return this;
+    }
+
+    public RerankingTagsBuilder withModel(String modelName) {
+      currentTags.add(Tag.of(MODEL_TAG, modelName));
+      return this;
+    }
+
+    /**
+     * Builds the final {@link Tags} object from the added tags.
+     *
+     * @return A new {@link Tags} instance containing all tags added via the 'withX' methods.
+     */
+    public Tags build() {
+      // Creates an immutable Tags object from the list
+      return Tags.of(currentTags);
+    }
   }
 }
