@@ -10,12 +10,12 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class RerankingMetrics {
-  final String RERANKING_NUMBER_OF_PASSAGE = "reranking.passage.count";
-  final String RERANKING_CALL_DURATION_METRICS = "reranking.call.duration";
-  final String RERANKING_PROVIDER_METRICS_TAG = "reranking.provider";
-  final String RERANKING_PROVIDER_MODEL_METRICS_TAG = "reranking.model";
-  final String TENANT_TAG = "tenant";
-  final String UNKNOWN_VALUE = "unknown";
+  private static final String RERANKING_PASSAGE_COUNT_METRICS = "reranking.passage.count";
+  private static final String RERANKING_CALL_DURATION_METRICS = "reranking.call.duration";
+  private static final String RERANKING_PROVIDER_METRICS_TAG = "reranking.provider";
+  private static final String RERANKING_PROVIDER_MODEL_METRICS_TAG = "reranking.model";
+  private static final String TENANT_TAG = "tenant";
+  private static final String UNKNOWN_VALUE = "unknown";
   private final MeterRegistry meterRegistry;
   private final RerankingProvider rerankingProvider;
   private final RequestContext requestContext;
@@ -24,14 +24,16 @@ public class RerankingMetrics {
       MeterRegistry meterRegistry,
       RerankingProvider rerankingProvider,
       RequestContext requestContext) {
-    this.meterRegistry = meterRegistry;
-    this.rerankingProvider = rerankingProvider;
-    this.requestContext = requestContext;
+    this.meterRegistry = Objects.requireNonNull(meterRegistry, "meterRegistry cannot be null");
+    this.rerankingProvider =
+        Objects.requireNonNull(rerankingProvider, "rerankingProvider cannot be null");
+    this.requestContext = Objects.requireNonNull(requestContext, "requestContext cannot be null");
   }
 
   void recordTotalNumberOfPassages(List<String> passages) {
     Objects.requireNonNull(passages);
-    DistributionSummary ds = meterRegistry.summary(RERANKING_NUMBER_OF_PASSAGE, getCustomTags());
+    DistributionSummary ds =
+        meterRegistry.summary(RERANKING_PASSAGE_COUNT_METRICS, getCustomTags());
     ds.record(passages.size());
   }
 

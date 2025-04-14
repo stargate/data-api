@@ -105,7 +105,8 @@ public class CollectionResource {
             .withCqlSessionCache(cqlSessionCache)
             .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
             .withEmbeddingProviderFactory(embeddingProviderFactory)
-            .withRerankingProviderFactory(rerankingProviderFactory);
+            .withRerankingProviderFactory(rerankingProviderFactory)
+            .withMeterRegistry(meterRegistry);
   }
 
   @Operation(
@@ -271,7 +272,6 @@ public class CollectionResource {
                         .withEmbeddingProvider(embeddingProvider)
                         .withCommandName(command.getClass().getSimpleName())
                         .withRequestContext(requestContext)
-                        .withMeterRegistry(meterRegistry)
                         .build();
 
                 return meteredCommandProcessor.processCommand(commandContext, command);

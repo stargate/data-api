@@ -229,6 +229,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
     private CommandConfig commandConfig;
     private EmbeddingProviderFactory embeddingProviderFactory;
     private RerankingProviderFactory rerankingProviderFactory;
+    private MeterRegistry meterRegistry;
 
     BuilderSupplier() {}
 
@@ -260,6 +261,11 @@ public class CommandContext<SchemaT extends SchemaObject> {
       return this;
     }
 
+    public BuilderSupplier withMeterRegistry(MeterRegistry meterRegistry) {
+      this.meterRegistry = meterRegistry;
+      return this;
+    }
+
     public <SchemaT extends SchemaObject> Builder<SchemaT> getBuilder(SchemaT schemaObject) {
 
       Objects.requireNonNull(
@@ -268,6 +274,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
       Objects.requireNonNull(commandConfig, "commandConfig must not be null");
       Objects.requireNonNull(embeddingProviderFactory, "embeddingProviderFactory must not be null");
       Objects.requireNonNull(rerankingProviderFactory, "rerankingProviderFactory must not be null");
+      Objects.requireNonNull(meterRegistry, "meterRegistry must not be null");
 
       // SchemaObject is passed here so the generics gets locked here, makes call chaining easier
       Objects.requireNonNull(schemaObject, "schemaObject must not be null");
@@ -289,7 +296,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
       private String commandName;
       private RequestContext requestContext;
       private ApiFeatures apiFeatures;
-      private MeterRegistry meterRegistry;
 
       Builder(SchemaT schemaObject) {
         this.schemaObject = schemaObject;
@@ -316,11 +322,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
        */
       public Builder<SchemaT> withApiFeatures(ApiFeatures apiFeatures) {
         this.apiFeatures = apiFeatures;
-        return this;
-      }
-
-      public Builder<SchemaT> withMeterRegistry(MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
         return this;
       }
 
