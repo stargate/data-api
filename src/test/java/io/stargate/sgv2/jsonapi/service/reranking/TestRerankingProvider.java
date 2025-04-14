@@ -2,6 +2,9 @@ package io.stargate.sgv2.jsonapi.service.reranking;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
+import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
+import io.stargate.sgv2.jsonapi.service.provider.ProviderType;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
@@ -37,6 +40,14 @@ public class TestRerankingProvider extends RerankingProvider {
       ranks.add(new Rank(i, score));
     }
     ranks.sort((o1, o2) -> Float.compare(o2.score(), o1.score())); // Descending order
-    return Uni.createFrom().item(RerankingBatchResponse.of(batchId, ranks, new Usage(0, 0)));
+    return Uni.createFrom()
+        .item(
+            RerankingBatchResponse.of(
+                batchId,
+                ranks,
+                new ModelUsage(
+                    ProviderType.RERANKING_PROVIDER,
+                    ProviderConstants.NVIDIA,
+                    "nvidia/llama-3.2-nv-rerankqa-1b-v2")));
   }
 }

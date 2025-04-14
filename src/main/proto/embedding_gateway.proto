@@ -53,7 +53,7 @@ message ProviderEmbedRequest {
 
 // The response message for the embedding gateway gRPC API if successful
 message EmbeddingResponse {
-  Usage 					usage = 1;
+  ModelUsage 					modelUsage = 1;
   repeated FloatEmbedding		embeddings = 2;
   ErrorResponse error = 3;
 
@@ -63,18 +63,6 @@ message EmbeddingResponse {
     int32 				index = 1;
     // The embedding values
     repeated float			embedding = 2;
-  }
-
-  // The usage statistics for the embedding gateway gRPC API on successful response
-  message Usage {
-    string 				provider_name = 1;
-    string 				model_name = 2;
-    string  			tenant_id = 3;
-    int32 				prompt_tokens = 4;
-    int32 				total_tokens = 5;
-    int32 				input_bytes = 6;
-    int32					output_bytes = 7;
-    int32					call_duration_us = 8;
   }
 
   // The error response message for the embedding gateway gRPC API
@@ -227,7 +215,7 @@ message ProviderRerankingRequest {
 
 // The reranking response message for the embedding gateway gRPC API if successful
 message RerankingResponse {
-  Usage 					  usage = 1;
+  ModelUsage 					  modelUsage = 1;
   repeated Rank		  ranks = 2;
   ErrorResponse     error = 3;
 
@@ -237,12 +225,6 @@ message RerankingResponse {
     int32 	  index = 1;
     // The rank score value of the passage
     float	    score = 2;
-  }
-
-  // The usage statistics of reranking for the embedding gateway gRPC API on successful response
-  message Usage {
-    int32 	prompt_tokens = 1;
-    int32 	total_tokens = 2;
   }
 
   message ErrorResponse {
@@ -313,3 +295,21 @@ service RerankingService {
   rpc Rerank (ProviderRerankingRequest) returns (RerankingResponse) {}
   rpc GetSupportedRerankingProviders (GetSupportedRerankingProvidersRequest) returns (GetSupportedRerankingProvidersResponse){}
 }
+
+
+
+// Common messages definition shared by both embedding and reranking
+
+// The usage statistics for the embedding gateway gRPC API on successful response from the provider
+message ModelUsage {
+  string 				provider_type = 1;
+  string 				provider_name = 2;
+  string 				model_name = 3;
+  string  			tenant_id = 4;
+  int32 				prompt_tokens = 5;
+  int32 				total_tokens = 6;
+  int32 				request_bytes = 7;
+  int32					response_bytes = 8;
+  int32					call_duration_us = 9;
+}
+

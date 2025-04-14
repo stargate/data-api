@@ -14,6 +14,8 @@ import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
+import io.stargate.sgv2.jsonapi.service.provider.ProviderType;
 import io.stargate.sgv2.jsonapi.service.reranking.gateway.RerankingEGWClient;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -55,6 +57,17 @@ public class RerankingGatewayClientTest {
                         .build())
             .toList();
     builder.addAllRanks(ranks);
+    // mock model usage
+    builder.setModelUsage(
+        EmbeddingGateway.ModelUsage.newBuilder()
+            .setProviderType(ProviderType.RERANKING_PROVIDER.name())
+            .setProviderName(ProviderConstants.NVIDIA)
+            .setModelName("llama-3.2-nv-rerankqa-1b-v2")
+            .setPromptTokens(10)
+            .setTotalTokens(20)
+            .setRequestBytes(100)
+            .setResponseBytes(200)
+            .build());
     when(rerankService.rerank(any())).thenReturn(Uni.createFrom().item(builder.build()));
 
     // Create a RerankEGWClient instance
@@ -86,6 +99,15 @@ public class RerankingGatewayClientTest {
     assertThat(response.ranks().get(0).score()).isEqualTo(1f);
     assertThat(response.ranks().get(1).index()).isEqualTo(0);
     assertThat(response.ranks().get(1).score()).isEqualTo(0.1f);
+
+    assertThat(response.modelUsage()).isNotNull();
+    assertThat(response.modelUsage().providerType).isEqualTo(ProviderType.RERANKING_PROVIDER);
+    assertThat(response.modelUsage().provider).isEqualTo(ProviderConstants.NVIDIA);
+    assertThat(response.modelUsage().model).isEqualTo("llama-3.2-nv-rerankqa-1b-v2");
+    assertThat(response.modelUsage().getPromptTokens()).isEqualTo(10);
+    assertThat(response.modelUsage().getTotalTokens()).isEqualTo(20);
+    assertThat(response.modelUsage().getRequestBytes()).isEqualTo(100);
+    assertThat(response.modelUsage().getResponseBytes()).isEqualTo(200);
   }
 
   @Test

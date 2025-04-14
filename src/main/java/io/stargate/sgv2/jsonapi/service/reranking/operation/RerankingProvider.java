@@ -4,6 +4,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -95,15 +96,14 @@ public abstract class RerankingProvider {
       int batchId, String query, List<String> passages, RerankingCredentials rerankingCredentials);
 
   /** The response of a batch rerank call. */
-  public record RerankingBatchResponse(int batchId, List<Rank> ranks, Usage usage) {
-    public static RerankingBatchResponse of(int batchId, List<Rank> rankings, Usage usage) {
-      return new RerankingBatchResponse(batchId, rankings, usage);
+  public record RerankingBatchResponse(int batchId, List<Rank> ranks, ModelUsage modelUsage) {
+    public static RerankingBatchResponse of(
+        int batchId, List<Rank> rankings, ModelUsage modelUsage) {
+      return new RerankingBatchResponse(batchId, rankings, modelUsage);
     }
   }
 
   public record Rank(int index, float score) {}
-
-  public record Usage(int prompt_tokens, int total_tokens) {}
 
   /**
    * Applies a retry mechanism with backoff and jitter to the Uni returned by the rerank() method,

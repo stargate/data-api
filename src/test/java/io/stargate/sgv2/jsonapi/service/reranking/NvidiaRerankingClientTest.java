@@ -10,6 +10,8 @@ import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
+import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
+import io.stargate.sgv2.jsonapi.service.provider.ProviderType;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.NvidiaRerankingProvider;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -42,7 +44,12 @@ public class NvidiaRerankingClientTest {
               return Uni.createFrom()
                   .item(
                       new RerankingProvider.RerankingBatchResponse(
-                          1, ranks, new RerankingProvider.Usage(0, 0)));
+                          1,
+                          ranks,
+                          new ModelUsage(
+                              ProviderType.RERANKING_PROVIDER,
+                              "nvidia",
+                              "llama-3.2-nv-rerankqa-1b-v2")));
             });
 
     final RerankingProvider.RerankingBatchResponse response =
