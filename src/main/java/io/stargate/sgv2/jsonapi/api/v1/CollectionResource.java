@@ -72,26 +72,21 @@ public class CollectionResource {
 
   public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}/{collection}";
 
-  private final MeteredCommandProcessor meteredCommandProcessor;
-
-  @Inject private SchemaCache schemaCache;
-
-  private EmbeddingProviderFactory embeddingProviderFactory;
-
-  @Inject private RequestContext requestContext;
-
-  //  need to keep for a little because we have to check the schema type before making the command
+  // need to keep for a little because we have to check the schema type before making the command
   // context
   // TODO remove apiFeatureConfig as a property after cleanup for how we get schema from cache
   @Inject private FeaturesConfig apiFeatureConfig;
+  @Inject private RequestContext requestContext;
+  @Inject private SchemaCache schemaCache;
 
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
-
-  @Inject MeterRegistry meterRegistry;
+  private final EmbeddingProviderFactory embeddingProviderFactory;
+  private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject
   public CollectionResource(
       MeteredCommandProcessor meteredCommandProcessor,
+      MeterRegistry meterRegistry,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CQLSessionCache cqlSessionCache,
       EmbeddingProviderFactory embeddingProviderFactory,
