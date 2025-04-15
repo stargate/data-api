@@ -305,7 +305,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
           rerankingProvider.rerank(query.query(), passages, credentials);
 
       // Start the timer after the internal prep is done to get more accurate reranking call latency
-      Timer.Sample sample = rerankingMetrics.startTimer();
+      Timer.Sample sample = rerankingMetrics.startRerankNetworkCallTimer();
 
       // --- Return Uni with Metrics Callbacks ---
       return rerankResponseUni
@@ -313,14 +313,14 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
           .invoke(
               response -> {
                 // Stop both timers on success
-                rerankingMetrics.stopTenantTimer(sample);
-                rerankingMetrics.stopAllTimer(sample);
+                rerankingMetrics.stopRerankNetworkCallTenantTimer(sample);
+                rerankingMetrics.stopRerankNetworkCallAllTimer(sample);
               })
           .onFailure()
           .invoke(
               error -> { // Stop both timers on failure too
-                rerankingMetrics.stopTenantTimer(sample);
-                rerankingMetrics.stopAllTimer(sample);
+                rerankingMetrics.stopRerankNetworkCallTenantTimer(sample);
+                rerankingMetrics.stopRerankNetworkCallAllTimer(sample);
               }) // Stop timer on failure too
           .map(
               rerankingResponse ->

@@ -76,7 +76,7 @@ public class RerankingMetrics {
    *
    * @param passageCount The number of passages.
    */
-  void recordAllPassageCount(int passageCount) {
+  public void recordAllPassageCount(int passageCount) {
     Tags tags =
         tagsBuilder()
             .withProvider(classSimpleName(rerankingProvider.getClass()))
@@ -88,11 +88,11 @@ public class RerankingMetrics {
 
   /**
    * Starts a timer sample to measure duration. This sample should be used with both {@link
-   * #stopTenantTimer} and {@link #stopAllTimer}.
+   * #stopRerankNetworkCallTenantTimer} and {@link #stopRerankNetworkCallAllTimer}.
    *
    * @return A {@link Timer.Sample} instance.
    */
-  Timer.Sample startTimer() {
+  public Timer.Sample startRerankNetworkCallTimer() {
     return Timer.start(meterRegistry);
   }
 
@@ -101,9 +101,10 @@ public class RerankingMetrics {
    * rerank.tenant.call.duration} Tags: {@code tenant}, {@code table} (Expected to be configured for
    * P98 percentile via MeterFilter)
    *
-   * @param sample The {@link Timer.Sample} started by {@link #startTimer()}. Must not be null.
+   * @param sample The {@link Timer.Sample} started by {@link #startRerankNetworkCallTimer()}. Must
+   *     not be null.
    */
-  void stopTenantTimer(Timer.Sample sample) {
+  public void stopRerankNetworkCallTenantTimer(Timer.Sample sample) {
     Tags tags =
         tagsBuilder()
             .withTenant(requestContext.getTenantId().orElse(UNKNOWN_VALUE))
@@ -125,9 +126,10 @@ public class RerankingMetrics {
    * Metric: {@code rerank.all.call.duration} Tags: {@code provider}, {@code model} (Expected to be
    * configured for P80, P95, P98 percentiles via MeterFilter)
    *
-   * @param sample The {@link Timer.Sample} started by {@link #startTimer()}. Must not be null.
+   * @param sample The {@link Timer.Sample} started by {@link #startRerankNetworkCallTimer()}. Must
+   *     not be null.
    */
-  void stopAllTimer(Timer.Sample sample) {
+  public void stopRerankNetworkCallAllTimer(Timer.Sample sample) {
     Tags tags =
         tagsBuilder()
             .withProvider(classSimpleName(rerankingProvider.getClass()))
@@ -170,6 +172,9 @@ public class RerankingMetrics {
     }
 
     public RerankingTagsBuilder withProvider(String provider) {
+      // TODO: It's not easy to get the provider name as it is described in the config. So we use
+      // the class name to
+      //  indicate the provider. Need to replace the class name in the future.
       currentTags.add(Tag.of(PROVIDER_TAG, provider));
       return this;
     }
