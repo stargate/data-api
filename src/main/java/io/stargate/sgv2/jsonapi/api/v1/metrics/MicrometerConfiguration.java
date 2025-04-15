@@ -34,16 +34,29 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Centralized configuration of Micrometer {@link MeterFilter}s. Provides filters for applying
- * global tags and configuring distribution statistics (percentiles, histograms, SLA boundaries) for
- * specific metrics.
+ * Centralized configuration of Micrometer {@link MeterFilter}s.
+ *
+ * <p>This class provides CDI producer methods for {@link MeterFilter} beans that:
+ *
+ * <ul>
+ *   <li>Apply global tags (e.g., module identifier) to all metrics based on {@link MetricsConfig}.
+ *   <li>Configure distribution statistics (client-side percentiles, Prometheus histogram buckets,
+ *       etc.) for specific timer metrics used throughout the application, such as HTTP server
+ *       requests, vectorization duration, and reranking durations.
+ * </ul>
  */
+@Singleton
 public class MicrometerConfiguration {
 
-  // Inject necessary configuration beans
   private final MetricsConfig metricsConfig;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
+  /**
+   * Constructs the Micrometer configuration bean. Dependencies are injected by the CDI container.
+   *
+   * @param metricsConfig General metrics configuration containing global tags.
+   * @param jsonApiMetricsConfig Configuration specific to JSON API metrics, including metric names.
+   */
   @Inject
   public MicrometerConfiguration(
       MetricsConfig metricsConfig, JsonApiMetricsConfig jsonApiMetricsConfig) {
@@ -52,10 +65,11 @@ public class MicrometerConfiguration {
   }
 
   /**
-   * Produces a meter filter that applies configured global tags (e.g. module tag sgv2-jsonapi) to
-   * all metrics. Reads tags from {@link MetricsConfig#globalTags()}.
+   * Produces a meter filter that applies configured global tags (e.g., {@code module=sgv2-jsonapi})
+   * to all metrics. Reads tags from {@link MetricsConfig#globalTags()}.
    *
-   * @return A {@link MeterFilter} for applying common tags.
+   * @return A {@link MeterFilter} for applying common tags, or an empty filter if no global tags
+   *     are configured.
    */
   @Produces
   @Singleton
@@ -80,16 +94,27 @@ public class MicrometerConfiguration {
   }
 
   /**
-   * Produces a meter filter that configures distribution statistics (percentiles, histograms, SLAs)
-   * for specific timer metrics used throughout the application.
+   * Produces a meter filter that configures distribution statistics for specific timer metrics used
+   * throughout the application..
+   *
+   * <p>This filter enables Prometheus-compatible histogram buckets for server-side percentile
+   * calculation (via {@code histogram_quantile}) and configures specific client-side percentiles
+   * where required.
    *
    * <p>Configures:
    *
    * <ul>
-   *   <li>HTTP Server Requests (http.server.requests.*): P50, P90, P95, P99, Histogram
-   *   <li>Vectorize Call Duration (vectorize.call.duration): P50, P90, P95, P99, Histogram
-   *   <li>Tenant Reranking Duration (rerank.tenant.call.duration): P98, Histogram
-   *   <li>Overall Reranking Duration (rerank.all.call.duration): P80, P95, P98, Histogram
+   *   <li>HTTP Server Requests {@value
+   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.HttpMetrics#HTTP_SERVER_REQUESTS}:
+   *       P50, P90, P95, P99, Histogram
+   *   <li>Vectorize Call Duration {@link JsonApiMetricsConfig#vectorizeCallDurationMetrics()}: P50,
+   *       P90, P95, P99, Histogram
+   *   <li>Tenant Reranking Duration {@value
+   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics#TENANT_CALL_DURATION_METRIC}:
+   *       P98, Histogram
+   *   <li>Overall Reranking Duration {@value
+   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics#ALL_CALL_DURATION_METRIC}:
+   *       P80, P95, P98, Histogram
    * </ul>
    *
    * @return A {@link MeterFilter} for configuring distribution statistics.
@@ -103,33 +128,30 @@ public class MicrometerConfiguration {
       public DistributionStatisticConfig configure(
           Meter.Id id, DistributionStatisticConfig config) {
         String name = id.getName();
+        DistributionStatisticConfig.Builder builder = null;
 
         // --- Configuration for HTTP Server & Vectorize metrics ---
         if (name.startsWith(HTTP_SERVER_REQUESTS)
             || name.equals(jsonApiMetricsConfig.vectorizeCallDurationMetrics())) {
-          return DistributionStatisticConfig.builder()
-              .percentiles(0.5, 0.90, 0.95, 0.99) // Client-side percentiles
-              .percentilesHistogram(true) // Enable Prometheus histogram buckets
-              .build()
-              .merge(config);
+          builder = DistributionStatisticConfig.builder().percentiles(0.5, 0.90, 0.95, 0.99);
         }
 
         // --- Configuration for Tenant Reranking Timer ---
         else if (name.equals(TENANT_CALL_DURATION_METRIC)) {
-          return DistributionStatisticConfig.builder()
-              .percentiles(0.98) // Publish only P98 client-side
-              .percentilesHistogram(true) // Enable Prometheus histogram buckets
-              .build()
-              .merge(config);
+          builder = DistributionStatisticConfig.builder().percentiles(0.98);
         }
 
         // --- Configuration for Overall Reranking Timer ---
         else if (name.equals(ALL_CALL_DURATION_METRIC)) {
-          return DistributionStatisticConfig.builder()
-              .percentiles(0.80, 0.95, 0.98) // Publish P80, P95, P98 client-side
-              .percentilesHistogram(true) // Enable Prometheus histogram buckets
-              .build()
-              .merge(config);
+          builder = DistributionStatisticConfig.builder().percentiles(0.80, 0.95, 0.98);
+        }
+
+        // If a specific configuration was found, enable histograms and merge
+        if (builder != null) {
+          // Enable Prometheus histogram buckets for all configured timers
+          // This allows server-side histogram_quantile calculations
+          builder.percentilesHistogram(true);
+          return builder.build().merge(config);
         }
 
         // For all other metrics, return the default configuration
