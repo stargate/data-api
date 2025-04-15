@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi;
 
 import static org.mockito.Mockito.mock;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
@@ -114,6 +115,7 @@ public class TestConstants {
         .withCommandConfig(new CommandConfig())
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
+        .withMeterRegistry(mock(MeterRegistry.class))
         .getBuilder(schema)
         .withEmbeddingProvider(embeddingProvider)
         .withCommandName(commandName)
@@ -138,6 +140,7 @@ public class TestConstants {
         .withCommandConfig(new CommandConfig())
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
+        .withMeterRegistry(mock(MeterRegistry.class))
         .getBuilder(schema)
         .withCommandName(commandName)
         .withRequestContext(new RequestContext(Optional.of("test-tenant")))
@@ -151,6 +154,7 @@ public class TestConstants {
         .withCommandConfig(new CommandConfig())
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
+        .withMeterRegistry(mock(MeterRegistry.class))
         .getBuilder(DATABASE_SCHEMA_OBJECT)
         .withCommandName(TEST_COMMAND_NAME)
         .withRequestContext(new RequestContext(Optional.of("test-tenant")))
