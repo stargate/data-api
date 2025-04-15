@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
+import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.MetricTags.*;
+import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics.*;
+import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.UNKNOWN_VALUE;
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import io.micrometer.core.instrument.*;
@@ -11,22 +14,6 @@ import java.util.List;
 import java.util.Objects;
 
 public class RerankingMetrics {
-  // --- Metric Names ---
-  private static final String TENANT_PASSAGE_COUNT_METRIC = "rerank.tenant.passage.count";
-  private static final String ALL_PASSAGE_COUNT_METRIC = "rerank.all.passage.count";
-  private static final String TENANT_CALL_DURATION_METRIC = "rerank.tenant.call.duration";
-  private static final String ALL_CALL_DURATION_METRIC = "rerank.all.call.duration";
-
-  // --- Tag Keys ---
-  private static final String TENANT_TAG = "tenant";
-  private static final String TABLE_TAG = "table";
-  private static final String PROVIDER_TAG = "provider";
-  private static final String MODEL_TAG = "model";
-
-  // --- Default Values ---
-  private static final String UNKNOWN_VALUE = "unknown";
-
-  // --- Instance Variables ---
   private final MeterRegistry meterRegistry;
   private final RerankingProvider rerankingProvider;
   private final RequestContext requestContext;
@@ -111,14 +98,7 @@ public class RerankingMetrics {
             .withTable(schemaObject.name().keyspace() + "." + schemaObject.name().table())
             .build();
 
-    // Record per-tenant timer (P98 only)
-    Timer tenantTimer =
-        Timer.builder(TENANT_CALL_DURATION_METRIC)
-            .description("Duration of rerank call for a specific tenant and table")
-            .tags(tags)
-            .publishPercentiles(0.98) // Only publish p98
-            .register(meterRegistry);
-    sample.stop(tenantTimer);
+    sample.stop(meterRegistry.timer(TENANT_CALL_DURATION_METRIC, tags));
   }
 
   /**
@@ -135,16 +115,8 @@ public class RerankingMetrics {
             .withProvider(classSimpleName(rerankingProvider.getClass()))
             .withModel(rerankingProvider.modelName())
             .build();
-    // Re-stop the same sample for the provider/model aggregated timer (P80, P95, P98)
-    // Note: Calling stop multiple times on the same sample works fine with Micrometer's default
-    // Clock.
-    Timer allTimer =
-        Timer.builder(ALL_CALL_DURATION_METRIC)
-            .description("Duration of rerank call across all tenants for a specific provider/model")
-            .tags(tags)
-            .publishPercentiles(0.80, 0.95, 0.98) // Publish p80, p95, p98
-            .register(meterRegistry);
-    sample.stop(allTimer); // Stop the same sample against the second timer config
+
+    sample.stop(meterRegistry.timer(ALL_CALL_DURATION_METRIC, tags));
   }
 
   // --- Static Inner Tag Builder Class ---
@@ -173,14 +145,13 @@ public class RerankingMetrics {
 
     public RerankingTagsBuilder withProvider(String provider) {
       // TODO: It's not easy to get the provider name as it is described in the config. So we use
-      // the class name to
-      //  indicate the provider. Need to replace the class name in the future.
-      currentTags.add(Tag.of(PROVIDER_TAG, provider));
+      // the class name to indicate the provider. Need to replace the class name in the future.
+      currentTags.add(Tag.of(RERANKING_PROVIDER_TAG, provider));
       return this;
     }
 
     public RerankingTagsBuilder withModel(String modelName) {
-      currentTags.add(Tag.of(MODEL_TAG, modelName));
+      currentTags.add(Tag.of(RERANKING_MODEL_TAG, modelName));
       return this;
     }
 
