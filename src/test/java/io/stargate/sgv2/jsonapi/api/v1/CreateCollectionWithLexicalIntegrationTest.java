@@ -104,6 +104,35 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
     }
 
     @Test
+    void createLexicalAdvancedCustom() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+      final String collectionName = "coll_lexical_advanced_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                      {
+                        "enabled": true,
+                        "analyzer": {
+                          "tokenizer" : {"name" : "standard"},
+                          "filters": [
+                            { "name": "lowercase" },
+                            { "name": "stop" },
+                            { "name": "porterstem" },
+                            { "name": "asciifolding" }
+                          ]
+                          }
+                        }
+                    """);
+
+      givenHeadersPostJsonThenOkNoErrors(json)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+      deleteCollection(collectionName);
+    }
+
+    @Test
     void createLexicalSimpleDisabled() {
       // Fine regardless of whether Lexical available for DB or not
 
