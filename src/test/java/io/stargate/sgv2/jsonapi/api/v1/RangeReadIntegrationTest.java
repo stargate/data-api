@@ -1,8 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
-import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -18,13 +17,12 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.jupiter.api.ClassOrderer;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestClassOrder;
-import org.junit.jupiter.api.TestMethodOrder;
+import java.util.Map;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -397,4 +395,67 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
   record TestData(int _id, String username, int userId, boolean activeUser, DateValue dateValue) {}
 
   record DateValue(long $date) {}
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  @Order(2)
+  class DocumentIdRangeTest {
+
+    List<Object> ids = List.of("{\"$date\": 1672531200000}", "doc1", true, 123);
+
+    // DocumentId with different types, Date/String/Boolean/BigDecimal
+    static Stream<Arguments> documentIds() {
+      return Stream.of(
+          Arguments.of(Map.of("$date", 1672531200000L)),
+          Arguments.of("doc1"),
+          Arguments.of(true),
+          Arguments.of(123));
+    }
+
+    @ParameterizedTest()
+    @MethodSource("documentIds")
+    @Order(1)
+    public void setUp(Object id) {
+      givenHeadersPostJsonThenOkNoErrors(
+                  """
+                {
+                  "insertOne": {
+                    "document": {
+                      "_id": %s
+                    }
+                  }
+                }
+                """
+                  .formatted(objectMapper.valueToTree(id).toString()))
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is(id));
+    }
+
+    @ParameterizedTest()
+    @MethodSource("documentIds")
+    @Order(2)
+    // Take $lte as example, we can use equal to test the filter value against inserted value.
+    public void rangeTest(Object id) throws Exception {
+      String json =
+              """
+                        {
+                          "find": {
+                            "filter" : {"_id" : {"$lte" : %s}}
+                          }
+                        }
+                        """
+              .formatted(objectMapper.valueToTree(id).toString());
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]._id", is(id));
+    }
+  }
 }
