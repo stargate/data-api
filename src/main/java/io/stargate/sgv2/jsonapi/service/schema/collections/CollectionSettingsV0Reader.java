@@ -12,11 +12,11 @@ import java.util.List;
 
 /**
  * schema_version 0 is before we introduced schema_version into the C* table comment of Data API
- * collection at this version, table comment only works for indexing options.
- * Sample:
- *<pre>
+ * collection at this version, table comment only works for indexing options. Sample:
+ *
+ * <pre>
  * {"indexing":{"deny":["address"]}}
- *</pre>
+ * </pre>
  *
  * <p>Note, all collection created in this schema version 0, should have UUID as idType
  */
