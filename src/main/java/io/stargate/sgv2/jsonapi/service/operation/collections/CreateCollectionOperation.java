@@ -175,8 +175,8 @@ public record CreateCollectionOperation(
     boolean settingsAreEqual = existingCollectionSettings.equals(newCollectionSettings);
 
     if (!settingsAreEqual) {
-      var oldLexical = existingCollectionSettings.lexicalConfig();
-      var newLexical = lexicalConfig();
+      final var oldLexical = existingCollectionSettings.lexicalConfig();
+      final var newLexical = lexicalConfig();
 
       // So: for backwards compatibility reasons we may need to override settings if
       // (and only if) the collection was created before lexical and reranking.
@@ -259,6 +259,7 @@ public record CreateCollectionOperation(
                         getIndexStatements(
                             commandContext.schemaObject().name().keyspace(),
                             name,
+                            lexicalConfig,
                             collectionExisted);
                     Multi<AsyncResultSet> indexResultMulti;
                     /*
@@ -519,7 +520,10 @@ public record CreateCollectionOperation(
    * For a new table they are run without IF NOT EXISTS.
    */
   public List<SimpleStatement> getIndexStatements(
-      String keyspace, String table, boolean collectionExisted) {
+      String keyspace,
+      String table,
+      CollectionLexicalConfig lexicalConfig,
+      boolean collectionExisted) {
     List<SimpleStatement> statements = new ArrayList<>(10);
     String appender =
         collectionExisted ? "CREATE CUSTOM INDEX IF NOT EXISTS" : "CREATE CUSTOM INDEX";
