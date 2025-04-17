@@ -26,7 +26,7 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
     @Order(1)
     public final void createPreLexicalRerankCollection() {
       // create a collection without lexical and rerank config
-      // very simple collection only with name - {"createCollection": {"name": "simple_collection"}}
+      // very simple collection only with name - {"createCollection": {"name": "%s"}}
       String collectionWithoutLexicalRerank =
           """
                     CREATE TABLE "%s"."%s" (
@@ -87,16 +87,16 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
     @Order(2)
     public final void createCollectionWithoutLexicalRerankAgain() {
       givenHeadersPostJsonThenOkNoErrors(
-              """
+                  """
                       {
                           "createCollection": {
-                              "name": "simple_collection"
+                              "name": "%s"
                           }
                       }
-              """)
+              """
+                  .formatted(PRE_LEXICAL_RERANK_COLLECTION_NAME))
           .body("$", responseIsStatusOnly())
           .body("status.ok", is(1));
-      ;
     }
   }
 }
