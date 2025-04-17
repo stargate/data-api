@@ -116,7 +116,7 @@ public record CreateCollectionOperation(
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
     logger.info(
-        "Executing CreateCollectionOperation for {}.{} with property {}",
+        "Executing CreateCollectionOperation for {}.{} with definition: {}",
         commandContext.schemaObject().name().keyspace(),
         name,
         comment);
