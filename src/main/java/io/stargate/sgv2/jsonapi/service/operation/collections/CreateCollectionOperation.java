@@ -219,7 +219,13 @@ public record CreateCollectionOperation(
     final Uni<AsyncResultSet> execute =
         queryExecutor.executeCreateSchemaChange(
             dataApiRequestInfo,
-            getCreateTable(commandContext.schemaObject().name().keyspace(), name, lexicalConfig));
+            getCreateTable(
+                commandContext.schemaObject().name().keyspace(),
+                name,
+                vectorSearch,
+                vectorSize,
+                comment,
+                lexicalConfig));
     final Uni<Boolean> indexResult =
         execute
             .onItem()
@@ -434,8 +440,13 @@ public record CreateCollectionOperation(
     return null;
   }
 
-  public SimpleStatement getCreateTable(
-      String keyspace, String table, CollectionLexicalConfig lexicalConfig) {
+  public static SimpleStatement getCreateTable(
+      String keyspace,
+      String table,
+      boolean vectorSearch,
+      int vectorSize,
+      String comment,
+      CollectionLexicalConfig lexicalConfig) {
     // The keyspace and table name are quoted to make it case-sensitive
     final String lexicalField = lexicalConfig.enabled() ? "    query_lexical_value   text, " : "";
     if (vectorSearch) {
@@ -461,27 +472,26 @@ public record CreateCollectionOperation(
         createTableWithVector = createTableWithVector + " WITH comment = '" + comment + "'";
       }
       return SimpleStatement.newInstance(String.format(createTableWithVector, keyspace, table));
-    } else {
-      String createTable =
-          "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
-              + "    key                 tuple<tinyint,text>,"
-              + "    tx_id               timeuuid, "
-              + "    doc_json            text,"
-              + "    exist_keys          set<text>,"
-              + "    array_size          map<text, int>,"
-              + "    array_contains      set<text>,"
-              + "    query_bool_values   map<text, tinyint>,"
-              + "    query_dbl_values    map<text, decimal>,"
-              + "    query_text_values   map<text, text>, "
-              + "    query_timestamp_values map<text, timestamp>, "
-              + "    query_null_values   set<text>, "
-              + lexicalField
-              + "    PRIMARY KEY (key))";
-      if (comment != null) {
-        createTable = createTable + " WITH comment = '" + comment + "'";
-      }
-      return SimpleStatement.newInstance(String.format(createTable, keyspace, table));
     }
+    String createTable =
+        "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
+            + "    key                 tuple<tinyint,text>,"
+            + "    tx_id               timeuuid, "
+            + "    doc_json            text,"
+            + "    exist_keys          set<text>,"
+            + "    array_size          map<text, int>,"
+            + "    array_contains      set<text>,"
+            + "    query_bool_values   map<text, tinyint>,"
+            + "    query_dbl_values    map<text, decimal>,"
+            + "    query_text_values   map<text, text>, "
+            + "    query_timestamp_values map<text, timestamp>, "
+            + "    query_null_values   set<text>, "
+            + lexicalField
+            + "    PRIMARY KEY (key))";
+    if (comment != null) {
+      createTable = createTable + " WITH comment = '" + comment + "'";
+    }
+    return SimpleStatement.newInstance(String.format(createTable, keyspace, table));
   }
 
   /*
