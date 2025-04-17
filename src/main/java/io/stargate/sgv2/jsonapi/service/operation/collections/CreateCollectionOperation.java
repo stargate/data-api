@@ -22,6 +22,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.time.Duration;
@@ -119,7 +120,7 @@ public record CreateCollectionOperation(
         commandContext.schemaObject().name().keyspace(),
         name,
         comment);
-    // validate Data API collection limit guardrail and get tableMetadata
+    // validate Data API collection limit guard rail and get tableMetadata
     Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces =
         cqlSessionCache.getSession(dataApiRequestInfo).getMetadata().getKeyspaces();
     KeyspaceMetadata currKeyspace =
@@ -136,7 +137,7 @@ public record CreateCollectionOperation(
 
     // if table doesn't exist, continue to create collection
     if (tableMetadata == null) {
-      return executeCollectionCreation(dataApiRequestInfo, queryExecutor, false);
+      return executeCollectionCreation(dataApiRequestInfo, queryExecutor, lexicalConfig(), false);
     }
     // if table exists, compare existedCollectionSettings and newCollectionSettings
     CollectionSchemaObject existedCollectionSettings =
@@ -168,15 +169,31 @@ public record CreateCollectionOperation(
     // but note that for case (1) we need to consider backwards-compatibility
     // as we have collections created before some of the settings were added
     // (namely, lexical and reranking settings)
-    // So let's unify settings if necessary:
-    if (existedCollectionSettings.lexicalConfig()
-        == CollectionLexicalConfig.configForPreLexical()) {
-      //      && newCollectionSettings.lexicalConfig() == CollectionLexicalConfig.()) {
+    boolean sameSettings = existedCollectionSettings.equals(newCollectionSettings);
 
+    if (!sameSettings) {
+      // So: for backwards compatibility reasons we may need to override settings if
+      // (and only if) the collection was created before lexical and reranking
+      if (existedCollectionSettings.lexicalConfig() == CollectionLexicalConfig.configForPreLexical()
+          && existedCollectionSettings.rerankingConfig()
+              == CollectionRerankDef.configForPreRerankingCollection()) {
+        newCollectionSettings =
+            newCollectionSettings.withLexicalAndRerankOverrides(
+                existedCollectionSettings.lexicalConfig(),
+                existedCollectionSettings.rerankingConfig());
+        // and now re-check if settings are the same
+        sameSettings = existedCollectionSettings.equals(newCollectionSettings);
+        logger.info(
+            "CreateCollectionOperation for {}.{} with legacy lexical/reranking settings: unification successful? {}",
+            commandContext.schemaObject().name().keyspace(),
+            name,
+            sameSettings);
+      }
     }
 
-    if (existedCollectionSettings.equals(newCollectionSettings)) {
-      return executeCollectionCreation(dataApiRequestInfo, queryExecutor, true);
+    if (sameSettings) {
+      return executeCollectionCreation(
+          dataApiRequestInfo, queryExecutor, newCollectionSettings.lexicalConfig(), true);
     }
     return Uni.createFrom()
         .failure(
@@ -189,15 +206,19 @@ public record CreateCollectionOperation(
    *
    * @param dataApiRequestInfo DBRequestContext
    * @param queryExecutor QueryExecutor instance
+   * @param lexicalConfig Lexical configuration for the collection
    * @param collectionExisted boolean that says if collection existed before
    * @return Uni<Supplier<CommandResult>>
    */
   private Uni<Supplier<CommandResult>> executeCollectionCreation(
-      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor, boolean collectionExisted) {
+      RequestContext dataApiRequestInfo,
+      QueryExecutor queryExecutor,
+      CollectionLexicalConfig lexicalConfig,
+      boolean collectionExisted) {
     final Uni<AsyncResultSet> execute =
         queryExecutor.executeCreateSchemaChange(
             dataApiRequestInfo,
-            getCreateTable(commandContext.schemaObject().name().keyspace(), name));
+            getCreateTable(commandContext.schemaObject().name().keyspace(), name, lexicalConfig));
     final Uni<Boolean> indexResult =
         execute
             .onItem()
@@ -412,9 +433,10 @@ public record CreateCollectionOperation(
     return null;
   }
 
-  public SimpleStatement getCreateTable(String keyspace, String table) {
+  public SimpleStatement getCreateTable(
+      String keyspace, String table, CollectionLexicalConfig lexicalConfig) {
     // The keyspace and table name are quoted to make it case-sensitive
-    final String lexicalField = lexicalConfig().enabled() ? "    query_lexical_value   text, " : "";
+    final String lexicalField = lexicalConfig.enabled() ? "    query_lexical_value   text, " : "";
     if (vectorSearch) {
       String createTableWithVector =
           "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("

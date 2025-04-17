@@ -46,7 +46,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           VectorConfig.NOT_ENABLED_CONFIG,
           null,
           CollectionLexicalConfig.configForDisabled(),
-          CollectionRerankDef.DISABLED);
+          CollectionRerankDef.configForDisabled());
 
   private final IdConfig idConfig;
   private final VectorConfig vectorConfig;
@@ -107,6 +107,22 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         indexingConfig,
         lexicalConfig,
         rerankDef);
+  }
+
+  /**
+   * Method for constructing a new CollectionSchemaObject with overrides for Lexical and Rerank
+   * settings.
+   */
+  public CollectionSchemaObject withLexicalAndRerankOverrides(
+      CollectionLexicalConfig lexicalOverride, CollectionRerankDef rerankOverride) {
+    return new CollectionSchemaObject(
+        name(),
+        tableMetadata,
+        idConfig,
+        vectorConfig,
+        indexingConfig,
+        lexicalOverride,
+        rerankOverride);
   }
 
   @Override

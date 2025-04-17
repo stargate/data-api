@@ -131,8 +131,8 @@ public record CollectionLexicalConfig(
   }
 
   /**
-   * Accessor for an instance to use for "lexical disabled" cases: either for existing collections
-   * without lexical config, or envi
+   * Accessor for an instance to use for "lexical disabled" cases (but not for ones pre-dating
+   * lexical search feature).
    */
   public static CollectionLexicalConfig configForDisabled() {
     return new CollectionLexicalConfig(false, null);

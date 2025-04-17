@@ -41,13 +41,13 @@ public class CollectionRerankDef {
    * Singleton instance for disabled reranking configuration. It can be used for disabled reranking
    * collections and missing collections.
    */
-  public static final CollectionRerankDef DISABLED = new CollectionRerankDef(false, null);
+  private static final CollectionRerankDef DISABLED = new CollectionRerankDef(false, null);
 
   /**
    * Singleton instance for disabled reranking configuration. It is to be used for existing
    * pre-reranking collections.
    */
-  public static final CollectionRerankDef MISSING = new CollectionRerankDef(false, null);
+  private static final CollectionRerankDef MISSING = new CollectionRerankDef(false, null);
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CollectionRerankDef.class);
 
@@ -188,9 +188,12 @@ public class CollectionRerankDef {
     return new CollectionRerankDef(true, defaultRerankingService);
   }
 
+  public static CollectionRerankDef configForDisabled() {
+    return DISABLED;
+  }
+
   /**
-   * Factory method for getting a configuration for existing collections that predate reranking
-   * support.
+   * Accessor for getting a configuration for existing collections that predate reranking support.
    *
    * <p>Used for collections created before reranking functionality was available. These collections
    * need to have reranking explicitly disabled for backward compatibility.
