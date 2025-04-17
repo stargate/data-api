@@ -139,8 +139,8 @@ public record CreateCollectionOperation(
     if (tableMetadata == null) {
       return executeCollectionCreation(dataApiRequestInfo, queryExecutor, lexicalConfig(), false);
     }
-    // if table exists, compare existedCollectionSettings and newCollectionSettings
-    CollectionSchemaObject existedCollectionSettings =
+    // if table exists, compare existingCollectionSettings and newCollectionSettings
+    CollectionSchemaObject existingCollectionSettings =
         CollectionSchemaObject.getCollectionSettings(tableMetadata, objectMapper);
 
     // Use the fromNameOrDefault() so if not specified it will default
@@ -169,20 +169,21 @@ public record CreateCollectionOperation(
     // but note that for case (1) we need to consider backwards-compatibility
     // as we have collections created before some of the settings were added
     // (namely, lexical and reranking settings)
-    boolean sameSettings = existedCollectionSettings.equals(newCollectionSettings);
+    boolean sameSettings = existingCollectionSettings.equals(newCollectionSettings);
 
     if (!sameSettings) {
       // So: for backwards compatibility reasons we may need to override settings if
       // (and only if) the collection was created before lexical and reranking
-      if (existedCollectionSettings.lexicalConfig() == CollectionLexicalConfig.configForPreLexical()
-          && existedCollectionSettings.rerankingConfig()
+      if (existingCollectionSettings.lexicalConfig()
+              == CollectionLexicalConfig.configForPreLexical()
+          && existingCollectionSettings.rerankingConfig()
               == CollectionRerankDef.configForPreRerankingCollection()) {
         newCollectionSettings =
             newCollectionSettings.withLexicalAndRerankOverrides(
-                existedCollectionSettings.lexicalConfig(),
-                existedCollectionSettings.rerankingConfig());
+                existingCollectionSettings.lexicalConfig(),
+                existingCollectionSettings.rerankingConfig());
         // and now re-check if settings are the same
-        sameSettings = existedCollectionSettings.equals(newCollectionSettings);
+        sameSettings = existingCollectionSettings.equals(newCollectionSettings);
         logger.info(
             "CreateCollectionOperation for {}.{} with legacy lexical/reranking settings: unification successful? {}",
             commandContext.schemaObject().name().keyspace(),
