@@ -54,29 +54,29 @@ public class CreateCollectionBackwardCompatibilityIntegrationTest
       // create indexes for the collection
       String[] createIndexCqls = {
         String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_contains ON %s.%s (values(array_contains)) USING 'StorageAttachedIndex';",
-            keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME, PRE_LEXICAL_RERANK_COLLECTION_NAME),
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_contains ON \"%s\".\"%s\" (values(array_contains)) USING 'StorageAttachedIndex';",
+            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME),
         String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON %s.%s (entries(array_size)) USING 'StorageAttachedIndex';",
-            keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME, PRE_LEXICAL_RERANK_COLLECTION_NAME),
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON \"%s\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex';",
+            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME),
         String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON %s.%s (values(exist_keys)) USING 'StorageAttachedIndex';",
-            keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME, PRE_LEXICAL_RERANK_COLLECTION_NAME),
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON \"%s\".\"%s\" (values(exist_keys)) USING 'StorageAttachedIndex';",
+            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME),
         String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_bool_values ON %s.%s (entries(query_bool_values)) USING 'StorageAttachedIndex';",
-            keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME, PRE_LEXICAL_RERANK_COLLECTION_NAME),
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_bool_values ON \"%s\".\"%s\" (entries(query_bool_values)) USING 'StorageAttachedIndex';",
+            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME),
         String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_dbl_values ON %s.%s (entries(query_dbl_values)) USING 'StorageAttachedIndex';",
-            keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME, PRE_LEXICAL_RERANK_COLLECTION_NAME),
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_dbl_values ON \"%s\".\"%s\" (entries(query_dbl_values)) USING 'StorageAttachedIndex';",
+            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME),
         String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_null_values ON %s.%s (values(query_null_values)) USING 'StorageAttachedIndex';",
-            keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME, PRE_LEXICAL_RERANK_COLLECTION_NAME),
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_null_values ON \"%s\".\"%s\" (values(query_null_values)) USING 'StorageAttachedIndex';",
+            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME),
         String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_text_values ON %s.%s (entries(query_text_values)) USING 'StorageAttachedIndex';",
-            keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME, PRE_LEXICAL_RERANK_COLLECTION_NAME),
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_text_values ON \"%s\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex';",
+            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME),
         String.format(
-            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_timestamp_values ON %s.%s (entries(query_timestamp_values)) USING 'StorageAttachedIndex';",
-            keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME, PRE_LEXICAL_RERANK_COLLECTION_NAME)
+            "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_timestamp_values ON \"%s\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex';",
+            PRE_LEXICAL_RERANK_COLLECTION_NAME, keyspaceName, PRE_LEXICAL_RERANK_COLLECTION_NAME)
       };
       for (String indexCql : createIndexCqls) {
         assertThat(executeCqlStatement(SimpleStatement.newInstance(indexCql))).isTrue();
