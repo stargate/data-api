@@ -17,6 +17,9 @@ public record CollectionLexicalConfig(
         JsonNode analyzerDefinition) {
   public static final String DEFAULT_NAMED_ANALYZER = "standard";
 
+  private static final CollectionLexicalConfig MISSING_CONFIG =
+      new CollectionLexicalConfig(false, null);
+
   private static final JsonNode DEFAULT_NAMED_ANALYZER_NODE =
       JsonNodeFactory.instance.textNode(DEFAULT_NAMED_ANALYZER);
 
@@ -138,5 +141,13 @@ public record CollectionLexicalConfig(
    */
   public static CollectionLexicalConfig configForDisabled() {
     return new CollectionLexicalConfig(false, null);
+  }
+
+  /**
+   * Accessor for a singleton instance used to represent case of missing lexical configuration for
+   * legacy collections created before lexical search was available.
+   */
+  public static CollectionLexicalConfig configForPreLexical() {
+    return MISSING_CONFIG;
   }
 }

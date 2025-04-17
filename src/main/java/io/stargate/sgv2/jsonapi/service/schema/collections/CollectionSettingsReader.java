@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * <p>CommandSettingsDeserializer works for convert the table comment jsonNode into
  * collectionSettings
  */
+@Deprecated
 public interface CollectionSettingsReader {
 
   // TODO: this interface is not used well, see the V0 implementation

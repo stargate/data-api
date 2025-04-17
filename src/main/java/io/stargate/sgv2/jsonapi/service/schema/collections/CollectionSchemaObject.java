@@ -272,7 +272,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
     if (comment == null || comment.isBlank()) {
       // If no "comment", must assume Legacy (no Lexical) config
-      CollectionLexicalConfig lexicalConfig = CollectionLexicalConfig.configForDisabled();
+      CollectionLexicalConfig lexicalConfig = CollectionLexicalConfig.configForPreLexical();
       // If no "comment", must assume Legacy (no Reranking) config
       CollectionRerankDef rerankingConfig = CollectionRerankDef.configForPreRerankingCollection();
       if (vectorEnabled) {

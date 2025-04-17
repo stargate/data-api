@@ -39,9 +39,15 @@ import org.slf4j.LoggerFactory;
 public class CollectionRerankDef {
   /**
    * Singleton instance for disabled reranking configuration. It can be used for disabled reranking
-   * collections, existing pre-reranking collections, and missing collections.
+   * collections and missing collections.
    */
   public static final CollectionRerankDef DISABLED = new CollectionRerankDef(false, null);
+
+  /**
+   * Singleton instance for disabled reranking configuration. It is to be used for existing
+   * pre-reranking collections.
+   */
+  public static final CollectionRerankDef MISSING = new CollectionRerankDef(false, null);
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CollectionRerankDef.class);
 
@@ -183,16 +189,16 @@ public class CollectionRerankDef {
   }
 
   /**
-   * Factory method for creating a configuration for existing collections that predate reranking
+   * Factory method for getting a configuration for existing collections that predate reranking
    * support.
    *
    * <p>Used for collections created before reranking functionality was available. These collections
    * need to have reranking explicitly disabled for backward compatibility.
    *
-   * @return A singleton CollectionRerankDef instance with reranking disabled
+   * @return A singleton CollectionRerankDef instance ({@link #MISSING}) with reranking disabled
    */
   public static CollectionRerankDef configForPreRerankingCollection() {
-    return DISABLED;
+    return MISSING;
   }
 
   /**
