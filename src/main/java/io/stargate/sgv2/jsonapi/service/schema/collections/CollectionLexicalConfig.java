@@ -131,7 +131,7 @@ public record CollectionLexicalConfig(
   }
 
   /**
-   * Accessor for an instance to use for "lexical disabled" cases (but not for ones pre-dating
+   * Accessor for an instance to use for "lexical disabled" Collections (but not for ones pre-dating
    * lexical search feature).
    */
   public static CollectionLexicalConfig configForDisabled() {
@@ -148,7 +148,7 @@ public record CollectionLexicalConfig(
 
   /**
    * Accessor for a singleton instance used to represent case of missing lexical configuration for
-   * legacy collections created before lexical search was available.
+   * legacy Collections created before lexical search was available.
    */
   public static CollectionLexicalConfig configForPreLexical() {
     return MISSING_CONFIG;

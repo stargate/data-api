@@ -480,7 +480,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
   @Override
   public String toString() {
-    return "CollectionSettings["
+    return "CollectionSchemaObject["
         + "name="
         + name
         + ", "

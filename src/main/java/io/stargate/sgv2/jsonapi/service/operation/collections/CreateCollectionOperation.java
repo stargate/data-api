@@ -163,36 +163,56 @@ public record CreateCollectionOperation(
             embeddingSourceModel,
             comment,
             objectMapper);
-    // if table exists we have a choice:
+    // If Collection exists we have a choice:
     // (1) trying to create with same options -> ok, proceed
     // (2) trying to create with different options -> error out
-    // but note that for case (1) we need to consider backwards-compatibility
-    // as we have collections created before some of the settings were added
-    // (namely, lexical and reranking settings)
-    boolean sameSettings = existingCollectionSettings.equals(newCollectionSettings);
+    // but before deciding (2), we need to consider one specific backwards-compatibility
+    // case: that of existing pre-lexical/pre-reranking collection, being re-created
+    // without definitions for lexical/pre-ranking. Although it would create a new
+    // Collection with both enabled, it should NOT fail if attempted on an existing
+    // Collection with pre-lexical/pre-reranking settings but silently succeed.
 
-    if (!sameSettings) {
+    boolean settingsAreEqual = existingCollectionSettings.equals(newCollectionSettings);
+
+    if (!settingsAreEqual) {
+      var oldLexical = existingCollectionSettings.lexicalConfig();
+      var newLexical = lexicalConfig();
+
       // So: for backwards compatibility reasons we may need to override settings if
-      // (and only if) the collection was created before lexical and reranking
-      if (existingCollectionSettings.lexicalConfig()
-              == CollectionLexicalConfig.configForPreLexical()
+      // (and only if) the collection was created before lexical and reranking.
+      // In addition, we need to check that new lexical settings are for defaults
+      // (difficult to check the same for reranking; for now assume that if lexical
+      // is default, reranking is also default).
+      if (oldLexical == CollectionLexicalConfig.configForPreLexical()
+          && newLexical == CollectionLexicalConfig.configForDefault()
           && existingCollectionSettings.rerankingConfig()
               == CollectionRerankDef.configForPreRerankingCollection()) {
+        var originalNewSettings = newCollectionSettings;
         newCollectionSettings =
             newCollectionSettings.withLexicalAndRerankOverrides(
-                existingCollectionSettings.lexicalConfig(),
-                existingCollectionSettings.rerankingConfig());
+                oldLexical, existingCollectionSettings.rerankingConfig());
         // and now re-check if settings are the same
-        sameSettings = existingCollectionSettings.equals(newCollectionSettings);
+        settingsAreEqual = existingCollectionSettings.equals(newCollectionSettings);
         logger.info(
-            "CreateCollectionOperation for {}.{} with legacy lexical/reranking settings: unification successful? {}",
+            "CreateCollectionOperation for {}.{} with existing legacy lexical/reranking settings, new settings differ. Tried to unify, result: {}"
+                + " Old settings: {}, New settings: {}",
             commandContext.schemaObject().name().keyspace(),
             name,
-            sameSettings);
+            settingsAreEqual,
+            existingCollectionSettings,
+            originalNewSettings);
+      } else {
+        logger.info(
+            "CreateCollectionOperation for {}.{} with different settings (but not old legacy lexical/reranking settings), cannot unify."
+                + " Old settings: {}, New settings: {}",
+            commandContext.schemaObject().name().keyspace(),
+            name,
+            existingCollectionSettings,
+            newCollectionSettings);
       }
     }
 
-    if (sameSettings) {
+    if (settingsAreEqual) {
       return executeCollectionCreation(
           dataApiRequestInfo, queryExecutor, newCollectionSettings.lexicalConfig(), true);
     }
