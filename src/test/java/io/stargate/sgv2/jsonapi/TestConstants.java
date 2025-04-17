@@ -57,7 +57,7 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            CollectionLexicalConfig.configForEnabledStandard(),
+            CollectionLexicalConfig.configForDefault(),
             // Use default reranking config - hardcode the value to avoid reading config
             new CollectionRerankDef(
                 true,

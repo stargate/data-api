@@ -162,9 +162,19 @@ public record CreateCollectionOperation(
             embeddingSourceModel,
             comment,
             objectMapper);
-    // if table exists we have two choices:
+    // if table exists we have a choice:
     // (1) trying to create with same options -> ok, proceed
     // (2) trying to create with different options -> error out
+    // but note that for case (1) we need to consider backwards-compatibility
+    // as we have collections created before some of the settings were added
+    // (namely, lexical and reranking settings)
+    // So let's unify settings if necessary:
+    if (existedCollectionSettings.lexicalConfig()
+        == CollectionLexicalConfig.configForPreLexical()) {
+      //      && newCollectionSettings.lexicalConfig() == CollectionLexicalConfig.()) {
+
+    }
+
     if (existedCollectionSettings.equals(newCollectionSettings)) {
       return executeCollectionCreation(dataApiRequestInfo, queryExecutor, true);
     }

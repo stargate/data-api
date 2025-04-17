@@ -69,7 +69,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
         buildColumnDefs(OperationTestBase.TestColumn.ofBoolean("[applied]"));
 
     private final CollectionLexicalConfig LEXICAL_CONFIG =
-        CollectionLexicalConfig.configForEnabledStandard();
+        CollectionLexicalConfig.configForDefault();
 
     @BeforeEach
     public void init() {}

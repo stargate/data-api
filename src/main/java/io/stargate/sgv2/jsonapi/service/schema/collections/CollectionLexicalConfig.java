@@ -17,11 +17,14 @@ public record CollectionLexicalConfig(
         JsonNode analyzerDefinition) {
   public static final String DEFAULT_NAMED_ANALYZER = "standard";
 
-  private static final CollectionLexicalConfig MISSING_CONFIG =
-      new CollectionLexicalConfig(false, null);
-
   private static final JsonNode DEFAULT_NAMED_ANALYZER_NODE =
       JsonNodeFactory.instance.textNode(DEFAULT_NAMED_ANALYZER);
+
+  private static final CollectionLexicalConfig DEFAULT_CONFIG =
+      new CollectionLexicalConfig(true, DEFAULT_NAMED_ANALYZER_NODE);
+
+  private static final CollectionLexicalConfig MISSING_CONFIG =
+      new CollectionLexicalConfig(false, null);
 
   /**
    * Constructs a lexical configuration with the specified enabled state and analyzer definition.
@@ -70,7 +73,7 @@ public record CollectionLexicalConfig(
       CreateCollectionCommand.Options.LexicalConfigDefinition lexicalConfig) {
     // Case 1: No lexical body provided - use defaults if available, otherwise disable
     if (lexicalConfig == null) {
-      return lexicalAvailableForDB ? configForEnabledStandard() : configForDisabled();
+      return lexicalAvailableForDB ? configForDefault() : configForDisabled();
     }
 
     // Case 2: Validate 'enabled' flag is present
@@ -128,19 +131,19 @@ public record CollectionLexicalConfig(
   }
 
   /**
-   * Accessor for an instance to use for "default enabled" cases, using "standard" analyzer
-   * configuration: typically used for new collections where lexical search is available.
-   */
-  public static CollectionLexicalConfig configForEnabledStandard() {
-    return new CollectionLexicalConfig(true, DEFAULT_NAMED_ANALYZER_NODE);
-  }
-
-  /**
    * Accessor for an instance to use for "lexical disabled" cases: either for existing collections
    * without lexical config, or envi
    */
   public static CollectionLexicalConfig configForDisabled() {
     return new CollectionLexicalConfig(false, null);
+  }
+
+  /**
+   * Accessor for a singleton instance used to represent case of default lexical configuration for
+   * newly created Collections that do not specify lexical configuration.
+   */
+  public static CollectionLexicalConfig configForDefault() {
+    return DEFAULT_CONFIG;
   }
 
   /**

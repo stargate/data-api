@@ -76,7 +76,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     if (options == null) {
       final CollectionLexicalConfig lexicalConfig =
           lexicalAvailableForDB
-              ? CollectionLexicalConfig.configForEnabledStandard()
+              ? CollectionLexicalConfig.configForDefault()
               : CollectionLexicalConfig.configForDisabled();
       final CollectionRerankDef rerankDef =
           CollectionRerankDef.configForNewCollections(
