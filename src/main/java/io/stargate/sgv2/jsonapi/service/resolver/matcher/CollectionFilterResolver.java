@@ -272,6 +272,23 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     idRangeGroup.consumeAllCaptures(
                         expression -> {
                           final DocumentId value = (DocumentId) expression.value();
+                          // E.G. {"_id":{"$gt":true}}
+                          if (value.value() instanceof Boolean) {
+                            dbLogicalExpression.addFilter(
+                                new BoolCollectionFilter(
+                                    DocumentConstants.Fields.DOC_ID,
+                                    getMapFilterBaseOperator(expression.operator()),
+                                    (Boolean) value.value()));
+                          }
+                          // E.G. {"_id":{"$gt":"apple"}}
+                          if (value.value() instanceof String) {
+                            dbLogicalExpression.addFilter(
+                                new TextCollectionFilter(
+                                    DocumentConstants.Fields.DOC_ID,
+                                    getMapFilterBaseOperator(expression.operator()),
+                                    (String) value.value()));
+                          }
+                          // E.G. {"_id":{"$gt":123}}
                           if (value.value() instanceof BigDecimal bdv) {
                             dbLogicalExpression.addFilter(
                                 new NumberCollectionFilter(
@@ -279,6 +296,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                                     getMapFilterBaseOperator(expression.operator()),
                                     bdv));
                           }
+                          // E.G. {"_id":{"$gt":{"$date":1672531200000}}}
                           if (value.value() instanceof Map) {
                             dbLogicalExpression.addFilter(
                                 new DateCollectionFilter(
