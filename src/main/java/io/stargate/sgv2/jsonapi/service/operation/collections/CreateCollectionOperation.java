@@ -46,7 +46,8 @@ public record CreateCollectionOperation(
     boolean tooManyIndexesRollbackEnabled,
     // if true, deny all indexing option is set and no indexes will be created
     boolean indexingDenyAll,
-    CollectionLexicalConfig lexicalConfig)
+    CollectionLexicalConfig lexicalConfig,
+    CollectionRerankDef rerankDef)
     implements Operation {
   private static final Logger logger = LoggerFactory.getLogger(CreateCollectionOperation.class);
 
@@ -66,7 +67,8 @@ public record CreateCollectionOperation(
       int ddlDelayMillis,
       boolean tooManyIndexesRollbackEnabled,
       boolean indexingDenyAll,
-      CollectionLexicalConfig lexicalConfig) {
+      CollectionLexicalConfig lexicalConfig,
+      CollectionRerankDef rerankDef) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -81,7 +83,8 @@ public record CreateCollectionOperation(
         ddlDelayMillis,
         tooManyIndexesRollbackEnabled,
         indexingDenyAll,
-        Objects.requireNonNull(lexicalConfig));
+        Objects.requireNonNull(lexicalConfig),
+        Objects.requireNonNull(rerankDef));
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
@@ -94,7 +97,8 @@ public record CreateCollectionOperation(
       int ddlDelayMillis,
       boolean tooManyIndexesRollbackEnabled,
       boolean indexingDenyAll,
-      CollectionLexicalConfig lexicalConfig) {
+      CollectionLexicalConfig lexicalConfig,
+      CollectionRerankDef rerankDef) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -109,7 +113,8 @@ public record CreateCollectionOperation(
         ddlDelayMillis,
         tooManyIndexesRollbackEnabled,
         indexingDenyAll,
-        Objects.requireNonNull(lexicalConfig));
+        Objects.requireNonNull(lexicalConfig),
+        Objects.requireNonNull(rerankDef));
   }
 
   @Override
@@ -177,6 +182,8 @@ public record CreateCollectionOperation(
     if (!settingsAreEqual) {
       final var oldLexical = existingCollectionSettings.lexicalConfig();
       final var newLexical = lexicalConfig();
+      final var oldReranking = existingCollectionSettings.rerankingConfig();
+      final var newReranking = rerankDef();
 
       // So: for backwards compatibility reasons we may need to override settings if
       // (and only if) the collection was created before lexical and reranking.
@@ -185,8 +192,8 @@ public record CreateCollectionOperation(
       // is default, reranking is also default).
       if (oldLexical == CollectionLexicalConfig.configForPreLexical()
           && newLexical == CollectionLexicalConfig.configForDefault()
-          && existingCollectionSettings.rerankingConfig()
-              == CollectionRerankDef.configForPreRerankingCollection()) {
+          && oldReranking == CollectionRerankDef.configForPreRerankingCollection()
+          && newReranking == CollectionRerankDef.configForDefault()) {
         var originalNewSettings = newCollectionSettings;
         newCollectionSettings =
             newCollectionSettings.withLexicalAndRerankOverrides(
