@@ -6,8 +6,6 @@ import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.micrometer.core.instrument.*;
-import io.micrometer.core.instrument.config.MeterFilter;
-import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
@@ -18,9 +16,7 @@ import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -282,29 +278,5 @@ public class MeteredCommandProcessor {
       }
     }
     return JsonApiMetricsConfig.SortType.NONE;
-  }
-
-  /** Enable histogram buckets for a specific timer */
-  private static final String HISTOGRAM_METRICS_NAME = "http.server.requests";
-
-  @Produces
-  @Singleton
-  public MeterFilter enableHistogram() {
-    return new MeterFilter() {
-      @Override
-      public DistributionStatisticConfig configure(
-          Meter.Id id, DistributionStatisticConfig config) {
-        if (id.getName().startsWith(HISTOGRAM_METRICS_NAME)
-            || id.getName().startsWith(jsonApiMetricsConfig.vectorizeCallDurationMetrics())) {
-
-          return DistributionStatisticConfig.builder()
-              .percentiles(0.5, 0.90, 0.95, 0.99) // median and 95th percentile, not aggregable
-              .percentilesHistogram(true) // histogram buckets (e.g. prometheus histogram_quantile)
-              .build()
-              .merge(config);
-        }
-        return config;
-      }
-    };
   }
 }

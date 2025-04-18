@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -55,15 +56,16 @@ import org.jboss.resteasy.reactive.RestResponse;
 public class KeyspaceResource {
 
   public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}";
-  private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject private RequestContext requestContext;
 
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
+  private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject
   public KeyspaceResource(
       MeteredCommandProcessor meteredCommandProcessor,
+      MeterRegistry meterRegistry,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CQLSessionCache cqlSessionCache,
       EmbeddingProviderFactory embeddingProviderFactory,
@@ -77,7 +79,8 @@ public class KeyspaceResource {
             .withCqlSessionCache(cqlSessionCache)
             .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
             .withEmbeddingProviderFactory(embeddingProviderFactory)
-            .withRerankingProviderFactory(rerankingProviderFactory);
+            .withRerankingProviderFactory(rerankingProviderFactory)
+            .withMeterRegistry(meterRegistry);
   }
 
   @Operation(

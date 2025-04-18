@@ -17,26 +17,66 @@
 
 package io.stargate.sgv2.jsonapi.api.v1.metrics;
 
+import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.HttpMetrics.HTTP_SERVER_REQUESTS;
+import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics.ALL_CALL_DURATION_METRIC;
+import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics.TENANT_CALL_DURATION_METRIC;
+
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.config.MeterFilter;
+import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/** Configuration of all {@link MeterFilter}s used. */
+/**
+ * Centralized configuration of Micrometer {@link MeterFilter}s.
+ *
+ * <p>This class provides CDI producer methods for {@link MeterFilter} beans that:
+ *
+ * <ul>
+ *   <li>Apply global tags (e.g., module identifier) to all metrics based on {@link MetricsConfig}.
+ *   <li>Configure distribution statistics (client-side percentiles, Prometheus histogram buckets,
+ *       etc.) for specific timer metrics used throughout the application, such as HTTP server
+ *       requests, vectorization duration, and reranking durations.
+ * </ul>
+ */
+@Singleton
 public class MicrometerConfiguration {
 
+  private final MetricsConfig metricsConfig;
+  private final JsonApiMetricsConfig jsonApiMetricsConfig;
+
   /**
-   * @return Produces meter filter that takes care of the global tags e.g. module tag sgv2-jsonapi
-   *     as MeterFilter commonTag
+   * Constructs the Micrometer configuration bean. Dependencies are injected by the CDI container.
+   *
+   * @param metricsConfig General metrics configuration containing global tags.
+   * @param jsonApiMetricsConfig Configuration specific to JSON API metrics, including metric names.
+   */
+  @Inject
+  public MicrometerConfiguration(
+      MetricsConfig metricsConfig, JsonApiMetricsConfig jsonApiMetricsConfig) {
+    this.metricsConfig = metricsConfig;
+    this.jsonApiMetricsConfig = jsonApiMetricsConfig;
+  }
+
+  /**
+   * Produces a meter filter that applies configured global tags (e.g., {@code module=sgv2-jsonapi})
+   * to all metrics. Reads tags from {@link MetricsConfig#globalTags()}.
+   *
+   * @return A {@link MeterFilter} for applying common tags, or an empty filter if no global tags
+   *     are configured.
    */
   @Produces
   @Singleton
-  public MeterFilter globalTagsMeterFilter(MetricsConfig config) {
-    Map<String, String> globalTags = config.globalTags();
+  @jakarta.annotation.Priority(
+      0) // Give common tags a higher priority , lower number = higher priority
+  public MeterFilter globalTagsMeterFilter() {
+    Map<String, String> globalTags = metricsConfig.globalTags();
 
     // if we have no global tags, use empty
     if (null == globalTags || globalTags.isEmpty()) {
@@ -51,5 +91,72 @@ public class MicrometerConfiguration {
 
     // return all
     return MeterFilter.commonTags(Tags.of(tags));
+  }
+
+  /**
+   * Produces a meter filter that configures distribution statistics for specific timer metrics used
+   * throughout the application..
+   *
+   * <p>This filter enables Prometheus-compatible histogram buckets for server-side percentile
+   * calculation (via {@code histogram_quantile}) and configures specific client-side percentiles
+   * where required.
+   *
+   * <p>Configures:
+   *
+   * <ul>
+   *   <li>HTTP Server Requests {@value
+   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.HttpMetrics#HTTP_SERVER_REQUESTS}:
+   *       P50, P90, P95, P99, Histogram
+   *   <li>Vectorize Call Duration {@link JsonApiMetricsConfig#vectorizeCallDurationMetrics()}: P50,
+   *       P90, P95, P99, Histogram
+   *   <li>Tenant Reranking Duration {@value
+   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics#TENANT_CALL_DURATION_METRIC}:
+   *       P98, Histogram
+   *   <li>Overall Reranking Duration {@value
+   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics#ALL_CALL_DURATION_METRIC}:
+   *       P80, P95, P98, Histogram
+   * </ul>
+   *
+   * @return A {@link MeterFilter} for configuring distribution statistics.
+   */
+  @Produces
+  @Singleton
+  @jakarta.annotation.Priority(1) // Lower priority than global tags
+  public MeterFilter configureDistributionStatistics() {
+    return new MeterFilter() {
+      @Override
+      public DistributionStatisticConfig configure(
+          Meter.Id id, DistributionStatisticConfig config) {
+        String name = id.getName();
+        DistributionStatisticConfig.Builder builder = null;
+
+        // --- Configuration for HTTP Server & Vectorize metrics ---
+        if (name.startsWith(HTTP_SERVER_REQUESTS)
+            || name.equals(jsonApiMetricsConfig.vectorizeCallDurationMetrics())) {
+          builder = DistributionStatisticConfig.builder().percentiles(0.5, 0.90, 0.95, 0.99);
+        }
+
+        // --- Configuration for Tenant Reranking Timer ---
+        else if (name.equals(TENANT_CALL_DURATION_METRIC)) {
+          builder = DistributionStatisticConfig.builder().percentiles(0.98);
+        }
+
+        // --- Configuration for Overall Reranking Timer ---
+        else if (name.equals(ALL_CALL_DURATION_METRIC)) {
+          builder = DistributionStatisticConfig.builder().percentiles(0.80, 0.95, 0.98);
+        }
+
+        // If a specific configuration was found, enable histograms and merge
+        if (builder != null) {
+          // Enable Prometheus histogram buckets for all configured timers
+          // This allows server-side histogram_quantile calculations
+          builder.percentilesHistogram(true);
+          return builder.build().merge(config);
+        }
+
+        // For all other metrics, return the default configuration
+        return config;
+      }
+    };
   }
 }
