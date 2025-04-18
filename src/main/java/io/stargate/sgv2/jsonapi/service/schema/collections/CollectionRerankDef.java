@@ -53,6 +53,10 @@ public class CollectionRerankDef {
   /**
    * Singleton instance for default reranking configuration. It is used for newly created
    * collections with default reranking settings.
+   *
+   * <p>NOTE: this is initialized during startup (via call to {@link #initializeDefaultRerankDef} by
+   * {@link RerankingProviderConfigProducer}) and cannot unfortunately be made final: this because
+   * initialization requires access to other configuration loaded during start up.
    */
   private static CollectionRerankDef DEFAULT;
 
