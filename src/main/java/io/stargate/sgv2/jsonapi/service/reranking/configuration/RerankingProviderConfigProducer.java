@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import java.time.temporal.ChronoUnit;
@@ -71,6 +72,11 @@ public class RerankingProviderConfigProducer {
     }
 
     validateRerankingProvidersConfig(rerankingProvidersConfig);
+
+    // Initialize the default reranking provider and model in DefaultRerankingProviderDef as
+    // Singleton.
+    CollectionRerankDef.initializeDefaultRerankDef(rerankingProvidersConfig);
+
     return rerankingProvidersConfig;
   }
 
