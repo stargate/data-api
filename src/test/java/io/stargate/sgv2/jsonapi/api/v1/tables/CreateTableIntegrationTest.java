@@ -819,10 +819,10 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                },
                                                "content": {
                                                  "type": "vector",
-                                                 "dimension": 1536,
+                                                 "dimension": 1024,
                                                  "service": {
-                                                   "provider": "openai",
-                                                   "modelName": "text-embedding-3-small"
+                                                   "provider": "nvidia",
+                                                   "modelName": "NV-Embed-QA"
                                                  }
                                                }
                                            },
@@ -918,7 +918,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                        "dimension": 123,
                                                        "service": {
                                                         "provider": "nvidia",
-                                                        "modelName": "NV-Embed-QA"
+                                                        "modelName": "a-deprecated-nvidia-embedding-model"
                                                       }
                                                      }
                                                  },
@@ -929,7 +929,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   "deprecatedEmbedModel",
                   true,
                   SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.name(),
-                  "The model NV-Embed-QA is at DEPRECATED status.")));
+                  "The model a-deprecated-nvidia-embedding-model is at DEPRECATED status.")));
 
       // vector type with dimension mismatch
       testCases.add(

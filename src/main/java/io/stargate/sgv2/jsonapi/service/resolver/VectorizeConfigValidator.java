@@ -310,11 +310,10 @@ public class VectorizeConfigValidator {
   }
 
   /**
-   * Validate the model support first. see {@link
-   * EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelSupport}
+   * Validate the model support first. see {@link ModelSupport}
    *
    * <ul>
-   *   <li>SUPPORTING: validation pass
+   *   <li>SUPPORTED: validation will pass
    *   <li>DEPRECATED: can not create new collection/table>, prompt support message
    *   <li>END_OF_LIFE: can not create new collection/table>, prompt support message
    * </ul>

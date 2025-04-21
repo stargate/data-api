@@ -921,8 +921,8 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                       "vector": {
                                           "metric": "cosine",
                                           "service": {
-                                              "provider": "openai",
-                                              "modelName": "text-embedding-3-small"
+                                              "provider": "nvidia",
+                                              "modelName": "NV-Embed-QA"
                                           }
                                       }
                                   }
@@ -937,10 +937,10 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                   "options": {
                                       "vector": {
                                           "metric": "cosine",
-                                          "dimension": 1536,
+                                          "dimension": 1024,
                                           "service": {
-                                              "provider": "openai",
-                                              "modelName": "text-embedding-3-small"
+                                              "provider": "nvidia",
+                                              "modelName": "NV-Embed-QA"
                                           }
                                       }
                                   }
@@ -1046,10 +1046,10 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     "options": {
                                         "vector": {
                                             "metric": "cosine",
-                                            "dimension": 5000,
+                                            "dimension": 123,
                                             "service": {
-                                                "provider": "openai",
-                                                "modelName": "text-embedding-3-small"
+                                                "provider": "nvidia",
+                                                "modelName": "NV-Embed-QA"
                                             }
                                         }
                                     }
