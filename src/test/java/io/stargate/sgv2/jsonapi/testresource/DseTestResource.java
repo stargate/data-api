@@ -41,12 +41,10 @@ public class DseTestResource extends StargateTestResource {
   }
 
   private String loadCassandraImageFromDockerComposeEnv() {
-    // 14-Mar-2025, tatu: Change from custom "dse-next" to the official DSE image
-    //  even for IDE tests
-    // 17-Mar-2025, tatu: and then to HCD to get BM25 implementation
+    // 21-Apr-2025, tatu: formerly referenced hard-coded images; left here for reference:
+    //   to be removed in near future
     // "stargateio/dse-next:4.0.11-591d171ac9c9"
     // "datastax/dse-server:6.9.8"
-    //
     // "559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/staging/hcd:1.2.1-early-preview";
 
     // 21-Apr-2025, tatu: [data-api#1952] Load definition from "./docker-compose/.env"
