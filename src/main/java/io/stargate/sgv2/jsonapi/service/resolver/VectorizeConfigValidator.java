@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
@@ -357,14 +358,13 @@ public class VectorizeConfigValidator {
                         userConfig.modelName(), userConfig.provider()));
 
     // validate model support
-    if (model.modelSupport().status()
-        != EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelSupport.SupportStatus.SUPPORTING) {
+    if (model.modelSupport().status() != ModelSupport.SupportStatus.SUPPORTED) {
       throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
           Map.of(
               "model",
               userConfig.modelName(),
               "modelStatus",
-              model.modelSupport().status().status,
+              model.modelSupport().status().name(),
               "message",
               model.modelSupport().message().orElse("The model is not supported.")));
     }

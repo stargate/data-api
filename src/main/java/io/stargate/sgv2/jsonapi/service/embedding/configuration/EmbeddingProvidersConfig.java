@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -134,36 +134,6 @@ public interface EmbeddingProvidersConfig {
       @Nullable
       @JsonProperty
       Optional<String> serviceUrlOverride();
-    }
-
-    /**
-     * By default, model is supporting and has no message. So if model-support is not configured in
-     * the config source, it will be supporting by default.
-     *
-     * <p>If the model is deprecated or EOF, it will be marked in the config source and been mapped.
-     *
-     * <p>If message is not configured in config source, it will be Optional.empty().
-     */
-    interface ModelSupport {
-      @JsonProperty
-      @WithDefault("SUPPORTING")
-      SupportStatus status();
-
-      @JsonProperty
-      @JsonInclude(JsonInclude.Include.NON_EMPTY)
-      Optional<String> message();
-
-      enum SupportStatus {
-        SUPPORTING("SUPPORTING"),
-        DEPRECATED("DEPRECATED"),
-        END_OF_LIFE("END_OF_LIFE");
-
-        public final String status;
-
-        SupportStatus(String status) {
-          this.status = status;
-        }
-      }
     }
 
     interface ParameterConfig {

@@ -287,17 +287,18 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
     }
 
     @Test
-    public void deprecatedModel() {
-
+    public void deprecatedEmbeddingModel() {
       assertTableCommand(keyspaceName, testTableName)
           .templated()
           .alterTable(
               "addVectorize",
-              Map.of("vector_type_1", Map.of("provider", "nvidia", "modelName", "NV-Embed-QA")))
+              Map.of(
+                  "vector_type_1",
+                  Map.of("provider", "nvidia", "modelName", "a-deprecated-nvidia-embedding-model")))
           .hasSingleApiError(
               SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL,
               SchemaException.class,
-              "The model NV-Embed-QA is at DEPRECATED status");
+              "The model NV-a-deprecated-nvidia-embedding-model-QA is at DEPRECATED status");
     }
   }
 

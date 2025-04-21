@@ -23,7 +23,9 @@ import org.slf4j.LoggerFactory;
  *       EmbeddingAndRerankingConfigSourceProvider#RERANKING_CONFIG_FILE_PATH} variable set, Data
  *       API loads provider config from specified file location. E.G. Astra Data API.
  *   <li>With system property {@link
- *       EmbeddingAndRerankingConfigSourceProvider#DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE} set,
+ *       EmbeddingAndRerankingConfigSourceProvider#DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE},
+ *       {@link
+ *       EmbeddingAndRerankingConfigSourceProvider#DEFAULT_EMBEDDING_CONFIG_RESOURCE_OVERRIDE} set,
  *       it will override the provider config resource. E.G. Data API integration test.
  *   <li>With none set, Data API loads default provider config from resource folder. E.G. Local
  *       development.
@@ -44,8 +46,13 @@ public class EmbeddingAndRerankingConfigSourceProvider implements ConfigSourcePr
   private static final String DEFAULT_EMBEDDING_CONFIG_RESOURCE = "embedding-providers-config.yaml";
   // Default reranking config resource.
   private static final String DEFAULT_RERANKING_CONFIG_RESOURCE = "reranking-providers-config.yaml";
-  // System property name to override reranking config resource. Could be set by integration test
-  // resource.
+
+  // System property name to override embedding config resource.
+  // Could be set by integration test resource.
+  private static final String DEFAULT_EMBEDDING_CONFIG_RESOURCE_OVERRIDE =
+      "DEFAULT_EMBEDDING_CONFIG_RESOURCE_OVERRIDE";
+  // System property name to override reranking config resource.
+  // Could be set by integration test resource.
   private static final String DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE =
       "DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE";
 
@@ -74,9 +81,14 @@ public class EmbeddingAndRerankingConfigSourceProvider implements ConfigSourcePr
    */
   private ConfigSource getEmbeddingConfigSources(ClassLoader forClassLoader) throws IOException {
     String filePathFromEnv = System.getenv(EMBEDDING_CONFIG_FILE_PATH);
+    String resourceOverride = System.getProperty(DEFAULT_EMBEDDING_CONFIG_RESOURCE_OVERRIDE);
+
     if (filePathFromEnv != null) {
       LOGGER.info("Loading embedding config from file path: {}", filePathFromEnv);
       return loadConfigSourceFromFile(filePathFromEnv);
+    } else if (resourceOverride != null) {
+      LOGGER.info("Loading embedding config from override resource: {}", resourceOverride);
+      return loadConfigSourceFromResource(resourceOverride, forClassLoader);
     } else {
       LOGGER.info(
           "Loading embedding config from default resource file : {}",
@@ -109,7 +121,7 @@ public class EmbeddingAndRerankingConfigSourceProvider implements ConfigSourcePr
       return loadConfigSourceFromFile(filePathFromEnv);
     } else if (resourceOverride != null) {
       LOGGER.info("Loading reranking config from override resource: {}", resourceOverride);
-      return loadConfigSourceFromResource("test-reranking-providers-config.yaml", forClassLoader);
+      return loadConfigSourceFromResource(resourceOverride, forClassLoader);
     } else {
       LOGGER.info(
           "Loading reranking config from default resource: {}", DEFAULT_RERANKING_CONFIG_RESOURCE);

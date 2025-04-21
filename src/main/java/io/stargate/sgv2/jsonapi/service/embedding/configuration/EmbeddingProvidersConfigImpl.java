@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
 import io.stargate.embedding.gateway.EmbeddingGateway;
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import java.util.*;
 import java.util.stream.Collectors;
 

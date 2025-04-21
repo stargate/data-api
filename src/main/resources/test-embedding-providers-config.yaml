@@ -310,17 +310,20 @@ stargate:
             max-batch-size: 8
           models:
             - name: NV-Embed-QA
-              model-support:
-                status: DEPRECATED
-                message: This model has been deprecated, it will be removed in a future release. It is not supported for new collection or table.
               vector-dimension: 1024
               properties:
                 max-tokens: 512
-            - name: nvidia/llama-3.2-nv-embedqa-1b-v2
-              vector-dimension: 2048
-              service-url-override: http://llama-3-2-nv-embedqa-1b-v2.nemo:8000/v1/embeddings
-              properties:
-                max-tokens: 8192
+            - name: a-deprecated-nvidia-embedding-model
+              vector-dimension: 123
+              model-support:
+                status: DEPRECATED
+                message: This model has been deprecated, it will be removed in a future release. It is not supported for new Collections or Tables.
+            - name: a-EOL-nvidia-embedding-model
+              vector-dimension: 123
+              model-support:
+                status: END_OF_LIFE
+                message: This model is at END_OF_LIFE status, it is not supported.
+
         jinaAI:
           #see https://jina.ai/embeddings/#apiform
           display-name: Jina AI

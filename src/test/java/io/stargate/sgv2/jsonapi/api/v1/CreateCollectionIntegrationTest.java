@@ -881,15 +881,15 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
         .body(
             """
 
-                            {
+                        {
                             "createCollection": {
-                                "name": "deprecated_nvidia_model",
+                                "name": "collection_deprecated_nvidia_model",
                                 "options": {
                                     "vector": {
                                         "dimension": 123,
                                         "service": {
                                             "provider": "nvidia",
-                                            "modelName": "NV-Embed-QA"
+                                            "modelName": "a-deprecated-nvidia-embedding-model"
                                         }
                                     }
                                 }
@@ -901,7 +901,9 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
         .then()
         .statusCode(200)
         .body("$", responseIsError())
-        .body("errors[0].message", containsString("The model NV-Embed-QA is at DEPRECATED status"))
+        .body(
+            "errors[0].message",
+            containsString("The model a-deprecated-nvidia-embedding-model is at DEPRECATED status"))
         .body("errors[0].errorCode", is("UNSUPPORTED_PROVIDER_MODEL"));
   }
 
