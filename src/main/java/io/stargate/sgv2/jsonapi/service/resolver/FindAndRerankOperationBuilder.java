@@ -23,15 +23,17 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingDeferredAc
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
-import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,12 +81,19 @@ class FindAndRerankOperationBuilder {
     checkSupported();
 
     // Step 1 - we need a reranking task and the deferrable actions to do the intermediate reads
-    var rerankTasksAndDeferrables = rerankTasks();
+    // Making the deferrables here so we can associate them with read types that will fill them
+    var deferredVectorRead =
+        new RerankingTask.DeferredCommandWithSource(
+            Rank.RankSource.VECTOR, new DeferredCommandResult());
+    var deferredBM25Read =
+        new RerankingTask.DeferredCommandWithSource(
+            Rank.RankSource.BM25, new DeferredCommandResult());
+
+    var rerankTasksAndDeferrables = rerankTasks(List.of(deferredBM25Read, deferredVectorRead));
 
     // Step 2 - we need to read the data from the collections, we are wrapping the old collections
-    // in the
-    // new tasks so we do not change the collection code
-    var readTasksAndDeferrables = readTasks(rerankTasksAndDeferrables.deferrables());
+    // in the new tasks so we do not change the collection code
+    var readTasksAndDeferrables = readTasks(deferredVectorRead, deferredBM25Read);
 
     // Step 3 - we may need an embedding task, lets get one of those :)
     var embeddingActions =
@@ -164,22 +173,20 @@ class FindAndRerankOperationBuilder {
     var modelConfig =
         rerankingProvidersConfig.filterByRerankServiceDef(
             commandContext.schemaObject().rerankingConfig().rerankServiceDef());
-    if (modelConfig.modelSupport().status()
-        == RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.ModelSupport.SupportStatus
-            .END_OF_LIFE) {
+    if (modelConfig.modelSupport().status() == ModelSupport.SupportStatus.END_OF_LIFE) {
       throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
           Map.of(
               "model",
               modelConfig.name(),
               "modelStatus",
-              modelConfig.modelSupport().status().status,
+              modelConfig.modelSupport().status().name(),
               "message",
               modelConfig.modelSupport().message().orElse("The model is not supported.")));
     }
   }
 
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
-      rerankTasks() {
+      rerankTasks(List<RerankingTask.DeferredCommandWithSource> deferredCommandResults) {
 
     // Previous code will check reranking is supported
     var providerConfig = commandContext.schemaObject().rerankingConfig().rerankServiceDef();
@@ -194,13 +201,8 @@ class FindAndRerankOperationBuilder {
                 providerConfig.authentication(),
                 commandContext.commandName());
 
-    // we need a deferred action for each read
-    // at the moment we dont
-    List<DeferredCommandResult> deferredCommandResults =
-        List.of(new DeferredCommandResult(), new DeferredCommandResult());
-    List<Deferrable> deferrables = new ArrayList<>(deferredCommandResults);
-
-    // todo: move to a builder pattern, mosty to make it eaier to manage the task position and retry
+    // todo: move to a builder pattern, mosty to make it easier to manage the task position and
+    // retry
     // policy
     int commandLimit = getOrDefault(command.options(), FindAndRerankCommand.Options::limit, 10);
     RerankingTask<CollectionSchemaObject> task =
@@ -209,8 +211,8 @@ class FindAndRerankOperationBuilder {
             commandContext.schemaObject(),
             TaskRetryPolicy.NO_RETRY,
             rerankingProvider,
-            rerankQuery(),
-            rerankOn(),
+            RerankingQuery.create(command),
+            passageLocator(),
             command.buildProjector(),
             deferredCommandResults,
             commandLimit);
@@ -228,23 +230,43 @@ class FindAndRerankOperationBuilder {
                 getOrDefault(
                     command.options(), FindAndRerankCommand.Options::includeSortVector, false));
 
-    return new TaskGroupAndDeferrables<>(taskGroup, rerankAccumulator, deferrables);
+    return new TaskGroupAndDeferrables<>(
+        taskGroup,
+        rerankAccumulator,
+        deferredCommandResults.stream()
+            .map(RerankingTask.DeferredCommandWithSource::deferredRead)
+            .collect(Collectors.toUnmodifiableList()));
   }
 
   private TaskGroupAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject> readTasks(
-      List<Deferrable> deferredCommandResults) {
+      RerankingTask.DeferredCommandWithSource deferredVectorRead,
+      RerankingTask.DeferredCommandWithSource deferredBM25Read) {
 
     // we can run these tasks in parallel
     TaskGroup<IntermediateCollectionReadTask, CollectionSchemaObject> taskGroup =
         new TaskGroup<>(false);
 
+    // Hack: See https://github.com/stargate/data-api/issues/1961
+    // copying the hybrid limits on the command context so the find command resolver can pick it up
+    // when the command runs later, so we can set the page size to be the same as the limit
+    commandContext.setHybridLimits(
+        getOrDefault(
+            command.options(),
+            FindAndRerankCommand.Options::hybridLimits,
+            FindAndRerankCommand.HybridLimits.DEFAULT));
+
     // these are the actions the reads should call when done, to pass the command result into the
     // next tasks
-    var deferredCommandActions =
+    var deferredBM25ReadAction =
         DeferredAction.filtered(
-            DeferredCommandResultAction.class, Deferrable.deferred(deferredCommandResults));
-    var deferredBM25ReadAction = deferredCommandActions.get(0);
-    var deferredVectorReadAction = deferredCommandActions.get(1);
+                DeferredCommandResultAction.class,
+                Deferrable.deferred(deferredBM25Read.deferredRead()))
+            .getFirst();
+    var deferredVectorReadAction =
+        DeferredAction.filtered(
+                DeferredCommandResultAction.class,
+                Deferrable.deferred(deferredVectorRead.deferredRead()))
+            .getFirst();
 
     // The BM25 read
     var bm25Read = buildBm25Read(deferredBM25ReadAction);
@@ -351,36 +373,26 @@ class FindAndRerankOperationBuilder {
         getOrDefault(command.options(), FindAndRerankCommand.Options::includeSortVector, false));
   }
 
-  private String rerankOn() {
+  private PathMatchLocator passageLocator() {
 
-    var rerankOn = getOrDefault(command.options(), FindAndRerankCommand.Options::rerankOn, "");
+    var rerankOn = getOrDefault(command.options(), FindAndRerankCommand.Options::rerankOn, null);
     var isRerankOn = rerankOn != null && !rerankOn.isBlank();
+
+    String finalRerankField = null;
 
     if (isVectorizeSort()) {
       // use the vectorize field, unless the user has overridden
-      return isRerankOn ? rerankOn : VECTOR_EMBEDDING_TEXT_FIELD;
+      finalRerankField = isRerankOn ? rerankOn : VECTOR_EMBEDDING_TEXT_FIELD;
+    } else if (isRerankOn) {
+      // user has to provide a field to rererank on
+      finalRerankField = rerankOn;
+
+    } else {
+      throw new IllegalArgumentException(
+          "TODO XXX rerankOn() - rerankOn required and not specified");
     }
 
-    // user has to provide a field to rererank on
-    if (isRerankOn) {
-      return rerankOn;
-    }
-
-    throw new IllegalArgumentException("XXX rerankOn() - rerankOn required and not specified");
-  }
-
-  private String rerankQuery() {
-
-    if (command.sortClause().vectorizeSort() != null) {
-      return command.sortClause().vectorizeSort();
-    }
-    var rerankQuery =
-        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankQuery, "");
-    if (rerankQuery != null && !rerankQuery.isBlank()) {
-      return rerankQuery;
-    }
-
-    throw new IllegalArgumentException(("XXX rerankQuery() - no rerank query"));
+    return PathMatchLocator.forPath(finalRerankField);
   }
 
   private boolean isLexicalSort() {

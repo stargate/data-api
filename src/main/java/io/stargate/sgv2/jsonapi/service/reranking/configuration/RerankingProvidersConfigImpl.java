@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.reranking.configuration;
 
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

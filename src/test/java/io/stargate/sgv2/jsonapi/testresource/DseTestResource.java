@@ -29,7 +29,7 @@ public class DseTestResource extends StargateTestResource {
     // 17-Mar-2025, tatu: and then to HCD to get BM25 implementation
     final String cassandraImage =
         // "stargateio/dse-next:4.0.11-591d171ac9c9"
-        // "datastax/dse-server:6.9.7"
+        // "datastax/dse-server:6.9.8"
         "559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/staging/hcd:1.2.1-early-preview";
 
     System.setProperty("testing.containers.cassandra-image", cassandraImage);
@@ -79,11 +79,24 @@ public class DseTestResource extends StargateTestResource {
     return "true";
   }
 
+  // By default, we enable the feature flag for reranking
+  public String getFeatureFlagReranking() {
+    return "true";
+  }
+
   @Override
   public Map<String, String> start() {
     Map<String, String> env = super.start();
     ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
     propsBuilder.putAll(env);
+
+    // 02-April-2025, yuqi: [data-api#1972] Set the system property variable to override the
+    // provider config file resource.
+    // Note, this only helps local integration runs, not GitHub integration test actions.
+    // For GitHub actions, the system property is passing through script.
+    propsBuilder.put(
+        "DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE", "test-reranking-providers-config.yaml");
+
     propsBuilder.put("stargate.jsonapi.custom.embedding.enabled", "true");
 
     // 17-Mar-2025, tatu: [data-api#1903] Lexical search/sort feature flag
@@ -98,12 +111,11 @@ public class DseTestResource extends StargateTestResource {
       propsBuilder.put("stargate.feature.flags.tables", tableFeatureSetting);
     }
 
-    // Integration tests load provider yaml files from test resources folder.
-    // This is to help with testing non-prod provider configuration. E.G. model deprecation.
-    propsBuilder.put(
-        "EMBEDDING_CONFIG_PATH", "src/test/resources/test-embedding-providers-config.yaml");
-    propsBuilder.put(
-        "RERANKING_CONFIG_PATH", "src/test/resources/test-reranking-providers-config.yaml");
+    // 31-Mar-2025, yuqi: [data-api#1904] Reranking feature flag:
+    String featureFlagReranking = getFeatureFlagReranking();
+    if (featureFlagReranking != null) {
+      propsBuilder.put("stargate.feature.flags.reranking", featureFlagReranking);
+    }
 
     propsBuilder.put(
         "stargate.jsonapi.custom.embedding.clazz",

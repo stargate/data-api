@@ -15,8 +15,7 @@ import java.util.List;
  * "parameters":{"projectId":"test project"}}} }, "lexical":{"enabled":true,"analyzer":"standard"},
  * "rerank":{"enabled":true,"provider":"nvidia","modelName":"nvidia/llama-3.2-nv-rerankqa-1b-v2"}, }
  */
-public class CollectionSettingsV1Reader implements CollectionSettingsReader {
-  @Override
+public class CollectionSettingsV1Reader {
   public CollectionSchemaObject readCollectionSettings(
       JsonNode collectionNode,
       String keyspaceName,
@@ -52,15 +51,15 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
     CollectionLexicalConfig lexicalConfig;
     JsonNode lexicalNode =
         collectionOptionsNode.path(TableCommentConstants.COLLECTION_LEXICAL_CONFIG_KEY);
-    if (lexicalNode == null) {
-      lexicalConfig = CollectionLexicalConfig.configForDisabled();
+    if (lexicalNode.isMissingNode()) {
+      lexicalConfig = CollectionLexicalConfig.configForPreLexical();
     } else {
       boolean enabled = lexicalNode.path("enabled").asBoolean(false);
-      JsonNode analyzerNode = lexicalNode.path("analyzer");
+      JsonNode analyzerNode = lexicalNode.get("analyzer");
       lexicalConfig = new CollectionLexicalConfig(enabled, analyzerNode);
     }
 
-    CollectionRerankDef rerankingConfig = null;
+    CollectionRerankDef rerankingConfig;
     JsonNode rerankingNode =
         collectionOptionsNode.path(TableCommentConstants.COLLECTION_RERANKING_CONFIG_KEY);
     if (rerankingNode.isMissingNode()) {

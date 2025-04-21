@@ -1,13 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.reranking.configuration;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.smallrye.config.WithDefault;
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 public interface RerankingProvidersConfig {
   Map<String, RerankingProviderConfig> providers();
@@ -73,37 +72,6 @@ public interface RerankingProvidersConfig {
       @JsonProperty
       RequestProperties properties();
 
-      /**
-       * By default, model is supporting and has no message. So if model-support is not configured
-       * in the config source, it will be supporting by default.
-       *
-       * <p>If the model is deprecated or EOF, it will be marked in the config source and been
-       * mapped.
-       *
-       * <p>If message is not configured in config source, it will be Optional.empty().
-       */
-      interface ModelSupport {
-        @JsonProperty
-        @WithDefault("SUPPORTING")
-        SupportStatus status();
-
-        @JsonProperty
-        @JsonInclude(JsonInclude.Include.NON_EMPTY)
-        Optional<String> message();
-
-        enum SupportStatus {
-          SUPPORTING("SUPPORTING"),
-          DEPRECATED("DEPRECATED"),
-          END_OF_LIFE("END_OF_LIFE");
-
-          public final String status;
-
-          SupportStatus(String status) {
-            this.status = status;
-          }
-        }
-      }
-
       interface RequestProperties {
         /**
          * Specifies the maximum number of attempts before failing. Default is 3 (1 request + 2
@@ -157,14 +125,15 @@ public interface RerankingProvidersConfig {
   }
 
   /**
-   * Helper method to filter out the model configuration by the rerank service definition.
+   * This is the helper method to match a model configuration by the provided RerankServiceDef.
+   * Specifically, it will get target provider and filter down to the target model.
    *
    * <p>E.G. This could be used for validating the reranking model in the existing collection/table,
    * the method takes the rerank service definition and returns the model configuration. Then caller
-   * checks the support status and handle accordingly.
+   * checks the support status and handles accordingly.
    *
-   * <p>NOTE, Data API keeps all the provider and model in the configuration, so internal
-   * rerankServiceDef always match a provider and a model.
+   * <p>NOTE, Data API keeps all the provider and model(supported, deprecated, end_of_life) in the
+   * configuration, so internal rerankServiceDef always matches a provider and a model.
    */
   default RerankingProviderConfig.ModelConfig filterByRerankServiceDef(
       CollectionRerankDef.RerankServiceDef rerankServiceDef) {

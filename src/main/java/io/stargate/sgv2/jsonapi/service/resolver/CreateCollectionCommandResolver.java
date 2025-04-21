@@ -71,14 +71,16 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
     final var name = validateSchemaName(command.name(), NamingRules.COLLECTION);
     final CreateCollectionCommand.Options options = command.options();
+    boolean isRerankingEnabledForAPI = ctx.apiFeatures().isFeatureEnabled(ApiFeature.RERANKING);
 
     if (options == null) {
       final CollectionLexicalConfig lexicalConfig =
           lexicalAvailableForDB
-              ? CollectionLexicalConfig.configForEnabledStandard()
+              ? CollectionLexicalConfig.configForDefault()
               : CollectionLexicalConfig.configForDisabled();
       final CollectionRerankDef rerankDef =
-          CollectionRerankDef.configForNewCollections(rerankingProvidersConfig);
+          CollectionRerankDef.configForNewCollections(
+              isRerankingEnabledForAPI, rerankingProvidersConfig);
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
           dbLimitsConfig,
@@ -91,7 +93,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           operationsConfig.tooManyIndexesRollbackEnabled(),
           false,
           lexicalConfig,
-          rerankDef); // Since the options is null
+          rerankDef);
     }
 
     boolean hasIndexing = options.indexing() != null;
@@ -100,8 +102,10 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     final CollectionLexicalConfig lexicalConfig =
         CollectionLexicalConfig.validateAndConstruct(
             objectMapper, lexicalAvailableForDB, options.lexical());
+
     final CollectionRerankDef rerankDef =
-        CollectionRerankDef.fromApiDesc(options.rerank(), rerankingProvidersConfig);
+        CollectionRerankDef.fromApiDesc(
+            isRerankingEnabledForAPI, options.rerank(), rerankingProvidersConfig);
 
     boolean indexingDenyAll = false;
     // handling indexing options

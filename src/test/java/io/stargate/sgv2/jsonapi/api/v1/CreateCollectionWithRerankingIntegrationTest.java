@@ -200,14 +200,14 @@ public class CreateCollectionWithRerankingIntegrationTest
               jsonEquals(
                       """
                               {
-                                              "name": "%s",
-                                              "options": {
-                                                  "lexical": %s,
-                                                  "rerank": {
-                                                      "enabled": false
-                                                  }
-                                              }
-                                          }
+                                  "name": "%s",
+                                  "options": {
+                                      "lexical": %s,
+                                      "rerank": {
+                                          "enabled": false
+                                      }
+                                  }
+                              }
                               """
                       .formatted(collectionName, lexical())));
 
@@ -215,20 +215,17 @@ public class CreateCollectionWithRerankingIntegrationTest
     }
 
     @Test
-    void createRerankingWithDisabledAndModel() {
+    void createRerankingDisabledWithEmptyService() {
       final String collectionName = "coll_Reranking_disabled" + RandomStringUtils.randomNumeric(16);
       String json =
           createRequestWithReranking(
               collectionName,
               """
-                            {
-                                "enabled": false,
-                                "service": {
-                                    "provider": "nvidia",
-                                    "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
-                                }
-                            }
-                            """);
+                                        {
+                                            "enabled": false,
+                                            "service": {}
+                                        }
+                                        """);
 
       givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsDDLSuccess())
@@ -237,30 +234,30 @@ public class CreateCollectionWithRerankingIntegrationTest
       // verify the collection using FindCollection
       givenHeadersPostJsonThenOkNoErrors(
               """
-                                {
-                                    "findCollections": {
-                                        "options" : {
-                                            "explain": true
-                                        }
-                                     }
-                                }
-                                """)
+                              {
+                                "findCollections": {
+                                    "options" : {
+                                        "explain": true
+                                    }
+                                 }
+                              }
+                              """)
           .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(1))
           .body(
               "status.collections[0]",
               jsonEquals(
                       """
-                                {
-                                                "name": "%s",
-                                                "options": {
-                                                    "lexical": %s,
-                                                    "rerank": {
-                                                        "enabled": false
-                                                    }
-                                                }
-                                            }
-                                """
+                            {
+                                "name": "%s",
+                                "options": {
+                                    "lexical": %s,
+                                    "rerank": {
+                                        "enabled": false
+                                    }
+                                }
+                            }
+                            """
                       .formatted(collectionName, lexical())));
 
       deleteCollection(collectionName);
@@ -270,6 +267,31 @@ public class CreateCollectionWithRerankingIntegrationTest
   @Nested
   @Order(2)
   class CreateRerankingFail {
+    @Test
+    void failCreateRerankingWithDisabledAndModel() {
+      final String collectionName = "coll_Reranking_disabled" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithReranking(
+              collectionName,
+              """
+                                    {
+                                        "enabled": false,
+                                        "service": {
+                                            "provider": "nvidia",
+                                            "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+                                        }
+                                    }
+                                    """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "The provided options are invalid: 'rerank' is disabled, but 'rerank.service' configuration is provided"));
+    }
+
     @Test
     void failCreateRerankingMissingEnabled() {
       final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
@@ -442,14 +464,14 @@ public class CreateCollectionWithRerankingIntegrationTest
           createRequestWithReranking(
               collectionName,
               """
-                                        {
-                                          "enabled": true,
-                                          "service": {
-                                              "provider": "nvidia",
-                                              "modelName": "nvidia/a-random-deprecated-model"
-                                          }
-                                        }
-                                        """);
+                            {
+                              "enabled": true,
+                              "service": {
+                                  "provider": "nvidia",
+                                  "modelName": "nvidia/a-random-deprecated-model"
+                              }
+                            }
+                            """);
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())

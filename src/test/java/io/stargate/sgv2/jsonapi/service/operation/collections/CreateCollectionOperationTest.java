@@ -70,14 +70,12 @@ public class CreateCollectionOperationTest extends OperationTestBase {
         buildColumnDefs(OperationTestBase.TestColumn.ofBoolean("[applied]"));
 
     private final CollectionLexicalConfig LEXICAL_CONFIG =
-        CollectionLexicalConfig.configForEnabledStandard();
+        CollectionLexicalConfig.configForDefault();
 
-    private CollectionRerankDef RERANKING_CONFIG;
+    private final CollectionRerankDef RERANKING_DEF = CollectionRerankDef.configForDefault();
 
     @BeforeEach
-    public void init() {
-      RERANKING_CONFIG = CollectionRerankDef.configForNewCollections(rerankingProvidersConfig);
-    }
+    public void init() {}
 
     @Test
     public void createCollectionNoVector() {
@@ -126,7 +124,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               false,
               false,
               LEXICAL_CONFIG,
-              RERANKING_CONFIG);
+              RERANKING_DEF);
 
       Supplier<CommandResult> execute =
           operation
@@ -189,7 +187,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               false,
               false,
               LEXICAL_CONFIG,
-              RERANKING_CONFIG);
+              RERANKING_DEF);
 
       Supplier<CommandResult> execute =
           operation
@@ -249,7 +247,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               false,
               true,
               LEXICAL_CONFIG,
-              RERANKING_CONFIG);
+              RERANKING_DEF);
 
       Supplier<CommandResult> execute =
           operation
@@ -312,7 +310,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               false,
               true,
               LEXICAL_CONFIG,
-              RERANKING_CONFIG);
+              RERANKING_DEF);
 
       Supplier<CommandResult> execute =
           operation
@@ -397,7 +395,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               true,
               false,
               LEXICAL_CONFIG,
-              RERANKING_CONFIG);
+              RERANKING_DEF);
 
       Supplier<CommandResult> execute =
           operation

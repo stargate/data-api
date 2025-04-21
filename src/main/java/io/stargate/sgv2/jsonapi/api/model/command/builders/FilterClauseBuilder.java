@@ -216,17 +216,24 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
           || operator == ValueComparisonOperator.GTE
           || operator == ValueComparisonOperator.LT
           || operator == ValueComparisonOperator.LTE) {
-        // Note, added 'valueObject instanceof String || valueObject instanceof Boolean', this is to
-        // unblock some table filter against non-numeric column
-        // e.g. {"event_date": {"$gt": "2024-09-24"}}, {"is_active": {"$gt": true}},
-        // {"name":{"$gt":"Tim"}}
-        // Also, for collection path, this will allow comparison filter against collection maps
-        // query_bool_values and query_text_values
+        // Comparator GT/GTE/LT/LTE can apply to following value types:
+        // For Tables, Data/String/Boolean/BigDecimal
+        // For Collections, Data/String/Boolean/BigDecimal and
+        // DocumentID(Date/String/Boolean/BigDecimal)
+        // E.G.
+        // {"birthday": {"$gt": {"$date": 1672531200000}}}, {"name": {"$gt": "Tim"}}
+        // {"is_active": {"$gt": true}}, {"age": {"$gt": 123}}
+        // {"_id": {"$gt": {"$date": 1672531200000}}}, {"_id": {"$gt": "Tim"}}
+        // {"_id": {"$gt": true}}, {"_id": {"$gt": 123}}
         if (!(valueObject instanceof Date
             || valueObject instanceof String
             || valueObject instanceof Boolean
             || valueObject instanceof BigDecimal
-            || (valueObject instanceof DocumentId && (value.isObject() || value.isNumber())))) {
+            || (valueObject instanceof DocumentId
+                && (value.isObject()
+                    || value.isTextual()
+                    || value.isBoolean()
+                    || value.isNumber())))) {
           throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
               "%s operator must have `DATE` or `NUMBER` or `TEXT` or `BOOLEAN` value",
               operator.getOperator());

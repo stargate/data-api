@@ -193,7 +193,7 @@ public class FindCollectionWithLexicalSortIntegrationTest
           .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"))
           .body(
               "errors[0].message",
-              containsString("if sorting by '$lexical' value must be STRING, not NUMBER"));
+              containsString("if sorting by '$lexical' value must be String, not Number"));
     }
 
     @Test

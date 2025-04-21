@@ -3,19 +3,21 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindRerankingProvidersCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public record FindRerankingProvidersOperation(RerankingProvidersConfig config)
+public record FindRerankingProvidersOperation(
+    FindRerankingProvidersCommand command, RerankingProvidersConfig config)
     implements Operation<DatabaseSchemaObject> {
 
   @Override
@@ -30,9 +32,21 @@ public record FindRerankingProvidersOperation(RerankingProvidersConfig config)
                       .collect(
                           Collectors.toMap(
                               Map.Entry::getKey,
-                              entry -> RerankingProviderResponse.provider(entry.getValue())));
+                              entry ->
+                                  RerankingProviderResponse.provider(
+                                      entry.getValue(), getSupportStatuses())));
               return new Result(rerankingProviders);
             });
+  }
+
+  // By default, if includeModelStatus is not provided in command option, only model in supported
+  // status will be listed.
+  private Set<ModelSupport.SupportStatus> getSupportStatuses() {
+    var includeModelStatus = EnumSet.of(ModelSupport.SupportStatus.SUPPORTED);
+    if (command.options() != null && command.options().includeModelStatus() != null) {
+      includeModelStatus = command.options().includeModelStatus();
+    }
+    return includeModelStatus;
   }
 
   // simple result wrapper
@@ -57,23 +71,30 @@ public record FindRerankingProvidersOperation(RerankingProvidersConfig config)
           supportedAuthentication,
       List<RerankingProvidersConfig.RerankingProviderConfig.ModelConfig> models) {
     private static RerankingProviderResponse provider(
-        RerankingProvidersConfig.RerankingProviderConfig rerankingProviderConfig) {
+        RerankingProvidersConfig.RerankingProviderConfig rerankingProviderConfig,
+        Set<ModelSupport.SupportStatus> includeModelStatus) {
+
       return new RerankingProviderResponse(
           rerankingProviderConfig.isDefault(),
           rerankingProviderConfig.displayName(),
           rerankingProviderConfig.supportedAuthentications(),
-          excludeProperties(rerankingProviderConfig.models()));
+          filterModels(rerankingProviderConfig.models(), includeModelStatus));
     }
 
     // exclude internal model properties from findRerankingProviders command
-    private static List<RerankingProvidersConfig.RerankingProviderConfig.ModelConfig>
-        excludeProperties(
-            List<RerankingProvidersConfig.RerankingProviderConfig.ModelConfig> models) {
+    // exclude models that are not in the provided statuses
+    private static List<RerankingProvidersConfig.RerankingProviderConfig.ModelConfig> filterModels(
+        List<RerankingProvidersConfig.RerankingProviderConfig.ModelConfig> models,
+        Set<ModelSupport.SupportStatus> includeModelStatus) {
       return models.stream()
+          .filter(model -> includeModelStatus.contains(model.modelSupport().status()))
           .map(
               model ->
                   new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
                       model.name(), model.modelSupport(), model.isDefault(), model.url(), null))
+          .sorted(
+              Comparator.comparing(
+                  RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::name))
           .collect(Collectors.toList());
     }
   }

@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -16,10 +18,12 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -1550,18 +1554,18 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
       String inputJSON =
               """
-                          { "id": "vectorValidBase64",
-                            "vector": {"$binary": "%s"}
-                          }
-                          """
+                      { "id": "vectorValidBase64",
+                        "vector": {"$binary": "%s"}
+                      }
+                      """
               .formatted(Base64Util.encodeAsMimeBase64(floatsAsBytes));
       // Base64-encoded float array used in input but will be read back as Array:
       String expJSON =
           """
-                          { "id": "vectorValidBase64",
-                            "vector": [1.0, -0.5, 2.5]
-                          }
-                          """;
+                      { "id": "vectorValidBase64",
+                        "vector": [1.0, -0.5, 2.5]
+                      }
+                      """;
       assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
           .templated()
           .insertOne(inputJSON)
@@ -1609,11 +1613,11 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     void insertValidVectorKey() {
       String docJSON =
           """
-                          {
-                            "vectorId": [0.75, -0.25, 0.5],
-                            "textValue": "stuff"
-                          }
-                          """;
+                      {
+                        "vectorId": [0.75, -0.25, 0.5],
+                        "textValue": "stuff"
+                      }
+                      """;
       assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_KEY)
           .templated()
           .insertOne(docJSON)
@@ -1635,11 +1639,11 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .templated()
           .insertOne(
               """
-              {
-                "id": "vectorInvalid",
-                "vector": 1
-              }
-              """)
+                              {
+                                "id": "vectorInvalid",
+                                "vector": 1
+                              }
+                              """)
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
@@ -1652,11 +1656,11 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .templated()
           .insertOne(
               """
-                      {
-                        "id":" vectorInvalid",
-                        "vector": ["abc", 123, false]
-                      }
-                      """)
+                              {
+                                "id":" vectorInvalid",
+                                "vector": ["abc", 123, false]
+                              }
+                              """)
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
@@ -1671,17 +1675,23 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .templated()
           .insertOne(
                   """
-                      { "id": "vectorValidBase64",
-                        "vector": {"$binary": "%s"}
-                      }
-                      """
+                              { "id": "vectorValidBase64",
+                                "vector": {"$binary": "%s"}
+                              }
+                              """
                   .formatted(Base64Util.encodeAsMimeBase64(floatsAsBytes)))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
               "vector(vector) - Cause: expected vector of length 3, got one with 2 elements");
     }
+  }
 
+  @Nested
+  @Order(12)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class InsertVectorizeColumns {
+    @Order(1)
     @Test
     void insertDifferentVectorizeDimensions() {
       // Two vector columns with same provider and model, but different dimension, is now allowed
@@ -1728,11 +1738,12 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: Incorrect API key provided: test_emb");
     }
 
+    @Order(2)
     @Test
     void insertDifferentVectorizeModels() {
       // Two vector columns with same provider, different models, different dimensions
       // is supported
-      String tableName = "insertOneMultipleVectorizeDiffModelsTable";
+      final String tableName = "insertOneMultipleVectorizeDiffModelsTable";
 
       assertNamespaceCommand(keyspaceName)
           .templated()
@@ -1775,10 +1786,11 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: Incorrect API key provided: test_emb");
     }
 
+    @Order(3)
     @Test
     void insertDifferentVectorizeProviders() {
       // Two columns with different providers, not allowed for now
-      String tableName = "insertOneMultipleVectorizeDiffProvidersTable";
+      final String tableName = "insertOneMultipleVectorizeDiffProvidersTable";
 
       assertNamespaceCommand(keyspaceName)
           .templated()
@@ -1817,8 +1829,12 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                   }
                                   """)
           .hasSingleApiError(
-              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.name(),
-              "Provider: openai; HTTP Status: 401; Error Message: Incorrect API key provided: test_emb");
+              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR,
+              anyOf(
+                  containsString(
+                      "Provider: openai; HTTP Status: 401; Error Message: Incorrect API key provided: test_emb"),
+                  containsString(
+                      "Provider: jinaAI; HTTP Status: 401; Error Message: \"Unauthorized\"")));
     }
   }
 }

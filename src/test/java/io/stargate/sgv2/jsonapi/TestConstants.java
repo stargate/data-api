@@ -25,7 +25,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 /**
  * Re-usable values for tests.
  *
- * <p>THis must be an instance so that quarkus can setup the environment, we need this because of
+ * <p>This must be an instance so that quarkus can set up the environment, we need this because of
  * the use of their config library
  */
 public class TestConstants {
@@ -57,7 +57,7 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            CollectionLexicalConfig.configForEnabledStandard(),
+            CollectionLexicalConfig.configForDefault(),
             // Use default reranking config - hardcode the value to avoid reading config
             new CollectionRerankDef(
                 true,
