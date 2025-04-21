@@ -3,9 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -399,9 +397,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   @Order(2)
-  class DocumentIdRangeTest {
-
-    List<Object> ids = List.of("{\"$date\": 1672531200000}", "doc1", true, 123);
+  class DocumentIdRange {
 
     // DocumentId with different types, Date/String/Boolean/BigDecimal
     static Stream<Arguments> documentIds() {
@@ -412,21 +408,37 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           Arguments.of(123));
     }
 
+    @Test
+    @Order(0)
+    public void cleanUpCollection() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                {
+                  "deleteMany": {
+                    "filter": {}
+                  }
+                }
+                """)
+          .body("$", responseIsStatusOnly())
+          .body("status.deletedCount", is(-1))
+          .body("status.moreData", is(nullValue()));
+    }
+
     @ParameterizedTest()
     @MethodSource("documentIds")
     @Order(1)
-    public void setUp(Object id) {
+    public void inserts(Object id) throws JsonProcessingException {
       givenHeadersPostJsonThenOkNoErrors(
                   """
-                {
-                  "insertOne": {
-                    "document": {
-                      "_id": %s
-                    }
-                  }
-                }
-                """
-                  .formatted(objectMapper.valueToTree(id).toString()))
+                      {
+                        "insertOne": {
+                          "document": {
+                            "_id": %s
+                          }
+                        }
+                      }
+                      """
+                  .formatted(objectMapper.writeValueAsString(id)))
           .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is(id));
     }
@@ -435,16 +447,16 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
     @MethodSource("documentIds")
     @Order(2)
     // Take $lte as example, we can use equal to test the filter value against inserted value.
-    public void rangeTest(Object id) throws Exception {
+    public void rangeTest(Object id) throws JsonProcessingException {
       String json =
               """
-                        {
-                          "find": {
-                            "filter" : {"_id" : {"$lte" : %s}}
-                          }
+                      {
+                        "find": {
+                          "filter" : {"_id" : {"$lte" : %s}}
                         }
-                        """
-              .formatted(objectMapper.valueToTree(id).toString());
+                      }
+                      """
+              .formatted(objectMapper.writeValueAsString(id));
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -456,6 +468,23 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body("data.documents[0]._id", is(id));
+    }
+
+    @Order(3)
+    @Test
+    public void InvalidRangeFilter() {
+      String filter =
+          """
+                              {"_id" : {"$lte" : null}}
+                      """;
+      givenHeadersPostJsonThenOk("{ \"findOne\": { \"filter\" : %s}}".formatted(filter))
+          .body("$", responseIsError())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "$lte operator must have `DATE` or `NUMBER` or `TEXT` or `BOOLEAN` value"));
     }
   }
 }
