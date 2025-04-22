@@ -299,10 +299,9 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
       final int passageCount = passages.size();
       rerankingMetrics.recordPassageCount(passageCount);
 
-      // Start the timer after the internal prep is done to get more accurate reranking call latency
+      // Start the timer
       Timer.Sample sample = rerankingMetrics.startRerankNetworkCallTimer();
 
-      // --- Return Uni with Metrics Callbacks ---
       return rerankingProvider
           .rerank(query.query(), passages, credentials)
           .onItem()

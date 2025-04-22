@@ -177,6 +177,7 @@ public class RerankingMetrics {
    * provided to the outer {@link RerankingMetrics} instance.
    */
   public static class RerankingTagsBuilder {
+    // Use a Map to store tags and check for duplicates
     private final Map<String, String> tagsMap;
 
     public RerankingTagsBuilder() {
