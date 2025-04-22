@@ -3,10 +3,10 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation.test;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import java.util.*;
 
 /**
  * This is a test implementation of the EmbeddingProvider interface. It is used for
@@ -29,9 +29,23 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
   public static HashMap<String, float[]> TEST_DATA_DIMENSION_5 = new HashMap<>();
   public static HashMap<String, float[]> TEST_DATA_DIMENSION_6 = new HashMap<>();
 
-  private int dimension;
+  private final int dimension;
 
   public CustomITEmbeddingProvider(int dimension) {
+    // construct the test modelConfig
+    super(
+        null,
+        null,
+        new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
+            "testModel",
+            new ModelSupport.ModelSupportImpl(
+                ModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
+            Optional.of(dimension),
+            List.of(),
+            Map.of(),
+            Optional.empty()),
+        dimension,
+        Map.of());
     this.dimension = dimension;
   }
 

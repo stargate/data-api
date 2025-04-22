@@ -1301,7 +1301,13 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
   @Nested
   @Order(8)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class DeprecatedModel {
+  class UnknownExistingModel {
+
+    // As best practice, when deprecate or EOL a model, we should mark them in the configuration,
+    // instead
+    // of removing the whole configuration entry as bad practice!
+    // The bad practice should only happen in dev before, add this validation to capture, and
+    // confirm it is as least not return 500,
     @Test
     @Order(1)
     public void findOneAndUpdate_sortClause() {
@@ -1341,12 +1347,11 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("VECTORIZE_MODEL_DEPRECATED"))
+          .body("errors[0].errorCode", is("VECTORIZE_SERVICE_TYPE_UNAVAILABLE"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
-              containsString(
-                  "Model random is deprecated, supported models for provider 'nvidia' are"));
+              containsString("unknown model 'random' for service provider 'nvidia'"));
     }
   }
 
