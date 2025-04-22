@@ -7,8 +7,10 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.time.Duration;
 import java.util.List;
@@ -70,6 +72,30 @@ public abstract class EmbeddingProvider {
             Duration.ofMillis(requestProperties.maxBackOffMillis()))
         .withJitter(requestProperties.jitter())
         .atMost(requestProperties.atMostRetries());
+  }
+
+  /**
+   * Checks if the vectorization will use an END_OF_LIFE model and throws an exception if it is.
+   *
+   * <p>As part of embedding model deprecation ability, any read and write with vectorization in an
+   * END_OF_LIFE model will throw an exception.
+   *
+   * <p>Note, SUPPORTED and DEPRECATED models are still allowed to be used in read and write.
+   *
+   * <p>This method should be called before any vectorization operation.
+   */
+  public void checkEOLModelUsage() {
+    // Validate if the model is END_OF_LIFE
+    if (model.modelSupport().status() == ModelSupport.SupportStatus.END_OF_LIFE) {
+      throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
+          Map.of(
+              "model",
+              model.name(),
+              "modelStatus",
+              model.modelSupport().status().name(),
+              "message",
+              model.modelSupport().message().orElse("The model is not supported.")));
+    }
   }
 
   /**

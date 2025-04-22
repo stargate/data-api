@@ -54,6 +54,8 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+    // Check if using an EOF model
+    checkEOLModelUsage();
     if (embeddingCredentials.accessId().isEmpty() && embeddingCredentials.secretId().isEmpty()) {
       throw ErrorCodeV1.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
           "Both '%s' and '%s' are missing in the header for provider '%s'",

@@ -87,6 +87,10 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+
+    // Check if using an EOF model
+    checkEOLModelUsage();
+
     List<float[]> response = new ArrayList<>(texts.size());
     if (texts.size() == 0) return Uni.createFrom().item(Response.of(batchId, response));
     if (!embeddingCredentials.apiKey().isPresent()

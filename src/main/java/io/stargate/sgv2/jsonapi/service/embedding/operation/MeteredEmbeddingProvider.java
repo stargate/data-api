@@ -7,12 +7,9 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -57,21 +54,6 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
-
-    // Validate if the model is END_OF_LIFE
-    if (embeddingProvider.model.modelSupport().status() == ModelSupport.SupportStatus.END_OF_LIFE) {
-      throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
-          Map.of(
-              "model", embeddingProvider.model.name(),
-              "modelStatus", embeddingProvider.model.modelSupport().status().name(),
-              "message",
-                  embeddingProvider
-                      .model
-                      .modelSupport()
-                      .message()
-                      .orElse("The model is not supported.")));
-    }
-
     // String bytes metrics for vectorize
     DistributionSummary ds =
         DistributionSummary.builder(jsonApiMetricsConfig.vectorizeInputBytesMetrics())

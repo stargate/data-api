@@ -126,6 +126,8 @@ public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+    // Check if using an EOF model
+    checkEOLModelUsage();
     checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
     // Oddity: Implementation does not support batching, so we only accept "batches"
     // of 1 String, fail for others
