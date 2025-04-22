@@ -26,12 +26,12 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
+import io.smallrye.config.SmallRyeConfig;
 import jakarta.enterprise.inject.Produces;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
  * Centralized configuration of Micrometer {@link MeterFilter}s.
@@ -45,24 +45,10 @@ import java.util.stream.Collectors;
  *       requests, vectorization duration, and reranking durations.
  * </ul>
  */
-@Singleton
-public class MicrometerConfiguration {
+public final class MicrometerConfiguration {
 
-  private final MetricsConfig metricsConfig;
-  private final JsonApiMetricsConfig jsonApiMetricsConfig;
-
-  /**
-   * Constructs the Micrometer configuration bean. Dependencies are injected by the CDI container.
-   *
-   * @param metricsConfig General metrics configuration containing global tags.
-   * @param jsonApiMetricsConfig Configuration specific to JSON API metrics, including metric names.
-   */
-  @Inject
-  public MicrometerConfiguration(
-      MetricsConfig metricsConfig, JsonApiMetricsConfig jsonApiMetricsConfig) {
-    this.metricsConfig = metricsConfig;
-    this.jsonApiMetricsConfig = jsonApiMetricsConfig;
-  }
+  // Private constructor to prevent instantiation
+  private MicrometerConfiguration() {}
 
   /**
    * Produces a meter filter that applies configured global tags (e.g., {@code module=sgv2-jsonapi})
@@ -72,10 +58,12 @@ public class MicrometerConfiguration {
    *     are configured.
    */
   @Produces
-  @Singleton
-  @jakarta.annotation.Priority(
-      0) // Give common tags a higher priority , lower number = higher priority
   public MeterFilter globalTagsMeterFilter() {
+    MetricsConfig metricsConfig =
+        ConfigProvider.getConfig()
+            .unwrap(SmallRyeConfig.class)
+            .getConfigMapping(MetricsConfig.class);
+
     Map<String, String> globalTags = metricsConfig.globalTags();
 
     // if we have no global tags, use empty
@@ -120,13 +108,16 @@ public class MicrometerConfiguration {
    * @return A {@link MeterFilter} for configuring distribution statistics.
    */
   @Produces
-  @Singleton
-  @jakarta.annotation.Priority(1) // Lower priority than global tags
   public MeterFilter configureDistributionStatistics() {
     return new MeterFilter() {
       @Override
       public DistributionStatisticConfig configure(
           Meter.Id id, DistributionStatisticConfig config) {
+        JsonApiMetricsConfig jsonApiMetricsConfig =
+            ConfigProvider.getConfig()
+                .unwrap(SmallRyeConfig.class)
+                .getConfigMapping(JsonApiMetricsConfig.class);
+
         String name = id.getName();
         DistributionStatisticConfig.Builder builder = null;
 
