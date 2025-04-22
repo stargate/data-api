@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -1827,8 +1829,12 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                   }
                                   """)
           .hasSingleApiError(
-              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR.name(),
-              "Provider: openai; HTTP Status: 401; Error Message: Incorrect API key provided: test_emb");
+              ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR,
+              anyOf(
+                  containsString(
+                      "Provider: openai; HTTP Status: 401; Error Message: Incorrect API key provided: test_emb"),
+                  containsString(
+                      "Provider: jinaAI; HTTP Status: 401; Error Message: \"Unauthorized\"")));
     }
   }
 }

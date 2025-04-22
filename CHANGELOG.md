@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
+## [v1.0.25](https://github.com/stargate/data-api/tree/v1.0.25) (2025-04-18)
 
-[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.24...HEAD)
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.24...v1.0.25)
 
 **Fixed bugs:**
 
@@ -10,7 +10,17 @@
 
 **Closed issues:**
 
+- Flaky IT: `insertDifferentVectorizeProviders` - Error message varies with multiple providers [\#2016](https://github.com/stargate/data-api/issues/2016)
+- Reranking and Lexical feature enabled in production caused backwards compatibility issue for createCollection. [\#2013](https://github.com/stargate/data-api/issues/2013)
 - \(Tables\) Error inserting empty association lists as a map [\#1998](https://github.com/stargate/data-api/issues/1998)
+
+**Merged pull requests:**
+
+- Fix \#2016: Fix flaky integration test [\#2017](https://github.com/stargate/data-api/pull/2017) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Add IT for \#2013: Add integration tests to ensure backward compatibility on createCollection [\#2015](https://github.com/stargate/data-api/pull/2015) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fixes \#2013: avoid fail for createCollection wrt legacy collections \(pre-lexical/pre-rerank\) [\#2014](https://github.com/stargate/data-api/pull/2014) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add simple IT to check that stemming/stop-word config works for $lexical Collection [\#2009](https://github.com/stargate/data-api/pull/2009) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#2007](https://github.com/stargate/data-api/pull/2007) ([github-actions[bot]](https://github.com/apps/github-actions))
 
 ## [v1.0.24](https://github.com/stargate/data-api/tree/v1.0.24) (2025-04-10)
 
