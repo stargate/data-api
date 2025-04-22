@@ -7,6 +7,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.MetricsConstants;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -101,7 +102,7 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
             () ->
                 sample.stop(
                     meterRegistry.timer(
-                        jsonApiMetricsConfig.vectorizeCallDurationMetrics(), tags)));
+                        MetricsConstants.VectorizeMetrics.VECTORIZE_CALL_DURATION_METRIC, tags)));
   }
 
   @Override

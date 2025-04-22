@@ -25,4 +25,9 @@ public interface MetricsConstants {
     String TENANT_CALL_DURATION_METRIC = "rerank.tenant.call.duration";
     String ALL_CALL_DURATION_METRIC = "rerank.all.call.duration";
   }
+
+  /** Defines metric names related to Vectorization operations. */
+  interface VectorizeMetrics {
+    String VECTORIZE_CALL_DURATION_METRIC = "vectorize.call.duration";
+  }
 }

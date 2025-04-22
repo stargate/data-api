@@ -1,25 +1,9 @@
-/*
- * Copyright The Stargate Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
-
 package io.stargate.sgv2.jsonapi.api.v1.metrics;
 
 import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.HttpMetrics.HTTP_SERVER_REQUESTS;
 import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics.ALL_CALL_DURATION_METRIC;
 import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics.TENANT_CALL_DURATION_METRIC;
+import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.VectorizeMetrics.VECTORIZE_CALL_DURATION_METRIC;
 
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Tag;
@@ -39,10 +23,11 @@ import org.eclipse.microprofile.config.ConfigProvider;
  * <p>This class provides CDI producer methods for {@link MeterFilter} beans that:
  *
  * <ul>
- *   <li>Apply global tags (e.g., module identifier) to all metrics based on {@link MetricsConfig}.
- *   <li>Configure distribution statistics (client-side percentiles, Prometheus histogram buckets,
- *       etc.) for specific timer metrics used throughout the application, such as HTTP server
- *       requests, vectorization duration, and reranking durations.
+ *   <li>Apply global tags (e.g., {@code module=sgv2-jsonapi}) to all metrics based on configuration
+ *       provided by {@link MetricsConfig}.
+ *   <li>Configure distribution statistics (client-side percentiles, Prometheus histogram buckets)
+ *       for specific timer metrics using constants defined in {@link
+ *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants}.
  * </ul>
  */
 public final class MicrometerConfiguration {
@@ -54,7 +39,7 @@ public final class MicrometerConfiguration {
    * Produces a meter filter that applies configured global tags (e.g., {@code module=sgv2-jsonapi})
    * to all metrics. Reads tags from {@link MetricsConfig#globalTags()}.
    *
-   * @return A {@link MeterFilter} for applying common tags, or an empty filter if no global tags
+   * @return A {@link MeterFilter} for applying common tags, or an no-op filter if no global tags
    *     are configured.
    */
   @Produces
@@ -66,7 +51,7 @@ public final class MicrometerConfiguration {
 
     Map<String, String> globalTags = metricsConfig.globalTags();
 
-    // if we have no global tags, use empty
+    // if we have no global tags, use empty (no-op filter)
     if (null == globalTags || globalTags.isEmpty()) {
       return new MeterFilter() {};
     }
@@ -82,66 +67,63 @@ public final class MicrometerConfiguration {
   }
 
   /**
-   * Produces a meter filter that configures distribution statistics for specific timer metrics used
-   * throughout the application..
+   * Produces a meter filter to configure distribution statistics for key timer metrics such as HTTP
+   * server requests, vectorization duration, and reranking calls.
    *
-   * <p>This filter enables Prometheus-compatible histogram buckets for server-side percentile
-   * calculation (via {@code histogram_quantile}) and configures specific client-side percentiles
-   * where required.
+   * <p>This filter enables Prometheus-compatible histogram buckets (allowing server-side {@code
+   * histogram_quantile} calculations) and configures specific client-side percentiles.
    *
-   * <p>Configures:
+   * <p>The percentile configuration strategy aims to balance detail with monitoring system load,
+   * particularly concerning metric cardinality:
    *
    * <ul>
-   *   <li>HTTP Server Requests {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.HttpMetrics#HTTP_SERVER_REQUESTS}:
-   *       P50, P90, P95, P99, Histogram
-   *   <li>Vectorize Call Duration {@link JsonApiMetricsConfig#vectorizeCallDurationMetrics()}: P50,
-   *       P90, P95, P99, Histogram
-   *   <li>Tenant Reranking Duration {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics#TENANT_CALL_DURATION_METRIC}:
-   *       P98, Histogram
-   *   <li>Overall Reranking Duration {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics#ALL_CALL_DURATION_METRIC}:
-   *       P80, P95, P98, Histogram
+   *   <li>Metrics with high-cardinality tags (e.g., including {@code tenant}) like {@value
+   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics#TENANT_CALL_DURATION_METRIC}
+   *       are configured with a limited set of essential percentiles (e.g., P98) to minimize
+   *       overhead.
+   *   <li>Metrics aggregated across tenants or with lower cardinality tags, such as {@value
+   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.HttpMetrics#HTTP_SERVER_REQUESTS}
+   *       and {@value
+   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics#ALL_CALL_DURATION_METRIC},
+   *       receive a more comprehensive set of standard percentiles (e.g., P50, P90, P95, P99).
    * </ul>
+   *
+   * Note: The percentiles Pxx correspond to the quantiles 0.xx used in configuration.
    *
    * @return A {@link MeterFilter} for configuring distribution statistics.
    */
   @Produces
   public MeterFilter configureDistributionStatistics() {
+    // --- Define Percentile Values ---
+    final double[] allCallDurationPercentiles = {0.5, 0.90, 0.95, 0.99};
+    final double[] tenantCallDurationPercentiles = {0.98};
+
+    // --- Create A Map For Value Look Up ---
+    final Map<String, double[]> percentileConfigs =
+        Map.of(
+            HTTP_SERVER_REQUESTS, allCallDurationPercentiles,
+            VECTORIZE_CALL_DURATION_METRIC, allCallDurationPercentiles,
+            TENANT_CALL_DURATION_METRIC, tenantCallDurationPercentiles,
+            ALL_CALL_DURATION_METRIC, allCallDurationPercentiles);
+
     return new MeterFilter() {
       @Override
       public DistributionStatisticConfig configure(
           Meter.Id id, DistributionStatisticConfig config) {
-        JsonApiMetricsConfig jsonApiMetricsConfig =
-            ConfigProvider.getConfig()
-                .unwrap(SmallRyeConfig.class)
-                .getConfigMapping(JsonApiMetricsConfig.class);
 
         String name = id.getName();
-        DistributionStatisticConfig.Builder builder = null;
+        // Look up using the above map to find the specific percentiles for the metric
+        double[] specificPercentiles = percentileConfigs.get(name);
 
-        // --- Configuration for HTTP Server & Vectorize metrics ---
-        if (name.startsWith(HTTP_SERVER_REQUESTS)
-            || name.equals(jsonApiMetricsConfig.vectorizeCallDurationMetrics())) {
-          builder = DistributionStatisticConfig.builder().percentiles(0.5, 0.90, 0.95, 0.99);
-        }
+        // If a specific configuration was found for this metric name
+        if (specificPercentiles != null) {
+          DistributionStatisticConfig.Builder builder =
+              DistributionStatisticConfig.builder().percentiles(specificPercentiles);
 
-        // --- Configuration for Tenant Reranking Timer ---
-        else if (name.equals(TENANT_CALL_DURATION_METRIC)) {
-          builder = DistributionStatisticConfig.builder().percentiles(0.98);
-        }
-
-        // --- Configuration for Overall Reranking Timer ---
-        else if (name.equals(ALL_CALL_DURATION_METRIC)) {
-          builder = DistributionStatisticConfig.builder().percentiles(0.80, 0.95, 0.98);
-        }
-
-        // If a specific configuration was found, enable histograms and merge
-        if (builder != null) {
-          // Enable Prometheus histogram buckets for all configured timers
-          // This allows server-side histogram_quantile calculations
+          // Enable Prometheus histogram buckets
           builder.percentilesHistogram(true);
+
+          // Merge the specific config with the existing/default config
           return builder.build().merge(config);
         }
 
