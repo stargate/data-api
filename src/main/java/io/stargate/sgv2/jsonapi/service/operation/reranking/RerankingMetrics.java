@@ -1,12 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
-import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.MetricTags.*;
-import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics.*;
+import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics.*;
+import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Tags.*;
 import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.UNKNOWN_VALUE;
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import io.micrometer.core.instrument.*;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.config.constants.MetricsConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import java.util.ArrayList;
@@ -78,11 +79,9 @@ public class RerankingMetrics {
    * this context.
    *
    * <p>Metric: {@value
-   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics#TENANT_PASSAGE_COUNT_METRIC}
+   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics#RERANK_TENANT_PASSAGE_COUNT_METRIC}
    * <br>
-   * Tags: {@value
-   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.MetricTags#TENANT_TAG}, {@value
-   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.MetricTags#TABLE_TAG}
+   * Tags: {@value MetricsConstants.Tags#TENANT_TAG}, {@value MetricsConstants.Tags#TABLE_TAG}
    *
    * @param passageCount The number of passages.
    */
@@ -92,7 +91,7 @@ public class RerankingMetrics {
             .withTenant(requestContext.getTenantId().orElse(UNKNOWN_VALUE))
             .withTable(schemaObject.name().keyspace() + "." + schemaObject.name().table())
             .build();
-    DistributionSummary ds = meterRegistry.summary(TENANT_PASSAGE_COUNT_METRIC, tags);
+    DistributionSummary ds = meterRegistry.summary(RERANK_TENANT_PASSAGE_COUNT_METRIC, tags);
     ds.record(passageCount);
   }
 
@@ -101,12 +100,10 @@ public class RerankingMetrics {
    * model associated with this context.
    *
    * <p>Metric: {@value
-   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics#ALL_PASSAGE_COUNT_METRIC}
+   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics#RERANK_ALL_PASSAGE_COUNT_METRIC}
    * <br>
-   * Tags: {@value
-   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.MetricTags#RERANKING_PROVIDER_TAG},
-   * {@value
-   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.MetricTags#RERANKING_MODEL_TAG}
+   * Tags: {@value MetricsConstants.Tags#RERANKING_PROVIDER_TAG}, {@value
+   * MetricsConstants.Tags#RERANKING_MODEL_TAG}
    *
    * @param passageCount The number of passages.
    */
@@ -116,7 +113,7 @@ public class RerankingMetrics {
             .withProvider(classSimpleName(rerankingProvider.getClass()))
             .withModel(rerankingProvider.modelName())
             .build();
-    DistributionSummary ds = meterRegistry.summary(ALL_PASSAGE_COUNT_METRIC, tags);
+    DistributionSummary ds = meterRegistry.summary(RERANK_ALL_PASSAGE_COUNT_METRIC, tags);
     ds.record(passageCount);
   }
 
@@ -138,11 +135,9 @@ public class RerankingMetrics {
    * and table associated with this context. Measures the asynchronous reranking network call phase.
    *
    * <p>Metric: {@value
-   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics#TENANT_CALL_DURATION_METRIC}
+   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics#RERANK_TENANT_CALL_DURATION_METRIC}
    * <br>
-   * Tags: {@value
-   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.MetricTags#TENANT_TAG}, {@value
-   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.MetricTags#TABLE_TAG} <br>
+   * Tags: {@value MetricsConstants.Tags#TENANT_TAG}, {@value MetricsConstants.Tags#TABLE_TAG} <br>
    * (Expected to be configured for P98 percentile via MeterFilter)
    *
    * @param sample The {@link Timer.Sample} started by {@link #startRerankNetworkCallTimer()}. Must
@@ -155,7 +150,7 @@ public class RerankingMetrics {
             .withTable(schemaObject.name().keyspace() + "." + schemaObject.name().table())
             .build();
 
-    sample.stop(meterRegistry.timer(TENANT_CALL_DURATION_METRIC, tags));
+    sample.stop(meterRegistry.timer(RERANK_TENANT_CALL_DURATION_METRIC, tags));
   }
 
   /**
@@ -164,12 +159,10 @@ public class RerankingMetrics {
    * reranking network call phase.
    *
    * <p>Metric: {@value
-   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics#ALL_CALL_DURATION_METRIC}
+   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics#RERANK_ALL_CALL_DURATION_METRIC}
    * <br>
-   * Tags: {@value
-   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.MetricTags#RERANKING_PROVIDER_TAG},
-   * {@value
-   * io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.MetricTags#RERANKING_MODEL_TAG} <br>
+   * Tags: {@value MetricsConstants.Tags#RERANKING_PROVIDER_TAG}, {@value
+   * MetricsConstants.Tags#RERANKING_MODEL_TAG} <br>
    * (Expected to be configured for P80, P95, P98 percentiles via MeterFilter)
    *
    * @param sample The {@link Timer.Sample} started by {@link #startRerankNetworkCallTimer()}. Must
@@ -182,7 +175,7 @@ public class RerankingMetrics {
             .withModel(rerankingProvider.modelName())
             .build();
 
-    sample.stop(meterRegistry.timer(ALL_CALL_DURATION_METRIC, tags));
+    sample.stop(meterRegistry.timer(RERANK_ALL_CALL_DURATION_METRIC, tags));
   }
 
   // --- Static Inner Tag Builder Class ---

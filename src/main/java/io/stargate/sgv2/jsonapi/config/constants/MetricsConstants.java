@@ -6,28 +6,20 @@ public interface MetricsConstants {
   String UNKNOWN_VALUE = "unknown";
 
   /** Defines common tag keys used across various metrics. */
-  interface MetricTags {
+  interface Tags {
     String TENANT_TAG = "tenant";
     String TABLE_TAG = "table";
-    String RERANKING_PROVIDER_TAG = "rerankingProvider";
-    String RERANKING_MODEL_TAG = "rerankingModel";
+    String RERANKING_PROVIDER_TAG = "reranking.provider";
+    String RERANKING_MODEL_TAG = "reranking.model";
   }
 
-  /** Defines metric names related to HTTP server interactions. */
-  interface HttpMetrics {
+  /** Defines metric names that used in the DataAPI */
+  interface Metrics {
     String HTTP_SERVER_REQUESTS = "http.server.requests";
-  }
-
-  /** Defines metric names related to Reranking operations. */
-  interface RerankingMetrics {
-    String TENANT_PASSAGE_COUNT_METRIC = "rerank.tenant.passage.count";
-    String ALL_PASSAGE_COUNT_METRIC = "rerank.all.passage.count";
-    String TENANT_CALL_DURATION_METRIC = "rerank.tenant.call.duration";
-    String ALL_CALL_DURATION_METRIC = "rerank.all.call.duration";
-  }
-
-  /** Defines metric names related to Vectorization operations. */
-  interface VectorizeMetrics {
+    String RERANK_ALL_CALL_DURATION_METRIC = "rerank.all.call.duration";
+    String RERANK_ALL_PASSAGE_COUNT_METRIC = "rerank.all.passage.count";
+    String RERANK_TENANT_CALL_DURATION_METRIC = "rerank.tenant.call.duration";
+    String RERANK_TENANT_PASSAGE_COUNT_METRIC = "rerank.tenant.passage.count";
     String VECTORIZE_CALL_DURATION_METRIC = "vectorize.call.duration";
   }
 }

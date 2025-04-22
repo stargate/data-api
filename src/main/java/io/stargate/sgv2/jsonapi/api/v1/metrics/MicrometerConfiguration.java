@@ -1,9 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.v1.metrics;
 
-import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.HttpMetrics.HTTP_SERVER_REQUESTS;
-import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics.ALL_CALL_DURATION_METRIC;
-import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics.TENANT_CALL_DURATION_METRIC;
-import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.VectorizeMetrics.VECTORIZE_CALL_DURATION_METRIC;
+import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics.HTTP_SERVER_REQUESTS;
+import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics.RERANK_ALL_CALL_DURATION_METRIC;
+import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics.RERANK_TENANT_CALL_DURATION_METRIC;
+import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics.VECTORIZE_CALL_DURATION_METRIC;
 
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Tag;
@@ -11,6 +11,7 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import io.smallrye.config.SmallRyeConfig;
+import io.stargate.sgv2.jsonapi.config.constants.MetricsConstants;
 import jakarta.enterprise.inject.Produces;
 import java.util.Collection;
 import java.util.Map;
@@ -78,13 +79,12 @@ public final class MicrometerConfiguration {
    *
    * <ul>
    *   <li>Metrics with high-cardinality tags (e.g., including {@code tenant}) like {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics#TENANT_CALL_DURATION_METRIC}
+   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics#RERANK_TENANT_CALL_DURATION_METRIC}
    *       are configured with a limited set of essential percentiles (e.g., P98) to minimize
    *       overhead.
    *   <li>Metrics aggregated across tenants or with lower cardinality tags, such as {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.HttpMetrics#HTTP_SERVER_REQUESTS}
-   *       and {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.RerankingMetrics#ALL_CALL_DURATION_METRIC},
+   *       MetricsConstants.Metrics#HTTP_SERVER_REQUESTS} and {@value
+   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics#RERANK_ALL_CALL_DURATION_METRIC},
    *       receive a more comprehensive set of standard percentiles (e.g., P50, P90, P95, P99).
    * </ul>
    *
@@ -101,10 +101,14 @@ public final class MicrometerConfiguration {
     // --- Create A Map For Value Look Up ---
     final Map<String, double[]> percentileConfigs =
         Map.of(
-            HTTP_SERVER_REQUESTS, allCallDurationPercentiles,
-            VECTORIZE_CALL_DURATION_METRIC, allCallDurationPercentiles,
-            TENANT_CALL_DURATION_METRIC, tenantCallDurationPercentiles,
-            ALL_CALL_DURATION_METRIC, allCallDurationPercentiles);
+            HTTP_SERVER_REQUESTS,
+            allCallDurationPercentiles,
+            VECTORIZE_CALL_DURATION_METRIC,
+            allCallDurationPercentiles,
+            RERANK_TENANT_CALL_DURATION_METRIC,
+            tenantCallDurationPercentiles,
+            RERANK_ALL_CALL_DURATION_METRIC,
+            allCallDurationPercentiles);
 
     return new MeterFilter() {
       @Override

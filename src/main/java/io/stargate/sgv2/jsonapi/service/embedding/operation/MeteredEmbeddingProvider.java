@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Tags.TENANT_TAG;
+import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.UNKNOWN_VALUE;
+
 import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.*;
 import io.smallrye.mutiny.Multi;
@@ -23,7 +26,6 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
   private final RequestContext requestContext;
-  private static final String UNKNOWN_VALUE = "unknown";
   private final EmbeddingProvider embeddingProvider;
   private final String commandName;
 
@@ -102,7 +104,7 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
             () ->
                 sample.stop(
                     meterRegistry.timer(
-                        MetricsConstants.VectorizeMetrics.VECTORIZE_CALL_DURATION_METRIC, tags)));
+                        MetricsConstants.Metrics.VECTORIZE_CALL_DURATION_METRIC, tags)));
   }
 
   @Override
@@ -120,7 +122,7 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
    */
   private Tags getCustomTags() {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
-    Tag tenantTag = Tag.of("tenant", requestContext.getTenantId().orElse(UNKNOWN_VALUE));
+    Tag tenantTag = Tag.of(TENANT_TAG, requestContext.getTenantId().orElse(UNKNOWN_VALUE));
     Tag embeddingProviderTag =
         Tag.of(
             jsonApiMetricsConfig.embeddingProvider(), embeddingProvider.getClass().getSimpleName());
