@@ -297,31 +297,22 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
       // --- Record Passage Counts ---
       final int passageCount = passages.size();
-      rerankingMetrics.recordTenantPassageCount(passageCount);
-      rerankingMetrics.recordAllPassageCount(passageCount);
-
-      // This executes the internal sync prep - no actual network call yet
-      Uni<RerankingProvider.RerankingResponse> rerankResponseUni =
-          rerankingProvider.rerank(query.query(), passages, credentials);
+      rerankingMetrics.recordPassageCount(passageCount);
 
       // Start the timer after the internal prep is done to get more accurate reranking call latency
       Timer.Sample sample = rerankingMetrics.startRerankNetworkCallTimer();
 
       // --- Return Uni with Metrics Callbacks ---
-      return rerankResponseUni
+      return rerankingProvider
+          .rerank(query.query(), passages, credentials)
           .onItem()
           .invoke(
-              response -> {
-                // Stop both timers on success
-                rerankingMetrics.stopRerankNetworkCallTenantTimer(sample);
-                rerankingMetrics.stopRerankNetworkCallAllTimer(sample);
-              })
+              response ->
+                  rerankingMetrics.stopRerankNetworkCallTimer(sample)) // Stop timer on success
           .onFailure()
           .invoke(
-              error -> { // Stop both timers on failure too
-                rerankingMetrics.stopRerankNetworkCallTenantTimer(sample);
-                rerankingMetrics.stopRerankNetworkCallAllTimer(sample);
-              }) // Stop timer on failure too
+              error ->
+                  rerankingMetrics.stopRerankNetworkCallTimer(sample)) // Stop timer on failure too
           .map(
               rerankingResponse ->
                   RerankingTaskResult.create(
