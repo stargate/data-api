@@ -91,7 +91,8 @@ public class RerankingMetrics {
     Tags tenantTags =
         new RerankingTagsBuilder()
             .withTenant(requestContext.getTenantId().orElse(UNKNOWN_VALUE))
-            .withTable(schemaObject.name().keyspace() + "." + schemaObject.name().table())
+            .withKeyspace(schemaObject.name().keyspace())
+            .withTable(schemaObject.name().table())
             .build();
     meterRegistry.summary(RERANK_TENANT_PASSAGE_COUNT_METRIC, tenantTags).record(passageCount);
 
@@ -147,7 +148,8 @@ public class RerankingMetrics {
     Tags tenantTags =
         new RerankingTagsBuilder()
             .withTenant(requestContext.getTenantId().orElse(UNKNOWN_VALUE))
-            .withTable(schemaObject.name().keyspace() + "." + schemaObject.name().table())
+            .withKeyspace(schemaObject.name().keyspace())
+            .withTable(schemaObject.name().table())
             .build();
     // Get the tenant timer instance
     Timer tenantTimer = meterRegistry.timer(RERANK_TENANT_CALL_DURATION_METRIC, tenantTags);
@@ -184,6 +186,11 @@ public class RerankingMetrics {
 
     public RerankingTagsBuilder withTenant(String tenantId) {
       currentTags.add(Tag.of(TENANT_TAG, tenantId));
+      return this;
+    }
+
+    public RerankingTagsBuilder withKeyspace(String keyspace) {
+      currentTags.add(Tag.of(KEYSPACE_TAG, keyspace));
       return this;
     }
 

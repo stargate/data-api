@@ -7,10 +7,11 @@ public interface MetricsConstants {
 
   /** Defines common tag keys used across various metrics. */
   interface Tags {
-    String TENANT_TAG = "tenant";
-    String TABLE_TAG = "table";
+    String KEYSPACE_TAG = "keyspace";
     String RERANKING_PROVIDER_TAG = "reranking.provider";
     String RERANKING_MODEL_TAG = "reranking.model";
+    String TENANT_TAG = "tenant";
+    String TABLE_TAG = "table";
   }
 
   /** Defines metric names that used in the DataAPI */
