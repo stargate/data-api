@@ -269,7 +269,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .hasSingleApiError(
               SchemaException.Code.CANNOT_VECTORIZE_UNKNOWN_COLUMNS,
               SchemaException.class,
-              "The command attempted to drop the unknown columns: invalid_column.");
+              "The command attempted to vectorize the unknown columns: invalid_column.");
     }
 
     @Test

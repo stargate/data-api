@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProviderErrorMapper;
 import jakarta.ws.rs.HeaderParam;
@@ -35,10 +36,10 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
   public VoyageAIEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
       Map<String, Object> serviceParameters) {
-    super(requestProperties, baseUrl, modelName, dimension, serviceParameters);
+    super(requestProperties, baseUrl, model, dimension, serviceParameters);
 
     // use configured input_type if available
     requestTypeQuery = requestProperties.requestTypeQuery().orElse(null);
@@ -119,7 +120,7 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
         (embeddingRequestType == EmbeddingRequestType.SEARCH) ? requestTypeQuery : requestTypeIndex;
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request =
-        new EmbeddingRequest(inputType, texts.toArray(textArray), modelName, autoTruncate);
+        new EmbeddingRequest(inputType, texts.toArray(textArray), model.name(), autoTruncate);
 
     Uni<EmbeddingResponse> response =
         applyRetry(

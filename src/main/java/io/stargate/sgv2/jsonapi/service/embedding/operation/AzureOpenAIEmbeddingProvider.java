@@ -9,6 +9,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProviderErrorMapper;
 import jakarta.ws.rs.HeaderParam;
@@ -37,15 +38,15 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
   public AzureOpenAIEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     // One special case: legacy "ada-002" model does not accept "dimension" parameter
     super(
         requestProperties,
         baseUrl,
-        modelName,
-        acceptsOpenAIDimensions(modelName) ? dimension : 0,
+        model,
+        acceptsOpenAIDimensions(model.name()) ? dimension : 0,
         vectorizeServiceParameters);
 
     String actualUrl = replaceParameters(baseUrl, vectorizeServiceParameters);
@@ -122,7 +123,8 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
       EmbeddingRequestType embeddingRequestType) {
     checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
     String[] textArray = new String[texts.size()];
-    EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
+    EmbeddingRequest request =
+        new EmbeddingRequest(texts.toArray(textArray), model.name(), dimension);
 
     // NOTE: NO "Bearer " prefix with API key for Azure OpenAI
     Uni<EmbeddingResponse> response =

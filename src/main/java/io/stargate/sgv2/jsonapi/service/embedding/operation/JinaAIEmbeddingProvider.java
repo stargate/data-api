@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProviderErrorMapper;
 import jakarta.ws.rs.HeaderParam;
@@ -35,14 +36,14 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
   public JinaAIEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     super(
         requestProperties,
         baseUrl,
-        modelName,
-        acceptsJinaAIDimensions(modelName) ? dimension : 0,
+        model,
+        acceptsJinaAIDimensions(model.name()) ? dimension : 0,
         vectorizeServiceParameters);
 
     jinaAIEmbeddingProviderClient =
@@ -122,7 +123,7 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
     EmbeddingRequest request =
         new EmbeddingRequest(
             texts,
-            modelName,
+            model.name(),
             dimension,
             (String) vectorizeServiceParameters.get("task"),
             (Boolean) vectorizeServiceParameters.get("late_chunking"));

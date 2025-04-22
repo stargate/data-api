@@ -51,7 +51,7 @@ public class EmbeddingGatewayClientTest {
       EmbeddingProviderConfigStore.RequestProperties requestProperties =
           EmbeddingProviderConfigStore.RequestProperties.of(
               3, 5, 5000, 5, 0.5, Optional.empty(), Optional.empty(), 2048);
-      assertThat(ctor.create(requestProperties, "baseUrl", "modelName", 5, null)).isNotNull();
+      assertThat(ctor.create(requestProperties, "baseUrl", null, 5, null)).isNotNull();
     }
   }
 

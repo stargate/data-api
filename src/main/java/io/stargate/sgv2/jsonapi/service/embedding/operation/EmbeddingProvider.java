@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.time.Duration;
 import java.util.List;
@@ -25,7 +26,7 @@ public abstract class EmbeddingProvider {
   protected static final Logger logger = LoggerFactory.getLogger(EmbeddingProvider.class);
   protected final EmbeddingProviderConfigStore.RequestProperties requestProperties;
   protected final String baseUrl;
-  protected final String modelName;
+  protected final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model;
   protected final int dimension;
   protected final Map<String, Object> vectorizeServiceParameters;
 
@@ -38,12 +39,12 @@ public abstract class EmbeddingProvider {
   protected EmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
     this.baseUrl = baseUrl;
-    this.modelName = modelName;
+    this.model = model;
     this.dimension = dimension;
     this.vectorizeServiceParameters = vectorizeServiceParameters;
   }
