@@ -6,12 +6,11 @@ import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.UNKNOWN
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import io.micrometer.core.instrument.*;
+import io.micrometer.core.instrument.Timer;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -178,37 +177,50 @@ public class RerankingMetrics {
    * provided to the outer {@link RerankingMetrics} instance.
    */
   public static class RerankingTagsBuilder {
-    private final List<Tag> currentTags;
+    private final Map<String, String> tagsMap;
 
     public RerankingTagsBuilder() {
-      this.currentTags = new ArrayList<>();
+      this.tagsMap = new HashMap<>();
     }
 
     public RerankingTagsBuilder withTenant(String tenantId) {
-      currentTags.add(Tag.of(TENANT_TAG, tenantId));
+      putOrThrow(TENANT_TAG, tenantId);
       return this;
     }
 
     public RerankingTagsBuilder withKeyspace(String keyspace) {
-      currentTags.add(Tag.of(KEYSPACE_TAG, keyspace));
+      putOrThrow(KEYSPACE_TAG, keyspace);
       return this;
     }
 
     public RerankingTagsBuilder withTable(String table) {
-      currentTags.add(Tag.of(TABLE_TAG, table));
+      putOrThrow(TABLE_TAG, table);
       return this;
     }
 
     public RerankingTagsBuilder withProvider(String provider) {
       // TODO: It's not easy to get the provider name as it is described in the config. So we use
       // the class name to indicate the provider. Need to replace the class name in the future.
-      currentTags.add(Tag.of(RERANKING_PROVIDER_TAG, provider));
+      putOrThrow(RERANKING_PROVIDER_TAG, provider);
       return this;
     }
 
     public RerankingTagsBuilder withModel(String modelName) {
-      currentTags.add(Tag.of(RERANKING_MODEL_TAG, modelName));
+      putOrThrow(RERANKING_MODEL_TAG, modelName);
       return this;
+    }
+
+    /** Helper method to check and put, throwing an exception on duplicate key */
+    private void putOrThrow(String key, String value) {
+      // If the key already exists, that means the caller is trying to set the same tag multiple
+      // times. Throw exception.
+      if (tagsMap.containsKey(key)) {
+        throw new IllegalStateException(
+            String.format(
+                "Tag key '%s' cannot be set multiple times. Check metrics tags related functions.",
+                key)); // Use dynamic callerMethodName
+      }
+      tagsMap.put(key, value);
     }
 
     /**
@@ -217,8 +229,12 @@ public class RerankingMetrics {
      * @return A new {@link Tags} instance containing all tags added via the 'withX' methods.
      */
     public Tags build() {
-      // Creates an immutable Tags object from the list
-      return Tags.of(currentTags);
+      // Convert the map entries back to Tag objects for Micrometer
+      List<Tag> tagList = new ArrayList<>(tagsMap.size());
+      for (Map.Entry<String, String> entry : tagsMap.entrySet()) {
+        tagList.add(Tag.of(entry.getKey(), entry.getValue()));
+      }
+      return Tags.of(tagList);
     }
   }
 }
