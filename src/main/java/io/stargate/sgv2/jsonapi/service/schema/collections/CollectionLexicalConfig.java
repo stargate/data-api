@@ -136,7 +136,7 @@ public record CollectionLexicalConfig(
       if (!foundNames.isEmpty()) {
         throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
             "Invalid field%s for 'lexical.analyzer'. Valid fields are: %s, found: %s",
-            (foundNames.size() == 1 ? "" : "s"), VALID_ANALYZER_FIELDS, foundNames);
+            (foundNames.size() == 1 ? "" : "s"), VALID_ANALYZER_FIELDS, new TreeSet<>(foundNames));
       }
       // Second: check basic data types for allowed fields
     } else {

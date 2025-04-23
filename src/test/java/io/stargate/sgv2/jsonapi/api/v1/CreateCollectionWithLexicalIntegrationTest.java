@@ -359,7 +359,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
           .body(
               "errors[0].message",
               containsString(
-                  "Invalid fields for 'lexical.analyzer'. Valid fields are: [charFilters, filters, tokenizer], found: [tokeniser, extra]"));
+                  "Invalid fields for 'lexical.analyzer'. Valid fields are: [charFilters, filters, tokenizer], found: [extra, tokeniser]"));
     }
   }
 
