@@ -305,11 +305,11 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
           createRequestWithLexical(
               collectionName,
               """
-                                        {
-                                          "enabled": true,
-                                          "analyzer": [ 1, 2, 3 ]
-                                        }
-                                  """);
+                                    {
+                                      "enabled": true,
+                                      "analyzer": [ 1, 2, 3 ]
+                                    }
+                              """);
 
       if (isLexicalAvailableForDB()) {
         givenHeadersPostJsonThenOk(json)
@@ -326,6 +326,40 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
             .body("$", responseIsError())
             .body("errors[0].errorCode", is("LEXICAL_NOT_AVAILABLE_FOR_DATABASE"));
       }
+    }
+
+    // [data-api#2011]
+    @Test
+    void failCreateLexicalMisspelledTokenizer() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                      {
+                        "enabled": true,
+                        "analyzer": {
+                          "tokeniser": {"name": "standard", "args": {}},
+                          "filters": [
+                              {"name": "lowercase"},
+                              {"name": "stop"},
+                              {"name": "porterstem"},
+                              {"name": "asciifolding"}
+                          ],
+                          "extra": 123
+                        }
+                      }
+                      """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Invalid fields for 'lexical.analyzer'. Valid fields are: [charFilters, filters, tokenizer], found: [tokeniser, extra]"));
     }
   }
 

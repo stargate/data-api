@@ -8,7 +8,12 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /** Validated configuration Object for Lexical (BM-25) indexing configuration for Collections. */
 public record CollectionLexicalConfig(
@@ -25,6 +30,10 @@ public record CollectionLexicalConfig(
 
   private static final CollectionLexicalConfig MISSING_CONFIG =
       new CollectionLexicalConfig(false, null);
+
+  // TreeSet just to retain alphabetic order for error message
+  private static final Set<String> VALID_ANALYZER_FIELDS =
+      new TreeSet<>(Arrays.asList("charFilters", "filters", "tokenizer"));
 
   /**
    * Constructs a lexical configuration with the specified enabled state and analyzer definition.
@@ -119,8 +128,17 @@ public record CollectionLexicalConfig(
       // Case 5b: JSON String - use as-is -- Could/should we try to validate analyzer name?
       ;
     } else if (analyzerDef.isObject()) {
-      // Case 5c: JSON Object - use as-is  -- TODO? validate analyzer wrt required fields?
-      ;
+      // Case 5c: JSON Object - use as-is but first do light validation
+      Set<String> foundNames =
+          analyzerDef.properties().stream().map(Map.Entry::getKey).collect(Collectors.toSet());
+      // First: check for any invalid (misspelled etc) fields
+      foundNames.removeAll(VALID_ANALYZER_FIELDS);
+      if (!foundNames.isEmpty()) {
+        throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+            "Invalid field%s for 'lexical.analyzer'. Valid fields are: %s, found: %s",
+            (foundNames.size() == 1 ? "" : "s"), VALID_ANALYZER_FIELDS, foundNames);
+      }
+      // Second: check basic data types for allowed fields
     } else {
       // Otherwise, invalid definition
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
