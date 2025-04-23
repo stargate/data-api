@@ -139,6 +139,30 @@ public record CollectionLexicalConfig(
             (foundNames.size() == 1 ? "" : "s"), VALID_ANALYZER_FIELDS, new TreeSet<>(foundNames));
       }
       // Second: check basic data types for allowed fields
+      for (Map.Entry<String, JsonNode> entry : analyzerDef.properties()) {
+        JsonNode fieldValue = entry.getValue();
+        // Nulls ok for all
+        if (fieldValue.isNull()) {
+          continue;
+        }
+        String expectedType;
+        boolean valueOk =
+            switch (entry.getKey()) {
+              case "tokenizer" -> {
+                expectedType = "Object";
+                yield fieldValue.isObject();
+              }
+              default -> {
+                expectedType = "Array";
+                yield fieldValue.isArray();
+              }
+            };
+        if (!valueOk) {
+          throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+              "'%s' property of 'lexical.analyzer' must be JSON %s, is: %s",
+              entry.getKey(), expectedType, JsonUtil.nodeTypeAsString(fieldValue));
+        }
+      }
     } else {
       // Otherwise, invalid definition
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(

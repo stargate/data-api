@@ -361,6 +361,60 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
               containsString(
                   "Invalid fields for 'lexical.analyzer'. Valid fields are: [charFilters, filters, tokenizer], found: [extra, tokeniser]"));
     }
+
+    // [data-api#2011]
+    @Test
+    void failCreateLexicalNonObjectForTokenizer() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                              {
+                                "enabled": true,
+                                "analyzer": {
+                                  "tokenizer": false
+                                }
+                              }
+                              """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "'tokenizer' property of 'lexical.analyzer' must be JSON Object, is: Boolean"));
+    }
+
+    // [data-api#2011]
+    @Test
+    void failCreateLexicalNonArrayForFilters() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                              {
+                                "enabled": true,
+                                "analyzer": {
+                                  "filters": { }
+                                }
+                              }
+                              """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "'filters' property of 'lexical.analyzer' must be JSON Array, is: Object"));
+    }
   }
 
   private String createRequestWithLexical(String collectionName, String lexicalDef) {
