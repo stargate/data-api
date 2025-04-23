@@ -253,7 +253,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
           .body(
               "errors[0].message",
               containsString(
-                  "When 'lexical' is disabled, 'lexical.analyzer' must either be omitted, JSON null, or an empty JSON object {}."));
+                  "When 'lexical' is disabled, 'lexical.analyzer' must either be omitted or be JSON null, or"));
     }
 
     @Test
