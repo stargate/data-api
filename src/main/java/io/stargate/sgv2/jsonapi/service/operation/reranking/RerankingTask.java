@@ -105,14 +105,21 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                     dedupResult.droppedDocuments(),
                     dedupResult.deduplicatedDocuments.size()));
 
+    var rerankMetrics =
+        new RerankingMetrics(
+            commandContext.meterRegistry(),
+            rerankingProvider,
+            commandContext.requestContext(),
+            commandContext.schemaObject());
+
     return new RerankingResultSupplier(
         commandContext.requestTracing(),
         rerankingProvider,
         commandContext.requestContext().getRerankingCredentials(),
         query,
-        passageLocator,
         dedupResult.deduplicatedDocuments(),
-        limit);
+        limit,
+        rerankMetrics);
   }
 
   @Override
@@ -213,21 +220,23 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
     private final RerankingQuery query;
     private final List<ScoredDocument> unrankedDocs;
     private final int limit;
+    private final RerankingMetrics rerankingMetrics;
 
     RerankingResultSupplier(
         RequestTracing requestTracing,
         RerankingProvider rerankingProvider,
         RerankingCredentials credentials,
         RerankingQuery query,
-        PathMatchLocator passageLocator,
         List<ScoredDocument> unrankedDocs,
-        int limit) {
+        int limit,
+        RerankingMetrics rerankingMetrics) {
       this.requestTracing = requestTracing;
       this.rerankingProvider = rerankingProvider;
       this.credentials = credentials;
       this.query = query;
       this.unrankedDocs = unrankedDocs;
       this.limit = limit;
+      this.rerankingMetrics = rerankingMetrics;
     }
 
     @Override
@@ -285,10 +294,20 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                           "limit", limit,
                           "passages", passages))));
 
+      rerankingMetrics.recordPassageCount(passages.size());
+
+      // Start the timer
+      var sample = rerankingMetrics.startCallLatency();
+
       return rerankingProvider
           .rerank(query.query(), passages, credentials)
-          .onItem()
-          .transform(
+          // Use .eventually() to execute the provided Runnable when the Uni terminates,
+          // either successfully (onItem) or with a failure (onFailure).
+          // This is preferred over .onItemOrFailure() when the side-effect action is identical
+          // for both outcomes and doesn't need access to the item or the failure reason.
+          .eventually(
+              () -> rerankingMetrics.recordCallLatency(sample)) // Stop timer regardless of outcome
+          .map(
               rerankingResponse ->
                   RerankingTaskResult.create(
                       requestTracing, rerankingProvider, rerankingResponse, unrankedDocs, limit));
