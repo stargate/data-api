@@ -905,7 +905,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 "name": "bad_nvidia_model",
                                 "options": {
                                     "vector": {
-                                        "dimension": 123,
+                                        "dimension": 1024,
                                         "service": {
                                             "provider": "nvidia",
                                             "modelName": "%s"
@@ -924,41 +924,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
         .body(
             "errors[0].message",
             containsString("The model %s is at %s status".formatted(modelName, status)))
-        .body("errors[0].errorCode", is(errorCode));
-  }
-
-  @Test
-  public void failEOLModel() {
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(
-            """
-
-                                {
-                                    "createCollection": {
-                                        "name": "collection_eol_nvidia_model",
-                                        "options": {
-                                            "vector": {
-                                                "dimension": 123,
-                                                "service": {
-                                                    "provider": "nvidia",
-                                                    "modelName": "a-EOL-nvidia-embedding-model"
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                """)
-        .when()
-        .post(KeyspaceResource.BASE_PATH, keyspaceName)
-        .then()
-        .statusCode(200)
-        .body("$", responseIsError())
-        .body(
-            "errors[0].message",
-            containsString("The model a-EOL-nvidia-embedding-model is at END_OF_LIFE status"))
-        .body("errors[0].errorCode", is("END_OF_LIFE_PROVIDER_MODEL"));
+        .body("errors[0].errorCode", is(errorCode.name()));
   }
 
   @Nested

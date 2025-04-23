@@ -121,13 +121,13 @@ public record FindEmbeddingProvidersOperation(
    * parameters for customization, excluding internal properties (retry, timeout etc.).
    *
    * @param name Identifier name of the model.
-   * @param support Support status of the model.
+   * @param modelSupport Support status of the model.
    * @param vectorDimension vector dimension of the model.
    * @param parameters Parameters for customizing the model.
    */
   private record ModelConfigResponse(
       String name,
-      ModelSupport support,
+      ModelSupport modelSupport,
       Optional<Integer> vectorDimension,
       List<ParameterConfigResponse> parameters) {
 

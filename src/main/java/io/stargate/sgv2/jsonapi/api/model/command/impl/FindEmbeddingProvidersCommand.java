@@ -22,7 +22,7 @@ public record FindEmbeddingProvidersCommand(
               description =
                   "If not provided, only SUPPORTED models will be returned."
                       + " If provided with \"\" empty string, all SUPPORTED, DEPRECATED, END_OF_LIFE model will be returned."
-                      + "If provided with specified SUPPORTED or DEPRECATED or END_OF_LIFE, only models matched the status will be returned.",
+                      + " If provided with specified SUPPORTED or DEPRECATED or END_OF_LIFE, only models matched the status will be returned.",
               type = SchemaType.STRING,
               implementation = String.class)
           @Pattern(

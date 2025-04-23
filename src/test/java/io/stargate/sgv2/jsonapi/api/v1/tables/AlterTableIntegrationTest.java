@@ -286,21 +286,6 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
               "The command attempted to vectorize the non-vector columns: age.");
     }
 
-    @Test
-    public void deprecatedEmbeddingModel() {
-      assertTableCommand(keyspaceName, testTableName)
-          .templated()
-          .alterTable(
-              "addVectorize",
-              Map.of(
-                  "vector_type_1",
-                  Map.of("provider", "nvidia", "modelName", "a-deprecated-nvidia-embedding-model")))
-          .hasSingleApiError(
-              SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL,
-              SchemaException.class,
-              "The model a-deprecated-nvidia-embedding-model is at DEPRECATED status");
-    }
-
     private static Stream<Arguments> deprecatedEmbeddingModelSource() {
       return Stream.of(
           Arguments.of(

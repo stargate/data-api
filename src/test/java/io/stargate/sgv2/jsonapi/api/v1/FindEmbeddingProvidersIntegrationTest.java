@@ -43,20 +43,21 @@ public class FindEmbeddingProvidersIntegrationTest extends AbstractKeyspaceInteg
           .body("$", responseIsStatusOnly())
           .body("status.embeddingProviders", notNullValue())
           .body("status.embeddingProviders.nvidia.url", notNullValue())
-          .body("status.embeddingProviders.nvidia.models[0].vectorDimension", equalTo(1024));
+          .body("status.embeddingProviders.nvidia.models[0].vectorDimension", equalTo(1024))
+          .body("status.embeddingProviders.nvidia.models[0].name", equalTo("NV-Embed-QA"))
+          .body(
+              "status.embeddingProviders.nvidia.models[0].modelSupport.status",
+              equalTo(ModelSupport.SupportStatus.SUPPORTED.name()));
     }
 
     @Test
-    public final void filterByModelStatus() {
+    public final void returnModelsWithAllStatus() {
       String json =
           """
                             {
                               "findEmbeddingProviders": {
                                 "options": {
-                                  "includeModelStatus": [
-                                    "DEPRECATED",
-                                    "END_OF_LIFE"
-                                  ]
+                                  "includeModelStatus": ""
                                 }
                               }
                             }
@@ -73,18 +74,55 @@ public class FindEmbeddingProvidersIntegrationTest extends AbstractKeyspaceInteg
           .statusCode(200)
           .body("$", responseIsStatusOnly())
           .body("status.embeddingProviders", notNullValue())
-          .body("status.embeddingProviders.nvidia.models", hasSize(2))
-          .body(
-              "status.embeddingProviders.nvidia.models[0].name",
-              equalTo("a-EOL-nvidia-embedding-model"))
+          .body("status.embeddingProviders.nvidia.models", hasSize(3))
+          .body("status.embeddingProviders.nvidia.models[0].name", equalTo("NV-Embed-QA"))
           .body(
               "status.embeddingProviders.nvidia.models[0].modelSupport.status",
-              equalTo(ModelSupport.SupportStatus.END_OF_LIFE.name()))
+              equalTo(ModelSupport.SupportStatus.SUPPORTED.name()))
           .body(
               "status.embeddingProviders.nvidia.models[1].name",
-              equalTo("a-deprecated-nvidia-embedding-model"))
+              equalTo("a-EOL-nvidia-embedding-model"))
           .body(
               "status.embeddingProviders.nvidia.models[1].modelSupport.status",
+              equalTo(ModelSupport.SupportStatus.END_OF_LIFE.name()))
+          .body(
+              "status.embeddingProviders.nvidia.models[2].name",
+              equalTo("a-deprecated-nvidia-embedding-model"))
+          .body(
+              "status.embeddingProviders.nvidia.models[2].modelSupport.status",
+              equalTo(ModelSupport.SupportStatus.DEPRECATED.name()));
+    }
+
+    @Test
+    public final void returnModelsWithSpecifiedStatus() {
+      String json =
+          """
+                                {
+                                  "findEmbeddingProviders": {
+                                    "options": {
+                                      "includeModelStatus": "deprecated"
+                                    }
+                                  }
+                                }
+                                """;
+
+      given()
+          .port(getTestPort())
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsStatusOnly())
+          .body("status.embeddingProviders", notNullValue())
+          .body("status.embeddingProviders.nvidia.models", hasSize(1))
+          .body(
+              "status.embeddingProviders.nvidia.models[0].name",
+              equalTo("a-deprecated-nvidia-embedding-model"))
+          .body(
+              "status.embeddingProviders.nvidia.models[0].modelSupport.status",
               equalTo(ModelSupport.SupportStatus.DEPRECATED.name()));
     }
 
@@ -95,9 +133,7 @@ public class FindEmbeddingProvidersIntegrationTest extends AbstractKeyspaceInteg
                           {
                             "findEmbeddingProviders": {
                               "options": {
-                                "includeModelStatus": [
-                                  "random"
-                                ]
+                                "includeModelStatus": "random"
                               }
                             }
                           }
@@ -111,11 +147,13 @@ public class FindEmbeddingProvidersIntegrationTest extends AbstractKeyspaceInteg
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
-          .statusCode(400)
+          .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_REQUEST_STRUCTURE_MISMATCH"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body(
-              "errors[0].message", containsString("not one of the values accepted for Enum class"));
+              "errors[0].message",
+              containsString(
+                  "field 'command.options.includeModelStatus' value \"random\" not valid"));
     }
   }
 
