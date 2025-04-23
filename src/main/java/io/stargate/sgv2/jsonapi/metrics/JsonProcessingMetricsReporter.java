@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.v1.metrics;
+package io.stargate.sgv2.jsonapi.metrics;
 
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
