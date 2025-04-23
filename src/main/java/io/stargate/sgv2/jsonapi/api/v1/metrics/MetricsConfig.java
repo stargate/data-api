@@ -57,7 +57,7 @@ public interface MetricsConfig {
      * @return The tag key for user-agent flag, defaults to <code>user_agent</code>.
      */
     @NotBlank
-    @WithDefault("user.agent")
+    @WithDefault("user_agent")
     String userAgentTag();
 
     /**
