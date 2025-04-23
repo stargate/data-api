@@ -7,9 +7,14 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -873,29 +878,44 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     }
   }
 
-  @Test
-  public void failDeprecatedEmbedModel() {
+  private static Stream<Arguments> deprecatedEmbeddingModelSource() {
+    return Stream.of(
+        Arguments.of(
+            "DEPRECATED",
+            "a-deprecated-nvidia-embedding-model",
+            SchemaException.Code.DEPRECATED_PROVIDER_MODEL),
+        Arguments.of(
+            "END_OF_LIFE",
+            "a-EOL-nvidia-embedding-model",
+            SchemaException.Code.END_OF_LIFE_PROVIDER_MODEL));
+  }
+
+  @ParameterizedTest
+  @MethodSource("deprecatedEmbeddingModelSource")
+  public void failDeprecatedEmbedModel(
+      String status, String modelName, SchemaException.Code errorCode) {
     given()
         .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
-            """
+                """
 
                         {
                             "createCollection": {
-                                "name": "collection_deprecated_nvidia_model",
+                                "name": "bad_nvidia_model",
                                 "options": {
                                     "vector": {
                                         "dimension": 123,
                                         "service": {
                                             "provider": "nvidia",
-                                            "modelName": "a-deprecated-nvidia-embedding-model"
+                                            "modelName": "%s"
                                         }
                                     }
                                 }
                             }
                         }
-                        """)
+                        """
+                .formatted(modelName))
         .when()
         .post(KeyspaceResource.BASE_PATH, keyspaceName)
         .then()
@@ -903,8 +923,42 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
         .body("$", responseIsError())
         .body(
             "errors[0].message",
-            containsString("The model a-deprecated-nvidia-embedding-model is at DEPRECATED status"))
-        .body("errors[0].errorCode", is("UNSUPPORTED_PROVIDER_MODEL"));
+            containsString("The model %s is at %s status".formatted(modelName, status)))
+        .body("errors[0].errorCode", is(errorCode));
+  }
+
+  @Test
+  public void failEOLModel() {
+    given()
+        .headers(getHeaders())
+        .contentType(ContentType.JSON)
+        .body(
+            """
+
+                                {
+                                    "createCollection": {
+                                        "name": "collection_eol_nvidia_model",
+                                        "options": {
+                                            "vector": {
+                                                "dimension": 123,
+                                                "service": {
+                                                    "provider": "nvidia",
+                                                    "modelName": "a-EOL-nvidia-embedding-model"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                """)
+        .when()
+        .post(KeyspaceResource.BASE_PATH, keyspaceName)
+        .then()
+        .statusCode(200)
+        .body("$", responseIsError())
+        .body(
+            "errors[0].message",
+            containsString("The model a-EOL-nvidia-embedding-model is at END_OF_LIFE status"))
+        .body("errors[0].errorCode", is("END_OF_LIFE_PROVIDER_MODEL"));
   }
 
   @Nested

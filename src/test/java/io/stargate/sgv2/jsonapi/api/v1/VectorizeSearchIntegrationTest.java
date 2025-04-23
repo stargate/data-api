@@ -1303,11 +1303,11 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class UnknownExistingModel {
 
-    // As best practice, when deprecate or EOL a model, we should mark them in the configuration,
-    // instead
-    // of removing the whole configuration entry as bad practice!
+    // As best practice, when we deprecate or EOL a model,
+    // we should mark them in the configuration,
+    // instead of removing the whole entry as bad practice!
     // The bad practice should only happen in dev before, add this validation to capture, and
-    // confirm it is as least not return 500,
+    // confirm it does at least not return 500.
     @Test
     @Order(1)
     public void findOneAndUpdate_sortClause() {

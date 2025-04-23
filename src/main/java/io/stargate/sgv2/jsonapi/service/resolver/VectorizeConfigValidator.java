@@ -72,6 +72,10 @@ public class VectorizeConfigValidator {
     Integer vectorDimension =
         validateModelAndDimension(userConfig, providerConfig, userVectorDimension);
 
+    // Model must be SUPPORTED to create the collection/table
+    // validate model support for collection creation
+    validateModelSupportForSchemaCreation(userConfig);
+
     // Validate user-provided parameters against internal expectations
     validateUserParameters(userConfig, providerConfig);
 
@@ -310,16 +314,8 @@ public class VectorizeConfigValidator {
   }
 
   /**
-   * Validate the model support first. see {@link ModelSupport}
-   *
-   * <ul>
-   *   <li>SUPPORTED: validation will pass
-   *   <li>DEPRECATED: can not create new collection/table>, prompt support message
-   *   <li>END_OF_LIFE: can not create new collection/table>, prompt support message
-   * </ul>
-   *
-   * Then Validates the model name and vector dimension provided in the user configuration against
-   * the specified embedding provider configuration.
+   * Validates the model name and vector dimension provided in the user configuration against the
+   * specified embedding provider configuration.
    *
    * @param userConfig the user-specified vectorization configuration
    * @param providerConfig the configuration of the embedding provider
@@ -342,31 +338,7 @@ public class VectorizeConfigValidator {
     }
 
     // 2. other providers do require model
-    if (userConfig.modelName() == null) {
-      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'modelName' is needed for provider %s", userConfig.provider());
-    }
-    EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model =
-        providerConfig.models().stream()
-            .filter(m -> m.name().equals(userConfig.modelName()))
-            .findFirst()
-            .orElseThrow(
-                () ->
-                    ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                        "Model name '%s' for provider '%s' is not supported",
-                        userConfig.modelName(), userConfig.provider()));
-
-    // validate model support
-    if (model.modelSupport().status() != ModelSupport.SupportStatus.SUPPORTED) {
-      throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
-          Map.of(
-              "model",
-              userConfig.modelName(),
-              "modelStatus",
-              model.modelSupport().status().name(),
-              "message",
-              model.modelSupport().message().orElse("The model is not supported.")));
-    }
+    var model = getModelConfig(userConfig, providerConfig);
 
     // Handle models with a fixed vector dimension
     if (model.vectorDimension().isPresent() && model.vectorDimension().get() != 0) {
@@ -387,6 +359,24 @@ public class VectorizeConfigValidator {
         .findFirst()
         .map(param -> validateRangeDimension(param, userVectorDimension))
         .orElse(userVectorDimension); // should not go here
+  }
+
+  /** Retrieves the model configuration for the specified provider and model. */
+  private EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig getModelConfig(
+      VectorizeConfig userConfig, EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
+
+    if (userConfig.modelName() == null) {
+      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          "'modelName' is needed for provider %s", userConfig.provider());
+    }
+    return providerConfig.models().stream()
+        .filter(m -> m.name().equals(userConfig.modelName()))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+                    "Model name '%s' for provider '%s' is not supported",
+                    userConfig.modelName(), userConfig.provider()));
   }
 
   /**
@@ -434,5 +424,37 @@ public class VectorizeConfigValidator {
       }
     }
     return userVectorDimension;
+  }
+
+  /**
+   * Validates the model support for the vectorization service. This method checks if the model is
+   * SUPPORTED and throw corresponding error if the model's DEPRECATED or END_OF_LIFE.
+   */
+  private void validateModelSupportForSchemaCreation(VectorizeConfig service) {
+
+    // 1. Check if the service provider exists and is enabled
+    var providerConfig = getAndValidateProviderConfig(service);
+
+    // 2. other providers do require model
+    var model = getModelConfig(service, providerConfig);
+
+    // 3. validate model support
+    if (model.modelSupport().status() != ModelSupport.SupportStatus.SUPPORTED) {
+      var errorCode =
+          model.modelSupport().status() == ModelSupport.SupportStatus.DEPRECATED
+              ? SchemaException.Code.DEPRECATED_PROVIDER_MODEL
+              : SchemaException.Code.END_OF_LIFE_PROVIDER_MODEL;
+      throw errorCode.get(
+          Map.of(
+              "model",
+              model.name(),
+              "modelStatus",
+              model.modelSupport().status().name(),
+              "message",
+              model
+                  .modelSupport()
+                  .message()
+                  .orElse("The model is %s.".formatted(model.modelSupport().status().name()))));
+    }
   }
 }

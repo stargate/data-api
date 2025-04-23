@@ -106,7 +106,8 @@ public interface EmbeddingProvidersConfig {
 
       /**
        * modelSupport marks the support status of the model and optional message for the
-       * deprecation, EOL etc.
+       * deprecation, EOL etc. By default, modelSupport will be mapped to SUPPORTED and empty
+       * message if it is not configured in the config source.
        */
       @JsonProperty
       ModelSupport modelSupport();

@@ -23,10 +23,9 @@ import org.slf4j.LoggerFactory;
  *       EmbeddingAndRerankingConfigSourceProvider#RERANKING_CONFIG_FILE_PATH} variable set, Data
  *       API loads provider config from specified file location. E.G. Astra Data API.
  *   <li>With system property {@link
- *       EmbeddingAndRerankingConfigSourceProvider#DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE},
- *       {@link
- *       EmbeddingAndRerankingConfigSourceProvider#DEFAULT_EMBEDDING_CONFIG_RESOURCE_OVERRIDE} set,
- *       it will override the provider config resource. E.G. Data API integration test.
+ *       EmbeddingAndRerankingConfigSourceProvider#SYSTEM_PROPERTY_EMBEDDING_CONFIG_RESOURCE},
+ *       {@link EmbeddingAndRerankingConfigSourceProvider#SYSTEM_PROPERTY_RERANKING_CONFIG_RESOURCE}
+ *       set, it will override the provider config resource. E.G. Data API integration test.
  *   <li>With none set, Data API loads default provider config from resource folder. E.G. Local
  *       development.
  * </ol>
@@ -48,13 +47,13 @@ public class EmbeddingAndRerankingConfigSourceProvider implements ConfigSourcePr
   private static final String DEFAULT_RERANKING_CONFIG_RESOURCE = "reranking-providers-config.yaml";
 
   // System property name to override embedding config resource.
-  // Could be set by integration test resource.
-  private static final String DEFAULT_EMBEDDING_CONFIG_RESOURCE_OVERRIDE =
-      "DEFAULT_EMBEDDING_CONFIG_RESOURCE_OVERRIDE";
+  // Is usually set by integration test resource.
+  private static final String SYSTEM_PROPERTY_EMBEDDING_CONFIG_RESOURCE =
+      "EMBEDDING_CONFIG_RESOURCE";
   // System property name to override reranking config resource.
-  // Could be set by integration test resource.
-  private static final String DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE =
-      "DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE";
+  // Is usually set by integration test resource.
+  private static final String SYSTEM_PROPERTY_RERANKING_CONFIG_RESOURCE =
+      "RERANKING_CONFIG_RESOURCE";
 
   @Override
   public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
@@ -76,17 +75,21 @@ public class EmbeddingAndRerankingConfigSourceProvider implements ConfigSourcePr
    *   <li>With env variable {@link
    *       EmbeddingAndRerankingConfigSourceProvider#EMBEDDING_CONFIG_FILE_PATH} set, Data API loads
    *       provider config from specified file location. E.G. Data API astra deployment.
+   *   <li>With system property {@link
+   *       EmbeddingAndRerankingConfigSourceProvider#SYSTEM_PROPERTY_EMBEDDING_CONFIG_RESOURCE} set,
+   *       it indicated Data API is running for integration tests, then override the default config
+   *       resource.
    *   <li>If the env is not set, use the default config from the resources folder.
    * </ol>
    */
   private ConfigSource getEmbeddingConfigSources(ClassLoader forClassLoader) throws IOException {
     String filePathFromEnv = System.getenv(EMBEDDING_CONFIG_FILE_PATH);
-    String resourceOverride = System.getProperty(DEFAULT_EMBEDDING_CONFIG_RESOURCE_OVERRIDE);
+    String resourceOverride = System.getProperty(SYSTEM_PROPERTY_EMBEDDING_CONFIG_RESOURCE);
 
     if (filePathFromEnv != null) {
       LOGGER.info("Loading embedding config from file path: {}", filePathFromEnv);
       return loadConfigSourceFromFile(filePathFromEnv);
-    } else if (resourceOverride != null) {
+    } else if (resourceOverride != null && !resourceOverride.isBlank()) {
       LOGGER.info("Loading embedding config from override resource: {}", resourceOverride);
       return loadConfigSourceFromResource(resourceOverride, forClassLoader);
     } else {
@@ -105,21 +108,21 @@ public class EmbeddingAndRerankingConfigSourceProvider implements ConfigSourcePr
    *       EmbeddingAndRerankingConfigSourceProvider#RERANKING_CONFIG_FILE_PATH} set, Data API loads
    *       provider config from specified file location. E.G. Data API astra deployment.
    *   <li>With system property {@link
-   *       EmbeddingAndRerankingConfigSourceProvider#DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE}
-   *       set, it indicated Data API is running for integration tests, then override the default
-   *       config resource.
+   *       EmbeddingAndRerankingConfigSourceProvider#SYSTEM_PROPERTY_RERANKING_CONFIG_RESOURCE} set,
+   *       it indicated Data API is running for integration tests, then override the default config
+   *       resource.
    *   <li>If none is set, use the default config from the resources folder. E.G. Local development
    *       mode.
    * </ol>
    */
   private ConfigSource getRerankingConfigSources(ClassLoader forClassLoader) throws IOException {
     String filePathFromEnv = System.getenv(RERANKING_CONFIG_FILE_PATH);
-    String resourceOverride = System.getProperty(DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE);
+    String resourceOverride = System.getProperty(SYSTEM_PROPERTY_RERANKING_CONFIG_RESOURCE);
 
     if (filePathFromEnv != null) {
       LOGGER.info("Loading reranking config from file path: {}", filePathFromEnv);
       return loadConfigSourceFromFile(filePathFromEnv);
-    } else if (resourceOverride != null) {
+    } else if (resourceOverride != null && !resourceOverride.isBlank()) {
       LOGGER.info("Loading reranking config from override resource: {}", resourceOverride);
       return loadConfigSourceFromResource(resourceOverride, forClassLoader);
     } else {

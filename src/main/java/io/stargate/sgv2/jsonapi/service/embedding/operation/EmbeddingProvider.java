@@ -87,7 +87,7 @@ public abstract class EmbeddingProvider {
   public void checkEOLModelUsage() {
     // Validate if the model is END_OF_LIFE
     if (model.modelSupport().status() == ModelSupport.SupportStatus.END_OF_LIFE) {
-      throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
+      throw SchemaException.Code.END_OF_LIFE_PROVIDER_MODEL.get(
           Map.of(
               "model",
               model.name(),

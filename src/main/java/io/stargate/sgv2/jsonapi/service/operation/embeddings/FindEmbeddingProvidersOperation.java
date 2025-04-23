@@ -33,20 +33,10 @@ public record FindEmbeddingProvidersOperation(
                           Collectors.toMap(
                               Map.Entry::getKey,
                               entry ->
-                                  EmbeddingProviderResponse.provider(
+                                  EmbeddingProviderResponse.toResponse(
                                       entry.getValue(), getSupportStatuses())));
               return new Result(embeddingProviders);
             });
-  }
-
-  // By default, if includeModelStatus is not provided in command option, only model in supported
-  // status will be listed.
-  private Set<ModelSupport.SupportStatus> getSupportStatuses() {
-    var includeModelStatus = EnumSet.of(ModelSupport.SupportStatus.SUPPORTED);
-    if (command.options() != null && command.options().includeModelStatus() != null) {
-      includeModelStatus = command.options().includeModelStatus();
-    }
-    return includeModelStatus;
   }
 
   // simple result wrapper
@@ -63,7 +53,7 @@ public record FindEmbeddingProvidersOperation(
   }
 
   /**
-   * A simplified representation of a vector provider's configuration for API responses. Excludes
+   * A simplified representation of n embedding provider's configuration for API responses. Excludes
    * internal properties (retry, timeout etc.) to focus on data relevant to clients, including URL,
    * authentication methods, and model customization parameters.
    *
@@ -81,66 +71,91 @@ public record FindEmbeddingProvidersOperation(
           supportedAuthentication,
       List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
       List<ModelConfigResponse> models) {
-    private static EmbeddingProviderResponse provider(
-        EmbeddingProvidersConfig.EmbeddingProviderConfig embeddingProviderConfig,
+
+    /**
+     * Constructs an {@link EmbeddingProviderResponse} from the original provider config. It will
+     * exclude the internal properties (retry, timeout etc.).
+     *
+     * @param sourceEmbeddingProviderConfig, the original provider config with all properties.
+     * @param includeModelStatus the modelSupport status that user asked for.
+     */
+    private static EmbeddingProviderResponse toResponse(
+        EmbeddingProvidersConfig.EmbeddingProviderConfig sourceEmbeddingProviderConfig,
         Set<ModelSupport.SupportStatus> includeModelStatus) {
-      ArrayList<ModelConfigResponse> modelsRemoveProperties = new ArrayList<>();
-      for (EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model :
-          embeddingProviderConfig.models()) {
-        if (!includeModelStatus.contains(model.modelSupport().status())) {
-          // exclude models that are not in the provided statuses
-          continue;
-        }
-        ModelConfigResponse returnModel =
-            ModelConfigResponse.returnModelConfigResponse(
-                model.name(), model.modelSupport(), model.vectorDimension(), model.parameters());
-        modelsRemoveProperties.add(returnModel);
+
+      // if the providerConfig.models is null or empty, return an EmbeddingProviderResponse with
+      // empty models.
+      if (sourceEmbeddingProviderConfig.models() == null
+          || Objects.requireNonNull(sourceEmbeddingProviderConfig.models()).isEmpty()) {
+        return new EmbeddingProviderResponse(
+            sourceEmbeddingProviderConfig.displayName(),
+            sourceEmbeddingProviderConfig.url(),
+            sourceEmbeddingProviderConfig.supportedAuthentications(),
+            sourceEmbeddingProviderConfig.parameters(),
+            Collections.emptyList());
       }
-      modelsRemoveProperties.sort(Comparator.comparing(ModelConfigResponse::name));
+
+      // include models that with modelSupport status that user asked for
+      var modelsFilteredWithStatus =
+          filterModelsWithStatus(
+              includeModelStatus, Objects.requireNonNull(sourceEmbeddingProviderConfig.models()));
+
+      // convert each modelConfig to ModelConfigResponse with internal properties excluded
+      var modelConfigResponses =
+          modelsFilteredWithStatus.stream()
+              .map(ModelConfigResponse::toResponse)
+              .sorted(Comparator.comparing(ModelConfigResponse::name))
+              .toList();
+
       return new EmbeddingProviderResponse(
-          embeddingProviderConfig.displayName(),
-          embeddingProviderConfig.url(),
-          embeddingProviderConfig.supportedAuthentications(),
-          embeddingProviderConfig.parameters(),
-          modelsRemoveProperties);
+          sourceEmbeddingProviderConfig.displayName(),
+          sourceEmbeddingProviderConfig.url(),
+          sourceEmbeddingProviderConfig.supportedAuthentications(),
+          sourceEmbeddingProviderConfig.parameters(),
+          modelConfigResponses);
     }
   }
 
   /**
-   * Configuration details for a model offered by a vector provider, tailored for external clients.
-   * Includes the model name and parameters for customization, excluding internal properties (retry,
-   * timeout etc.).
+   * Model configuration with internal properties excluded. Only includes the model name and
+   * parameters for customization, excluding internal properties (retry, timeout etc.).
    *
    * @param name Identifier name of the model.
+   * @param support Support status of the model.
    * @param vectorDimension vector dimension of the model.
    * @param parameters Parameters for customizing the model.
    */
   private record ModelConfigResponse(
       String name,
-      ModelSupport modelSupport,
+      ModelSupport support,
       Optional<Integer> vectorDimension,
       List<ParameterConfigResponse> parameters) {
-    private static ModelConfigResponse returnModelConfigResponse(
-        String name,
-        ModelSupport modelSupport,
-        Optional<Integer> vectorDimension,
-        List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters) {
-      // reconstruct each parameter for lowercase parameter type
-      ArrayList<ParameterConfigResponse> parametersResponse = new ArrayList<>();
-      for (EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig parameter :
-          parameters) {
-        ParameterConfigResponse returnParameter =
-            ParameterConfigResponse.returnParameterConfigResponse(
-                parameter.name(),
-                parameter.type().toString(),
-                parameter.required(),
-                parameter.defaultValue(),
-                parameter.validation(),
-                parameter.help());
-        parametersResponse.add(returnParameter);
+
+    private static ModelConfigResponse toResponse(
+        EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig sourceModelConfig) {
+
+      // if the sourceModelConfig.parameters is null or empty, return a ModelConfigResponse with
+      // empty parameters.
+      if (sourceModelConfig.parameters() == null
+          || Objects.requireNonNull(sourceModelConfig.parameters()).isEmpty()) {
+        return new ModelConfigResponse(
+            sourceModelConfig.name(),
+            sourceModelConfig.modelSupport(),
+            sourceModelConfig.vectorDimension(),
+            Collections.emptyList());
       }
 
-      return new ModelConfigResponse(name, modelSupport, vectorDimension, parametersResponse);
+      // reconstruct each parameter for lowercase parameter type
+      List<ParameterConfigResponse> parametersResponse =
+          Objects.requireNonNull(sourceModelConfig.parameters()).stream()
+              .map(ParameterConfigResponse::toResponse)
+              .collect(Collectors.toList());
+
+      return new ModelConfigResponse(
+          sourceModelConfig.name(),
+          sourceModelConfig.modelSupport(),
+          sourceModelConfig.vectorDimension(),
+          parametersResponse);
     }
   }
 
@@ -164,20 +179,61 @@ public record FindEmbeddingProvidersOperation(
       Optional<String> defaultValue,
       Map<String, List<Integer>> validation,
       Optional<String> help) {
-    private static ParameterConfigResponse returnParameterConfigResponse(
-        String name,
-        String type,
-        boolean required,
-        Optional<String> defaultValue,
-        Map<EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType, List<Integer>>
-            validation,
-        Optional<String> help) {
-      Map<String, List<Integer>> validationMap = new HashMap<>();
-      for (Map.Entry<EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType, List<Integer>>
-          entry : validation.entrySet()) {
-        validationMap.put(entry.getKey().toString(), entry.getValue());
-      }
-      return new ParameterConfigResponse(name, type, required, defaultValue, validationMap, help);
+
+    private static ParameterConfigResponse toResponse(
+        EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig sourceParameterConfig) {
+      Map<String, List<Integer>> validationMap =
+          sourceParameterConfig.validation().entrySet().stream()
+              .collect(Collectors.toMap(entry -> entry.getKey().toString(), Map.Entry::getValue));
+
+      return new ParameterConfigResponse(
+          sourceParameterConfig.name(),
+          sourceParameterConfig.type().name(),
+          sourceParameterConfig.required(),
+          sourceParameterConfig.defaultValue(),
+          validationMap,
+          sourceParameterConfig.help());
     }
+  }
+
+  /**
+   * With {@link FindEmbeddingProvidersCommand.Options#includeModelStatus()}, there are the rules to
+   * filter the models:
+   *
+   * <ul>
+   *   <li>If not provided, only SUPPORTED models will be returned.
+   *   <li>If provided with "" empty string, all SUPPORTED, DEPRECATED, END_OF_LIFE model will be
+   *       returned.
+   *   <li>If provided with specified SUPPORTED or DEPRECATED or END_OF_LIFE, only models matched
+   *       the status will be returned.
+   * </ul>
+   */
+  private Set<ModelSupport.SupportStatus> getSupportStatuses() {
+    if (command.options() == null || command.options().includeModelStatus() == null) {
+      return EnumSet.of(ModelSupport.SupportStatus.SUPPORTED);
+    }
+
+    if (command.options().includeModelStatus().isEmpty()) {
+      return EnumSet.of(
+          ModelSupport.SupportStatus.SUPPORTED,
+          ModelSupport.SupportStatus.DEPRECATED,
+          ModelSupport.SupportStatus.END_OF_LIFE);
+    }
+
+    var specifiedModelStatus = command.options().includeModelStatus().toUpperCase(Locale.ROOT);
+    return EnumSet.of(ModelSupport.SupportStatus.valueOf(specifiedModelStatus));
+  }
+
+  /**
+   * Filter models based on the provided support statuses. Only handle models wit modelStatuses that
+   * user asked for.
+   */
+  private static List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig>
+      filterModelsWithStatus(
+          Set<ModelSupport.SupportStatus> supportStatuses,
+          List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig> sourceModels) {
+    return sourceModels.stream()
+        .filter(modelConfig -> supportStatuses.contains(modelConfig.modelSupport().status()))
+        .collect(Collectors.toList());
   }
 }

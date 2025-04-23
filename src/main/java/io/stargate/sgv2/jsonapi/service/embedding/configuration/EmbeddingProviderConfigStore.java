@@ -37,10 +37,10 @@ public interface EmbeddingProviderConfigStore {
 
     public String getBaseUrl(String modelName) {
       if (modelUrlOverrides != null && modelUrlOverrides.get(modelName) == null) {
-        // modelUrlOverride is a walk-around for self-hosted nvidia models with different url.
+        // modelUrlOverride is a work-around for self-hosted nvidia models with different url.
         // This is bad, initial design should have url in model level instead of provider level.
-        // As best practice, when deprecate or EOL a model:
-        // we should mark the status in the configuration,
+        // As best practice, when we deprecate or EOL a model:
+        // we must mark the status in the configuration,
         // instead of removing the whole configuration entry.
         throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
             "unknown model '%s' for service provider '%s'", modelName, serviceProvider);

@@ -22,6 +22,18 @@ public interface ModelSupport {
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   Optional<String> message();
 
+  /**
+   * Enumeration of support status for an embedding or reranking model.
+   *
+   * <ul>
+   *   <li>SUPPORTED: The model is supported and can be used.
+   *   <li>DEPRECATED: The model is deprecated and may be removed in future versions. Data API
+   *       supports read and write on DEPRECATED model, createCollection and CreateTable are
+   *       forbidden.
+   *   <li>END_OF_LIFE: The model is no longer supported and should not be used. Data API does not
+   *       support read, write, createCollection, createTable for END_OF_LIFE model,
+   * </ul>
+   */
   enum SupportStatus {
     SUPPORTED,
     DEPRECATED,

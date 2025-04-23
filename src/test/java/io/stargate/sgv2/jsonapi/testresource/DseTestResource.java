@@ -128,10 +128,8 @@ public class DseTestResource extends StargateTestResource {
     // provider config file resource.
     // Note, this only helps local integration runs, not GitHub integration test actions.
     // For GitHub actions, the system property is passing through script in CI workflow file.
-    propsBuilder.put(
-        "DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE", "test-reranking-providers-config.yaml");
-    propsBuilder.put(
-        "DEFAULT_EMBEDDING_CONFIG_RESOURCE_OVERRIDE", "test-embedding-providers-config.yaml");
+    propsBuilder.put("RERANKING_CONFIG_RESOURCE", "test-reranking-providers-config.yaml");
+    propsBuilder.put("EMBEDDING_CONFIG_RESOURCE", "test-embedding-providers-config.yaml");
 
     propsBuilder.put("stargate.jsonapi.custom.embedding.enabled", "true");
 

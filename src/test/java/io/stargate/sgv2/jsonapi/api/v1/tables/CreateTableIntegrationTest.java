@@ -906,29 +906,59 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
           Arguments.of(
               new CreateTableTestData(
                   """
-                                          {
-                                             "name": "deprecatedEmbedModel",
-                                             "definition": {
-                                                 "columns": {
-                                                     "id": {
-                                                         "type": "text"
-                                                     },
-                                                     "content": {
-                                                       "type": "vector",
-                                                       "dimension": 123,
-                                                       "service": {
-                                                        "provider": "nvidia",
-                                                        "modelName": "a-deprecated-nvidia-embedding-model"
-                                                      }
-                                                     }
-                                                 },
-                                                 "primaryKey": "id"
-                                             }
-                                          }
-                                          """,
+                            {
+                               "name": "deprecatedEmbedModel",
+                               "definition": {
+                                   "columns": {
+                                       "id": {
+                                           "type": "text"
+                                       },
+                                       "content": {
+                                         "type": "vector",
+                                         "dimension": 123,
+                                         "service": {
+                                          "provider": "nvidia",
+                                          "modelName": "a-deprecated-nvidia-embedding-model"
+                                        }
+                                       }
+                                   },
+                                   "primaryKey": "id"
+                               }
+                            }
+                            """,
                   "deprecatedEmbedModel",
                   true,
-                  SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.name(),
+                  SchemaException.Code.DEPRECATED_PROVIDER_MODEL.name(),
+                  "The model a-deprecated-nvidia-embedding-model is at DEPRECATED status.")));
+
+      // vector type with end_of_life model
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                        {
+                                           "name": "deprecatedEmbedModel",
+                                           "definition": {
+                                               "columns": {
+                                                   "id": {
+                                                       "type": "text"
+                                                   },
+                                                   "content": {
+                                                     "type": "vector",
+                                                     "dimension": 123,
+                                                     "service": {
+                                                      "provider": "nvidia",
+                                                      "modelName": "a-EOL-nvidia-embedding-model"
+                                                    }
+                                                   }
+                                               },
+                                               "primaryKey": "id"
+                                           }
+                                        }
+                                        """,
+                  "deprecatedEmbedModel",
+                  true,
+                  SchemaException.Code.END_OF_LIFE_PROVIDER_MODEL.name(),
                   "The model a-deprecated-nvidia-embedding-model is at DEPRECATED status.")));
 
       // vector type with dimension mismatch

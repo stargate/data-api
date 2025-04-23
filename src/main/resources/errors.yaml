@@ -871,6 +871,28 @@ request-errors:
       Resend the command using supported model.
 
   - scope: SCHEMA
+    code: DEPRECATED_PROVIDER_MODEL
+    title: The model is DEPRECATED.
+    body: |-
+      The model ${model} is at ${modelStatus} status.
+      ${message}
+      
+      DEPRECATED model cannot be used for creation of new Collections or Tables, but can be used for existing Collections or Tables until model status is changed to END_OF_LIFE.
+      
+      Resend the command using supported model.
+
+  - scope: SCHEMA
+    code: END_OF_LIFE_PROVIDER_MODEL
+    title: The model is ENF_OF_LIFE.
+    body: |-
+      The model ${model} is at ${modelStatus} status.
+      ${message}
+      
+      END_OF_LIFE model cannot be used for creation of new Collections or Tables, and can not be used for existing Collections or Tables.
+      
+      Resend the command using supported model.
+
+  - scope: SCHEMA
     code: CANNOT_VECTORIZE_UNKNOWN_COLUMNS
     title: Columns cannot be vectorized if they are not defined in the table schema
     body: |-

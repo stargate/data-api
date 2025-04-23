@@ -3,9 +3,8 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
 import jakarta.validation.Valid;
-import java.util.EnumSet;
+import jakarta.validation.constraints.Pattern;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -17,16 +16,18 @@ public record FindEmbeddingProvidersCommand(
         Options options)
     implements GeneralCommand {
 
-  /**
-   * By default, if includeModelStatus is not provided, only model in supported status will be
-   * returned.
-   */
   public record Options(
-      @Schema(
-              description = "Use the option to include models as in target support status.",
-              type = SchemaType.OBJECT,
-              implementation = ModelSupport.SupportStatus.class)
-          EnumSet<ModelSupport.SupportStatus> includeModelStatus) {}
+      @Nullable
+          @Schema(
+              description =
+                  "If not provided, only SUPPORTED models will be returned."
+                      + " If provided with \"\" empty string, all SUPPORTED, DEPRECATED, END_OF_LIFE model will be returned."
+                      + "If provided with specified SUPPORTED or DEPRECATED or END_OF_LIFE, only models matched the status will be returned.",
+              type = SchemaType.STRING,
+              implementation = String.class)
+          @Pattern(
+              regexp = "^(SUPPORTED|DEPRECATED|END_OF_LIFE|supported|deprecated|end_of_life|)$")
+          String includeModelStatus) {}
 
   /** {@inheritDoc} */
   @Override

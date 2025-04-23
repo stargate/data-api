@@ -300,6 +300,33 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
               SchemaException.class,
               "The model a-deprecated-nvidia-embedding-model is at DEPRECATED status");
     }
+
+    private static Stream<Arguments> deprecatedEmbeddingModelSource() {
+      return Stream.of(
+          Arguments.of(
+              "DEPRECATED",
+              "a-deprecated-nvidia-embedding-model",
+              SchemaException.Code.DEPRECATED_PROVIDER_MODEL),
+          Arguments.of(
+              "END_OF_LIFE",
+              "a-EOL-nvidia-embedding-model",
+              SchemaException.Code.END_OF_LIFE_PROVIDER_MODEL));
+    }
+
+    @ParameterizedTest
+    @MethodSource("deprecatedEmbeddingModelSource")
+    public void deprecatedEmbeddingModel(
+        String status, String modelName, SchemaException.Code errorCode) {
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable(
+              "addVectorize",
+              Map.of("vector_type_1", Map.of("provider", "nvidia", "modelName", modelName)))
+          .hasSingleApiError(
+              errorCode,
+              SchemaException.class,
+              "The model %s is at %s status".formatted(modelName, status));
+    }
   }
 
   @Nested
