@@ -214,7 +214,8 @@ public class RerankingMetrics {
     /** Helper method to check and put, throwing an exception on duplicate key */
     private void putOrThrow(String key, String value) {
       // If the key already exists, that means the caller is trying to set the same tag multiple
-      // times. Throw exception.
+      // times. Throw IllegalStateException since this is only related to our internal
+      // implementation.
       if (tagsMap.put(key, value) != null) {
         throw new IllegalStateException(
             String.format(

@@ -123,14 +123,16 @@ public final class MicrometerConfiguration {
 
         // If a specific configuration was found for this metric name
         if (specificPercentiles != null) {
-          DistributionStatisticConfig.Builder builder =
-              DistributionStatisticConfig.builder().percentiles(specificPercentiles);
-
-          // Enable Prometheus histogram buckets
-          builder.percentilesHistogram(true);
-
-          // Merge the specific config with the existing/default config
-          return builder.build().merge(config);
+          return DistributionStatisticConfig.builder()
+              .percentiles(specificPercentiles)
+              // Enable Prometheus histogram buckets (_bucket metrics) for this timer.
+              // This allows accurate server-side aggregation and enables the use of
+              // Prometheus's histogram_quantile() function for flexible quantile querying
+              // in Grafana, complementing the fixed client-side percentiles.
+              .percentilesHistogram(true)
+              .build()
+              // Merge the specific config with the existing/default config
+              .merge(config);
         }
 
         // For all other metrics, return the default configuration

@@ -301,10 +301,12 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
 
       return rerankingProvider
           .rerank(query.query(), passages, credentials)
-          .onItem()
-          .invoke(response -> rerankingMetrics.recordCallLatency(sample)) // Stop timer on success
-          .onFailure()
-          .invoke(error -> rerankingMetrics.recordCallLatency(sample)) // Stop timer on failure too
+          // Use .eventually() to execute the provided Runnable when the Uni terminates,
+          // either successfully (onItem) or with a failure (onFailure).
+          // This is preferred over .onItemOrFailure() when the side-effect action is identical
+          // for both outcomes and doesn't need access to the item or the failure reason.
+          .eventually(
+              () -> rerankingMetrics.recordCallLatency(sample)) // Stop timer regardless of outcome
           .map(
               rerankingResponse ->
                   RerankingTaskResult.create(
