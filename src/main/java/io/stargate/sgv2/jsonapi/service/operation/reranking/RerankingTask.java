@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
-import io.micrometer.core.instrument.Timer;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -295,23 +294,17 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                           "limit", limit,
                           "passages", passages))));
 
-      // --- Record Passage Counts ---
-      final int passageCount = passages.size();
-      rerankingMetrics.recordPassageCount(passageCount);
+      rerankingMetrics.recordPassageCount(passages.size());
 
       // Start the timer
-      Timer.Sample sample = rerankingMetrics.startRerankNetworkCallTimer();
+      var sample = rerankingMetrics.startCallLatency();
 
       return rerankingProvider
           .rerank(query.query(), passages, credentials)
           .onItem()
-          .invoke(
-              response ->
-                  rerankingMetrics.stopRerankNetworkCallTimer(sample)) // Stop timer on success
+          .invoke(response -> rerankingMetrics.recordCallLatency(sample)) // Stop timer on success
           .onFailure()
-          .invoke(
-              error ->
-                  rerankingMetrics.stopRerankNetworkCallTimer(sample)) // Stop timer on failure too
+          .invoke(error -> rerankingMetrics.recordCallLatency(sample)) // Stop timer on failure too
           .map(
               rerankingResponse ->
                   RerankingTaskResult.create(

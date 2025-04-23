@@ -63,7 +63,10 @@ public final class MicrometerConfiguration {
             .map(e -> Tag.of(e.getKey(), e.getValue()))
             .collect(Collectors.toList());
 
-    // return all
+    // Notes from PR 2003: This producer method globalTagsMeterFilter is typically called only once
+    // during the application startup phase by the Micrometer extension when it's collecting all the
+    // MeterFilter beans. It's not called repeatedly during the application's runtime for every
+    // metric being recorded. So no need the cache.
     return MeterFilter.commonTags(Tags.of(tags));
   }
 
@@ -95,29 +98,28 @@ public final class MicrometerConfiguration {
   @Produces
   public MeterFilter configureDistributionStatistics() {
     // --- Define Percentile Values ---
-    final double[] allCallDurationPercentiles = {0.5, 0.90, 0.95, 0.99};
-    final double[] tenantCallDurationPercentiles = {0.98};
+    final double[] allTenantLatencyPercentiles = {0.5, 0.90, 0.95, 0.99};
+    final double[] perTenantLatencyPercentiles = {0.98};
 
     // --- Create A Map For Value Look Up ---
     final Map<String, double[]> percentileConfigs =
         Map.of(
             HTTP_SERVER_REQUESTS,
-            allCallDurationPercentiles,
+            allTenantLatencyPercentiles,
             VECTORIZE_CALL_DURATION_METRIC,
-            allCallDurationPercentiles,
+            allTenantLatencyPercentiles,
             RERANK_TENANT_CALL_DURATION_METRIC,
-            tenantCallDurationPercentiles,
+            perTenantLatencyPercentiles,
             RERANK_ALL_CALL_DURATION_METRIC,
-            allCallDurationPercentiles);
+            allTenantLatencyPercentiles);
 
     return new MeterFilter() {
       @Override
       public DistributionStatisticConfig configure(
           Meter.Id id, DistributionStatisticConfig config) {
 
-        String name = id.getName();
         // Look up using the above map to find the specific percentiles for the metric
-        double[] specificPercentiles = percentileConfigs.get(name);
+        double[] specificPercentiles = percentileConfigs.get(id.getName());
 
         // If a specific configuration was found for this metric name
         if (specificPercentiles != null) {

@@ -107,12 +107,12 @@ public class RerankingMetrics {
   /**
    * Starts a timer sample to measure the duration of the asynchronous reranking network call phase.
    *
-   * <p>The returned sample should be passed to {@link #stopRerankNetworkCallTimer} upon completion
-   * of the asynchronous operation.
+   * <p>The returned sample should be passed to {@link #recordCallLatency} upon completion of the
+   * asynchronous operation.
    *
    * @return A {@link Timer.Sample} instance representing the start time.
    */
-  public Timer.Sample startRerankNetworkCallTimer() {
+  public Timer.Sample startCallLatency() {
     return Timer.start(meterRegistry);
   }
 
@@ -136,11 +136,11 @@ public class RerankingMetrics {
    *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Tags#RERANKING_MODEL_TAG}.
    * </ul>
    *
-   * @param sample The {@link Timer.Sample} started by {@link #startRerankNetworkCallTimer()}. Must
-   *     not be null.
+   * @param sample The {@link Timer.Sample} started by {@link #startCallLatency()}. Must not be
+   *     null.
    */
-  public void stopRerankNetworkCallTimer(Timer.Sample sample) {
-    Objects.requireNonNull(sample, "Timer.Sample cannot be null");
+  public void recordCallLatency(Timer.Sample sample) {
+    Objects.requireNonNull(sample, "sample cannot be null");
 
     // --- Tenant-Specific Timer ---
     // Build tags for the tenant timer
@@ -215,13 +215,12 @@ public class RerankingMetrics {
     private void putOrThrow(String key, String value) {
       // If the key already exists, that means the caller is trying to set the same tag multiple
       // times. Throw exception.
-      if (tagsMap.containsKey(key)) {
+      if (tagsMap.put(key, value) != null) {
         throw new IllegalStateException(
             String.format(
                 "Tag key '%s' cannot be set multiple times. Check metrics tags related functions.",
                 key)); // Use dynamic callerMethodName
       }
-      tagsMap.put(key, value);
     }
 
     /**
