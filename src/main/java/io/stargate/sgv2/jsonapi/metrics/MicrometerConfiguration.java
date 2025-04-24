@@ -11,6 +11,7 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import io.smallrye.config.SmallRyeConfig;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import jakarta.enterprise.inject.Produces;
 import java.util.Collection;
 import java.util.Map;
