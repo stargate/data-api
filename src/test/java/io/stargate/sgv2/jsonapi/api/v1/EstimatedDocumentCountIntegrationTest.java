@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsWriteSuccess;
 import static org.hamcrest.Matchers.is;
@@ -8,7 +7,6 @@ import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
@@ -17,7 +15,8 @@ import org.slf4j.LoggerFactory;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-@Disabled("Disabled for CI, requires a test configuration where system.size_estimates is enabled")
+// @Disabled("Disabled for CI, requires a test configuration where system.size_estimates is
+// enabled")
 public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   private static final Logger LOG =
@@ -30,7 +29,11 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
   @Order(1)
   class Count {
 
-    public static final int TIME_TO_SETTLE = 75;
+    /**
+     * Time to wait for the estimated document count to settle after a truncate or insertMany (based
+     * on... observed time needed?)
+     */
+    public static final int TIME_TO_SETTLE = 45;
 
     public static final String JSON_ESTIMATED_COUNT =
         """
@@ -147,14 +150,7 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
                 }
               }
               """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(jsonTruncate)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(jsonTruncate)
           .body("$", responseIsStatusOnly())
           .body("status.deletedCount", is(-1))
           .body("status.moreData", is(nullValue()));
@@ -168,27 +164,13 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
 
       // ensure estimated doc count is zero
       // does not find the documents
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(JSON_ESTIMATED_COUNT)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(JSON_ESTIMATED_COUNT)
           .body("$", responseIsStatusOnly())
           .body("status.count", is(0));
     }
 
     private int getActualCount() {
-      return given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(JSON_ACTUAL_COUNT)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      return givenHeadersPostJsonThenOk(JSON_ACTUAL_COUNT)
           .body("$", responseIsStatusOnly())
           .extract()
           .response()
@@ -197,14 +179,7 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
     }
 
     private int getEstimatedCount() {
-      return given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(JSON_ESTIMATED_COUNT)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      return givenHeadersPostJsonThenOk(JSON_ESTIMATED_COUNT)
           .body("$", responseIsStatusOnly())
           .extract()
           .response()
@@ -213,15 +188,7 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
     }
 
     private void insertMany() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(INSERT_MANY)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsWriteSuccess());
+      givenHeadersPostJsonThenOk(INSERT_MANY).body("$", responseIsWriteSuccess());
     }
   }
 
