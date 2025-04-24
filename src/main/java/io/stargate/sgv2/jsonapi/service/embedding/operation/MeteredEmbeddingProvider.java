@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Tags.TENANT_TAG;
-import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.UNKNOWN_VALUE;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.Tags.TENANT_TAG;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.UNKNOWN_VALUE;
 
 import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.*;
@@ -10,7 +10,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.MetricsConstants;
+import io.stargate.sgv2.jsonapi.metrics.MetricsConstants;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
