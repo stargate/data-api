@@ -253,7 +253,7 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
           .body(
               "errors[0].message",
               containsString(
-                  "When 'lexical' is disabled, 'lexical.analyzer' must either be omitted, JSON null, or an empty JSON object {}."));
+                  "When 'lexical' is disabled, 'lexical.analyzer' must either be omitted or be JSON null, or"));
     }
 
     @Test
@@ -305,11 +305,11 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
           createRequestWithLexical(
               collectionName,
               """
-                                        {
-                                          "enabled": true,
-                                          "analyzer": [ 1, 2, 3 ]
-                                        }
-                                  """);
+                                    {
+                                      "enabled": true,
+                                      "analyzer": [ 1, 2, 3 ]
+                                    }
+                              """);
 
       if (isLexicalAvailableForDB()) {
         givenHeadersPostJsonThenOk(json)
@@ -326,6 +326,94 @@ class CreateCollectionWithLexicalIntegrationTest extends AbstractKeyspaceIntegra
             .body("$", responseIsError())
             .body("errors[0].errorCode", is("LEXICAL_NOT_AVAILABLE_FOR_DATABASE"));
       }
+    }
+
+    // [data-api#2011]
+    @Test
+    void failCreateLexicalMisspelledTokenizer() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                      {
+                        "enabled": true,
+                        "analyzer": {
+                          "tokeniser": {"name": "standard", "args": {}},
+                          "filters": [
+                              {"name": "lowercase"},
+                              {"name": "stop"},
+                              {"name": "porterstem"},
+                              {"name": "asciifolding"}
+                          ],
+                          "extra": 123
+                        }
+                      }
+                      """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Invalid fields for 'lexical.analyzer'. Valid fields are: [charFilters, filters, tokenizer], found: [extra, tokeniser]"));
+    }
+
+    // [data-api#2011]
+    @Test
+    void failCreateLexicalNonObjectForTokenizer() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                              {
+                                "enabled": true,
+                                "analyzer": {
+                                  "tokenizer": false
+                                }
+                              }
+                              """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "'tokenizer' property of 'lexical.analyzer' must be JSON Object, is: Boolean"));
+    }
+
+    // [data-api#2011]
+    @Test
+    void failCreateLexicalNonArrayForFilters() {
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+      final String collectionName = "coll_lexical_" + RandomStringUtils.randomNumeric(16);
+      String json =
+          createRequestWithLexical(
+              collectionName,
+              """
+                              {
+                                "enabled": true,
+                                "analyzer": {
+                                  "filters": { }
+                                }
+                              }
+                              """);
+
+      givenHeadersPostJsonThenOk(json)
+          .body("$", responseIsError())
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "'filters' property of 'lexical.analyzer' must be JSON Array, is: Object"));
     }
   }
 
