@@ -8,7 +8,7 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
@@ -47,8 +47,8 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
               "status.rerankingProviders.nvidia.models[0].name",
               equalTo("nvidia/llama-3.2-nv-rerankqa-1b-v2"))
           .body(
-              "status.rerankingProviders.nvidia.models[0].modelSupport.status",
-              equalTo(ModelSupport.SupportStatus.SUPPORTED.name()));
+              "status.rerankingProviders.nvidia.models[0].apiModelSupport.status",
+              equalTo(ApiModelSupport.SupportStatus.SUPPORTED.name()));
     }
 
     @Test
@@ -83,14 +83,14 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
               "status.rerankingProviders.nvidia.models[0].name",
               equalTo("nvidia/a-random-EOL-model"))
           .body(
-              "status.rerankingProviders.nvidia.models[0].modelSupport.status",
-              equalTo(ModelSupport.SupportStatus.END_OF_LIFE.name()))
+              "status.rerankingProviders.nvidia.models[0].apiModelSupport.status",
+              equalTo(ApiModelSupport.SupportStatus.END_OF_LIFE.name()))
           .body(
               "status.rerankingProviders.nvidia.models[1].name",
               equalTo("nvidia/a-random-deprecated-model"))
           .body(
-              "status.rerankingProviders.nvidia.models[1].modelSupport.status",
-              equalTo(ModelSupport.SupportStatus.DEPRECATED.name()));
+              "status.rerankingProviders.nvidia.models[1].apiModelSupport.status",
+              equalTo(ApiModelSupport.SupportStatus.DEPRECATED.name()));
     }
 
     @Test

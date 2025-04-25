@@ -5,7 +5,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import java.util.*;
 
 /**
@@ -38,8 +38,8 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
         null,
         new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
             "testModel",
-            new ModelSupport.ModelSupportImpl(
-                ModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
+            new ApiModelSupport.ApiModelSupportImpl(
+                ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
             Optional.of(dimension),
             List.of(),
             Map.of(),

@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.time.Duration;
 import java.util.List;
@@ -84,17 +84,17 @@ public abstract class EmbeddingProvider {
    *
    * <p>This method should be called before any vectorization operation.
    */
-  public void checkEOLModelUsage() {
+  protected void checkEOLModelUsage() {
     // Validate if the model is END_OF_LIFE
-    if (model.modelSupport().status() == ModelSupport.SupportStatus.END_OF_LIFE) {
-      throw SchemaException.Code.END_OF_LIFE_PROVIDER_MODEL.get(
+    if (model.apiModelSupport().status() == ApiModelSupport.SupportStatus.END_OF_LIFE) {
+      throw SchemaException.Code.END_OF_LIFE_AI_MODEL.get(
           Map.of(
               "model",
               model.name(),
               "modelStatus",
-              model.modelSupport().status().name(),
+              model.apiModelSupport().status().name(),
               "message",
-              model.modelSupport().message().orElse("The model is not supported.")));
+              model.apiModelSupport().message().orElse("The model is not supported.")));
     }
   }
 

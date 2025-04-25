@@ -871,24 +871,24 @@ request-errors:
       Resend the command using supported model.
 
   - scope: SCHEMA
-    code: DEPRECATED_PROVIDER_MODEL
-    title: The model is DEPRECATED.
+    code: DEPRECATED_AI_MODEL
+    title: Cannot use deprecated model.
     body: |-
-      The model ${model} is at ${modelStatus} status.
+      The command attempted to create or alter a Collection or Table to use a AI Model that has been marked as deprecated. Deprecated models are only supported by the API for existing use and will later be removed.
+
+      The model is: ${model}. It is in ${modelStatus} status.
       ${message}
-      
-      DEPRECATED model cannot be used for creation of new Collections or Tables, but can be used for existing Collections or Tables until model status is changed to END_OF_LIFE.
       
       Resend the command using supported model.
 
   - scope: SCHEMA
-    code: END_OF_LIFE_PROVIDER_MODEL
-    title: The model is ENF_OF_LIFE.
+    code: END_OF_LIFE_AI_MODEL
+    title: Cannot use end of life model.
     body: |-
-      The model ${model} is at ${modelStatus} status.
-      ${message}
+      The command attempted to use an AI Model that has been marked as end of life. End of life models cannot be used in any way. Collections or Tables that use the model must be recreated as data such as embeddings is not transferrable.
       
-      END_OF_LIFE model cannot be used for creation of new Collections or Tables, and can not be used for existing Collections or Tables.
+      The model is: ${model}. It is in ${modelStatus} status.
+      ${message}
       
       Resend the command using supported model.
 

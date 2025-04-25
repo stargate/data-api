@@ -5,7 +5,7 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -105,12 +105,12 @@ public interface EmbeddingProvidersConfig {
       String name();
 
       /**
-       * modelSupport marks the support status of the model and optional message for the
-       * deprecation, EOL etc. By default, modelSupport will be mapped to SUPPORTED and empty
+       * apiModelSupport marks the support status of the model and optional message for the
+       * deprecation, EOL etc. By default, apiModelSupport will be mapped to SUPPORTED and empty
        * message if it is not configured in the config source.
        */
       @JsonProperty
-      ModelSupport modelSupport();
+      ApiModelSupport apiModelSupport();
 
       /**
        * vectorDimension is not null if the model supports a single dimension value. It will be null

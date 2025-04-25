@@ -883,11 +883,11 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
         Arguments.of(
             "DEPRECATED",
             "a-deprecated-nvidia-embedding-model",
-            SchemaException.Code.DEPRECATED_PROVIDER_MODEL),
+            SchemaException.Code.DEPRECATED_AI_MODEL),
         Arguments.of(
             "END_OF_LIFE",
             "a-EOL-nvidia-embedding-model",
-            SchemaException.Code.END_OF_LIFE_PROVIDER_MODEL));
+            SchemaException.Code.END_OF_LIFE_AI_MODEL));
   }
 
   @ParameterizedTest

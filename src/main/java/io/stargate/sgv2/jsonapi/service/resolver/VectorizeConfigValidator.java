@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
-
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -9,7 +7,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
@@ -72,9 +70,10 @@ public class VectorizeConfigValidator {
     Integer vectorDimension =
         validateModelAndDimension(userConfig, providerConfig, userVectorDimension);
 
-    // Model must be SUPPORTED to create the collection/table
-    // validate model support for collection creation
-    validateModelSupportForSchemaCreation(userConfig);
+    // Model must be SUPPORTED to do the schema operation.
+    // Note, validateService method is only triggered for createCollection/createTable/alterTable.
+    // So we can add validation here to cut off DEPRECATED/END_OF_LIFE model for schema creation.
+    checkModelSupportForSchemaCreation(userConfig);
 
     // Validate user-provided parameters against internal expectations
     validateUserParameters(userConfig, providerConfig);
@@ -429,8 +428,13 @@ public class VectorizeConfigValidator {
   /**
    * Validates the model support for the vectorization service. This method checks if the model is
    * SUPPORTED and throw corresponding error if the model's DEPRECATED or END_OF_LIFE.
+   *
+   * <p>Note, this validation will only happen for schema change, E.G.
+   * createCollection/createTable/alterTable. When loading schemaObject from existing
+   * collection/table from DB, this validation will not be called, since the model is already set
+   * and we don't want to cut off the normal usage for existing collection/table.
    */
-  private void validateModelSupportForSchemaCreation(VectorizeConfig service) {
+  private void checkModelSupportForSchemaCreation(VectorizeConfig service) {
 
     // 1. Check if the service provider exists and is enabled
     var providerConfig = getAndValidateProviderConfig(service);
@@ -439,22 +443,22 @@ public class VectorizeConfigValidator {
     var model = getModelConfig(service, providerConfig);
 
     // 3. validate model support
-    if (model.modelSupport().status() != ModelSupport.SupportStatus.SUPPORTED) {
+    if (model.apiModelSupport().status() != ApiModelSupport.SupportStatus.SUPPORTED) {
       var errorCode =
-          model.modelSupport().status() == ModelSupport.SupportStatus.DEPRECATED
-              ? SchemaException.Code.DEPRECATED_PROVIDER_MODEL
-              : SchemaException.Code.END_OF_LIFE_PROVIDER_MODEL;
+          model.apiModelSupport().status() == ApiModelSupport.SupportStatus.DEPRECATED
+              ? SchemaException.Code.DEPRECATED_AI_MODEL
+              : SchemaException.Code.END_OF_LIFE_AI_MODEL;
       throw errorCode.get(
           Map.of(
               "model",
               model.name(),
               "modelStatus",
-              model.modelSupport().status().name(),
+              model.apiModelSupport().status().name(),
               "message",
               model
-                  .modelSupport()
+                  .apiModelSupport()
                   .message()
-                  .orElse("The model is %s.".formatted(model.modelSupport().status().name()))));
+                  .orElse("The model is %s.".formatted(model.apiModelSupport().status().name()))));
     }
   }
 }

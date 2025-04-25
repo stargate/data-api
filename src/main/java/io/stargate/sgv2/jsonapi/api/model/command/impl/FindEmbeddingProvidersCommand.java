@@ -20,14 +20,12 @@ public record FindEmbeddingProvidersCommand(
       @Nullable
           @Schema(
               description =
-                  "If not provided, only SUPPORTED models will be returned."
-                      + " If provided with \"\" empty string, all SUPPORTED, DEPRECATED, END_OF_LIFE model will be returned."
-                      + " If provided with specified SUPPORTED or DEPRECATED or END_OF_LIFE, only models matched the status will be returned.",
+                  "Filters the models based on their support status, defaults to SUPPORTED to only return models that can be used when creating a new Collection or Table. Supported filter values are SUPPORTED, DEPRECATED, and END_OF_LIFE. Set to null or empty string to return all models.",
               type = SchemaType.STRING,
+              defaultValue = "SUPPORTED",
               implementation = String.class)
-          @Pattern(
-              regexp = "^(SUPPORTED|DEPRECATED|END_OF_LIFE|supported|deprecated|end_of_life|)$")
-          String includeModelStatus) {}
+          @Pattern(regexp = "(?i)^(SUPPORTED|DEPRECATED|END_OF_LIFE)?$")
+          String filterModelStatus) {}
 
   /** {@inheritDoc} */
   @Override

@@ -9,8 +9,9 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -34,7 +35,7 @@ public record FindEmbeddingProvidersOperation(
                               Map.Entry::getKey,
                               entry ->
                                   EmbeddingProviderResponse.toResponse(
-                                      entry.getValue(), getSupportStatuses())));
+                                      entry.getValue(), getSupportStatusPredicate())));
               return new Result(embeddingProviders);
             });
   }
@@ -77,16 +78,16 @@ public record FindEmbeddingProvidersOperation(
      * exclude the internal properties (retry, timeout etc.).
      *
      * @param sourceEmbeddingProviderConfig, the original provider config with all properties.
-     * @param includeModelStatus the modelSupport status that user asked for.
+     * @param statusPredicate predicate to filter models based on their support status.
      */
     private static EmbeddingProviderResponse toResponse(
         EmbeddingProvidersConfig.EmbeddingProviderConfig sourceEmbeddingProviderConfig,
-        Set<ModelSupport.SupportStatus> includeModelStatus) {
+        Predicate<ApiModelSupport.SupportStatus> statusPredicate) {
 
       // if the providerConfig.models is null or empty, return an EmbeddingProviderResponse with
       // empty models.
       if (sourceEmbeddingProviderConfig.models() == null
-          || Objects.requireNonNull(sourceEmbeddingProviderConfig.models()).isEmpty()) {
+          || sourceEmbeddingProviderConfig.models().isEmpty()) {
         return new EmbeddingProviderResponse(
             sourceEmbeddingProviderConfig.displayName(),
             sourceEmbeddingProviderConfig.url(),
@@ -95,10 +96,11 @@ public record FindEmbeddingProvidersOperation(
             Collections.emptyList());
       }
 
-      // include models that with modelSupport status that user asked for
+      // include models that with apiModelSupport status that user asked for
       var modelsFilteredWithStatus =
-          filterModelsWithStatus(
-              includeModelStatus, Objects.requireNonNull(sourceEmbeddingProviderConfig.models()));
+          sourceEmbeddingProviderConfig.models().stream()
+              .filter(modelConfig -> statusPredicate.test(modelConfig.apiModelSupport().status()))
+              .toList();
 
       // convert each modelConfig to ModelConfigResponse with internal properties excluded
       var modelConfigResponses =
@@ -121,13 +123,13 @@ public record FindEmbeddingProvidersOperation(
    * parameters for customization, excluding internal properties (retry, timeout etc.).
    *
    * @param name Identifier name of the model.
-   * @param modelSupport Support status of the model.
+   * @param apiModelSupport Support status of the model.
    * @param vectorDimension vector dimension of the model.
    * @param parameters Parameters for customizing the model.
    */
   private record ModelConfigResponse(
       String name,
-      ModelSupport modelSupport,
+      ApiModelSupport apiModelSupport,
       Optional<Integer> vectorDimension,
       List<ParameterConfigResponse> parameters) {
 
@@ -136,24 +138,23 @@ public record FindEmbeddingProvidersOperation(
 
       // if the sourceModelConfig.parameters is null or empty, return a ModelConfigResponse with
       // empty parameters.
-      if (sourceModelConfig.parameters() == null
-          || Objects.requireNonNull(sourceModelConfig.parameters()).isEmpty()) {
+      if (sourceModelConfig.parameters() == null || sourceModelConfig.parameters().isEmpty()) {
         return new ModelConfigResponse(
             sourceModelConfig.name(),
-            sourceModelConfig.modelSupport(),
+            sourceModelConfig.apiModelSupport(),
             sourceModelConfig.vectorDimension(),
             Collections.emptyList());
       }
 
       // reconstruct each parameter for lowercase parameter type
       List<ParameterConfigResponse> parametersResponse =
-          Objects.requireNonNull(sourceModelConfig.parameters()).stream()
+          sourceModelConfig.parameters().stream()
               .map(ParameterConfigResponse::toResponse)
               .collect(Collectors.toList());
 
       return new ModelConfigResponse(
           sourceModelConfig.name(),
-          sourceModelConfig.modelSupport(),
+          sourceModelConfig.apiModelSupport(),
           sourceModelConfig.vectorDimension(),
           parametersResponse);
     }
@@ -197,43 +198,30 @@ public record FindEmbeddingProvidersOperation(
   }
 
   /**
-   * With {@link FindEmbeddingProvidersCommand.Options#includeModelStatus()}, there are the rules to
+   * With {@link FindEmbeddingProvidersCommand.Options#filterModelStatus()}, there are the rules to
    * filter the models:
    *
    * <ul>
    *   <li>If not provided, only SUPPORTED models will be returned.
-   *   <li>If provided with "" empty string, all SUPPORTED, DEPRECATED, END_OF_LIFE model will be
-   *       returned.
+   *   <li>If provided with "" empty string or null, all SUPPORTED, DEPRECATED, END_OF_LIFE model
+   *       will be returned.
    *   <li>If provided with specified SUPPORTED or DEPRECATED or END_OF_LIFE, only models matched
    *       the status will be returned.
    * </ul>
    */
-  private Set<ModelSupport.SupportStatus> getSupportStatuses() {
-    if (command.options() == null || command.options().includeModelStatus() == null) {
-      return EnumSet.of(ModelSupport.SupportStatus.SUPPORTED);
+  private Predicate<ApiModelSupport.SupportStatus> getSupportStatusPredicate() {
+    if (command.options() == null) {
+      return status -> status == ApiModelSupport.SupportStatus.SUPPORTED;
     }
 
-    if (command.options().includeModelStatus().isEmpty()) {
-      return EnumSet.of(
-          ModelSupport.SupportStatus.SUPPORTED,
-          ModelSupport.SupportStatus.DEPRECATED,
-          ModelSupport.SupportStatus.END_OF_LIFE);
+    if (command.options().filterModelStatus() == null
+        || command.options().filterModelStatus().isBlank()) {
+      return status -> true; // accept all
     }
 
-    var specifiedModelStatus = command.options().includeModelStatus().toUpperCase(Locale.ROOT);
-    return EnumSet.of(ModelSupport.SupportStatus.valueOf(specifiedModelStatus));
-  }
-
-  /**
-   * Filter models based on the provided support statuses. Only handle models wit modelStatuses that
-   * user asked for.
-   */
-  private static List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig>
-      filterModelsWithStatus(
-          Set<ModelSupport.SupportStatus> supportStatuses,
-          List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig> sourceModels) {
-    return sourceModels.stream()
-        .filter(modelConfig -> supportStatuses.contains(modelConfig.modelSupport().status()))
-        .collect(Collectors.toList());
+    var specifiedStatus =
+        ApiModelSupport.SupportStatus.valueOf(
+            command.options().filterModelStatus().toUpperCase(Locale.ROOT));
+    return status -> status == specifiedStatus;
   }
 }

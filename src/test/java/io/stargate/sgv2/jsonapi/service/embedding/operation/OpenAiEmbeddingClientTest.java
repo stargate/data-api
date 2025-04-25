@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
@@ -32,7 +32,8 @@ public class OpenAiEmbeddingClientTest {
   private final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig testModel =
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
           "test-model",
-          new ModelSupport.ModelSupportImpl(ModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
+          new ApiModelSupport.ApiModelSupportImpl(
+              ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
           Optional.of(123),
           List.of(),
           Map.of(),

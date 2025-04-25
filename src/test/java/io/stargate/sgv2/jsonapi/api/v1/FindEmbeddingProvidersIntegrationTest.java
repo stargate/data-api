@@ -8,9 +8,13 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -46,22 +50,32 @@ public class FindEmbeddingProvidersIntegrationTest extends AbstractKeyspaceInteg
           .body("status.embeddingProviders.nvidia.models[0].vectorDimension", equalTo(1024))
           .body("status.embeddingProviders.nvidia.models[0].name", equalTo("NV-Embed-QA"))
           .body(
-              "status.embeddingProviders.nvidia.models[0].modelSupport.status",
-              equalTo(ModelSupport.SupportStatus.SUPPORTED.name()));
+              "status.embeddingProviders.nvidia.models[0].apiModelSupport.status",
+              equalTo(ApiModelSupport.SupportStatus.SUPPORTED.name()));
     }
 
-    @Test
-    public final void returnModelsWithAllStatus() {
+    private static Stream<Arguments> returnedAllStatus() {
+      return Stream.of(
+          // emtpy string
+          Arguments.of("\"\""),
+          // null
+          Arguments.of("null"));
+    }
+
+    @ParameterizedTest()
+    @MethodSource("returnedAllStatus")
+    public final void returnModelsWithAllStatus(String filterModelStatus) {
       String json =
-          """
+              """
                             {
                               "findEmbeddingProviders": {
                                 "options": {
-                                  "includeModelStatus": ""
+                                  "filterModelStatus": %s
                                 }
                               }
                             }
-                            """;
+                            """
+              .formatted(filterModelStatus);
 
       given()
           .port(getTestPort())
@@ -77,20 +91,20 @@ public class FindEmbeddingProvidersIntegrationTest extends AbstractKeyspaceInteg
           .body("status.embeddingProviders.nvidia.models", hasSize(3))
           .body("status.embeddingProviders.nvidia.models[0].name", equalTo("NV-Embed-QA"))
           .body(
-              "status.embeddingProviders.nvidia.models[0].modelSupport.status",
-              equalTo(ModelSupport.SupportStatus.SUPPORTED.name()))
+              "status.embeddingProviders.nvidia.models[0].apiModelSupport.status",
+              equalTo(ApiModelSupport.SupportStatus.SUPPORTED.name()))
           .body(
               "status.embeddingProviders.nvidia.models[1].name",
               equalTo("a-EOL-nvidia-embedding-model"))
           .body(
-              "status.embeddingProviders.nvidia.models[1].modelSupport.status",
-              equalTo(ModelSupport.SupportStatus.END_OF_LIFE.name()))
+              "status.embeddingProviders.nvidia.models[1].apiModelSupport.status",
+              equalTo(ApiModelSupport.SupportStatus.END_OF_LIFE.name()))
           .body(
               "status.embeddingProviders.nvidia.models[2].name",
               equalTo("a-deprecated-nvidia-embedding-model"))
           .body(
-              "status.embeddingProviders.nvidia.models[2].modelSupport.status",
-              equalTo(ModelSupport.SupportStatus.DEPRECATED.name()));
+              "status.embeddingProviders.nvidia.models[2].apiModelSupport.status",
+              equalTo(ApiModelSupport.SupportStatus.DEPRECATED.name()));
     }
 
     @Test
@@ -100,7 +114,7 @@ public class FindEmbeddingProvidersIntegrationTest extends AbstractKeyspaceInteg
                                 {
                                   "findEmbeddingProviders": {
                                     "options": {
-                                      "includeModelStatus": "deprecated"
+                                      "filterModelStatus": "deprecated"
                                     }
                                   }
                                 }
@@ -122,8 +136,8 @@ public class FindEmbeddingProvidersIntegrationTest extends AbstractKeyspaceInteg
               "status.embeddingProviders.nvidia.models[0].name",
               equalTo("a-deprecated-nvidia-embedding-model"))
           .body(
-              "status.embeddingProviders.nvidia.models[0].modelSupport.status",
-              equalTo(ModelSupport.SupportStatus.DEPRECATED.name()));
+              "status.embeddingProviders.nvidia.models[0].apiModelSupport.status",
+              equalTo(ApiModelSupport.SupportStatus.DEPRECATED.name()));
     }
 
     @Test
@@ -133,7 +147,7 @@ public class FindEmbeddingProvidersIntegrationTest extends AbstractKeyspaceInteg
                           {
                             "findEmbeddingProviders": {
                               "options": {
-                                "includeModelStatus": "random"
+                                "filterModelStatus": "random"
                               }
                             }
                           }
@@ -153,7 +167,7 @@ public class FindEmbeddingProvidersIntegrationTest extends AbstractKeyspaceInteg
           .body(
               "errors[0].message",
               containsString(
-                  "field 'command.options.includeModelStatus' value \"random\" not valid"));
+                  "field 'command.options.filterModelStatus' value \"random\" not valid"));
     }
   }
 

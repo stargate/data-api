@@ -928,7 +928,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                             """,
                   "deprecatedEmbedModel",
                   true,
-                  SchemaException.Code.DEPRECATED_PROVIDER_MODEL.name(),
+                  SchemaException.Code.DEPRECATED_AI_MODEL.name(),
                   "The model a-deprecated-nvidia-embedding-model is at DEPRECATED status.")));
 
       // vector type with end_of_life model
@@ -958,7 +958,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                         """,
                   "deprecatedEmbedModel",
                   true,
-                  SchemaException.Code.END_OF_LIFE_PROVIDER_MODEL.name(),
+                  SchemaException.Code.END_OF_LIFE_AI_MODEL.name(),
                   "The model a-EOL-nvidia-embedding-model is at END_OF_LIFE status.")));
 
       // vector type with dimension mismatch

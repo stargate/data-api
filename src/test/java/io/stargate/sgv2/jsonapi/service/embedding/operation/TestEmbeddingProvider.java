@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
@@ -40,8 +40,8 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
       TEST_MODEL_CONFIG =
           new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
               "testModel",
-              new ModelSupport.ModelSupportImpl(
-                  ModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
+              new ApiModelSupport.ApiModelSupportImpl(
+                  ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
               Optional.empty(),
               List.of(),
               Map.of(),

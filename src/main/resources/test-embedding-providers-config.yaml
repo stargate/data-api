@@ -315,12 +315,12 @@ stargate:
                 max-tokens: 512
             - name: a-deprecated-nvidia-embedding-model
               vector-dimension: 1024
-              model-support:
+              api-model-support:
                 status: DEPRECATED
                 message: This model has been deprecated, it will be removed in a future release. It is not supported for new Collections or Tables.
             - name: a-EOL-nvidia-embedding-model
               vector-dimension: 1024
-              model-support:
+              api-model-support:
                 status: END_OF_LIFE
                 message: This model is at END_OF_LIFE status, it is not supported.
 
