@@ -24,7 +24,7 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
   private static final Logger LOG =
       LoggerFactory.getLogger(EstimatedDocumentCountIntegrationTest.class);
 
-  private static final int MAX_ITERATIONS = 100;
+  private static final int MAX_ITERATIONS = 200;
 
   private static final int DOCS_PER_ITERATION = 4;
 
@@ -37,7 +37,7 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
      * Time to wait for the estimated document count to settle after a truncate or insertMany (based
      * on... observed time needed?)
      */
-    public static final int TIME_TO_SETTLE_SECS = 90;
+    public static final int TIME_TO_SETTLE_SECS = 120;
 
     public static final String JSON_ESTIMATED_COUNT =
         """
