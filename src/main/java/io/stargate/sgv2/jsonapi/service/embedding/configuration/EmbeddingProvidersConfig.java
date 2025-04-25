@@ -5,6 +5,7 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -33,8 +34,6 @@ public interface EmbeddingProvidersConfig {
     /**
      * A map of supported authentications. HEADER, SHARED_SECRET and NONE are the only techniques
      * the DataAPI supports (i.e. the key of map can only be HEADER, SHARED_SECRET or NONE).
-     *
-     * @return
      */
     @JsonProperty
     Map<AuthenticationType, AuthenticationConfig> supportedAuthentications();
@@ -106,10 +105,16 @@ public interface EmbeddingProvidersConfig {
       String name();
 
       /**
+       * apiModelSupport marks the support status of the model and optional message for the
+       * deprecation, EOL etc. By default, apiModelSupport will be mapped to SUPPORTED and empty
+       * message if it is not configured in the config source.
+       */
+      @JsonProperty
+      ApiModelSupport apiModelSupport();
+
+      /**
        * vectorDimension is not null if the model supports a single dimension value. It will be null
        * if the model supports different dimensions. A parameter called vectorDimension is included.
-       *
-       * @return
        */
       @Nullable
       @JsonProperty

@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import java.util.*;
@@ -39,10 +39,10 @@ public record FindRerankingProvidersOperation(
             });
   }
 
-  // By default, if includeModelStatus is not provided in command option, only model in supported
+  // By default, if filterModelStatus is not provided in command option, only model in supported
   // status will be listed.
-  private Set<ModelSupport.SupportStatus> getSupportStatuses() {
-    var includeModelStatus = EnumSet.of(ModelSupport.SupportStatus.SUPPORTED);
+  private Set<ApiModelSupport.SupportStatus> getSupportStatuses() {
+    var includeModelStatus = EnumSet.of(ApiModelSupport.SupportStatus.SUPPORTED);
     if (command.options() != null && command.options().includeModelStatus() != null) {
       includeModelStatus = command.options().includeModelStatus();
     }
@@ -72,7 +72,7 @@ public record FindRerankingProvidersOperation(
       List<RerankingProvidersConfig.RerankingProviderConfig.ModelConfig> models) {
     private static RerankingProviderResponse provider(
         RerankingProvidersConfig.RerankingProviderConfig rerankingProviderConfig,
-        Set<ModelSupport.SupportStatus> includeModelStatus) {
+        Set<ApiModelSupport.SupportStatus> includeModelStatus) {
 
       return new RerankingProviderResponse(
           rerankingProviderConfig.isDefault(),
@@ -85,13 +85,13 @@ public record FindRerankingProvidersOperation(
     // exclude models that are not in the provided statuses
     private static List<RerankingProvidersConfig.RerankingProviderConfig.ModelConfig> filterModels(
         List<RerankingProvidersConfig.RerankingProviderConfig.ModelConfig> models,
-        Set<ModelSupport.SupportStatus> includeModelStatus) {
+        Set<ApiModelSupport.SupportStatus> includeModelStatus) {
       return models.stream()
-          .filter(model -> includeModelStatus.contains(model.modelSupport().status()))
+          .filter(model -> includeModelStatus.contains(model.apiModelSupport().status()))
           .map(
               model ->
                   new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
-                      model.name(), model.modelSupport(), model.isDefault(), model.url(), null))
+                      model.name(), model.apiModelSupport(), model.isDefault(), model.url(), null))
           .sorted(
               Comparator.comparing(
                   RerankingProvidersConfig.RerankingProviderConfig.ModelConfig::name))
