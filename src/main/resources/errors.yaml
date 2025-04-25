@@ -876,7 +876,7 @@ request-errors:
     body: |-
       The command attempted to create or alter a Collection or Table to use a AI Model that has been marked as deprecated. Deprecated models are only supported by the API for existing use and will later be removed.
 
-      The model is: ${model}. It is in ${modelStatus} status.
+      The model is: ${model}. It is at ${modelStatus} status.
       ${message}
       
       Resend the command using supported model.
@@ -887,7 +887,7 @@ request-errors:
     body: |-
       The command attempted to use an AI Model that has been marked as end of life. End of life models cannot be used in any way. Collections or Tables that use the model must be recreated as data such as embeddings is not transferrable.
       
-      The model is: ${model}. It is in ${modelStatus} status.
+      The model is: ${model}. It is at ${modelStatus} status.
       ${message}
       
       Resend the command using supported model.

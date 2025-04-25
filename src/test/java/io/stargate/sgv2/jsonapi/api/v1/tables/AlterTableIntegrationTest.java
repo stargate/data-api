@@ -310,7 +310,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .hasSingleApiError(
               errorCode,
               SchemaException.class,
-              "The model %s is at %s status".formatted(modelName, status));
+              "The model is: %s. It is at %s status".formatted(modelName, status));
     }
   }
 

@@ -923,7 +923,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
         .body("$", responseIsError())
         .body(
             "errors[0].message",
-            containsString("The model %s is at %s status".formatted(modelName, status)))
+            containsString("The model is: %s. It is at %s status".formatted(modelName, status)))
         .body("errors[0].errorCode", is(errorCode.name()));
   }
 
