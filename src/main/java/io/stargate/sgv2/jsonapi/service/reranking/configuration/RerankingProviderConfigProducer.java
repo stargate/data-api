@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.reranking.configuration;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
-
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.runtime.Startup;
 import io.stargate.embedding.gateway.EmbeddingGateway;
@@ -9,7 +7,7 @@ import io.stargate.embedding.gateway.RerankingServiceGrpc;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
@@ -198,10 +196,11 @@ public class RerankingProviderConfigProducer {
                 model ->
                     new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
                         model.getName(),
-                        new ModelSupport.ModelSupportImpl(
-                            ModelSupport.SupportStatus.valueOf(model.getModelSupport().getStatus()),
-                            model.getModelSupport().hasMessage()
-                                ? Optional.of(model.getModelSupport().getMessage())
+                        new ApiModelSupport.ApiModelSupportImpl(
+                            ApiModelSupport.SupportStatus.valueOf(
+                                model.getApiModelSupport().getStatus()),
+                            model.getApiModelSupport().hasMessage()
+                                ? Optional.of(model.getApiModelSupport().getMessage())
                                 : Optional.empty()),
                         model.getIsDefault(),
                         model.getUrl(),

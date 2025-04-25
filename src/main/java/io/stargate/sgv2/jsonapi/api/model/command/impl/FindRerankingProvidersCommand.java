@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import jakarta.validation.Valid;
 import java.util.EnumSet;
 import javax.annotation.Nullable;
@@ -18,15 +18,15 @@ public record FindRerankingProvidersCommand(
     implements GeneralCommand {
 
   /**
-   * By default, if includeModelStatus is not provided, only model in supported status will be
+   * By default, if filterModelStatus is not provided, only model in supported status will be
    * returned.
    */
   public record Options(
       @Schema(
               description = "Use the option to include models as in target support status.",
               type = SchemaType.OBJECT,
-              implementation = ModelSupport.SupportStatus.class)
-          EnumSet<ModelSupport.SupportStatus> includeModelStatus) {}
+              implementation = ApiModelSupport.SupportStatus.class)
+          EnumSet<ApiModelSupport.SupportStatus> includeModelStatus) {}
 
   /** {@inheritDoc} */
   @Override

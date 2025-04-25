@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProviderErrorMapper;
 import jakarta.ws.rs.HeaderParam;
@@ -34,15 +35,15 @@ public class OpenAIEmbeddingProvider extends EmbeddingProvider {
   public OpenAIEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     // One special case: legacy "ada-002" model does not accept "dimension" parameter
     super(
         requestProperties,
         baseUrl,
-        modelName,
-        acceptsOpenAIDimensions(modelName) ? dimension : 0,
+        model,
+        acceptsOpenAIDimensions(model.name()) ? dimension : 0,
         vectorizeServiceParameters);
 
     openAIEmbeddingProviderClient =
@@ -122,9 +123,12 @@ public class OpenAIEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+    // Check if using an EOF model
+    checkEOLModelUsage();
     checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
     String[] textArray = new String[texts.size()];
-    EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
+    EmbeddingRequest request =
+        new EmbeddingRequest(texts.toArray(textArray), model.name(), dimension);
     String organizationId = (String) vectorizeServiceParameters.get("organizationId");
     String projectId = (String) vectorizeServiceParameters.get("projectId");
 

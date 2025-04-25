@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
 import io.stargate.embedding.gateway.EmbeddingGateway;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -26,6 +27,7 @@ public record EmbeddingProvidersConfigImpl(
 
     public record ModelConfigImpl(
         String name,
+        ApiModelSupport apiModelSupport,
         Optional<Integer> vectorDimension,
         List<ParameterConfig> parameters,
         Map<String, String> properties,
@@ -37,6 +39,12 @@ public record EmbeddingProvidersConfigImpl(
           List<ParameterConfig> modelParameterList) {
         this(
             grpcModelConfig.getName(),
+            new ApiModelSupport.ApiModelSupportImpl(
+                ApiModelSupport.SupportStatus.valueOf(
+                    grpcModelConfig.getApiModelSupport().getStatus()),
+                grpcModelConfig.getApiModelSupport().hasMessage()
+                    ? Optional.of(grpcModelConfig.getApiModelSupport().getMessage())
+                    : Optional.empty()),
             grpcModelConfig.hasVectorDimension()
                 ? Optional.of(grpcModelConfig.getVectorDimension())
                 : Optional.empty(),

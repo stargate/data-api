@@ -13,6 +13,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import java.io.IOException;
 import java.util.List;
@@ -36,14 +37,14 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
   public AwsBedrockEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     super(
         requestProperties,
         baseUrl,
-        modelName,
-        acceptsTitanAIDimensions(modelName) ? dimension : 0,
+        model,
+        acceptsTitanAIDimensions(model.name()) ? dimension : 0,
         vectorizeServiceParameters);
   }
 
@@ -53,6 +54,8 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+    // Check if using an EOF model
+    checkEOLModelUsage();
     if (embeddingCredentials.accessId().isEmpty() && embeddingCredentials.secretId().isEmpty()) {
       throw ErrorCodeV1.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
           "Both '%s' and '%s' are missing in the header for provider '%s'",
@@ -84,7 +87,7 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
               final byte[] inputData;
               try {
                 inputData = ow.writeValueAsBytes(new EmbeddingRequest(texts.get(0), dimension));
-                request.body(SdkBytes.fromByteArray(inputData)).modelId(modelName);
+                request.body(SdkBytes.fromByteArray(inputData)).modelId(model.name());
               } catch (JsonProcessingException e) {
                 throw ErrorCodeV1.EMBEDDING_REQUEST_ENCODING_ERROR.toApiException();
               }

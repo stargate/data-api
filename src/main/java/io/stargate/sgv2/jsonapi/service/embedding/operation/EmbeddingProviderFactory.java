@@ -5,6 +5,7 @@ import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -16,7 +17,7 @@ import java.util.Optional;
 @ApplicationScoped
 public class EmbeddingProviderFactory {
   @Inject Instance<EmbeddingProviderConfigStore> embeddingProviderConfigStore;
-
+  @Inject EmbeddingProvidersConfig embeddingProvidersConfig;
   @Inject OperationsConfig config;
 
   @GrpcClient("embedding")
@@ -26,7 +27,7 @@ public class EmbeddingProviderFactory {
     EmbeddingProvider create(
         EmbeddingProviderConfigStore.RequestProperties requestProperties,
         String baseUrl,
-        String modelName,
+        EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
         int dimension,
         Map<String, Object> vectorizeServiceParameter);
   }
@@ -117,10 +118,26 @@ public class EmbeddingProviderFactory {
       throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
           "unknown service provider '%s'", configuration.serviceProvider());
     }
+
+    // Get the provider, then get the model.
+    var providerConfig = embeddingProvidersConfig.providers().get(configuration.serviceProvider());
+    if (providerConfig == null) {
+      throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
+          "unknown service provider '%s'", configuration.serviceProvider());
+    }
+    EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model =
+        embeddingProvidersConfig.providers().get(configuration.serviceProvider()).models().stream()
+            .filter(m -> m.name().equals(modelName))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
+                        "unknown model '%s' for service provider '%s'",
+                        modelName, configuration.serviceProvider()));
     return ctor.create(
         configuration.requestConfiguration(),
         configuration.getBaseUrl(modelName),
-        modelName,
+        model,
         dimension,
         vectorizeServiceParameters);
   }
