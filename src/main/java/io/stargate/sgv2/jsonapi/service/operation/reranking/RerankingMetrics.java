@@ -1,13 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
-import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics.*;
-import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Tags.*;
-import static io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.UNKNOWN_VALUE;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.Metrics.*;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.Tags.*;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.UNKNOWN_VALUE;
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.Timer;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.metrics.MetricsConstants;
+import io.stargate.sgv2.jsonapi.metrics.MicrometerConfiguration;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import java.util.*;
@@ -34,7 +36,7 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>Note: Configuration of percentiles and histogram settings for timers is handled externally via
  * {@link io.micrometer.core.instrument.config.MeterFilter} beans (see {@link
- * io.stargate.sgv2.jsonapi.api.v1.metrics.MicrometerConfiguration}).
+ * MicrometerConfiguration}).
  */
 public class RerankingMetrics {
   private final MeterRegistry meterRegistry;
@@ -70,17 +72,12 @@ public class RerankingMetrics {
    * <p>This involves recording the count against two distinct metrics:
    *
    * <ul>
-   *   <li>Tenant-specific: {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics#RERANK_TENANT_PASSAGE_COUNT_METRIC}
-   *       with tags {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Tags#TENANT_TAG} and {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Tags#TABLE_TAG}.
-   *   <li>Overall: {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics#RERANK_ALL_PASSAGE_COUNT_METRIC}
-   *       with tags {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Tags#RERANKING_PROVIDER_TAG}
-   *       and {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Tags#RERANKING_MODEL_TAG}.
+   *   <li>Tenant-specific: {@value MetricsConstants.Metrics#RERANK_TENANT_PASSAGE_COUNT_METRIC}
+   *       with tags {@value MetricsConstants.Tags#TENANT_TAG} and {@value
+   *       MetricsConstants.Tags#TABLE_TAG}.
+   *   <li>Overall: {@value MetricsConstants.Metrics#RERANK_ALL_PASSAGE_COUNT_METRIC} with tags
+   *       {@value MetricsConstants.Tags#RERANKING_PROVIDER_TAG} and {@value
+   *       MetricsConstants.Tags#RERANKING_MODEL_TAG}.
    * </ul>
    *
    * @param passageCount The number of passages.
@@ -123,17 +120,12 @@ public class RerankingMetrics {
    * <p>This ensures the identical duration value is recorded for:
    *
    * <ul>
-   *   <li>Tenant-specific: {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics#RERANK_TENANT_CALL_DURATION_METRIC}
-   *       with tags {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Tags#TENANT_TAG} and {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Tags#TABLE_TAG}.
-   *   <li>Overall: {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Metrics#RERANK_ALL_CALL_DURATION_METRIC}
-   *       with tags {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Tags#RERANKING_PROVIDER_TAG}
-   *       and {@value
-   *       io.stargate.sgv2.jsonapi.config.constants.MetricsConstants.Tags#RERANKING_MODEL_TAG}.
+   *   <li>Tenant-specific: {@value MetricsConstants.Metrics#RERANK_TENANT_CALL_DURATION_METRIC}
+   *       with tags {@value MetricsConstants.Tags#TENANT_TAG} and {@value
+   *       MetricsConstants.Tags#TABLE_TAG}.
+   *   <li>Overall: {@value MetricsConstants.Metrics#RERANK_ALL_CALL_DURATION_METRIC} with tags
+   *       {@value MetricsConstants.Tags#RERANKING_PROVIDER_TAG} and {@value
+   *       MetricsConstants.Tags#RERANKING_MODEL_TAG}.
    * </ul>
    *
    * @param sample The {@link Timer.Sample} started by {@link #startCallLatency()}. Must not be
