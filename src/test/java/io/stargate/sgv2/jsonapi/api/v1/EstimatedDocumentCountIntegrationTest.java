@@ -1,14 +1,14 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsWriteSuccess;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
@@ -23,14 +23,20 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
   private static final Logger LOG =
       LoggerFactory.getLogger(EstimatedDocumentCountIntegrationTest.class);
 
-  public static final int MAX_ITERATIONS = 100;
+  private static final int MAX_ITERATIONS = 200;
+
+  private static final int DOCS_PER_ITERATION = 4;
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   @Order(1)
   class Count {
 
-    public static final int TIME_TO_SETTLE = 75;
+    /**
+     * Time to wait for the estimated document count to settle after a truncate or insertMany (based
+     * on... observed time needed?)
+     */
+    public static final int TIME_TO_SETTLE_SECS = 75;
 
     public static final String JSON_ESTIMATED_COUNT =
         """
@@ -77,10 +83,6 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
                   {
                       "username": "user4",
                       "indexedObject" : { "0": "value_0", "1": "value_1" }
-                  },
-                  {
-                      "username": "user5",
-                      "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
                   }
                 ],
                 "options" : {
@@ -99,18 +101,19 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
       int tries = 1;
       while (tries <= MAX_ITERATIONS) {
         insertMany();
+        Thread.sleep(10L);
 
         // get count results every N iterations
-        if (tries % 500 == 0) {
+        if (tries % 10 == 0) {
 
           int estimatedCount = getEstimatedCount();
           int actualCount = getActualCount();
 
-          LOG.info(
+          LOG.warn(
               "Iteration: "
                   + tries
                   + ", Docs inserted: "
-                  + tries * 5
+                  + tries * DOCS_PER_ITERATION
                   + ", Actual count: "
                   + actualCount
                   + ", Estimated count: "
@@ -125,11 +128,23 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
       }
 
       LOG.info(
-          "Stopping insertion after non-zero estimated count, now waiting "
-              + TIME_TO_SETTLE
+          "Stopping insertion after non-zero estimated count, now waiting up to "
+              + TIME_TO_SETTLE_SECS
               + " seconds for count to settle");
-      Thread.sleep(TIME_TO_SETTLE * 1000);
-      LOG.info("Final estimated count: " + getEstimatedCount());
+
+      for (int i = 0; i < TIME_TO_SETTLE_SECS; ++i) {
+        int estimatedCount = getEstimatedCount();
+        if (estimatedCount > 0) {
+          LOG.info("Final estimated count: " + estimatedCount + " -- test passes");
+          return;
+        }
+        if (i % 10 == 0) {
+          LOG.info("Estimated count is still zero, waiting...");
+        }
+        Thread.sleep(1000L);
+      }
+
+      fail("Estimated count is zero after " + TIME_TO_SETTLE_SECS + " seconds of wait.");
     }
 
     /**
@@ -139,6 +154,8 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
     @Test
     @Order(2)
     public void truncate() throws InterruptedException {
+      int estimatedCount = getEstimatedCount();
+      LOG.info("Estimated count before truncate: " + estimatedCount);
 
       String jsonTruncate =
           """
@@ -147,48 +164,30 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
                 }
               }
               """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(jsonTruncate)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(jsonTruncate)
           .body("$", responseIsStatusOnly())
           .body("status.deletedCount", is(-1))
           .body("status.moreData", is(nullValue()));
 
       LOG.info(
-          "Truncated collection, waiting for estimated count to settle for "
-              + TIME_TO_SETTLE
+          "Truncated collection, waiting for estimated count to settle for up to "
+              + TIME_TO_SETTLE_SECS
               + " seconds");
-      Thread.sleep(TIME_TO_SETTLE * 1000);
-      LOG.info("Final estimated count after truncate: " + getEstimatedCount());
 
-      // ensure estimated doc count is zero
-      // does not find the documents
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(JSON_ESTIMATED_COUNT)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsStatusOnly())
-          .body("status.count", is(0));
+      for (int i = 0; i < TIME_TO_SETTLE_SECS; ++i) {
+        if (estimatedCount < 1) {
+          break;
+        }
+        if (i % 10 == 0) {
+          LOG.info("Estimated count still above (" + estimatedCount + "), waiting...");
+        }
+        Thread.sleep(1000);
+      }
+      assertThat(estimatedCount).isLessThan(1);
     }
 
     private int getActualCount() {
-      return given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(JSON_ACTUAL_COUNT)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      return givenHeadersPostJsonThenOk(JSON_ACTUAL_COUNT)
           .body("$", responseIsStatusOnly())
           .extract()
           .response()
@@ -197,14 +196,7 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
     }
 
     private int getEstimatedCount() {
-      return given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(JSON_ESTIMATED_COUNT)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      return givenHeadersPostJsonThenOk(JSON_ESTIMATED_COUNT)
           .body("$", responseIsStatusOnly())
           .extract()
           .response()
@@ -213,15 +205,7 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
     }
 
     private void insertMany() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(INSERT_MANY)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsWriteSuccess());
+      givenHeadersPostJsonThenOk(INSERT_MANY).body("$", responseIsWriteSuccess());
     }
   }
 
