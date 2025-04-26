@@ -17,8 +17,7 @@ import org.slf4j.LoggerFactory;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-// @Disabled("Disabled for CI, requires a test configuration where system.size_estimates is
-// enabled")
+@Disabled("Disabled for CI, requires a test configuration where system.size_estimates is enabled")
 public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   private static final Logger LOG =
@@ -37,7 +36,7 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
      * Time to wait for the estimated document count to settle after a truncate or insertMany (based
      * on... observed time needed?)
      */
-    public static final int TIME_TO_SETTLE_SECS = 120;
+    public static final int TIME_TO_SETTLE_SECS = 75;
 
     public static final String JSON_ESTIMATED_COUNT =
         """
