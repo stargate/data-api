@@ -167,11 +167,6 @@ message GetSupportedProvidersResponse {
       map<string, string> properties = 4;
       optional string service_url_override = 5;
       ApiModelSupport apiModelSupport = 6;
-
-      message ApiModelSupport{
-        string status = 1;
-        optional string message = 2;
-      }
     }
   }
 
@@ -291,11 +286,6 @@ message GetSupportedRerankingProvidersResponse {
       string url = 4;
       RequestProperties properties = 5;
 
-      message ApiModelSupport{
-        string status = 1;
-        optional string message = 2;
-      }
-
       message RequestProperties {
         int32 at_most_retries = 1;
         int32 initial_back_off_millis = 2;
@@ -312,6 +302,12 @@ message GetSupportedRerankingProvidersResponse {
     string error_code = 1;
     string error_message = 2;
   }
+}
+
+// The ApiModelSupport message represents the support status of the embedding/reranking model.
+message ApiModelSupport{
+  string status = 1;
+  optional string message = 2;
 }
 
 // The embedding gateway gPRC API to reranking

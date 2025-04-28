@@ -422,14 +422,21 @@ public class CollectionRerankDef {
 
     var model = rerankModel.get();
     if (model.apiModelSupport().status() != ApiModelSupport.SupportStatus.SUPPORTED) {
-      throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
+      var errorCode =
+          model.apiModelSupport().status() == ApiModelSupport.SupportStatus.DEPRECATED
+              ? SchemaException.Code.DEPRECATED_AI_MODEL
+              : SchemaException.Code.END_OF_LIFE_AI_MODEL;
+      throw errorCode.get(
           Map.of(
               "model",
               model.name(),
               "modelStatus",
               model.apiModelSupport().status().name(),
               "message",
-              model.apiModelSupport().message().orElse("The model is not supported.")));
+              model
+                  .apiModelSupport()
+                  .message()
+                  .orElse("The model is %s.".formatted(model.apiModelSupport().status().name()))));
     }
 
     return modelName;

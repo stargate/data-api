@@ -892,7 +892,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
   @ParameterizedTest
   @MethodSource("deprecatedEmbeddingModelSource")
-  public void failDeprecatedEmbedModel(
+  public void failDeprecatedEOLModel(
       String status, String modelName, SchemaException.Code errorCode) {
     given()
         .headers(getHeaders())

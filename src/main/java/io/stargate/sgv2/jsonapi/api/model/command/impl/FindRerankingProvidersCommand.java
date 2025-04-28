@@ -3,9 +3,8 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
-import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import jakarta.validation.Valid;
-import java.util.EnumSet;
+import jakarta.validation.constraints.Pattern;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -17,16 +16,16 @@ public record FindRerankingProvidersCommand(
         Options options)
     implements GeneralCommand {
 
-  /**
-   * By default, if filterModelStatus is not provided, only model in supported status will be
-   * returned.
-   */
   public record Options(
-      @Schema(
-              description = "Use the option to include models as in target support status.",
-              type = SchemaType.OBJECT,
-              implementation = ApiModelSupport.SupportStatus.class)
-          EnumSet<ApiModelSupport.SupportStatus> includeModelStatus) {}
+      @Nullable
+          @Schema(
+              description =
+                  "Filters the models based on their support status, defaults to SUPPORTED to only return models that can be used when creating a new Collection or Table. Supported filter values are SUPPORTED, DEPRECATED, and END_OF_LIFE. Set to null or empty string to return all models.",
+              type = SchemaType.STRING,
+              defaultValue = "SUPPORTED",
+              implementation = String.class)
+          @Pattern(regexp = "(?i)^(SUPPORTED|DEPRECATED|END_OF_LIFE)?$")
+          String filterModelStatus) {}
 
   /** {@inheritDoc} */
   @Override

@@ -7,9 +7,14 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -274,14 +279,14 @@ public class CreateCollectionWithRerankingIntegrationTest
           createRequestWithReranking(
               collectionName,
               """
-                                    {
-                                        "enabled": false,
-                                        "service": {
-                                            "provider": "nvidia",
-                                            "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
-                                        }
-                                    }
-                                    """);
+                              {
+                                  "enabled": false,
+                                  "service": {
+                                      "provider": "nvidia",
+                                      "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+                                  }
+                              }
+                              """);
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
@@ -313,11 +318,11 @@ public class CreateCollectionWithRerankingIntegrationTest
           createRequestWithReranking(
               collectionName,
               """
-                                {
-                                  "enabled": true,
-                                  "service": {}
-                                }
-                          """);
+                                    {
+                                      "enabled": true,
+                                      "service": {}
+                                    }
+                              """);
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
@@ -335,13 +340,13 @@ public class CreateCollectionWithRerankingIntegrationTest
           createRequestWithReranking(
               collectionName,
               """
-                            {
-                              "enabled": true,
-                              "service": {
-                                  "provider": "unknown"
+                              {
+                                "enabled": true,
+                                "service": {
+                                    "provider": "unknown"
+                                }
                               }
-                            }
-                            """);
+                              """);
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
@@ -359,13 +364,13 @@ public class CreateCollectionWithRerankingIntegrationTest
           createRequestWithReranking(
               collectionName,
               """
-                                    {
-                                      "enabled": true,
-                                      "service": {
-                                          "provider": "nvidia"
+                                      {
+                                        "enabled": true,
+                                        "service": {
+                                            "provider": "nvidia"
+                                        }
                                       }
-                                    }
-                            """);
+                              """);
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
@@ -383,14 +388,14 @@ public class CreateCollectionWithRerankingIntegrationTest
           createRequestWithReranking(
               collectionName,
               """
-                                {
-                                  "enabled": true,
-                                  "service": {
-                                      "provider": "nvidia",
-                                      "modelName": "unknown"
-                                  }
+                              {
+                                "enabled": true,
+                                "service": {
+                                    "provider": "nvidia",
+                                    "modelName": "unknown"
                                 }
-                                """);
+                              }
+                              """);
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
@@ -408,17 +413,17 @@ public class CreateCollectionWithRerankingIntegrationTest
           createRequestWithReranking(
               collectionName,
               """
-                                {
-                                  "enabled": true,
-                                  "service": {
-                                      "provider": "nvidia",
-                                      "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
-                                      "authentication": {
-                                          "providerKey" : "myKey"
-                                      }
-                                  }
+                              {
+                                "enabled": true,
+                                "service": {
+                                    "provider": "nvidia",
+                                    "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+                                    "authentication": {
+                                        "providerKey" : "myKey"
+                                    }
                                 }
-                                """);
+                              }
+                              """);
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
@@ -436,17 +441,17 @@ public class CreateCollectionWithRerankingIntegrationTest
           createRequestWithReranking(
               collectionName,
               """
-                                {
-                                  "enabled": true,
-                                  "service": {
-                                      "provider": "nvidia",
-                                      "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
-                                      "parameters": {
-                                          "test": "test"
-                                      }
-                                  }
+                              {
+                                "enabled": true,
+                                "service": {
+                                    "provider": "nvidia",
+                                    "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+                                    "parameters": {
+                                        "test": "test"
+                                    }
                                 }
-                                """);
+                              }
+                              """);
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
@@ -457,53 +462,43 @@ public class CreateCollectionWithRerankingIntegrationTest
                   "Reranking provider 'nvidia' currently doesn't support any parameters. No parameters should be provided."));
     }
 
-    @Test
-    void failDeprecatedModel() {
-      final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
-      String json =
-          createRequestWithReranking(
-              collectionName,
-              """
-                            {
-                              "enabled": true,
-                              "service": {
-                                  "provider": "nvidia",
-                                  "modelName": "nvidia/a-random-deprecated-model"
-                              }
-                            }
-                            """);
-
-      givenHeadersPostJsonThenOk(json)
-          .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNSUPPORTED_PROVIDER_MODEL"))
-          .body(
-              "errors[0].message",
-              containsString(
-                  "The model nvidia/a-random-deprecated-model is at DEPRECATED status."));
+    private static Stream<Arguments> deprecatedRerankingModelSource() {
+      return Stream.of(
+          Arguments.of(
+              "DEPRECATED",
+              "nvidia/a-random-deprecated-model",
+              SchemaException.Code.DEPRECATED_AI_MODEL),
+          Arguments.of(
+              "END_OF_LIFE",
+              "nvidia/a-random-EOL-model",
+              SchemaException.Code.END_OF_LIFE_AI_MODEL));
     }
 
-    @Test
-    void failEOLModel() {
+    @ParameterizedTest
+    @MethodSource("deprecatedRerankingModelSource")
+    public void failDeprecatedEOLModel(
+        String status, String modelName, SchemaException.Code errorCode) {
       final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
       String json =
           createRequestWithReranking(
               collectionName,
-              """
-                                        {
-                                          "enabled": true,
-                                          "service": {
-                                              "provider": "nvidia",
-                                              "modelName": "nvidia/a-random-EOL-model"
-                                          }
-                                        }
-                                        """);
+                  """
+                              {
+                                "enabled": true,
+                                "service": {
+                                    "provider": "nvidia",
+                                    "modelName": "%s"
+                                }
+                              }
+                              """
+                  .formatted(modelName));
 
       givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("UNSUPPORTED_PROVIDER_MODEL"))
           .body(
               "errors[0].message",
-              containsString("The model nvidia/a-random-EOL-model is at END_OF_LIFE status."));
+              containsString("The model is: %s. It is at %s status".formatted(modelName, status)))
+          .body("errors[0].errorCode", is(errorCode.name()));
     }
   }
 

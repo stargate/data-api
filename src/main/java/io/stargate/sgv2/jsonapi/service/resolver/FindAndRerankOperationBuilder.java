@@ -173,8 +173,9 @@ class FindAndRerankOperationBuilder {
     var modelConfig =
         rerankingProvidersConfig.filterByRerankServiceDef(
             commandContext.schemaObject().rerankingConfig().rerankServiceDef());
+    // Validate if the model is END_OF_LIFE
     if (modelConfig.apiModelSupport().status() == ApiModelSupport.SupportStatus.END_OF_LIFE) {
-      throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
+      throw SchemaException.Code.END_OF_LIFE_AI_MODEL.get(
           Map.of(
               "model",
               modelConfig.name(),

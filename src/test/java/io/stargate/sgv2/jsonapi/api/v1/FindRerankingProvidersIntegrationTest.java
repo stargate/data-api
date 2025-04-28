@@ -10,7 +10,11 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -51,21 +55,28 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
               equalTo(ApiModelSupport.SupportStatus.SUPPORTED.name()));
     }
 
-    @Test
-    public final void filterByModelStatus() {
+    private static Stream<Arguments> returnedAllStatus() {
+      return Stream.of(
+          // emtpy string
+          Arguments.of("\"\""),
+          // null
+          Arguments.of("null"));
+    }
+
+    @ParameterizedTest()
+    @MethodSource("returnedAllStatus")
+    public final void returnModelsWithAllStatus(String filterModelStatus) {
       String json =
-          """
-                        {
-                          "findRerankingProviders": {
-                            "options": {
-                              "includeModelStatus": [
-                                "DEPRECATED",
-                                "END_OF_LIFE"
-                              ]
+              """
+                            {
+                              "findRerankingProviders": {
+                                "options": {
+                                  "filterModelStatus": %s
+                                }
+                              }
                             }
-                          }
-                        }
-                        """;
+                            """
+              .formatted(filterModelStatus);
 
       given()
           .port(getTestPort())
@@ -78,7 +89,7 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
           .statusCode(200)
           .body("$", responseIsStatusOnly())
           .body("status.rerankingProviders", notNullValue())
-          .body("status.rerankingProviders.nvidia.models", hasSize(2))
+          .body("status.rerankingProviders.nvidia.models", hasSize(3))
           .body(
               "status.rerankingProviders.nvidia.models[0].name",
               equalTo("nvidia/a-random-EOL-model"))
@@ -90,6 +101,45 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
               equalTo("nvidia/a-random-deprecated-model"))
           .body(
               "status.rerankingProviders.nvidia.models[1].apiModelSupport.status",
+              equalTo(ApiModelSupport.SupportStatus.DEPRECATED.name()))
+          .body(
+              "status.rerankingProviders.nvidia.models[2].name",
+              equalTo("nvidia/llama-3.2-nv-rerankqa-1b-v2"))
+          .body(
+              "status.rerankingProviders.nvidia.models[2].apiModelSupport.status",
+              equalTo(ApiModelSupport.SupportStatus.SUPPORTED.name()));
+    }
+
+    @Test
+    public final void returnModelsWithSpecifiedStatus() {
+      String json =
+          """
+                                    {
+                                      "findRerankingProviders": {
+                                        "options": {
+                                          "filterModelStatus": "deprecated"
+                                        }
+                                      }
+                                    }
+                                    """;
+
+      given()
+          .port(getTestPort())
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsStatusOnly())
+          .body("status.rerankingProviders", notNullValue())
+          .body("status.rerankingProviders.nvidia.models", hasSize(1))
+          .body(
+              "status.rerankingProviders.nvidia.models[0].name",
+              equalTo("nvidia/a-random-deprecated-model"))
+          .body(
+              "status.rerankingProviders.nvidia.models[0].apiModelSupport.status",
               equalTo(ApiModelSupport.SupportStatus.DEPRECATED.name()));
     }
 
@@ -100,9 +150,7 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
                       {
                         "findRerankingProviders": {
                           "options": {
-                            "includeModelStatus": [
-                              "random"
-                            ]
+                              "filterModelStatus": "random"
                           }
                         }
                       }
@@ -116,11 +164,13 @@ public class FindRerankingProvidersIntegrationTest extends AbstractKeyspaceInteg
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
-          .statusCode(400)
+          .statusCode(200)
           .body("$", responseIsError())
-          .body("errors[0].errorCode", is("INVALID_REQUEST_STRUCTURE_MISMATCH"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body(
-              "errors[0].message", containsString("not one of the values accepted for Enum class"));
+              "errors[0].message",
+              containsString(
+                  "field 'command.options.filterModelStatus' value \"random\" not valid"));
     }
   }
 
