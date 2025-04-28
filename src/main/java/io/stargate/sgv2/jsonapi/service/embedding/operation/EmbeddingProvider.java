@@ -94,7 +94,10 @@ public abstract class EmbeddingProvider {
               "modelStatus",
               model.apiModelSupport().status().name(),
               "message",
-              model.apiModelSupport().message().orElse("The model is not supported.")));
+              model
+                  .apiModelSupport()
+                  .message()
+                  .orElse("The model is no longer supported (reached its end-of-life).")));
     }
   }
 

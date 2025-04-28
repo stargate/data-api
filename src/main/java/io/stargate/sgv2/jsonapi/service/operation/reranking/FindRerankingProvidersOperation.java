@@ -85,7 +85,7 @@ public record FindRerankingProvidersOperation(
 
       // include models that with apiModelSupport status that user asked for.
       // also exclude internal model properties.
-      var filteredModels = filteringModels(sourceRerankingProviderConfig.models(), statusPredicate);
+      var filteredModels = filteredModels(sourceRerankingProviderConfig.models(), statusPredicate);
 
       return new RerankingProviderResponse(
           sourceRerankingProviderConfig.isDefault(),
@@ -95,11 +95,11 @@ public record FindRerankingProvidersOperation(
     }
 
     /**
-     * exclude models that are not in the provided statuses, exclude internal model properties from
-     * findRerankingProviders command.
+     * Returns models matched by given model supportStatus Predicate, and exclude internal model
+     * properties from command response.
      */
     private static List<RerankingProvidersConfig.RerankingProviderConfig.ModelConfig>
-        filteringModels(
+        filteredModels(
             List<RerankingProvidersConfig.RerankingProviderConfig.ModelConfig> models,
             Predicate<ApiModelSupport.SupportStatus> statusPredicate) {
       return models.stream()
@@ -137,9 +137,6 @@ public record FindRerankingProvidersOperation(
       return status -> true; // accept all
     }
 
-    var specifiedStatus =
-        ApiModelSupport.SupportStatus.valueOf(
-            command.options().filterModelStatus().toUpperCase(Locale.ROOT));
-    return status -> status == specifiedStatus;
+    return status -> status.name().equalsIgnoreCase(command.options().filterModelStatus());
   }
 }

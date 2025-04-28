@@ -182,7 +182,10 @@ class FindAndRerankOperationBuilder {
               "modelStatus",
               modelConfig.apiModelSupport().status().name(),
               "message",
-              modelConfig.apiModelSupport().message().orElse("The model is not supported.")));
+              modelConfig
+                  .apiModelSupport()
+                  .message()
+                  .orElse("The model is no longer supported (reached its end-of-life).")));
     }
   }
 

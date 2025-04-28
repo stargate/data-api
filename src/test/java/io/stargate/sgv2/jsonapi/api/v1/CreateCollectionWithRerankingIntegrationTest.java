@@ -476,7 +476,7 @@ public class CreateCollectionWithRerankingIntegrationTest
 
     @ParameterizedTest
     @MethodSource("deprecatedRerankingModelSource")
-    public void failDeprecatedEOLModel(
+    public void failDeprecatedEOLRerankModel(
         String status, String modelName, SchemaException.Code errorCode) {
       final String collectionName = "coll_Reranking_" + RandomStringUtils.randomNumeric(16);
       String json =
