@@ -6,10 +6,12 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.core.Base64Variants;
+import io.quarkus.logging.Log;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
@@ -234,15 +236,25 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
 
   public static void checkDriverMetricsTenantId() {
     String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+    List<String> lines = metrics.lines().toList();
     Optional<String> sessionLevelDriverMetricTenantId =
-        metrics
-            .lines()
-            .filter(
-                line ->
-                    line.startsWith("session_cql_requests_seconds_bucket")
-                        && line.contains("tenant"))
-            .findFirst();
-    assertThat(sessionLevelDriverMetricTenantId.isPresent()).isTrue();
+            lines.stream()
+                    .filter(
+                            line ->
+                                    line.startsWith("session_cql_requests_seconds_bucket")
+                                            && line.contains("tenant"))
+                    .findFirst();
+    if (!sessionLevelDriverMetricTenantId.isPresent()) {
+      long buckets =
+              lines.stream()
+                      .filter(line -> line.startsWith("session_cql_requests_seconds_bucket"))
+                      .count();
+      Log.info("sample session_cql_requests_seconds_bucket " + lines.stream().limit(5).toList());
+      fail(
+              String.format(
+                      "No tenant id found in 'session_cql_requests_seconds_bucket' (%d buckets; %d log lines)",
+                      buckets, lines.size()));
+    }
   }
 
   public static void checkVectorMetrics(String commandName, String sortType) {
