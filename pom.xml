@@ -38,7 +38,7 @@
     <!-- 14-Mar-2025, tatu: no more use of Stargate Coordinator -->
     <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
     <!-- Cassandra driver -->
-    <driver.version>4.17.0</driver.version>
+    <driver.version>4.19.0</driver.version>
     <!-- Compiler -->
     <compiler-plugin.version>3.11.0</compiler-plugin.version>
     <maven.compiler.source>21</maven.compiler.source>
@@ -80,15 +80,6 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-  <!-- Add local repository for private java driver queryBuilder build to avoid using systemPath in dependency-->
-  <!-- Tracker issue: https://github.com/stargate/data-api/issues/1509 -->
-  <repositories>
-    <repository>
-      <id>local-lib</id>
-      <name>local-lib</name>
-      <url>file://${project.basedir}/lib</url>
-    </repository>
-  </repositories>
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -183,7 +174,7 @@
       <artifactId>sts</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.datastax.oss</groupId>
+      <groupId>org.apache.cassandra</groupId>
       <artifactId>java-driver-core</artifactId>
       <version>${driver.version}</version>
       <exclusions>
@@ -198,24 +189,15 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>com.datastax.oss</groupId>
+      <groupId>org.apache.cassandra</groupId>
       <artifactId>java-driver-metrics-micrometer</artifactId>
       <version>${driver.version}</version>
     </dependency>
-    <!--Note, using Java Driver QueryBuilder from a preview build. See https://github.com/stargate/data-api/issues/1509 -->
-    <!--This jar is built by driver team from https://github.com/absurdfarce/cassandra-java-driver/tree/4190-preview1 branch -->
     <dependency>
       <groupId>org.apache.cassandra</groupId>
       <artifactId>java-driver-query-builder</artifactId>
-      <version>4.19.0-preview1</version>
+      <version>${driver.version}</version>
     </dependency>
-    <!--    <dependency>-->
-    <!--      <groupId>com.datastax.oss</groupId>-->
-    <!--      <artifactId>java-driver-query-builder</artifactId>-->
-    <!--      <version>${driver.version}</version>-->
-    <!--    </dependency>-->
-    <!-- Jackson YAML module for config file loading
-      -->
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
@@ -237,6 +219,13 @@
       <groupId>org.mongodb</groupId>
       <artifactId>bson</artifactId>
       <version>5.0.0</version>
+    </dependency>
+    <!-- For @NonNull annotation etc -->
+    <dependency>
+      <groupId>com.github.spotbugs</groupId>
+      <artifactId>spotbugs-annotations</artifactId>
+      <version>4.9.3</version>
+      <scope>provided</scope>
     </dependency>
     <!-- Test dependencies -->
     <dependency>
