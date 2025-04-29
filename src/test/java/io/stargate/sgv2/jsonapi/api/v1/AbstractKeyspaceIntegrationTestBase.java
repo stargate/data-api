@@ -250,7 +250,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
               .count();
       fail(
           String.format(
-              "No tenant id found in 'session_cql_requests_seconds_bucket' (% buckets; %d log lines)",
+              "No tenant id found in 'session_cql_requests_seconds_bucket' (%d buckets; %d log lines)",
               buckets, lines.size()));
     }
   }
