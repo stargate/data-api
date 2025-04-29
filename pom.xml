@@ -204,18 +204,11 @@
       <artifactId>java-driver-metrics-micrometer</artifactId>
       <version>${driver.version}</version>
     </dependency>
-    <!--Note, using Java Driver QueryBuilder from a preview build. See https://github.com/stargate/data-api/issues/1509 -->
-    <!--This jar is built by driver team from https://github.com/absurdfarce/cassandra-java-driver/tree/4190-preview1 branch -->
     <dependency>
       <groupId>org.apache.cassandra</groupId>
       <artifactId>java-driver-query-builder</artifactId>
       <version>${driver.version}</version>
     </dependency>
-    <!--    <dependency>-->
-    <!--      <groupId>org.apache.cassandra</groupId>-->
-    <!--      <artifactId>java-driver-query-builder</artifactId>-->
-    <!--      <version>${driver.version}</version>-->
-    <!--    </dependency>-->
     <!-- Jackson YAML module for config file loading
       -->
     <dependency>
