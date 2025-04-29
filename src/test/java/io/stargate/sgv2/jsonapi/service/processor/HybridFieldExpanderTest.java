@@ -188,6 +188,17 @@ public class HybridFieldExpanderTest {
                     }
                     """,
             ErrorCodeV1.HYBRID_FIELD_CONFLICT,
+            ErrorCodeV1.HYBRID_FIELD_CONFLICT.getMessage()),
+        // Conflict whenever $hybrid and $vector are used together
+        Arguments.of(
+            """
+                            {
+                              "_id": 1,
+                              "$vector": [1,2,3],
+                              "$hybrid": "I like cheese"
+                            }
+                            """,
+            ErrorCodeV1.HYBRID_FIELD_CONFLICT,
             ErrorCodeV1.HYBRID_FIELD_CONFLICT.getMessage()));
   }
 
