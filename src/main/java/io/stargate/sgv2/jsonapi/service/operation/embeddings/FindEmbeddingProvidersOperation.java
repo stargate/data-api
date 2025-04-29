@@ -219,9 +219,6 @@ public record FindEmbeddingProvidersOperation(
       return status -> true; // accept all
     }
 
-    var specifiedStatus =
-        ApiModelSupport.SupportStatus.valueOf(
-            command.options().filterModelStatus().toUpperCase(Locale.ROOT));
-    return status -> status == specifiedStatus;
+    return status -> status.name().equalsIgnoreCase(command.options().filterModelStatus());
   }
 }
