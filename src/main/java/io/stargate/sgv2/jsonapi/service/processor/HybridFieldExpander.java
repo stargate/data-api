@@ -97,13 +97,13 @@ public class HybridFieldExpander {
   }
 
   private static void addLexicalAndVectorize(ObjectNode doc, JsonNode lexical, JsonNode vectorize) {
-    // Important: verify we had no conflict with existing $lexical or $vectorize or $vector fields
+    // Important: verify we had no conflict with existing $lexical or $vector or $vectorize fields
     // (that is, values from $hybrid would not overwrite existing values)
     var oldLexical = doc.replace(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, lexical);
-    var oldVectorize = doc.replace(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, vectorize);
     var oldVector = doc.get(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+    var oldVectorize = doc.replace(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, vectorize);
 
-    if ((oldLexical != null) || (oldVectorize != null) || (oldVector != null)) {
+    if ((oldLexical != null) || (oldVector != null) || (oldVectorize != null)) {
       throw ErrorCodeV1.HYBRID_FIELD_CONFLICT.toApiException();
     }
   }
