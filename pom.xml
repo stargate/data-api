@@ -82,6 +82,7 @@
   </dependencyManagement>
   <!-- Add local repository for private java driver queryBuilder build to avoid using systemPath in dependency-->
   <!-- Tracker issue: https://github.com/stargate/data-api/issues/1509 -->
+  <!--
   <repositories>
     <repository>
       <id>local-lib</id>
@@ -89,6 +90,7 @@
       <url>file://${project.basedir}/lib</url>
     </repository>
   </repositories>
+  -->
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -207,7 +209,7 @@
     <dependency>
       <groupId>org.apache.cassandra</groupId>
       <artifactId>java-driver-query-builder</artifactId>
-      <version>4.19.0-preview1</version>
+      <version>${driver.version}</version>
     </dependency>
     <!--    <dependency>-->
     <!--      <groupId>org.apache.cassandra</groupId>-->
