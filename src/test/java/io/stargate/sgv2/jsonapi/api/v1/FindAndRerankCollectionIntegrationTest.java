@@ -9,6 +9,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -99,6 +100,9 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
 
   @Test
   void failOnEmptyRequest() {
+    // Must not fail for "no lexical available", so skip on DSE
+    Assumptions.assumeTrue(isLexicalAvailableForDB());
+
     String collectionName = "find_rerank_empty_request";
     createCollectionWithCleanup(
         collectionName,
