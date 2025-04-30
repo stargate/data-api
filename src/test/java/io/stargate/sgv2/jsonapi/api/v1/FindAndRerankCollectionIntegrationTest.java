@@ -98,6 +98,7 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         "Lexical search is not enabled for collection");
   }
 
+  // https://github.com/stargate/data-api/issues/2057
   @Test
   void failOnEmptyRequest() {
     // Must not fail for "no lexical available", so skip on DSE
