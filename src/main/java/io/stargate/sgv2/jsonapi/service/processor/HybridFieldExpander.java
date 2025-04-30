@@ -48,6 +48,7 @@ public class HybridFieldExpander {
     if ((docNode instanceof ObjectNode doc)
         && (hybridField = doc.remove(DocumentConstants.Fields.HYBRID_FIELD)) != null) {
       switch (hybridField) {
+          // this is {"$hybrid" : null}
         case NullNode ignored -> addLexicalAndVectorize(doc, hybridField, hybridField);
         case TextNode ignored -> addLexicalAndVectorize(doc, hybridField, hybridField);
         case ObjectNode ob -> addFromObject(doc, ob, docIndex, docCount);
