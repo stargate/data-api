@@ -16,6 +16,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.Feature;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureSource;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureUsage;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.validation.Valid;
@@ -35,7 +38,7 @@ public record FindAndRerankCommand(
     @JsonProperty("projection") JsonNode projectionDefinition,
     @Valid @JsonProperty("sort") FindAndRerankSort sortClause,
     @Valid @Nullable Options options)
-    implements ReadCommand, Filterable, Projectable, Windowable {
+    implements ReadCommand, Filterable, Projectable, Windowable, FeatureSource {
 
   // NOTE: is not VectorSortable because it has its own sort clause.
 
@@ -43,6 +46,16 @@ public record FindAndRerankCommand(
   @Override
   public CommandName commandName() {
     return CommandName.FIND_AND_RERANK;
+  }
+
+  @Override
+  public FeatureUsage getFeatureUsage() {
+    var sortFeatures = (sortClause != null) ? sortClause.getFeatureUsage() : FeatureUsage.EMPTY;
+    var hybridLimitsFeatures =
+        (options != null && options.hybridLimits() != null)
+            ? options.hybridLimits().getFeatureUsage()
+            : FeatureUsage.EMPTY;
+    return sortFeatures.unionWith(hybridLimitsFeatures);
   }
 
   public record Options(
@@ -94,13 +107,22 @@ public record FindAndRerankCommand(
   public record HybridLimits(
       @JsonProperty(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) int vectorLimit,
       /** ---- */
-      @JsonProperty(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) int lexicalLimit)
-      implements Recordable {
-    public static final HybridLimits DEFAULT = new HybridLimits(50, 50);
+      @JsonProperty(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) int lexicalLimit,
+      FeatureUsage featureUsage)
+      implements Recordable, FeatureSource {
+    public static final HybridLimits DEFAULT = new HybridLimits(50, 50, FeatureUsage.EMPTY);
 
     @Override
     public DataRecorder recordTo(DataRecorder dataRecorder) {
-      return dataRecorder.append("vectorLimit", vectorLimit).append("lexicalLimit", lexicalLimit);
+      return dataRecorder
+          .append("vectorLimit", vectorLimit)
+          .append("lexicalLimit", lexicalLimit)
+          .append("featureUsage", featureUsage);
+    }
+
+    @Override
+    public FeatureUsage getFeatureUsage() {
+      return featureUsage != null ? featureUsage : FeatureUsage.EMPTY;
     }
   }
 
@@ -128,8 +150,8 @@ public record FindAndRerankCommand(
         JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
 
       return switch (deserializationContext.readTree(jsonParser)) {
-        case NumericNode number -> deserialise(jsonParser, number);
-        case ObjectNode object -> deserialise(jsonParser, object);
+        case NumericNode number -> deserialize(jsonParser, number);
+        case ObjectNode object -> deserialize(jsonParser, object);
         case JsonNode node ->
             throw new JsonMappingException(
                 jsonParser,
@@ -138,15 +160,16 @@ public record FindAndRerankCommand(
       };
     }
 
-    private HybridLimits deserialise(JsonParser jsonParser, NumericNode limitsNumber)
+    private HybridLimits deserialize(JsonParser jsonParser, NumericNode limitsNumber)
         throws JsonMappingException {
 
       return new HybridLimits(
           normaliseLimit(jsonParser, limitsNumber, VECTOR_EMBEDDING_FIELD),
-          normaliseLimit(jsonParser, limitsNumber, LEXICAL_CONTENT_FIELD));
+          normaliseLimit(jsonParser, limitsNumber, LEXICAL_CONTENT_FIELD),
+          FeatureUsage.of(Feature.HYBRID_LIMITS_NUMBER));
     }
 
-    private HybridLimits deserialise(JsonParser jsonParser, ObjectNode limitsObject)
+    private HybridLimits deserialize(JsonParser jsonParser, ObjectNode limitsObject)
         throws JsonMappingException {
 
       var limitMatch = MATCH_LIMIT_FIELDS.matchAndThrow(limitsObject, jsonParser, ERROR_CONTEXT);
@@ -155,7 +178,8 @@ public record FindAndRerankCommand(
           normaliseLimit(
               jsonParser, limitMatch.matched().get(VECTOR_EMBEDDING_FIELD), VECTOR_EMBEDDING_FIELD),
           normaliseLimit(
-              jsonParser, limitMatch.matched().get(LEXICAL_CONTENT_FIELD), LEXICAL_CONTENT_FIELD));
+              jsonParser, limitMatch.matched().get(LEXICAL_CONTENT_FIELD), LEXICAL_CONTENT_FIELD),
+          FeatureUsage.of(Feature.HYBRID_LIMITS_VECTOR, Feature.HYBRID_LIMITS_LEXICAL));
     }
 
     private int normaliseLimit(JsonParser jsonParser, NumericNode limitNode, String fieldName)

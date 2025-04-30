@@ -13,6 +13,8 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.Feature;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureUsage;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
 import java.io.IOException;
 import java.util.*;
@@ -58,7 +60,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
     return switch (deserializationContext.readTree(jsonParser)) {
       case NullNode ignored -> // this is {"sort" : null}
           FindAndRerankSort.NO_ARG_SORT;
-      case ObjectNode objectNode -> deserialise(jsonParser, objectNode);
+      case ObjectNode objectNode -> deserialize(jsonParser, objectNode);
       default ->
           throw new JsonMappingException(
               jsonParser, "sort clause must be an object or null", jsonParser.currentLocation());
@@ -66,13 +68,13 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
   }
 
   /**
-   * Deserialise the sort clause from an object node.
+   * Deserialize the sort clause from an object node.
    *
    * @param sort The sort clause as an object node, no check for nulls.
    * @return The {@link FindAndRerankSort} that reflects the request without validation, e.g.
    *     checking that a vectorize or vector sort is provided but not both.
    */
-  private static FindAndRerankSort deserialise(JsonParser jsonParser, ObjectNode sort)
+  private static FindAndRerankSort deserialize(JsonParser jsonParser, ObjectNode sort)
       throws JsonMappingException {
 
     // { "sort" : { } }
@@ -85,7 +87,10 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
     return switch (hybridMatch.matched().get(HYBRID_FIELD)) {
       case TextNode textNode -> // using the same text for vectorize and for lexical, no vector
           new FindAndRerankSort(
-              normalizedText(textNode.asText()), normalizedText(textNode.asText()), null);
+              normalizedText(textNode.asText()),
+              normalizedText(textNode.asText()),
+              null,
+              FeatureUsage.of(Feature.HYBRID));
       case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
       case JsonNode node ->
           throw JsonFieldMatcher.errorForWrongType(
@@ -97,6 +102,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       JsonParser jsonParser, ObjectNode hybridObject) throws JsonMappingException {
 
     var sortMatch = MATCH_SORT_FIELDS.matchAndThrow(hybridObject, jsonParser, ERROR_CONTEXT);
+    EnumSet<Feature> features = EnumSet.noneOf(Feature.class);
 
     var vectorizeText =
         switch (sortMatch.matched().get(VECTOR_EMBEDDING_TEXT_FIELD)) {
@@ -113,6 +119,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           }
           case TextNode textNode -> {
             // { "sort" : { "$hybrid" : { "$vectorize" : "I like cheese",
+            features.add(Feature.HYBRID_VECTORIZE);
             yield normalizedText(textNode.asText().trim());
           }
           case JsonNode node ->
@@ -139,6 +146,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           }
           case TextNode textNode -> {
             // { "sort" : { "$hybrid" : { "$lexical" : "cheese",
+            features.add(Feature.HYBRID_LEXICAL);
             yield normalizedText(textNode.asText().trim());
           }
           case JsonNode node ->
@@ -165,6 +173,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           }
           case ArrayNode arrayNode -> {
             // { "sort" : { "$hybrid" : { "vector" : [1,2,3],
+            features.add(Feature.HYBRID_VECTOR);
             yield arrayNodeToVector(arrayNode);
           }
           case ObjectNode objectNode -> {
@@ -184,6 +193,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   ArrayNode.class,
                   ObjectNode.class);
             }
+            features.add(Feature.HYBRID_VECTOR);
             yield ejson.getVectorValueForBinary();
           }
           case JsonNode node ->
@@ -197,7 +207,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   ObjectNode.class);
         };
 
-    return new FindAndRerankSort(vectorizeText, lexicalText, vector);
+    return new FindAndRerankSort(vectorizeText, lexicalText, vector, FeatureUsage.of(features));
   }
 
   /**
