@@ -55,10 +55,13 @@ public class RerankingQuery implements Recordable {
       return new RerankingQuery(rerankQuery, Source.OPTIONS);
     }
 
-    var vectorizeQuery = command.sortClause().vectorizeSort();
-    // will never be blank, but double checking for safety
-    if (vectorizeQuery != null && !vectorizeQuery.isBlank()) {
-      return new RerankingQuery(vectorizeQuery, Source.VECTORIZE);
+    var sortClause = command.sortClause();
+    if (sortClause != null) {
+      var vectorizeQuery = sortClause.vectorizeSort();
+      // will never be blank, but double-checking for safety
+      if (vectorizeQuery != null && !vectorizeQuery.isBlank()) {
+        return new RerankingQuery(vectorizeQuery, Source.VECTORIZE);
+      }
     }
 
     throw RequestException.Code.MISSING_RERANK_QUERY_TEXT.get();

@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -52,7 +53,7 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
   }
 
   @Test
-  public void voidFailOnVectorizeDisabled() {
+  void failOnVectorizeDisabled() {
     errorOnNotEnabled(
         "vectorize_not_enabled",
         """
@@ -71,7 +72,7 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
   }
 
   @Test
-  public void voidFailOnLexicalDisabled() {
+  void failOnLexicalDisabled() {
     errorOnNotEnabled(
         "lexical_not_enabled",
         """
@@ -96,12 +97,43 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         "Lexical search is not enabled for collection");
   }
 
+  @Test
+  void failOnEmptyRequest() {
+    String collectionName = "find_rerank_empty_request";
+    createCollectionWithCleanup(
+        collectionName,
+        """
+            {
+              "name" : "%s",
+              "options": {
+                "vector": {
+                        "metric": "cosine",
+                        "dimension": 1024,
+                        "service": {
+                            "provider": "openai",
+                            "modelName": "text-embedding-3-small"
+                        }
+                    },
+                "lexical": {
+                  "enabled": true,
+                  "analyzer": "standard"
+                }
+              }
+            }
+            """);
+
+    givenHeadersPostJsonThen(keyspaceName, collectionName, "{\"findAndRerank\": { } }")
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.MISSING_RERANK_QUERY_TEXT.name()))
+        .body(
+            "errors[0].message",
+            containsString(
+                "findAndRerank command is missing the text to use as the query with the reranking"));
+  }
+
   private void errorOnNotEnabled(
       String collectionName, String collectionSpec, String errorCode, String errorMessageContains) {
-
-    var createCollection = collectionSpec.formatted(collectionName);
-    cleanupCollectionName = collectionName;
-    createComplexCollection(createCollection);
+    createCollectionWithCleanup(collectionName, collectionSpec);
 
     var rerank =
         """
@@ -127,5 +159,11 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         .body(
             "errors[0].message",
             containsString(errorMessageContains.formatted(keyspaceName, collectionName)));
+  }
+
+  private void createCollectionWithCleanup(String collectionName, String collectionSpec) {
+    createComplexCollection(collectionSpec.formatted(collectionName));
+    // save the collection name for cleanup, but only after successful creation
+    cleanupCollectionName = collectionName;
   }
 }

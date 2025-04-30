@@ -400,14 +400,14 @@ class FindAndRerankOperationBuilder {
   }
 
   private boolean isLexicalSort() {
-    return command.sortClause().lexicalSort() != null;
+    return command.sortClause() != null && command.sortClause().lexicalSort() != null;
   }
 
   private boolean isVectorizeSort() {
-    return command.sortClause().vectorizeSort() != null;
+    return command.sortClause() != null && command.sortClause().vectorizeSort() != null;
   }
 
   private boolean isVectorSort() {
-    return command.sortClause().vectorSort() != null;
+    return command.sortClause() != null && command.sortClause().vectorSort() != null;
   }
 }
