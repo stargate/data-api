@@ -39,6 +39,9 @@ public record FindAndRerankCommand(
     @Valid @JsonProperty("sort") FindAndRerankSort sortClause,
     @Valid @Nullable Options options)
     implements ReadCommand, Filterable, Projectable, Windowable, FeatureSource {
+  public FindAndRerankCommand {
+    sortClause = (sortClause == null) ? FindAndRerankSort.NO_ARG_SORT : sortClause;
+  }
 
   // NOTE: is not VectorSortable because it has its own sort clause.
 

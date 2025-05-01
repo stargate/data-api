@@ -32,7 +32,7 @@ public record FindAndRerankSort(
     String vectorizeSort, String lexicalSort, float[] vectorSort, FeatureUsage featureUsage)
     implements Recordable, FeatureSource {
 
-  static final FindAndRerankSort NO_ARG_SORT =
+  public static final FindAndRerankSort NO_ARG_SORT =
       new FindAndRerankSort(null, null, null, FeatureUsage.EMPTY);
 
   @Override
