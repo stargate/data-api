@@ -125,10 +125,20 @@ public class MeteredCommandProcessor {
             // That is, this should not happen unless there are unexpected errors before/in the
             // .recoverWithItem() or there are some framework errors
             throwable -> {
+              // Note: Metrics timer (`sample.stop()`) is NOT called here by design, as successful
+              // execution time is typically measured.
+
               // --- Command Level Logging
               if (isCommandLevelLoggingEnabled(commandContext, null, true)) {
                 logger.error(buildCommandLog(commandContext, command, null), throwable);
               }
+            })
+        .eventually(
+            () -> {
+              // Cleanup MDC after processing completes (success or failure) to prevent data from
+              // leaking into the next request handled by the same thread.
+              commandContext.schemaObject().name().removeFromMDC();
+              MDC.remove("tenantId");
             });
   }
 
@@ -185,12 +195,14 @@ public class MeteredCommandProcessor {
    * @return Document count as a String, or "NA" if not applicable.
    */
   private String getIncomingDocumentsCount(Command command) {
-    if (command instanceof InsertManyCommand) {
-      return String.valueOf(((InsertManyCommand) command).documents().size());
-    } else if (command instanceof InsertOneCommand) {
-      return String.valueOf(((InsertOneCommand) command).document() != null ? 1 : 0);
-    }
-    return NA;
+    return switch (command) {
+      case InsertManyCommand insertManyCmd ->
+          String.valueOf(insertManyCmd.documents() != null ? insertManyCmd.documents().size() : 0);
+      case InsertOneCommand insertOneCmd -> String.valueOf(insertOneCmd.document() != null ? 1 : 0);
+      default ->
+          // Command types without relevant incoming documents
+          NA;
+    };
   }
 
   /**
@@ -214,10 +226,11 @@ public class MeteredCommandProcessor {
     if (!allowedTenants.contains(ALL_TENANTS)
         && !allowedTenants.contains(
             commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE))) {
+      // Logging disabled for this tenant
       return false;
     }
 
-    // Check error-only filter (only applies to success path)
+    // Disabled if no errors in command
     if (!isFailure
         && commandLevelLoggingConfig.onlyResultsWithErrors()
         && (commandResult == null
@@ -252,7 +265,7 @@ public class MeteredCommandProcessor {
     Tag errorTag = errorFalse;
     Tag errorClassTag = defaultErrorClass;
     Tag errorCodeTag = defaultErrorCode;
-    if (null != result.errors() && !result.errors().isEmpty()) {
+    if (result != null && null != result.errors() && !result.errors().isEmpty()) {
       errorTag = errorTrue;
       // Extract details from the *first* error object's metric fields.
       // TODO: Assumption use the first error is representative for metrics?
