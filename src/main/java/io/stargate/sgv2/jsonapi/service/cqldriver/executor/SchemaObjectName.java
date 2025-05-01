@@ -34,6 +34,11 @@ public record SchemaObjectName(String keyspace, String table) implements Recorda
     MDC.put("collection", table);
   }
 
+  public void removeFromMDC() {
+    MDC.remove("namespace");
+    MDC.remove("collection");
+  }
+
   @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {
     return dataRecorder.append("keyspace", keyspace).append("table", table);
