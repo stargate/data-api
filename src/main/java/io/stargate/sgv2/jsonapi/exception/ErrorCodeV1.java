@@ -168,7 +168,7 @@ public enum ErrorCodeV1 {
   LEXICAL_NOT_ENABLED_FOR_COLLECTION("Lexical search is not enabled for the collection"),
 
   HYBRID_FIELD_CONFLICT(
-      "The '$hybrid' field must be used exclusively and cannot be combined with '$lexical', '$vector', or '$vectorize'."),
+      "The '$hybrid' field cannot be used with '$lexical', '$vector', or '$vectorize'."),
   HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE("Unsupported JSON value type for '$hybrid' field"),
   HYBRID_FIELD_UNKNOWN_SUBFIELDS("Unrecognized sub-field(s) for '$hybrid' Object"),
   HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
