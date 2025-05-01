@@ -125,8 +125,7 @@ public class MeteredCommandProcessor {
             // That is, this should not happen unless there are unexpected errors before/in the
             // .recoverWithItem() or there are some framework errors
             throwable -> {
-              // Note: Metrics timer (`sample.stop()`) is NOT called here by design, as successful
-              // execution time is typically measured.
+              // TODO: Metrics timer (`sample.stop()`) is not called here by design?
 
               // --- Command Level Logging
               if (isCommandLevelLoggingEnabled(commandContext, null, true)) {
@@ -267,7 +266,7 @@ public class MeteredCommandProcessor {
     Tag errorCodeTag = defaultErrorCode;
     if (result != null && null != result.errors() && !result.errors().isEmpty()) {
       errorTag = errorTrue;
-      // Extract details from the *first* error object's metric fields.
+      // Extract details from the first error object's metric fields.
       // TODO: Assumption use the first error is representative for metrics?
       var metricFields = result.errors().getFirst().fieldsForMetricsTag();
 
@@ -280,7 +279,6 @@ public class MeteredCommandProcessor {
 
     // --- Schema Feature Tags ---
     // Indicate if the collection/table has vector search enabled in its schema
-    // Using booleanToString for tag value consistency ("true"/"false")
     Tag vectorEnabled =
         Tag.of(
             jsonApiMetricsConfig.vectorEnabled(),
@@ -321,7 +319,7 @@ public class MeteredCommandProcessor {
 
       var sortExpressions = sc.sortClause().sortExpressions();
 
-      // Check if the *only* sort expression is for vector similarity ($vector or $vectorize)
+      // Check if the only sort expression is for vector similarity ($vector or $vectorize)
       if (sortExpressions.size() == 1) {
         String sortPath = sortExpressions.getFirst().path();
         if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(sortPath) // $vector
