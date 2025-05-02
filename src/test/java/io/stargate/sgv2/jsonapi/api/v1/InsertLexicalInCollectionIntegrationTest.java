@@ -246,12 +246,8 @@ public class InsertLexicalInCollectionIntegrationTest
       givenHeadersPostJsonThenOk("{ \"insertOne\": {  \"document\": %s }}".formatted(doc))
           .body("$", responseIsWritePartialSuccess())
           .body("errors", hasSize(1))
-          // !!! TODO: not rely on DB error, but enforce our own limits
-          .body("errors[0].errorCode", is("INVALID_QUERY"))
-          .body(
-              "errors[0].message",
-              containsString(
-                  "Term's analyzed size for column query_lexical_value exceeds the cumulative limit for index"));
+          .body("errors[0].errorCode", is(ErrorCodeV1.LEXICAL_CONTENT_TOO_BIG.name()))
+          .body("errors[0].message", containsString("Lexical content is too big"));
     }
   }
 
