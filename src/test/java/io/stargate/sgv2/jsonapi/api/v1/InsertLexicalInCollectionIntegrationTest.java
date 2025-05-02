@@ -28,7 +28,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class InsertLexicalInCollectionIntegrationTest
     extends AbstractCollectionIntegrationTestBase {
-  public static final int MAX_LEXICAL_LENGTH = 8192;
+  private static final int MAX_LEXICAL_LENGTH = 8192;
 
   protected InsertLexicalInCollectionIntegrationTest() {
     super("col_insert_lexical_");
