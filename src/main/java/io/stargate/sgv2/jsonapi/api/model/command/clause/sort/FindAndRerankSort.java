@@ -29,7 +29,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public record FindAndRerankSort(String vectorizeSort, String lexicalSort, float[] vectorSort)
     implements Recordable {
 
-  static final FindAndRerankSort NO_ARG_SORT = new FindAndRerankSort(null, null, null);
+  public static final FindAndRerankSort NO_ARG_SORT = new FindAndRerankSort(null, null, null);
 
   @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {

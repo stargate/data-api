@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.reranking.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.smallrye.config.WithDefault;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import java.util.List;
 import java.util.Map;
@@ -56,11 +56,11 @@ public interface RerankingProvidersConfig {
       String name();
 
       /**
-       * modelSupport marks the support status of the model and optional message for the
+       * apiModelSupport marks the support status of the model and optional message for the
        * deprecation, EOL etc.
        */
       @JsonProperty
-      ModelSupport modelSupport();
+      ApiModelSupport apiModelSupport();
 
       @JsonProperty
       @WithDefault("false")

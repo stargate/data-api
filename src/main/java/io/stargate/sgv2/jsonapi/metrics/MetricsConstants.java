@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.config.constants;
+package io.stargate.sgv2.jsonapi.metrics;
 
 /** Defines constants for metric names and tag keys used in the Data API. */
 public interface MetricsConstants {

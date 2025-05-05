@@ -193,6 +193,13 @@ public final class ThrowableToErrorMapper {
           .toApiException()
           .getCommandResultError(message, Response.Status.OK);
     }
+    // [data-api#2068]: Need to convert Lexical-value-too-big failure to something more meaningful
+    if (message.contains(
+        "analyzed size for column query_lexical_value exceeds the cumulative limit for index")) {
+      return ErrorCodeV1.LEXICAL_CONTENT_TOO_BIG
+          .toApiException()
+          .getCommandResultError(Response.Status.OK);
+    }
     return ErrorCodeV1.INVALID_QUERY
         .toApiException()
         .getCommandResultError(message, Response.Status.OK);

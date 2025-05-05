@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProviderErrorMapper;
 import jakarta.ws.rs.HeaderParam;
@@ -35,10 +36,10 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
   public VertexAIEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
       Map<String, Object> serviceParameters) {
-    super(requestProperties, baseUrl, modelName, dimension, serviceParameters);
+    super(requestProperties, baseUrl, model, dimension, serviceParameters);
 
     String actualUrl = replaceParameters(baseUrl, serviceParameters);
     vertexAIEmbeddingProviderClient =
@@ -161,6 +162,8 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+    // Check if using an EOF model
+    checkEOLModelUsage();
     checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
     EmbeddingRequest request =
         new EmbeddingRequest(texts.stream().map(t -> new EmbeddingRequest.Content(t)).toList());
@@ -169,7 +172,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
         applyRetry(
             vertexAIEmbeddingProviderClient.embed(
                 HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get(),
-                modelName,
+                model.name(),
                 request));
 
     return serviceResponse

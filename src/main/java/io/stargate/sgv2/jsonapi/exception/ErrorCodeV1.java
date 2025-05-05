@@ -155,7 +155,6 @@ public enum ErrorCodeV1 {
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
   VECTOR_SIZE_MISMATCH("Length of vector parameter different from declared '$vector' dimension"),
 
-  VECTORIZE_MODEL_DEPRECATED("Vectorize model is deprecated"),
   VECTORIZE_FEATURE_NOT_AVAILABLE("Vectorize feature is not available in the environment"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
@@ -167,9 +166,11 @@ public enum ErrorCodeV1 {
 
   LEXICAL_NOT_AVAILABLE_FOR_DATABASE("Lexical search is not available on this database"),
   LEXICAL_NOT_ENABLED_FOR_COLLECTION("Lexical search is not enabled for the collection"),
+  LEXICAL_CONTENT_TOO_BIG(
+      "Lexical content is too big, please use a smaller value for the $lexical field"),
 
   HYBRID_FIELD_CONFLICT(
-      "Conflict between '$hybrid' field and '$vector' and/or '$vectorize' field(s): can only use one or the other(s)"),
+      "The '$hybrid' field cannot be used with '$lexical', '$vector', or '$vectorize'."),
   HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE("Unsupported JSON value type for '$hybrid' field"),
   HYBRID_FIELD_UNKNOWN_SUBFIELDS("Unrecognized sub-field(s) for '$hybrid' Object"),
   HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(

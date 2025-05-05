@@ -5,7 +5,7 @@
   <artifactId>sgv2-jsonapi</artifactId>
   <version>1.0.26-SNAPSHOT</version>
   <properties>
-    <stargate.version>2.1.0-BETA-23</stargate.version>
+    <stargate.version>2.1.0-BETA-24</stargate.version>
     <!-- 16-Aug-2024, tatu: Quarkus depends on 2.17 already, but keep explicit -->
     <!-- 23-Oct-2024, tatu: For latest FP optimizations let's get 2.18 -->
     <jackson.version>2.18.3</jackson.version>
@@ -239,6 +239,12 @@
       <version>5.0.0</version>
     </dependency>
     <!-- Test dependencies -->
+    <dependency>
+      <groupId>com.github.javafaker</groupId>
+      <artifactId>javafaker</artifactId>
+      <version>1.0.2</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5</artifactId>

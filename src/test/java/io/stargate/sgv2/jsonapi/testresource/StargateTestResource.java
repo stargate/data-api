@@ -191,7 +191,9 @@ public abstract class StargateTestResource
         "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8"
             // 18-Mar-2025, tatu: to work around [https://github.com/riptano/cndb/issues/13330],
             // need to temporarily add this for HCD:
-            + " -Dcassandra.cluster_version_provider.min_stable_duration_ms=-1";
+            + " -Dcassandra.cluster_version_provider.min_stable_duration_ms=-1"
+            // 02-May-2025, tatu: [data-api#2063] force checking of max analyzed text length
+            + " -Dcassandra.sai.validate_max_term_size_at_coordinator=true";
     container
         .withEnv("HEAP_NEWSIZE", "512M")
         .withEnv("MAX_HEAP_SIZE", "2048M")
