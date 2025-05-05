@@ -17,8 +17,6 @@
 
 package io.stargate.sgv2.jsonapi.config;
 
-import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.CASSANDRA;
-
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
@@ -179,8 +177,9 @@ public interface OperationsConfig {
   interface DatabaseConfig {
 
     /** Database type can be <code>cassandra</code> or <code>astra</code>. */
-    @WithDefault(CASSANDRA)
-    String type();
+    @WithDefault(DatabaseType.Constants.CASSANDRA)
+    @WithConverter(DatabaseType.DatabaseTypeConverter.class)
+    DatabaseType type();
 
     /** Username when connecting to cassandra database (when type is <code>cassandra</code>) */
     @Nullable

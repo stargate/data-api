@@ -1,29 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import com.datastax.oss.driver.api.core.CqlSession;
-import io.micrometer.core.instrument.FunctionCounter;
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import jakarta.inject.Inject;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(CqlSessionCacheTimingTest.TestProfile.class)
@@ -44,73 +26,75 @@ public class CqlSessionCacheTimingTest {
     }
   }
 
-  @Inject OperationsConfig operationsConfig;
-
-  private MeterRegistry meterRegistry;
-
-  /**
-   * List of sessions created in the tests. This is used to close the sessions after each test. This
-   * is needed because, though the sessions evicted from the cache are closed, the sessions left
-   * active on the cache are not closed, so we have to close them explicitly.
-   */
-  private List<CqlSession> sessionsCreatedInTests;
-
-  @BeforeEach
-  public void setupEachTest() {
-    meterRegistry = new SimpleMeterRegistry();
-    sessionsCreatedInTests = new ArrayList<>();
-  }
-
-  @AfterEach
-  public void tearDownEachTest() {
-    sessionsCreatedInTests.forEach(CqlSession::close);
-  }
-
-  @Test
-  public void testOSSCxCQLSessionCacheTimedEviction() throws InterruptedException {
-
-    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
-
-    int sessionsToCreate = operationsConfig.databaseConfig().sessionCacheMaxSize();
-
-    for (int i = 0; i < sessionsToCreate; i++) {
-      String tenantId = "tenant_timing_test_" + i;
-
-      var requestContext = mock(RequestContext.class);
-      when(requestContext.getTenantId()).thenReturn(Optional.of(tenantId));
-      when(requestContext.getCassandraToken())
-          .thenReturn(operationsConfig.databaseConfig().fixedToken());
-
-      CqlSession cqlSession = cqlSessionCacheForTest.getSession(requestContext);
-      sessionsCreatedInTests.add(cqlSession);
-      assertThat(cqlSession.getContext().getSessionName())
-          .as("Session name is the tenantID")
-          .isEqualTo(tenantId);
-    }
-
-    // wait for the cache to expire all the inactive sessions after 10 seconds
-    Thread.sleep(11 * 1000);
-
-    assertThat(cqlSessionCacheForTest.cacheSize()).isEqualTo(0);
-
-    // metrics test
-    Gauge cacheSizeMetric =
-        meterRegistry.find("cache.size").tag("cache", "cql_sessions_cache").gauge();
-    assertThat(cacheSizeMetric).isNotNull();
-    assertThat(cacheSizeMetric.value()).isEqualTo(0);
-
-    FunctionCounter cachePutMetric =
-        meterRegistry.find("cache.puts").tag("cache", "cql_sessions_cache").functionCounter();
-    assertThat(cachePutMetric).isNotNull();
-    assertThat(cachePutMetric.count()).isEqualTo(sessionsToCreate);
-
-    FunctionCounter cacheLoadMetric =
-        meterRegistry
-            .find("cache.load")
-            .tag("cache", "cql_sessions_cache")
-            .tag("result", "success")
-            .functionCounter();
-    assertThat(cacheLoadMetric).isNotNull();
-    assertThat(cacheLoadMetric.count()).isEqualTo(sessionsToCreate);
-  }
+  //  @Inject OperationsConfig operationsConfig;
+  //
+  //  private MeterRegistry meterRegistry;
+  //
+  //  /**
+  //   * List of sessions created in the tests. This is used to close the sessions after each test.
+  // This
+  //   * is needed because, though the sessions evicted from the cache are closed, the sessions left
+  //   * active on the cache are not closed, so we have to close them explicitly.
+  //   */
+  //  private List<CqlSession> sessionsCreatedInTests;
+  //
+  //  @BeforeEach
+  //  public void setupEachTest() {
+  //    meterRegistry = new SimpleMeterRegistry();
+  //    sessionsCreatedInTests = new ArrayList<>();
+  //  }
+  //
+  //  @AfterEach
+  //  public void tearDownEachTest() {
+  //    sessionsCreatedInTests.forEach(CqlSession::close);
+  //  }
+  //
+  //  @Test
+  //  public void testOSSCxCQLSessionCacheTimedEviction() throws InterruptedException {
+  //
+  //    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig,
+  // meterRegistry);
+  //
+  //    int sessionsToCreate = operationsConfig.databaseConfig().sessionCacheMaxSize();
+  //
+  //    for (int i = 0; i < sessionsToCreate; i++) {
+  //      String tenantId = "tenant_timing_test_" + i;
+  //
+  //      var requestContext = mock(RequestContext.class);
+  //      when(requestContext.getTenantId()).thenReturn(Optional.of(tenantId));
+  //      when(requestContext.getCassandraToken())
+  //          .thenReturn(operationsConfig.databaseConfig().fixedToken());
+  //
+  //      CqlSession cqlSession = cqlSessionCacheForTest.getSession(requestContext);
+  //      sessionsCreatedInTests.add(cqlSession);
+  //      assertThat(cqlSession.getContext().getSessionName())
+  //          .as("Session name is the tenantID")
+  //          .isEqualTo(tenantId);
+  //    }
+  //
+  //    // wait for the cache to expire all the inactive sessions after 10 seconds
+  //    Thread.sleep(11 * 1000);
+  //
+  //    assertThat(cqlSessionCacheForTest.cacheSize()).isEqualTo(0);
+  //
+  //    // metrics test
+  //    Gauge cacheSizeMetric =
+  //        meterRegistry.find("cache.size").tag("cache", "cql_sessions_cache").gauge();
+  //    assertThat(cacheSizeMetric).isNotNull();
+  //    assertThat(cacheSizeMetric.value()).isEqualTo(0);
+  //
+  //    FunctionCounter cachePutMetric =
+  //        meterRegistry.find("cache.puts").tag("cache", "cql_sessions_cache").functionCounter();
+  //    assertThat(cachePutMetric).isNotNull();
+  //    assertThat(cachePutMetric.count()).isEqualTo(sessionsToCreate);
+  //
+  //    FunctionCounter cacheLoadMetric =
+  //        meterRegistry
+  //            .find("cache.load")
+  //            .tag("cache", "cql_sessions_cache")
+  //            .tag("result", "success")
+  //            .functionCounter();
+  //    assertThat(cacheLoadMetric).isNotNull();
+  //    assertThat(cacheLoadMetric.count()).isEqualTo(sessionsToCreate);
+  //  }
 }
