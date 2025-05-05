@@ -1,88 +1,120 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
-import com.datastax.oss.driver.api.core.type.DataType;
-import com.datastax.oss.driver.api.core.type.DataTypes;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import com.datastax.oss.driver.api.core.type.*;
+import java.util.*;
+import java.util.function.Predicate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Defines the API data types that are supported by the API. */
 public abstract class ApiDataTypeDefs {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ApiDataTypeDefs.class);
 
   // text types
-  public static final ApiDataTypeDef TEXT =
-      new ApiDataTypeDef(PrimitiveApiDataType.TEXT, DataTypes.TEXT);
+  public static final PrimitiveApiDataTypeDef ASCII =
+      new PrimitiveApiDataTypeDef(ApiTypeName.ASCII, DataTypes.ASCII, ApiSupportDef.Support.FULL);
+
+  public static final PrimitiveApiDataTypeDef TEXT =
+      new PrimitiveApiDataTypeDef(ApiTypeName.TEXT, DataTypes.TEXT, ApiSupportDef.Support.FULL);
 
   // Numeric types
-  public static final ApiDataTypeDef BIGINT =
-      new ApiDataTypeDef(PrimitiveApiDataType.BIGINT, DataTypes.BIGINT);
-  public static final ApiDataTypeDef DECIMAL =
-      new ApiDataTypeDef(PrimitiveApiDataType.DECIMAL, DataTypes.DECIMAL);
-  public static final ApiDataTypeDef DOUBLE =
-      new ApiDataTypeDef(PrimitiveApiDataType.DOUBLE, DataTypes.DOUBLE);
-  public static final ApiDataTypeDef FLOAT =
-      new ApiDataTypeDef(PrimitiveApiDataType.FLOAT, DataTypes.FLOAT);
-  public static final ApiDataTypeDef INT =
-      new ApiDataTypeDef(PrimitiveApiDataType.INT, DataTypes.INT);
-  public static final ApiDataTypeDef SMALLINT =
-      new ApiDataTypeDef(PrimitiveApiDataType.SMALLINT, DataTypes.SMALLINT);
-  public static final ApiDataTypeDef TINYINT =
-      new ApiDataTypeDef(PrimitiveApiDataType.TINYINT, DataTypes.TINYINT);
-  public static final ApiDataTypeDef VARINT =
-      new ApiDataTypeDef(PrimitiveApiDataType.VARINT, DataTypes.VARINT);
+  public static final PrimitiveApiDataTypeDef BIGINT =
+      new PrimitiveApiDataTypeDef(ApiTypeName.BIGINT, DataTypes.BIGINT, ApiSupportDef.Support.FULL);
+  public static final PrimitiveApiDataTypeDef DECIMAL =
+      new PrimitiveApiDataTypeDef(
+          ApiTypeName.DECIMAL, DataTypes.DECIMAL, ApiSupportDef.Support.FULL);
+  public static final PrimitiveApiDataTypeDef DOUBLE =
+      new PrimitiveApiDataTypeDef(ApiTypeName.DOUBLE, DataTypes.DOUBLE, ApiSupportDef.Support.FULL);
+  public static final PrimitiveApiDataTypeDef FLOAT =
+      new PrimitiveApiDataTypeDef(ApiTypeName.FLOAT, DataTypes.FLOAT, ApiSupportDef.Support.FULL);
+  public static final PrimitiveApiDataTypeDef INT =
+      new PrimitiveApiDataTypeDef(ApiTypeName.INT, DataTypes.INT, ApiSupportDef.Support.FULL);
+  public static final PrimitiveApiDataTypeDef SMALLINT =
+      new PrimitiveApiDataTypeDef(
+          ApiTypeName.SMALLINT, DataTypes.SMALLINT, ApiSupportDef.Support.FULL);
+  public static final PrimitiveApiDataTypeDef TINYINT =
+      new PrimitiveApiDataTypeDef(
+          ApiTypeName.TINYINT, DataTypes.TINYINT, ApiSupportDef.Support.FULL);
+  public static final PrimitiveApiDataTypeDef VARINT =
+      new PrimitiveApiDataTypeDef(ApiTypeName.VARINT, DataTypes.VARINT, ApiSupportDef.Support.FULL);
 
-  // Boolean type
-  public static final ApiDataTypeDef BOOLEAN =
-      new ApiDataTypeDef(PrimitiveApiDataType.BOOLEAN, DataTypes.BOOLEAN);
+  // Date and Time types
+  public static final PrimitiveApiDataTypeDef DATE =
+      new PrimitiveApiDataTypeDef(ApiTypeName.DATE, DataTypes.DATE, ApiSupportDef.Support.FULL);
 
-  public static final ApiDataTypeDef BINARY =
-      new ApiDataTypeDef(PrimitiveApiDataType.BINARY, DataTypes.BLOB);
+  public static final PrimitiveApiDataTypeDef DURATION =
+      new PrimitiveApiDataTypeDef(
+          // Does not support duration as map key. But, duration can be map/list/set value
+          ApiTypeName.DURATION,
+          DataTypes.DURATION,
+          new ApiSupportDef.Support(
+              true,
+              new ApiSupportDef.Collection(true, true, false, true),
+              true,
+              true,
+              true,
+              ApiSupportDef.Update.PRIMITIVE));
 
-  public static final ApiDataTypeDef DATE =
-      new ApiDataTypeDef(PrimitiveApiDataType.DATE, DataTypes.DATE);
-  public static final ApiDataTypeDef DURATION =
-      new ApiDataTypeDef(PrimitiveApiDataType.DURATION, DataTypes.DURATION);
+  public static final PrimitiveApiDataTypeDef TIME =
+      new PrimitiveApiDataTypeDef(ApiTypeName.TIME, DataTypes.TIME, ApiSupportDef.Support.FULL);
 
-  public static final ApiDataTypeDef TIME =
-      new ApiDataTypeDef(PrimitiveApiDataType.TIME, DataTypes.TIME);
+  public static final PrimitiveApiDataTypeDef TIMESTAMP =
+      new PrimitiveApiDataTypeDef(
+          ApiTypeName.TIMESTAMP, DataTypes.TIMESTAMP, ApiSupportDef.Support.FULL);
 
-  public static final ApiDataTypeDef TIMESTAMP =
-      new ApiDataTypeDef(PrimitiveApiDataType.TIMESTAMP, DataTypes.TIMESTAMP);
+  // Remaining types
+  public static final PrimitiveApiDataTypeDef BINARY =
+      new PrimitiveApiDataTypeDef(ApiTypeName.BINARY, DataTypes.BLOB, ApiSupportDef.Support.FULL);
 
-  public static final ApiDataTypeDef ASCII =
-      new ApiDataTypeDef(PrimitiveApiDataType.ASCII, DataTypes.ASCII);
+  public static final PrimitiveApiDataTypeDef BOOLEAN =
+      new PrimitiveApiDataTypeDef(
+          ApiTypeName.BOOLEAN, DataTypes.BOOLEAN, ApiSupportDef.Support.FULL);
 
-  public static final ApiDataTypeDef UUID =
-      new ApiDataTypeDef(PrimitiveApiDataType.UUID, DataTypes.UUID);
+  public static final PrimitiveApiDataTypeDef COUNTER =
+      new PrimitiveApiDataTypeDef(
+          ApiTypeName.COUNTER,
+          DataTypes.COUNTER,
+          // Does not support counter as primitive column, list/set value or map key/value.
+          new ApiSupportDef.Support(
+              false,
+              ApiSupportDef.Collection.NONE,
+              false,
+              true,
+              true,
+              ApiSupportDef.Update.PRIMITIVE));
 
-  public static final ApiDataTypeDef TIMEUUID =
-      new ApiDataTypeDef(PrimitiveApiDataType.TIMEUUID, DataTypes.TIMEUUID);
+  public static final PrimitiveApiDataTypeDef INET =
+      new PrimitiveApiDataTypeDef(ApiTypeName.INET, DataTypes.INET, ApiSupportDef.Support.FULL);
 
-  public static final ApiDataTypeDef INET =
-      new ApiDataTypeDef(PrimitiveApiDataType.INET, DataTypes.INET);
+  public static final PrimitiveApiDataTypeDef TIMEUUID =
+      new PrimitiveApiDataTypeDef(
+          ApiTypeName.TIMEUUID,
+          DataTypes.TIMEUUID,
+          // Does not support counter as primitive column, list/set value or map key/value.
+          new ApiSupportDef.Support(
+              false,
+              ApiSupportDef.Collection.NONE,
+              true,
+              true,
+              true,
+              ApiSupportDef.Update.PRIMITIVE));
 
-  // Primitive Types
-  public static final List<ApiDataTypeDef> PRIMITIVE_TYPES =
+  public static final PrimitiveApiDataTypeDef UUID =
+      new PrimitiveApiDataTypeDef(ApiTypeName.UUID, DataTypes.UUID, ApiSupportDef.Support.FULL);
+
+  // Collections use to help lookups, all external access should be through the from() functions
+  // below.
+  static final List<PrimitiveApiDataTypeDef> PRIMITIVE_TYPES =
       List.of(
-          ASCII, BIGINT, BOOLEAN, BINARY, DATE, DECIMAL, DOUBLE, DURATION, FLOAT, INT, SMALLINT,
-          TEXT, TIME, TIMESTAMP, TINYINT, VARINT, INET, UUID, TIMEUUID);
+          ASCII, BIGINT, BOOLEAN, BINARY, COUNTER, DATE, DECIMAL, DOUBLE, DURATION, FLOAT, INT,
+          SMALLINT, TEXT, TIME, TIMESTAMP, TINYINT, VARINT, INET, UUID, TIMEUUID);
 
-  public static final Map<DataType, ApiDataTypeDef> PRIMITIVE_TYPES_BY_CQL_TYPE =
-      PRIMITIVE_TYPES.stream()
-          .collect(Collectors.toMap(ApiDataTypeDef::getCqlType, Function.identity()));
-
-  public static Optional<ApiDataTypeDef> from(DataType dataType) {
-    return Optional.ofNullable(PRIMITIVE_TYPES_BY_CQL_TYPE.get(dataType));
-  }
-
-  // Private to force use of the from() method which returns an Optional
-  private static final Map<ApiDataType, ApiDataTypeDef> CQL_TYPES_BY_PRIMITIVE_TYPE =
-      PRIMITIVE_TYPES.stream()
-          .collect(Collectors.toMap(ApiDataTypeDef::getApiType, Function.identity()));
-
-  public static Optional<ApiDataTypeDef> from(ApiDataType dataType) {
-    return Optional.ofNullable(CQL_TYPES_BY_PRIMITIVE_TYPE.get(dataType));
+  /**
+   * This static method is to filter out all the {@link PrimitiveApiDataTypeDef} that check the
+   * given ApiSupport matcher.
+   */
+  public static List<PrimitiveApiDataTypeDef> filterBySupportToList(
+      Predicate<ApiSupportDef> matcher) {
+    return PRIMITIVE_TYPES.stream().filter(type -> matcher.test(type.apiSupport())).toList();
   }
 }

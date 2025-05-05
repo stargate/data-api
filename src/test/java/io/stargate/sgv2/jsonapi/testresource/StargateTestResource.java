@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -56,7 +58,7 @@ public abstract class StargateTestResource
       boolean reuse = false;
       ImmutableMap.Builder propsBuilder;
       if (this.containerNetworkId.isPresent()) {
-        String networkId = (String) this.containerNetworkId.get();
+        String networkId = this.containerNetworkId.get();
         propsBuilder = this.startWithContainerNetwork(networkId, reuse);
       } else {
         propsBuilder = this.startWithoutContainerNetwork(reuse);
@@ -165,7 +167,7 @@ public abstract class StargateTestResource
 
   private GenericContainer<?> baseCassandraContainer(boolean reuse) {
     String image = this.getCassandraImage();
-    GenericContainer<?> container = null;
+    GenericContainer<?> container;
     if (this.isDse()) {
       container =
           new GenericContainer<>(image)
@@ -185,13 +187,18 @@ public abstract class StargateTestResource
                   MountableFile.forClasspathResource("cassandra.yaml"),
                   "/etc/cassandra/cassandra.yaml");
     }
+    final String JVM_EXTRA_OPTS =
+        "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8"
+            // 18-Mar-2025, tatu: to work around [https://github.com/riptano/cndb/issues/13330],
+            // need to temporarily add this for HCD:
+            + " -Dcassandra.cluster_version_provider.min_stable_duration_ms=-1"
+            // 02-May-2025, tatu: [data-api#2063] force checking of max analyzed text length
+            + " -Dcassandra.sai.validate_max_term_size_at_coordinator=true";
     container
         .withEnv("HEAP_NEWSIZE", "512M")
         .withEnv("MAX_HEAP_SIZE", "2048M")
         .withEnv("CASSANDRA_CGROUP_MEMORY_LIMIT", "true")
-        .withEnv(
-            "JVM_EXTRA_OPTS",
-            "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8")
+        .withEnv("JVM_EXTRA_OPTS", JVM_EXTRA_OPTS)
         .withNetworkAliases(new String[] {"cassandra"})
         .withExposedPorts(new Integer[] {7000, 9042})
         .withLogConsumer(
@@ -269,18 +276,20 @@ public abstract class StargateTestResource
         "testing.containers.cluster-persistence", "persistence-cassandra-4.0");
   }
 
-  protected boolean isDse() {
-    String dse =
-        System.getProperty(
-            "testing.containers.cluster-dse", StargateTestResource.Defaults.CLUSTER_DSE);
+  public static boolean isDse() {
+    String dse = System.getProperty("testing.containers.cluster-dse", null);
     return "true".equals(dse);
   }
 
-  protected boolean isHcd() {
-    String dse =
-        System.getProperty(
-            "testing.containers.cluster-hcd", StargateTestResource.Defaults.CLUSTER_HCD);
+  public static boolean isHcd() {
+    String dse = System.getProperty("testing.containers.cluster-hcd", null);
     return "true".equals(dse);
+  }
+
+  public static boolean isRunningUnderMaven() {
+    // Running under Maven if surefire test class path is set
+    // (note: also set up by Failsafe plugin (integ tests))
+    return System.getProperty("surefire.test.class.path") != null;
   }
 
   /**
@@ -310,14 +319,13 @@ public abstract class StargateTestResource
       HttpRequest request =
           HttpRequest.newBuilder()
               .uri(authUri)
-              .header("Content-Type", "application/json")
+              .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
               .POST(BodyPublishers.ofString(json))
               .build();
       HttpResponse<String> response =
           HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
       ObjectMapper objectMapper = new ObjectMapper();
-      AuthResponse authResponse =
-          (AuthResponse) objectMapper.readValue((String) response.body(), AuthResponse.class);
+      AuthResponse authResponse = objectMapper.readValue(response.body(), AuthResponse.class);
       return authResponse.authToken;
     } catch (Exception var9) {
       throw new RuntimeException("Failed to get Cassandra token for integration tests.", var9);
@@ -334,29 +342,5 @@ public abstract class StargateTestResource
 
   public abstract Long getMaxDocumentSortCount();
 
-  interface Defaults {
-    String CASSANDRA_IMAGE = "cassandra";
-    String CASSANDRA_IMAGE_TAG = "4.0.10";
-    String STARGATE_IMAGE = "stargateio/coordinator-4_0";
-    String STARGATE_IMAGE_TAG = "v2.1";
-    String CLUSTER_NAME = "int-test-cluster";
-    String PERSISTENCE_MODULE = "persistence-cassandra-4.0";
-    String CLUSTER_DSE = null;
-
-    String CLUSTER_HCD = null;
-
-    String CQL_HOST = "stargate";
-    long CASSANDRA_STARTUP_TIMEOUT = 2L;
-    long COORDINATOR_STARTUP_TIMEOUT = 3L;
-  }
-
-  static record AuthResponse(String authToken) {
-    AuthResponse(String authToken) {
-      this.authToken = authToken;
-    }
-
-    public String authToken() {
-      return this.authToken;
-    }
-  }
+  record AuthResponse(String authToken) {}
 }

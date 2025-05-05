@@ -42,6 +42,11 @@ public class ResponseAssertions {
         "responseIsErrorWithStatus", Presence.FORBIDDEN, Presence.REQUIRED, Presence.REQUIRED);
   }
 
+  public static TypeSafeMatcher<Map<String, ?>> responseIsErrorWithOptionalStatus() {
+    return envelopeChecker(
+        "responseIsErrorWithStatus", Presence.FORBIDDEN, Presence.OPTIONAL, Presence.REQUIRED);
+  }
+
   public static TypeSafeMatcher<Map<String, ?>> responseIsWriteSuccess() {
     return envelopeChecker(
         "responseIsWriteSuccess", Presence.FORBIDDEN, Presence.REQUIRED, Presence.FORBIDDEN);
@@ -55,6 +60,21 @@ public class ResponseAssertions {
   public static TypeSafeMatcher<Map<String, ?>> responseIsDDLSuccess() {
     return envelopeChecker(
         "responseIsDDLSuccess", Presence.FORBIDDEN, Presence.REQUIRED, Presence.FORBIDDEN);
+  }
+
+  // A countCommand success should only have status field required
+  public static TypeSafeMatcher<Map<String, ?>> responseIsCountSuccess() {
+    return envelopeChecker(
+        "responseIsCountSuccess", Presence.FORBIDDEN, Presence.REQUIRED, Presence.FORBIDDEN);
+  }
+
+  // A FindRerankingProviders/FindEmbeddingProviders success should only have status field required
+  public static TypeSafeMatcher<Map<String, ?>> responseIsFindProvidersSuccess() {
+    return envelopeChecker(
+        "responseIsFindProvidersSuccess",
+        Presence.FORBIDDEN,
+        Presence.REQUIRED,
+        Presence.FORBIDDEN);
   }
 
   private static TypeSafeMatcher<Map<String, ?>> envelopeChecker(

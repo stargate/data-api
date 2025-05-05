@@ -38,7 +38,7 @@ public class EmbeddingProvidersConfigProducer {
     // defaultEmbeddingProviderConfig is what we mapped from embedding-providers-config.yaml
     // and will be used if embedding-gateway is not enabled
     if (!operationsConfig.enableEmbeddingGateway()) {
-      LOG.info("embedding gateway disabled, use default config");
+      LOG.info("embedding gateway disabled, use default embedding config");
       return defaultConfig;
     }
     LOG.info("embedding gateway enabled, fetch supported providers from embedding gateway");
@@ -63,7 +63,7 @@ public class EmbeddingProvidersConfigProducer {
       EmbeddingProvidersConfig.CustomConfig customConfig) {
     Map<String, EmbeddingProvidersConfig.EmbeddingProviderConfig> providerMap = new HashMap<>();
 
-    // traverse ProviderConfig in Grpc GetSupportedProvidersResponse
+    // traverse EmbeddingProvidersConfig in Grpc GetSupportedProvidersResponse
     for (Map.Entry<String, EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig> entry :
         getSupportedProvidersResponse.getSupportedProvidersMap().entrySet()) {
 
@@ -136,7 +136,7 @@ public class EmbeddingProvidersConfigProducer {
           new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
               grpcProviderConfigProperties);
 
-      // construct providerConfig
+      // construct EmbeddingProvidersConfig
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig =
           new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
               grpcProviderConfig.getDisplayName(),

@@ -5,6 +5,7 @@ import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.update.Update;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
+import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
 import java.util.List;
@@ -44,9 +45,10 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
    * @param dbLogicalExpression
    * @return
    */
-  public static TableWhereCQLClause<Select> forSelect(
-      TableSchemaObject table, DBLogicalExpression dbLogicalExpression) {
-    return new TableWhereCQLClause<>(table, dbLogicalExpression);
+  public static WithWarnings<TableWhereCQLClause<Select>> forSelect(
+      TableSchemaObject table, WithWarnings<DBLogicalExpression> dbLogicalExpression) {
+    return WithWarnings.of(
+        new TableWhereCQLClause<>(table, dbLogicalExpression.target()), dbLogicalExpression);
   }
 
   /**
@@ -58,9 +60,10 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
    * @param dbLogicalExpression
    * @return
    */
-  public static TableWhereCQLClause<Update> forUpdate(
-      TableSchemaObject table, DBLogicalExpression dbLogicalExpression) {
-    return new TableWhereCQLClause<>(table, dbLogicalExpression);
+  public static WithWarnings<TableWhereCQLClause<Update>> forUpdate(
+      TableSchemaObject table, WithWarnings<DBLogicalExpression> dbLogicalExpression) {
+    return WithWarnings.of(
+        new TableWhereCQLClause<>(table, dbLogicalExpression.target()), dbLogicalExpression);
   }
 
   /**
@@ -94,5 +97,30 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
       tOngoingWhereClause = tableFilter.apply(tableSchemaObject, tOngoingWhereClause, objects);
     }
     return tOngoingWhereClause;
+  }
+
+  @Override
+  public boolean selectsSinglePartition(TableSchemaObject tableSchemaObject) {
+
+    var apiTableDef =
+        Objects.requireNonNull(tableSchemaObject, "tableSchemaObject must not be null")
+            .apiTableDef();
+
+    final boolean[] isMatched = {false};
+    for (var apiColumnDef : apiTableDef.partitionKeys().values()) {
+      isMatched[0] = false;
+      dbLogicalExpression.visitAllFilters(
+          TableFilter.class,
+          tableFilter ->
+              isMatched[0] =
+                  isMatched[0]
+                      || tableFilter.isFor(apiColumnDef.name())
+                          && tableFilter.filterIsExactMatch());
+      // we only need to find one partition column that does not have an exact match filter on it
+      if (!isMatched[0]) {
+        return false;
+      }
+    }
+    return true;
   }
 }

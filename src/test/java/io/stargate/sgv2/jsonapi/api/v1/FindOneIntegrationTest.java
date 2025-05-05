@@ -1,13 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -84,75 +82,37 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     @Test
     @Order(-1) // executed before insert
     public void noFilterNoDocuments() {
-      String json =
-          """
-          {
-            "findOne": {
-            }
-          }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors("{\"findOne\": { } }")
           .body("$", responseIsFindSuccess())
           .body("data.document", is(nullValue()));
     }
 
     @Test
     public void noFilter() {
-      String json =
-          """
-          {
-            "findOne": {
-            }
-          }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors("{\"findOne\": { } }")
           .body("$", responseIsFindSuccess())
+          // Test run after documents inserted
           .body("data.document", is(not(nullValue())));
     }
 
     @Test
     public void emptyOptionsAllowed() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "options": {}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.document", is(not(nullValue())));
     }
 
     @Test
     public void includeSortVectorOptionsAllowed() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
               {
                 "findOne": {
                   "options": {
@@ -160,16 +120,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
                   }
                 }
               }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+              """)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", is(not(nullValue())))
           .body("status.sortVector", nullValue());
@@ -177,56 +128,35 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
 
     @Test
     public void noFilterSortAscending() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "sort" : {"username" : 1}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC4_JSON)); // missing value is the lowest precedence
     }
 
     @Test
     public void noFilterSortDescending() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "sort" : {"username" : -1 }
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC5_JSON)); // missing value is the lowest precedence
     }
 
     @Test
     public void byId() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
           {
             "findOne": {
@@ -234,10 +164,6 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
             }
           }
           """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC1_JSON));
     }
@@ -245,10 +171,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     // https://github.com/stargate/jsonapi/issues/572 -- is passing empty Object for "sort" ok?
     @Test
     public void byIdEmptySort() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                 {
                   "findOne": {
@@ -257,101 +180,65 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
                   }
                 }
                 """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC1_JSON));
     }
 
     @Test
     public void byIdNotFound() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"_id" : "none"}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.document", is(nullValue()));
     }
 
     @Test
     public void inCondition() {
-      String json =
-          """
-        {
-          "findOne": {
-            "filter" : {"_id" : {"$in": ["doc5", "doc4"]}}
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+          {
+            "findOne": {
+              "filter" : {"_id" : {"$in": ["doc5", "doc4"]}}
+            }
           }
-        }
-        """;
-      // findOne resolves any one of the resolved documents. So the order of the documents in the
-      // $in clause is not guaranteed.
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
+          // findOne resolves any one of the resolved documents. So the order of the documents in
+          // the
+          // $in clause is not guaranteed.
           .body("$", responseIsFindSuccess())
           .body("data.document", anyOf(jsonEquals(DOC5_JSON), jsonEquals(DOC4_JSON)));
     }
 
     @Test
     public void inConditionEmptyArray() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
         {
           "findOne": {
             "filter" : {"_id" : {"$in": []}}
           }
         }
-            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+            """)
           .body("$", responseIsFindSuccess())
           .body("data.document", is(nullValue()));
     }
 
     @Test
     public void inConditionNonArrayArray() {
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
         {
           "findOne": {
             "filter" : {"_id" : {"$in": true}}
           }
         }
-        """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+        """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -361,22 +248,14 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
 
     @Test
     public void ninConditionNonArrayArray() {
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
             {
               "findOne": {
                 "filter" : {"_id" : {"$nin": false}}
               }
             }
-            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+            """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -386,138 +265,85 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
 
     @Test
     public void inConditionNonIdField() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
         {
           "findOne": {
             "filter" : {"non_id" : {"$in": ["a", "b", "c"]}}
           }
         }
-        """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+        """)
           .body("$", responseIsFindSuccess());
     }
 
     @Test
     public void byColumn() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"username" : "user1"}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC1_JSON));
     }
 
     @Test
     public void byColumnMissing() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"nickname" : "user1"}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.document", is(nullValue()));
     }
 
     @Test
     public void byColumnNotMatching() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"username" : "batman"}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.document", is(nullValue()));
     }
 
     @Test
     public void withExistsOperatorSortAsc() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"username" : {"$exists" : true}},
               "sort" : {"username" : 1 }
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC1_JSON));
     }
 
     @Test
     public void withExistsOperatorSortDesc() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"username" : {"$exists" : true}},
               "sort" : {"username" : -1}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           // post sorting by sort id , it uses document id by default.
           .body("data.document", jsonEquals(DOC5_JSON));
@@ -525,138 +351,84 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
 
     @Test
     public void withExistsOperator() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"active_user" : {"$exists" : true}}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC1_JSON));
     }
 
     @Test
     public void withExistsOperatorFalse() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"active_user" : {"$exists" : false}}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.document", is(not(nullValue())));
     }
 
     @Test
     public void withExistsNotMatching() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"power_rating" : {"$exists" : true}}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.document", is(nullValue()));
     }
 
     @Test
     public void withAllOperatorMissing() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"tags-and-button" : {"$all" : ["tag1", "tag2"]}}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.document", is(nullValue()));
     }
 
     @Test
     public void withAllOperatorNotMatching() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"tags" : {"$all" : ["tag1", "tag2", "tag-not-there"]}}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.document", is(nullValue()));
     }
 
     @Test
     public void withAllOperatorNotArray() {
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
           {
             "findOne": {
               "filter" : {"tags" : {"$all" : 1}}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -666,69 +438,42 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
 
     @Test
     public void withSizeOperator() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"tags" : {"$size" : 6}}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC3_JSON));
     }
 
     @Test
     public void withSizeOperatorNotMatching() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"tags" : {"$size" : 78}}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.document", is(nullValue()));
     }
 
     @Test
     public void withSizeOperatorNotNumber() {
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
           {
             "findOne": {
               "filter" : {"tags" : {"$size" : true}}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -822,14 +567,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
               .formatted(OBJECTID_ID1, UUID_X);
 
       // We should only match one of ids so ordering won't matter
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(request)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(request)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC1));
     }
@@ -851,14 +589,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
               .formatted(OBJECTID_X, UUID_ID1);
 
       // We should only match one of ids so ordering won't matter
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(request)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(request)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC2));
     }
@@ -880,14 +611,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
               .formatted(OBJECTID_ID1, OBJECTID_LEAF);
 
       // We should only match one of ids so ordering won't matter
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(request)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(request)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC3));
     }
@@ -909,14 +633,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
               .formatted(UUID_LEAF, UUID_X);
 
       // We should only match one of ids so ordering won't matter
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(request)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(request)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(DOC4));
     }
@@ -925,13 +642,145 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
   @Nested
   @Order(3)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class FindOneFilterWithDottedPaths {
+    private final String DOC1 =
+        """
+                    {
+                      "_id": "dotted1",
+                      "app.kubernetes.io/name": "dotted1",
+                      "pricing": {
+                        "price.usd": 25.5,
+                        "price&.aud": 10.5,
+                        "currency": "USD"
+                      }
+                    }
+                    """;
+
+    private final String DOC2 =
+        """
+                    {
+                      "_id": "dotted2",
+                      "app.kubernetes.io/name": "dotted2",
+                      "pricing.price.usd": 12.5,
+                      "pricing&price&aud": 25.5,
+                      "pricing.currency": "USD"
+                    }
+                    """;
+
+    @Test
+    @Order(1)
+    public void setUp() {
+      insertDoc(DOC1);
+      insertDoc(DOC2);
+    }
+
+    @Test
+    public void byDottedFieldSimpleEq() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+          {
+            "findOne": {
+              "filter" : {"pricing.price&.usd" : 25.5}
+            }
+          }
+          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+    }
+
+    @Test
+    public void byDottedFieldSimpleEqWithoutEscape() {
+      // should find nothing if the document is not correctly escaped
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+            {
+                "findOne": {
+                "filter" : {"pricing.price.usd" : 25.5}
+                }
+            }
+            """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", is(nullValue()));
+    }
+
+    @Test
+    public void byDottedFieldTwoEqs() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+          {
+            "findOne": {
+              "filter": {
+                "pricing&.currency": {"$eq": "USD"},
+                "app&.kubernetes&.io/name": {"$eq": "dotted2"}
+              }
+            }
+          }
+          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC2));
+    }
+
+    @Test
+    public void byDottedFieldTwoEqsWithoutEscape() {
+      // should find nothing if the document is not correctly escaped
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+          {
+            "findOne": {
+              "filter": {
+                "pricing.currency": {"$eq": "USD"},
+                "app.kubernetes.io/name": {"$eq": "dotted2"}
+              }
+            }
+          }
+          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", is(nullValue()));
+    }
+
+    @Test
+    public void byDottedFieldComplexEscapeEq() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+              {
+                "findOne": {
+                  "filter" : {"pricing.price&&&.aud" : 10.5}
+                }
+              }
+              """)
+          .body("$", responseIsFindSuccess())
+          .body("data.document", jsonEquals(DOC1));
+    }
+
+    @Test
+    public void failWithInvalidEscape() {
+      // assume the user forgot to escape the ampersand
+      givenHeadersPostJsonThenOk(
+              """
+              {
+                "findOne": {
+                  "filter" : {"pricing&price&aud" : 25.5}
+                }
+              }
+              """)
+          .body("$", responseIsError())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Invalid filter expression: filter clause path ('pricing&price&aud') is not a valid path."));
+    }
+  }
+
+  @Nested
+  @Order(4)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FindOneFail {
     @Test
     public void failForMissingCollection() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"findOne\": { \"filter\" : {\"_id\": \"doc1\"}}}")
+      givenHeadersAndJson("{ \"findOne\": { \"filter\" : {\"_id\": \"doc1\"}}}")
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, "no_such_collection")
           .then()
@@ -946,35 +795,8 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     }
 
     @Test
-    public void failForInvalidCollectionName() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"findOne\": { \"filter\" : {\"_id\": \"doc1\"}}}")
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, "table,rate=100")
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Request invalid: field 'collection' value \"table,rate=100\" not valid. Problem:"));
-    }
-
-    @Test
     public void failForInvalidJsonExtension() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"findOne\": { \"filter\" : {\"_id\": {\"$guid\": \"doc1\"}}}}")
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk("{ \"findOne\": { \"filter\" : {\"_id\": {\"$guid\": \"doc1\"}}}}")
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("UNSUPPORTED_FILTER_OPERATION"))
@@ -984,14 +806,8 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
 
     @Test
     public void failForInvalidUUIDAsId() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"findOne\": { \"filter\" : {\"_id\": {\"$uuid\": \"not-an-uuid\"}}}}")
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(
+              "{ \"findOne\": { \"filter\" : {\"_id\": {\"$uuid\": \"not-an-uuid\"}}}}")
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
@@ -1004,14 +820,8 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
 
     @Test
     public void failForInvalidObjectIdAsId() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("{ \"findOne\": { \"filter\" : {\"_id\": {\"$objectId\": \"bogus\"}}}}")
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(
+              "{ \"findOne\": { \"filter\" : {\"_id\": {\"$objectId\": \"bogus\"}}}}")
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
@@ -1020,6 +830,24 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
               "errors[0].message",
               containsString(
                   "Bad JSON Extension value: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"bogus\")"));
+    }
+
+    // [data-api#1902] - $lexical not allowed in filter
+    @Test
+    public void failForFilteringOnLexical() {
+      for (String filter :
+          new String[] {
+            "{\"$lexical\": \"quick brown fox\"}", "{\"$lexical\": {\"eq\": \"quick brown fox\"}}"
+          }) {
+        givenHeadersPostJsonThenOk("{ \"findOne\": { \"filter\" : %s}}".formatted(filter))
+            .body("$", responseIsError())
+            .body("errors", hasSize(1))
+            .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+            .body(
+                "errors[0].message",
+                containsString(
+                    "Cannot filter on lexical content field '$lexical': only 'sort' clause supported"));
+      }
     }
   }
 

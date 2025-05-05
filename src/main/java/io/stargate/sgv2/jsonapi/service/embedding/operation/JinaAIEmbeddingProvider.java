@@ -1,16 +1,22 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProviderErrorMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -30,10 +36,15 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
   public JinaAIEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
+    super(
+        requestProperties,
+        baseUrl,
+        model,
+        acceptsJinaAIDimensions(model.name()) ? dimension : 0,
+        vectorizeServiceParameters);
 
     jinaAIEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()
@@ -46,14 +57,14 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
   public interface JinaAIEmbeddingProviderClient {
     @POST
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
+      return EmbeddingProviderErrorMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -76,9 +87,8 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
       // Get the whole response body
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
-      logger.info(
-          String.format(
-              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
+      logger.error(
+          "Error response from embedding provider '{}': {}", providerId, rootNode.toString());
       // Extract the "detail" node
       JsonNode detailNode = rootNode.path("detail");
       return detailNode.isMissingNode() ? rootNode.toString() : detailNode.toString();
@@ -86,11 +96,19 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
   }
 
   // By default, Jina Text Encoding Format is float
-  private record EmbeddingRequest(List<String> input, String model) {}
+  private record EmbeddingRequest(
+      List<String> input,
+      String model,
+      @JsonInclude(value = JsonInclude.Include.NON_DEFAULT) int dimensions,
+      @JsonInclude(value = JsonInclude.Include.NON_NULL) String task,
+      @JsonInclude(value = JsonInclude.Include.NON_NULL) Boolean late_chunking) {}
 
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
   private record EmbeddingResponse(String object, Data[] data, String model, Usage usage) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record Data(String object, int index, float[] embedding) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record Usage(int prompt_tokens, int total_tokens) {}
   }
 
@@ -100,14 +118,23 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+    // Check if using an EOF model
+    checkEOLModelUsage();
     checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
 
-    EmbeddingRequest request = new EmbeddingRequest(texts, modelName);
+    EmbeddingRequest request =
+        new EmbeddingRequest(
+            texts,
+            model.name(),
+            dimension,
+            (String) vectorizeServiceParameters.get("task"),
+            (Boolean) vectorizeServiceParameters.get("late_chunking"));
 
     Uni<EmbeddingResponse> response =
         applyRetry(
             jinaAIEmbeddingProviderClient.embed(
-                "Bearer " + embeddingCredentials.apiKey().get(), request));
+                HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get(),
+                request));
 
     return response
         .onItem()

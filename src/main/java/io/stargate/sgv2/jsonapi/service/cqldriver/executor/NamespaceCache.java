@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -40,7 +40,7 @@ public class NamespaceCache {
   }
 
   protected Uni<SchemaObject> getSchemaObject(
-      DataApiRequestInfo dataApiRequestInfo, String collectionName, boolean forceRefresh) {
+      RequestContext requestContext, String collectionName, boolean forceRefresh) {
 
     // TODO: why is this not using the loader pattern ?
     SchemaObject schemaObject = null;
@@ -50,7 +50,7 @@ public class NamespaceCache {
     if (null != schemaObject) {
       return Uni.createFrom().item(schemaObject);
     } else {
-      return loadSchemaObject(dataApiRequestInfo, collectionName)
+      return loadSchemaObject(requestContext, collectionName)
           .onItemOrFailure()
           .transformToUni(
               (result, error) -> {
@@ -84,11 +84,10 @@ public class NamespaceCache {
     }
   }
 
-  private Uni<SchemaObject> loadSchemaObject(
-      DataApiRequestInfo dataApiRequestInfo, String collectionName) {
+  private Uni<SchemaObject> loadSchemaObject(RequestContext requestContext, String collectionName) {
 
     return queryExecutor
-        .getSchema(dataApiRequestInfo, namespace, collectionName)
+        .getSchema(requestContext, namespace, collectionName)
         .onItem()
         .transform(
             optionalTable -> {
@@ -98,7 +97,7 @@ public class NamespaceCache {
                   optionalTable.orElseThrow(
                       () -> ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
 
-              // check if its a valid json api table
+              // check if its a valid json API Table
               // TODO: re-use the table matcher this is on the request hot path
               if (new CollectionTableMatcher().test(table)) {
                 return CollectionSchemaObject.getCollectionSettings(

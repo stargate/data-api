@@ -1,22 +1,22 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
-
-import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
-import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 
-public class TableDriverExceptionHandler extends DefaultDriverExceptionHandler<TableSchemaObject> {
+/**
+ * Subclass of {@link DefaultDriverExceptionHandler} for working with {@link TableSchemaObject}.
+ *
+ * <p>The class may be used directly when working with a Table and there are no specific exception
+ * handling for the command, or it may be subclassed by exception handlers for a command that have
+ * specific exception handling such as for {@link CreateIndexExceptionHandler}
+ */
+public class TableDriverExceptionHandler
+    extends DefaultDriverExceptionHandler<TableBasedSchemaObject> {
 
-  @Override
-  public RuntimeException handle(TableSchemaObject schemaObject, WriteTimeoutException exception) {
-    return DatabaseException.Code.TABLE_WRITE_TIMEOUT.get(
-        errVars(
-            schemaObject,
-            m -> {
-              m.put("blockFor", String.valueOf(exception.getBlockFor()));
-              m.put("received", String.valueOf(exception.getReceived()));
-            }));
+  public TableDriverExceptionHandler(
+      TableBasedSchemaObject schemaObject, SimpleStatement statement) {
+    super(schemaObject, statement);
   }
 }

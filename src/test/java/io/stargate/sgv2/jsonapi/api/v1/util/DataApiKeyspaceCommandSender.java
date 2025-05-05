@@ -1,16 +1,18 @@
 package io.stargate.sgv2.jsonapi.api.v1.util;
 
 import io.restassured.specification.RequestSpecification;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource;
 
 public class DataApiKeyspaceCommandSender
     extends DataApiCommandSenderBase<DataApiKeyspaceCommandSender> {
 
+  private final String keyspace;
+
   private KeyspaceTemplates keyspaceTemplates;
 
   protected DataApiKeyspaceCommandSender(String keyspace) {
-    super(keyspace);
+    this.keyspace = keyspace;
     this.keyspaceTemplates = new KeyspaceTemplates(this);
   }
 
@@ -27,15 +29,19 @@ public class DataApiKeyspaceCommandSender
   // ===================================================================================================================
 
   public DataApiResponseValidator postCreateTable(String jsonClause) {
-    return postCommand(Command.CommandName.CREATE_TABLE, jsonClause);
+    return postCommand(CommandName.CREATE_TABLE, jsonClause);
   }
 
   public DataApiResponseValidator postDropTable(String jsonClause) {
-    return postCommand(Command.CommandName.DROP_TABLE, jsonClause);
+    return postCommand(CommandName.DROP_TABLE, jsonClause);
+  }
+
+  public DataApiResponseValidator postDropIndex(String jsonClause) {
+    return postCommand(CommandName.DROP_INDEX, jsonClause);
   }
 
   public DataApiResponseValidator postListTables(String jsonClause) {
-    return postCommand(Command.CommandName.LIST_TABLES, jsonClause);
+    return postCommand(CommandName.LIST_TABLES, jsonClause);
   }
 
   // ===================================================================================================================
@@ -43,6 +49,6 @@ public class DataApiKeyspaceCommandSender
   // ===================================================================================================================
 
   public DataApiResponseValidator postCreateCollection(String jsonClause) {
-    return postCommand(Command.CommandName.CREATE_COLLECTION, jsonClause);
+    return postCommand(CommandName.CREATE_COLLECTION, jsonClause);
   }
 }

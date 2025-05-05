@@ -3,12 +3,12 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -17,14 +17,11 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     description =
         "Command that creates a namespace. This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead.",
     deprecated = true)
-@JsonTypeName("createNamespace")
+@JsonTypeName(CommandName.Names.CREATE_NAMESPACE)
 public record CreateNamespaceCommand(
-    @NotNull
-        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-        @Size(min = 1, max = 48)
-        @Schema(
+    @Schema(
             description =
-                "Name of the namespace. This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead.",
+                "Required name of the new Keyspace. This command has been deprecated and will be removed in future releases, use createKeyspace instead.",
             deprecated = true)
         String name,
     @Nullable @Valid CreateNamespaceCommand.Options options)

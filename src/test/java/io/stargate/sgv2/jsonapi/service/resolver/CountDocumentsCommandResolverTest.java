@@ -9,7 +9,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CountCollectionOperation;
@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollect
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -29,12 +30,18 @@ class CountDocumentsCommandResolverTest {
   @Inject CountDocumentsCommandResolver resolver;
 
   @Inject OperationsConfig operationsConfig;
-  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
+  @InjectMock protected RequestContext dataApiRequestInfo;
+  private TestConstants testConstants = new TestConstants();
+
+  CommandContext<CollectionSchemaObject> commandContext;
+
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.collectionContext();
+  }
 
   @Nested
   class ResolveCommand {
-
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void noFilter() throws Exception {

@@ -10,6 +10,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
+import io.stargate.sgv2.jsonapi.util.Base64Util;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,50 @@ class SortClauseDeserializerTest {
     }
 
     @Test
+    public void happyPathWithUnusualChars() throws Exception {
+      String json =
+          """
+              {
+               "app.kubernetes.io/name" : 1,
+               "another.odd$path" : -1
+              }
+              """;
+
+      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions())
+          .hasSize(2)
+          .contains(
+              SortExpression.sort("app.kubernetes.io/name", true),
+              SortExpression.sort("another.odd$path", false));
+    }
+
+    @Test
+    public void happyPathWithEscapedChars() throws Exception {
+      // should have the escape character in the expression
+      String json =
+          """
+              {
+               "app&.kubernetes&.io/name" : 1,
+               "another&.odd&&path" : -1
+              }
+              """;
+
+      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions())
+          .hasSize(2)
+          .containsExactlyInAnyOrder(
+              SortExpression.sort("app&.kubernetes&.io/name", true),
+              SortExpression.sort("another&.odd&&path", false))
+          .doesNotContainSequence(
+              SortExpression.sort("app.kubernetes.io/name", true),
+              SortExpression.sort("another.odd&path", false));
+    }
+
+    @Test
     public void happyPathVectorSearch() throws Exception {
       String json =
           """
@@ -56,6 +102,50 @@ class SortClauseDeserializerTest {
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions()).hasSize(1);
       assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("$vector");
+      assertThat(sortClause.sortExpressions().get(0).vector())
+          .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
+    }
+
+    @Test
+    public void vectorSearchBinaryObject() throws Exception {
+      String vectorString =
+          Base64Util.encodeAsMimeBase64(
+              CqlVectorUtil.floatsToBytes(new float[] {0.11f, 0.22f, 0.33f}));
+      String json =
+              """
+            {
+             "$vector" : { "$binary" : "%s"}
+            }
+            """
+              .formatted(vectorString);
+
+      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions()).hasSize(1);
+      assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("$vector");
+      assertThat(sortClause.sortExpressions().get(0).vector())
+          .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
+    }
+
+    @Test
+    public void binaryVectorSearchTableColumn() throws Exception {
+      String vectorString =
+          Base64Util.encodeAsMimeBase64(
+              CqlVectorUtil.floatsToBytes(new float[] {0.11f, 0.22f, 0.33f}));
+      String json =
+              """
+            {
+             "test" : { "$binary" : "%s"}
+            }
+            """
+              .formatted(vectorString);
+
+      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.sortExpressions()).hasSize(1);
+      assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("test");
       assertThat(sortClause.sortExpressions().get(0).vector())
           .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
     }
@@ -102,9 +192,12 @@ class SortClauseDeserializerTest {
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable.getMessage()).contains("$vector value needs to be array of numbers");
+      assertThat(throwable.getMessage())
+          .contains(
+              "Invalid sort clause value: Only binary vector object values is supported for sorting. Path: $vector, Value: {}.");
     }
 
+    @Test
     public void vectorSearchInvalidData() {
       String json =
           """
@@ -116,9 +209,10 @@ class SortClauseDeserializerTest {
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
-      assertThat(throwable.getMessage()).contains("$vector search needs to be array of numbers");
+      assertThat(throwable.getMessage()).contains("$vector value needs to be array of numbers");
     }
 
+    @Test
     public void vectorSearchInvalidSortClause() {
       String json =
           """
@@ -181,7 +275,8 @@ class SortClauseDeserializerTest {
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage())
-          .contains("$vectorize search clause needs to be non-blank text value");
+          .contains(
+              "Invalid sort clause value: Only binary vector object values is supported for sorting. Path: $vectorize, Value: {}.");
     }
 
     @Test
@@ -254,18 +349,6 @@ class SortClauseDeserializerTest {
     }
 
     @Test
-    public void mustBeCorrectContainerNode() {
-      String json =
-          """
-                    {"path": "value"}
-                    """;
-
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
-
-      assertThat(throwable).isInstanceOf(JsonApiException.class);
-    }
-
-    @Test
     public void mustNotContainBlankString() {
       String json =
           """
@@ -290,7 +373,7 @@ class SortClauseDeserializerTest {
     }
 
     @Test
-    public void invalidPathName() {
+    public void invalidPathNameOperator() {
       String json =
           """
               {"$gt": 1}
@@ -298,6 +381,57 @@ class SortClauseDeserializerTest {
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable)
+          .hasMessageContaining("Invalid sort clause path: path ('$gt') cannot start with '$'");
+    }
+
+    // [data-api#1967] - Not allowed to use "$hybrid"; either with 1/-1 or with String
+    @Test
+    public void invalidPathNameHybridWithNumber() {
+      // First test with regular 1/-1 value
+      Throwable t =
+          catchThrowable(
+              () ->
+                  objectMapper.readValue(
+                      """
+                          {"$hybrid": 1}
+                      """,
+                      SortClause.class));
+
+      assertThat(t).isInstanceOf(JsonApiException.class);
+      assertThat(t)
+          .hasMessageContaining("Invalid sort clause path: path ('$hybrid') cannot start with '$'");
+    }
+
+    // [data-api#1967] - Not allowed to use "$hybrid"; either with 1/-1 or with String
+    @Test
+    public void invalidPathNameHybridWithString() {
+      Throwable t =
+          catchThrowable(
+              () ->
+                  objectMapper.readValue(
+                      """
+                  {"$hybrid": "tokens are tasty"}
+              """,
+                      SortClause.class));
+
+      assertThat(t).isInstanceOf(JsonApiException.class);
+      assertThat(t)
+          .hasMessageContaining("Invalid sort clause path: path ('$hybrid') cannot start with '$'");
+    }
+
+    @Test
+    public void invalidEscapeUsage() {
+      String json =
+          """
+          {"a&b": 1}
+          """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
+      assertThat(throwable)
+          .hasMessageContaining(
+              "Invalid sort clause path: sort clause path ('a&b') is not a valid path.");
     }
   }
 }

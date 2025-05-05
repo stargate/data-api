@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -20,7 +19,6 @@ public class CountDocumentsCommandResolver implements CommandResolver<CountDocum
 
   private final OperationsConfig operationsConfig;
   private final MeterRegistry meterRegistry;
-  private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final CollectionFilterResolver<CountDocumentsCommand> collectionFilterResolver;
@@ -29,12 +27,10 @@ public class CountDocumentsCommandResolver implements CommandResolver<CountDocum
   public CountDocumentsCommandResolver(
       OperationsConfig operationsConfig,
       MeterRegistry meterRegistry,
-      DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
     super();
     this.operationsConfig = operationsConfig;
     this.meterRegistry = meterRegistry;
-    this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
@@ -46,19 +42,21 @@ public class CountDocumentsCommandResolver implements CommandResolver<CountDocum
   }
 
   @Override
-  public Operation resolveCollectionCommand(
-      CommandContext<CollectionSchemaObject> ctx, CountDocumentsCommand command) {
-    DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> commandContext, CountDocumentsCommand command) {
+
+    DBLogicalExpression dbLogicalExpression =
+        collectionFilterResolver.resolve(commandContext, command).target();
     addToMetrics(
         meterRegistry,
-        dataApiRequestInfo,
+        commandContext.requestContext(),
         jsonApiMetricsConfig,
         command,
         dbLogicalExpression,
-        ctx.schemaObject().newIndexUsage());
+        commandContext.schemaObject().newIndexUsage());
 
     return new CountCollectionOperation(
-        ctx,
+        commandContext,
         dbLogicalExpression,
         operationsConfig.defaultCountPageSize(),
         operationsConfig.maxCountLimit());

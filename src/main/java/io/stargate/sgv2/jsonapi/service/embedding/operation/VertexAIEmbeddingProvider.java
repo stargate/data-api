@@ -1,19 +1,24 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProviderErrorMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -31,10 +36,10 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
   public VertexAIEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
       Map<String, Object> serviceParameters) {
-    super(requestProperties, baseUrl, modelName, dimension, serviceParameters);
+    super(requestProperties, baseUrl, model, dimension, serviceParameters);
 
     String actualUrl = replaceParameters(baseUrl, serviceParameters);
     vertexAIEmbeddingProviderClient =
@@ -49,7 +54,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
   public interface VertexAIEmbeddingProviderClient {
     @POST
     @Path("/{modelId}:predict")
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken,
         @PathParam("modelId") String modelId,
@@ -58,7 +63,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
+      return EmbeddingProviderErrorMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -76,9 +81,8 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
       // Get the whole response body
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
-      logger.info(
-          String.format(
-              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
+      logger.error(
+          "Error response from embedding provider '{}': {}", providerId, rootNode.toString());
       return rootNode.toString();
     }
   }
@@ -87,6 +91,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
     public record Content(String content) {}
   }
 
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
   private static class EmbeddingResponse {
     public EmbeddingResponse() {}
 
@@ -110,6 +115,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
       this.metadata = metadata;
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     protected static class Prediction {
       public Prediction() {}
 
@@ -123,6 +129,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
         this.embeddings = embeddings;
       }
 
+      @JsonIgnoreProperties(ignoreUnknown = true)
       protected static class Embeddings {
         public Embeddings() {}
 
@@ -155,6 +162,8 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+    // Check if using an EOF model
+    checkEOLModelUsage();
     checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
     EmbeddingRequest request =
         new EmbeddingRequest(texts.stream().map(t -> new EmbeddingRequest.Content(t)).toList());
@@ -162,7 +171,9 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
     Uni<EmbeddingResponse> serviceResponse =
         applyRetry(
             vertexAIEmbeddingProviderClient.embed(
-                "Bearer " + embeddingCredentials.apiKey().get(), modelName, request));
+                HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get(),
+                model.name(),
+                request));
 
     return serviceResponse
         .onItem()

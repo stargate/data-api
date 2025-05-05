@@ -7,11 +7,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.fasterxml.jackson.core.Base64Variants;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
+import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.TenantAwareCqlSessionBuilder;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
+import io.stargate.sgv2.jsonapi.testresource.StargateTestResource;
+import io.stargate.sgv2.jsonapi.util.Base64Util;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
+import java.net.InetSocketAddress;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +46,7 @@ import org.junit.jupiter.api.TestInstance;
 public abstract class AbstractKeyspaceIntegrationTestBase {
 
   // keyspace automatically created in this test
-  protected final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
+  protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
 
   @BeforeAll
   public static void enableLog() {
@@ -112,10 +123,31 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
                   """
                 .formatted(collectionToCreate))
         .when()
-        .post(KeyspaceResource.BASE_PATH, keyspaceName)
+        .post(KeyspaceResource.BASE_PATH, keyspace)
         .then()
         .statusCode(200)
         .body("$", responseIsDDLSuccess());
+  }
+
+  protected void deleteCollection(String collectionName) {
+    given()
+        .headers(getHeaders())
+        .contentType(ContentType.JSON)
+        .body(
+                """
+                    {
+                      "deleteCollection": {
+                        "name": "%s"
+                      }
+                    }
+                    """
+                .formatted(collectionName))
+        .when()
+        .post(KeyspaceResource.BASE_PATH, keyspaceName)
+        .then()
+        .statusCode(200)
+        .body("$", responseIsDDLSuccess())
+        .body("status.ok", is(1));
   }
 
   protected int getTestPort() {
@@ -251,5 +283,74 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   /** Utility method for reducing boilerplate code for sending JSON commands */
   protected RequestSpecification givenHeadersAndJson(String json) {
     return given().headers(getHeaders()).contentType(ContentType.JSON).body(json);
+  }
+
+  protected String generateBase64EncodedBinaryVector(float[] vector) {
+    {
+      final byte[] byteArray = CqlVectorUtil.floatsToBytes(vector);
+
+      // Encode the byte array into a Base64 string
+      return Base64Variants.MIME_NO_LINEFEEDS.encode(byteArray);
+    }
+  }
+
+  protected float[] decodeBase64BinaryVectorToFloatArray(String base64Vector) {
+    byte[] binaryPayload;
+    try {
+      binaryPayload = Base64Util.decodeFromMimeBase64(base64Vector);
+      return CqlVectorUtil.bytesToFloats(binaryPayload);
+    } catch (Exception e) {
+      throw new RuntimeException("Not a valid binary vector", e);
+    }
+  }
+
+  protected boolean executeCqlStatement(SimpleStatement... statements) {
+    var cqlSession = createDriverSession();
+    for (SimpleStatement statement : statements) {
+      if (!cqlSession.execute(statement).wasApplied()) {
+        cqlSession.close();
+        return false;
+      }
+    }
+    cqlSession.close();
+    return true;
+  }
+
+  private CqlSession createDriverSession() {
+    int port =
+        useCoordinator()
+            ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
+            : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
+    String dc;
+    if (StargateTestResource.isDse() || StargateTestResource.isHcd()) {
+      dc = "dc1";
+    } else {
+      dc = "datacenter1";
+    }
+    var builder = new TenantAwareCqlSessionBuilder("IntegrationTest").withLocalDatacenter(dc);
+    builder
+        .addContactPoint(new InetSocketAddress("localhost", port))
+        .withAuthCredentials(CQLSessionCache.CASSANDRA, CQLSessionCache.CASSANDRA);
+    return builder.build();
+  }
+
+  /** Helper method for determining if lexical search is available for the database backend */
+  protected boolean isLexicalAvailableForDB() {
+    return !"true".equals(System.getProperty("testing.db.lexical-disabled"));
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected ValidatableResponse givenHeadersPostJsonThen(String json) {
+    return givenHeadersAndJson(json).when().post(KeyspaceResource.BASE_PATH, keyspaceName).then();
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected ValidatableResponse givenHeadersPostJsonThenOk(String json) {
+    return givenHeadersPostJsonThen(json).statusCode(200);
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected ValidatableResponse givenHeadersPostJsonThenOkNoErrors(String json) {
+    return givenHeadersPostJsonThenOk(json).body("errors", is(nullValue()));
   }
 }

@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.ModifyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.validation.MaxInsertManyDocuments;
 import jakarta.validation.constraints.NotEmpty;
@@ -19,7 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * @param options Options for this command.
  */
 @Schema(description = "Command that inserts multiple JSON document to a collection.")
-@JsonTypeName("insertMany")
+@JsonTypeName(CommandName.Names.INSERT_MANY)
 public record InsertManyCommand(
     @NotNull
         @NotEmpty

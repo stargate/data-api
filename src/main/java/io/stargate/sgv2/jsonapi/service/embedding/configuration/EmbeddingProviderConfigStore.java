@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import java.util.Map;
 import java.util.Optional;
 
 public interface EmbeddingProviderConfigStore {
@@ -10,19 +12,40 @@ public interface EmbeddingProviderConfigStore {
       String baseUrl,
       // `implementationClass` is the custom class that implements the EmbeddingProvider interface
       Optional<Class<?>> implementationClass,
-      RequestProperties requestConfiguration) {
+      RequestProperties requestConfiguration,
+      Map<String, Optional<String>> modelUrlOverrides) {
 
     public static ServiceConfig provider(
         String serviceName,
         String serviceProvider,
         String baseUrl,
-        RequestProperties requestConfiguration) {
-      return new ServiceConfig(serviceName, serviceProvider, baseUrl, null, requestConfiguration);
+        RequestProperties requestConfiguration,
+        Map<String, Optional<String>> modelUrlOverrides) {
+      return new ServiceConfig(
+          serviceName, serviceProvider, baseUrl, null, requestConfiguration, modelUrlOverrides);
     }
 
     public static ServiceConfig custom(Optional<Class<?>> implementationClass) {
       return new ServiceConfig(
-          ProviderConstants.CUSTOM, ProviderConstants.CUSTOM, null, implementationClass, null);
+          ProviderConstants.CUSTOM,
+          ProviderConstants.CUSTOM,
+          null,
+          implementationClass,
+          null,
+          Map.of());
+    }
+
+    public String getBaseUrl(String modelName) {
+      if (modelUrlOverrides != null && modelUrlOverrides.get(modelName) == null) {
+        // modelUrlOverride is a work-around for self-hosted nvidia models with different url.
+        // This is bad, initial design should have url in model level instead of provider level.
+        // As best practice, when we deprecate or EOL a model:
+        // we must mark the status in the configuration,
+        // instead of removing the whole configuration entry.
+        throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
+            "unknown model '%s' for service provider '%s'", modelName, serviceProvider);
+      }
+      return modelUrlOverrides != null ? modelUrlOverrides.get(modelName).orElse(baseUrl) : baseUrl;
     }
   }
 

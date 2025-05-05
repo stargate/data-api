@@ -1,16 +1,21 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProviderErrorMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -30,10 +35,10 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
   public MistralEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
+    super(requestProperties, baseUrl, model, dimension, vectorizeServiceParameters);
 
     mistralEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()
@@ -46,14 +51,14 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
   public interface MistralEmbeddingProviderClient {
     @POST
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
+      return EmbeddingProviderErrorMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -94,11 +99,15 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
 
   private record EmbeddingRequest(List<String> input, String model, String encoding_format) {}
 
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
   private record EmbeddingResponse(
       String id, String object, Data[] data, String model, Usage usage) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record Data(String object, int index, float[] embedding) {}
 
-    private record Usage(int prompt_tokens, int total_tokens, int completion_tokens) {}
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record Usage(
+        int prompt_tokens, int total_tokens, int completion_tokens, int request_count) {}
   }
 
   @Override
@@ -107,14 +116,17 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+    // Check if using an EOF model
+    checkEOLModelUsage();
     checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
 
-    EmbeddingRequest request = new EmbeddingRequest(texts, modelName, "float");
+    EmbeddingRequest request = new EmbeddingRequest(texts, model.name(), "float");
 
     Uni<EmbeddingResponse> response =
         applyRetry(
             mistralEmbeddingProviderClient.embed(
-                "Bearer " + embeddingCredentials.apiKey().get(), request));
+                HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get(),
+                request));
 
     return response
         .onItem()

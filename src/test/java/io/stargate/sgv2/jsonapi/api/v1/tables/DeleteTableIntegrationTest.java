@@ -5,7 +5,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -24,6 +25,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   static final String TABLE_WITH_COMPLEX_PRIMARY_KEY = "table_" + System.currentTimeMillis();
+  static final String TABLE_WITH_BLOB_IN_PK = "table_blob_pk_" + System.currentTimeMillis();
 
   static final String TABLE_DEFINITION_TEMPLATE =
       """
@@ -51,18 +53,41 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
                             }
                           """;
 
-  private static Command.CommandName toCommandName(
-      WhereCQLClauseAnalyzer.StatementType statementType) {
+  static final String TABLE_WITH_BLOB_IN_PK_TEMPLATE =
+      """
+      {
+          "name": "%s",
+          "definition": {
+              "columns": {
+                  "p_ascii": "ascii",
+                  "p_bigint": "bigint",
+                  "p_blob": "blob",
+                  "p_boolean": "boolean"
+              },
+              "primaryKey": {
+                  "partitionBy": [
+                      "p_ascii",
+                      "p_blob"
+                  ],
+                  "partitionSort": {
+                      "p_bigint": 1,
+                      "p_boolean": -1
+                  }
+              }
+          }
+      }
+      """;
+
+  private static CommandName toCommandName(WhereCQLClauseAnalyzer.StatementType statementType) {
     return switch (statementType) {
-      case DELETE_ONE -> Command.CommandName.DELETE_ONE;
-      case DELETE_MANY -> Command.CommandName.DELETE_MANY;
+      case DELETE_ONE -> CommandName.DELETE_ONE;
+      case DELETE_MANY -> CommandName.DELETE_MANY;
       default -> throw new IllegalArgumentException("Unexpected statement type: " + statementType);
     };
   }
 
   @BeforeAll
-  public final void createTable() {
-
+  public final void createTables() {
     assertNamespaceCommand(keyspaceName)
         .postCreateTable(TABLE_DEFINITION_TEMPLATE.formatted(TABLE_WITH_COMPLEX_PRIMARY_KEY))
         .wasSuccessful();
@@ -73,6 +98,11 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
         .createIndex(
             "IX_%s_%s".formatted(TABLE_WITH_COMPLEX_PRIMARY_KEY, "indexed_column"),
             "indexed_column")
+        .wasSuccessful();
+
+    // Create table for Blob-in-PK test(s)
+    assertNamespaceCommand(keyspaceName)
+        .postCreateTable(TABLE_WITH_BLOB_IN_PK_TEMPLATE.formatted(TABLE_WITH_BLOB_IN_PK))
         .wasSuccessful();
   }
 
@@ -86,11 +116,7 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE,
-            0),
-        Arguments.of(
-            WhereCQLClauseAnalyzer.StatementType.DELETE_MANY,
-            FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FILTER_FOR_UPDATE_DELETE,
             0));
   }
 
@@ -148,6 +174,49 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
+  // [data-api#1578]: BINARY in PK fails due to missing filter support
+  @Test
+  public void deleteOneWithBlobInPK() {
+    final String base64Blob = "q83vASNFZ4k=";
+    String docJSON =
+            """
+                {
+                    "p_ascii": "abc",
+                    "p_bigint": 10000,
+                    "p_blob": {
+                        "$binary": "%s"
+                    },
+                    "p_boolean": false
+                }
+        """
+            .formatted(base64Blob);
+    assertTableCommand(keyspaceName, TABLE_WITH_BLOB_IN_PK)
+        .templated()
+        .insertOne(docJSON)
+        .wasSuccessful();
+
+    // Verify document exists
+    assertTableCommand(keyspaceName, TABLE_WITH_BLOB_IN_PK)
+        // Document consist of just PK columns so:
+        .postFindOne("{\"filter\": %s}".formatted(docJSON))
+        .wasSuccessful()
+        .hasJSONField("data.document", docJSON);
+
+    // Then delete
+    assertTableCommand(keyspaceName, TABLE_WITH_BLOB_IN_PK)
+        .templated()
+        .deleteOne(docJSON)
+        .wasSuccessful()
+        .hasNoErrors();
+
+    // And verify it's gone
+    assertTableCommand(keyspaceName, TABLE_WITH_BLOB_IN_PK)
+        .postFind("{\"filter\": %s}".formatted(docJSON))
+        .wasSuccessful()
+        .hasNoWarnings()
+        .hasEmptyDataDocuments();
+  }
+
   // ==================================================================================================================
   // NON PK COLUMNS - INDEXED AND UN-INDEXED
   // ==================================================================================================================
@@ -156,11 +225,11 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE,
+            FilterException.Code.UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE,
             0),
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_MANY,
-            FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE,
+            FilterException.Code.UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE,
             0));
   }
 
@@ -215,11 +284,11 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE,
             0),
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_MANY,
-            FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER,
+            FilterException.Code.INVALID_PRIMARY_KEY_FILTER,
             0));
   }
 
@@ -258,11 +327,11 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE,
             0),
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_MANY,
-            FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER,
+            FilterException.Code.INVALID_PRIMARY_KEY_FILTER,
             0));
   }
 
@@ -295,11 +364,11 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE,
             0),
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_MANY,
-            FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER,
+            FilterException.Code.INVALID_PRIMARY_KEY_FILTER,
             0));
   }
 
@@ -332,7 +401,7 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE,
             0),
         Arguments.of(WhereCQLClauseAnalyzer.StatementType.DELETE_MANY, null, 2));
   }
@@ -366,11 +435,11 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE,
             0),
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_MANY,
-            FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER,
+            FilterException.Code.INVALID_PRIMARY_KEY_FILTER,
             0));
   }
 
@@ -402,7 +471,7 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE,
             0),
         Arguments.of(WhereCQLClauseAnalyzer.StatementType.DELETE_MANY, null, 2));
   }
@@ -436,11 +505,11 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     return Stream.of(
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_ONE,
-            FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE,
+            FilterException.Code.MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE,
             0),
         Arguments.of(
             WhereCQLClauseAnalyzer.StatementType.DELETE_MANY,
-            FilterException.Code.INCOMPLETE_PRIMARY_KEY_FILTER,
+            FilterException.Code.INVALID_PRIMARY_KEY_FILTER,
             0));
   }
 
@@ -466,6 +535,20 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
         .hasSingleApiError(expectedCode, FilterException.class)
         .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
+  }
+
+  @Test
+  public void truncateTable() {
+    deleteAllDefaultRows();
+    insertDefaultRows();
+    var filterJSON = "{}";
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .delete(toCommandName(WhereCQLClauseAnalyzer.StatementType.DELETE_MANY), filterJSON)
+        .hasNoErrors()
+        .hasNoWarnings();
+    checkDataHasBeenDeleted(
+        WhereCQLClauseAnalyzer.StatementType.DELETE_MANY, null, DEFAULT_ROWS.size());
   }
 
   // ==================================================================================================================

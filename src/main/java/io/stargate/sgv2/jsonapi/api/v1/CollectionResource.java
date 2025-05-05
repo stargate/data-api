@@ -1,11 +1,15 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
+
+import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.ConfigPreLoader;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.EstimatedDocumentCountCommand;
@@ -16,10 +20,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.ListIndexesCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
@@ -27,17 +31,19 @@ import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
+import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -64,23 +70,38 @@ import org.jboss.resteasy.reactive.RestResponse;
 @Tag(ref = "Documents")
 public class CollectionResource {
 
-  public static final String BASE_PATH = "/v1/{keyspace}/{collection}";
+  public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}/{collection}";
 
-  private final MeteredCommandProcessor meteredCommandProcessor;
-
+  // need to keep for a little because we have to check the schema type before making the command
+  // context
+  // TODO remove apiFeatureConfig as a property after cleanup for how we get schema from cache
+  @Inject private FeaturesConfig apiFeatureConfig;
+  @Inject private RequestContext requestContext;
   @Inject private SchemaCache schemaCache;
 
-  @Inject private EmbeddingProviderFactory embeddingProviderFactory;
-
-  @Inject private DataApiRequestInfo dataApiRequestInfo;
-
-  @Inject FeaturesConfig apiFeatureConfig;
-
-  @Inject private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
+  private final CommandContext.BuilderSupplier contextBuilderSupplier;
+  private final EmbeddingProviderFactory embeddingProviderFactory;
+  private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject
-  public CollectionResource(MeteredCommandProcessor meteredCommandProcessor) {
+  public CollectionResource(
+      MeteredCommandProcessor meteredCommandProcessor,
+      MeterRegistry meterRegistry,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      CQLSessionCache cqlSessionCache,
+      EmbeddingProviderFactory embeddingProviderFactory,
+      RerankingProviderFactory rerankingProviderFactory) {
+    this.embeddingProviderFactory = embeddingProviderFactory;
     this.meteredCommandProcessor = meteredCommandProcessor;
+
+    contextBuilderSupplier =
+        CommandContext.builderSupplier()
+            .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
+            .withCqlSessionCache(cqlSessionCache)
+            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
+            .withEmbeddingProviderFactory(embeddingProviderFactory)
+            .withRerankingProviderFactory(rerankingProviderFactory)
+            .withMeterRegistry(meterRegistry);
   }
 
   @Operation(
@@ -111,11 +132,11 @@ public class CollectionResource {
                         InsertManyCommand.class,
                         UpdateManyCommand.class,
                         UpdateOneCommand.class,
-                        // TODO, hide table feature detail before it goes public,
-                        // https://github.com/stargate/data-api/pull/1360
-                        //                        CreateIndexCommand.class,
-                        //                        CreateVectorIndexCommand.class
-                        //                        DropIndexCommand.class
+                        // Table Only commands
+                        AlterTableCommand.class,
+                        CreateIndexCommand.class,
+                        CreateVectorIndexCommand.class,
+                        ListIndexesCommand.class
                       }),
               examples = {
                 @ExampleObject(ref = "countDocuments"),
@@ -133,6 +154,15 @@ public class CollectionResource {
                 @ExampleObject(ref = "insertMany"),
                 @ExampleObject(ref = "updateMany"),
                 @ExampleObject(ref = "updateOne"),
+                @ExampleObject(ref = "alterTableAddColumns"),
+                @ExampleObject(ref = "alterTableDropColumns"),
+                @ExampleObject(ref = "alterTableAddVectorize"),
+                @ExampleObject(ref = "alterTableDropVectorize"),
+                @ExampleObject(ref = "createIndex"),
+                @ExampleObject(ref = "createVectorIndex"),
+                @ExampleObject(ref = "listIndexes"),
+                @ExampleObject(ref = "insertOneTables"),
+                @ExampleObject(ref = "insertManyTables"),
               }))
   @APIResponses(
       @APIResponse(
@@ -159,31 +189,28 @@ public class CollectionResource {
                     @ExampleObject(ref = "resultUpdateMany"),
                     @ExampleObject(ref = "resultUpdateManyUpsert"),
                     @ExampleObject(ref = "resultError"),
+                    @ExampleObject(ref = "resultDdl"),
+                    @ExampleObject(ref = "resultListIndexes"),
+                    @ExampleObject(ref = "insertManyTablesResponse"),
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
       @NotNull @Valid CollectionCommand command,
-      @PathParam("keyspace")
-          @NotNull
-          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-          @Size(min = 1, max = 48)
-          String keyspace,
-      @PathParam("collection")
-          @NotNull
-          @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-          @Size(min = 1, max = 48)
-          String collection) {
+      @PathParam("keyspace") @NotEmpty String keyspace,
+      @PathParam("collection") @NotEmpty String collection) {
     return schemaCache
         .getSchemaObject(
-            dataApiRequestInfo,
-            dataApiRequestInfo.getTenantId(),
+            requestContext,
+            requestContext.getTenantId(),
             keyspace,
             collection,
-            Command.CommandType.DDL.equals(command.commandName().getCommandType()))
+            CommandType.DDL.equals(command.commandName().getCommandType()))
         .onItemOrFailure()
         .transformToUni(
             (schemaObject, throwable) -> {
               if (throwable != null) {
+
+                // We failed to get the schema object, or failed to build it.
                 Throwable error = throwable;
                 if (error instanceof JsonApiException jsonApiException) {
                   return Uni.createFrom().failure(jsonApiException);
@@ -195,49 +222,55 @@ public class CollectionResource {
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
                 // TODO No need for the else clause here, simplify
-                final ApiFeatures apiFeatures =
-                    ApiFeatures.fromConfigAndRequest(
-                        apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
-                if ((schemaObject.type() == SchemaObject.SchemaObjectType.TABLE)
-                    && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
-                  return Uni.createFrom()
-                      .failure(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException());
+                if (schemaObject.type() == SchemaObject.SchemaObjectType.TABLE) {
+                  var apiFeatures =
+                      ApiFeatures.fromConfigAndRequest(
+                          apiFeatureConfig, requestContext.getHttpHeaders());
+                  if (!apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
+                    return Uni.createFrom()
+                        .failure(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException());
+                  }
                 }
-                // TODO: refactor this code to be cleaner so it assigns on one line
-                EmbeddingProvider embeddingProvider = null;
-                VectorConfig vectorConfig = schemaObject.vectorConfig();
-                final VectorConfig.ColumnVectorDefinition columnVectorDefinition =
-                    vectorConfig.columnVectorDefinitions() == null
-                            || vectorConfig.columnVectorDefinitions().isEmpty()
+
+                // TODO: This needs to change, currently it is only checking if there is vectorize
+                // for the $vector column in a collection
+
+                VectorColumnDefinition vectorColDef = null;
+                if (schemaObject.type() == SchemaObject.SchemaObjectType.COLLECTION) {
+                  vectorColDef =
+                      schemaObject
+                          .vectorConfig()
+                          .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
+                          .orElse(null);
+                } else if (schemaObject.type() == SchemaObject.SchemaObjectType.TABLE) {
+                  vectorColDef =
+                      schemaObject
+                          .vectorConfig()
+                          .getFirstVectorColumnWithVectorizeDefinition()
+                          .orElse(null);
+                }
+                EmbeddingProvider embeddingProvider =
+                    (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)
                         ? null
-                        : vectorConfig.columnVectorDefinitions().get(0);
-                final VectorConfig.ColumnVectorDefinition.VectorizeConfig vectorizeConfig =
-                    columnVectorDefinition != null
-                        ? columnVectorDefinition.vectorizeConfig()
-                        : null;
-                if (vectorizeConfig != null) {
-                  embeddingProvider =
-                      embeddingProviderFactory.getConfiguration(
-                          dataApiRequestInfo.getTenantId(),
-                          dataApiRequestInfo.getCassandraToken(),
-                          vectorizeConfig.provider(),
-                          vectorizeConfig.modelName(),
-                          columnVectorDefinition.vectorSize(),
-                          vectorizeConfig.parameters(),
-                          vectorizeConfig.authentication(),
-                          command.getClass().getSimpleName());
-                }
+                        : embeddingProviderFactory.getConfiguration(
+                            requestContext.getTenantId(),
+                            requestContext.getCassandraToken(),
+                            vectorColDef.vectorizeDefinition().provider(),
+                            vectorColDef.vectorizeDefinition().modelName(),
+                            vectorColDef.vectorSize(),
+                            vectorColDef.vectorizeDefinition().parameters(),
+                            vectorColDef.vectorizeDefinition().authentication(),
+                            command.getClass().getSimpleName());
 
                 var commandContext =
-                    CommandContext.forSchemaObject(
-                        schemaObject,
-                        embeddingProvider,
-                        command.getClass().getSimpleName(),
-                        jsonProcessingMetricsReporter,
-                        apiFeatures);
+                    contextBuilderSupplier
+                        .getBuilder(schemaObject)
+                        .withEmbeddingProvider(embeddingProvider)
+                        .withCommandName(command.getClass().getSimpleName())
+                        .withRequestContext(requestContext)
+                        .build();
 
-                return meteredCommandProcessor.processCommand(
-                    dataApiRequestInfo, commandContext, command);
+                return meteredCommandProcessor.processCommand(commandContext, command);
               }
             })
         .map(commandResult -> commandResult.toRestResponse());

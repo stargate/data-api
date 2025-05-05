@@ -28,12 +28,14 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -45,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -52,23 +55,27 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class CreateCollectionOperationTest extends OperationTestBase {
 
-  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT =
-      new CommandContext<>(
-          COLLECTION_SCHEMA_OBJECT,
-          null,
-          "CreateCollectionCommand",
-          null,
-          DEFAULT_API_FEATURES_FOR_TESTS);
+  private TestConstants testConstants = new TestConstants();
 
   @Inject DatabaseLimitsConfig databaseLimitsConfig;
 
   @Inject ObjectMapper objectMapper;
+
+  @Inject RerankingProvidersConfig rerankingProvidersConfig;
 
   @Nested
   class Execute {
 
     private final ColumnDefinitions RESULT_COLUMNS =
         buildColumnDefs(OperationTestBase.TestColumn.ofBoolean("[applied]"));
+
+    private final CollectionLexicalConfig LEXICAL_CONFIG =
+        CollectionLexicalConfig.configForDefault();
+
+    private final CollectionRerankDef RERANKING_DEF = CollectionRerankDef.configForDefault();
+
+    @BeforeEach
+    public void init() {}
 
     @Test
     public void createCollectionNoVector() {
@@ -115,7 +122,9 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               "",
               10,
               false,
-              false);
+              false,
+              LEXICAL_CONFIG,
+              RERANKING_DEF);
 
       Supplier<CommandResult> execute =
           operation
@@ -124,8 +133,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
-      // 1 create Table + 8 super shredder indexes
-      assertThat(schemaCounter.get()).isEqualTo(9);
+      // 1 create Table + 8 super shredder indexes + lexical index
+      assertThat(schemaCounter.get()).isEqualTo(10);
     }
 
     @Test
@@ -173,9 +182,12 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               5,
               "cosine",
               "",
+              "",
               10,
               false,
-              false);
+              false,
+              LEXICAL_CONFIG,
+              RERANKING_DEF);
 
       Supplier<CommandResult> execute =
           operation
@@ -184,8 +196,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
-      // 1 create Table + 8 super shredder indexes + 1 vector index
-      assertThat(schemaCounter.get()).isEqualTo(10);
+      // 1 create Table + 8 super shredder indexes + 1 vector index + 1 lexical
+      assertThat(schemaCounter.get()).isEqualTo(11);
     }
 
     @Test
@@ -233,7 +245,9 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               "",
               10,
               false,
-              true);
+              true,
+              LEXICAL_CONFIG,
+              RERANKING_DEF);
 
       Supplier<CommandResult> execute =
           operation
@@ -242,8 +256,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
-      // 1 create Table
-      assertThat(schemaCounter.get()).isEqualTo(1);
+      // 1 create Table + 1 lexical index
+      assertThat(schemaCounter.get()).isEqualTo(2);
     }
 
     @Test
@@ -291,9 +305,12 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               5,
               "cosine",
               "",
+              "",
               10,
               false,
-              true);
+              true,
+              LEXICAL_CONFIG,
+              RERANKING_DEF);
 
       Supplier<CommandResult> execute =
           operation
@@ -302,8 +319,8 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
-      // 1 create Table + 1 vector index
-      assertThat(schemaCounter.get()).isEqualTo(2);
+      // 1 create Table + 1 vector index + 1 lexical
+      assertThat(schemaCounter.get()).isEqualTo(3);
     }
 
     @Test
@@ -376,7 +393,9 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               "",
               10,
               true,
-              false);
+              false,
+              LEXICAL_CONFIG,
+              RERANKING_DEF);
 
       Supplier<CommandResult> execute =
           operation

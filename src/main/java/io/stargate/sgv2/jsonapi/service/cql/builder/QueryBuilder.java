@@ -14,6 +14,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class QueryBuilder {
+  public static final int DEFAULT_BM25_LIMIT = 100;
+  public static final int MAX_BM25_LIMIT = 1000;
+
+  private static final String COUNT_FUNCTION_NAME = "COUNT";
+
   private String keyspaceName;
   private String tableName;
   private boolean isInsert;
@@ -22,6 +27,7 @@ public class QueryBuilder {
   private boolean isSelect;
   private Integer limitInt;
   private String orderByAnn;
+  private BM25Clause bm25Clause;
   private final List<QueryBuilder.FunctionCall> functionCalls = new ArrayList<>();
 
   /** The vectorValue used to compute similarityScore or process an ANN search */
@@ -32,8 +38,6 @@ public class QueryBuilder {
 
   /** The where expression which contains conditions and logic operation for a SELECT or UPDATE. */
   private Expression<BuiltCondition> whereExpression = null;
-
-  private static final String COUNT_FUNCTION_NAME = "COUNT";
 
   public void keyspace(String keyspace) {
     this.keyspaceName = keyspace;
@@ -144,7 +148,25 @@ public class QueryBuilder {
       values.add(vectorValue);
     }
 
-    if (limitInt != null) {
+    if (bm25Clause != null) {
+      // LIMIT gets tricky with BM25: should use explicit one, if one given, but
+      // it looks like it's sometimes passed as `Integer.MAX_VALUE` to mean "no limit"
+
+      final int bm25Limit;
+      if (limitInt == null || limitInt < 1 || (limitInt == Integer.MAX_VALUE)) {
+        bm25Limit = DEFAULT_BM25_LIMIT;
+      } else {
+        bm25Limit = Math.min(limitInt, MAX_BM25_LIMIT);
+      }
+
+      builder
+          .append(" ORDER BY ")
+          .append(bm25Clause.column())
+          .append(" BM25 OF ? LIMIT ")
+          .append(bm25Limit);
+
+      values.add(bm25Clause.query());
+    } else if (limitInt != null) {
       builder.append(" LIMIT ").append(limitInt == -1 ? "?" : limitInt);
     }
 
@@ -265,7 +287,7 @@ public class QueryBuilder {
 
   public QueryBuilder similarityFunction(String columnName, SimilarityFunction similarityFunction) {
     switch (similarityFunction) {
-      case COSINE, UNDEFINED ->
+      case COSINE ->
           functionCalls.add(FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_COSINE"));
       case EUCLIDEAN ->
           functionCalls.add(
@@ -280,11 +302,18 @@ public class QueryBuilder {
     return this;
   }
 
+  public QueryBuilder bm25Sort(String column, String text) {
+    bm25Clause = new BM25Clause(column, text);
+    return this;
+  }
+
   public QueryBuilder vsearch(String column, float[] vectorValue) {
     this.orderByAnn = column;
     this.vectorValue = CQLBindValues.getVectorValue(vectorValue);
     return this;
   }
+
+  private record BM25Clause(String column, String query) {}
 
   public static class FunctionCall {
     final String columnName;

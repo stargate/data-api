@@ -16,6 +16,7 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
@@ -70,14 +71,13 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
-                  """
+              """
                 {
                   "createCollection": {
-                    "name": "%s"
+                    "name": "collection1"
                   }
                 }
-                """
-                  .formatted("collection1"))
+                """)
           .when()
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
@@ -107,11 +107,14 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
     @Test
     @Order(3)
     public void happyPathWithExplain() {
+      // To create Collection with Lexical, it must be available for the database
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
       String json =
-              """
+          """
               {
                 "createCollection": {
-                  "name": "%s",
+                  "name": "collection2",
                   "options": {
                     "vector": {
                       "dimension": 5,
@@ -119,12 +122,22 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                     },
                     "indexing": {
                       "deny" : ["comment"]
+                    },
+                    "lexical": {
+                      "enabled": true,
+                      "analyzer": "standard"
+                    },
+                    "rerank": {
+                        "enabled": true,
+                        "service": {
+                            "provider": "nvidia",
+                            "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+                        }
                     }
                   }
                 }
               }
-              """
-              .formatted("collection2");
+              """;
 
       given()
           .headers(getHeaders())
@@ -138,28 +151,51 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .body("status.ok", is(1));
 
       String expected1 =
-              """
+          """
                   {
-                    "name": "%s",
-                    "options":{}
+                    "name": "collection1",
+                    "options":{
+                      "lexical": {
+                        "enabled": true,
+                        "analyzer": "standard"
+                      },
+                      "rerank": {
+                          "enabled": true,
+                          "service": {
+                              "provider": "nvidia",
+                              "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+                          }
+                      }
+                    }
                   }
-                    """
-              .formatted("collection1");
+                  """;
       String expected2 =
-              """
+          """
               {
-                  "name": "%s",
+                  "name": "collection2",
                   "options": {
                     "vector": {
                       "dimension": 5,
-                      "metric": "cosine"
-                    },"indexing": {
+                      "metric": "cosine",
+                      "sourceModel": "other"
+                    },
+                    "indexing": {
                       "deny" : ["comment"]
+                    },
+                    "lexical": {
+                      "enabled": true,
+                      "analyzer": "standard"
+                    },
+                    "rerank": {
+                        "enabled": true,
+                        "service": {
+                            "provider": "nvidia",
+                            "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+                        }
                     }
                   }
                 }
-                """
-              .formatted("collection2");
+              """;
 
       json =
           """
@@ -326,23 +362,31 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
     @Test
     @Order(7)
     public void happyPathIndexingWithExplain() {
+      // To create Collection with Lexical, it must be available for the database
+      Assumptions.assumeTrue(isLexicalAvailableForDB());
+
       String json =
-              """
+          """
                   {
                     "createCollection": {
-                      "name": "%s",
+                      "name": "collection4",
                       "options": {
                         "defaultId" : {
                           "type" : "objectId"
                         },
                         "indexing": {
                           "deny" : ["comment"]
+                        },
+                        "lexical": {
+                          "enabled": false
+                        },
+                        "rerank": {
+                            "enabled": false
                         }
                       }
                     }
                   }
-                  """
-              .formatted("collection4");
+                  """;
 
       given()
           .headers(getHeaders())
@@ -355,31 +399,73 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
-      json =
-          """
-                  {
-                    "findCollections": {
-                      "options": {
-                        "explain" : true
-                      }
-                    }
-                  }
-                  """;
       String expected1 =
           """
-      {"name":"TableName","options":{}}
+      {"name":"TableName","options":{
+        "lexical": {
+          "enabled": true,
+          "analyzer": "standard"
+        },
+        "rerank": {
+            "enabled": true,
+            "service": {
+                "provider": "nvidia",
+                "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+            }
+        }
+      }}
       """;
       String expected2 =
           """
-              {"name":"collection1", "options":{}}
+                  {
+                    "name": "collection1",
+                    "options": {
+                      "lexical": {
+                        "enabled": true,
+                        "analyzer": "standard"
+                      },
+                        "rerank": {
+                            "enabled": true,
+                            "service": {
+                                "provider": "nvidia",
+                                "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+                            }
+                        }
+                    }
+                  }
               """;
       String expected3 =
           """
-      {"name":"collection2", "options": {"vector": {"dimension":5, "metric":"cosine"}, "indexing":{"deny":["comment"]}}}
+      {"name":"collection2",
+        "options": {"vector": {"dimension":5, "metric":"cosine", "sourceModel": "other"},
+        "indexing":{"deny":["comment"]},
+        "lexical": {
+            "enabled": true,
+            "analyzer": "standard"
+          },
+            "rerank": {
+                "enabled": true,
+                "service": {
+                    "provider": "nvidia",
+                    "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+                }
+            }
+      }}
       """;
       String expected4 =
           """
-              {"name":"collection4","options":{"defaultId" : {"type" : "objectId"}, "indexing":{"deny":["comment"]}}}
+              {"name":"collection4",
+               "options":{
+                  "defaultId" : {"type" : "objectId"},
+                  "indexing":{"deny":["comment"]},
+                  "lexical": {
+                    "enabled": false
+                  },
+                  "rerank": {
+                      "enabled": false
+                  }
+                }
+              }
               """;
       json =
           """

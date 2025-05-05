@@ -16,27 +16,41 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(PropertyBasedOverrideProfile.class)
 public class DataVectorizerTest {
+
   @Inject ObjectMapper objectMapper;
-  private final EmbeddingProvider testService = new TestEmbeddingProvider();
-  private final CollectionSchemaObject collectionSettings =
-      TestEmbeddingProvider.commandContextWithVectorize.schemaObject();
+  private final TestEmbeddingProvider testEmbeddingProvider =
+      TestEmbeddingProvider.TEST_EMBEDDING_PROVIDER;
+  private final EmbeddingProvider testService = testEmbeddingProvider;
   private final EmbeddingCredentials embeddingCredentials =
       new EmbeddingCredentials(Optional.empty(), Optional.empty(), Optional.empty());
+
+  private CollectionSchemaObject collectionSettings = null;
+
+  @BeforeEach
+  public void beforeEach() {
+    collectionSettings = testEmbeddingProvider.commandContextWithVectorize().schemaObject();
+  }
 
   @Nested
   public class TestTextValues {
@@ -233,13 +247,15 @@ public class DataVectorizerTest {
               IdConfig.defaultIdConfig(),
               VectorConfig.fromColumnDefinitions(
                   List.of(
-                      new VectorConfig.ColumnVectorDefinition(
+                      new VectorColumnDefinition(
                           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                           4,
                           SimilarityFunction.COSINE,
-                          new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
-                              "custom", "custom", null, null)))),
-              null);
+                          EmbeddingSourceModel.OTHER,
+                          new VectorizeDefinition("custom", "custom", null, null)))),
+              null,
+              CollectionLexicalConfig.configForDisabled(),
+              CollectionRerankDef.configForPreRerankingCollection());
       List<JsonNode> documents = new ArrayList<>();
       for (int i = 0; i < 2; i++) {
         documents.add(objectMapper.createObjectNode().put("$vectorize", "test data"));

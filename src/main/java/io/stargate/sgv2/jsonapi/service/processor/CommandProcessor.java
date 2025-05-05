@@ -5,18 +5,18 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.function.Supplier;
@@ -37,18 +37,13 @@ public class CommandProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(CommandProcessor.class);
 
-  private final QueryExecutor queryExecutor;
-
   private final DataVectorizerService dataVectorizerService;
 
   private final CommandResolverService commandResolverService;
 
   @Inject
   public CommandProcessor(
-      QueryExecutor queryExecutor,
-      CommandResolverService commandResolverService,
-      DataVectorizerService dataVectorizerService) {
-    this.queryExecutor = queryExecutor;
+      CommandResolverService commandResolverService, DataVectorizerService dataVectorizerService) {
     this.commandResolverService = commandResolverService;
     this.dataVectorizerService = dataVectorizerService;
   }
@@ -59,18 +54,32 @@ public class CommandProcessor {
    * @param commandContext {@link CommandContext}
    * @param command {@link Command}
    * @return Uni emitting the result of the command execution.
-   * @param <T> Type of the command.
-   * @param <U> Type of the schema object command operates on.
+   * @param <CommandT> Type of the command.
+   * @param <SchemaT> Type of the schema object command operates on.
    */
-  public <T extends Command, U extends SchemaObject> Uni<CommandResult> processCommand(
-      DataApiRequestInfo dataApiRequestInfo, CommandContext<U> commandContext, T command) {
+  public <CommandT extends Command, SchemaT extends SchemaObject> Uni<CommandResult> processCommand(
+      CommandContext<SchemaT> commandContext, CommandT command) {
 
-    var debugMode = commandContext.getConfig(DebugModeConfig.class).enabled();
-    var errorObjectV2 = commandContext.getConfig(OperationsConfig.class).extendError();
+    var debugMode = commandContext.config().get(DebugModeConfig.class).enabled();
+    var errorObjectV2 = commandContext.config().get(OperationsConfig.class).extendError();
+
+    commandContext
+        .requestTracing()
+        .maybeTrace(
+            () ->
+                new TraceMessage(
+                    "Starting to process '%s' command for schema object %s"
+                        .formatted(
+                            command.commandName().getApiName(),
+                            PrettyPrintable.print(commandContext.schemaObject().name())),
+                    commandContext.schemaObject()));
+
+    // First bit of pre-processing: possible expansion of "$hybrid" alias
+    HybridFieldExpander.expandHybridField(commandContext, command);
 
     // vectorize the data
     return dataVectorizerService
-        .vectorize(dataApiRequestInfo, commandContext, command)
+        .vectorize(commandContext, command)
         .onItem()
         .transformToUni(
             vectorizedCommand -> {
@@ -82,14 +91,14 @@ public class CommandProcessor {
                   .flatMap(
                       resolver -> {
                         // if we have resolver, resolve operation
-                        Operation operation =
+                        Operation<SchemaT> operation =
                             resolver.resolveCommand(commandContext, vectorizedCommand);
                         return Uni.createFrom().item(operation);
                       });
             })
 
         //  execute the operation
-        .flatMap(operation -> operation.execute(dataApiRequestInfo, queryExecutor))
+        .flatMap(operation -> operation.execute(commandContext))
 
         // handle failures here
         .onFailure()
@@ -99,14 +108,13 @@ public class CommandProcessor {
                   case APIException apiException -> {
                     // new error object V2
                     var errorBuilder =
-                        new APIExceptionCommandErrorBuilder(
-                            commandContext.getConfig(DebugModeConfig.class).enabled(),
-                            commandContext.getConfig(OperationsConfig.class).extendError());
+                        new APIExceptionCommandErrorBuilder(debugMode, errorObjectV2);
 
                     // yet more mucking about with suppliers everywhere :(
                     yield (Supplier<CommandResult>)
                         () ->
-                            CommandResult.statusOnlyBuilder(errorObjectV2, debugMode)
+                            CommandResult.statusOnlyBuilder(
+                                    errorObjectV2, debugMode, commandContext.requestTracing())
                                 .addCommandResultError(
                                     errorBuilder.buildLegacyCommandResultError(apiException))
                                 .build();

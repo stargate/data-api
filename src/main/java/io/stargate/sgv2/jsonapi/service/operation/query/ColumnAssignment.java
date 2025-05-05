@@ -1,17 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
-
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.datastax.oss.driver.api.querybuilder.update.Assignment;
 import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
-import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
+import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
+import io.stargate.sgv2.jsonapi.service.shredding.*;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValue;
+import io.stargate.sgv2.jsonapi.service.shredding.CqlNamedValueContainer;
+import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import java.util.List;
 import java.util.Objects;
 
@@ -19,51 +15,30 @@ import java.util.Objects;
  * Assigns a single column a value in a CQL Update statement build with the Java Driver Query
  * Builder.
  *
- * <p>NOTE: This class is designed to set scalar column values, basic strings, ints etc. It should
- * be possible to extend it to support more exotic types like collections and UDT's using the
- * appropriate methods on the {@link OngoingAssignment}.
+ * <p>Subclasses need to implement {@link #apply(Object, Object)} with the {@link OngoingAssignment}
+ * to set the appropriate CQL value for the column, then use {@link #addPositionalValues(List)} to
+ * add the values to the list of positional values to bind to the query.
  *
  * <p>Designed to be used with the {@link UpdateValuesCQLClause} to build the full clause.
+ *
+ * <p>Supports {@link Deferrable} so that the values needed vectorizing can be deferred until
+ * execution time. See {@link #deferred()} for docs.
  */
-public class ColumnAssignment implements CQLAssignment {
+public abstract class ColumnAssignment implements CQLAssignment, Deferrable {
 
-  private final TableMetadata tableMetadata;
-  private final CqlIdentifier column;
-  private final JsonLiteral<?> value;
+  protected final CqlNamedValue namedValue;
 
-  /**
-   * Create a new instance of the class to set the {@code column} to the {@code value} in the
-   * specified {@code tableMetadata}.
-   *
-   * @param tableMetadata The {@link TableMetadata} for the target table.
-   * @param column The name of the column to set.
-   * @param value the {@link JsonLiteral} value created by shredding the value from the update
-   *     clause in the request.
-   */
-  public ColumnAssignment(TableMetadata tableMetadata, CqlIdentifier column, JsonLiteral<?> value) {
-    this.tableMetadata = Objects.requireNonNull(tableMetadata, "tableMetadata cannot be null");
-    this.column = Objects.requireNonNull(column, "column cannot be null");
-    // Value may be null, this is how to clear a column in CQL
-    this.value = value;
+  protected ColumnAssignment(CqlNamedValue namedValue) {
+    this.namedValue = Objects.requireNonNull(namedValue, "namedValue cannot be null");
   }
 
-  @Override
-  public UpdateWithAssignments apply(
-      OngoingAssignment ongoingAssignment, List<Object> positionalValues) {
-
-    addPositionalValues(positionalValues);
-    return ongoingAssignment.set(getAssignment());
+  public CqlIdentifier name() {
+    return namedValue.name();
   }
 
-  /**
-   * Get the {@link Assignment} for the column and value.
-   *
-   * <p>Is a separate method to support expansion for collections etc in subtypes.
-   *
-   * @return
-   */
-  protected Assignment getAssignment() {
-    return Assignment.setColumn(column, bindMarker());
+  @VisibleForTesting
+  public CqlNamedValue namedValue() {
+    return namedValue;
   }
 
   /**
@@ -74,21 +49,11 @@ public class ColumnAssignment implements CQLAssignment {
    * @param positionalValues
    */
   protected void addPositionalValues(List<Object> positionalValues) {
+    positionalValues.add(namedValue.value());
+  }
 
-    var rawValue = value.value();
-    try {
-      positionalValues.add(
-          JSONCodecRegistries.DEFAULT_REGISTRY
-              .codecToCQL(tableMetadata, column, rawValue)
-              .toCQL(rawValue));
-    } catch (MissingJSONCodecException e) {
-      // TODO: Better error handling
-      throw new RuntimeException(e);
-    } catch (UnknownColumnException e) {
-      // TODO: Better error handling
-      throw new RuntimeException(e);
-    } catch (ToCQLCodecException e) {
-      throw new RuntimeException(e);
-    }
+  @Override
+  public List<? extends Deferred> deferred() {
+    return new CqlNamedValueContainer(List.of(namedValue)).deferredValues();
   }
 }

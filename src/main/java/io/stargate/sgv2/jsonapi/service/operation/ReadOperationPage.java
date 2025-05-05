@@ -2,11 +2,14 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * Holds the documents from a read operation to create the {@link CommandResult}
+ * NOTE: AARON FEB 5 2025 - Used by collections leave in place.
+ *
+ * <p>Holds the documents from a read operation to create the {@link CommandResult}
  *
  * @param documentSources The source documents to be included the results, may be empty but never
  *     null. If singleResponse only the first {@link DocumentSource} will be used.
@@ -32,8 +35,8 @@ public record ReadOperationPage(
 
     var builder =
         singleResponse
-            ? CommandResult.singleDocumentBuilder(false, false)
-            : CommandResult.multiDocumentBuilder(false, false);
+            ? CommandResult.singleDocumentBuilder(false, false, RequestTracing.NO_OP)
+            : CommandResult.multiDocumentBuilder(false, false, RequestTracing.NO_OP);
 
     if (includeSortVector) {
       builder.addStatus(CommandStatus.SORT_VECTOR, vector);

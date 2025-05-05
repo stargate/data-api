@@ -3,39 +3,40 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.19-SNAPSHOT</version>
+  <version>1.0.26-SNAPSHOT</version>
   <properties>
-    <stargate.version>2.1.0-BETA-19</stargate.version>
-    <!-- 17-May-2023, tatu: [json-api#172] Need at least Jackson 2.15.x -->
+    <stargate.version>2.1.0-BETA-24</stargate.version>
     <!-- 16-Aug-2024, tatu: Quarkus depends on 2.17 already, but keep explicit -->
-    <jackson.version>2.17.2</jackson.version>
+    <!-- 23-Oct-2024, tatu: For latest FP optimizations let's get 2.18 -->
+    <jackson.version>2.18.3</jackson.version>
     <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>3.13.2</quarkus.platform.version>
+    <!-- 27-Mar-2025, tatu: Updated to later but not Latest available Quarkus -->
+    <quarkus.platform.version>3.15.4</quarkus.platform.version>
     <!-- miscellaneous -->
     <wiremock.version>3.4.2</wiremock.version>
     <mockito.version>5.12.0</mockito.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
+    <!-- Integration test props -->
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
     <quarkus.container-image.group>stargateio</quarkus.container-image.group>
     <quarkus.container-image.name>jsonapi</quarkus.container-image.name>
     <quarkus.container-image.tag>v${project.version}</quarkus.container-image.tag>
     <quarkus.container-image.additional-tags>v1</quarkus.container-image.additional-tags>
-    <cassandra.version>4.0.11-591d171ac9c9</cassandra.version>
-    <!-- Integration test props -->
     <!-- When updating please change defaults in the DseTestResource class -->
-    <stargate.int-test.cassandra.image>stargateio/dse-next</stargate.int-test.cassandra.image>
-    <!-- from Stargate persistence, latest as of 2024-01-24: -->
+    <!-- 14-Mar-2025, tatu: default to DSE-6.9 (was "dse-next") -->
+    <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
+    <cassandra.version>6.9.8</cassandra.version>
     <stargate.int-test.cassandra.image-tag>${cassandra.version}</stargate.int-test.cassandra.image-tag>
-    <stargate.int-test.coordinator.image>stargateio/coordinator-dse-next</stargate.int-test.coordinator.image>
-    <stargate.int-test.coordinator.image-tag>v${stargate.version}</stargate.int-test.coordinator.image-tag>
-    <stargate.int-test.cluster.name>dse-next-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
-    <stargate.int-test.cluster.persistence>persistence-dse-next</stargate.int-test.cluster.persistence>
-    <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
+    <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
+    <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
     <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>
     <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
-    <stargate.int-test.use-coordinator>true</stargate.int-test.use-coordinator>
+    <!-- Defaults are for DSE which does not support (full) lexical feature set so: -->
+    <stargate.int-test.lexical-disabled>true</stargate.int-test.lexical-disabled>
+    <!-- 14-Mar-2025, tatu: no more use of Stargate Coordinator -->
+    <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
     <!-- Cassandra driver -->
     <driver.version>4.17.0</driver.version>
     <!-- Compiler -->
@@ -49,7 +50,7 @@
     <!-- Testing -->
     <skipTests>false</skipTests>
     <skipUnitTests>${skipTests}</skipUnitTests>
-    <surefire-plugin.version>3.3.0</surefire-plugin.version>
+    <surefire-plugin.version>3.5.2</surefire-plugin.version>
     <skipITs>false</skipITs>
   </properties>
   <dependencyManagement>
@@ -73,12 +74,21 @@
       <dependency>
         <groupId>software.amazon.awssdk</groupId>
         <artifactId>bom</artifactId>
-        <version>2.26.12</version>
+        <version>2.26.31</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
+  <!-- Add local repository for private java driver queryBuilder build to avoid using systemPath in dependency-->
+  <!-- Tracker issue: https://github.com/stargate/data-api/issues/1509 -->
+  <repositories>
+    <repository>
+      <id>local-lib</id>
+      <name>local-lib</name>
+      <url>file://${project.basedir}/lib</url>
+    </repository>
+  </repositories>
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -192,11 +202,18 @@
       <artifactId>java-driver-metrics-micrometer</artifactId>
       <version>${driver.version}</version>
     </dependency>
+    <!--Note, using Java Driver QueryBuilder from a preview build. See https://github.com/stargate/data-api/issues/1509 -->
+    <!--This jar is built by driver team from https://github.com/absurdfarce/cassandra-java-driver/tree/4190-preview1 branch -->
     <dependency>
-      <groupId>com.datastax.oss</groupId>
+      <groupId>org.apache.cassandra</groupId>
       <artifactId>java-driver-query-builder</artifactId>
-      <version>${driver.version}</version>
+      <version>4.19.0-preview1</version>
     </dependency>
+    <!--    <dependency>-->
+    <!--      <groupId>com.datastax.oss</groupId>-->
+    <!--      <artifactId>java-driver-query-builder</artifactId>-->
+    <!--      <version>${driver.version}</version>-->
+    <!--    </dependency>-->
     <!-- Jackson YAML module for config file loading
       -->
     <dependency>
@@ -222,6 +239,12 @@
       <version>5.0.0</version>
     </dependency>
     <!-- Test dependencies -->
+    <dependency>
+      <groupId>com.github.javafaker</groupId>
+      <artifactId>javafaker</artifactId>
+      <version>1.0.2</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5</artifactId>
@@ -292,6 +315,12 @@
           <systemPropertyVariables>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
             <maven.home>${maven.home}</maven.home>
+            <!-- Some Cache "unit" tests run with DseTestResource, so need to pass these configs -->
+            <testing.containers.cassandra-image>${stargate.int-test.cassandra.image}:${stargate.int-test.cassandra.image-tag}</testing.containers.cassandra-image>
+            <testing.containers.cluster-name>${stargate.int-test.cluster.name}</testing.containers.cluster-name>
+            <testing.containers.cluster-dse>${stargate.int-test.cluster.dse}</testing.containers.cluster-dse>
+            <testing.containers.cluster-hcd>${stargate.int-test.cluster.hcd}</testing.containers.cluster-hcd>
+            <testing.containers.use-coordinator>false</testing.containers.use-coordinator>
           </systemPropertyVariables>
           <excludes>
             <exclude>**/*IntegrationTest.*</exclude>
@@ -376,6 +405,7 @@
                 <testing.containers.cluster-dse>${stargate.int-test.cluster.dse}</testing.containers.cluster-dse>
                 <testing.containers.cluster-hcd>${stargate.int-test.cluster.hcd}</testing.containers.cluster-hcd>
                 <testing.package.type>${quarkus.package.type}</testing.package.type>
+                <testing.db.lexical-disabled>${stargate.int-test.lexical-disabled}</testing.db.lexical-disabled>
                 <maven.home>${maven.home}</maven.home>
                 <testing.containers.use-coordinator>${stargate.int-test.use-coordinator}</testing.containers.use-coordinator>
               </systemPropertyVariables>
@@ -398,10 +428,13 @@
       </activation>
       <properties>
         <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
-        <stargate.int-test.cassandra.image-tag>6.9.1</stargate.int-test.cassandra.image-tag>
+        <stargate.int-test.cassandra.image-tag>6.9.8</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
+        <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>
+        <!-- No lexical-sort on DSE: -->
+        <stargate.int-test.lexical-disabled>true</stargate.int-test.lexical-disabled>
       </properties>
     </profile>
     <profile>
@@ -412,11 +445,17 @@
         </property>
       </activation>
       <properties>
-        <stargate.int-test.cassandra.image>datastax/hcd</stargate.int-test.cassandra.image>
-        <stargate.int-test.cassandra.image-tag>1.0.0</stargate.int-test.cassandra.image-tag>
+        <!-- Note, Cassandra HCD image is not in public repository anymore, Data API need to pull from certain ECR repo -->
+        <!-- 14-Mar-2025, tatu [data-api#1923]: Need to use pre-release image for HCD; hence diff URL -->
+        <!-- 559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/prod/hcd -->
+        <stargate.int-test.cassandra.image>559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/staging/hcd</stargate.int-test.cassandra.image>
+        <stargate.int-test.cassandra.image-tag>1.2.1-early-preview</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>hcd-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
+        <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
         <stargate.int-test.cluster.hcd>true</stargate.int-test.cluster.hcd>
+        <!-- HCD does have lexical-sort: -->
+        <stargate.int-test.lexical-disabled>false</stargate.int-test.lexical-disabled>
       </properties>
     </profile>
   </profiles>

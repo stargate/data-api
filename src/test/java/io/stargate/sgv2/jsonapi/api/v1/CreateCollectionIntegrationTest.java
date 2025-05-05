@@ -7,9 +7,14 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -139,6 +144,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
+      deleteCollection("testcollection");
       deleteCollection("testCollection");
     }
 
@@ -293,7 +299,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               "function" : "cosine"
                             },
                             "indexing" : {
-                              "allow" : ["field1", "field2", "address.city", "_id", "$vector"]
+                              "allow" : ["field1", "field2", "address.city", "_id", "$vector", "pricing.price&.usd"]
                             }
                           }
                         }
@@ -526,39 +532,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     }
 
     @Test
-    public void failWithInvalidNameInIndexingAllows() {
-      // create a vector collection
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          // Brackets not allowed in field names
-          .body(
-              """
-                    {
-                      "createCollection": {
-                        "name": "collection_with_bad_allows",
-                        "options" : {
-                          "indexing" : {
-                            "allow" : ["valid-field", "address[1].street"]
-                          }
-                        }
-                      }
-                    }
-                    """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "Invalid indexing definition: `allow` contains invalid path: 'address[1].street'"))
-          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
-    }
-
-    @Test
     public void failWithInvalidNameInIndexingDeny() {
       // create a vector collection
       given()
@@ -585,7 +558,55 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body("$", responseIsError())
           .body(
               "errors[0].message",
-              startsWith("Invalid indexing definition: `deny` contains invalid path: '$in'"))
+              startsWith("Invalid indexing definition: path must not start with '$'"))
+          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failWithEmptyNameInIndexingDeny() {
+      givenHeadersPostJsonThenOk(
+              """
+                    {
+                      "createCollection": {
+                        "name": "collection_with_bad_deny",
+                        "options" : {
+                          "indexing" : {
+                            "deny" : ["field", ""]
+                          }
+                        }
+                      }
+                    }
+                    """)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Invalid indexing definition: path must be represented as a non-empty string"))
+          .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failWithInvalidEscapeCharacterInIndexingDeny() {
+      givenHeadersPostJsonThenOk(
+              """
+                    {
+                      "createCollection": {
+                        "name": "collection_with_bad_deny",
+                        "options" : {
+                          "indexing" : {
+                            "deny" : ["field", "pricing.price&usd"]
+                          }
+                        }
+                      }
+                    }
+                    """)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Invalid indexing definition: indexing path ('pricing.price&usd') is not a valid path."))
           .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -617,7 +638,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: No option \"InDex\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"vector\")"));
+                  "The provided options are invalid: No option \"InDex\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"lexical\", \"rerank\", \"vector\")"));
     }
 
     @Test
@@ -855,6 +876,55 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
+  }
+
+  private static Stream<Arguments> deprecatedEmbeddingModelSource() {
+    return Stream.of(
+        Arguments.of(
+            "DEPRECATED",
+            "a-deprecated-nvidia-embedding-model",
+            SchemaException.Code.DEPRECATED_AI_MODEL),
+        Arguments.of(
+            "END_OF_LIFE",
+            "a-EOL-nvidia-embedding-model",
+            SchemaException.Code.END_OF_LIFE_AI_MODEL));
+  }
+
+  @ParameterizedTest
+  @MethodSource("deprecatedEmbeddingModelSource")
+  public void failDeprecatedEOLEmbedModel(
+      String status, String modelName, SchemaException.Code errorCode) {
+    given()
+        .headers(getHeaders())
+        .contentType(ContentType.JSON)
+        .body(
+                """
+
+                        {
+                            "createCollection": {
+                                "name": "bad_nvidia_model",
+                                "options": {
+                                    "vector": {
+                                        "dimension": 1024,
+                                        "service": {
+                                            "provider": "nvidia",
+                                            "modelName": "%s"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        """
+                .formatted(modelName))
+        .when()
+        .post(KeyspaceResource.BASE_PATH, keyspaceName)
+        .then()
+        .statusCode(200)
+        .body("$", responseIsError())
+        .body(
+            "errors[0].message",
+            containsString("The model is: %s. It is at %s status".formatted(modelName, status)))
+        .body("errors[0].errorCode", is(errorCode.name()));
   }
 
   @Nested
@@ -1751,25 +1821,309 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     }
   }
 
-  private void deleteCollection(String collectionName) {
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(
-                """
-                {
-                  "deleteCollection": {
-                    "name": "%s"
+  @Nested
+  @Order(7)
+  class CreateCollectionWithSourceModel {
+    @Test
+    public void happyWithSourceModelAndMetrics() {
+      // create a collection with source model and metric
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                  {
+                      "createCollection": {
+                          "name": "collection_with_sourceModel_metric",
+                          "options": {
+                              "vector": {
+                                  "metric": "cosine",
+                                  "sourceModel": "openai-v3-small",
+                                  "dimension": 1536,
+                                  "service": {
+                                      "provider": "openai",
+                                      "modelName": "text-embedding-3-small"
+                                  }
+                              }
+                          }
+                      }
                   }
-                }
-                """
-                .formatted(collectionName))
-        .when()
-        .post(KeyspaceResource.BASE_PATH, keyspaceName)
-        .then()
-        .statusCode(200)
-        .body("$", responseIsDDLSuccess())
-        .body("status.ok", is(1));
+                  """)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+
+      // verify the collection using FindCollection
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                        "findCollections": {
+                            "options" : {
+                                "explain": true
+                            }
+                         }
+                      }
+                      """)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body("status.collections", hasSize(1))
+          .body("status.collections[0].options.vector.metric", is("cosine"))
+          .body("status.collections[0].options.vector.sourceModel", is("openai-v3-small"));
+
+      deleteCollection("collection_with_sourceModel_metric");
+    }
+
+    @Test
+    public void happyWithSourceModelOnly() {
+      // create a collection with source model - metric will be auto-populated to 'dot_product'
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                          {
+                              "createCollection": {
+                                  "name": "collection_with_sourceModel",
+                                  "options": {
+                                      "vector": {
+                                          "sourceModel": "openai-v3-small",
+                                          "dimension": 1536,
+                                          "service": {
+                                              "provider": "openai",
+                                              "modelName": "text-embedding-3-small"
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          """)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+
+      // verify the collection using FindCollection
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                        "findCollections": {
+                            "options" : {
+                                "explain": true
+                            }
+                         }
+                      }
+                      """)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body("status.collections", hasSize(1))
+          .body("status.collections[0].options.vector.metric", is("dot_product"))
+          .body("status.collections[0].options.vector.sourceModel", is("openai-v3-small"));
+
+      deleteCollection("collection_with_sourceModel");
+    }
+
+    @Test
+    public void happyWithMetricOnly() {
+      // create a collection with metric - source model will be auto-populated to 'other'
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_metric",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 1536,
+                                    "service": {
+                                        "provider": "openai",
+                                        "modelName": "text-embedding-3-small"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    """)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+
+      // verify the collection using FindCollection
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                          {
+                            "findCollections": {
+                                "options" : {
+                                    "explain": true
+                                }
+                             }
+                          }
+                          """)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body("status.collections", hasSize(1))
+          .body("status.collections[0].options.vector.metric", is("cosine"))
+          .body("status.collections[0].options.vector.sourceModel", is("other"));
+
+      deleteCollection("collection_with_metric");
+    }
+
+    @Test
+    public void happyNoSourceModelAndMetric() {
+      // create a collection without sourceModel and metric - source model will be auto-populated to
+      // 'other' and metric to 'cosine'
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                          "createCollection": {
+                              "name": "collection_with_no_sourceModel_metric",
+                              "options": {
+                                  "vector": {
+                                      "dimension": 1536,
+                                      "service": {
+                                          "provider": "openai",
+                                          "modelName": "text-embedding-3-small"
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                      """)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body("status.ok", is(1));
+
+      // verify the collection using FindCollection
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                  {
+                    "findCollections": {
+                        "options" : {
+                            "explain": true
+                        }
+                     }
+                  }
+                  """)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsDDLSuccess())
+          .body("status.collections", hasSize(1))
+          .body("status.collections[0].options.vector.metric", is("cosine"))
+          .body("status.collections[0].options.vector.sourceModel", is("other"));
+
+      deleteCollection("collection_with_no_sourceModel_metric");
+    }
+
+    @Test
+    public void failWithInvalidSourceModel() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                          "createCollection": {
+                              "name": "collection_with_sourceModel",
+                              "options": {
+                                  "vector": {
+                                      "sourceModel": "invalidName",
+                                      "dimension": 1536,
+                                      "service": {
+                                          "provider": "openai",
+                                          "modelName": "text-embedding-3-small"
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                      """)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsError())
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Request invalid: field 'command.options.vector.sourceModel' value \"invalidName\" not valid."));
+    }
+
+    @Test
+    public void failWithInvalidSourceModelObject() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                              {
+                                  "createCollection": {
+                                      "name": "collection_with_sourceModel",
+                                      "options": {
+                                          "vector": {
+                                              "sourceModel": "invalidName",
+                                              "dimension": 1536,
+                                              "service": {
+                                                  "provider": "openai",
+                                                  "modelName": "text-embedding-3-small"
+                                              }
+                                          }
+                                      }
+                                  }
+                              }
+                              """)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsError())
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Request invalid: field 'command.options.vector.sourceModel' value \"invalidName\" not valid."));
+    }
   }
 
   @Nested

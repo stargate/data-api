@@ -1,18 +1,31 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.Tags.TENANT_TAG;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.UNKNOWN_VALUE;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandTarget;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.ErrorTemplate;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.naming.SchemaObjectNamingRule;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -53,18 +66,29 @@ public interface CommandResolver<C extends Command> {
    * @param commandContext Context the command is running in
    * @param command The command to resolve into an opertion
    * @return Operation, must not be <code>null</code>
-   * @param <T> The type of the schema object the command is operating on.
+   * @param <SchemaT> The type of the schema object the command is operating on.
    */
-  default <T extends SchemaObject> Operation resolveCommand(
-      CommandContext<T> commandContext, C command) {
+  @SuppressWarnings("unchecked")
+  default <SchemaT extends SchemaObject> Operation<SchemaT> resolveCommand(
+      CommandContext<SchemaT> commandContext, C command) {
     Objects.requireNonNull(commandContext, "commandContext must not be null");
     Objects.requireNonNull(command, "command must not be null");
 
+    // aaron - feb 6 20254 - adding the unchecked was the only way I could get this to compile
     return switch (commandContext.schemaObject().type()) {
-      case COLLECTION -> resolveCollectionCommand(commandContext.asCollectionContext(), command);
-      case TABLE -> resolveTableCommand(commandContext.asTableContext(), command);
-      case KEYSPACE -> resolveKeyspaceCommand(commandContext.asKeyspaceContext(), command);
-      case DATABASE -> resolveDatabaseCommand(commandContext.asDatabaseContext(), command);
+      case COLLECTION ->
+          (Operation<SchemaT>)
+              resolveCollectionCommand(commandContext.asCollectionContext(), command);
+      case TABLE ->
+          (Operation<SchemaT>) resolveTableCommand(commandContext.asTableContext(), command);
+      case KEYSPACE ->
+          (Operation<SchemaT>) resolveKeyspaceCommand(commandContext.asKeyspaceContext(), command);
+      case DATABASE ->
+          (Operation<SchemaT>) resolveDatabaseCommand(commandContext.asDatabaseContext(), command);
+      default ->
+          throw new IllegalStateException(
+              "Unsupported schema object type to resolve command: "
+                  + commandContext.schemaObject().type().apiName());
     };
   }
 
@@ -75,14 +99,31 @@ public interface CommandResolver<C extends Command> {
    * @param command
    * @return
    */
-  default Operation resolveCollectionCommand(
+  default Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "%s Command does not support operating on Collections, target was %s",
-        command.getClass().getSimpleName(), ctx.schemaObject().name());
+
+    // this is duplicated because do not want to put it on the interface where it is public, nor
+    // on the enum, it already has a filter* helper.
+    var tableCommands =
+        CommandName.filterByTarget(CommandTarget.TABLE).stream()
+            .map(CommandName::getApiName)
+            .sorted()
+            .toList();
+    var collectionCommands =
+        CommandName.filterByTarget(CommandTarget.COLLECTION).stream()
+            .map(CommandName::getApiName)
+            .sorted()
+            .toList();
+    throw RequestException.Code.UNSUPPORTED_COLLECTION_COMMAND.get(
+        errVars(
+            ctx.schemaObject(),
+            map -> {
+              map.put("tableCommands", errFmtJoin(tableCommands));
+              map.put("collectionCommands", errFmtJoin(collectionCommands));
+              map.put("unsupportedCommand", command.commandName().getApiName());
+            }));
   }
-  ;
 
   /**
    * Implementors should use this method when they can resolve commands for a table.
@@ -91,11 +132,30 @@ public interface CommandResolver<C extends Command> {
    * @param command
    * @return
    */
-  default Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, C command) {
+  default Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "%s Command does not support operating on Tables, target was %s",
-        command.getClass().getSimpleName(), ctx.schemaObject().name());
+
+    // this is duplicated because do not want to put it on the interface where it is public, nor
+    // on the enum, it already has a filter* helper.
+    var tableCommands =
+        CommandName.filterByTarget(CommandTarget.TABLE).stream()
+            .map(CommandName::getApiName)
+            .sorted()
+            .toList();
+    var collectionCommands =
+        CommandName.filterByTarget(CommandTarget.COLLECTION).stream()
+            .map(CommandName::getApiName)
+            .sorted()
+            .toList();
+    throw RequestException.Code.UNSUPPORTED_TABLE_COMMAND.get(
+        errVars(
+            ctx.schemaObject(),
+            map -> {
+              map.put("tableCommands", errFmtJoin(tableCommands));
+              map.put("collectionCommands", errFmtJoin(collectionCommands));
+              map.put("unsupportedCommand", command.commandName().getApiName());
+            }));
   }
 
   /**
@@ -105,7 +165,8 @@ public interface CommandResolver<C extends Command> {
    * @param command
    * @return
    */
-  default Operation resolveKeyspaceCommand(CommandContext<KeyspaceSchemaObject> ctx, C command) {
+  default Operation<KeyspaceSchemaObject> resolveKeyspaceCommand(
+      CommandContext<KeyspaceSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
     throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Keyspaces, target was %s",
@@ -119,22 +180,20 @@ public interface CommandResolver<C extends Command> {
    * @param command
    * @return
    */
-  default Operation resolveDatabaseCommand(CommandContext<DatabaseSchemaObject> ctx, C command) {
+  default Operation<DatabaseSchemaObject> resolveDatabaseCommand(
+      CommandContext<DatabaseSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
     throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Databases, target was %s",
         command.getClass().getSimpleName(), ctx.schemaObject().name());
   }
 
-  static final String UNKNOWN_VALUE = "unknown";
-  static final String TENANT_TAG = "tenant";
-
   /**
    * Call to track metrics for the index usage, this method is called after the command is resolved
    * and we know the filters we want to run.
    *
    * @param meterRegistry
-   * @param dataApiRequestInfo
+   * @param requestContext
    * @param jsonApiMetricsConfig
    * @param command
    * @param dbLogicalExpression
@@ -145,7 +204,7 @@ public interface CommandResolver<C extends Command> {
    */
   default void addToMetrics(
       MeterRegistry meterRegistry,
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext requestContext,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       Command command,
       DBLogicalExpression dbLogicalExpression,
@@ -155,7 +214,7 @@ public interface CommandResolver<C extends Command> {
     // that
     // it's only here because of the use of records and interfaces, move to a base class
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
-    Tag tenantTag = Tag.of(TENANT_TAG, dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
+    Tag tenantTag = Tag.of(TENANT_TAG, requestContext.getTenantId().orElse(UNKNOWN_VALUE));
     Tags tags = Tags.of(commandTag, tenantTag);
 
     getIndexUsageTags(dbLogicalExpression, baseIndexUsage);
@@ -171,5 +230,27 @@ public interface CommandResolver<C extends Command> {
     for (DBLogicalExpression subDBLogicalExpression : dbLogicalExpression.subExpressions()) {
       getIndexUsageTags(subDBLogicalExpression, indexUsage);
     }
+  }
+
+  /**
+   * Validate the name of a schema object (e.g., keyspace, table, collection, or index).
+   *
+   * @param name The name to validate.
+   * @param namingRule The naming rule to apply.
+   * @return The validated name.
+   * @throws SchemaException if the name is invalid.
+   */
+  default String validateSchemaName(String name, SchemaObjectNamingRule namingRule) {
+    if (!namingRule.apply(name)) {
+      throw SchemaException.Code.UNSUPPORTED_SCHEMA_NAME.get(
+          Map.of(
+              "schemaType",
+              namingRule.schemaType().apiName(),
+              "maxNameLength",
+              String.valueOf(namingRule.getMaxLength()),
+              "unsupportedSchemaName",
+              ErrorTemplate.replaceIfNull(name)));
+    }
+    return name;
   }
 }

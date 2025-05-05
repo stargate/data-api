@@ -4,8 +4,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
@@ -67,6 +69,11 @@ public class VectorizeConfigValidator {
     // specified
     Integer vectorDimension =
         validateModelAndDimension(userConfig, providerConfig, userVectorDimension);
+
+    // Model must be SUPPORTED to do the schema operation.
+    // Note, validateService method is only triggered for createCollection/createTable/alterTable.
+    // So we can add validation here to cut off DEPRECATED/END_OF_LIFE model for schema creation.
+    checkModelSupportForSchemaCreation(userConfig);
 
     // Validate user-provided parameters against internal expectations
     validateUserParameters(userConfig, providerConfig);
@@ -319,6 +326,7 @@ public class VectorizeConfigValidator {
       VectorizeConfig userConfig,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
       Integer userVectorDimension) {
+
     // Find the model configuration by matching the model name
     // 1. huggingfaceDedicated does not require model, but requires dimension
     if (userConfig.provider().equals(ProviderConstants.HUGGINGFACE_DEDICATED)) {
@@ -327,20 +335,9 @@ public class VectorizeConfigValidator {
             "'dimension' is needed for provider %s", ProviderConstants.HUGGINGFACE_DEDICATED);
       }
     }
+
     // 2. other providers do require model
-    if (userConfig.modelName() == null) {
-      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'modelName' is needed for provider %s", userConfig.provider());
-    }
-    EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model =
-        providerConfig.models().stream()
-            .filter(m -> m.name().equals(userConfig.modelName()))
-            .findFirst()
-            .orElseThrow(
-                () ->
-                    ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                        "Model name '%s' for provider '%s' is not supported",
-                        userConfig.modelName(), userConfig.provider()));
+    var model = getModelConfig(userConfig, providerConfig);
 
     // Handle models with a fixed vector dimension
     if (model.vectorDimension().isPresent() && model.vectorDimension().get() != 0) {
@@ -361,6 +358,24 @@ public class VectorizeConfigValidator {
         .findFirst()
         .map(param -> validateRangeDimension(param, userVectorDimension))
         .orElse(userVectorDimension); // should not go here
+  }
+
+  /** Retrieves the model configuration for the specified provider and model. */
+  private EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig getModelConfig(
+      VectorizeConfig userConfig, EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
+
+    if (userConfig.modelName() == null) {
+      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          "'modelName' is needed for provider %s", userConfig.provider());
+    }
+    return providerConfig.models().stream()
+        .filter(m -> m.name().equals(userConfig.modelName()))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+                    "Model name '%s' for provider '%s' is not supported",
+                    userConfig.modelName(), userConfig.provider()));
   }
 
   /**
@@ -408,5 +423,42 @@ public class VectorizeConfigValidator {
       }
     }
     return userVectorDimension;
+  }
+
+  /**
+   * Validates the model support for the vectorization service. This method checks if the model is
+   * SUPPORTED and throw corresponding error if the model's DEPRECATED or END_OF_LIFE.
+   *
+   * <p>Note, this validation will only happen for schema change, E.G.
+   * createCollection/createTable/alterTable. When loading schemaObject from existing
+   * collection/table from DB, this validation will not be called, since the model is already set
+   * and we don't want to cut off the normal usage for existing collection/table.
+   */
+  private void checkModelSupportForSchemaCreation(VectorizeConfig service) {
+
+    // 1. Check if the service provider exists and is enabled
+    var providerConfig = getAndValidateProviderConfig(service);
+
+    // 2. other providers do require model
+    var model = getModelConfig(service, providerConfig);
+
+    // 3. validate model support
+    if (model.apiModelSupport().status() != ApiModelSupport.SupportStatus.SUPPORTED) {
+      var errorCode =
+          model.apiModelSupport().status() == ApiModelSupport.SupportStatus.DEPRECATED
+              ? SchemaException.Code.DEPRECATED_AI_MODEL
+              : SchemaException.Code.END_OF_LIFE_AI_MODEL;
+      throw errorCode.get(
+          Map.of(
+              "model",
+              model.name(),
+              "modelStatus",
+              model.apiModelSupport().status().name(),
+              "message",
+              model
+                  .apiModelSupport()
+                  .message()
+                  .orElse("The model is %s.".formatted(model.apiModelSupport().status().name()))));
+    }
   }
 }

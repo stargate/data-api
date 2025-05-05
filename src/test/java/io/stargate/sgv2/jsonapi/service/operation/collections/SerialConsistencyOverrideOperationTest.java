@@ -37,7 +37,6 @@ import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -47,6 +46,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -89,8 +89,9 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
     }
   }
 
-  @PostConstruct
-  public void init() {
+  @BeforeEach
+  public void beforeEach() {
+    super.beforeEach();
     COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
   }
 
@@ -172,9 +173,10 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
   class Insert {
     static final String INSERT_CQL =
         "INSERT INTO \"%s\".\"%s\""
-            + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
+            + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,"
+            + " query_dbl_values, query_text_values, query_null_values, query_timestamp_values)"
             + " VALUES"
-            + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+            + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS";
 
     @Test
     public void insert() throws Exception {
@@ -287,41 +289,14 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
                           }
                           """;
 
-      String update =
-          "UPDATE \"%s\".\"%s\" "
-              + "        SET"
-              + "            tx_id = now(),"
-              + "            exist_keys = ?,"
-              + "            array_size = ?,"
-              + "            array_contains = ?,"
-              + "            query_bool_values = ?,"
-              + "            query_dbl_values = ?,"
-              + "            query_text_values = ?,"
-              + "            query_null_values = ?,"
-              + "            query_timestamp_values = ?,"
-              + "            doc_json  = ?"
-              + "        WHERE "
-              + "            key = ?"
-              + "        IF "
-              + "            tx_id = ?";
-      String updateCql = update.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      final String updateCql =
+          ReadAndUpdateCollectionOperation.buildUpdateQuery(
+              KEYSPACE_NAME, COLLECTION_NAME, false, false);
       JsonNode jsonNode = objectMapper.readTree(doc1Updated);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
-
+      WritableShreddedDocument shredDocument =
+          documentShredder.shred(COMMAND_CONTEXT, jsonNode, tx_id);
       SimpleStatement updateStmt =
-          SimpleStatement.newInstance(
-              updateCql.formatted(KEYSPACE_NAME, COLLECTION_NAME),
-              CQLBindValues.getSetValue(shredDocument.existKeys()),
-              CQLBindValues.getIntegerMapValues(shredDocument.arraySize()),
-              shredDocument.arrayContains(),
-              CQLBindValues.getBooleanMapValues(shredDocument.queryBoolValues()),
-              CQLBindValues.getDoubleMapValues(shredDocument.queryNumberValues()),
-              CQLBindValues.getStringMapValues(shredDocument.queryTextValues()),
-              CQLBindValues.getSetValue(shredDocument.queryNullValues()),
-              CQLBindValues.getTimestampMapValues(shredDocument.queryTimestampValues()),
-              shredDocument.docJson(),
-              CQLBindValues.getDocumentIdValue(shredDocument.id()),
-              tx_id);
+          ReadAndUpdateCollectionOperation.bindUpdateValues(updateCql, shredDocument, false, false);
 
       List<Row> resultRows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, byteBufferFrom(true)));
       AsyncResultSet updateResults = new MockAsyncResultSet(COLUMNS_APPLIED, resultRows, null);

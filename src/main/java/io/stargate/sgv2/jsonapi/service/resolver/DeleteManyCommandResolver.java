@@ -3,24 +3,21 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.DeleteAttemptPage;
-import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
-import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
+import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.TruncateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
-import io.stargate.sgv2.jsonapi.service.operation.tables.DeleteAttemptBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableDeleteDBTaskBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
@@ -40,7 +37,6 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
   private final ObjectMapper objectMapper;
 
   private final MeterRegistry meterRegistry;
-  private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final FilterResolver<DeleteManyCommand, CollectionSchemaObject> collectionFilterResolver;
@@ -51,13 +47,11 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
       OperationsConfig operationsConfig,
       ObjectMapper objectMapper,
       MeterRegistry meterRegistry,
-      DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
 
     this.operationsConfig = operationsConfig;
     this.objectMapper = objectMapper;
     this.meterRegistry = meterRegistry;
-    this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
@@ -65,30 +59,42 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
   }
 
   @Override
-  public Operation resolveTableCommand(
-      CommandContext<TableSchemaObject> ctx, DeleteManyCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, DeleteManyCommand command) {
 
-    var builder = new DeleteAttemptBuilder<>(ctx.schemaObject(), false);
+    // If there is no filter or filter is empty for table deleteMany, build truncate attempt
+    final FilterClause filterClause = command.filterClause(commandContext);
 
+    if (filterClause == null || filterClause.isEmpty()) {
+      var taskBuilder = TruncateDBTask.builder(commandContext.schemaObject());
+      taskBuilder.withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+
+      var taskGroup = new TaskGroup<>(taskBuilder.build());
+      return new TaskOperation<>(
+          taskGroup, TruncateDBTaskPage.accumulator(TruncateDBTask.class, commandContext));
+    }
+
+    TableDeleteDBTaskBuilder taskBuilder =
+        new TableDeleteDBTaskBuilder(commandContext.schemaObject())
+            .withDeleteOne(false)
+            .withExceptionHandlerFactory(TableDriverExceptionHandler::new);
+
+    // need to update so we use WithWarnings correctly
     var where =
         TableWhereCQLClause.forDelete(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command));
+            commandContext.schemaObject(),
+            tableFilterResolver.resolve(commandContext, command).target());
 
-    var attempts = new OperationAttemptContainer<>(builder.build(where));
-
-    var pageBuilder =
-        DeleteAttemptPage.<TableSchemaObject>builder()
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
-
-    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
+    var tasks = new TaskGroup<>(taskBuilder.build(where));
+    return new TaskOperation<>(tasks, DeleteDBTaskPage.accumulator(commandContext));
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, DeleteManyCommand command) {
+    final FilterClause filterClause = command.filterClause(ctx);
     // If there is no filter or filter is empty, use Truncate operation instead of Delete
-    if (command.filterClause() == null || command.filterClause().logicalExpression().isEmpty()) {
+    if (filterClause == null || filterClause.isEmpty()) {
       return new TruncateCollectionOperation(ctx);
     }
     final FindCollectionOperation findCollectionOperation = getFindOperation(ctx, command);
@@ -105,18 +111,18 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
   }
 
   private FindCollectionOperation getFindOperation(
-      CommandContext<CollectionSchemaObject> ctx, DeleteManyCommand command) {
-    final DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
+      CommandContext<CollectionSchemaObject> commandContext, DeleteManyCommand command) {
+    var dbLogicalExpression = collectionFilterResolver.resolve(commandContext, command).target();
     // Read One extra document than delete limit so return moreData flag
     addToMetrics(
         meterRegistry,
-        dataApiRequestInfo,
+        commandContext.requestContext(),
         jsonApiMetricsConfig,
         command,
         dbLogicalExpression,
-        ctx.schemaObject().newIndexUsage());
+        commandContext.schemaObject().newIndexUsage());
     return FindCollectionOperation.unsorted(
-        ctx,
+        commandContext,
         dbLogicalExpression,
         DocumentProjector.includeAllProjector(),
         null,

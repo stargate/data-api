@@ -1,16 +1,20 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateKeyspaceCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
-import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
+import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -36,18 +40,32 @@ import org.jboss.resteasy.reactive.RestResponse;
 @SecurityRequirement(name = OpenApiConstants.SecuritySchemes.TOKEN)
 @Tag(ref = "General")
 public class GeneralResource {
-
-  @Inject private DataApiRequestInfo dataApiRequestInfo;
-
-  @Inject FeaturesConfig apiFeatureConfig;
-
   public static final String BASE_PATH = "/v1";
 
+  @Inject private RequestContext requestContext;
+
+  private final CommandContext.BuilderSupplier contextBuilderSupplier;
   private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject
-  public GeneralResource(MeteredCommandProcessor meteredCommandProcessor) {
+  public GeneralResource(
+      MeteredCommandProcessor meteredCommandProcessor,
+      MeterRegistry meterRegistry,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      CQLSessionCache cqlSessionCache,
+      EmbeddingProviderFactory embeddingProviderFactory,
+      RerankingProviderFactory rerankingProviderFactory) {
     this.meteredCommandProcessor = meteredCommandProcessor;
+
+    contextBuilderSupplier =
+        CommandContext.builderSupplier()
+            // old code did not set jsonProcessingMetricsReporter - Aaron Feb 10
+            .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
+            .withCqlSessionCache(cqlSessionCache)
+            .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
+            .withEmbeddingProviderFactory(embeddingProviderFactory)
+            .withRerankingProviderFactory(rerankingProviderFactory)
+            .withMeterRegistry(meterRegistry);
   }
 
   // TODO: add example for findEmbeddingProviders
@@ -79,19 +97,16 @@ public class GeneralResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid GeneralCommand command) {
-    final ApiFeatures apiFeatures =
-        ApiFeatures.fromConfigAndRequest(apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
 
     var commandContext =
-        CommandContext.forSchemaObject(
-            new DatabaseSchemaObject(),
-            null,
-            command.getClass().getSimpleName(),
-            null,
-            apiFeatures);
+        contextBuilderSupplier
+            .getBuilder(new DatabaseSchemaObject())
+            .withCommandName(command.getClass().getSimpleName())
+            .withRequestContext(requestContext)
+            .build();
 
     return meteredCommandProcessor
-        .processCommand(dataApiRequestInfo, commandContext, command)
+        .processCommand(commandContext, command)
         // map to 2xx unless overridden by error
         .map(commandResult -> commandResult.toRestResponse());
   }

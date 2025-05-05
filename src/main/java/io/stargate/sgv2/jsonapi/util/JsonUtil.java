@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeCreator;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -9,6 +10,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
+import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
@@ -17,8 +19,23 @@ import java.util.OptionalInt;
 import org.bson.types.ObjectId;
 
 public class JsonUtil {
-  @Deprecated // use JsonExtensionType.EJSON_DATE.encodedName() instead
-  public static final String EJSON_VALUE_KEY_DATE = JsonExtensionType.EJSON_DATE.encodedName();
+  @Deprecated // Call JsonExtensionType.EJSON_DATE.encodedName() directly instead
+  private static final String EJSON_VALUE_KEY_DATE = JsonExtensionType.EJSON_DATE.encodedName();
+
+  /**
+   * Helper method for producing "pretty" type description for given {@link JsonNode} value.
+   *
+   * @param node JSON value to describe
+   * @return Capitalized type name like "Object", "Array", "String", "Number" etc.
+   */
+  public static String nodeTypeAsString(JsonNode node) {
+    if (node == null) {
+      return "<null>";
+    }
+    String typeDesc = node.getNodeType().toString();
+    // We know all are longer than 1 character, upper case, so:
+    return typeDesc.substring(0, 1) + typeDesc.substring(1).toLowerCase();
+  }
 
   /**
    * Method that compares to JSON values for equality using Mongo semantics which are otherwise same
@@ -226,6 +243,15 @@ public class JsonUtil {
         } catch (IllegalArgumentException e) {
         }
         break;
+      case BINARY:
+        // For some formats we may get actual Binary; for JSON it's Text (JSON String):
+        if (value.isBinary() || value.isTextual()) {
+          try {
+            return value.binaryValue();
+          } catch (IOException e) {
+          }
+        }
+        break;
     }
     return null;
   }
@@ -255,8 +281,8 @@ public class JsonUtil {
    * length, and if so, return actual length (in bytes); otherwise return {@code
    * OptionalInt.empty()}. This is faster than encoding String as byte[] and checking length as it
    * not only avoids unnecessary allocation of potentially long String, but also avoids exact
-   * calculation for shorter Strings where we can determine that size cannot exceed the limit (since
-   * we know that UTF-8 encoded length is at most 3x of char length).
+   * calculation for shorter Constants where we can determine that size cannot exceed the limit
+   * (since we know that UTF-8 encoded length is at most 3x of char length).
    *
    * @param value String to check
    * @param maxLengthInBytes Maximum length in bytes allowed (inclusive)
@@ -275,5 +301,22 @@ public class JsonUtil {
       }
     }
     return OptionalInt.empty();
+  }
+
+  public static float[] arrayNodeToVector(ArrayNode arrayNode) {
+
+    float[] arrayVals = new float[arrayNode.size()];
+    if (arrayNode.isEmpty()) {
+      throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+    }
+
+    for (int i = 0; i < arrayNode.size(); i++) {
+      JsonNode element = arrayNode.get(i);
+      if (!element.isNumber()) {
+        throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
+      }
+      arrayVals[i] = element.floatValue();
+    }
+    return arrayVals;
   }
 }

@@ -1,103 +1,99 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.datastax.oss.driver.api.core.type.VectorType;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
+import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
+
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
+import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
-import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
-import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
-import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexAttemptBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import io.stargate.sgv2.jsonapi.service.operation.*;
+import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexDBTask;
+import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexDBTaskBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskGroup;
+import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskOperation;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorIndex;
 import jakarta.enterprise.context.ApplicationScoped;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.time.Duration;
 import java.util.Map;
-import java.util.Optional;
 
 /** Resolver for the {@link CreateVectorIndexCommand}. */
 @ApplicationScoped
 public class CreateVectorIndexCommandResolver implements CommandResolver<CreateVectorIndexCommand> {
+
   @Override
   public Class<CreateVectorIndexCommand> getCommandClass() {
     return CreateVectorIndexCommand.class;
   }
-  ;
 
   @Override
-  public Operation resolveTableCommand(
-      CommandContext<TableSchemaObject> ctx, CreateVectorIndexCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, CreateVectorIndexCommand command) {
 
-    String columnName = command.definition().column();
-    String indexName = command.name();
-    final CreateVectorIndexCommand.Definition.Options definitionOptions =
-        command.definition().options();
+    final var indexName = validateSchemaName(command.name(), NamingRules.INDEX);
 
-    TableMetadata tableMetadata = ctx.schemaObject().tableMetadata();
-    // Validate Column present in Table
-    final Optional<ColumnMetadata> column =
-        ctx.schemaObject()
-            .tableMetadata()
-            .getColumn(CqlIdentifierUtil.cqlIdentifierFromUserInput(columnName));
-    ColumnMetadata columnMetadata =
-        column.orElseThrow(
-            () ->
-                SchemaException.Code.INVALID_INDEX_DEFINITION.get(
-                    Map.of("reason", "Column not defined in the table")));
-    SimilarityFunction similarityFunction =
-        definitionOptions != null ? definitionOptions.metric() : null;
-    String sourceModel = definitionOptions != null ? definitionOptions.sourceModel() : null;
-    if (!(columnMetadata.getType() instanceof VectorType)) {
-      throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
-          Map.of("reason", "use `createIndex` command to create index on non-vector type column"));
+    var indexType =
+        command.indexType() == null
+            ? ApiIndexType.VECTOR
+            : ApiIndexType.fromApiName(command.indexType());
+
+    if (indexType == null) {
+      throw SchemaException.Code.UNKNOWN_INDEX_TYPE.get(
+          Map.of(
+              "knownTypes",
+              errFmtJoin(ApiIndexType.values(), ApiIndexType::apiName),
+              "unknownType",
+              command.indexType()));
     }
 
-    if (definitionOptions != null) {
-      if (sourceModel != null && VectorConstant.SUPPORTED_SOURCES.get(sourceModel) == null) {
-        List<String> supportedSourceModel =
-            new ArrayList<>(VectorConstant.SUPPORTED_SOURCES.keySet());
-        Collections.sort(supportedSourceModel);
-        throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
-            Map.of(
-                "reason",
-                "sourceModel `%s` used in request is invalid. Supported source models are: %s"
-                    .formatted(sourceModel, supportedSourceModel)));
-      }
+    if (indexType != ApiIndexType.VECTOR) {
+      throw SchemaException.Code.UNSUPPORTED_INDEX_TYPE.get(
+          Map.of(
+              "supportedTypes",
+              ApiIndexType.VECTOR.apiName(),
+              "unsupportedType",
+              command.indexType()));
     }
 
-    // Command level option for ifNotExists
-    boolean ifNotExists = false;
-    final CreateVectorIndexCommand.Options commandOptions = command.options();
-    if (commandOptions != null && commandOptions.ifNotExists() != null) {
-      ifNotExists = commandOptions.ifNotExists();
-    }
+    // TODO: we need a centralised way of creating retry attempt.
+    CreateIndexDBTaskBuilder taskBuilder =
+        CreateIndexDBTask.builder(commandContext.schemaObject())
+            .withIfNotExists(
+                getOrDefault(
+                    command.options(),
+                    CreateVectorIndexCommand.CreateVectorIndexCommandOptions::ifNotExists,
+                    TableDescDefaults.CreateVectorIndexOptionsDefaults.IF_NOT_EXISTS))
+            .withSchemaRetryPolicy(
+                new SchemaDBTask.SchemaRetryPolicy(
+                    commandContext
+                        .config()
+                        .get(OperationsConfig.class)
+                        .databaseConfig()
+                        .ddlRetries(),
+                    Duration.ofMillis(
+                        commandContext
+                            .config()
+                            .get(OperationsConfig.class)
+                            .databaseConfig()
+                            .ddlRetryDelayMillis())));
 
-    // Default Similarity Function to COSINE
-    if (similarityFunction == null && sourceModel == null) {
-      similarityFunction = SimilarityFunction.COSINE;
-    }
+    // this will throw APIException if the index is not supported
+    var apiIndex =
+        ApiVectorIndex.FROM_DESC_FACTORY.create(
+            commandContext.schemaObject(), indexName, command.definition());
+    taskBuilder.withExceptionHandlerFactory(
+        DefaultDriverExceptionHandler.Factory.withIdentifier(
+            CreateIndexExceptionHandler::new, apiIndex.indexName()));
 
-    var attempt =
-        new CreateIndexAttemptBuilder(0, ctx.schemaObject(), columnName, indexName)
-            .ifNotExists(ifNotExists)
-            .vectorIndexOptions(similarityFunction, sourceModel)
-            .build();
-    var attempts = new OperationAttemptContainer<>(List.of(attempt));
-    var pageBuilder =
-        SchemaAttemptPage.<TableSchemaObject>builder()
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+    var taskGroup = new TaskGroup<>(taskBuilder.build(apiIndex));
 
-    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
+    return new TaskOperation<>(
+        taskGroup, SchemaDBTaskPage.accumulator(CreateIndexDBTask.class, commandContext));
   }
 }

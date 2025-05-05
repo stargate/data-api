@@ -10,7 +10,9 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.core.servererrors.TruncateException;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.DBTraceMessages;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -19,6 +21,7 @@ import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
@@ -32,10 +35,44 @@ public class QueryExecutor {
   /** CQLSession cache. */
   private final CQLSessionCache cqlSessionCache;
 
+  private final RequestTracing requestTracing;
+
   @Inject
   public QueryExecutor(CQLSessionCache cqlSessionCache, OperationsConfig operationsConfig) {
-    this.cqlSessionCache = cqlSessionCache;
-    this.operationsConfig = operationsConfig;
+    this(cqlSessionCache, operationsConfig, RequestTracing.NO_OP);
+  }
+
+  public QueryExecutor(
+      CQLSessionCache cqlSessionCache,
+      OperationsConfig operationsConfig,
+      RequestTracing requestTracing) {
+    this.cqlSessionCache =
+        Objects.requireNonNull(cqlSessionCache, "cqlSessionCache must not be null");
+    this.operationsConfig =
+        Objects.requireNonNull(operationsConfig, "operationsConfig must not be null");
+    this.requestTracing = Objects.requireNonNull(requestTracing, "requestTracing must not be null");
+  }
+
+  private Uni<AsyncResultSet> executeAsync(
+      RequestContext requestContext, SimpleStatement statement) {
+
+    var stmtWithTracing =
+        requestTracing.enabled() != statement.isTracing()
+            ? statement.setTracing(requestTracing.enabled())
+            : statement;
+
+    DBTraceMessages.executingStatement(
+        requestTracing, stmtWithTracing, "Executing statement for non task based operation");
+
+    return Uni.createFrom()
+        .completionStage(cqlSessionCache.getSession(requestContext).executeAsync(stmtWithTracing))
+        .onItem()
+        .call(
+            asyncResultSet ->
+                DBTraceMessages.maybeCqlTrace(
+                    requestTracing,
+                    asyncResultSet,
+                    "Statement trace for non task based operation"));
   }
 
   /**
@@ -49,7 +86,7 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeRead(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext requestContext,
       SimpleStatement simpleStatement,
       Optional<String> pagingState,
       int pageSize) {
@@ -61,9 +98,7 @@ public class QueryExecutor {
       simpleStatement =
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
-    return Uni.createFrom()
-        .completionStage(
-            cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement));
+    return executeAsync(requestContext, simpleStatement);
   }
 
   /**
@@ -74,12 +109,12 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public CompletionStage<AsyncResultSet> executeCount(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement simpleStatement) {
+      RequestContext requestContext, SimpleStatement simpleStatement) {
     simpleStatement =
         simpleStatement
             .setExecutionProfileName("count")
             .setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
-    return cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement);
+    return cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement);
   }
 
   /**
@@ -90,11 +125,11 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public CompletionStage<AsyncResultSet> executeEstimatedCount(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement simpleStatement) {
+      RequestContext requestContext, SimpleStatement simpleStatement) {
     simpleStatement =
         simpleStatement.setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
 
-    return cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement);
+    return cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement);
   }
 
   /**
@@ -108,7 +143,7 @@ public class QueryExecutor {
    * @return
    */
   public Uni<AsyncResultSet> executeVectorSearch(
-      DataApiRequestInfo dataApiRequestInfo,
+      RequestContext requestContext,
       SimpleStatement simpleStatement,
       Optional<String> pagingState,
       int pageSize) {
@@ -120,9 +155,11 @@ public class QueryExecutor {
       simpleStatement =
           simpleStatement.setPagingState(ByteBuffer.wrap(decodeBase64(pagingState.get())));
     }
-    return Uni.createFrom()
-        .completionStage(
-            cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement));
+
+    return executeAsync(requestContext, simpleStatement);
+    //    return Uni.createFrom()
+    //
+    // .completionStage(cqlSessionCache.getSession(requestContext).executeAsync(simpleStatement));
   }
 
   /**
@@ -133,11 +170,11 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeWrite(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement statement) {
+      RequestContext requestContext, SimpleStatement statement) {
     return Uni.createFrom()
         .completionStage(
             cqlSessionCache
-                .getSession(dataApiRequestInfo)
+                .getSession(requestContext)
                 .executeAsync(
                     statement
                         .setIdempotent(true)
@@ -155,8 +192,8 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeCreateSchemaChange(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement) {
-    return executeSchemaChange(dataApiRequestInfo, boundStatement, "create");
+      RequestContext requestContext, SimpleStatement boundStatement) {
+    return executeSchemaChange(requestContext, boundStatement, "create");
   }
 
   /**
@@ -167,8 +204,8 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeDropSchemaChange(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement) {
-    return executeSchemaChange(dataApiRequestInfo, boundStatement, "drop");
+      RequestContext requestContext, SimpleStatement boundStatement) {
+    return executeSchemaChange(requestContext, boundStatement, "drop");
   }
 
   /**
@@ -179,16 +216,16 @@ public class QueryExecutor {
    * @return AsyncResultSet
    */
   public Uni<AsyncResultSet> executeTruncateSchemaChange(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement) {
-    return executeSchemaChange(dataApiRequestInfo, boundStatement, "truncate");
+      RequestContext requestContext, SimpleStatement boundStatement) {
+    return executeSchemaChange(requestContext, boundStatement, "truncate");
   }
 
   private Uni<AsyncResultSet> executeSchemaChange(
-      DataApiRequestInfo dataApiRequestInfo, SimpleStatement boundStatement, String profile) {
+      RequestContext requestContext, SimpleStatement boundStatement, String profile) {
     return Uni.createFrom()
         .completionStage(
             cqlSessionCache
-                .getSession(dataApiRequestInfo)
+                .getSession(requestContext)
                 .executeAsync(
                     boundStatement
                         .setExecutionProfileName(profile)
@@ -218,7 +255,7 @@ public class QueryExecutor {
                           Uni.createFrom()
                               .completionStage(
                                   cqlSessionCache
-                                      .getSession(dataApiRequestInfo)
+                                      .getSession(requestContext)
                                       .executeAsync(
                                           duplicate
                                               .setExecutionProfileName(profile)
@@ -247,30 +284,27 @@ public class QueryExecutor {
    * @return
    */
   protected Uni<Optional<TableMetadata>> getSchema(
-      DataApiRequestInfo dataApiRequestInfo, String namespace, String collectionName) {
-    KeyspaceMetadata keyspaceMetadata;
+      RequestContext requestContext, String namespace, String collectionName) {
     try {
-      cqlSessionCache.getSession(dataApiRequestInfo).refreshSchema();
-      keyspaceMetadata =
-          cqlSessionCache
-              .getSession(dataApiRequestInfo)
-              .getMetadata()
-              .getKeyspaces()
-              .get(cqlIdentifierFromUserInput(namespace));
+      var session = cqlSessionCache.getSession(requestContext);
+      return Uni.createFrom()
+          .completionStage(session.refreshSchemaAsync())
+          .onItem()
+          .transformToUni(
+              v -> {
+                KeyspaceMetadata keyspaceMetadata =
+                    session.getMetadata().getKeyspaces().get(cqlIdentifierFromUserInput(namespace));
+                if (keyspaceMetadata == null) {
+                  return Uni.createFrom()
+                      .failure(ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException("%s", namespace));
+                }
+                return Uni.createFrom()
+                    .item(keyspaceMetadata.getTable(cqlIdentifierFromUserInput(collectionName)));
+              });
     } catch (Exception e) {
       // TODO: this ^^ is a very wide error catch, confirm what it should actually be catching
       return Uni.createFrom().failure(e);
     }
-    // if namespace does not exist, throw error
-    if (keyspaceMetadata == null) {
-      return Uni.createFrom()
-          .failure(ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException("%s", namespace));
-    }
-    // else get the table
-    // TODO: this should probably use CqlIdentifier.fromCql() (or .fromInternal())
-    // if we want to support case-sensitive names
-    return Uni.createFrom()
-        .item(keyspaceMetadata.getTable(cqlIdentifierFromUserInput(collectionName)));
   }
 
   /**
@@ -281,10 +315,10 @@ public class QueryExecutor {
    * @return TableMetadata
    */
   protected Uni<TableMetadata> getCollectionSchema(
-      DataApiRequestInfo dataApiRequestInfo, String namespace, String collectionName) {
+      RequestContext requestContext, String namespace, String collectionName) {
     Optional<KeyspaceMetadata> keyspaceMetadata;
     if ((keyspaceMetadata =
-            cqlSessionCache.getSession(dataApiRequestInfo).getMetadata().getKeyspace(namespace))
+            cqlSessionCache.getSession(requestContext).getMetadata().getKeyspace(namespace))
         .isPresent()) {
       Optional<TableMetadata> tableMetadata = keyspaceMetadata.get().getTable(collectionName);
       if (tableMetadata.isPresent()) {

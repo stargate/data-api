@@ -23,7 +23,7 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
     final String typeStr = (deserializer == null) ? "N/A" : deserializer.handledType().toString();
     if (typeStr.endsWith("CreateCollectionCommand$Options")) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "No option \"%s\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"vector\")",
+          "No option \"%s\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"lexical\", \"rerank\", \"vector\")",
           propertyName);
     }
     if (typeStr.endsWith("CreateCollectionCommand$Options$IdConfig")) {
@@ -38,7 +38,7 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
     }
     if (typeStr.endsWith("CreateCollectionCommand$Options$VectorSearchConfig")) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "Unrecognized field \"%s\" for `createCollection.options.vector` (known fields: \"dimension\", \"metric\", \"service\")",
+          "Unrecognized field \"%s\" for `createCollection.options.vector` (known fields: \"dimension\", \"metric\", \"service\", \"sourceModel\",)",
           propertyName);
     }
 
@@ -55,12 +55,6 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
       TypeIdResolver idResolver,
       String failureMsg)
       throws JsonApiException {
-    //            interface io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand ->
-    // NamespaceCommand
-    //            interface io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand ->
-    // CollectionCommand
-    //            interface io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand ->
-    // GeneralCommand
     final String rawCommandClassString = baseType.getRawClass().getName();
     final String baseCommand =
         rawCommandClassString.substring(rawCommandClassString.lastIndexOf('.') + 1);

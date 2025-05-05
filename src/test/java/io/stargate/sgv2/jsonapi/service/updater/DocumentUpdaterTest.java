@@ -12,15 +12,14 @@ import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
-import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -29,6 +28,7 @@ import org.junit.jupiter.api.Test;
 public class DocumentUpdaterTest {
   @Inject ObjectMapper objectMapper;
   @Inject DataVectorizerService dataVectorizerService;
+  private TestEmbeddingProvider testEmbeddingProvider = new TestEmbeddingProvider();
 
   private static String BASE_DOC_JSON =
       """
@@ -298,11 +298,11 @@ public class DocumentUpdaterTest {
                         objectMapper.getNodeFactory().objectNode().put("_id", "xyz")));
               });
       assertThat(t)
-          .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .withFailMessage("Should throw exception on $set of _id")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID)
-          .hasMessage(ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $set");
+          .isInstanceOf(UpdateException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID.name())
+          .hasFieldOrPropertyWithValue("title", "Update operators cannot be used on _id field")
+          .hasMessageContaining("The command used the update operator: $set");
     }
 
     @Test
@@ -316,11 +316,11 @@ public class DocumentUpdaterTest {
                         objectMapper.getNodeFactory().objectNode().put("_id", "xyz")));
               });
       assertThat(t)
-          .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .withFailMessage("Should throw exception on $unset of _id")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID)
-          .hasMessage(ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $unset");
+          .isInstanceOf(UpdateException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID.name())
+          .hasFieldOrPropertyWithValue("title", "Update operators cannot be used on _id field")
+          .hasMessageContaining("The command used the update operator: $unset");
     }
 
     @Test
@@ -576,8 +576,7 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   firstResponse,
                   dataVectorizerService,
-                  new DataApiRequestInfo(Optional.of("testTenant")),
-                  TestEmbeddingProvider.commandContextWithVectorize)
+                  testEmbeddingProvider.commandContextWithVectorize())
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -787,8 +786,7 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   firstResponse,
                   dataVectorizerService,
-                  new DataApiRequestInfo(Optional.of("testTenant")),
-                  TestEmbeddingProvider.commandContextWithVectorize)
+                  testEmbeddingProvider.commandContextWithVectorize())
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -957,8 +955,7 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   updatedDocument,
                   dataVectorizerService,
-                  new DataApiRequestInfo(Optional.of("testTenant")),
-                  TestEmbeddingProvider.commandContextWithVectorize)
+                  testEmbeddingProvider.commandContextWithVectorize())
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1206,8 +1203,7 @@ public class DocumentUpdaterTest {
               .updateEmbeddingVector(
                   updatedDocument,
                   dataVectorizerService,
-                  new DataApiRequestInfo(Optional.of("testTenant")),
-                  TestEmbeddingProvider.commandContextWithVectorize)
+                  testEmbeddingProvider.commandContextWithVectorize())
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()

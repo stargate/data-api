@@ -12,7 +12,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -31,6 +31,7 @@ import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -41,12 +42,18 @@ public class FindOneAndReplaceCommandResolverTest {
   @Inject OperationsConfig operationsConfig;
   @Inject DocumentShredder documentShredder;
   @Inject FindOneAndReplaceCommandResolver resolver;
-  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
+  @InjectMock protected RequestContext dataApiRequestInfo;
+  private TestConstants testConstants = new TestConstants();
+
+  CommandContext<CollectionSchemaObject> commandContext;
+
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.collectionContext();
+  }
 
   @Nested
   class Resolve {
-
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void invalidVectorizeUsage() throws Exception {

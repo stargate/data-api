@@ -10,9 +10,12 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.*;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.NotSupportedException;
@@ -38,7 +41,14 @@ public final class ThrowableToErrorMapper {
 
   private static final BiFunction<Throwable, String, CommandResult.Error> MAPPER_WITH_MESSAGE =
       (throwable, message) -> {
-        // if our own exception, shortcut
+
+        // V2 error, normally handled in the Task processing but can be in other places
+        if (throwable instanceof APIException apiException) {
+          return CommandResult.statusOnlyBuilder(true, false, RequestTracing.NO_OP)
+              .throwableToCommandError(apiException);
+        }
+
+        // if our own V1 exception, shortcut
         if (throwable instanceof JsonApiException jae) {
           if (jae.getErrorCode().equals(ErrorCodeV1.SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE)) {
             // 30-Aug-2021: [data-api#1383] Why is this special case here?
@@ -177,6 +187,19 @@ public final class ThrowableToErrorMapper {
           .toApiException("root cause = (%s) %s", throwable.getClass().getSimpleName(), message)
           .getCommandResultError(Response.Status.OK);
     }
+    // [data-api#1900]: Need to convert Lexical-index creation failure to something more meaningful
+    if (message.contains("Invalid analyzer config")) {
+      return ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS
+          .toApiException()
+          .getCommandResultError(message, Response.Status.OK);
+    }
+    // [data-api#2068]: Need to convert Lexical-value-too-big failure to something more meaningful
+    if (message.contains(
+        "analyzed size for column query_lexical_value exceeds the cumulative limit for index")) {
+      return ErrorCodeV1.LEXICAL_CONTENT_TOO_BIG
+          .toApiException()
+          .getCommandResultError(Response.Status.OK);
+    }
     return ErrorCodeV1.INVALID_QUERY
         .toApiException()
         .getCommandResultError(message, Response.Status.OK);
@@ -241,9 +264,10 @@ public final class ThrowableToErrorMapper {
               Response.Status.BAD_REQUEST,
               "underlying problem: (%s) %s",
               e.getClass().getName(),
-              message)
+              e.getMessage())
           .getCommandResultError();
     }
+
     // Unrecognized property? (note: CommandObjectMapperHandler handles some cases)
     if (e instanceof UnrecognizedPropertyException upe) {
       final Collection<Object> knownIds =
@@ -260,6 +284,20 @@ public final class ThrowableToErrorMapper {
           .getCommandResultError();
     }
 
+    // aaron 28-oct-2024, HACK just need something to handle our deserialization errors
+    // should not be using V1 errors but would be too much to fix this now
+    // NOTE: must be after the UnrecognizedPropertyException check
+    // 09-Jan-2025, tatu: [data-api#1812] Not ideal but slightly better than before
+    if (e instanceof JsonMappingException jme) {
+      return ErrorCodeV1.INVALID_REQUEST_STRUCTURE_MISMATCH
+          .toApiException(
+              Response.Status.BAD_REQUEST,
+              "underlying problem: (%s) %s",
+              e.getClass().getName(),
+              e.getMessage())
+          .getCommandResultError();
+    }
+
     // Will need to add more handling but start with above
     return handleUnrecognizedException(e, message);
   }
@@ -271,6 +309,7 @@ public final class ThrowableToErrorMapper {
             "Unrecognized Exception (%s) caught, mapped to SERVER_UNHANDLED_ERROR: %s",
             throwable.getClass().getName(), message),
         throwable);
+
     return ErrorCodeV1.SERVER_UNHANDLED_ERROR
         .toApiException("root cause: (%s) %s", throwable.getClass().getName(), message)
         .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);

@@ -1,9 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
+import io.stargate.sgv2.jsonapi.util.recordable.Jsonable;
 import java.util.*;
 
 /**
@@ -40,6 +42,7 @@ public class CommandResultBuilder {
   // Flagged true to include the new error object v2
   private final boolean useErrorObjectV2;
 
+  private final RequestTracing requestTracing;
   // Created in the Ctor
   private final APIExceptionCommandErrorBuilder apiExceptionToError;
 
@@ -47,10 +50,17 @@ public class CommandResultBuilder {
   // but may not be returning V2 errors in the result
   private final APIExceptionCommandErrorBuilder apiWarningToError;
 
-  CommandResultBuilder(ResponseType responseType, boolean useErrorObjectV2, boolean debugMode) {
+  CommandResultBuilder(
+      ResponseType responseType,
+      boolean useErrorObjectV2,
+      boolean debugMode,
+      RequestTracing requestTracing) {
     this.responseType = responseType;
     this.useErrorObjectV2 = useErrorObjectV2;
     this.debugMode = debugMode;
+
+    // There is a no op implementation for tracing that is used when tracing is disabled
+    this.requestTracing = Objects.requireNonNull(requestTracing, "requestTracing must not be null");
 
     this.apiExceptionToError = new APIExceptionCommandErrorBuilder(debugMode, useErrorObjectV2);
     this.apiWarningToError = new APIExceptionCommandErrorBuilder(debugMode, true);
@@ -145,7 +155,11 @@ public class CommandResultBuilder {
       cmdStatus.put(CommandStatus.WARNINGS, warnings);
     }
 
-    // null out values that are empty, the CommandResult serialiser will ignore them when the JSON
+    requestTracing
+        .getSession()
+        .ifPresent(session -> cmdStatus.put(CommandStatus.TRACE, Jsonable.toJson(session)));
+
+    // null out values that are empty, the CommandResult serializer will ignore them when the JSON
     // is built
     var finalStatus = cmdStatus.isEmpty() ? null : cmdStatus;
     var finalErrors = cmdErrors.isEmpty() ? null : cmdErrors;

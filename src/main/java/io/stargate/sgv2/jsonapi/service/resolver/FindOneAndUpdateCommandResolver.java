@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
@@ -13,8 +13,6 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
-import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -32,7 +30,6 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
-  private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final CollectionFilterResolver<FindOneAndUpdateCommand> collectionFilterResolver;
@@ -46,7 +43,6 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
       DataVectorizerService dataVectorizerService,
       DocumentShredder documentShredder,
       MeterRegistry meterRegistry,
-      DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
     super();
     this.objectMapper = objectMapper;
@@ -54,7 +50,6 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
     this.operationsConfig = operationsConfig;
     this.dataVectorizerService = dataVectorizerService;
     this.meterRegistry = meterRegistry;
-    this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
@@ -66,7 +61,7 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
   }
 
   @Override
-  public Operation resolveCollectionCommand(
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, FindOneAndUpdateCommand command) {
     FindCollectionOperation findCollectionOperation = getFindOperation(ctx, command);
 
@@ -97,11 +92,13 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> commandContext, FindOneAndUpdateCommand command) {
-    final DBLogicalExpression dbLogicalExpression =
-        collectionFilterResolver.resolve(commandContext, command);
+
+    var dbLogicalExpression = collectionFilterResolver.resolve(commandContext, command).target();
 
     final SortClause sortClause = command.sortClause();
-    SchemaValidatable.maybeValidate(commandContext, sortClause);
+    if (sortClause != null) {
+      sortClause.validate(commandContext.schemaObject());
+    }
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
     var indexUsage = commandContext.schemaObject().newCollectionIndexUsage();
@@ -109,7 +106,7 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
 
     addToMetrics(
         meterRegistry,
-        dataApiRequestInfo,
+        commandContext.requestContext(),
         jsonApiMetricsConfig,
         command,
         dbLogicalExpression,
@@ -125,6 +122,17 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
           false);
     }
 
+    // BM25 search / sort?
+    SortExpression bm25Expr = SortClauseUtil.resolveBM25Search(sortClause);
+    if (bm25Expr != null) {
+      return FindCollectionOperation.bm25Single(
+          commandContext,
+          dbLogicalExpression,
+          DocumentProjector.includeAllProjector(),
+          CollectionReadType.DOCUMENT,
+          objectMapper,
+          bm25Expr);
+    }
     List<FindCollectionOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
     // If orderBy present
     if (orderBy != null) {

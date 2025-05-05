@@ -3,14 +3,19 @@ package io.stargate.sgv2.jsonapi.api.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchException;
 
+import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.fasterxml.jackson.databind.*;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperation;
@@ -23,15 +28,17 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperationImpl;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.DropIndexCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexTypes;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveTypes;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -51,9 +58,10 @@ class ObjectMapperConfigurationTest {
   @Inject ObjectMapper objectMapper;
 
   @Inject DocumentLimitsConfig documentLimitsConfig;
+  private TestConstants testConstants = new TestConstants();
 
   @Nested
-  class unmatchedOperationCommandHandlerTest {
+  class UnmatchedOperationCommandHandlerTest {
     @Test
     public void notExistedCommandMatchKeyspaceCommand() throws Exception {
       String json =
@@ -134,9 +142,19 @@ class ObjectMapperConfigurationTest {
     }
   }
 
+  // Tests for CQL value serialization handling
+  @Nested
+  class ValueHandlingCqlSerialization {
+    // [data-api#1698] Default CqlVector serialization not what we need for InsertedIds
+    @Test
+    public void okCqlVectorSerialization() throws Exception {
+      CqlVector<Float> input = CqlVector.newInstance(1.0f, 0.5f, -0.25f, 0.0f);
+      assertThat(objectMapper.writeValueAsString(input)).isEqualTo("[1.0,0.5,-0.25,0.0]");
+    }
+  }
+
   @Nested
   class FindOne {
-
     @Test
     public void happyPath() throws Exception {
       String json =
@@ -165,7 +183,8 @@ class ObjectMapperConfigurationTest {
                         SortExpression.sort("user.name", true),
                         SortExpression.sort("user.age", false));
 
-                FilterClause filterClause = findOne.filterClause();
+                FilterClause filterClause =
+                    filterClause(testConstants.collectionContext(), findOne);
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);
@@ -219,7 +238,7 @@ class ObjectMapperConfigurationTest {
       assertThat(result)
           .isInstanceOfSatisfying(
               FindOneCommand.class,
-              findOne -> Assertions.assertThat(findOne.filterClause()).isNull());
+              findOne -> Assertions.assertThat(findOne.filterSpec()).isNull());
     }
 
     // Only "empty" Options allowed, nothing else
@@ -351,7 +370,7 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               DeleteOneCommand.class,
               cmd -> {
-                FilterClause filterClause = cmd.filterClause();
+                FilterClause filterClause = filterClause(testConstants.collectionContext(), cmd);
                 assertThat(filterClause).isNotNull();
                 assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount())
                     .isEqualTo(1);
@@ -633,7 +652,263 @@ class ObjectMapperConfigurationTest {
                 assertThat(createCollection.options()).isNotNull();
                 assertThat(createCollection.options().vector()).isNotNull();
                 assertThat(createCollection.options().vector().dimension()).isEqualTo(5);
-                assertThat(createCollection.options().vector().metric()).isEqualTo("cosine");
+                assertThat(createCollection.options().vector().metric()).isNull();
+                assertThat(createCollection.options().vector().sourceModel()).isNull();
+              });
+    }
+  }
+
+  @Nested
+  class CreateTable {
+    @Test
+    public void happyPathWithOption() throws Exception {
+      String json =
+          """
+                            {
+                                 "createTable": {
+                                     "name": "person",
+                                     "definition": {
+                                         "columns": {
+                                             "id": "text",
+                                             "age": "int",
+                                             "name": "text",
+                                             "city": "text"
+                                         },
+                                         "primaryKey": "id"
+                                     },
+                                     "options" : {
+                                         "ifNotExists" : true
+                                     }
+                                 }
+                             }
+                            """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateTableCommand.class,
+              createTableCommand -> {
+                String name = createTableCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(createTableCommand.options().ifNotExists()).isTrue();
+              });
+    }
+
+    @Test
+    public void happyPathWithEmptyOption() throws Exception {
+      String json =
+          """
+                                    {
+                                         "createTable": {
+                                             "name": "person",
+                                             "definition": {
+                                                 "columns": {
+                                                     "id": "text",
+                                                     "age": "int",
+                                                     "name": "text",
+                                                     "city": "text"
+                                                 },
+                                                 "primaryKey": "id"
+                                             },
+                                             "options" : {}
+                                         }
+                                     }
+                                    """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateTableCommand.class,
+              createTableCommand -> {
+                String name = createTableCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(createTableCommand.options()).isNotNull();
+                assertThat(createTableCommand.options().ifNotExists()).isNull();
+              });
+    }
+  }
+
+  @Nested
+  class CreateIndex {
+    @Test
+    public void happyPathWithOption() throws Exception {
+      String json =
+          """
+                            {
+                                  "createIndex": {
+                                      "name": "name_idx",
+                                      "definition": {
+                                          "column": "name",
+                                          "options": {
+                                              "caseSensitive": false,
+                                              "normalize": true,
+                                              "ascii": true
+                                          }
+                                      },
+                                      "options" : {
+                                         "ifNotExists" : true
+                                      }
+                                  }
+                              }
+                                      """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateIndexCommand.class,
+              createIndexCommand -> {
+                String name = createIndexCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(createIndexCommand.definition().column()).isNotNull();
+                assertThat(createIndexCommand.options().ifNotExists()).isTrue();
+                assertThat(createIndexCommand.definition().options().caseSensitive()).isFalse();
+                assertThat(createIndexCommand.definition().options().normalize()).isTrue();
+                assertThat(createIndexCommand.definition().options().ascii()).isTrue();
+              });
+    }
+
+    @Test
+    public void happyPathWithEmptyOption() throws Exception {
+      String json =
+          """
+                            {
+                                  "createIndex": {
+                                      "name": "name_idx",
+                                      "definition": {
+                                          "column": "name",
+                                          "options": {
+                                              "caseSensitive": false,
+                                              "normalize": true,
+                                              "ascii": true
+                                          }
+                                      },
+                                      "options" : {}
+                                  }
+                              }
+                                      """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              CreateIndexCommand.class,
+              createIndexCommand -> {
+                String name = createIndexCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(createIndexCommand.definition().column()).isNotNull();
+                assertThat(createIndexCommand.options().ifNotExists()).isNull();
+                assertThat(createIndexCommand.definition().options().caseSensitive()).isFalse();
+                assertThat(createIndexCommand.definition().options().normalize()).isTrue();
+                assertThat(createIndexCommand.definition().options().ascii()).isTrue();
+              });
+    }
+  }
+
+  @Nested
+  class DropTable {
+    @Test
+    public void happyPathWithOption() throws Exception {
+      String json =
+          """
+                            {
+                                   "dropTable": {
+                                       "name": "allTypesTable",
+                                       "options" : {
+                                          "ifExists" : true
+                                       }
+                                   }
+                               }
+                                                """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              DropTableCommand.class,
+              dropTableCommand -> {
+                String name = dropTableCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(dropTableCommand.options().ifExists()).isTrue();
+              });
+    }
+
+    @Test
+    public void happyPathWithEmptyOption() throws Exception {
+      String json =
+          """
+                       {
+                                   "dropTable": {
+                                       "name": "allTypesTable",
+                                       "options" : {}
+                                   }
+                               }
+                               """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              DropTableCommand.class,
+              dropTableCommand -> {
+                String name = dropTableCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(dropTableCommand.options().ifExists()).isNull();
+              });
+    }
+  }
+
+  @Nested
+  class DropIndex {
+    @Test
+    public void happyPathWithOption() throws Exception {
+      String json =
+          """
+                                      {
+                                             "dropIndex": {
+                                                 "name": "text_index",
+                                                 "options" : {
+                                                    "ifExists" : true
+                                                 }
+                                             }
+                                         }
+                                                          """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              DropIndexCommand.class,
+              dropIndexCommand -> {
+                String name = dropIndexCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(dropIndexCommand.options().ifExists()).isTrue();
+              });
+    }
+
+    @Test
+    public void happyPathWithEmptyOption() throws Exception {
+      String json =
+          """
+                                 {
+                                             "dropIndex": {
+                                                 "name": "text_index",
+                                                 "options" : {}
+                                             }
+                                         }
+                                         """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              DropIndexCommand.class,
+              dropIndexCommand -> {
+                String name = dropIndexCommand.name();
+                assertThat(name).isNotNull();
+                assertThat(dropIndexCommand.options().ifExists()).isNull();
               });
     }
   }
@@ -659,8 +934,8 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               FindOneAndUpdateCommand.class,
               findOneAndUpdateCommand -> {
-                FilterClause filterClause = findOneAndUpdateCommand.filterClause();
-                assertThat(filterClause).isNotNull();
+                FilterSpec filterSpec = findOneAndUpdateCommand.filterSpec();
+                assertThat(filterSpec).isNotNull();
                 final UpdateClause updateClause = findOneAndUpdateCommand.updateClause();
                 assertThat(updateClause).isNotNull();
                 assertThat(updateClause.buildOperations()).hasSize(1);
@@ -688,8 +963,8 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               FindOneAndUpdateCommand.class,
               findOneAndUpdateCommand -> {
-                FilterClause filterClause = findOneAndUpdateCommand.filterClause();
-                assertThat(filterClause).isNotNull();
+                FilterSpec filterSpec = findOneAndUpdateCommand.filterSpec();
+                assertThat(filterSpec).isNotNull();
                 final UpdateClause updateClause = findOneAndUpdateCommand.updateClause();
                 assertThat(updateClause).isNotNull();
                 assertThat(updateClause.buildOperations()).hasSize(1);
@@ -763,8 +1038,8 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               CountDocumentsCommand.class,
               countCommand -> {
-                FilterClause filterClause = countCommand.filterClause();
-                assertThat(filterClause).isNotNull();
+                FilterSpec filterSpec = countCommand.filterSpec();
+                assertThat(filterSpec).isNotNull();
               });
     }
   }
@@ -793,6 +1068,13 @@ class ObjectMapperConfigurationTest {
                                                    "provider": "nvidia",
                                                    "modelName": "NV-Embed-QA"
                                                  }
+                                               },
+                                               "vector_1": {
+                                                 "type": "vector",
+                                                 "service": {
+                                                   "provider": "nvidia",
+                                                   "modelName": "NV-Embed-QA"
+                                                 }
                                                }
                                             }
                                         }
@@ -812,21 +1094,26 @@ class ObjectMapperConfigurationTest {
                     .isInstanceOfSatisfying(
                         AlterTableOperationImpl.AddColumns.class,
                         addColumns -> {
-                          Map<String, ColumnType> columns = addColumns.columns();
+                          Map<String, ColumnDesc> columns = addColumns.columns();
                           assertThat(columns).isNotNull();
-                          assertThat(columns).hasSize(3);
-                          assertThat(columns).containsEntry("new_col_1", PrimitiveTypes.TEXT);
+                          assertThat(columns).hasSize(4);
+                          assertThat(columns).containsEntry("new_col_1", PrimitiveColumnDesc.TEXT);
                           assertThat(columns)
                               .containsEntry(
                                   "new_col_2",
-                                  new ComplexTypes.MapType(
-                                      PrimitiveTypes.TEXT, PrimitiveTypes.TEXT));
+                                  new MapColumnDesc(
+                                      PrimitiveColumnDesc.TEXT, PrimitiveColumnDesc.TEXT));
                           assertThat(columns)
                               .containsEntry(
                                   "content",
-                                  new ComplexTypes.VectorType(
-                                      PrimitiveTypes.FLOAT,
+                                  new VectorColumnDesc(
                                       1024,
+                                      new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
+                          assertThat(columns)
+                              .containsEntry(
+                                  "vector_1",
+                                  new VectorColumnDesc(
+                                      null,
                                       new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
                         });
               });
@@ -949,5 +1236,10 @@ class ObjectMapperConfigurationTest {
                         });
               });
     }
+  }
+
+  private <CMD extends Command & Filterable> FilterClause filterClause(
+      CommandContext<?> ctx, CMD cmd) {
+    return cmd.filterClause(ctx);
   }
 }

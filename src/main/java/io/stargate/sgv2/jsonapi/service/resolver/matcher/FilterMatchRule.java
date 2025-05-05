@@ -30,7 +30,7 @@ public record FilterMatchRule<T extends Command & Filterable>(
   @Override
   public Optional<DBLogicalExpression> apply(CommandContext commandContext, T command) {
     return matcher
-        .apply(command)
+        .apply(commandContext, command)
         .map(
             captures ->
                 resolveFunction.apply(

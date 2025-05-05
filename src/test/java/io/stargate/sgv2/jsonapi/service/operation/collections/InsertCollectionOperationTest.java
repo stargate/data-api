@@ -17,6 +17,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -24,9 +25,13 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
@@ -35,7 +40,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDo
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -45,14 +49,17 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class InsertCollectionOperationTest extends OperationTestBase {
-  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_NON_VECTOR;
 
+  private TestConstants testConstants = new TestConstants();
+
+  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_NON_VECTOR;
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_VECTOR;
 
   private final ColumnDefinitions COLUMNS_APPLIED =
@@ -79,38 +86,44 @@ public class InsertCollectionOperationTest extends OperationTestBase {
 
   static final String INSERT_CQL =
       "INSERT INTO \"%s\".\"%s\""
-          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
+          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,"
+          + " query_dbl_values, query_text_values, query_null_values, query_timestamp_values)"
           + " VALUES"
-          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS";
 
   static final String INSERT_VECTOR_CQL =
       "INSERT INTO \"%s\".\"%s\""
-          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
+          + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values,"
+          + " query_dbl_values, query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
           + " VALUES"
-          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  IF NOT EXISTS";
+          + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS";
 
-  @PostConstruct
-  public void init() {
+  @BeforeEach
+  public void beforeEach() {
+    super.beforeEach();
+
     COMMAND_CONTEXT_NON_VECTOR = createCommandContextWithCommandName("testCommand");
 
     COMMAND_CONTEXT_VECTOR =
-        new CommandContext<>(
+        testConstants.collectionContext(
+            "testCommand",
             new CollectionSchemaObject(
                 SCHEMA_OBJECT_NAME,
                 null,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(
-                        new VectorConfig.ColumnVectorDefinition(
+                        new VectorColumnDefinition(
                             DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                             4,
                             SimilarityFunction.COSINE,
+                            EmbeddingSourceModel.OTHER,
                             null))),
-                null),
-            null,
-            "testCommand",
+                null,
+                CollectionLexicalConfig.configForDisabled(),
+                CollectionRerankDef.configForPreRerankingCollection()),
             jsonProcessingMetricsReporter,
-            DEFAULT_API_FEATURES_FOR_TESTS);
+            null);
   }
 
   @Nested

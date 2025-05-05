@@ -1,16 +1,21 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProviderErrorMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -26,10 +31,10 @@ public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
   public HuggingFaceDedicatedEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
+    super(requestProperties, baseUrl, model, dimension, vectorizeServiceParameters);
 
     // replace placeholders: endPointName, regionName, cloudName
     String dedicatedApiUrl = replaceParameters(baseUrl, vectorizeServiceParameters);
@@ -44,14 +49,14 @@ public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
   public interface HuggingFaceDedicatedEmbeddingProviderClient {
     @POST
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
+      return EmbeddingProviderErrorMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -76,9 +81,8 @@ public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
       // Get the whole response body
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
-      logger.info(
-          String.format(
-              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
+      logger.error(
+          "Error response from embedding provider '{}': {}", providerId, rootNode.toString());
       // Extract the "message" node
       JsonNode messageNode = rootNode.path("message");
       // Return the text of the "message" node, or the whole response body if it is missing
@@ -90,9 +94,12 @@ public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
   // https://huggingface.github.io/text-embeddings-inference/#/Text%20Embeddings%20Inference/openai_embed
   private record EmbeddingRequest(String[] input) {}
 
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
   private record EmbeddingResponse(String object, Data[] data, String model, Usage usage) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record Data(String object, int index, float[] embedding) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record Usage(int prompt_tokens, int total_tokens) {}
   }
 
@@ -102,6 +109,8 @@ public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+    // Check if using an EOF model
+    checkEOLModelUsage();
     checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
 
     String[] textArray = new String[texts.size()];
@@ -110,7 +119,8 @@ public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
     Uni<EmbeddingResponse> response =
         applyRetry(
             huggingFaceDedicatedEmbeddingProviderClient.embed(
-                "Bearer " + embeddingCredentials.apiKey().get(), request));
+                HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get(),
+                request));
 
     return response
         .onItem()

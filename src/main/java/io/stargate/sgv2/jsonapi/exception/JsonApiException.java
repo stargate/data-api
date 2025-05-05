@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.*;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
@@ -135,7 +136,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
       message = errorCode.getMessage();
     }
 
-    var builder = CommandResult.statusOnlyBuilder(false, false);
+    var builder = CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP);
 
     // construct and return
     builder.addCommandResultError(getCommandResultError(message, httpStatus));
@@ -234,6 +235,9 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     if (errorCode.name().startsWith("EMBEDDING") || errorCode.name().startsWith("VECTORIZE")) {
       return ErrorScope.EMBEDDING;
     }
+    if (errorCode.name().startsWith("RERANKING")) {
+      return ErrorScope.RERANKING;
+    }
     if (errorCode.name().contains("FILTER")) {
       return ErrorScope.FILTER;
     }
@@ -259,11 +263,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
       return ErrorScope.DATA_LOADER;
     }
 
-    // decide the scope based on family
-    if (family == ErrorFamily.SERVER) {
-      return ErrorScope.DATABASE;
-    }
-
     return ErrorScope.EMPTY;
   }
 
@@ -274,14 +273,15 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
 
   enum ErrorScope {
     AUTHENTICATION("AUTHENTICATION"),
-    DATA_LOADER("DATA_LOADER"),
     DATABASE("DATABASE"),
+    DATA_LOADER("DATA_LOADER"),
     DOCUMENT("DOCUMENT"),
     EMBEDDING("EMBEDDING"),
     EMPTY(""),
     FILTER("FILTER"),
     INDEX("INDEX"),
     PROJECTION("PROJECTION"),
+    RERANKING("RERANKING"),
     SCHEMA("SCHEMA"),
     SORT("SORT"),
     UPDATE("UPDATE");

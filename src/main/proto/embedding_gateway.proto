@@ -159,12 +159,14 @@ message GetSupportedProvidersResponse {
       int32 max_batch_size = 9;
     }
 
-    // ModelConfig message represents configuration for a specific model.
+    // ModelConfig message represents configuration for a specific embedding model.
     message ModelConfig {
       string name = 1;
       optional int32 vector_dimension = 2;
       repeated ParameterConfig parameters = 3;
       map<string, string> properties = 4;
+      optional string service_url_override = 5;
+      ApiModelSupport apiModelSupport = 6;
     }
   }
 
@@ -194,11 +196,122 @@ message ValidateCredentialResponse {
   }
 }
 
-
-
 // The embedding gateway gPRC API to generate embeddings
 service EmbeddingService {
   rpc Embed (ProviderEmbedRequest) returns (EmbeddingResponse) {}
   rpc GetSupportedProviders (GetSupportedProvidersRequest) returns (GetSupportedProvidersResponse){}
   rpc ValidateCredential (ValidateCredentialRequest) returns (ValidateCredentialResponse) {}
+}
+
+
+// The reranking request message that is sent to embedding gateway gRPC API
+message ProviderRerankingRequest {
+  ProviderContext 			provider_context = 1;
+  RerankingRequest			Reranking_request = 2;
+  message ProviderContext {
+    string 					          provider_name = 1;
+    string  					        tenant_id = 2;
+    map<string, string>  			auth_tokens = 3;
+  }
+  message RerankingRequest {
+    // The model name for the reranking request
+    string 					      model_name = 1;
+    // The query text for the reranking request
+    string 					      query = 2;
+    // The passages texts for the reranking request
+    repeated string 			passages = 3;
+    // The command contains reranking
+    string                command_name = 4;
+  }
+}
+
+
+// The reranking response message for the embedding gateway gRPC API if successful
+message RerankingResponse {
+  Usage 					  usage = 1;
+  repeated Rank		  ranks = 2;
+  ErrorResponse     error = 3;
+
+  // Reranking result for each passage
+  message Rank {
+    // The rank index of the passage
+    int32 	  index = 1;
+    // The rank score value of the passage
+    float	    score = 2;
+  }
+
+  // The usage statistics of reranking for the embedding gateway gRPC API on successful response
+  message Usage {
+    int32 	prompt_tokens = 1;
+    int32 	total_tokens = 2;
+  }
+
+  message ErrorResponse {
+    string error_code = 1;
+    string error_message = 2;
+  }
+}
+
+// The request message for the get supported reranking providers gRPC API
+message GetSupportedRerankingProvidersRequest {}
+
+// The response message for the get supported reranking providers gRPC API if successful
+message GetSupportedRerankingProvidersResponse {
+  map<string, ProviderConfig>  	supportedProviders = 1;
+  ErrorResponse error = 2;
+
+  // ProviderConfig message represents configuration for an reranking provider.
+  message ProviderConfig {
+    bool isDefault = 1;
+    string displayName = 2;
+    bool enabled = 3;
+    map<string, AuthenticationConfig> supported_authentications = 4;
+    repeated ModelConfig models = 5;
+
+    message AuthenticationConfig{
+      bool enabled = 1;
+      repeated TokenConfig tokens = 2;
+
+      message TokenConfig{
+        string accepted = 1;
+        string forwarded = 2;
+      }
+    }
+
+    // ModelConfig message represents configuration for a specific reranking model.
+    message ModelConfig {
+      string name = 1;
+      ApiModelSupport apiModelSupport = 2;
+      bool isDefault = 3;
+      string url = 4;
+      RequestProperties properties = 5;
+
+      message RequestProperties {
+        int32 at_most_retries = 1;
+        int32 initial_back_off_millis = 2;
+        int32 read_timeout_millis = 3;
+        int32 max_back_off_millis = 4;
+        double jitter = 5;
+        int32 max_batch_size = 6;
+      }
+    }
+
+  }
+
+  message ErrorResponse {
+    string error_code = 1;
+    string error_message = 2;
+  }
+}
+
+// The ApiModelSupport message represents the support status of the embedding/reranking model.
+message ApiModelSupport{
+  string status = 1;
+  optional string message = 2;
+}
+
+// The embedding gateway gPRC API to reranking
+service RerankingService {
+  rpc Rerank (ProviderRerankingRequest) returns (RerankingResponse) {}
+  rpc GetSupportedRerankingProviders (GetSupportedRerankingProvidersRequest) returns (GetSupportedRerankingProvidersResponse){}
 }

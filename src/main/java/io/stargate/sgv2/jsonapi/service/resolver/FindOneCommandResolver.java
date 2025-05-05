@@ -4,22 +4,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
-import io.stargate.sgv2.jsonapi.service.operation.tables.*;
-import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
-import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -32,29 +28,22 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   private final ObjectMapper objectMapper;
   private final OperationsConfig operationsConfig;
   private final MeterRegistry meterRegistry;
-  private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final FilterResolver<FindOneCommand, CollectionSchemaObject> collectionFilterResolver;
-  private final FilterResolver<FindOneCommand, TableSchemaObject> tableFilterResolver;
 
   @Inject
   public FindOneCommandResolver(
       ObjectMapper objectMapper,
       OperationsConfig operationsConfig,
       MeterRegistry meterRegistry,
-      DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
-    super();
     this.objectMapper = objectMapper;
     this.operationsConfig = operationsConfig;
-
     this.meterRegistry = meterRegistry;
-    this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
-    this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
   }
 
   @Override
@@ -63,41 +52,26 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   }
 
   @Override
-  public Operation resolveTableCommand(
-      CommandContext<TableSchemaObject> ctx, FindOneCommand command) {
+  public Operation<TableSchemaObject> resolveTableCommand(
+      CommandContext<TableSchemaObject> commandContext, FindOneCommand command) {
 
-    var projection =
-        TableRowProjection.fromDefinition(
-            objectMapper, command.tableProjectionDefinition(), ctx.schemaObject());
-    var builder =
-        new TableReadAttemptBuilder(ctx.schemaObject(), projection, projection)
-            .addBuilderOption(CQLOption.ForSelect.limit(1));
-
-    // TODO, we may want the ability to resolve API filter clause into multiple
-    // dbLogicalExpressions, which will map into multiple readAttempts
-    var where =
-        TableWhereCQLClause.forSelect(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command));
-
-    var attempts = new OperationAttemptContainer<>(builder.build(where));
-
-    var pageBuilder =
-        ReadAttemptPage.<TableSchemaObject>builder()
-            .singleResponse(true)
-            .includeSortVector(false)
-            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
-            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
-
-    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
+    return new TableReadDBOperationBuilder<>(commandContext)
+        .withCommand(command)
+        .withPagingState(CqlPagingState.EMPTY)
+        .withSingleResponse(true)
+        .build();
   }
 
   @Override
-  public Operation resolveCollectionCommand(
-      CommandContext<CollectionSchemaObject> ctx, FindOneCommand command) {
+  public Operation<CollectionSchemaObject> resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> commandContext, FindOneCommand command) {
 
-    final DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
+    final DBLogicalExpression dbLogicalExpression =
+        collectionFilterResolver.resolve(commandContext, command).target();
     final SortClause sortClause = command.sortClause();
-    SchemaValidatable.maybeValidate(ctx, sortClause);
+    if (sortClause != null) {
+      sortClause.validate(commandContext.schemaObject());
+    }
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 
@@ -108,18 +82,18 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
       includeSimilarity = options.includeSimilarity();
       includeSortVector = options.includeSortVector();
     }
-    var indexUsage = ctx.schemaObject().newCollectionIndexUsage();
+    var indexUsage = commandContext.schemaObject().newCollectionIndexUsage();
     indexUsage.vectorIndexTag = vector != null;
     addToMetrics(
         meterRegistry,
-        dataApiRequestInfo,
+        commandContext.requestContext(),
         jsonApiMetricsConfig,
         command,
         dbLogicalExpression,
         indexUsage);
     if (vector != null) {
       return FindCollectionOperation.vsearchSingle(
-          ctx,
+          commandContext,
           dbLogicalExpression,
           command.buildProjector(includeSimilarity),
           CollectionReadType.DOCUMENT,
@@ -128,11 +102,23 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
           includeSortVector);
     }
 
+    // BM25 search / sort?
+    SortExpression bm25Expr = SortClauseUtil.resolveBM25Search(sortClause);
+    if (bm25Expr != null) {
+      return FindCollectionOperation.bm25Single(
+          commandContext,
+          dbLogicalExpression,
+          command.buildProjector(),
+          CollectionReadType.DOCUMENT,
+          objectMapper,
+          bm25Expr);
+    }
+
     List<FindCollectionOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
     // If orderBy present
     if (orderBy != null) {
       return FindCollectionOperation.sortedSingle(
-          ctx,
+          commandContext,
           dbLogicalExpression,
           command.buildProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
@@ -147,7 +133,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
           includeSortVector);
     } else {
       return FindCollectionOperation.unsortedSingle(
-          ctx,
+          commandContext,
           dbLogicalExpression,
           command.buildProjector(),
           CollectionReadType.DOCUMENT,

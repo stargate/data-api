@@ -3,10 +3,10 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation.test;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+import java.util.*;
 
 /**
  * This is a test implementation of the EmbeddingProvider interface. It is used for
@@ -17,12 +17,35 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
 
   public static final String TEST_API_KEY = "test_embedding_service_api_key";
 
+  public static final List<String> SAMPLE_VECTORIZE_CONTENTS =
+      List.of(
+          "ChatGPT integrated sneakers that talk to you",
+          "ChatGPT upgraded",
+          "New data updated",
+          "An AI quilt to help you sleep forever",
+          "A deep learning display that controls your mood",
+          "Updating new data");
+
   public static HashMap<String, float[]> TEST_DATA_DIMENSION_5 = new HashMap<>();
   public static HashMap<String, float[]> TEST_DATA_DIMENSION_6 = new HashMap<>();
 
-  private int dimension;
+  private final int dimension;
 
   public CustomITEmbeddingProvider(int dimension) {
+    // construct the test modelConfig
+    super(
+        null,
+        null,
+        new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
+            "testModel",
+            new ApiModelSupport.ApiModelSupportImpl(
+                ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
+            Optional.of(dimension),
+            List.of(),
+            Map.of(),
+            Optional.empty()),
+        dimension,
+        Map.of());
     this.dimension = dimension;
   }
 
@@ -64,6 +87,10 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+
+    // Check if using an EOF model
+    checkEOLModelUsage();
+
     List<float[]> response = new ArrayList<>(texts.size());
     if (texts.size() == 0) return Uni.createFrom().item(Response.of(batchId, response));
     if (!embeddingCredentials.apiKey().isPresent()

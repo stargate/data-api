@@ -7,12 +7,16 @@ import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProviderErrorMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,10 +36,10 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
   public VoyageAIEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
       Map<String, Object> serviceParameters) {
-    super(requestProperties, baseUrl, modelName, dimension, serviceParameters);
+    super(requestProperties, baseUrl, model, dimension, serviceParameters);
 
     // use configured input_type if available
     requestTypeQuery = requestProperties.requestTypeQuery().orElse(null);
@@ -55,14 +59,14 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
   public interface VoyageAIEmbeddingProviderClient {
     @POST
     // no path specified, as it is already included in the baseUri
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
+      return EmbeddingProviderErrorMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -81,9 +85,8 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
       // Get the whole response body
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
-      logger.info(
-          String.format(
-              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
+      logger.error(
+          "Error response from embedding provider '{}': {}", providerId, rootNode.toString());
       // Extract the "detail" node
       JsonNode detailNode = rootNode.path("detail");
       // Return the text of the "detail" node, or the full response body if it is missing
@@ -97,11 +100,12 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
       String model,
       @JsonInclude(JsonInclude.Include.NON_NULL) Boolean truncation) {}
 
-  @JsonIgnoreProperties({"object"})
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
   record EmbeddingResponse(Data[] data, String model, Usage usage) {
-    @JsonIgnoreProperties({"object"})
+    @JsonIgnoreProperties(ignoreUnknown = true)
     record Data(int index, float[] embedding) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     record Usage(int total_tokens) {}
   }
 
@@ -111,17 +115,20 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+    // Check if using an EOF model
+    checkEOLModelUsage();
     checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
     final String inputType =
         (embeddingRequestType == EmbeddingRequestType.SEARCH) ? requestTypeQuery : requestTypeIndex;
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request =
-        new EmbeddingRequest(inputType, texts.toArray(textArray), modelName, autoTruncate);
+        new EmbeddingRequest(inputType, texts.toArray(textArray), model.name(), autoTruncate);
 
     Uni<EmbeddingResponse> response =
         applyRetry(
             voyageAIEmbeddingProviderClient.embed(
-                "Bearer " + embeddingCredentials.apiKey().get(), request));
+                HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get(),
+                request));
 
     return response
         .onItem()

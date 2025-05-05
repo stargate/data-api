@@ -22,18 +22,23 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
@@ -41,7 +46,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
 import java.math.BigDecimal;
@@ -53,7 +57,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -64,6 +68,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT;
 
   private CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT;
+  private TestConstants testConstants = new TestConstants();
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
@@ -71,30 +76,33 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
   @Inject ObjectMapper objectMapper;
 
-  @PostConstruct
-  public void init() {
+  @BeforeEach
+  public void beforeEach() {
+    super.beforeEach();
     // TODO: a lot of these test create the same command context, these should be in the base class
     // leaving as new objects for now, they can prob be reused
 
     COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
     VECTOR_COMMAND_CONTEXT =
-        new CommandContext<>(
+        testConstants.collectionContext(
+            "testCommand",
             new CollectionSchemaObject(
                 SCHEMA_OBJECT_NAME,
                 null,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(
-                        new VectorConfig.ColumnVectorDefinition(
+                        new VectorColumnDefinition(
                             DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                             -1,
                             SimilarityFunction.COSINE,
+                            EmbeddingSourceModel.OTHER,
                             null))),
-                null),
-            null,
-            "testCommand",
+                null,
+                CollectionLexicalConfig.configForDisabled(),
+                CollectionRerankDef.configForPreRerankingCollection()),
             jsonProcessingMetricsReporter,
-            DEFAULT_API_FEATURES_FOR_TESTS);
+            null);
   }
 
   @Nested
@@ -2714,6 +2722,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+
       FindCollectionOperation operation =
           FindCollectionOperation.vsearch(
               VECTOR_COMMAND_CONTEXT,
@@ -2746,7 +2755,6 @@ public class FindCollectionOperationTest extends OperationTestBase {
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
       assertThat(result.status()).isEmpty();
-      ;
     }
 
     @Test
@@ -2981,13 +2989,11 @@ public class FindCollectionOperationTest extends OperationTestBase {
       CommandResult.Error error =
           ThrowableToErrorMapper.getMapperWithMessageFunction()
               .apply(failure, failure.getMessage());
-      AssertionsForClassTypes.assertThat(error).isNotNull();
-      AssertionsForClassTypes.assertThat(error.fields().get("errorCode"))
-          .isEqualTo("SERVER_READ_FAILED");
-      AssertionsForClassTypes.assertThat(error.fields().get("exceptionClass"))
-          .isEqualTo("JsonApiException");
-      AssertionsForClassTypes.assertThat(error.httpStatus()).isEqualTo(Response.Status.BAD_GATEWAY);
-      AssertionsForClassTypes.assertThat(error.message())
+      assertThat(error).isNotNull();
+      assertThat(error.fields().get("errorCode")).isEqualTo("SERVER_READ_FAILED");
+      assertThat(error.fields().get("exceptionClass")).isEqualTo("JsonApiException");
+      assertThat(error.httpStatus()).isEqualTo(Response.Status.BAD_GATEWAY);
+      assertThat(error.message())
           .startsWith("Database read failed")
           .endsWith(
               "Cassandra failure during read query at consistency ONE (0 responses were required but only 1 replica responded, 1 failed)");

@@ -1,160 +1,187 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
-import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.SmallRyeConfigBuilder;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
-import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.DefaultRequestTracing;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
+import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import org.eclipse.microprofile.config.ConfigProvider;
+import java.util.Objects;
 
 /**
- * Defines the context in which to execute the command.
+ * Defines the context in which to execute the command, providing access to the schema and config,
+ * and any external resources for the command to use.
  *
- * @param schemaObject Settings for the collection, if Collection-specific command; if not, "empty"
- *     Settings {see CollectionSettings#empty()}.
+ * <p>To get an instance, call {@link CommandContext#builderSupplier()} to get a {@link
+ * BuilderSupplier}, configure this with application wide config, then when ready to build the
+ * context for a specific request call {@link BuilderSupplier#getBuilder(SchemaObject)} to get a
+ * {@link BuilderSupplier.Builder} to configure the context for the request.
+ *
+ * <p>
+ *
+ * @param <SchemaT> The schema object type that this context is for. There are times we need to lock
+ *     this down to the specific type, if so use the "as" methods such as {@link
+ *     CommandContext#asCollectionContext()}
  */
-public record CommandContext<T extends SchemaObject>(
-    T schemaObject,
-    EmbeddingProvider embeddingProvider,
-    String commandName,
-    JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-    ApiFeatures apiFeatures) {
+public class CommandContext<SchemaT extends SchemaObject> {
 
-  // TODO: this is what the original EMPTY had, no idea why the name of the command is missing
-  // this is used by the GeneralResource
-  //  private static final CommandContext EMPTY =
-  //      new CommandContext(null, null, CollectionSettings.empty(), null, "testCommand", null);
+  // Common for all instances
+  private final JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
+  private final CQLSessionCache cqlSessionCache;
+  private final CommandConfig commandConfig;
+  private final EmbeddingProviderFactory embeddingProviderFactory;
+  private final RerankingProviderFactory rerankingProviderFactory;
+  private final MeterRegistry meterRegistry;
 
-  /**
-   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
-   * are working with.
-   *
-   * <p>This one handles the super class of {@link SchemaObject}
-   *
-   * @param schemaObject
-   * @param embeddingProvider
-   * @param commandName
-   * @param jsonProcessingMetricsReporter
-   * @return
-   */
-  @SuppressWarnings("unchecked")
-  public static <T extends SchemaObject> CommandContext<T> forSchemaObject(
-      T schemaObject,
+  // Request specific
+  private final SchemaT schemaObject;
+  private final EmbeddingProvider
+      embeddingProvider; // to be removed later, this is a single provider
+  private final String commandName; // TODO: remove the command name, but it is used in 14 places
+  private final RequestContext requestContext;
+  private RequestTracing requestTracing;
+
+  // see accessors
+  private FindAndRerankCommand.HybridLimits hybridLimits;
+
+  // created on demand or set via builder, otherwise we need to read from config too early when
+  // running tests, See the {@link Builder#withApiFeatures}
+  // access via {@link CommandContext#apiFeatures()}
+  private ApiFeatures apiFeatures;
+
+  private CommandContext(
+      SchemaT schemaObject,
       EmbeddingProvider embeddingProvider,
       String commandName,
+      RequestContext requestContext,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures) {
+      CQLSessionCache cqlSessionCache,
+      CommandConfig commandConfig,
+      ApiFeatures apiFeatures,
+      EmbeddingProviderFactory embeddingProviderFactory,
+      RerankingProviderFactory rerankingProviderFactory,
+      MeterRegistry meterRegistry) {
 
-    // TODO: upgrade to use the modern switch statements
-    // TODO: how to remove the unchecked cast ? Had to use unchecked cast to get back to the
-    // CommandContext<T>
-    if (schemaObject instanceof CollectionSchemaObject cso) {
-      return (CommandContext<T>)
-          forSchemaObject(
-              cso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
-    }
-    if (schemaObject instanceof TableSchemaObject tso) {
-      return (CommandContext<T>)
-          forSchemaObject(
-              tso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
-    }
-    if (schemaObject instanceof KeyspaceSchemaObject kso) {
-      return (CommandContext<T>)
-          forSchemaObject(
-              kso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
-    }
-    if (schemaObject instanceof DatabaseSchemaObject dso) {
-      return (CommandContext<T>)
-          forSchemaObject(
-              dso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
-    }
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "Unknown schema object type: %s", schemaObject.getClass().getName());
+    this.schemaObject = schemaObject;
+    this.embeddingProvider = embeddingProvider;
+    this.commandName = commandName;
+    this.requestContext = requestContext;
+
+    this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
+    this.cqlSessionCache = cqlSessionCache;
+    this.commandConfig = commandConfig;
+    this.embeddingProviderFactory = embeddingProviderFactory;
+    this.rerankingProviderFactory = rerankingProviderFactory;
+
+    this.apiFeatures = apiFeatures;
+    this.meterRegistry = meterRegistry;
+
+    var anyTracing =
+        apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING)
+            || apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL);
+
+    this.requestTracing =
+        anyTracing
+            ? new DefaultRequestTracing(
+                requestContext.getRequestId(),
+                requestContext.getTenantId().orElse(""),
+                apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL))
+            : RequestTracing.NO_OP;
+  }
+
+  /** See doc comments for {@link CommandContext} */
+  public static BuilderSupplier builderSupplier() {
+    return new BuilderSupplier();
   }
 
   /**
-   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
-   * are working with
+   * HACK: for https://github.com/stargate/data-api/issues/1961 This is a temporary work around for
+   * needing to pass the page size to the FindCollectionOperation when doing the inner finds for
+   * findAndRerank because they will only run the command once, and not multiple times to exhaust
+   * the cursor.
    *
-   * @param schemaObject
-   * @param embeddingProvider
-   * @param commandName
-   * @param jsonProcessingMetricsReporter
    * @return
    */
-  public static CommandContext<CollectionSchemaObject> forSchemaObject(
-      CollectionSchemaObject schemaObject,
-      EmbeddingProvider embeddingProvider,
-      String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures) {
-    return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
+  public FindAndRerankCommand.HybridLimits getHybridLimits() {
+    return hybridLimits;
   }
 
-  /**
-   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
-   * are working with
-   *
-   * @param schemaObject
-   * @param embeddingProvider
-   * @param commandName
-   * @param jsonProcessingMetricsReporter
-   * @return
-   */
-  public static CommandContext<TableSchemaObject> forSchemaObject(
-      TableSchemaObject schemaObject,
-      EmbeddingProvider embeddingProvider,
-      String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures) {
-    return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
+  public void setHybridLimits(FindAndRerankCommand.HybridLimits hybridLimits) {
+    this.hybridLimits = hybridLimits;
   }
 
-  /**
-   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
-   * are working with
-   *
-   * @param schemaObject
-   * @param embeddingProvider
-   * @param commandName
-   * @param jsonProcessingMetricsReporter
-   * @return
-   */
-  public static CommandContext<KeyspaceSchemaObject> forSchemaObject(
-      KeyspaceSchemaObject schemaObject,
-      EmbeddingProvider embeddingProvider,
-      String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures) {
-    return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
+  public SchemaT schemaObject() {
+    return schemaObject;
   }
 
-  /**
-   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
-   * are working with
-   *
-   * @param schemaObject
-   * @param embeddingProvider
-   * @param commandName
-   * @param jsonProcessingMetricsReporter
-   * @return
-   */
-  public static CommandContext<DatabaseSchemaObject> forSchemaObject(
-      DatabaseSchemaObject schemaObject,
-      EmbeddingProvider embeddingProvider,
-      String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      ApiFeatures apiFeatures) {
-    return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
+  public EmbeddingProvider embeddingProvider() {
+    return embeddingProvider;
+  }
+
+  public RerankingProviderFactory rerankingProviderFactory() {
+    return rerankingProviderFactory;
+  }
+
+  public String commandName() {
+    return commandName;
+  }
+
+  public RequestTracing requestTracing() {
+    return requestTracing;
+  }
+
+  public RequestContext requestContext() {
+    return requestContext;
+  }
+
+  public ApiFeatures apiFeatures() {
+    // using a sync block here because the context can be accessed by multiple tasks concurrently
+    if (apiFeatures == null) {
+      synchronized (this) {
+        if (apiFeatures == null) {
+          // Merging the config for features with the request headers to get the final feature set
+          apiFeatures =
+              ApiFeatures.fromConfigAndRequest(
+                  commandConfig.get(FeaturesConfig.class), requestContext.getHttpHeaders());
+        }
+      }
+    }
+    return apiFeatures;
+  }
+
+  public JsonProcessingMetricsReporter jsonProcessingMetricsReporter() {
+    return jsonProcessingMetricsReporter;
+  }
+
+  public CQLSessionCache cqlSessionCache() {
+    return cqlSessionCache;
+  }
+
+  public CommandConfig config() {
+    return commandConfig;
+  }
+
+  public EmbeddingProviderFactory embeddingProviderFactory() {
+    return embeddingProviderFactory;
+  }
+
+  public MeterRegistry meterRegistry() {
+    return meterRegistry;
+  }
+
+  public boolean isCollectionContext() {
+    return schemaObject().type() == CollectionSchemaObject.TYPE;
   }
 
   @SuppressWarnings("unchecked")
@@ -190,38 +217,133 @@ public record CommandContext<T extends SchemaObject>(
   }
 
   /**
-   * Uses the config service to populate the config interface passed in.
-   *
-   * <p>Example: <code>
-   *   bool isDebugMode = getConfig(DebugModeConfig.class).enabled()
-   * </code>
-   *
-   * @param configType The configuration interface to populate, normally be decorated with {@link
-   *     io.smallrye.config.ConfigMapping}
-   * @return Populated configration object of type <code>configType</code>
-   * @param <ConfigType> The configuration interface to populate
+   * Configure the BuilderSupplier with resources and config that will be used for all the {@link
+   * CommandContext} that will be created. Then called {@link
+   * BuilderSupplier#getBuilder(SchemaObject)} to get a builder to configure the {@link
+   * CommandContext} for the specific request.
    */
-  public <ConfigType> ConfigType getConfig(Class<ConfigType> configType) {
-    return getConfig().getConfigMapping(configType);
-  }
+  public static class BuilderSupplier {
 
-  /**
-   * Gets the config service to use, depends on the offline mode.
-   *
-   * <p>Exposed as we may need to get this from multiple places, best to use {@link
-   * #getConfig(Class)}
-   *
-   * <p>TODO: Copied from JsonAPIException , not sure why we need to do this
-   */
-  public SmallRyeConfig getConfig() {
-    // aaron - copied from JsonAPIException , not sure why we need to do this
-    // TODO - cleanup how we get config, this seem unnecessary complicated
+    private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
+    private CQLSessionCache cqlSessionCache;
+    private CommandConfig commandConfig;
+    private EmbeddingProviderFactory embeddingProviderFactory;
+    private RerankingProviderFactory rerankingProviderFactory;
+    private MeterRegistry meterRegistry;
 
-    if (ApiConstants.isOffline()) {
-      // Prev code  is below, but confusing that it was then used to map different interfaces
-      // config = new SmallRyeConfigBuilder().withMapping(DebugModeConfig.class).build();
-      return new SmallRyeConfigBuilder().build();
+    BuilderSupplier() {}
+
+    public BuilderSupplier withJsonProcessingMetricsReporter(
+        JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+      this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
+      return this;
     }
-    return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+
+    public BuilderSupplier withCqlSessionCache(CQLSessionCache cqlSessionCache) {
+      this.cqlSessionCache = cqlSessionCache;
+      return this;
+    }
+
+    public BuilderSupplier withCommandConfig(CommandConfig commandConfig) {
+      this.commandConfig = commandConfig;
+      return this;
+    }
+
+    public BuilderSupplier withEmbeddingProviderFactory(
+        EmbeddingProviderFactory embeddingProviderFactory) {
+      this.embeddingProviderFactory = embeddingProviderFactory;
+      return this;
+    }
+
+    public BuilderSupplier withRerankingProviderFactory(
+        RerankingProviderFactory rerankingProviderFactory) {
+      this.rerankingProviderFactory = rerankingProviderFactory;
+      return this;
+    }
+
+    public BuilderSupplier withMeterRegistry(MeterRegistry meterRegistry) {
+      this.meterRegistry = meterRegistry;
+      return this;
+    }
+
+    public <SchemaT extends SchemaObject> Builder<SchemaT> getBuilder(SchemaT schemaObject) {
+
+      Objects.requireNonNull(
+          jsonProcessingMetricsReporter, "jsonProcessingMetricsReporter must not be null");
+      Objects.requireNonNull(cqlSessionCache, "cqlSessionCache must not be null");
+      Objects.requireNonNull(commandConfig, "commandConfig must not be null");
+      Objects.requireNonNull(embeddingProviderFactory, "embeddingProviderFactory must not be null");
+      Objects.requireNonNull(rerankingProviderFactory, "rerankingProviderFactory must not be null");
+      Objects.requireNonNull(meterRegistry, "meterRegistry must not be null");
+
+      // SchemaObject is passed here so the generics gets locked here, makes call chaining easier
+      Objects.requireNonNull(schemaObject, "schemaObject must not be null");
+      return new Builder<>(schemaObject);
+    }
+
+    /**
+     * A builder for a {@link CommandContext} that is configured with for a specific request.
+     *
+     * <p>Deliberately not a static inner class, so that the {@link BuilderSupplier} does not need
+     * to pass all the resources and config to the builder.
+     *
+     * @param <SchemaT> The schema object type that this context is for.
+     */
+    public class Builder<SchemaT extends SchemaObject> {
+
+      private final SchemaT schemaObject;
+      private EmbeddingProvider embeddingProvider;
+      private String commandName;
+      private RequestContext requestContext;
+      private ApiFeatures apiFeatures;
+
+      Builder(SchemaT schemaObject) {
+        this.schemaObject = schemaObject;
+      }
+
+      public Builder<SchemaT> withEmbeddingProvider(EmbeddingProvider embeddingProvider) {
+        this.embeddingProvider = embeddingProvider;
+        return this;
+      }
+
+      public Builder<SchemaT> withCommandName(String commandName) {
+        this.commandName = commandName;
+        return this;
+      }
+
+      public Builder<SchemaT> withRequestContext(RequestContext requestContext) {
+        this.requestContext = requestContext;
+        return this;
+      }
+
+      /**
+       * Optional {@link ApiFeatures} that can be set when running testing, normally set to {@link
+       * ApiFeatures#empty()}
+       */
+      public Builder<SchemaT> withApiFeatures(ApiFeatures apiFeatures) {
+        this.apiFeatures = apiFeatures;
+        return this;
+      }
+
+      public CommandContext<SchemaT> build() {
+        // embeddingProvider may be null, e.g. a keyspace command this will change when we pass in
+        // all the providers
+        Objects.requireNonNull(commandName, "commandName must not be null");
+        Objects.requireNonNull(requestContext, "requestContext must not be null");
+
+        return new CommandContext<>(
+            schemaObject,
+            embeddingProvider,
+            commandName,
+            requestContext,
+            jsonProcessingMetricsReporter,
+            cqlSessionCache,
+            commandConfig,
+            apiFeatures,
+            embeddingProviderFactory,
+            rerankingProviderFactory,
+            meterRegistry);
+      }
+    }
   }
 }

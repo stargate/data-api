@@ -8,10 +8,13 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProviderErrorMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,10 +36,10 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
   public NvidiaEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
+    super(requestProperties, baseUrl, model, dimension, vectorizeServiceParameters);
 
     nvidiaEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()
@@ -49,14 +52,14 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
   public interface NvidiaEmbeddingProviderClient {
     @POST
-    @ClientHeaderParam(name = "Content-Type", value = "application/json")
+    @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
+      return EmbeddingProviderErrorMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -78,9 +81,8 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
       // Get the whole response body
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
-      logger.info(
-          String.format(
-              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
+      logger.error(
+          "Error response from embedding provider '{}': {}", providerId, rootNode.toString());
       JsonNode messageNode = rootNode.path("message");
       // Return the text of the "message" node, or the whole response body if it is missing
       return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
@@ -89,7 +91,7 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
 
   private record EmbeddingRequest(String[] input, String model, String input_type) {}
 
-  @JsonIgnoreProperties(ignoreUnknown = true)
+  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
   private record EmbeddingResponse(Data[] data, String model, Usage usage) {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record Data(int index, float[] embedding) {}
@@ -107,12 +109,13 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
-
+    // Check if using an EOF model
+    checkEOLModelUsage();
     String[] textArray = new String[texts.size()];
     String input_type = embeddingRequestType == EmbeddingRequestType.INDEX ? PASSAGE : QUERY;
 
     EmbeddingRequest request =
-        new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
+        new EmbeddingRequest(texts.toArray(textArray), model.name(), input_type);
 
     Uni<EmbeddingResponse> response =
         applyRetry(nvidiaEmbeddingProviderClient.embed("Bearer ", request));

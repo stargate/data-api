@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import jakarta.validation.Valid;
@@ -17,20 +18,20 @@ public record VectorizeConfig(
             description = "Registered Embedding service provider",
             type = SchemaType.STRING,
             implementation = String.class)
-        @JsonProperty("provider")
+        @JsonProperty(VectorConstants.Vectorize.PROVIDER)
         String provider,
     @Schema(
             description = "Registered Embedding service model",
             type = SchemaType.STRING,
             implementation = String.class)
-        @JsonProperty("modelName")
+        @JsonProperty(VectorConstants.Vectorize.MODEL_NAME)
         String modelName,
     @Valid
         @Nullable
         @Schema(
             description = "Authentication config for chosen embedding service",
             type = SchemaType.OBJECT)
-        @JsonProperty("authentication")
+        @JsonProperty(VectorConstants.Vectorize.AUTHENTICATION)
         @JsonInclude(JsonInclude.Include.NON_NULL)
         Map<String, String> authentication,
     @Nullable
@@ -38,7 +39,7 @@ public record VectorizeConfig(
             description =
                 "Optional parameters that match the messageTemplate provided for the provider",
             type = SchemaType.OBJECT)
-        @JsonProperty("parameters")
+        @JsonProperty(VectorConstants.Vectorize.PARAMETERS)
         @JsonInclude(JsonInclude.Include.NON_NULL)
         Map<String, Object> parameters) {
 
@@ -47,22 +48,25 @@ public record VectorizeConfig(
       String modelName,
       Map<String, String> authentication,
       Map<String, Object> parameters) {
+    if (provider == null) {
+      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          "'provider' in required property for 'vector.service' Object value");
+    }
     this.provider = provider;
     // HuggingfaceDedicated does not need user to specify model explicitly
     // If user specifies modelName other than endpoint-defined-model, will error out
     // By default, huggingfaceDedicated provider use endpoint-defined-model as placeholder
-    if (provider.equals(ProviderConstants.HUGGINGFACE_DEDICATED)) {
-      if (modelName != null
-          && !modelName.equals(ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL)) {
+    if (ProviderConstants.HUGGINGFACE_DEDICATED.equals(provider)) {
+      if (modelName == null) {
+        modelName = ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL;
+      } else if (!modelName.equals(ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL)) {
         throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "'modelName' is not needed for provider %s explicitly, only '%s' is accepted",
+            "'modelName' is not needed for embedding provider %s explicitly, only '%s' is accepted",
             ProviderConstants.HUGGINGFACE_DEDICATED,
             ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL);
       }
-      this.modelName = ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL;
-    } else {
-      this.modelName = modelName;
     }
+    this.modelName = modelName;
     if (authentication != null && !authentication.isEmpty()) {
       Map<String, String> updatedAuth = new HashMap<>();
       for (Map.Entry<String, String> userAuth : authentication.entrySet()) {

@@ -3,9 +3,11 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * UpdateOperation represents one of update definitions from {@link UpdateClause} (like {@code $set}
@@ -50,22 +52,34 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
    * specifically Document's primary id, {@code _id}.
    */
   protected static String validateUpdatePath(UpdateOperator oper, String path) {
-    if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)
-        && !(oper.operator().equals("$set")
-            || oper.operator().equals("$unset")
-            || oper.operator().equals("$setOnInsert"))) {
-      throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_VECTOR.toApiException("%s", oper.operator());
-    }
-
-    if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)
-        && !(oper.operator().equals("$set")
-            || oper.operator().equals("$unset")
-            || oper.operator().equals("$setOnInsert"))) {
-      throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_VECTORIZE.toApiException("%s", oper.operator());
-    }
-
-    if (DocumentConstants.Fields.DOC_ID.equals(path)) {
-      throw ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.toApiException("%s", oper.operator());
+    switch (path) {
+      case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD:
+        switch (oper) {
+          case SET, SET_ON_INSERT, UNSET -> {}
+          default ->
+              throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR_FOR_VECTOR.get(
+                  Map.of("operator", oper.apiName()));
+        }
+        break;
+      case DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD:
+        switch (oper) {
+          case SET, SET_ON_INSERT, UNSET -> {}
+          default ->
+              throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR_FOR_VECTORIZE.get(
+                  Map.of("operator", oper.apiName()));
+        }
+        break;
+      case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD:
+        switch (oper) {
+          case SET, SET_ON_INSERT, UNSET -> {}
+          default ->
+              throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR_FOR_LEXICAL.get(
+                  Map.of("operator", oper.apiName()));
+        }
+        break;
+      case DocumentConstants.Fields.DOC_ID:
+        throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID.get(
+            Map.of("operator", oper.apiName()));
     }
     return path;
   }
@@ -82,7 +96,7 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
   protected static String validateNonModifierPath(UpdateOperator oper, String path) {
     if (looksLikeModifier(path)) {
       throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.toApiException(
-          "%s does not support modifiers", oper.operator());
+          "%s does not support modifiers", oper.apiName());
     }
     return path;
   }

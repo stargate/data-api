@@ -7,15 +7,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
-import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.exception.catchable.ToJSONCodecException;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.exception.checked.ToJSONCodecException;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.JsonNamedValueContainerFactory;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.time.DateTimeException;
+import java.time.Instant;
 import java.util.function.Function;
 
 /**
@@ -28,8 +29,9 @@ import java.util.function.Function;
  *
  * <ul>
  *   <li>JSON Document parsed by Jackson into a {@link JsonNode}
- *   <li>{@link RowShredder} converts the Jackson {@JsonNode}s values into Java Objects (from {@code
- *       TextNode} into {@code String}, {@code BooleanNode} into {@code Boolean}, etc.)
+ *   <li>{@link JsonNamedValueContainerFactory} converts the Jackson {@JsonNode}s values into Java
+ *       Objects (from {@code TextNode} into {@code String}, {@code BooleanNode} into {@code
+ *       Boolean}, etc.)
  *   <li>JSONCodec (this class) turns Java Object into the Java type the C* driver expects (e.g.
  *       Short
  *   <li>C* driver codec turns Java type into C* type
@@ -42,7 +44,7 @@ import java.util.function.Function;
  *
  * <p>Note on Jackson conversion of JSON Numbers: Jackson is used to first read JSON content as
  * {@link JsonNode}s, and then values are converted to "natural" Java types: conversion is done in
- * {@link RowShredder#shredValue} and results in one of the following types:
+ * {@link JsonNamedValueContainerFactory#shredValue} and results in one of the following types:
  *
  * <ul>
  *   <li>{@link java.math.BigDecimal} for numbers that are not integers in JSON
@@ -336,13 +338,7 @@ public record JSONCodec<JavaT, CqlT>(
 
     static byte[] byteArrayFromEJSON(DataType targetCQLType, EJSONWrapper wrapper)
         throws ToCQLCodecException {
-      if (wrapper.type() != EJSONWrapper.EJSONType.BINARY) {
-        throw new ToCQLCodecException(
-            wrapper,
-            targetCQLType,
-            "Unsupported EJSON type '%s': only '%s' supported"
-                .formatted(wrapper.type().key(), EJSONWrapper.EJSONType.BINARY.key()));
-      }
+      verifyEJSONType(wrapper, targetCQLType, EJSONWrapper.EJSONType.BINARY);
       JsonNode value = wrapper.value();
       byte[] binaryPayload;
 
@@ -381,6 +377,33 @@ public record JSONCodec<JavaT, CqlT>(
         return InetAddress.getByName(value);
       } catch (UnknownHostException e) {
         throw new IllegalArgumentException("Invalid IP address value '%s'".formatted(value));
+      }
+    }
+
+    static Instant instantFromEJSON(DataType targetCQLType, EJSONWrapper wrapper)
+        throws ToCQLCodecException {
+      verifyEJSONType(wrapper, targetCQLType, EJSONWrapper.EJSONType.DATE);
+      JsonNode value = wrapper.value();
+
+      if (!value.isNumber()) {
+        throw new ToCQLCodecException(
+            wrapper,
+            targetCQLType,
+            "Unsupported JSON value type in EJSON $date wrapper (%s): only NUMBER allowed"
+                .formatted(value.getNodeType()));
+      }
+      return Instant.ofEpochMilli(value.longValue());
+    }
+
+    private static void verifyEJSONType(
+        EJSONWrapper wrapper, DataType targetCQLType, EJSONWrapper.EJSONType expectedType)
+        throws ToCQLCodecException {
+      if (wrapper.type() != expectedType) {
+        throw new ToCQLCodecException(
+            wrapper,
+            targetCQLType,
+            "Unsupported EJSON type '%s': only '%s' supported"
+                .formatted(wrapper.type().key(), expectedType.key()));
       }
     }
   }

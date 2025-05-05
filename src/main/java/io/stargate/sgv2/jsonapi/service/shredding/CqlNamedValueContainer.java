@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.shredding;
 
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import java.util.Collection;
 
 /** A container for {@link CqlNamedValue}'s that maintains the order the named values were added. */
 public class CqlNamedValueContainer
-    extends NamedValueContainer<ColumnMetadata, Object, CqlNamedValue> {
+    extends NamedValueContainer<CqlIdentifier, Object, CqlNamedValue> {
 
   public CqlNamedValueContainer() {
     super();
@@ -20,7 +20,7 @@ public class CqlNamedValueContainer
   }
 
   public CqlNamedValueContainer(Collection<CqlNamedValue> values) {
-    super();
+    super(values.size());
     putAll(values);
   }
 }

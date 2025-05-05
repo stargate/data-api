@@ -10,7 +10,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
@@ -26,6 +26,7 @@ import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -35,12 +36,19 @@ public class FindCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject OperationsConfig operationsConfig;
   @Inject FindCommandResolver resolver;
-  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
+  @InjectMock protected RequestContext dataApiRequestInfo;
+
+  private TestConstants testConstants = new TestConstants();
+
+  CommandContext<CollectionSchemaObject> commandContext;
+
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.collectionContext();
+  }
 
   @Nested
   class FindCommandResolveCommand {
-
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void idFilterCondition() throws Exception {
@@ -935,8 +943,6 @@ public class FindCommandResolverTest {
   @Nested
   class FindCommandResolveWithProjection {
 
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
-
     @Test
     public void idFilterConditionAndProjection() throws Exception {
       final String json =
@@ -1039,7 +1045,6 @@ public class FindCommandResolverTest {
 
   @Nested
   class FindCommandResolveWithINOperator {
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void NonIdIn() throws Exception {
@@ -1345,7 +1350,6 @@ public class FindCommandResolverTest {
 
   @Nested
   class FindCommandResolveWithRangeOperator {
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void gt() throws Exception {

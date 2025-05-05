@@ -10,7 +10,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
@@ -25,6 +25,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -34,12 +35,19 @@ public class FindOneAndDeleteCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject OperationsConfig operationsConfig;
   @Inject FindOneAndDeleteCommandResolver resolver;
-  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
+  @InjectMock protected RequestContext dataApiRequestInfo;
+
+  private TestConstants testConstants = new TestConstants();
+
+  CommandContext<CollectionSchemaObject> commandContext;
+
+  @BeforeEach
+  public void beforeEach() {
+    commandContext = testConstants.collectionContext();
+  }
 
   @Nested
   class Resolve {
-
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void idFilterCondition() throws Exception {

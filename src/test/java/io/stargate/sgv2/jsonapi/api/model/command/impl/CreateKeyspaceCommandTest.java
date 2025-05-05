@@ -10,7 +10,6 @@ import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.Set;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -24,66 +23,6 @@ class CreateKeyspaceCommandTest {
 
   @Nested
   class Validation {
-
-    @Test
-    public void noName() throws Exception {
-      String json =
-          """
-          {
-            "createKeyspace": {
-            }
-          }
-          """;
-
-      CreateKeyspaceCommand command = objectMapper.readValue(json, CreateKeyspaceCommand.class);
-      Set<ConstraintViolation<CreateKeyspaceCommand>> result = validator.validate(command);
-
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("must not be null");
-    }
-
-    @Test
-    public void nameTooLong() throws Exception {
-      String json =
-              """
-          {
-            "createKeyspace": {
-              "name": "%s"
-            }
-          }
-          """
-              .formatted(RandomStringUtils.randomAlphabetic(49));
-
-      CreateKeyspaceCommand command = objectMapper.readValue(json, CreateKeyspaceCommand.class);
-      Set<ConstraintViolation<CreateKeyspaceCommand>> result = validator.validate(command);
-
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("size must be between 1 and 48");
-    }
-
-    @Test
-    public void nameWrongPattern() throws Exception {
-      String json =
-          """
-          {
-            "createKeyspace": {
-              "name": "_not_possible"
-            }
-          }
-          """;
-
-      CreateKeyspaceCommand command = objectMapper.readValue(json, CreateKeyspaceCommand.class);
-      Set<ConstraintViolation<CreateKeyspaceCommand>> result = validator.validate(command);
-
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("must match \"[a-zA-Z][a-zA-Z0-9_]*\"");
-    }
 
     @Test
     public void nameCorrectPattern() throws Exception {
@@ -154,66 +93,6 @@ class CreateKeyspaceCommandTest {
 
   @Nested
   class DeprecatedCreateNamespaceTest {
-
-    @Test
-    public void noName() throws Exception {
-      String json =
-          """
-              {
-                "createNamespace": {
-                }
-              }
-              """;
-
-      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
-      Set<ConstraintViolation<CreateNamespaceCommand>> result = validator.validate(command);
-
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("must not be null");
-    }
-
-    @Test
-    public void nameTooLong() throws Exception {
-      String json =
-              """
-          {
-            "createNamespace": {
-              "name": "%s"
-            }
-          }
-          """
-              .formatted(RandomStringUtils.randomAlphabetic(49));
-
-      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
-      Set<ConstraintViolation<CreateNamespaceCommand>> result = validator.validate(command);
-
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("size must be between 1 and 48");
-    }
-
-    @Test
-    public void nameWrongPattern() throws Exception {
-      String json =
-          """
-              {
-                "createNamespace": {
-                  "name": "_not_possible"
-                }
-              }
-              """;
-
-      CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
-      Set<ConstraintViolation<CreateNamespaceCommand>> result = validator.validate(command);
-
-      assertThat(result)
-          .isNotEmpty()
-          .extracting(ConstraintViolation::getMessage)
-          .contains("must match \"[a-zA-Z][a-zA-Z0-9_]*\"");
-    }
 
     @Test
     public void nameCorrectPattern() throws Exception {

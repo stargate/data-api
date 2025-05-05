@@ -1,13 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
 import com.datastax.oss.driver.api.querybuilder.insert.OngoingValues;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
-import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
@@ -20,8 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An attempt to insert into a table, runs the query, does not hold the result set (e.g. for applied
- * LWT) that is for later.
+ * IMPORTANT: THIS IS ALSO USED BY THE COLLECTIONS (JUST FOR INSERT) SO IT NEEDS TO STAY UNTIL
+ * COLLECTIONS CODE IS UPDATED (INSERTS STARTED THE "ATTEMPT" PATTERN)
  */
 public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
     extends OperationAttempt<InsertAttempt<SchemaT>, SchemaT> {
@@ -40,18 +37,12 @@ public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
+  protected StatementContext buildStatementContext(CommandQueryExecutor queryExecutor) {
     // bind and execute
     var statement = buildInsertStatement();
 
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
-          "execute() - {}, cql={}, values={}",
-          positionAndAttemptId(),
-          statement.getQuery(),
-          statement.getPositionalValues());
-    }
-    return queryExecutor.executeWrite(statement);
+    logStatement(LOGGER, "executeStatement()", statement);
+    return new StatementContext(statement, () -> queryExecutor.executeWrite(statement));
   }
 
   protected SimpleStatement buildInsertStatement() {
@@ -82,12 +73,4 @@ public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
    * @return The {@link DocRowIdentifer} that identifies the document or row by ID
    */
   public abstract Optional<DocRowIdentifer> docRowID();
-
-  /**
-   * Called to get the description of the schema to use when building the response.
-   *
-   * @return The optional object that describes the schema, if present the object will be serialised
-   *     to JSON and included in the response status as {@link CommandStatus#PRIMARY_KEY_SCHEMA}.
-   */
-  public abstract Optional<Object> schemaDescription();
 }

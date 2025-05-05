@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.ws.rs.core.Response;
 import java.util.Objects;
 import java.util.Optional;
@@ -41,7 +43,7 @@ import java.util.UUID;
  * APIExceptionCommandErrorBuilder} all the logic for mapping to the API is in there to keep it out
  * of the core exception classes.
  */
-public abstract class APIException extends RuntimeException {
+public abstract class APIException extends RuntimeException implements Recordable {
 
   // All errors default to 200 HTTP status code, because we have partial failure modes.
   // There are some overrides, e.g. a server timeout may be a 500, this is managed in the
@@ -132,8 +134,17 @@ public abstract class APIException extends RuntimeException {
 
   @Override
   public String toString() {
-    return String.format(
-        "%s{errorId=%s, family=%s, scope='%s', code='%s', title='%s', body='%s'}",
-        getClass().getSimpleName(), errorId, family, scope, code, title, body);
+    return PrettyPrintable.print(this);
+  }
+
+  @Override
+  public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
+    return dataRecorder
+        .append("errorId", errorId)
+        .append("family", family)
+        .append("scope", scope)
+        .append("code", code)
+        .append("title", title)
+        .append("body", body);
   }
 }

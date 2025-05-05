@@ -8,8 +8,11 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.resolver.UnvalidatedClauseException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.List;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link InsertValuesCQLClause} that builds the VALUES part of the CQL Insert statement when
@@ -24,9 +27,12 @@ import java.util.Objects;
 public record TableInsertValuesCQLClause(TableSchemaObject tableSchemaObject, WriteableTableRow row)
     implements InsertValuesCQLClause {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(TableInsertValuesCQLClause.class);
+
   public TableInsertValuesCQLClause {
     Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     Objects.requireNonNull(row, "row cannot be null");
+
     if (row.allColumns().isEmpty()) {
       throw new UnvalidatedClauseException("Row must have at least one column to insert");
     }
@@ -39,12 +45,20 @@ public record TableInsertValuesCQLClause(TableSchemaObject tableSchemaObject, Wr
 
     RegularInsert regularInsert = null;
 
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug(
+          "apply() - building insert keyspace={} table={} row.allColumns={}",
+          tableSchemaObject.keyspaceName().asCql(true),
+          tableSchemaObject.tableName().asCql(true),
+          PrettyPrintable.print(row.allColumns()));
+    }
+
     for (var cqlNamedValue : row.allColumns().values()) {
       positionalValues.add(cqlNamedValue.value());
       regularInsert =
           regularInsert == null
-              ? ongoingValues.value(cqlNamedValue.name().getName(), bindMarker())
-              : regularInsert.value(cqlNamedValue.name().getName(), bindMarker());
+              ? ongoingValues.value(cqlNamedValue.name(), bindMarker())
+              : regularInsert.value(cqlNamedValue.name(), bindMarker());
     }
 
     return regularInsert;

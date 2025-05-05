@@ -7,7 +7,11 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +28,7 @@ public abstract class EmbeddingProvider {
   protected static final Logger logger = LoggerFactory.getLogger(EmbeddingProvider.class);
   protected final EmbeddingProviderConfigStore.RequestProperties requestProperties;
   protected final String baseUrl;
-  protected final String modelName;
+  protected final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model;
   protected final int dimension;
   protected final Map<String, Object> vectorizeServiceParameters;
 
@@ -37,12 +41,12 @@ public abstract class EmbeddingProvider {
   protected EmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
     this.baseUrl = baseUrl;
-    this.modelName = modelName;
+    this.model = model;
     this.dimension = dimension;
     this.vectorizeServiceParameters = vectorizeServiceParameters;
   }
@@ -68,6 +72,33 @@ public abstract class EmbeddingProvider {
             Duration.ofMillis(requestProperties.maxBackOffMillis()))
         .withJitter(requestProperties.jitter())
         .atMost(requestProperties.atMostRetries());
+  }
+
+  /**
+   * Checks if the vectorization will use an END_OF_LIFE model and throws an exception if it is.
+   *
+   * <p>As part of embedding model deprecation ability, any read and write with vectorization in an
+   * END_OF_LIFE model will throw an exception.
+   *
+   * <p>Note, SUPPORTED and DEPRECATED models are still allowed to be used in read and write.
+   *
+   * <p>This method should be called before any vectorization operation.
+   */
+  protected void checkEOLModelUsage() {
+    // Validate if the model is END_OF_LIFE
+    if (model.apiModelSupport().status() == ApiModelSupport.SupportStatus.END_OF_LIFE) {
+      throw SchemaException.Code.END_OF_LIFE_AI_MODEL.get(
+          Map.of(
+              "model",
+              model.name(),
+              "modelStatus",
+              model.apiModelSupport().status().name(),
+              "message",
+              model
+                  .apiModelSupport()
+                  .message()
+                  .orElse("The model is no longer supported (reached its end-of-life).")));
+    }
   }
 
   /**
@@ -101,6 +132,17 @@ public abstract class EmbeddingProvider {
    */
   protected static boolean acceptsOpenAIDimensions(String modelName) {
     return !modelName.endsWith("-ada-002");
+  }
+
+  /**
+   * Helper method that has logic wrt whether JinaAI accepts {@code "dimensions"} parameter or not.
+   *
+   * @param modelName JinaAI model to check
+   * @return True if given JinaAI model accepts (and expects} {@code "dimensions"} parameter; false
+   *     if not.
+   */
+  protected static boolean acceptsJinaAIDimensions(String modelName) {
+    return modelName.endsWith("jina-embeddings-v3");
   }
 
   /**
@@ -164,9 +206,15 @@ public abstract class EmbeddingProvider {
    * @param batchId - Sequence number for the batch to order the vectors.
    * @param embeddings - Embedding vectors for the given text inputs.
    */
-  public record Response(int batchId, List<float[]> embeddings) {
+  public record Response(int batchId, List<float[]> embeddings) implements Recordable {
+
     public static Response of(int batchId, List<float[]> embeddings) {
       return new Response(batchId, embeddings);
+    }
+
+    @Override
+    public DataRecorder recordTo(DataRecorder dataRecorder) {
+      return dataRecorder.append("batchId", batchId).append("embeddings", embeddings);
     }
   }
 

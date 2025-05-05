@@ -18,15 +18,7 @@ import org.junit.jupiter.api.*;
 public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   private void insert(String json) {
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(json)
-        .when()
-        .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-        .then()
-        .statusCode(200)
-        .body("$", responseIsWriteSuccess());
+    givenHeadersPostJsonThenOkNoErrors(json).body("$", responseIsWriteSuccess());
   }
 
   @Nested
@@ -151,31 +143,76 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
-    public void noFilter() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
+    public void failWithNonEmptySortAndPageState() {
+      givenHeadersPostJsonThenOk(
+              """
+                {
+                 "find": {
+                    "filter" : {"username" : "user1"},
+                    "sort" : {"username" : 1},
+                    "options" : {
+                      "pageState" : "someState"
+                    }
+                  }
+                }
+                """)
+          .body("$", responseIsError())
           .body(
+              "errors[0].message",
+              is("Invalid sort clause: pageState is not supported with non-empty sort clause"))
+          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"));
+    }
+
+    @Test
+    public void happyWithEmptyPageStateAndNonEmptySort() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                {
+                 "find": {
+                    "filter" : {"username" : "user1"},
+                    "sort" : {"username" : 1},
+                    "options" : {
+                      "pageState" : ""
+                    }
+                  }
+                }
+                """)
+          .body("$", responseIsFindSuccess());
+    }
+
+    @Test
+    public void happyWithNullPageStateAndNonEmptySort() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                {
+                 "find": {
+                    "filter" : {"username" : "user1"},
+                    "sort" : {"username" : 1},
+                    "options" : {
+                      "pageState" : null
+                    }
+                  }
+                }
+                """)
+          .body("$", responseIsFindSuccess());
+    }
+
+    @Test
+    public void noFilter() {
+      givenHeadersPostJsonThenOkNoErrors(
               """
               {
                 "find": {
                 }
               }
               """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(6));
     }
 
     @Test
     public void noFilterWithOptions() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                       {
                         "find": {
@@ -185,20 +222,13 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                         }
                       }
                       """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(2));
     }
 
     @Test
     public void noFilterWithIncludeSortVectorOptions() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
             {
               "find": {
@@ -209,10 +239,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               }
             }
             """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindAndSuccess())
           .body("status.sortVector", nullValue())
           .body("data.documents", hasSize(2));
@@ -220,10 +246,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void byId() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                       {
                         "find": {
@@ -231,10 +254,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                         }
                       }
                       """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body(
@@ -250,98 +269,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           "null_column": null
                       }
                       """));
-    }
-
-    // For [json-api#634]: empty Object as Projection should work same as missing one,
-    // that is, include everything
-    @Test
-    public void byIdEmptyProjection() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
-              """
-                      {
-                        "find": {
-                          "filter" : {"_id" : "doc1"},
-                          "projection": { }
-                        }
-                      }
-                      """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(1))
-          .body(
-              "data.documents[0]",
-              jsonEquals(
-                  """
-                      {
-                          "_id": "doc1",
-                          "username": "user1",
-                          "active_user" : true,
-                          "date" : {"$date": 1672531200000},
-                          "age" : 20,
-                          "null_column": null
-                      }
-                      """));
-    }
-
-    @Test
-    public void byIdIncludeAllProjection() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
-              """
-                              {
-                                "find": {
-                                  "filter" : {"_id" : "doc5"},
-                                  "projection": { "*": 1 }
-                                }
-                              }
-                              """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(1))
-          .body(
-              "data.documents[0]",
-              jsonEquals(
-                  """
-                        {
-                            "_id": "doc5",
-                            "username": "user5",
-                            "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
-                        }
-                        """));
-    }
-
-    @Test
-    public void byIdExcludeAllProjection() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
-              """
-                              {
-                                "find": {
-                                  "filter" : {"_id" : "doc5"},
-                                  "projection": { "*": 0 }
-                                }
-                              }
-                              """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsFindSuccess())
-          .body("data.documents", hasSize(1))
-          .body("data.documents[0]", jsonEquals("{}"));
     }
 
     // https://github.com/stargate/jsonapi/issues/572 -- is passing empty Object for "sort" ok?
@@ -400,43 +327,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                         "user-name": "user6"
                       }
                       """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected))
-          .body("data.documents", hasSize(1));
-    }
-
-    @Test
-    public void byIdWithProjection() {
-      String json =
-          """
-                      {
-                        "find": {
-                          "filter" : {"_id" : "doc1"},
-                          "projection": { "_id":0, "username":1 }
-                        }
-                      }
-                      """;
-
-      String expected =
-          """
-              {"username":"user1"}
-              """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -457,14 +348,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
                           {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -473,10 +357,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     // [https://github.com/stargate/jsonapi/issues/521]: allow hyphens in property names
     @Test
     public void byColumnWithHyphen() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                   {
                     "find": {
@@ -484,10 +365,6 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                     }
                   }
               """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body(
@@ -514,16 +391,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
       String expected =
           """
-                          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
-                          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+          """;
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
@@ -543,14 +413,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
               {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
               """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -577,14 +440,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           }
           """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -610,14 +466,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
             "array": ["value1"]
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -667,14 +516,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           }
                           """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(5))
           .body(
@@ -702,14 +544,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
                           {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -730,14 +565,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
           {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -759,14 +587,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
           {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -787,14 +608,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
            {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -811,14 +625,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           }
           """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
     }
@@ -842,14 +649,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
             "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -874,14 +674,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
             "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
           }
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -898,14 +691,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           }
           """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
     }
@@ -921,14 +707,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           }
           """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
     }
@@ -948,14 +727,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
           {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -972,19 +744,13 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           }
           """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
     }
 
     @Test
+    @Disabled("Different behavior with HCD 1.2, temporarily skipped")
     public void withSizeOperatorNotZero() {
       String json =
           """
@@ -1001,14 +767,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   }
                       """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           // should have all the documents
           .body("data.documents", hasSize(6));
@@ -1029,14 +788,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
           {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -1057,14 +809,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
           {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -1081,14 +826,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           }
           """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
     }
@@ -1104,14 +842,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           }
           """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
     }
@@ -1131,14 +862,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
                           {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -1160,14 +884,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
                           {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -1198,14 +915,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
                   {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
                   """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(2))
           .body("data.documents", containsInAnyOrder(jsonEquals(expected1), jsonEquals(expected2)));
@@ -1254,14 +964,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
                   {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
                   """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected))
           .body("data.documents", hasSize(1));
@@ -1293,60 +996,9 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
                   """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(3));
-    }
-
-    @Test
-    public void dollarOperatorInSortPathExpression() {
-      String json =
-          """
-              { "find": { "sort" : {"$gt" : 1} } }
-              """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body(
-              "errors[0].message",
-              endsWith("sort clause path ('$gt') contains character(s) not allowed"))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
-    }
-
-    @Test
-    void emptyPathExpressionInSort() {
-      String json =
-          """
-              { "find": { "sort" : {"" : 1} } }
-              """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsError())
-          .body(
-              "errors[0].message",
-              endsWith("sort clause path must be represented as not-blank string"))
-          .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE_PATH"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
@@ -1355,20 +1007,10 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
               { "find": { "filter" : {"$gt" : {"test" : 5}} } }
               """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body(
-              "errors[0].message",
-              endsWith("filter clause path ('$gt') contains character(s) not allowed"))
           .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].message", containsString("filter clause path ('$gt')"));
     }
 
     @Test
@@ -1377,40 +1019,24 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
                   { "find": { "filter" : {"address" : {"city" : {"$eq" : "Beijing"}}}}}
                   """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
-          .body("errors[0].message", endsWith("Invalid use of $eq operator"))
           .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].message", endsWith("Invalid use of $eq operator"));
     }
 
     @Test
     public void exceedMaxFieldInFilter() {
       // Max allowed 64, so fail with 65
       String json = createJsonStringWithNFilterFields(65);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
           .body("$", responseIsError())
+          .body("errors[0].errorCode", is("FILTER_FIELDS_LIMIT_VIOLATION"))
           .body(
               "errors[0].message",
               endsWith(
                   " filter has 65 fields, exceeds maximum allowed "
-                      + OperationsConfig.DEFAULT_MAX_FILTER_SIZE))
-          .body("errors[0].errorCode", is("FILTER_FIELDS_LIMIT_VIOLATION"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                      + OperationsConfig.DEFAULT_MAX_FILTER_SIZE));
     }
 
     private static String createJsonStringWithNFilterFields(int numberOfFields) {
@@ -1478,14 +1104,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                     "user-name": "user6"
                                   }
                                   """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(5))
           .body(
@@ -1540,14 +1159,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                     "user-name": "user6"
                                   }
                                   """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(5))
           .body(
@@ -1602,14 +1214,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                     "user-name": "user6"
                                   }
                                   """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(5))
           .body(
@@ -1664,14 +1269,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                     "user-name": "user6"
                                   }
                                   """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(5))
           .body(
@@ -1726,14 +1324,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                     "user-name": "user6"
                                   }
                                   """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(5))
           .body(
@@ -1796,14 +1387,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                     "user-name": "user6"
                                   }
                                   """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(5))
           .body(
@@ -1860,14 +1444,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                             "user-name": "user6"
                                           }
                                           """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(5))
           .body(
@@ -1925,14 +1502,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
                       {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
                       """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", not(containsInAnyOrder(expected)))
           .body("data.documents", hasSize(5));
@@ -1955,14 +1525,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
                               {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                               """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body("data.documents", containsInAnyOrder(jsonEquals(expected)));
@@ -1983,14 +1546,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
               {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
               """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", not(containsInAnyOrder(expected)))
           .body("data.documents", hasSize(5));
@@ -2012,14 +1568,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
                               {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                               """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body("data.documents", containsInAnyOrder(jsonEquals(expected)));
@@ -2063,17 +1612,207 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """
                                   {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                                   """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body("data.documents", containsInAnyOrder(jsonEquals(expected)));
+    }
+  }
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  @Order(2)
+  class FindWithProjection {
+    @Test
+    @Order(1)
+    public void insertData() {
+      insert(
+          """
+                            {
+                              "insertOne": {
+                                "document": {
+                                  "_id": "doc6",
+                                  "price.usd": 5
+                                }
+                              }
+                            }
+                          """);
+    }
+
+    @Test
+    public void byIdWithProjection() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                          {
+                            "find": {
+                              "filter" : {"_id" : "doc1"},
+                              "projection": { "_id":0, "username":1 }
+                            }
+                          }
+                          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents[0]", jsonEquals("{\"username\":\"user1\"}"))
+          .body("data.documents", hasSize(1));
+    }
+
+    // For [json-api#634]: empty Object as Projection should work same as missing one,
+    // that is, include everything
+    @Test
+    public void byIdEmptyProjection() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                              {
+                                "find": {
+                                  "filter" : {"_id" : "doc1"},
+                                  "projection": { }
+                                }
+                              }
+                              """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1))
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                                  {
+                                      "_id": "doc1",
+                                      "username": "user1",
+                                      "active_user" : true,
+                                      "date" : {"$date": 1672531200000},
+                                      "age" : 20,
+                                      "null_column": null
+                                  }
+                                  """));
+    }
+
+    @Test
+    public void byIdIncludeAllProjection() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                                      {
+                                        "find": {
+                                          "filter" : {"_id" : "doc5"},
+                                          "projection": { "*": 1 }
+                                        }
+                                      }
+                                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1))
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                                    {
+                                        "_id": "doc5",
+                                        "username": "user5",
+                                        "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                                    }
+                                    """));
+    }
+
+    @Test
+    public void byIdExcludeAllProjection() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                                      {
+                                        "find": {
+                                          "filter" : {"_id" : "doc5"},
+                                          "projection": { "*": 0 }
+                                        }
+                                      }
+                                      """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]", jsonEquals("{}"));
+    }
+
+    @Test
+    public void withAmpersandEscape() {
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                  {
+                    "find": {
+                        "filter" : {"_id" : "doc6"},
+                        "projection" : {
+                            "price&.usd": 1
+                        }
+                    }
+                  }
+                  """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1))
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                 {
+                     "_id": "doc6",
+                     "price.usd": 5
+                 }
+                 """));
+    }
+
+    @Test
+    public void failWithAmpersandEscapeAtTheEnd() {
+      givenHeadersPostJsonThenOk(
+              """
+                    {
+                        "find": {
+                            "projection" : {
+                                "price&": 1
+                            }
+                        }
+                    }
+                    """)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Unsupported projection parameter: projection path ('price&') is not a valid path."))
+          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failWithAmpersandEscapeNotFollowedByAmpersandOrDot() {
+      givenHeadersPostJsonThenOk(
+              """
+                        {
+                            "find": {
+                                "projection" : {
+                                    "price&abc": 1
+                                }
+                            }
+                        }
+                        """)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Unsupported projection parameter: projection path ('price&abc') is not a valid path."))
+          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failWithEmptySegment() {
+      givenHeadersPostJsonThenOk(
+              """
+                        {
+                            "find": {
+                                "projection" : {
+                                    "foo..bar": 1
+                                }
+                            }
+                        }
+                        """)
+          .body("$", responseIsError())
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Unsupported projection parameter: projection path ('foo..bar') is not a valid path."))
+          .body("errors[0].errorCode", is("UNSUPPORTED_PROJECTION_PARAM"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
   }
 

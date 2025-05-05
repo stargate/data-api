@@ -23,13 +23,32 @@ public class DocumentProjectorTest {
   @Nested
   class ProjectorDefValidation {
     @Test
-    public void verifyProjectionJsonObject() throws Exception {
-      JsonNode def = objectMapper.readTree(" [ 1, 2, 3 ]");
-      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+    public void verifyProjectionJsonObjectNotArray() {
+      Throwable t =
+          catchThrowable(
+              () -> DocumentProjector.createFromDefinition(objectMapper.readTree(" [ 1, 2, 3 ]")));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage("Unsupported projection parameter: definition must be OBJECT, was ARRAY");
+    }
+
+    // Also verify that JSON String not allowed: common mistake to try
+    //
+    // {"projection": "*"}
+    //
+    // instead of valid
+    //
+    // {"projection": {"*": 1}}
+    @Test
+    public void verifyProjectionJsonObjectNotString() {
+      Throwable t =
+          catchThrowable(
+              () -> DocumentProjector.createFromDefinition(objectMapper.readTree(" \"*\"")));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage("Unsupported projection parameter: definition must be OBJECT, was STRING");
     }
 
     @Test
@@ -166,7 +185,131 @@ public class DocumentProjectorTest {
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
-              "Unsupported projection parameter: '$vector'/'$vectorize' are the only allowed paths that can start with '$'");
+              "Unsupported projection parameter: '$lexical'/'$vector'/'$vectorize' are the only allowed paths that can start with '$'");
+    }
+  }
+
+  // [jsonapi#1853]: Support ampersand-escape in projection
+  @Nested
+  class ProjectorPathValidation {
+    @Test
+    public void verifyAmpersandEscape() throws Exception {
+      final String docJson =
+          """
+                      "pricing": {
+                          "price.usd": 1.0,
+                          "price&jpy": 2.0,
+                          "price&.aud": 3.0,
+                          "app.kubernetes.io/name": {
+                              "abc$def": "123",
+                              "a b": "456"
+                          }
+                      },
+                      "metadata": {
+                          "name": "test-app",
+                          "namespace": "default",
+                          "metadata.name": 1
+                      }
+                      """;
+      // case 1: selecting "pricing.price.usd" (using the ampersand escape for the literal '.') and
+      // the nested "metadata.name" field (which requires no escaping).
+      String projectionString =
+          """
+                      {
+                          "pricing.price&.usd": 1,
+                          "pricing.price&&jpy": 1,
+                          "metadata.name": 1
+                      }
+                      """;
+      JsonNode doc = objectMapper.readTree(docJson);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(objectMapper.readTree(projectionString));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                      "pricing": {
+                          "price.usd": 1,
+                          "price&jpy": 2
+                      },
+                      "metadata": {
+                          "name": "test-app"
+                      }
+                      """));
+
+      // case 2: selecting "pricing.price&.aud" (using the ampersand escape for the literal '.' and
+      // '&')
+      // the nested "metadata.metadata.name" field will select nothing (not using ampersand escape
+      // to escape the dot).
+      doc = objectMapper.readTree(docJson);
+      projectionString =
+          """
+                        {
+                            "pricing.price&&&.aud": 1,
+                            "pricing.app&.kubernetes&.io/name": 1,
+                            "metadata.metadata.name": 1
+                        }
+                        """;
+      DocumentProjector projection1 =
+          DocumentProjector.createFromDefinition(objectMapper.readTree(projectionString));
+      assertThat(projection1.isInclusion()).isTrue();
+      projection1.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                              "pricing": {
+                                  "price&.aud": 3,
+                                  "app.kubernetes.io/name": {
+                                      "abc$def": "123",
+                                      "a b": "456"
+                                  }
+                              }
+                              """));
+    }
+
+    @Test
+    public void verifyAmpersandEscapeAtTheEnd() throws Exception {
+      final String projectionString =
+          """
+                      {
+                          "pricing.price&.usd&": 0
+                      }
+                      """;
+
+      Throwable t =
+          catchThrowable(
+              () ->
+                  DocumentProjector.createFromDefinition(objectMapper.readTree(projectionString)));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessageContaining(
+              ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.getMessage()
+                  + ": projection path ('pricing.price&.usd&') is not a valid path.");
+    }
+
+    @Test
+    public void verifyAmpersandEscapeNotFollowedByAmpersandOrDot() throws Exception {
+      final String projectionString =
+          """
+                      {
+                          "pricing.price&usd": 0
+                      }
+                      """;
+
+      Throwable t =
+          catchThrowable(
+              () ->
+                  DocumentProjector.createFromDefinition(objectMapper.readTree(projectionString)));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessageContaining(
+              ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.getMessage()
+                  + ": projection path ('pricing.price&usd') is not a valid path.");
     }
   }
 
@@ -222,7 +365,7 @@ public class DocumentProjectorTest {
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
-              "Unsupported projection parameter: '$vector'/'$vectorize' are the only allowed paths that can start with '$'");
+              "Unsupported projection parameter: '$lexical'/'$vector'/'$vectorize' are the only allowed paths that can start with '$'");
     }
 
     @Test
@@ -292,6 +435,7 @@ public class DocumentProjectorTest {
                                       {
                                          "_id" : 1,
                                          "value1": 42,
+                                         "$lexical": "brown fox",
                                          "$vectorize": "Quick brown fox",
                                          "$vector": [0.0, 1.0],
                                          "value2": -3

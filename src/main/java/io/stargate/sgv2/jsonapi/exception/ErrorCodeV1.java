@@ -47,6 +47,8 @@ public enum ErrorCodeV1 {
   /** note: Only used by EmbeddingGateway */
   INVALID_REQUEST("Request not supported by the data store"),
 
+  INVALID_REQUEST_STRUCTURE_MISMATCH("Request invalid, mismatching JSON structure"),
+
   INVALID_REQUEST_NOT_JSON("Request invalid, cannot parse as JSON"),
 
   INVALID_REQUEST_UNKNOWN_FIELD("Request invalid, unrecognized JSON field"),
@@ -63,15 +65,17 @@ public enum ErrorCodeV1 {
 
   SHRED_BAD_BINARY_VECTOR_VALUE("Bad binary vector value to shred"),
 
-  SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
-
   SHRED_BAD_DOCID_TYPE("Bad type for '_id' property"),
+
+  SHRED_BAD_DOCID_EMPTY_STRING("Bad value for '_id' property: empty String not allowed"),
+
+  SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
 
   SHRED_BAD_DOCUMENT_VECTOR_TYPE("Bad $vector document type to shred "),
 
   SHRED_BAD_DOCUMENT_VECTORIZE_TYPE("Bad $vectorize document type to shred "),
 
-  SHRED_BAD_DOCID_EMPTY_STRING("Bad value for '_id' property: empty String not allowed"),
+  SHRED_BAD_DOCUMENT_LEXICAL_TYPE("Bad type for $lexical content to shred"),
 
   SHRED_BAD_EJSON_VALUE("Bad JSON Extension value"),
 
@@ -90,6 +94,16 @@ public enum ErrorCodeV1 {
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
+
+  RERANKING_FEATURE_NOT_ENABLED("Reranking feature is not enabled"),
+  RERANKING_SERVICE_TYPE_UNAVAILABLE("Reranking service unavailable"),
+  RERANKING_PROVIDER_UNEXPECTED_RESPONSE("The Reranking Provider returned an unexpected response"),
+  RERANKING_PROVIDER_CLIENT_ERROR("The Reranking Provider returned a HTTP client error"),
+  RERANKING_PROVIDER_SERVER_ERROR("The Reranking Provider returned a HTTP server error"),
+  RERANKING_PROVIDER_RATE_LIMITED("The Reranking Provider rate limited the request"),
+  RERANKING_PROVIDER_TIMEOUT("The Reranking Provider timed out"),
+  RERANKING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED(
+      "The reranking provider authentication key is not provided"),
 
   TOO_MANY_COLLECTIONS("Too many collections"),
 
@@ -124,14 +138,9 @@ public enum ErrorCodeV1 {
 
   UNSUPPORTED_UPDATE_OPERATION_PARAM("Unsupported update operation parameter"),
 
-  UNSUPPORTED_UPDATE_OPERATION_PATH("Invalid update operation path"),
+  UNSUPPORTED_UPDATE_OPERATION_PATH("Unsupported update operation path"),
 
   UNSUPPORTED_UPDATE_OPERATION_TARGET("Unsupported target JSON value for update operation"),
-
-  UNSUPPORTED_UPDATE_FOR_DOC_ID("Cannot use operator with '_id' property"),
-
-  UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' property"),
-  UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' property"),
 
   VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
 
@@ -140,6 +149,8 @@ public enum ErrorCodeV1 {
   VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection"),
 
   VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name"),
+
+  VECTOR_SEARCH_UNRECOGNIZED_SOURCE_MODEL_NAME("Unrecognized vector search source model name"),
 
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
   VECTOR_SIZE_MISMATCH("Length of vector parameter different from declared '$vector' dimension"),
@@ -151,7 +162,19 @@ public enum ErrorCodeV1 {
   VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
 
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
-  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail"),
+  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
+
+  LEXICAL_NOT_AVAILABLE_FOR_DATABASE("Lexical search is not available on this database"),
+  LEXICAL_NOT_ENABLED_FOR_COLLECTION("Lexical search is not enabled for the collection"),
+  LEXICAL_CONTENT_TOO_BIG(
+      "Lexical content is too big, please use a smaller value for the $lexical field"),
+
+  HYBRID_FIELD_CONFLICT(
+      "The '$hybrid' field cannot be used with '$lexical', '$vector', or '$vectorize'."),
+  HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE("Unsupported JSON value type for '$hybrid' field"),
+  HYBRID_FIELD_UNKNOWN_SUBFIELDS("Unrecognized sub-field(s) for '$hybrid' Object"),
+  HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE(
+      "Unsupported JSON value type for '$hybrid' sub-field"),
 
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   COLLECTION_CREATION_ERROR(
