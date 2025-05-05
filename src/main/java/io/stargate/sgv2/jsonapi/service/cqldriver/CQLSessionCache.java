@@ -276,7 +276,7 @@ public class CQLSessionCache {
    * things like evictions may not happen exactly at the TTL, this is a way to force it.
    */
   @VisibleForTesting
-  public void cleanUp() {
+  void cleanUp() {
     sessionCache.cleanUp();
   }
 

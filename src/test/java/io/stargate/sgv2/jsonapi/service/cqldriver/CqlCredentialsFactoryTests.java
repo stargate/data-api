@@ -13,6 +13,7 @@ import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+/** Tests for {@link CqlCredentials.CqlCredentialsFactory}. */
 public class CqlCredentialsFactoryTests {
 
   private static final String FIXED_TOKEN = "fixed-token";

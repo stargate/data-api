@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+/** Tests for {@link CQLSessionCache}. */
 public class CqlSessionCacheTests {
 
   private final String authToken = "authToken";
@@ -65,6 +66,7 @@ public class CqlSessionCacheTests {
   @Test
   public void cassandraCache() {
 
+    // only testing it works with the CASSANDRA db type, all other logic is tested with ASTRA
     var fixture = newFixture(DatabaseType.CASSANDRA, List.of(), CACHE_TTL, CACHE_MAX_SIZE, true);
 
     var actualSession = fixture.cache.getSession(tenantId, authToken);
@@ -110,7 +112,7 @@ public class CqlSessionCacheTests {
 
     assertThat(fixture.cache.cacheSize()).as("Cache size is max size").isEqualTo(CACHE_MAX_SIZE);
 
-    // consumer called with tenantId-0 because the size of the cache was exceeeded
+    // consumer called with tenantId-0 because the size of the cache was exceeded
     verify(consumer).accept("%s-%s".formatted(tenantId, 0), RemovalCause.SIZE);
     verifyNoMoreInteractions(consumer);
   }
@@ -125,8 +127,7 @@ public class CqlSessionCacheTests {
     assertThat(fixture.cache.cacheSize()).as("Cache size is 1 after getting item").isEqualTo(1);
 
     ///  we dont care why the tenant was marked inactive, so do not need to wait for TTL, clear the
-    // cache
-    // to force eviction
+    // cache to force eviction
     fixture.cache.clearCache();
     // Session must be closed when evicted
     verify(fixture.expectedSession).close();
@@ -244,7 +245,7 @@ public class CqlSessionCacheTests {
 
   @Test
   public void metricsAdded() {
-    // only testing they are added to the registry with the expected name, not chekcing the values
+    // only testing they are added to the registry with the expected name, not checking the values
     // that is a feature of the cache itself
 
     var fixture = newFixture();

@@ -212,7 +212,7 @@ public class SchemaCache {
    * <p>This could be non-static inner, but statis to make testing easier so we can pass in the
    * cache it is working with.
    */
-  class SchemaCacheSchemaChangeListener extends SchemaChangeListenerBase {
+  static class SchemaCacheSchemaChangeListener extends SchemaChangeListenerBase {
 
     private static final Logger LOGGER =
         LoggerFactory.getLogger(SchemaCacheSchemaChangeListener.class);

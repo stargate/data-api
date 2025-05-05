@@ -12,10 +12,12 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+/** Tests for {@link CqlSessionCacheFactory}. */
 public class CqlSessionCacheFactoryTests {
 
   @Test
   public void testSingleton() {
+    // Not a lot to test, just checking it always returns the same instance.
 
     var dbConfig = mock(OperationsConfig.DatabaseConfig.class);
     when(dbConfig.type()).thenReturn(DatabaseType.ASTRA);

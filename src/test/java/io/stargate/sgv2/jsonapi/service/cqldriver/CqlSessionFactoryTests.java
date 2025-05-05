@@ -16,6 +16,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+/** Tests for {@link CqlSessionFactory}. */
 public class CqlSessionFactoryTests {
 
   private static final String APP_NAME = "appName" + System.currentTimeMillis();
