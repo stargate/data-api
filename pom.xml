@@ -183,9 +183,9 @@
       <artifactId>sts</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.datastax.oss</groupId>
+      <groupId>org.apache.cassandra</groupId>
       <artifactId>java-driver-core</artifactId>
-      <version>${driver.version}</version>
+      <version>4.19.1-SNAPSHOT</version>
       <exclusions>
         <exclusion>
           <groupId>io.dropwizard.metrics</groupId>
@@ -198,16 +198,16 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>com.datastax.oss</groupId>
+      <groupId>org.apache.cassandra</groupId>
       <artifactId>java-driver-metrics-micrometer</artifactId>
-      <version>${driver.version}</version>
+      <version>4.19.1-SNAPSHOT</version>
     </dependency>
     <!--Note, using Java Driver QueryBuilder from a preview build. See https://github.com/stargate/data-api/issues/1509 -->
     <!--This jar is built by driver team from https://github.com/absurdfarce/cassandra-java-driver/tree/4190-preview1 branch -->
     <dependency>
       <groupId>org.apache.cassandra</groupId>
       <artifactId>java-driver-query-builder</artifactId>
-      <version>4.19.0-preview1</version>
+      <version>4.19.1-SNAPSHOT</version>
     </dependency>
     <!--    <dependency>-->
     <!--      <groupId>com.datastax.oss</groupId>-->

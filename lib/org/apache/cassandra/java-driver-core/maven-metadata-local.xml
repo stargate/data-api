@@ -3,10 +3,9 @@
   <groupId>org.apache.cassandra</groupId>
   <artifactId>java-driver-core</artifactId>
   <versioning>
-    <release>4.19.0-preview1</release>
     <versions>
-      <version>4.19.0-preview1</version>
+      <version>4.19.1-SNAPSHOT</version>
     </versions>
-    <lastUpdated>20241016035805</lastUpdated>
+    <lastUpdated>20250506190035</lastUpdated>
   </versioning>
 </metadata>
