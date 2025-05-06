@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>org.apache.cassandra</groupId>
+  <artifactId>java-driver-test-infra</artifactId>
+  <versioning>
+    <versions>
+      <version>4.19.1-SNAPSHOT</version>
+    </versions>
+    <lastUpdated>20250506190035</lastUpdated>
+  </versioning>
+</metadata>
