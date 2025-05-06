@@ -1,13 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
-import static io.stargate.sgv2.jsonapi.service.cqldriver.TenantAwareCqlSessionBuilderTest.TENANT_ID_PROPERTY_KEY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
 import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -71,23 +69,25 @@ public class CqlSessionCacheTest {
 
   @Test
   public void testOSSCxCQLSessionCacheDefaultTenant() {
-    RequestContext dataApiRequestInfo = mock(RequestContext.class);
-    when(dataApiRequestInfo.getCassandraToken())
+
+    var requestContext = mock(RequestContext.class);
+    when(requestContext.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
+
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
-    CqlSession cqlSession = cqlSessionCacheForTest.getSession(dataApiRequestInfo);
+    CqlSession cqlSession = cqlSessionCacheForTest.getSession(requestContext);
     sessionsCreatedInTests.add(cqlSession);
-    assertThat(
-            ((DefaultDriverContext) cqlSession.getContext())
-                .getStartupOptions()
-                .get(TENANT_ID_PROPERTY_KEY))
+    assertThat(cqlSession.getContext().getSessionName())
+        .as("Session name is the tenantID")
         .isEqualTo("default_tenant");
+
     Gauge cacheSizeMetric =
         meterRegistry.find("cache.size").tag("cache", "cql_sessions_cache").gauge();
-    FunctionCounter cachePutMetric =
-        meterRegistry.find("cache.puts").tag("cache", "cql_sessions_cache").functionCounter();
     assertThat(cacheSizeMetric).isNotNull();
     assertThat(cacheSizeMetric.value()).isEqualTo(1);
+
+    FunctionCounter cachePutMetric =
+        meterRegistry.find("cache.puts").tag("cache", "cql_sessions_cache").functionCounter();
     assertThat(cachePutMetric).isNotNull();
     assertThat(cachePutMetric.count()).isEqualTo(1);
   }
@@ -95,31 +95,34 @@ public class CqlSessionCacheTest {
   @Test
   public void testOSSCxCQLSessionCacheWithFixedToken()
       throws NoSuchFieldException, IllegalAccessException {
-    // set request info
-    RequestContext dataApiRequestInfo = mock(RequestContext.class);
-    when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
-    when(dataApiRequestInfo.getCassandraToken())
+
+    var requestContext = mock(RequestContext.class);
+    when(requestContext.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
+    when(requestContext.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
+
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
-    // set operation config
+
+    // Monkeys with the config, for utterly unknown and unexplained reason
     Field operationsConfigField =
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
     operationsConfigField.setAccessible(true);
     operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
-    CqlSession cqlSession = cqlSessionCacheForTest.getSession(dataApiRequestInfo);
+
+    CqlSession cqlSession = cqlSessionCacheForTest.getSession(requestContext);
     sessionsCreatedInTests.add(cqlSession);
-    assertThat(
-            ((DefaultDriverContext) cqlSession.getContext())
-                .getStartupOptions()
-                .get(TENANT_ID_PROPERTY_KEY))
+    assertThat(cqlSession.getContext().getSessionName())
+        .as("Session name is the tenantID")
         .isEqualTo(TENANT_ID_FOR_TEST);
+
     // metrics test
     Gauge cacheSizeMetric =
         meterRegistry.find("cache.size").tag("cache", "cql_sessions_cache").gauge();
-    FunctionCounter cachePutMetric =
-        meterRegistry.find("cache.puts").tag("cache", "cql_sessions_cache").functionCounter();
     assertThat(cacheSizeMetric).isNotNull();
     assertThat(cacheSizeMetric.value()).isEqualTo(1);
+
+    FunctionCounter cachePutMetric =
+        meterRegistry.find("cache.puts").tag("cache", "cql_sessions_cache").functionCounter();
     assertThat(cachePutMetric).isNotNull();
     assertThat(cachePutMetric.count()).isEqualTo(1);
   }
@@ -127,29 +130,34 @@ public class CqlSessionCacheTest {
   @Test
   public void testOSSCxCQLSessionCacheWithInvalidFixedToken()
       throws NoSuchFieldException, IllegalAccessException {
+
     // set request info
-    RequestContext dataApiRequestInfo = mock(RequestContext.class);
-    when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
-    when(dataApiRequestInfo.getCassandraToken()).thenReturn(Optional.of("invalid_token"));
+    RequestContext requestContext = mock(RequestContext.class);
+    when(requestContext.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
+    when(requestContext.getCassandraToken()).thenReturn(Optional.of("invalid_token"));
+
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
     // set operation config
     Field operationsConfigField =
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
     operationsConfigField.setAccessible(true);
     operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
+
     // Throwable
-    Throwable t = catchThrowable(() -> cqlSessionCacheForTest.getSession(dataApiRequestInfo));
+    Throwable t = catchThrowable(() -> cqlSessionCacheForTest.getSession(requestContext));
     assertThat(t)
         .isNotNull()
         .isInstanceOf(UnauthorizedException.class)
         .hasMessage("UNAUTHENTICATED: Invalid token");
+
     // metrics test
     Gauge cacheSizeMetric =
         meterRegistry.find("cache.size").tag("cache", "cql_sessions_cache").gauge();
-    FunctionCounter cachePutMetric =
-        meterRegistry.find("cache.puts").tag("cache", "cql_sessions_cache").functionCounter();
     assertThat(cacheSizeMetric).isNotNull();
     assertThat(cacheSizeMetric.value()).isEqualTo(0);
+
+    FunctionCounter cachePutMetric =
+        meterRegistry.find("cache.puts").tag("cache", "cql_sessions_cache").functionCounter();
     assertThat(cachePutMetric).isNotNull();
     assertThat(cachePutMetric.count()).isEqualTo(0);
   }
@@ -157,41 +165,46 @@ public class CqlSessionCacheTest {
   @Test
   public void testOSSCxCQLSessionCacheMultiTenant()
       throws NoSuchFieldException, IllegalAccessException {
+
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
     // set operation config
     Field operationsConfigField =
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
     operationsConfigField.setAccessible(true);
     operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
+
     List<String> tenantIds = new ArrayList<>();
     tenantIds.add("tenant1");
     tenantIds.add("tenant2");
     tenantIds.add("tenant3");
     tenantIds.add("tenant4");
     tenantIds.add("tenant5");
+
     for (String tenantId : tenantIds) {
       // set request info
-      RequestContext dataApiRequestInfo = mock(RequestContext.class);
-      when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
-      when(dataApiRequestInfo.getCassandraToken())
+      RequestContext requestContext = mock(RequestContext.class);
+      when(requestContext.getTenantId()).thenReturn(Optional.of(tenantId));
+      when(requestContext.getCassandraToken())
           .thenReturn(operationsConfig.databaseConfig().fixedToken());
-      CqlSession cqlSession = cqlSessionCacheForTest.getSession(dataApiRequestInfo);
+
+      CqlSession cqlSession = cqlSessionCacheForTest.getSession(requestContext);
       sessionsCreatedInTests.add(cqlSession);
-      assertThat(
-              ((DefaultDriverContext) cqlSession.getContext())
-                  .getStartupOptions()
-                  .get(TENANT_ID_PROPERTY_KEY))
+      assertThat(cqlSession.getContext().getSessionName())
+          .as("Session name is the tenantID")
           .isEqualTo(tenantId);
     }
+
     // metrics test
     Gauge cacheSizeMetric =
         meterRegistry.find("cache.size").tag("cache", "cql_sessions_cache").gauge();
     assertThat(cacheSizeMetric).isNotNull();
     assertThat(cacheSizeMetric.value()).isEqualTo(tenantIds.size());
+
     FunctionCounter cachePutMetric =
         meterRegistry.find("cache.puts").tag("cache", "cql_sessions_cache").functionCounter();
     assertThat(cachePutMetric).isNotNull();
     assertThat(cachePutMetric.count()).isEqualTo(tenantIds.size());
+
     FunctionCounter cacheLoadMetric =
         meterRegistry
             .find("cache.load")
@@ -205,27 +218,31 @@ public class CqlSessionCacheTest {
   @Test
   public void testOSSCxCQLSessionCacheSizeEviction()
       throws NoSuchFieldException, IllegalAccessException {
+
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
+
     // set operation config
     Field operationsConfigField =
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
     operationsConfigField.setAccessible(true);
     operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
+
     int sessionsToCreate = operationsConfig.databaseConfig().sessionCacheMaxSize() + 5;
     for (int i = 0; i < sessionsToCreate; i++) {
       String tenantId = "tenant" + i;
-      RequestContext dataApiRequestInfo = mock(RequestContext.class);
-      when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
-      when(dataApiRequestInfo.getCassandraToken())
+
+      RequestContext requestContext = mock(RequestContext.class);
+      when(requestContext.getTenantId()).thenReturn(Optional.of(tenantId));
+      when(requestContext.getCassandraToken())
           .thenReturn(operationsConfig.databaseConfig().fixedToken());
-      CqlSession cqlSession = cqlSessionCacheForTest.getSession(dataApiRequestInfo);
+
+      CqlSession cqlSession = cqlSessionCacheForTest.getSession(requestContext);
       sessionsCreatedInTests.add(cqlSession);
-      assertThat(
-              ((DefaultDriverContext) cqlSession.getContext())
-                  .getStartupOptions()
-                  .get(TENANT_ID_PROPERTY_KEY))
+      assertThat(cqlSession.getContext().getSessionName())
+          .as("Session name is the tenantID")
           .isEqualTo(tenantId);
     }
+
     // test if cache size is maintained at `sessionCacheMaxSizeConfigured`
     long cacheSize = cqlSessionCacheForTest.cacheSize();
     assertThat(cacheSize).isEqualTo(operationsConfig.databaseConfig().sessionCacheMaxSize());
@@ -235,10 +252,12 @@ public class CqlSessionCacheTest {
     assertThat(cacheSizeMetric).isNotNull();
     assertThat(cacheSizeMetric.value())
         .isEqualTo(operationsConfig.databaseConfig().sessionCacheMaxSize());
+
     FunctionCounter cachePutMetric =
         meterRegistry.find("cache.puts").tag("cache", "cql_sessions_cache").functionCounter();
     assertThat(cachePutMetric).isNotNull();
     assertThat(cachePutMetric.count()).isEqualTo(sessionsToCreate);
+
     FunctionCounter cacheLoadMetric =
         meterRegistry
             .find("cache.load")
@@ -248,73 +267,4 @@ public class CqlSessionCacheTest {
     assertThat(cacheLoadMetric).isNotNull();
     assertThat(cacheLoadMetric.count()).isEqualTo(sessionsToCreate);
   }
-  //
-  //  @Test
-  //  public void testInvalidSession()
-  //      throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-  //    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig,
-  // meterRegistry);
-  //    CqlSession cqlSession = mock(CqlSession.class);
-  //    Metadata metadata = mock(Metadata.class);
-  //    when(cqlSession.getMetadata()).thenReturn(metadata);
-  //    when(metadata.getKeyspaces()).thenReturn(Map.of());
-  //    Node node = mock(Node.class);
-  //    com.datastax.oss.driver.api.core.servererrors.UnauthorizedException unauthorizedException =
-  //        new com.datastax.oss.driver.api.core.servererrors.UnauthorizedException(
-  //            node, "Unauthorized");
-  //    when(cqlSession.execute("SELECT * FROM system_virtual_schema.tables"))
-  //        .thenThrow(unauthorizedException);
-  //    Method isValidMethod =
-  //        cqlSessionCacheForTest
-  //            .getClass()
-  //            .getDeclaredMethod("isAstraSessionValid", CqlSession.class, String.class);
-  //    isValidMethod.setAccessible(true);
-  //    boolean isValid =
-  //        (boolean) isValidMethod.invoke(cqlSessionCacheForTest, cqlSession, TENANT_ID_FOR_TEST);
-  //    assertThat(isValid).isFalse();
-  //  }
-  //
-  //  @Test
-  //  public void testAValidSessionWithKeyspaces()
-  //      throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-  //    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig,
-  // meterRegistry);
-  //    CqlSession cqlSession = mock(CqlSession.class);
-  //    Metadata metadata = mock(Metadata.class);
-  //    when(cqlSession.getMetadata()).thenReturn(metadata);
-  //    when(metadata.getKeyspaces())
-  //        .thenReturn(Map.of(CqlIdentifier.fromCql("ks1"), mock(KeyspaceMetadata.class)));
-  //    Method isValidMethod =
-  //        cqlSessionCacheForTest
-  //            .getClass()
-  //            .getDeclaredMethod("isAstraSessionValid", CqlSession.class, String.class);
-  //    isValidMethod.setAccessible(true);
-  //    boolean isValid =
-  //        (boolean) isValidMethod.invoke(cqlSessionCacheForTest, cqlSession, TENANT_ID_FOR_TEST);
-  //    assertThat(isValid).isTrue();
-  //  }
-  //
-  //  @Test
-  //  public void testAValidSessionNoKeyspaces()
-  //      throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-  //    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig,
-  // meterRegistry);
-  //    CqlSession cqlSession = mock(CqlSession.class);
-  //    Metadata metadata = mock(Metadata.class);
-  //    when(cqlSession.getMetadata()).thenReturn(metadata);
-  //    when(metadata.getKeyspaces()).thenReturn(Map.of());
-  //    Node node = mock(Node.class);
-  //    com.datastax.oss.driver.api.core.servererrors.UnauthorizedException unauthorizedException =
-  //        new com.datastax.oss.driver.api.core.servererrors.UnauthorizedException(
-  //            node, "Unauthorized");
-  //    when(cqlSession.execute("SELECT * FROM system_virtual_schema.tables")).thenReturn(null);
-  //    Method isValidMethod =
-  //        cqlSessionCacheForTest
-  //            .getClass()
-  //            .getDeclaredMethod("isAstraSessionValid", CqlSession.class, String.class);
-  //    isValidMethod.setAccessible(true);
-  //    boolean isValid =
-  //        (boolean) isValidMethod.invoke(cqlSessionCacheForTest, cqlSession, TENANT_ID_FOR_TEST);
-  //    assertThat(isValid).isTrue();
-  //  }
 }
