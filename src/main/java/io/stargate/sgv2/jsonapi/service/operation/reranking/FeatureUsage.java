@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public final class FeatureUsage {
   private final EnumSet<Feature> features;
@@ -48,5 +49,29 @@ public final class FeatureUsage {
 
   public EnumSet<Feature> getFeatures() {
     return EnumSet.copyOf(features);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
+    FeatureUsage that = (FeatureUsage) obj;
+    return Objects.equals(features, that.features);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(features);
+  }
+
+  @Override
+  public String toString() {
+    return "FeatureUsage{"
+        + features.stream().map(Enum::name).collect(Collectors.joining(", "))
+        + '}';
   }
 }

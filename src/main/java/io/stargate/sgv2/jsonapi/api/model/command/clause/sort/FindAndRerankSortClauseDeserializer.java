@@ -85,12 +85,15 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
     var hybridMatch = MATCH_HYBRID_FIELD.matchAndThrow(sort, jsonParser, ERROR_CONTEXT);
 
     return switch (hybridMatch.matched().get(HYBRID_FIELD)) {
-      case TextNode textNode -> // using the same text for vectorize and for lexical, no vector
-          new FindAndRerankSort(
-              normalizedText(textNode.asText()),
-              normalizedText(textNode.asText()),
-              null,
-              FeatureUsage.of(Feature.HYBRID));
+      case TextNode textNode -> {
+        // using the same text for vectorize and for lexical, no vector
+        var normalizedText = normalizedText(textNode.asText().trim());
+        yield new FindAndRerankSort(
+            normalizedText,
+            normalizedText,
+            null,
+            normalizedText == null ? FeatureUsage.EMPTY : FeatureUsage.of(Feature.HYBRID));
+      }
       case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
       case JsonNode node ->
           throw JsonFieldMatcher.errorForWrongType(
@@ -119,8 +122,11 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           }
           case TextNode textNode -> {
             // { "sort" : { "$hybrid" : { "$vectorize" : "I like cheese",
-            features.add(Feature.HYBRID_VECTORIZE);
-            yield normalizedText(textNode.asText().trim());
+            var normalizedText = normalizedText(textNode.asText().trim());
+            if (normalizedText != null) {
+              features.add(Feature.HYBRID_VECTORIZE);
+            }
+            yield normalizedText;
           }
           case JsonNode node ->
               throw JsonFieldMatcher.errorForWrongType(
@@ -146,8 +152,11 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           }
           case TextNode textNode -> {
             // { "sort" : { "$hybrid" : { "$lexical" : "cheese",
-            features.add(Feature.HYBRID_LEXICAL);
-            yield normalizedText(textNode.asText().trim());
+            var normalizedText = normalizedText(textNode.asText().trim());
+            if (normalizedText != null) {
+              features.add(Feature.HYBRID_LEXICAL);
+            }
+            yield normalizedText;
           }
           case JsonNode node ->
               throw JsonFieldMatcher.errorForWrongType(
