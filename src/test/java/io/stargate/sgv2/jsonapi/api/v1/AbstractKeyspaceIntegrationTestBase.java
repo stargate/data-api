@@ -247,6 +247,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
                         && line.contains("session="))
             .findFirst();
 
+    List<String> lines = metrics.lines().toList();
     if (!sessionLevelDriverMetricTenantId.isPresent()) {
       long buckets =
           lines.stream()
