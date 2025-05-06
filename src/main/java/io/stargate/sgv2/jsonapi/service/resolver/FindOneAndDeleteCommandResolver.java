@@ -68,7 +68,7 @@ public class FindOneAndDeleteCommandResolver implements CommandResolver<FindOneA
       CommandContext<CollectionSchemaObject> commandContext, FindOneAndDeleteCommand command) {
     var dbLogicalExpression = collectionFilterResolver.resolve(commandContext, command).target();
 
-    final SortClause sortClause = command.sortClause();
+    final SortClause sortClause = command.sortClause(commandContext);
     if (sortClause != null) {
       sortClause.validate(commandContext.schemaObject());
     }

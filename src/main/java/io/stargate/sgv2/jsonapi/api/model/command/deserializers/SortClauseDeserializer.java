@@ -2,10 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
 
 import static io.stargate.sgv2.jsonapi.util.JsonUtil.arrayNodeToVector;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
@@ -23,23 +20,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-/** {@link StdDeserializer} for the {@link SortClause}. */
-public class SortClauseDeserializer extends StdDeserializer<SortClause> {
+public class SortClauseDeserializer {
 
   /** No-arg constructor explicitly needed. */
-  protected SortClauseDeserializer() {
-    super(SortClause.class);
-  }
+  public SortClauseDeserializer() {}
 
-  /** {@inheritDoc} */
-  @Override
-  public SortClause deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
-    JsonNode node = ctxt.readTree(parser);
-
+  public SortClause deserialize(JsonNode node) throws IOException {
     // if missing or null, return null back
     if (node.isMissingNode() || node.isNull()) {
-      // TODO should we return empty sort clause instead?
-      return null;
+      return SortClause.empty();
     }
 
     // otherwise, if it's not object throw exception
