@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -13,6 +14,7 @@ import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import jakarta.inject.Inject;
+import java.io.IOException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +37,7 @@ class SortClauseDeserializerTest {
           }
           """;
 
-      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+      SortClause sortClause = deserializeSortClause(json);
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions())
@@ -54,7 +56,7 @@ class SortClauseDeserializerTest {
               }
               """;
 
-      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+      SortClause sortClause = deserializeSortClause(json);
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions())
@@ -75,7 +77,7 @@ class SortClauseDeserializerTest {
               }
               """;
 
-      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+      SortClause sortClause = deserializeSortClause(json);
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions())
@@ -97,7 +99,7 @@ class SortClauseDeserializerTest {
         }
         """;
 
-      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+      SortClause sortClause = deserializeSortClause(json);
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions()).hasSize(1);
@@ -119,7 +121,7 @@ class SortClauseDeserializerTest {
             """
               .formatted(vectorString);
 
-      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+      SortClause sortClause = deserializeSortClause(json);
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions()).hasSize(1);
@@ -141,7 +143,7 @@ class SortClauseDeserializerTest {
             """
               .formatted(vectorString);
 
-      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+      SortClause sortClause = deserializeSortClause(json);
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions()).hasSize(1);
@@ -159,7 +161,7 @@ class SortClauseDeserializerTest {
         }
         """;
 
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage()).contains("$vector value can't be empty");
@@ -174,7 +176,7 @@ class SortClauseDeserializerTest {
         }
         """;
 
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage()).contains("$vector value needs to be array of numbers");
@@ -189,7 +191,7 @@ class SortClauseDeserializerTest {
         }
         """;
 
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage())
@@ -206,7 +208,7 @@ class SortClauseDeserializerTest {
         }
         """;
 
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage()).contains("$vector value needs to be array of numbers");
@@ -222,7 +224,7 @@ class SortClauseDeserializerTest {
         }
         """;
 
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage())
@@ -238,7 +240,7 @@ class SortClauseDeserializerTest {
         }
         """;
 
-      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+      SortClause sortClause = deserializeSortClause(json);
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions()).hasSize(1);
@@ -255,7 +257,7 @@ class SortClauseDeserializerTest {
         }
         """;
 
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage())
@@ -271,7 +273,7 @@ class SortClauseDeserializerTest {
         }
         """;
 
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage())
@@ -288,7 +290,7 @@ class SortClauseDeserializerTest {
             }
             """;
 
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage())
@@ -305,7 +307,7 @@ class SortClauseDeserializerTest {
         }
         """;
 
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage())
@@ -319,7 +321,7 @@ class SortClauseDeserializerTest {
               {"some.path " : 1}
           """;
 
-      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+      SortClause sortClause = deserializeSortClause(json);
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions())
@@ -331,9 +333,11 @@ class SortClauseDeserializerTest {
     public void mustHandleNull() throws Exception {
       String json = "null";
 
-      SortClause sortClause = objectMapper.readValue(json, SortClause.class);
+      SortClause sortClause = deserializeSortClause(json);
 
-      assertThat(sortClause).isNull();
+      // Note: we will always create non-null sort clause
+      assertThat(sortClause).isNotNull();
+      assertThat(sortClause.isEmpty()).isTrue();
     }
 
     @Test
@@ -343,7 +347,7 @@ class SortClauseDeserializerTest {
                     ["primitive"]
                     """;
 
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
     }
@@ -355,7 +359,7 @@ class SortClauseDeserializerTest {
               {" " : 1}
           """;
 
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
     }
@@ -367,7 +371,7 @@ class SortClauseDeserializerTest {
               {"": 1}
           """;
 
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
     }
@@ -378,7 +382,7 @@ class SortClauseDeserializerTest {
           """
               {"$gt": 1}
           """;
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable)
@@ -392,11 +396,10 @@ class SortClauseDeserializerTest {
       Throwable t =
           catchThrowable(
               () ->
-                  objectMapper.readValue(
+                  deserializeSortClause(
                       """
                           {"$hybrid": 1}
-                      """,
-                      SortClause.class));
+                      """));
 
       assertThat(t).isInstanceOf(JsonApiException.class);
       assertThat(t)
@@ -409,11 +412,10 @@ class SortClauseDeserializerTest {
       Throwable t =
           catchThrowable(
               () ->
-                  objectMapper.readValue(
+                  deserializeSortClause(
                       """
                   {"$hybrid": "tokens are tasty"}
-              """,
-                      SortClause.class));
+              """));
 
       assertThat(t).isInstanceOf(JsonApiException.class);
       assertThat(t)
@@ -426,12 +428,17 @@ class SortClauseDeserializerTest {
           """
           {"a&b": 1}
           """;
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
+      Throwable throwable = catchThrowable(() -> deserializeSortClause(json));
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable)
           .hasMessageContaining(
               "Invalid sort clause path: sort clause path ('a&b') is not a valid path.");
     }
+  }
+
+  private SortClause deserializeSortClause(String json) throws IOException {
+    final JsonNode node = objectMapper.readTree(json);
+    return new SortClauseDeserializer().deserialize(node);
   }
 }
