@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -114,8 +115,10 @@ public class CQLSessionCache {
    */
   private CqlSession getNewSession(SessionCacheKey cacheKey) {
 
-    // TODO: WHY IS DriverConfigLoader USED ?
-    DriverConfigLoader loader =
+    // the driver TypedDriverOption is only used with DriverConfigLoader.fromMap()
+    // The ConfigLoader is held by the session and closed when the session closes, do not close it
+    // here.
+    var configLoader =
         DriverConfigLoader.programmaticBuilder()
             .withString(DefaultDriverOption.SESSION_NAME, cacheKey.tenantId)
             .build();
@@ -130,10 +133,10 @@ public class CQLSessionCache {
 
     // there is a lot of common setup regardless of the database type
     var builder =
-        new TenantAwareCqlSessionBuilder(cacheKey.tenantId())
+        new CqlSessionBuilder()
             .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
             .withClassLoader(Thread.currentThread().getContextClassLoader())
-            .withConfigLoader(loader)
+            .withConfigLoader(configLoader)
             .addSchemaChangeListener(new SchemaChangeListener(schemaCache, cacheKey.tenantId))
             .withApplicationName(APPLICATION_NAME);
     cacheKey.credentials().addToSessionBuilder(builder);

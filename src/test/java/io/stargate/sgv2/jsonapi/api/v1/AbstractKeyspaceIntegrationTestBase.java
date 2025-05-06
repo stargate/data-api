@@ -9,6 +9,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.core.Base64Variants;
 import io.restassured.RestAssured;
@@ -18,7 +19,6 @@ import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.TenantAwareCqlSessionBuilder;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.testresource.StargateTestResource;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
@@ -235,14 +235,18 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
 
   public static void checkDriverMetricsTenantId() {
     String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-    List<String> lines = metrics.lines().toList();
+    // Example line
+    // session_cql_requests_seconds_bucket{module="sgv2-jsonapi",session="3ee89833-3f8c-4140-841f-59ae95bc48e0",le="0.001"} 0.0
+
     Optional<String> sessionLevelDriverMetricTenantId =
-        lines.stream()
+        metrics
+            .lines()
             .filter(
                 line ->
                     line.startsWith("session_cql_requests_seconds_bucket")
-                        && line.contains("tenant"))
+                        && line.contains("session="))
             .findFirst();
+
     if (!sessionLevelDriverMetricTenantId.isPresent()) {
       long buckets =
           lines.stream()
@@ -337,10 +341,11 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     } else {
       dc = "datacenter1";
     }
-    var builder = new TenantAwareCqlSessionBuilder("IntegrationTest").withLocalDatacenter(dc);
-    builder
-        .addContactPoint(new InetSocketAddress("localhost", port))
-        .withAuthCredentials(CQLSessionCache.CASSANDRA, CQLSessionCache.CASSANDRA);
+    var builder =
+        new CqlSessionBuilder()
+            .withLocalDatacenter(dc)
+            .addContactPoint(new InetSocketAddress("localhost", port))
+            .withAuthCredentials(CQLSessionCache.CASSANDRA, CQLSessionCache.CASSANDRA);
     return builder.build();
   }
 
