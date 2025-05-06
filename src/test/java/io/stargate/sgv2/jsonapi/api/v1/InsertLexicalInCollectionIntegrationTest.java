@@ -12,6 +12,7 @@ import static org.hamcrest.Matchers.is;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.fixtures.TestTextUtil;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.ClassOrderer;
@@ -27,6 +28,8 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class InsertLexicalInCollectionIntegrationTest
     extends AbstractCollectionIntegrationTestBase {
+  private static final int MAX_LEXICAL_LENGTH = 8192;
+
   protected InsertLexicalInCollectionIntegrationTest() {
     super("col_insert_lexical_");
   }
@@ -164,6 +167,30 @@ public class InsertLexicalInCollectionIntegrationTest
     }
 
     @Test
+    public void insertDocWithLongestLexicalOk() {
+      final String docId = "lexical-long-ok";
+      final String text = TestTextUtil.generateTextDoc(MAX_LEXICAL_LENGTH, " ");
+      String doc =
+              """
+              {
+                "_id": "%s",
+                "$lexical": "%s"
+              }
+              """
+              .formatted(docId, text);
+
+      givenHeadersPostJsonThenOkNoErrors("{ \"insertOne\": {  \"document\": %s }}".formatted(doc))
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is(docId));
+
+      givenHeadersPostJsonThenOkNoErrors(
+              "{ \"find\": { \"filter\" : { \"_id\" : \"%s\"}}}}".formatted(docId))
+          .body("$", responseIsFindSuccess())
+          // NOTE: "$lexical" is not included in the response by default, ensure
+          .body("data.documents", hasSize(1));
+    }
+
+    @Test
     public void failInsertDocWithLexicalIfNotEnabled() {
       final String COLLECTION_WITHOUT_LEXICAL =
           "coll_insert_no_lexical_" + RandomStringUtils.randomNumeric(16);
@@ -199,6 +226,28 @@ public class InsertLexicalInCollectionIntegrationTest
 
       // And finally, drop the Collection after use
       deleteCollection(COLLECTION_WITHOUT_LEXICAL);
+    }
+
+    @Test
+    public void failInsertDocWithTooLongLexical() {
+      final String docId = "lexical-too-long";
+      // Limit not based on the length of the string, but on total length of unique
+      // tokens. So need to guesstimate "too big" size
+      final String text = TestTextUtil.generateTextDoc((int) (MAX_LEXICAL_LENGTH * 1.5), " ");
+      String doc =
+              """
+              {
+                "_id": "%s",
+                "$lexical": "%s"
+              }
+              """
+              .formatted(docId, text);
+
+      givenHeadersPostJsonThenOk("{ \"insertOne\": {  \"document\": %s }}".formatted(doc))
+          .body("$", responseIsWritePartialSuccess())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is(ErrorCodeV1.LEXICAL_CONTENT_TOO_BIG.name()))
+          .body("errors[0].message", containsString("Lexical content is too big"));
     }
   }
 

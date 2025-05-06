@@ -1,12 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
-import static io.stargate.sgv2.jsonapi.service.cqldriver.TenantAwareCqlSessionBuilderTest.TENANT_ID_PROPERTY_KEY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
 import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -70,33 +68,42 @@ public class CqlSessionCacheTimingTest {
 
   @Test
   public void testOSSCxCQLSessionCacheTimedEviction() throws InterruptedException {
+
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
+
     int sessionsToCreate = operationsConfig.databaseConfig().sessionCacheMaxSize();
+
     for (int i = 0; i < sessionsToCreate; i++) {
       String tenantId = "tenant_timing_test_" + i;
-      RequestContext dataApiRequestInfo = mock(RequestContext.class);
-      when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
-      when(dataApiRequestInfo.getCassandraToken())
+
+      var requestContext = mock(RequestContext.class);
+      when(requestContext.getTenantId()).thenReturn(Optional.of(tenantId));
+      when(requestContext.getCassandraToken())
           .thenReturn(operationsConfig.databaseConfig().fixedToken());
-      CqlSession cqlSession = cqlSessionCacheForTest.getSession(dataApiRequestInfo);
+
+      CqlSession cqlSession = cqlSessionCacheForTest.getSession(requestContext);
       sessionsCreatedInTests.add(cqlSession);
-      assertThat(
-              ((DefaultDriverContext) cqlSession.getContext())
-                  .getStartupOptions()
-                  .get(TENANT_ID_PROPERTY_KEY))
+      assertThat(cqlSession.getContext().getSessionName())
+          .as("Session name is the tenantID")
           .isEqualTo(tenantId);
     }
-    Thread.sleep(10000);
+
+    // wait for the cache to expire all the inactive sessions after 10 seconds
+    Thread.sleep(11 * 1000);
+
     assertThat(cqlSessionCacheForTest.cacheSize()).isEqualTo(0);
+
     // metrics test
     Gauge cacheSizeMetric =
         meterRegistry.find("cache.size").tag("cache", "cql_sessions_cache").gauge();
     assertThat(cacheSizeMetric).isNotNull();
     assertThat(cacheSizeMetric.value()).isEqualTo(0);
+
     FunctionCounter cachePutMetric =
         meterRegistry.find("cache.puts").tag("cache", "cql_sessions_cache").functionCounter();
     assertThat(cachePutMetric).isNotNull();
     assertThat(cachePutMetric.count()).isEqualTo(sessionsToCreate);
+
     FunctionCounter cacheLoadMetric =
         meterRegistry
             .find("cache.load")
