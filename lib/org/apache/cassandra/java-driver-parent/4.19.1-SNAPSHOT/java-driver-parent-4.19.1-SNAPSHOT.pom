@@ -27,7 +27,7 @@
   </parent>
   <groupId>org.apache.cassandra</groupId>
   <artifactId>java-driver-parent</artifactId>
-  <version>4.19.0-preview1</version>
+  <version>4.19.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Apache Cassandra Java Driver</name>
   <url>https://github.com/datastax/java-driver</url>
@@ -40,6 +40,7 @@
     <module>mapper-processor</module>
     <module>metrics/micrometer</module>
     <module>metrics/microprofile</module>
+    <module>guava-shaded</module>
     <module>test-infra</module>
     <module>integration-tests</module>
     <module>osgi-tests</module>
@@ -56,7 +57,7 @@
     <!-- when changing version also update version in LICENSE_binary  -->
     <hdrhistogram.version>2.1.12</hdrhistogram.version>
     <metrics.version>4.1.18</metrics.version>
-    <netty.version>4.1.94.Final</netty.version>
+    <netty.version>4.1.119.Final</netty.version>
     <esri.version>1.2.1</esri.version>
     <!--
     When upgrading TinkerPop please upgrade the version matrix in
@@ -68,8 +69,8 @@
     <!-- when changing version also update version in LICENSE_binary  -->
     <reactive-streams.version>1.0.3</reactive-streams.version>
     <json.version>20230227</json.version>
-    <jackson.version>2.13.4</jackson.version>
-    <jackson-databind.version>2.13.4.2</jackson-databind.version>
+    <jackson.version>2.13.5</jackson.version>
+    <jackson-databind.version>${jackson.version}</jackson-databind.version>
     <!-- optional dependencies -->
     <snappy.version>1.1.10.1</snappy.version>
     <lz4.version>1.7.1</lz4.version>
@@ -110,10 +111,10 @@
         <version>${netty.version}</version>
       </dependency>
       <dependency>
-        <!-- Only for integration tests, use the shaded JAR for production code -->
+        <!-- Version of Guava used in shaded module and for integration tests. -->
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>25.1-jre</version>
+        <version>33.3.1-jre</version>
       </dependency>
       <dependency>
         <groupId>com.typesafe</groupId>
@@ -574,7 +575,7 @@
             </analysisConfiguration>
             <oldArtifacts>
               <!-- The previous release used DataStax groupId, remove this after the next release -->
-              <artifact>com.datastax.oss:${project.artifactId}:RELEASE</artifact>
+              <artifact>${project.groupId}:${project.artifactId}:RELEASE</artifact>
             </oldArtifacts>
           </configuration>
           <dependencies>
@@ -1013,6 +1014,19 @@ limitations under the License.]]></inlineHeader>
         <blockhound.argline>-XX:+AllowRedefinitionToAddDeleteMethods</blockhound.argline>
         <!-- allow deep reflection for mockito when using JDK 17+, see https://stackoverflow.com/questions/70993863/mockito-can-not-mock-random-in-java-17 -->
         <mockitoopens.argline>--add-opens java.base/jdk.internal.util.random=ALL-UNNAMED</mockitoopens.argline>
+      </properties>
+    </profile>
+    <profile>
+      <!-- workarounds for running tests with JDK21 -->
+      <id>test-jdk-21</id>
+      <activation>
+        <jdk>[21,)</jdk>
+      </activation>
+      <properties>
+        <!-- for DriverBlockHoundIntegrationIT when using JDK 13+, see https://github.com/reactor/BlockHound/issues/33 -->
+        <blockhound.argline>-XX:+AllowRedefinitionToAddDeleteMethods</blockhound.argline>
+        <!-- allow deep reflection for mockito when using JDK 17+, see https://stackoverflow.com/questions/70993863/mockito-can-not-mock-random-in-java-17 -->
+        <mockitoopens.argline>--add-opens=java.base/jdk.internal.util.random=ALL-UNNAMED</mockitoopens.argline>
       </properties>
     </profile>
   </profiles>

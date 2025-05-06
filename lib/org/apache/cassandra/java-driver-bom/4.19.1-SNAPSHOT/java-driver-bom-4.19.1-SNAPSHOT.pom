@@ -23,7 +23,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.apache.cassandra</groupId>
   <artifactId>java-driver-bom</artifactId>
-  <version>4.19.0-preview1</version>
+  <version>4.19.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Apache Cassandra Java Driver - Bill Of Materials</name>
   <description>The Apache Software Foundation provides support for the Apache community of open-source software projects.
@@ -82,52 +82,52 @@
       <dependency>
         <groupId>org.apache.cassandra</groupId>
         <artifactId>java-driver-core</artifactId>
-        <version>4.19.0-preview1</version>
+        <version>4.19.1-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.apache.cassandra</groupId>
         <artifactId>java-driver-core-shaded</artifactId>
-        <version>4.19.0-preview1</version>
+        <version>4.19.1-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.apache.cassandra</groupId>
         <artifactId>java-driver-mapper-processor</artifactId>
-        <version>4.19.0-preview1</version>
+        <version>4.19.1-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.apache.cassandra</groupId>
         <artifactId>java-driver-mapper-runtime</artifactId>
-        <version>4.19.0-preview1</version>
+        <version>4.19.1-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.apache.cassandra</groupId>
         <artifactId>java-driver-query-builder</artifactId>
-        <version>4.19.0-preview1</version>
+        <version>4.19.1-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.cassandra</groupId>
+        <artifactId>java-driver-guava-shaded</artifactId>
+        <version>4.19.1-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.apache.cassandra</groupId>
         <artifactId>java-driver-test-infra</artifactId>
-        <version>4.19.0-preview1</version>
+        <version>4.19.1-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.apache.cassandra</groupId>
         <artifactId>java-driver-metrics-micrometer</artifactId>
-        <version>4.19.0-preview1</version>
+        <version>4.19.1-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.apache.cassandra</groupId>
         <artifactId>java-driver-metrics-microprofile</artifactId>
-        <version>4.19.0-preview1</version>
+        <version>4.19.1-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>com.datastax.oss</groupId>
         <artifactId>native-protocol</artifactId>
-        <version>1.5.1</version>
-      </dependency>
-      <dependency>
-        <groupId>com.datastax.oss</groupId>
-        <artifactId>java-driver-shaded-guava</artifactId>
-        <version>25.1-jre-graal-sub-1</version>
+        <version>1.5.2</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
