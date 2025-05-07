@@ -228,15 +228,16 @@ public class WhereCQLClauseAnalyzer {
             .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
-    if (!filterOnComplexColumns.isEmpty()) {
-      throw FilterException.Code.UNSUPPORTED_FILTERING_FOR_COLUMN_TYPES.get(
-          errVars(
-              tableSchemaObject,
-              map -> {
-                map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
-                map.put("complexColumns", errFmtCqlIdentifier(filterOnComplexColumns));
-              }));
-    }
+    //    if (!filterOnComplexColumns.isEmpty()) {
+    //      throw FilterException.Code.UNSUPPORTED_FILTERING_FOR_COLUMN_TYPES.get(
+    //          errVars(
+    //              tableSchemaObject,
+    //              map -> {
+    //                map.put("allColumns",
+    // errFmtColumnMetadata(tableMetadata.getColumns().values()));
+    //                map.put("complexColumns", errFmtCqlIdentifier(filterOnComplexColumns));
+    //              }));
+    //    }
   }
 
   /**

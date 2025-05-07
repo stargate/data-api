@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.stargate.sgv2.jsonapi.api.model.command.table.MapSetListComponent;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
@@ -20,9 +21,7 @@ public class ComparisonExpressionTest {
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "username",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("abc", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "abc")),
               null);
       ComparisonExpression result = ComparisonExpression.eq("username", "abc");
       assertThat(result.getFilterOperations()).isEqualTo(expectedResult.getFilterOperations());
@@ -34,9 +33,7 @@ public class ComparisonExpressionTest {
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "username",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral("abc", JsonType.STRING))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, "abc")),
               null);
 
       ComparisonExpression result = new ComparisonExpression("username", new ArrayList<>(), null);
@@ -51,9 +48,8 @@ public class ComparisonExpressionTest {
           new ComparisonExpression(
               "id",
               List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ,
-                      new JsonLiteral(BigDecimal.valueOf(10), JsonType.NUMBER))),
+                  ValueComparisonOperation.build(
+                      ValueComparisonOperator.EQ, BigDecimal.valueOf(10))),
               null);
 
       ComparisonExpression result = ComparisonExpression.eq("id", BigDecimal.valueOf(10));
@@ -66,9 +62,7 @@ public class ComparisonExpressionTest {
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "bool",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral(true, JsonType.BOOLEAN))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, true)),
               null);
 
       ComparisonExpression result = ComparisonExpression.eq("bool", true);
@@ -81,9 +75,7 @@ public class ComparisonExpressionTest {
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "nullVal",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral(null, JsonType.NULL))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, null)),
               null);
 
       ComparisonExpression result = ComparisonExpression.eq("nullVal", null);
@@ -96,9 +88,7 @@ public class ComparisonExpressionTest {
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "dateVal",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral(new Date(10L), JsonType.DATE))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, new Date(10L))),
               null);
 
       ComparisonExpression result = ComparisonExpression.eq("dateVal", new Date(10L));
@@ -114,27 +104,64 @@ public class ComparisonExpressionTest {
       final ComparisonExpression comparisonExpression =
           new ComparisonExpression(
               "path",
-              List.of(
-                  new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral(null, JsonType.NULL))),
+              List.of(ValueComparisonOperation.build(ValueComparisonOperator.EQ, null)),
               null);
 
       List<FilterOperation<?>> match =
-          comparisonExpression.match("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL);
-      assertThat(match).hasSize(1);
-
-      match =
-          comparisonExpression.match("path", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL);
+          comparisonExpression.match(
+              "*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL, false);
       assertThat(match).hasSize(1);
 
       match =
           comparisonExpression.match(
-              "differentPath", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL);
+              "path", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL, false);
+      assertThat(match).hasSize(1);
+
+      match =
+          comparisonExpression.match(
+              "differentPath", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL, false);
       assertThat(match).hasSize(0);
 
       match =
           comparisonExpression.match(
-              "path", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
+              "path", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING, false);
+      assertThat(match).hasSize(0);
+    }
+
+    @Test
+    public void matchTestWithMapSetListComponent() throws Exception {
+      final ComparisonExpression comparisonExpression =
+          new ComparisonExpression(
+              "mapSetListColumn",
+              MapSetListComponent.LIST_VALUE,
+              List.of(
+                  ValueComparisonOperation.build(
+                      ValueComparisonOperator.IN,
+                      List.of("value1", "value2"),
+                      MapSetListComponent.LIST_VALUE)),
+              null);
+
+      List<FilterOperation<?>> match =
+          comparisonExpression.match(
+              "*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY, true);
+      assertThat(match).hasSize(1);
+
+      // MapSetListComponent should not exist in the ComparisonExpression and FilterOperation.
+      match =
+          comparisonExpression.match(
+              "*", EnumSet.of(ValueComparisonOperator.IN), JsonType.NULL, false);
+      assertThat(match).hasSize(0);
+
+      // JsonType does not match
+      match =
+          comparisonExpression.match(
+              "*", EnumSet.of(ValueComparisonOperator.IN), JsonType.NULL, true);
+      assertThat(match).hasSize(0);
+
+      // Operator does not match
+      match =
+          comparisonExpression.match(
+              "*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL, true);
       assertThat(match).hasSize(0);
     }
   }

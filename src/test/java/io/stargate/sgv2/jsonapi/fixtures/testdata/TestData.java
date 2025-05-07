@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.fixtures.testdata;
 
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTaskTestData;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.ReadDBTaskTestData;
+import io.stargate.sgv2.jsonapi.service.processor.CommandContextTestData;
 import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdateOperatorTestData;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -42,6 +43,10 @@ public class TestData {
 
   public SchemaObjectTestData schemaObject() {
     return getOrCache(SchemaObjectTestData.class);
+  }
+
+  public CommandContextTestData commandContext() {
+    return getOrCache(CommandContextTestData.class);
   }
 
   public TableMetadataTestData tableMetadata() {
