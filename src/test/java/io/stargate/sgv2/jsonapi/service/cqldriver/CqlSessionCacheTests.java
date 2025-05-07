@@ -34,7 +34,7 @@ public class CqlSessionCacheTests {
 
     var fixture = newFixture();
 
-    var actualSession = fixture.cache.getSession(tenantId, authToken);
+    var actualSession = fixture.cache.getSession(tenantId, authToken, null);
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
@@ -51,7 +51,7 @@ public class CqlSessionCacheTests {
     clearInvocations(fixture.credentialsFactory, fixture.sessionFactory);
 
     // Second call to check cache hit
-    var actualSession2 = fixture.cache.getSession(tenantId, authToken);
+    var actualSession2 = fixture.cache.getSession(tenantId, authToken, null);
     assertThat(actualSession2)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
@@ -69,7 +69,7 @@ public class CqlSessionCacheTests {
     // only testing it works with the CASSANDRA db type, all other logic is tested with ASTRA
     var fixture = newFixture(DatabaseType.CASSANDRA, List.of(), CACHE_TTL, CACHE_MAX_SIZE, true);
 
-    var actualSession = fixture.cache.getSession(tenantId, authToken);
+    var actualSession = fixture.cache.getSession(tenantId, authToken, null);
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
@@ -102,7 +102,7 @@ public class CqlSessionCacheTests {
       when(fixture.sessionFactory.apply(thisTenantId, expectedCredentials))
           .thenReturn(expectedSession);
 
-      var actualSession = fixture.cache.getSession(thisTenantId, authToken);
+      var actualSession = fixture.cache.getSession(thisTenantId, authToken, null);
       assertThat(actualSession)
           .as("Session from cache is instance from factory")
           .isSameAs(expectedSession);
@@ -123,7 +123,7 @@ public class CqlSessionCacheTests {
     var fixture =
         newFixture(DatabaseType.ASTRA, List.of(consumer), CACHE_TTL, CACHE_MAX_SIZE, true);
 
-    var actualSession = fixture.cache.getSession(tenantId, authToken);
+    var actualSession = fixture.cache.getSession(tenantId, authToken, null);
     assertThat(fixture.cache.cacheSize()).as("Cache size is 1 after getting item").isEqualTo(1);
 
     ///  we dont care why the tenant was marked inactive, so do not need to wait for TTL, clear the
@@ -146,7 +146,7 @@ public class CqlSessionCacheTests {
     var fixture =
         newFixture(DatabaseType.ASTRA, List.of(consumer), CACHE_TTL, CACHE_MAX_SIZE, true);
 
-    var actualSession = fixture.cache.getSession(tenantId, authToken);
+    var actualSession = fixture.cache.getSession(tenantId, authToken, null);
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
@@ -176,7 +176,7 @@ public class CqlSessionCacheTests {
     var consumer = mock(CQLSessionCache.DeactivatedTenantConsumer.class);
     var fixture = newFixture(DatabaseType.ASTRA, List.of(consumer), longTTL, CACHE_MAX_SIZE, true);
 
-    var actualSession = fixture.cache.getSession(tenantId, authToken);
+    var actualSession = fixture.cache.getSession(tenantId, authToken, null);
 
     // must not call consumer until evicted
     verifyNoInteractions(consumer);
@@ -198,7 +198,7 @@ public class CqlSessionCacheTests {
     var fixture =
         newFixture(
             DatabaseType.ASTRA, List.of(consumer1, consumer2), CACHE_TTL, CACHE_MAX_SIZE, true);
-    var actualSession = fixture.cache.getSession(tenantId, authToken);
+    var actualSession = fixture.cache.getSession(tenantId, authToken, null);
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
@@ -219,7 +219,7 @@ public class CqlSessionCacheTests {
     assertThrows(
         IllegalStateException.class,
         () -> {
-          fixture.cache.getSession(tenantId, authToken);
+          fixture.cache.getSession(tenantId, authToken, null);
         });
   }
 
@@ -233,7 +233,7 @@ public class CqlSessionCacheTests {
     var expectedSession = mock(CqlSession.class);
     when(fixture.sessionFactory.apply("", expectedCredentials)).thenReturn(expectedSession);
 
-    var actualSession = fixture.cache.getSession(null, authToken);
+    var actualSession = fixture.cache.getSession(null, authToken, null);
 
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
@@ -249,7 +249,7 @@ public class CqlSessionCacheTests {
     // that is a feature of the cache itself
 
     var fixture = newFixture();
-    var actualSession = fixture.cache.getSession(tenantId, authToken);
+    var actualSession = fixture.cache.getSession(tenantId, authToken, null);
 
     // give ethe cache time to bookkeep
     fixture.cache.cleanUp();
@@ -271,6 +271,75 @@ public class CqlSessionCacheTests {
         .isNotNull();
   }
 
+  @Test
+  public void expireAfterReadPicksHighestTTL() {
+      
+    var expiry = new CQLSessionCache.SessionExpiry();
+    
+    var lowTTL = Duration.ofSeconds(1);
+    var highTTL = Duration.ofSeconds(10);
+    
+    var lowTTLKey = mock(CQLSessionCache.SessionCacheKey.class);
+    when(lowTTLKey.ttl()).thenReturn(lowTTL);
+    
+    var highTTLKey = mock(CQLSessionCache.SessionCacheKey.class);
+    when(highTTLKey.ttl()).thenReturn(highTTL);
+    
+    // Loaded with Low TTL
+    var valueHolderLoadedLow = mock(CQLSessionCache.SessionValueHolder.class);
+    when(valueHolderLoadedLow.loadingKey()).thenReturn(lowTTLKey);
+    
+    var nanosLowToHigh = expiry.expireAfterRead(highTTLKey, valueHolderLoadedLow, 0, 0);
+    assertThat(nanosLowToHigh)
+        .as("Loaded with low TTL, access with high TTL access, new TTL is high")
+        .isEqualTo(highTTL.toNanos());
+
+    var nanosLowToLow = expiry.expireAfterRead(lowTTLKey, valueHolderLoadedLow, 0, 0);
+    assertThat(nanosLowToLow)
+        .as("Loaded with low TTL, access with low TTL access, new TTL is low")
+        .isEqualTo(lowTTL.toNanos());
+    
+    // Loaded with High TTL
+    var valueHolderLoadedHigh = mock(CQLSessionCache.SessionValueHolder.class);
+    when(valueHolderLoadedHigh.loadingKey()).thenReturn(highTTLKey);
+
+    var nanosHighToLow = expiry.expireAfterRead(lowTTLKey, valueHolderLoadedHigh, 0, 0);
+    assertThat(nanosHighToLow)
+        .as("Loaded with high TTL, access with low TTL, new TTL remains high")
+        .isEqualTo(highTTL.toNanos());
+
+    var nanosHighToHigh = expiry.expireAfterRead(highTTLKey, valueHolderLoadedHigh, 0, 0);
+    assertThat(nanosHighToHigh)
+        .as("Loaded with high TTL, access with high TTL, new TTL remains high")
+        .isEqualTo(highTTL.toNanos());
+  }
+
+  @Test
+  public void expireAfterCreateUsesLoadingKey(){
+    var expiry = new CQLSessionCache.SessionExpiry();
+
+    var lowTTL = Duration.ofSeconds(1);
+    var highTTL = Duration.ofSeconds(10);
+
+    var lowTTLKey = mock(CQLSessionCache.SessionCacheKey.class);
+    when(lowTTLKey.ttl()).thenReturn(lowTTL);
+
+    var highTTLKey = mock(CQLSessionCache.SessionCacheKey.class);
+    when(highTTLKey.ttl()).thenReturn(highTTL);
+
+    var valueHolder = mock(CQLSessionCache.SessionValueHolder.class);
+    when(valueHolder.loadingKey()).thenReturn(highTTLKey);
+
+    // actual call will pass the loading key for the first param,
+    // as a test I want to make sure it uses the key on the vaue holder
+    var actualNanos = expiry.expireAfterCreate(lowTTLKey, valueHolder, 0);
+    assertThat(actualNanos)
+        .as("Expire after create is from the loading key on value holder")
+        .isEqualTo(highTTL.toNanos());
+  }
+  // =======================================================
+  // Helpers / no more tests below
+  // =======================================================
   private CQLSessionCache.DeactivatedTenantConsumer consumerWithLogging() {
     var consumer = mock(CQLSessionCache.DeactivatedTenantConsumer.class);
     doAnswer(
@@ -328,6 +397,8 @@ public class CqlSessionCacheTests {
             databaseType,
             cacheTTL,
             cacheSize,
+            null,
+            null,
             credentialsFactory,
             sessionFactory,
             meterRegistry,
@@ -343,3 +414,4 @@ public class CqlSessionCacheTests {
         meterRegistry);
   }
 }
+

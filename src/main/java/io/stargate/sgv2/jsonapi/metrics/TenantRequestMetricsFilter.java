@@ -27,6 +27,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import java.util.regex.Pattern;
+
+import jakarta.ws.rs.core.HttpHeaders;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 
 /**
@@ -114,7 +116,7 @@ public class TenantRequestMetricsFilter {
   }
 
   private String getUserAgentValue(ContainerRequestContext requestContext) {
-    String headerString = requestContext.getHeaderString("user-agent");
+    String headerString = requestContext.getHeaderString(HttpHeaders.USER_AGENT);
     if (null != headerString && !headerString.isBlank()) {
       String[] split = USER_AGENT_SPLIT.split(headerString);
       if (split.length > 0) {

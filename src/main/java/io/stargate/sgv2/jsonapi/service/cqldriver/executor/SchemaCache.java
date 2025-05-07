@@ -298,7 +298,7 @@ public class SchemaCache {
 
     @Override
     public void accept(String tenantId, RemovalCause cause) {
-      // the sessions are keyed on the tenantID and the crednetials, and one session can work with
+      // the sessions are keyed on the tenantID and the credentials, and one session can work with
       // multiple keyspaces. So we need to evict all the keyspaces for the tenantId
       schemaCache.evictAllKeyspaces(tenantId);
     }

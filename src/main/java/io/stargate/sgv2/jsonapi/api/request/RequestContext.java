@@ -4,11 +4,15 @@ import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
 import io.stargate.sgv2.jsonapi.api.request.tenant.DataApiTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
+import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.SecurityContext;
+
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -30,6 +34,8 @@ public class RequestContext {
   private final HttpHeaderAccess httpHeaders;
   private final String requestId;
 
+  private final String userAgent;
+
   /**
    * Constructor that will be useful in the offline library mode, where only the tenant will be set
    * and accessed.
@@ -43,6 +49,7 @@ public class RequestContext {
     this.rerankingCredentials = null;
     httpHeaders = null;
     requestId = generateRequestId();
+    userAgent = null;
   }
 
   @Inject
@@ -52,15 +59,19 @@ public class RequestContext {
       Instance<DataApiTenantResolver> tenantResolver,
       Instance<DataApiTokenResolver> tokenResolver,
       Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
+
     this.embeddingCredentials =
         embeddingCredentialsResolver.get().resolveEmbeddingCredentials(routingContext);
-    this.tenantId = (tenantResolver.get()).resolve(routingContext, securityContext);
-    this.cassandraToken = (tokenResolver.get()).resolve(routingContext, securityContext);
+    this.tenantId = tenantResolver.get().resolve(routingContext, securityContext);
+    this.cassandraToken = tokenResolver.get().resolve(routingContext, securityContext);
+
     httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
     requestId = generateRequestId();
+    userAgent = httpHeaders.getHeader(HttpHeaders.USER_AGENT);
 
     Optional<String> rerankingApiKeyFromHeader =
         HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext);
+
     this.rerankingCredentials =
         rerankingApiKeyFromHeader
             .map(apiKey -> new RerankingCredentials(Optional.of(apiKey)))
@@ -79,19 +90,23 @@ public class RequestContext {
   }
 
   public Optional<String> getTenantId() {
-    return this.tenantId;
+    return tenantId;
   }
 
   public Optional<String> getCassandraToken() {
-    return this.cassandraToken;
+    return cassandraToken;
+  }
+
+  public Optional<String> getUserAgent(){
+    return Optional.ofNullable(userAgent);
   }
 
   public EmbeddingCredentials getEmbeddingCredentials() {
-    return this.embeddingCredentials;
+    return embeddingCredentials;
   }
 
   public RerankingCredentials getRerankingCredentials() {
-    return this.rerankingCredentials;
+    return rerankingCredentials;
   }
 
   public HttpHeaderAccess getHttpHeaders() {
@@ -107,6 +122,14 @@ public class RequestContext {
 
     public HttpHeaderAccess(io.vertx.core.MultiMap headers) {
       this.headers = headers;
+    }
+
+    public String getHeader(String headerName) {
+      return headers.get(headerName);
+    }
+
+    public List<String> getHeaders(String headerName) {
+      return headers.getAll(headerName);
     }
 
     /**

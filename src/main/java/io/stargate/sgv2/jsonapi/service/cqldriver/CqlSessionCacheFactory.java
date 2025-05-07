@@ -92,6 +92,7 @@ public class CqlSessionCacheFactory {
               dbConfig.type(),
               Duration.ofSeconds(dbConfig.sessionCacheTtlSeconds()),
               dbConfig.sessionCacheMaxSize(),
+              null, null,
               credentialsFactory,
               sessionFactory,
               meterRegistry,

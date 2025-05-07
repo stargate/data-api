@@ -8,6 +8,8 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.vertx.core.http.HttpServerRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.HttpHeaders;
+
 import java.util.regex.Pattern;
 
 /** Tags provider for http request metrics. It provides tenant id and user agent as tags. */
@@ -65,7 +67,7 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
   }
 
   private String getUserAgentValue(HttpServerRequest request) {
-    String headerString = request.getHeader("user-agent");
+    String headerString = request.getHeader(HttpHeaders.USER_AGENT);
     if (null != headerString && !headerString.isBlank()) {
       String[] split = USER_AGENT_SPLIT.split(headerString);
       if (split.length > 0) {
