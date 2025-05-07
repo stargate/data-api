@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.metrics;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
@@ -8,6 +10,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.*;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -15,31 +22,22 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class MicrometerConfigurationTests {
   private static final Logger LOGGER = LoggerFactory.getLogger(MicrometerConfigurationTests.class);
 
-
-  private static final JsonFactory JSON_FACTORY = JsonFactory.builder()
-      .enable(JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES)
-      .build();
+  private static final JsonFactory JSON_FACTORY =
+      JsonFactory.builder().enable(JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES).build();
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(JSON_FACTORY);
 
   @Test
-  public void allTenantTimerPercentiles(){
+  public void allTenantTimerPercentiles() {
 
     var registry = newRegistry();
     var timer = registry.timer("all.tenant.metric", "tag1", "value1");
     fillMetric(timer);
 
-    var expected = """
+    var expected =
+        """
     all_tenant_metric_seconds{tag1="value1",quantile="0.5",} 1.040154624
     all_tenant_metric_seconds{tag1="value1",quantile="0.9",} 1.81190656
     all_tenant_metric_seconds{tag1="value1",quantile="0.95",} 1.946124288
@@ -53,13 +51,14 @@ public class MicrometerConfigurationTests {
   }
 
   @Test
-  public void perTenantTimerPercentiles(){
+  public void perTenantTimerPercentiles() {
 
     var registry = newRegistry();
     var timer = registry.timer("per.tenant.metric", "tag1", "value1", "tenant", "1234");
     fillMetric(timer);
 
-    var expected = """
+    var expected =
+        """
     per_tenant_metric_seconds{tag1="value1",tenant="1234",quantile="0.5",} 1.040154624
     per_tenant_metric_seconds{tag1="value1",tenant="1234",quantile="0.98",} 2.013233152
     per_tenant_metric_seconds{tag1="value1",tenant="1234",quantile="0.99",} 2.013233152
@@ -70,15 +69,15 @@ public class MicrometerConfigurationTests {
     assertPublishing(registry, expected, "per tenant timer");
   }
 
-
   @Test
-  public void perSessionTimerPercentiles(){
+  public void perSessionTimerPercentiles() {
 
     var registry = newRegistry();
     var timer = registry.timer("per.session.metric", "tag1", "value1", "session", "1234");
     fillMetric(timer);
 
-    var expected = """
+    var expected =
+        """
     per_session_metric_seconds{session="1234",tag1="value1",quantile="0.5",} 1.040154624
     per_session_metric_seconds{session="1234",tag1="value1",quantile="0.98",} 2.013233152
     per_session_metric_seconds{session="1234",tag1="value1",quantile="0.99",} 2.013233152
@@ -88,15 +87,16 @@ public class MicrometerConfigurationTests {
     """;
     assertPublishing(registry, expected, "per session timer");
   }
-  
+
   @Test
-  public void perTenantDistributionSummary(){
+  public void perTenantDistributionSummary() {
 
     var registry = newRegistry();
     var metric = registry.summary("per.tenant.metric", "tag1", "value1", "tenant", "1234");
     fillMetric(metric);
 
-    var expected = """
+    var expected =
+        """
     per_tenant_metric_count{tag1="value1",tenant="1234",}
     per_tenant_metric_max{tag1="value1",tenant="1234",}
     per_tenant_metric_sum{tag1="value1",tenant="1234",}
@@ -108,13 +108,14 @@ public class MicrometerConfigurationTests {
   }
 
   @Test
-  public void perSessionDistributionSummary(){
+  public void perSessionDistributionSummary() {
 
     var registry = newRegistry();
     var metric = registry.summary("per.tenant.metric", "tag1", "value1", "session", "1234");
     fillMetric(metric);
 
-    var expected = """
+    var expected =
+        """
     per_tenant_metric_count{session="1234",tag1="value1",}
     per_tenant_metric_max{session="1234",tag1="value1",}
     per_tenant_metric_sum{session="1234",tag1="value1",}
@@ -126,13 +127,14 @@ public class MicrometerConfigurationTests {
   }
 
   @Test
-  public void allTenantDistributionSummary(){
+  public void allTenantDistributionSummary() {
 
     var registry = newRegistry();
     var metric = registry.summary("per.tenant.metric", "tag1", "value1");
     fillMetric(metric);
 
-    var expected = """
+    var expected =
+        """
     per_tenant_metric_count{tag1="value1",}
     per_tenant_metric_max{tag1="value1",}
     per_tenant_metric_sum{tag1="value1",}
@@ -145,20 +147,18 @@ public class MicrometerConfigurationTests {
     assertPublishing(registry, expected, "per tenant summary");
   }
 
-  private void assertPublishing(PrometheusMeterRegistry registry, String expectedLines, String context ){
+  private void assertPublishing(
+      PrometheusMeterRegistry registry, String expectedLines, String context) {
 
     var actual = cleanMetricLines(registry.scrape());
     var expected = cleanMetricLines(expectedLines);
 
-    assertThat(actual)
-        .as(context)
-        .isEqualTo(expected);
+    assertThat(actual).as(context).isEqualTo(expected);
   }
 
   private PrometheusMeterRegistry newRegistry() {
     var registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
-    registry.config()
-        .meterFilter(new MicrometerConfiguration().configureDistributionStatistics());
+    registry.config().meterFilter(new MicrometerConfiguration().configureDistributionStatistics());
     return registry;
   }
 
@@ -178,24 +178,27 @@ public class MicrometerConfigurationTests {
     }
   }
 
-  private String cleanMetricLines(String input){
+  private String cleanMetricLines(String input) {
 
-    // # is used for comments, remove those lines and remove the value which is after the  " " at end
+    // # is used for comments, remove those lines and remove the value which is after the  " " at
+    // end
     // e.g. all_tenant_metric_seconds{tag1="value1",quantile="0.5",} 1.040154624
     // and then sort for comparison
-    return input.lines()
+    return input
+        .lines()
         .filter(line -> !line.startsWith("#"))
-        .map(line -> {
-          int lastBrace = line.lastIndexOf('}');
-          int lastSpace = line.lastIndexOf(' ');
-          return (lastBrace >= 0 && lastSpace > lastBrace)
-              ? line.substring(0, lastSpace)
-              : line;
-        })
+        .map(
+            line -> {
+              int lastBrace = line.lastIndexOf('}');
+              int lastSpace = line.lastIndexOf(' ');
+              return (lastBrace >= 0 && lastSpace > lastBrace)
+                  ? line.substring(0, lastSpace)
+                  : line;
+            })
         .sorted()
         .collect(Collectors.joining("\n"));
-
   }
+
   @ParameterizedTest
   @MethodSource("testIsPerTenantPredicateArgs")
   public void testIsPerTenantPredicateArgs(String slug, boolean isTenant) {
@@ -205,27 +208,31 @@ public class MicrometerConfigurationTests {
     assertThat(predicate.test(id))
         .as("isTenant=%s for slug %s", isTenant, slug)
         .isEqualTo(isTenant);
-
   }
 
   private static Stream<Arguments> testIsPerTenantPredicateArgs() {
     return Stream.of(
-        Arguments.of("""
-            http_server_requests_seconds_bucket{method="POST",module="sgv2-jsonapi",outcome="SUCCESS",status="200",tenant="5d9bf1c5-bead-48ec-ac04-6662c2ae9cff",uri="/v1/{keyspace}/{collection}",user_agent="astrapy",le="2.505397588"}""", true),
-        Arguments.of("""
-                session_cql_requests_seconds{module="sgv2-jsonapi",session="default_tenant",quantile="0.98"}""", true),
-        Arguments.of("cache_gets_total{cache=\"cql_sessions_cache\",module=\"sgv2-jsonapi\",result=\"hit\"} ", false)
-    );
+        Arguments.of(
+            """
+            http_server_requests_seconds_bucket{method="POST",module="sgv2-jsonapi",outcome="SUCCESS",status="200",tenant="5d9bf1c5-bead-48ec-ac04-6662c2ae9cff",uri="/v1/{keyspace}/{collection}",user_agent="astrapy",le="2.505397588"}""",
+            true),
+        Arguments.of(
+            """
+                session_cql_requests_seconds{module="sgv2-jsonapi",session="default_tenant",quantile="0.98"}""",
+            true),
+        Arguments.of(
+            "cache_gets_total{cache=\"cql_sessions_cache\",module=\"sgv2-jsonapi\",result=\"hit\"} ",
+            false));
   }
 
   /**
-   * Pass in a metric from the /metrics and it will create the ID
-   * e.g.
+   * Pass in a metric from the /metrics and it will create the ID e.g.
+   *
    * <pre>
    *   http_server_requests_seconds_bucket{method="POST",module="sgv2-jsonapi",outcome="SUCCESS",status="200",tenant="5d9bf1c5-bead-48ec-ac04-6662c2ae9cff",uri="/v1/{keyspace}/{collection}",user_agent="astrapy",le="2.505397588"}
    * </pre>
    */
-  private Meter.Id slugToId(String slug)  {
+  private Meter.Id slugToId(String slug) {
 
     int braceIndex = slug.indexOf('{');
     String name = slug.substring(0, braceIndex);
@@ -233,22 +240,19 @@ public class MicrometerConfigurationTests {
 
     Map<String, String> rawTags = Map.of();
     try {
-      rawTags = OBJECT_MAPPER
-          .readValue(metadata, new TypeReference<Map<String, String>>() {
-          });
+      rawTags = OBJECT_MAPPER.readValue(metadata, new TypeReference<Map<String, String>>() {});
 
-    }
-    catch (JsonProcessingException e) {
+    } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
 
-    var tags = Tags.of(
-        rawTags.entrySet().stream()
-            .map(e -> Tag.of(e.getKey(), e.getValue()))
-            .collect(Collectors.toList())
-    );
+    var tags =
+        Tags.of(
+            rawTags.entrySet().stream()
+                .map(e -> Tag.of(e.getKey(), e.getValue()))
+                .collect(Collectors.toList()));
     LOGGER.info("slugToId - slug {} -> name {} tags {}", slug, name, tags);
 
-    return  new Meter.Id(name, tags, null, null, Meter.Type.OTHER);
+    return new Meter.Id(name, tags, null, null, Meter.Type.OTHER);
   }
 }

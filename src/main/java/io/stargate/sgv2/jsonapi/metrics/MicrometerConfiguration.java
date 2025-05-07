@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.metrics;
 
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.SESSION_TAG;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.TENANT_TAG;
+
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
@@ -8,16 +11,12 @@ import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import jakarta.enterprise.inject.Produces;
-import org.eclipse.microprofile.config.ConfigProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.SESSION_TAG;
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.TENANT_TAG;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Centralized configuration of Micrometer {@link MeterFilter}s.
@@ -26,9 +25,9 @@ import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.TENAN
  *
  * <ul>
  *   <li>Apply global tags (e.g., {@code module=sgv2-jsonapi}) to all metrics based on configuration
- *       provided by {@link MetricsConfig}, see {@link #globalTagsMeterFilter()}.</li>
- *   <li>Configure distribution statistics percentiles for timer metrics such as HTTP server
- *   see {@link #configureDistributionStatistics()}.</li>
+ *       provided by {@link MetricsConfig}, see {@link #globalTagsMeterFilter()}.
+ *   <li>Configure distribution statistics percentiles for timer metrics such as HTTP server see
+ *       {@link #configureDistributionStatistics()}.
  * </ul>
  */
 public class MicrometerConfiguration {
@@ -57,7 +56,8 @@ public class MicrometerConfiguration {
       return new MeterFilter() {};
     }
 
-    var tags = globalTags.entrySet().stream()
+    var tags =
+        globalTags.entrySet().stream()
             .map(e -> Tag.of(e.getKey(), e.getValue()))
             .collect(Collectors.toList());
 
@@ -72,19 +72,18 @@ public class MicrometerConfiguration {
    * Produces a meter filter to configure distribution statistics for timer metrics such as HTTP
    * server requests, vectorization duration, and reranking calls.
    *
-   * <p>
-   * Tests in {@link MicrometerConfigurationTests} show what is expected to output for the different
-   * metric types.
+   * <p>Tests in {@link MicrometerConfigurationTests} show what is expected to output for the
+   * different metric types.
    *
-   * </p>
-   * <p>For all distribution metrics, we supress the full histogram buckets to reduce overhead. And then
-   * we configure the percentiles based on the metric type:
+   * <p>For all distribution metrics, we supress the full histogram buckets to reduce overhead. And
+   * then we configure the percentiles based on the metric type:
    *
    * <ul>
-   *   <li>Per tenant metrics (see {@link IsPerTenantPredicate}) have fewer percentiles because there will be
-   *   many more metrics of these types. </li>
-   *   <li>Non per tenant metrics have more percentiles because they are less numerous.</li>
+   *   <li>Per tenant metrics (see {@link IsPerTenantPredicate}) have fewer percentiles because
+   *       there will be many more metrics of these types.
+   *   <li>Non per tenant metrics have more percentiles because they are less numerous.
    * </ul>
+   *
    * This is applied to all metrics, including the driver metrics.
    *
    * @return A {@link MeterFilter} for configuring distribution statistics.
@@ -99,29 +98,28 @@ public class MicrometerConfiguration {
 
     return new MeterFilter() {
       @Override
-      public DistributionStatisticConfig configure(Meter.Id id, DistributionStatisticConfig config) {
+      public DistributionStatisticConfig configure(
+          Meter.Id id, DistributionStatisticConfig config) {
 
         var builder = DistributionStatisticConfig.builder();
-        if (isPerTenantPredicate.test(id)){
+        if (isPerTenantPredicate.test(id)) {
           builder = builder.percentiles(perTenantLatencyPercentiles);
-        }
-        else {
+        } else {
           builder = builder.percentiles(allTenantLatencyPercentiles);
         }
 
         // make sure we do not publish the histogram buckets for all distribution metrics
-        // that can be 70 lines long for a single metric, and we don't need them because we have calc'd
+        // that can be 70 lines long for a single metric, and we don't need them because we have
+        // calc'd
         // the percentiles
         builder = builder.percentilesHistogram(false);
 
-        return builder
-            .build()
-            .merge(config);
+        return builder.build().merge(config);
       }
     };
   }
 
-  static class IsPerTenantPredicate implements Predicate<Meter.Id>{
+  static class IsPerTenantPredicate implements Predicate<Meter.Id> {
 
     @Override
     public boolean test(Meter.Id id) {
@@ -131,12 +129,12 @@ public class MicrometerConfiguration {
       // getTags() iterates over the tags, but there will never be too many for it to be a problem
       // and sanity check they are not blank strings
 
-      var tenantTag =  id.getTag(TENANT_TAG);
+      var tenantTag = id.getTag(TENANT_TAG);
       if (tenantTag != null && !tenantTag.isBlank()) {
         return true;
       }
 
-      var sessionTag =  id.getTag(SESSION_TAG);
+      var sessionTag = id.getTag(SESSION_TAG);
       if (sessionTag != null && !sessionTag.isBlank()) {
         return true;
       }
