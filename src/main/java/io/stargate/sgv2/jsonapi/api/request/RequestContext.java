@@ -4,14 +4,12 @@ import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
 import io.stargate.sgv2.jsonapi.api.request.tenant.DataApiTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
-import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.SecurityContext;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -97,7 +95,7 @@ public class RequestContext {
     return cassandraToken;
   }
 
-  public Optional<String> getUserAgent(){
+  public Optional<String> getUserAgent() {
     return Optional.ofNullable(userAgent);
   }
 

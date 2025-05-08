@@ -12,8 +12,6 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import java.time.Duration;
 import java.util.List;
-
-import org.apache.http.auth.AUTH;
 import org.junit.jupiter.api.Test;
 
 /** Tests for {@link CQLSessionCache}. */
@@ -73,7 +71,16 @@ public class CqlSessionCacheTests {
   public void cassandraCache() {
 
     // only testing it works with the CASSANDRA db type, all other logic is tested with ASTRA
-    var fixture = newFixture(DatabaseType.CASSANDRA, List.of(), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, false, true);
+    var fixture =
+        newFixture(
+            DatabaseType.CASSANDRA,
+            List.of(),
+            CACHE_TTL,
+            CACHE_MAX_SIZE,
+            SLA_USER_AGENT,
+            SLA_USER_TTL,
+            false,
+            true);
 
     var actualSession = fixture.cache.getSession(TENANT_ID, AUTH_TOKEN, null);
     assertThat(actualSession)
@@ -96,7 +103,14 @@ public class CqlSessionCacheTests {
     // use  very long TTL so removal cause is not expired
     var fixture =
         newFixture(
-            DatabaseType.ASTRA, List.of(consumer), Duration.ofSeconds(20), CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, false,false);
+            DatabaseType.ASTRA,
+            List.of(consumer),
+            Duration.ofSeconds(20),
+            CACHE_MAX_SIZE,
+            SLA_USER_AGENT,
+            SLA_USER_TTL,
+            false,
+            false);
 
     for (int i = 0; i < CACHE_MAX_SIZE + 1; i++) {
       var thisTenantId = "%s-%s".formatted(TENANT_ID, i);
@@ -127,7 +141,15 @@ public class CqlSessionCacheTests {
   public void sessionClosedAndEvictionListenerCalledOnForced() {
     var consumer = consumerWithLogging();
     var fixture =
-        newFixture(DatabaseType.ASTRA, List.of(consumer), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL,false, true);
+        newFixture(
+            DatabaseType.ASTRA,
+            List.of(consumer),
+            CACHE_TTL,
+            CACHE_MAX_SIZE,
+            SLA_USER_AGENT,
+            SLA_USER_TTL,
+            false,
+            true);
 
     var actualSession = fixture.cache.getSession(TENANT_ID, AUTH_TOKEN, null);
     assertThat(fixture.cache.cacheSize()).as("Cache size is 1 after getting item").isEqualTo(1);
@@ -150,7 +172,15 @@ public class CqlSessionCacheTests {
     var ttl = Duration.ofSeconds(1);
     var consumer = consumerWithLogging();
     var fixture =
-        newFixture(DatabaseType.ASTRA, List.of(consumer), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL,false, true);
+        newFixture(
+            DatabaseType.ASTRA,
+            List.of(consumer),
+            CACHE_TTL,
+            CACHE_MAX_SIZE,
+            SLA_USER_AGENT,
+            SLA_USER_TTL,
+            false,
+            true);
 
     var actualSession = fixture.cache.getSession(TENANT_ID, AUTH_TOKEN, null);
     assertThat(actualSession)
@@ -177,7 +207,16 @@ public class CqlSessionCacheTests {
 
     var longTTL = Duration.ofSeconds(5);
     var consumer = mock(CQLSessionCache.DeactivatedTenantConsumer.class);
-    var fixture = newFixture(DatabaseType.ASTRA, List.of(consumer), longTTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, false,true);
+    var fixture =
+        newFixture(
+            DatabaseType.ASTRA,
+            List.of(consumer),
+            longTTL,
+            CACHE_MAX_SIZE,
+            SLA_USER_AGENT,
+            SLA_USER_TTL,
+            false,
+            true);
 
     var actualSession = fixture.cache.getSession(TENANT_ID, AUTH_TOKEN, null);
 
@@ -200,7 +239,14 @@ public class CqlSessionCacheTests {
     // get a session added to the cache, then evict it, so the callbacks are run
     var fixture =
         newFixture(
-            DatabaseType.ASTRA, List.of(consumer1, consumer2), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, false,true);
+            DatabaseType.ASTRA,
+            List.of(consumer1, consumer2),
+            CACHE_TTL,
+            CACHE_MAX_SIZE,
+            SLA_USER_AGENT,
+            SLA_USER_TTL,
+            false,
+            true);
     var actualSession = fixture.cache.getSession(TENANT_ID, AUTH_TOKEN, null);
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
@@ -228,7 +274,16 @@ public class CqlSessionCacheTests {
 
   @Test
   public void nullTenantIdToEmptyString() {
-    var fixture = newFixture(DatabaseType.ASTRA, List.of(), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL,false, false);
+    var fixture =
+        newFixture(
+            DatabaseType.ASTRA,
+            List.of(),
+            CACHE_TTL,
+            CACHE_MAX_SIZE,
+            SLA_USER_AGENT,
+            SLA_USER_TTL,
+            false,
+            false);
 
     var expectedCredentials = mock(CqlCredentials.class);
     when(fixture.credentialsFactory.apply(AUTH_TOKEN)).thenReturn(expectedCredentials);
@@ -251,7 +306,16 @@ public class CqlSessionCacheTests {
     // only testing they are added to the registry with the expected name, not checking the values
     // that is a feature of the cache itself
 
-    var fixture = newFixture(DatabaseType.ASTRA, List.of(), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, false,true);
+    var fixture =
+        newFixture(
+            DatabaseType.ASTRA,
+            List.of(),
+            CACHE_TTL,
+            CACHE_MAX_SIZE,
+            SLA_USER_AGENT,
+            SLA_USER_TTL,
+            false,
+            true);
     var actualSession = fixture.cache.getSession(TENANT_ID, AUTH_TOKEN, null);
 
     // give ethe cache time to bookkeep
@@ -276,22 +340,22 @@ public class CqlSessionCacheTests {
 
   @Test
   public void expireAfterReadPicksHighestTTL() {
-      
+
     var expiry = new CQLSessionCache.SessionExpiry();
-    
+
     var lowTTL = Duration.ofSeconds(1);
     var highTTL = Duration.ofSeconds(10);
-    
+
     var lowTTLKey = mock(CQLSessionCache.SessionCacheKey.class);
     when(lowTTLKey.ttl()).thenReturn(lowTTL);
-    
+
     var highTTLKey = mock(CQLSessionCache.SessionCacheKey.class);
     when(highTTLKey.ttl()).thenReturn(highTTL);
-    
+
     // Loaded with Low TTL
     var valueHolderLoadedLow = mock(CQLSessionCache.SessionValueHolder.class);
     when(valueHolderLoadedLow.loadingKey()).thenReturn(lowTTLKey);
-    
+
     var nanosLowToHigh = expiry.expireAfterRead(highTTLKey, valueHolderLoadedLow, 0, 0);
     assertThat(nanosLowToHigh)
         .as("Loaded with low TTL, access with high TTL access, new TTL is high")
@@ -301,7 +365,7 @@ public class CqlSessionCacheTests {
     assertThat(nanosLowToLow)
         .as("Loaded with low TTL, access with low TTL access, new TTL is low")
         .isEqualTo(lowTTL.toNanos());
-    
+
     // Loaded with High TTL
     var valueHolderLoadedHigh = mock(CQLSessionCache.SessionValueHolder.class);
     when(valueHolderLoadedHigh.loadingKey()).thenReturn(highTTLKey);
@@ -318,7 +382,7 @@ public class CqlSessionCacheTests {
   }
 
   @Test
-  public void expireAfterCreateUsesLoadingKey(){
+  public void expireAfterCreateUsesLoadingKey() {
     var expiry = new CQLSessionCache.SessionExpiry();
 
     var lowTTL = Duration.ofSeconds(1);
@@ -342,10 +406,19 @@ public class CqlSessionCacheTests {
   }
 
   @Test
-  public void expireSlaUser(){
+  public void expireSlaUser() {
 
     // using the fake ticker so we can control the time
-    var fixture = newFixture(DatabaseType.ASTRA, List.of(), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, true,true);
+    var fixture =
+        newFixture(
+            DatabaseType.ASTRA,
+            List.of(),
+            CACHE_TTL,
+            CACHE_MAX_SIZE,
+            SLA_USER_AGENT,
+            SLA_USER_TTL,
+            true,
+            true);
 
     // request a session using the SLA user agent, this will be expired after SLA_USER_TTL
     var actualSession = fixture.cache.getSession(TENANT_ID, AUTH_TOKEN, SLA_USER_AGENT);
@@ -367,10 +440,19 @@ public class CqlSessionCacheTests {
   }
 
   @Test
-  public void expireKeepsSessionAfterNonSLAUserRead(){
+  public void expireKeepsSessionAfterNonSLAUserRead() {
 
     // using the fake ticker so we can control the time
-    var fixture = newFixture(DatabaseType.ASTRA, List.of(), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, true,true);
+    var fixture =
+        newFixture(
+            DatabaseType.ASTRA,
+            List.of(),
+            CACHE_TTL,
+            CACHE_MAX_SIZE,
+            SLA_USER_AGENT,
+            SLA_USER_TTL,
+            true,
+            true);
 
     // request a session using the SLA user agent, this will be expired after SLA_USER_TTL
     var actualSession = fixture.cache.getSession(TENANT_ID, AUTH_TOKEN, SLA_USER_AGENT);
@@ -403,12 +485,14 @@ public class CqlSessionCacheTests {
 
     // the SLA session should still be REMOVED, using both the SLA and non SLA user agent
     assertThat(fixture.cache.peekSession(TENANT_ID, AUTH_TOKEN, SLA_USER_AGENT))
-        .as("SLA Session is not present in cache when peeking with SLA agent - after non SLA expiry")
+        .as(
+            "SLA Session is not present in cache when peeking with SLA agent - after non SLA expiry")
         .isNotPresent();
     assertThat(fixture.cache.peekSession(TENANT_ID, AUTH_TOKEN, null))
         .as("SLA Session is not present in cache when peeking non SLA agent - after non SLA expiry")
         .isNotPresent();
   }
+
   // =======================================================
   // Helpers / no more tests below
   // =======================================================
@@ -427,12 +511,11 @@ public class CqlSessionCacheTests {
     return consumer;
   }
 
-  /**
-   * {@link Ticker} for the cache so we can control the time for testing differentiated TTL
-   */
+  /** {@link Ticker} for the cache so we can control the time for testing differentiated TTL */
   static class FakeTicker implements Ticker {
 
     private long nanos = 0;
+
     @Override
     public long read() {
       return nanos;
@@ -453,7 +536,15 @@ public class CqlSessionCacheTests {
       FakeTicker ticker) {}
 
   private Fixture newFixture() {
-    return newFixture(DatabaseType.ASTRA, List.of(), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, false, true);
+    return newFixture(
+        DatabaseType.ASTRA,
+        List.of(),
+        CACHE_TTL,
+        CACHE_MAX_SIZE,
+        SLA_USER_AGENT,
+        SLA_USER_TTL,
+        false,
+        true);
   }
 
   private Fixture newFixture(
@@ -462,7 +553,15 @@ public class CqlSessionCacheTests {
       Duration cacheTTL,
       int cacheSize,
       boolean setExpected) {
-    return newFixture(databaseType, consumers, cacheTTL, cacheSize, SLA_USER_AGENT, SLA_USER_TTL, false, setExpected);
+    return newFixture(
+        databaseType,
+        consumers,
+        cacheTTL,
+        cacheSize,
+        SLA_USER_AGENT,
+        SLA_USER_TTL,
+        false,
+        setExpected);
   }
 
   private Fixture newFixture(

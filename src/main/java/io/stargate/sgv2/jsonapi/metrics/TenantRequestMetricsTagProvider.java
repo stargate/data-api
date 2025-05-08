@@ -9,7 +9,6 @@ import io.vertx.core.http.HttpServerRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
-
 import java.util.regex.Pattern;
 
 /** Tags provider for http request metrics. It provides tenant id and user agent as tags. */

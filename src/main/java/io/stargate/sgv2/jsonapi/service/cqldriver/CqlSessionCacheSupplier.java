@@ -57,7 +57,8 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
             dbConfig.type(),
             Duration.ofSeconds(dbConfig.sessionCacheTtlSeconds()),
             dbConfig.sessionCacheMaxSize(),
-            null, null, //XXX TODO:
+            null,
+            null, // XXX TODO:
             credentialsFactory,
             sessionFactory,
             meterRegistry,

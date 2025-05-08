@@ -7,8 +7,6 @@ import com.github.benmanes.caffeine.cache.*;
 import com.google.common.annotations.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
-import io.stargate.sgv2.jsonapi.ConfigPreLoader;
-
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import java.time.Duration;
@@ -63,8 +61,8 @@ public class CQLSessionCache {
 
   /**
    * Constructs a new instance of the {@link CQLSessionCache}.
-   * <p>
-   * Use this overload in production code, see other for detailed description of the parameters.
+   *
+   * <p>Use this overload in production code, see other for detailed description of the parameters.
    */
   public CQLSessionCache(
       DatabaseType databaseType,
@@ -92,9 +90,8 @@ public class CQLSessionCache {
 
   /**
    * Constructs a new instance of the {@link CQLSessionCache}.
-   * <p>
-   * Use this ctor for testing only.
-   * </p>
+   *
+   * <p>Use this ctor for testing only.
    *
    * @param databaseType The type of database being used,
    * @param cacheTTL The time-to-live (TTL) duration for cache entries.
@@ -106,8 +103,8 @@ public class CQLSessionCache {
    * @param deactivatedTenantConsumer A list of consumers to handle tenant deactivation events.
    * @param asyncTaskOnCaller If true, asynchronous tasks (e.g., callbacks) will run on the caller
    *     thread. This is intended for testing purposes only. DO NOT USE in production.
-   * @param cacheTicker  If non-null, this is the ticker used by the cache to decide when to expire
-   *                     entries. If null, the default ticker is used. DO NOT USE in production.
+   * @param cacheTicker If non-null, this is the ticker used by the cache to decide when to expire
+   *     entries. If null, the default ticker is used. DO NOT USE in production.
    */
   CQLSessionCache(
       DatabaseType databaseType,
@@ -126,10 +123,10 @@ public class CQLSessionCache {
     this.cacheTTL = Objects.requireNonNull(cacheTTL, "cacheTTL must not be null");
     this.cacheMaxSize = cacheMaxSize;
     this.slaUserAgent = slaUserAgent != null ? slaUserAgent.toLowerCase() : null;
-    if (slaUserAgent != null ) {
-      this.slaUserTTL = Objects.requireNonNull(slaUserTTL, "slaUserTTL must not be null is slaUserAgent is set");
-    }
-    else {
+    if (slaUserAgent != null) {
+      this.slaUserTTL =
+          Objects.requireNonNull(slaUserTTL, "slaUserTTL must not be null is slaUserAgent is set");
+    } else {
       this.slaUserTTL = null;
     }
 
@@ -162,7 +159,8 @@ public class CQLSessionCache {
       LOGGER.warn("CQLSessionCache CONFIGURED TO USE A CUSTOM TICKER, DO NOT USE IN PRODUCTION.");
       builder = builder.ticker(cacheTicker);
     }
-    LoadingCache<SessionCacheKey, SessionValueHolder> loadingCache = builder.build(this::onLoadSession);
+    LoadingCache<SessionCacheKey, SessionValueHolder> loadingCache =
+        builder.build(this::onLoadSession);
 
     this.sessionCache =
         CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
@@ -193,18 +191,19 @@ public class CQLSessionCache {
    *
    * @param tenantId the identifier for the tenant
    * @param authToken the authentication token for accessing the session
-   * @param userAgent Nullable user agent, if matching the configured SLA checker user agent then the
-   *                  session will use the TTL for the SLA user.
+   * @param userAgent Nullable user agent, if matching the configured SLA checker user agent then
+   *     the session will use the TTL for the SLA user.
    * @return a {@link CqlSession} associated with the given tenantId and authToken
    */
   public CqlSession getSession(String tenantId, String authToken, String userAgent) {
 
     var cacheKey = createCacheKey(tenantId, authToken, userAgent);
     // TODO: why is this different for OFFLINE ?
-    var holder = switch (databaseType) {
-      case OFFLINE_WRITER -> sessionCache.getIfPresent(cacheKey);
-      default -> sessionCache.get(cacheKey);
-    };
+    var holder =
+        switch (databaseType) {
+          case OFFLINE_WRITER -> sessionCache.getIfPresent(cacheKey);
+          default -> sessionCache.get(cacheKey);
+        };
     return holder == null ? null : holder.session();
   }
 
@@ -215,11 +214,13 @@ public class CQLSessionCache {
   @VisibleForTesting
   protected Optional<CqlSession> peekSession(String tenantId, String authToken, String userAgent) {
     var cacheKey = createCacheKey(tenantId, authToken, userAgent);
-    return Optional.ofNullable(sessionCache.getIfPresent(cacheKey)).map(SessionValueHolder::session);
+    return Optional.ofNullable(sessionCache.getIfPresent(cacheKey))
+        .map(SessionValueHolder::session);
   }
 
   /** Process a key being removed from the cache for any reason. */
-  private void onKeyRemoved(SessionCacheKey cacheKey, SessionValueHolder sessionHolder, RemovalCause cause) {
+  private void onKeyRemoved(
+      SessionCacheKey cacheKey, SessionValueHolder sessionHolder, RemovalCause cause) {
 
     deactivatedTenantConsumers.forEach(
         consumer -> {
@@ -278,7 +279,8 @@ public class CQLSessionCache {
           cacheKey.credentials().isAnonymous());
     }
 
-    return new SessionValueHolder(sessionFactory.apply(cacheKey.tenantId(), cacheKey.credentials()), cacheKey);
+    return new SessionValueHolder(
+        sessionFactory.apply(cacheKey.tenantId(), cacheKey.credentials()), cacheKey);
   }
 
   /** Builds the cache key to use for the supplied tenant and authentication token. */
@@ -292,12 +294,17 @@ public class CQLSessionCache {
 
     // userAgent arg can be null
     // slaUserAgent forced to lower case in the ctor
-    var keyTTL = slaUserAgent == null || userAgent == null || !slaUserAgent.equals(userAgent.toLowerCase()) ? cacheTTL : slaUserTTL;
+    var keyTTL =
+        slaUserAgent == null || userAgent == null || !slaUserAgent.equals(userAgent.toLowerCase())
+            ? cacheTTL
+            : slaUserTTL;
     return switch (databaseType) {
       case CASSANDRA, OFFLINE_WRITER ->
           new SessionCacheKey(
-              tenantId == null || tenantId.isBlank() ? DEFAULT_TENANT : tenantId, credentials, keyTTL);
-      case ASTRA -> new SessionCacheKey(tenantId, credentials ,keyTTL);
+              tenantId == null || tenantId.isBlank() ? DEFAULT_TENANT : tenantId,
+              credentials,
+              keyTTL);
+      case ASTRA -> new SessionCacheKey(tenantId, credentials, keyTTL);
     };
   }
 
@@ -352,7 +359,7 @@ public class CQLSessionCache {
      * @param tenantId The identifier for the tenant.
      * @param credentials The credentials used for authentication.
      * @param ttl The time-to-live (TTL) duration for the cache entry. Note: This is NOT used in the
-     *            value quality of the cache key, it is set so dynamic TTL can be used per key.
+     *     value quality of the cache key, it is set so dynamic TTL can be used per key.
      */
     SessionCacheKey(String tenantId, CqlCredentials credentials, Duration ttl) {
       if (tenantId == null || tenantId.isBlank()) {
@@ -384,8 +391,7 @@ public class CQLSessionCache {
         return false;
       }
       SessionCacheKey that = (SessionCacheKey) o;
-      return tenantId.equals(that.tenantId) &&
-          credentials.equals(that.credentials);
+      return tenantId.equals(that.tenantId) && credentials.equals(that.credentials);
     }
 
     @Override
@@ -396,21 +402,23 @@ public class CQLSessionCache {
     @Override
     public String toString() {
       return new StringBuilder("SessionCacheKey{")
-          .append("tenantId='").append(tenantId).append('\'')
-          .append(", credentials=").append(credentials)
-          .append(", ttl=").append(ttl)
+          .append("tenantId='")
+          .append(tenantId)
+          .append('\'')
+          .append(", credentials=")
+          .append(credentials)
+          .append(", ttl=")
+          .append(ttl)
           .append('}')
           .toString();
     }
   }
 
   /**
-   * Holder for the value added to the cache to make it very clear what key was used when it was added
-   * so we can get the TTL used when it was loaded. Used for dynamic TTL in the Expiry class
+   * Holder for the value added to the cache to make it very clear what key was used when it was
+   * added so we can get the TTL used when it was loaded. Used for dynamic TTL in the Expiry class
    */
-  record SessionValueHolder(
-      CqlSession session,
-      SessionCacheKey loadingKey){
+  record SessionValueHolder(CqlSession session, SessionCacheKey loadingKey) {
 
     SessionValueHolder {
       Objects.requireNonNull(session, "session must not be null");
@@ -420,12 +428,14 @@ public class CQLSessionCache {
 
   /**
    * Dynamic cache TTL for the session cache.
-   * <p>
-   * We use the maximum TTL between either the key that was used the load the session, or the current key
-   * being used to access it. The TTL is set when the key is created based on the user agent coming in.
-   * So if a SLA user agent adds it, then a non SLA uses it the non SLA user agent TTL will be used.
-   * <p>
-   * The laster user who access the session will set the TTL for the session if their TTL is higher.
+   *
+   * <p>We use the maximum TTL between either the key that was used the load the session, or the
+   * current key being used to access it. The TTL is set when the key is created based on the user
+   * agent coming in. So if a SLA user agent adds it, then a non SLA uses it the non SLA user agent
+   * TTL will be used.
+   *
+   * <p>The laster user who access the session will set the TTL for the session if their TTL is
+   * higher.
    */
   static class SessionExpiry implements Expiry<SessionCacheKey, SessionValueHolder> {
 
@@ -437,15 +447,17 @@ public class CQLSessionCache {
     }
 
     @Override
-    public long expireAfterUpdate(SessionCacheKey key, SessionValueHolder value, long currentTime, long currentDuration) {
+    public long expireAfterUpdate(
+        SessionCacheKey key, SessionValueHolder value, long currentTime, long currentDuration) {
       return currentDuration;
     }
 
     @Override
-    public long expireAfterRead(SessionCacheKey key, SessionValueHolder value, long currentTime, long currentDuration) {
+    public long expireAfterRead(
+        SessionCacheKey key, SessionValueHolder value, long currentTime, long currentDuration) {
       long accessTTL = key.ttl().toNanos();
       long loadTTL = value.loadingKey().ttl().toNanos();
-      if (LOGGER.isTraceEnabled()){
+      if (LOGGER.isTraceEnabled()) {
         LOGGER.trace(
             "expireAfterRead() - key.tenant={}, key.ttl={}, key.identityHashCode={}, value.loadingKey.ttl={}, value.loadingKey.identityHashCode={}",
             key.tenantId(),
@@ -453,7 +465,6 @@ public class CQLSessionCache {
             System.identityHashCode(key),
             value.loadingKey.ttl(),
             System.identityHashCode(value.loadingKey));
-
       }
       return Math.max(accessTTL, loadTTL);
     }

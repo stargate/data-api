@@ -26,9 +26,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
-import java.util.regex.Pattern;
-
 import jakarta.ws.rs.core.HttpHeaders;
+import java.util.regex.Pattern;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 
 /**
