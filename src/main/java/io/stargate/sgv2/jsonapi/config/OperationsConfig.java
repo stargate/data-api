@@ -176,30 +176,41 @@ public interface OperationsConfig {
 
   interface DatabaseConfig {
 
-    /** Database type can be <code>cassandra</code> or <code>astra</code>. */
+    /**
+     * The type of backend DB to connect to, this drives decisions like using the cassandraEndPoints
+     */
     @WithDefault(DatabaseType.Constants.CASSANDRA)
     @WithConverter(DatabaseType.DatabaseTypeConverter.class)
     DatabaseType type();
 
-    /** Username when connecting to cassandra database (when type is <code>cassandra</code>) */
+    /**
+     * Username when connecting to cassandra database (when type is {@link DatabaseType#CASSANDRA})
+     * and fixedToken is used
+     */
     @Nullable
     @WithDefault("cassandra")
     String userName();
 
-    /** Password when connecting to cassandra database (when type is <code>cassandra</code>) */
+    /**
+     * Password when connecting to cassandra database (when type is {@link DatabaseType#CASSANDRA})
+     * and fixedToken is used
+     */
     @Nullable
     @WithDefault("cassandra")
     String password();
 
-    /** Fixed Token used for Integration Test authentication */
+    /**
+     * Fixed Token used for Integration Test authentication. When set, all tokens must match this
+     * value and the userName and password from this config are always used for the db credentials
+     */
     Optional<String> fixedToken();
 
-    /** Cassandra contact points (when type is <code>cassandra</code>) */
+    /** Cassandra contact points (when type is {@link DatabaseType#CASSANDRA}) */
     @Nullable
     @WithDefault("127.0.0.1")
     List<String> cassandraEndPoints();
 
-    /** Cassandra contact points (when type is <code>cassandra</code>) */
+    /** Cassandra port (when type is {@link DatabaseType#CASSANDRA}) */
     @Nullable
     @WithDefault("9042")
     int cassandraPort();
@@ -217,7 +228,7 @@ public interface OperationsConfig {
     @WithDefault("50")
     int sessionCacheMaxSize();
 
-    /** DDL query retry wait in illis. */
+    /** DDL query retry wait in millis. */
     @WithDefault("1000")
     int ddlRetryDelayMillis();
 
@@ -302,7 +313,6 @@ public interface OperationsConfig {
 
   interface OfflineModeConfig {
 
-    /** Database type can be <code>cassandra</code> or <code>astra</code>. */
     @WithDefault("1000")
     int maxDocumentInsertCount();
   }

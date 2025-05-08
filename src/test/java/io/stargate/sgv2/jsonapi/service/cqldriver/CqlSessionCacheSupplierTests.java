@@ -12,8 +12,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** Tests for {@link CqlSessionCacheFactory}. */
-public class CqlSessionCacheFactoryTests {
+/** Tests for {@link CqlSessionCacheSupplier}. */
+public class CqlSessionCacheSupplierTests {
 
   @Test
   public void testSingleton() {
@@ -33,11 +33,11 @@ public class CqlSessionCacheFactoryTests {
         .thenReturn(mock(CQLSessionCache.DeactivatedTenantConsumer.class));
 
     var factory =
-        new CqlSessionCacheFactory(
+        new CqlSessionCacheSupplier(
             "testApp", operationsConfig, new SimpleMeterRegistry(), schemaCache);
 
-    var sessionCache1 = factory.create();
-    var sessionCache2 = factory.create();
+    var sessionCache1 = factory.get();
+    var sessionCache2 = factory.get();
 
     assertThat(sessionCache1)
         .as("Session cache should be the same instance")

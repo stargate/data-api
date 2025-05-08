@@ -13,7 +13,7 @@ import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** Tests for {@link CqlCredentials.CqlCredentialsFactory}. */
+/** Tests for {@link CqlCredentialsFactory}. */
 public class CqlCredentialsFactoryTests {
 
   private static final String FIXED_TOKEN = "fixed-token";
@@ -174,7 +174,7 @@ public class CqlCredentialsFactoryTests {
       String fixedToken,
       String fixedUserName,
       String fixedPassword,
-      CqlCredentials.CqlCredentialsFactory factory) {}
+      CqlCredentialsFactory factory) {}
   ;
 
   private Fixture fixtureWithFixed() {
@@ -191,7 +191,6 @@ public class CqlCredentialsFactoryTests {
         fixedToken,
         fixedUserName,
         fixedPassword,
-        new CqlCredentials.CqlCredentialsFactory(
-            fixedToken, fixedUserName, fixedPassword, databseType));
+        new CqlCredentialsFactory(databseType, fixedToken, fixedUserName, fixedPassword));
   }
 }

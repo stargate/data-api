@@ -16,7 +16,8 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheFactory;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import java.util.List;
 import java.util.Optional;
@@ -239,7 +240,9 @@ public class SchemaCacheTests {
 
     var tableCacheFactory = mock(SchemaCache.TableCacheFactory.class);
 
-    var sessionCacheFactory = mock(CqlSessionCacheFactory.class);
+    var sessionCacheSupplier = mock(CqlSessionCacheSupplier.class);
+    when(sessionCacheSupplier.get()).thenReturn(mock(CQLSessionCache.class));
+
     var objectMapper = mock(ObjectMapper.class);
 
     var databaseConfig = mock(OperationsConfig.DatabaseConfig.class);
@@ -248,7 +251,7 @@ public class SchemaCacheTests {
     when(databaseConfig.type()).thenReturn(databaseType);
 
     SchemaCache schemaCache =
-        new SchemaCache(sessionCacheFactory, objectMapper, operationsConfig, tableCacheFactory);
+        new SchemaCache(sessionCacheSupplier, objectMapper, operationsConfig, tableCacheFactory);
     return new Fixture(session, tableCacheFactory, schemaCache);
   }
 }

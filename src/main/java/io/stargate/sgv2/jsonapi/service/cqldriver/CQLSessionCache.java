@@ -26,10 +26,10 @@ import org.slf4j.LoggerFactory;
  * A cache for managing and reusing {@link CqlSession} instances based on tenant and authentication
  * credentials.
  *
- * <p>Sessions are cache based on the tenantId and authentication token. So that a single tenant may
- * have multiple sessions, but a single session is used for the same tenant and auth token.
+ * <p>Sessions are cached based on the tenantId and authentication token. So that a single tenant
+ * may have multiple sessions, but a single session is used for the same tenant and auth token.
  *
- * <p>Create instances using the {@link CqlSessionCacheFactory} class.
+ * <p>Create instances using the {@link CqlSessionCacheSupplier} class.
  *
  * <p>Call {@link #getSession(RequestContext)} and overloads to get a session for the current
  * request context.
@@ -57,7 +57,7 @@ public class CQLSessionCache {
   private final Duration slaUserTTL;
 
   private final LoadingCache<SessionCacheKey, SessionValueHolder> sessionCache;
-  private final CqlCredentials.CqlCredentialsFactory credentialsFactory;
+  private final CqlCredentialsFactory credentialsFactory;
   private final SessionFactory sessionFactory;
 
   private List<DeactivatedTenantConsumer> deactivatedTenantConsumers;
@@ -68,7 +68,7 @@ public class CQLSessionCache {
       long cacheMaxSize,
       String slaUserAgent,
       Duration slaUserTTL,
-      CqlCredentials.CqlCredentialsFactory credentialsFactory,
+      CqlCredentialsFactory credentialsFactory,
       SessionFactory sessionFactory,
       MeterRegistry meterRegistry,
       List<DeactivatedTenantConsumer> deactivatedTenantConsumer) {
@@ -105,7 +105,7 @@ public class CQLSessionCache {
       long cacheMaxSize,
       String slaUserAgent,
       Duration slaUserTTL,
-      CqlCredentials.CqlCredentialsFactory credentialsFactory,
+      CqlCredentialsFactory credentialsFactory,
       SessionFactory sessionFactory,
       MeterRegistry meterRegistry,
       List<DeactivatedTenantConsumer> deactivatedTenantConsumer,
@@ -123,7 +123,7 @@ public class CQLSessionCache {
     }
 
     this.credentialsFactory =
-        Objects.requireNonNull(credentialsFactory, "credentialsSupplier must not be null");
+        Objects.requireNonNull(credentialsFactory, "credentialsFactory must not be null");
     this.sessionFactory = Objects.requireNonNull(sessionFactory, "sessionFactory must not be null");
     this.deactivatedTenantConsumers =
         deactivatedTenantConsumer == null ? List.of() : List.copyOf(deactivatedTenantConsumer);
@@ -219,7 +219,7 @@ public class CQLSessionCache {
             cacheKey.credentials().isAnonymous());
       }
 
-      // This will be running on a cache tread, any erorr will not make it to the user
+      // This will be running on a cache tread, any error will not make it to the user
       // So we log it and swallow
       try {
         sessionHolder.session.close();
@@ -275,7 +275,7 @@ public class CQLSessionCache {
   }
 
   /**
-   * Gets the current size of the cache, not this causes bookkeeping to happen to best not done in
+   * Gets the current size of the cache, note this causes bookkeeping to happen so best not done in
    * production code
    */
   @VisibleForTesting

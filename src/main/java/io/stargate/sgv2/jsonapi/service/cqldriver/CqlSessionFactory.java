@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
+import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
 import java.net.InetSocketAddress;
@@ -35,6 +36,18 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
   private final List<SchemaChangeListener> schemaChangeListeners;
   private final Supplier<CqlSessionBuilder> sessionBuilderSupplier;
 
+  /**
+   * Constructor for the CqlSessionFactory, normally this overload is used for non-testing code.
+   *
+   * @param applicationName the name of the application, set on the CQL session
+   * @param databaseType the type of database, controls contact points and other settings
+   * @param localDatacenter the local datacenter for the client connection.
+   * @param cassandraEndPoints the Cassandra endpoints, only used when the database type is
+   *     CASSANDRA
+   * @param cassandraPort the Cassandra port, only used when the database type is CASSANDRA
+   * @param schemaChangeListeners the schema change listeners, these are added to the session to
+   *     listen for schema changes from it.
+   */
   CqlSessionFactory(
       String applicationName,
       DatabaseType databaseType,
@@ -53,8 +66,8 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
   }
 
   /**
-   * Constructor for the CqlSessionFactory, normally use the overload without the
-   * sessionBuilderSupplier param.
+   * Constructor for the CqlSessionFactory, this overload is for testing so the SessionBuilder can
+   * be mocked.
    *
    * @param applicationName the name of the application, set on the CQL session
    * @param databaseType the type of database, controls contact points and other settings
@@ -67,6 +80,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
    * @param sessionBuilderSupplier a supplier for creating CqlSessionBuilder instances, so that
    *     testing can mock the builder for session creation. In prod code use the ctor without this.
    */
+  @VisibleForTesting
   CqlSessionFactory(
       String applicationName,
       DatabaseType databaseType,
