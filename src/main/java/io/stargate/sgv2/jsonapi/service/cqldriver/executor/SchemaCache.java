@@ -11,13 +11,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.google.common.annotations.VisibleForTesting;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheFactory;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionFactory;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -31,7 +32,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>IMPORTANT: use {@link #getSchemaChangeListener()} and {@link #getDeactivatedTenantConsumer()}
  * to get callbacks to evict the cache when the schema changes or a tenant is deactivated. This
- * should be handled in {@link io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheFactory}
+ * should be handled in {@link CqlSessionCacheSupplier}
  *
  * <p>TODO: There should be a single level cache of keyspace,table not two levels, it will be easier
  * to size and manage https://github.com/stargate/data-api/issues/2070
@@ -40,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public class SchemaCache {
   private static final Logger LOGGER = LoggerFactory.getLogger(SchemaCache.class);
 
-  private final CqlSessionCacheFactory sessionCacheFactory;
+  private final CqlSessionCacheSupplier sessionCacheSupplier;
   private final DatabaseType databaseType;
   private final ObjectMapper objectMapper;
   private final TableCacheFactory tableCacheFactory;
@@ -51,24 +52,25 @@ public class SchemaCache {
 
   @Inject
   public SchemaCache(
-      CqlSessionCacheFactory sessionCacheFactory,
+      CqlSessionCacheSupplier sessionCacheSupplier,
       ObjectMapper objectMapper,
       OperationsConfig operationsConfig) {
-    this(sessionCacheFactory, objectMapper, operationsConfig, TableBasedSchemaCache::new);
+    this(sessionCacheSupplier, objectMapper, operationsConfig, TableBasedSchemaCache::new);
   }
 
   /**
-   * NOTE: must not use the sessionCacheFactory in the ctor or because it will create a circular
-   * calls, because the sessionCacheFactory calls schema cache to get listeners
+   * NOTE: must not use the sessionCacheSupplier in the ctor or because it will create a circular
+   * calls, because the sessionCacheSupplier calls schema cache to get listeners
    */
-  SchemaCache(
-      CqlSessionCacheFactory sessionCacheFactory,
+  @VisibleForTesting
+  protected SchemaCache(
+      CqlSessionCacheSupplier sessionCacheSupplier,
       ObjectMapper objectMapper,
       OperationsConfig operationsConfig,
       TableCacheFactory tableCacheFactory) {
 
-    this.sessionCacheFactory =
-        Objects.requireNonNull(sessionCacheFactory, "sessionCacheFactory must not be null");
+    this.sessionCacheSupplier =
+        Objects.requireNonNull(sessionCacheSupplier, "sessionCacheSupplier must not be null");
     this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
     this.operationsConfig = operationsConfig;
     this.databaseType =
@@ -130,12 +132,15 @@ public class SchemaCache {
       LOGGER.trace("onLoad() - tenantId: {}, keyspace: {}", key.tenantId(), key.keyspace());
     }
 
-    // MUST not use the session cache in the ctor, OK to create a query executor for each inner
-    // cache here
-    var queryExecutor = new QueryExecutor(sessionCacheFactory.create(), operationsConfig);
+    // Cannot get a session from the sessionCacheSupplier in the constructor because
+    // it will create a circular call. So need to wait until now to create the QueryExecutor
+    // this is OK, only happens when the table is not in the cache
+    var queryExecutor = new QueryExecutor(sessionCacheSupplier.get(), operationsConfig);
     return tableCacheFactory.create(key.keyspace(), queryExecutor, objectMapper);
   }
 
+  /** For testing only - peek to see if the schema object is in the cache without loading it. */
+  @VisibleForTesting
   Optional<SchemaObject> peekSchemaObject(String tenantId, String keyspaceName, String tableName) {
 
     var tableBasedSchemaCache =
@@ -209,7 +214,7 @@ public class SchemaCache {
    * callback methods are called on driver async threads and exceptions there are unlikely to be
    * passed back in the request response.
    *
-   * <p>This could be non-static inner, but statis to make testing easier so we can pass in the
+   * <p>This could be non-static inner, but static to make testing easier so we can pass in the
    * cache it is working with.
    */
   static class SchemaCacheSchemaChangeListener extends SchemaChangeListenerBase {
@@ -225,7 +230,7 @@ public class SchemaCache {
       this.schemaCache = Objects.requireNonNull(schemaCache, "schemaCache must not be null");
     }
 
-    private boolean isTenantId(String context) {
+    private boolean hasTenantId(String context) {
       if (tenantId == null || tenantId.isBlank()) {
         LOGGER.error(
             "SchemaCacheSchemaChangeListener tenantId is null or blank when expected to be set - {}",
@@ -236,7 +241,7 @@ public class SchemaCache {
     }
 
     private void evictTable(String context, TableMetadata tableMetadata) {
-      if (isTenantId(context)) {
+      if (hasTenantId(context)) {
         schemaCache.evictTable(
             tenantId,
             tableMetadata.getKeyspace().asInternal(),
@@ -249,7 +254,7 @@ public class SchemaCache {
       // This is called when the session is ready, we can get the tenantId from the session name
       // and set it in the listener so we can use it in the other methods.
       tenantId = session.getName();
-      isTenantId("onSessionReady called but sessionName() is null or blank");
+      hasTenantId("onSessionReady called but sessionName() is null or blank");
     }
 
     /**
@@ -277,7 +282,7 @@ public class SchemaCache {
     /** When keyspace dropped, we dont need any more of the tables in the cache */
     @Override
     public void onKeyspaceDropped(@NonNull KeyspaceMetadata keyspace) {
-      if (isTenantId("onKeyspaceDropped")) {
+      if (hasTenantId("onKeyspaceDropped")) {
         schemaCache.evictKeyspace(tenantId, keyspace.getName().asInternal());
       }
     }
@@ -298,7 +303,7 @@ public class SchemaCache {
 
     @Override
     public void accept(String tenantId, RemovalCause cause) {
-      // the sessions are keyed on the tenantID and the crednetials, and one session can work with
+      // the sessions are keyed on the tenantID and the credentials, and one session can work with
       // multiple keyspaces. So we need to evict all the keyspaces for the tenantId
       schemaCache.evictAllKeyspaces(tenantId);
     }

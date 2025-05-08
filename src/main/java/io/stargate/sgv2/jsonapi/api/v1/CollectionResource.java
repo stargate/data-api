@@ -32,7 +32,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheFactory;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
@@ -88,7 +88,7 @@ public class CollectionResource {
       MeteredCommandProcessor meteredCommandProcessor,
       MeterRegistry meterRegistry,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      CqlSessionCacheFactory cqlSessionCacheFactory,
+      CqlSessionCacheSupplier sessionCacheSupplier,
       EmbeddingProviderFactory embeddingProviderFactory,
       RerankingProviderFactory rerankingProviderFactory) {
     this.embeddingProviderFactory = embeddingProviderFactory;
@@ -97,7 +97,7 @@ public class CollectionResource {
     contextBuilderSupplier =
         CommandContext.builderSupplier()
             .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
-            .withCqlSessionCache(cqlSessionCacheFactory.create())
+            .withCqlSessionCache(sessionCacheSupplier.get())
             .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
             .withEmbeddingProviderFactory(embeddingProviderFactory)
             .withRerankingProviderFactory(rerankingProviderFactory)

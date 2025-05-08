@@ -139,7 +139,7 @@ public class CqlSessionCacheTests {
   }
 
   @Test
-  public void sessionClosedAndEvictionListenerCalledOnExpired() {
+  public void sessionClosedAndEvictionListenerCalledOnExpired() throws InterruptedException {
 
     var ttl = Duration.ofSeconds(1);
     var consumer = consumerWithLogging();
@@ -152,11 +152,8 @@ public class CqlSessionCacheTests {
         .isSameAs(fixture.expectedSession);
 
     // wait for the session to expire
-    try {
-      Thread.sleep(ttl.toMillis() * 2);
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
+    Thread.sleep(ttl.toMillis() * 2);
+
     // let the cache cleanup
     fixture.cache.cleanUp();
 
@@ -289,7 +286,7 @@ public class CqlSessionCacheTests {
   private record Fixture(
       CQLSessionCache cache,
       CqlCredentials expectedCredentials,
-      CqlCredentials.CqlCredentialsFactory credentialsFactory,
+      CqlCredentialsFactory credentialsFactory,
       CqlSession expectedSession,
       CQLSessionCache.SessionFactory sessionFactory,
       MeterRegistry meterRegistry) {}
@@ -305,7 +302,7 @@ public class CqlSessionCacheTests {
       int cacheSize,
       boolean setExpected) {
 
-    var credentialsFactory = mock(CqlCredentials.CqlCredentialsFactory.class);
+    var credentialsFactory = mock(CqlCredentialsFactory.class);
     var sessionFactory = mock(CQLSessionCache.SessionFactory.class);
 
     CqlCredentials expectedCredentials = null;

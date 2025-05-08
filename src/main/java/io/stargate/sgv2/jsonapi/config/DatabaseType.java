@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.config;
 
-import io.stargate.sgv2.jsonapi.service.cqldriver.CqlCredentials;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CqlCredentialsFactory;
 import java.util.Objects;
 import org.eclipse.microprofile.config.spi.Converter;
 
@@ -8,7 +8,7 @@ import org.eclipse.microprofile.config.spi.Converter;
  * The back end database the API is running against.
  *
  * <p>How we manage credentials is a bit different for each database type, see {@link
- * CqlCredentials.CqlCredentialsFactory}.
+ * CqlCredentialsFactory}.
  */
 public enum DatabaseType {
   ASTRA,
