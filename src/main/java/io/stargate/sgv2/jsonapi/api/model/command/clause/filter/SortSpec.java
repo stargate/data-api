@@ -45,7 +45,8 @@ public class SortSpec extends JsonDefinition {
 
   /**
    * Alternate constructor used to "wrap" already constructed {@link SortClause} into a {@link
-   * SortSpec} instance.
+   * SortSpec} instance. Used by Find-and-Rerank functionality to pass already resolved {@link
+   * SortClause}s.
    *
    * @param sortClause Actual sort clause to be wrapped.
    */
