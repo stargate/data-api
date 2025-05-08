@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
+package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
 import static io.stargate.sgv2.jsonapi.util.JsonUtil.arrayNodeToVector;
 
@@ -6,26 +6,51 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortSpec;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-public class SortClauseDeserializer {
+/**
+ * Object for converting {@link JsonNode} (from {@link SortSpec}) into {@link SortClause}. Process
+ * will validate structure of the JSON, and also validate values of the filter operations.
+ *
+ * <p>TIDY: this class has a lot of string constants for filter operations that we have defined as
+ * constants elsewhere
+ */
+public class SortClauseBuilder<T extends SchemaObject> {
+  protected final T schema;
 
-  /** No-arg constructor explicitly needed. */
-  public SortClauseDeserializer() {}
+  protected SortClauseBuilder(T schema) {
+    this.schema = Objects.requireNonNull(schema);
+  }
 
-  public SortClause deserialize(JsonNode node) throws IOException {
+  public static SortClauseBuilder<?> builderFor(SchemaObject schema) {
+    return switch (schema) {
+      case CollectionSchemaObject collection -> new SortClauseBuilder(collection);
+      case TableSchemaObject table -> new SortClauseBuilder(table);
+      default ->
+          throw new UnsupportedOperationException(
+              String.format(
+                  "Unsupported schema object class for `FilterClauseBuilder`: %s",
+                  schema.getClass()));
+    };
+  }
+
+  public SortClause build(JsonNode node) {
     // if missing or null, return null back
     if (node.isMissingNode() || node.isNull()) {
       return SortClause.empty();

@@ -7,9 +7,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.builders.SortClauseBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
@@ -21,6 +24,7 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 class SortClauseDeserializerTest {
+  final TestConstants testConstants = new TestConstants();
 
   @Inject ObjectMapper objectMapper;
 
@@ -439,6 +443,7 @@ class SortClauseDeserializerTest {
 
   private SortClause deserializeSortClause(String json) throws IOException {
     final JsonNode node = objectMapper.readTree(json);
-    return new SortClauseDeserializer().deserialize(node);
+    CollectionSchemaObject schema = testConstants.collectionContext().schemaObject();
+    return SortClauseBuilder.builderFor(schema).build(node);
   }
 }

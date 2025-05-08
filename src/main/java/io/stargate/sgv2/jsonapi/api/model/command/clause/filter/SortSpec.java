@@ -4,11 +4,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.JsonDefinition;
+import io.stargate.sgv2.jsonapi.api.model.command.builders.SortClauseBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
-import io.stargate.sgv2.jsonapi.api.model.command.deserializers.SortClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import java.io.IOException;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -61,9 +60,9 @@ public class SortSpec extends JsonDefinition {
    * @param schema Collection or Table for the current command.
    * @return The resolved filter clause.
    */
-  public SortClause toSortClause(SchemaObject schema) throws IOException {
+  public SortClause toSortClause(SchemaObject schema) {
     if (sortClause == null) {
-      sortClause = new SortClauseDeserializer().deserialize(json());
+      sortClause = SortClauseBuilder.builderFor(schema).build(json());
     }
     return sortClause;
   }
