@@ -8,6 +8,7 @@ import com.google.common.annotations.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
 import io.stargate.sgv2.jsonapi.ConfigPreLoader;
+
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import java.time.Duration;
@@ -162,6 +163,7 @@ public class CQLSessionCache {
       builder = builder.ticker(cacheTicker);
     }
     LoadingCache<SessionCacheKey, SessionValueHolder> loadingCache = builder.build(this::onLoadSession);
+
     this.sessionCache =
         CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
   }
@@ -334,6 +336,9 @@ public class CQLSessionCache {
    * Key for CQLSession cache.
    *
    * <p>As the cache key, we rely on the record implementation of hash and equals.
+   *
+   * @param tenantId optional tenantId, if null or blank converted to empty string
+   * @param credentials Required, credentials for the session
    */
   static class SessionCacheKey {
 
