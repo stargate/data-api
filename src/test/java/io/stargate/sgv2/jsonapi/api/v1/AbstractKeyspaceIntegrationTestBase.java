@@ -17,7 +17,6 @@ import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.testresource.StargateTestResource;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
@@ -334,7 +333,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
         new CqlSessionBuilder()
             .withLocalDatacenter(dc)
             .addContactPoint(new InetSocketAddress("localhost", port))
-            .withAuthCredentials(CQLSessionCache.CASSANDRA, CQLSessionCache.CASSANDRA);
+            .withAuthCredentials("cassandra", "cassandra"); // default admin password :)
     return builder.build();
   }
 

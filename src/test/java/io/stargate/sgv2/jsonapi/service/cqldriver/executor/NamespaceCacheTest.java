@@ -147,7 +147,7 @@ public class NamespaceCacheTest {
                                 new HashMap<>(),
                                 new HashMap<>())));
               });
-      NamespaceCache namespaceCache = createNamespaceCache(queryExecutor);
+      TableBasedSchemaCache namespaceCache = createNamespaceCache(queryExecutor);
       var schemaObject =
           namespaceCache
               .getSchemaObject(dataApiRequestInfo, "table", false)
@@ -278,7 +278,7 @@ public class NamespaceCacheTest {
                                     "{\"indexing\":{\"deny\":[\"comment\"]}}"),
                                 new HashMap<>())));
               });
-      NamespaceCache namespaceCache = createNamespaceCache(queryExecutor);
+      TableBasedSchemaCache namespaceCache = createNamespaceCache(queryExecutor);
       var schemaObject =
           namespaceCache
               .getSchemaObject(dataApiRequestInfo, "table", false)
@@ -347,7 +347,7 @@ public class NamespaceCacheTest {
                                 new HashMap<>(),
                                 new HashMap<>())));
               });
-      NamespaceCache namespaceCache = createNamespaceCache(queryExecutor);
+      TableBasedSchemaCache namespaceCache = createNamespaceCache(queryExecutor);
       var schemaObject =
           namespaceCache
               .getSchemaObject(dataApiRequestInfo, "table", false)
@@ -360,7 +360,7 @@ public class NamespaceCacheTest {
     }
   }
 
-  private NamespaceCache createNamespaceCache(QueryExecutor qe) {
-    return new NamespaceCache("ks", qe, objectMapper);
+  private TableBasedSchemaCache createNamespaceCache(QueryExecutor qe) {
+    return new TableBasedSchemaCache("ks", qe, objectMapper);
   }
 }
