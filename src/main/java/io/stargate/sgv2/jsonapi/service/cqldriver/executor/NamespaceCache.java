@@ -10,13 +10,12 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.time.Duration;
-import java.util.Optional;
 
 /** Caches the vector enabled status for the namespace */
 // TODO: what is the vector status of a namespace ? vectors are per collection
 // TODO: clarify the name of this class, it is a cache of the collections/ tables not a cache of
 // namespaces ??
-public class TableBasedSchemaCache {
+public class NamespaceCache {
 
   public final String namespace;
 
@@ -34,8 +33,7 @@ public class TableBasedSchemaCache {
           .maximumSize(CACHE_MAX_SIZE)
           .build();
 
-  public TableBasedSchemaCache(
-      String namespace, QueryExecutor queryExecutor, ObjectMapper objectMapper) {
+  public NamespaceCache(String namespace, QueryExecutor queryExecutor, ObjectMapper objectMapper) {
     this.namespace = namespace;
     this.queryExecutor = queryExecutor;
     this.objectMapper = objectMapper;
@@ -84,10 +82,6 @@ public class TableBasedSchemaCache {
                 }
               });
     }
-  }
-
-  Optional<SchemaObject> peekSchemaObject(String tableName) {
-    return Optional.ofNullable(schemaObjectCache.getIfPresent(tableName));
   }
 
   private Uni<SchemaObject> loadSchemaObject(RequestContext requestContext, String collectionName) {

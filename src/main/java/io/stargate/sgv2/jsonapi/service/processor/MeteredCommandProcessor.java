@@ -100,21 +100,9 @@ public class MeteredCommandProcessor {
     commandContext.schemaObject().name().addToMDC();
     MDC.put("tenantId", commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE));
 
-    // --- Defer Command Processing (from PR2076) ---
-    // We wrap the call to `commandProcessor.processCommand` in `Uni.createFrom().deferred()`
-    // for two main reasons:
-    // 1. Defensive Programming for Synchronous Failures:
-    //    Ensures that if `commandProcessor.processCommand` itself (or code executed synchronously
-    //    within it before its own reactive chain fully forms and handles errors) throws a
-    //    synchronous exception, this MeteredCommandProcessor can still catch it in its
-    //    `.onFailure()` block for consistent logging (no metrics currently). This acts as a safety
-    //    net.
-    // 2. Lazy Execution (Benefit of `deferred`):
-    //    The `commandProcessor.processCommand` method, which kicks off potentially significant
-    //    work and returns a Uni, will only be invoked when this resulting Uni is actually
-    //    subscribed to.
-    return Uni.createFrom()
-        .deferred(() -> commandProcessor.processCommand(commandContext, command))
+    // Delegate the actual command processing
+    return commandProcessor
+        .processCommand(commandContext, command)
         .onItem()
         .invoke(
             // Success path handling
@@ -141,10 +129,7 @@ public class MeteredCommandProcessor {
 
               // --- Command Level Logging
               if (isCommandLevelLoggingEnabled(commandContext, null, true)) {
-                logger.error(
-                    "Command processing failed. Details: {}",
-                    buildCommandLog(commandContext, command, null),
-                    throwable);
+                logger.error(buildCommandLog(commandContext, command, null), throwable);
               }
             })
         .eventually(

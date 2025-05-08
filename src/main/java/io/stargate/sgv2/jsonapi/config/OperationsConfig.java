@@ -17,6 +17,8 @@
 
 package io.stargate.sgv2.jsonapi.config;
 
+import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.CASSANDRA;
+
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
@@ -176,41 +178,29 @@ public interface OperationsConfig {
 
   interface DatabaseConfig {
 
-    /**
-     * The type of backend DB to connect to, this drives decisions like using the cassandraEndPoints
-     */
-    @WithDefault(DatabaseType.Constants.CASSANDRA)
-    @WithConverter(DatabaseType.DatabaseTypeConverter.class)
-    DatabaseType type();
+    /** Database type can be <code>cassandra</code> or <code>astra</code>. */
+    @WithDefault(CASSANDRA)
+    String type();
 
-    /**
-     * Username when connecting to cassandra database (when type is {@link DatabaseType#CASSANDRA})
-     * and fixedToken is used
-     */
+    /** Username when connecting to cassandra database (when type is <code>cassandra</code>) */
     @Nullable
     @WithDefault("cassandra")
     String userName();
 
-    /**
-     * Password when connecting to cassandra database (when type is {@link DatabaseType#CASSANDRA})
-     * and fixedToken is used
-     */
+    /** Password when connecting to cassandra database (when type is <code>cassandra</code>) */
     @Nullable
     @WithDefault("cassandra")
     String password();
 
-    /**
-     * Fixed Token used for Integration Test authentication. When set, all tokens must match this
-     * value and the userName and password from this config are always used for the db credentials
-     */
+    /** Fixed Token used for Integration Test authentication */
     Optional<String> fixedToken();
 
-    /** Cassandra contact points (when type is {@link DatabaseType#CASSANDRA}) */
+    /** Cassandra contact points (when type is <code>cassandra</code>) */
     @Nullable
     @WithDefault("127.0.0.1")
     List<String> cassandraEndPoints();
 
-    /** Cassandra port (when type is {@link DatabaseType#CASSANDRA}) */
+    /** Cassandra contact points (when type is <code>cassandra</code>) */
     @Nullable
     @WithDefault("9042")
     int cassandraPort();
@@ -228,7 +218,7 @@ public interface OperationsConfig {
     @WithDefault("50")
     int sessionCacheMaxSize();
 
-    /** DDL query retry wait in millis. */
+    /** DDL query retry wait in illis. */
     @WithDefault("1000")
     int ddlRetryDelayMillis();
 
@@ -313,6 +303,7 @@ public interface OperationsConfig {
 
   interface OfflineModeConfig {
 
+    /** Database type can be <code>cassandra</code> or <code>astra</code>. */
     @WithDefault("1000")
     int maxDocumentInsertCount();
   }

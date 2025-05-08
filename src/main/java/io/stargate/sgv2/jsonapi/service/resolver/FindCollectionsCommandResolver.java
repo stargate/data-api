@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionsCollectionOperation;
@@ -13,10 +14,13 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class FindCollectionsCommandResolver implements CommandResolver<FindCollectionsCommand> {
   private final ObjectMapper objectMapper;
+  private final CQLSessionCache cqlSessionCache;
 
   @Inject
-  public FindCollectionsCommandResolver(ObjectMapper objectMapper) {
+  public FindCollectionsCommandResolver(
+      ObjectMapper objectMapper, CQLSessionCache cqlSessionCache) {
     this.objectMapper = objectMapper;
+    this.cqlSessionCache = cqlSessionCache;
   }
 
   /** {@inheritDoc} */
@@ -31,7 +35,6 @@ public class FindCollectionsCommandResolver implements CommandResolver<FindColle
       CommandContext<KeyspaceSchemaObject> ctx, FindCollectionsCommand command) {
 
     boolean explain = command.options() != null ? command.options().explain() : false;
-    return new FindCollectionsCollectionOperation(
-        explain, objectMapper, ctx.cqlSessionCache(), ctx);
+    return new FindCollectionsCollectionOperation(explain, objectMapper, cqlSessionCache, ctx);
   }
 }

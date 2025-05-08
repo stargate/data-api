@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListTablesCommand;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
@@ -16,10 +17,12 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class ListTablesCommandResolver implements CommandResolver<ListTablesCommand> {
   private final ObjectMapper objectMapper;
+  private final CQLSessionCache cqlSessionCache;
 
   @Inject
-  public ListTablesCommandResolver(ObjectMapper objectMapper) {
+  public ListTablesCommandResolver(ObjectMapper objectMapper, CQLSessionCache cqlSessionCache) {
     this.objectMapper = objectMapper;
+    this.cqlSessionCache = cqlSessionCache;
   }
 
   /** {@inheritDoc} */

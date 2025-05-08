@@ -30,7 +30,7 @@ public interface CommandLevelLoggingConfig {
   /**
    * @return If request info logging is enabled.
    */
-  @WithDefault("true")
+  @WithDefault("false")
   boolean enabled();
 
   /**
