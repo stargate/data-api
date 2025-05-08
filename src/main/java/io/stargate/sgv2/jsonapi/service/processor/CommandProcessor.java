@@ -24,13 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Processes valid document {@link Command} to read, write, schema change, etc. This is a single
- * entry to run a Command without worrying how to.
- *
- * <p>Called from the API layer which deals with public JSON data formats, the command layer
- * translates from the JSON models to internal and back (shredding and de-shredding).
- *
- * <p>May provide a thread or resource boundary from calling API layer.
+ * Processes a {@link Command} by taking it through a series of transformations: expansion,
+ * vectorization, resolution to an {@link Operation}, and finally execution. It also handles error
+ * recovery and result post-processing.
  */
 @ApplicationScoped
 public class CommandProcessor {
@@ -49,20 +45,18 @@ public class CommandProcessor {
   }
 
   /**
-   * Processes a single command in a given command context.
+   * Processes a single command through the full pipeline.
    *
-   * @param commandContext {@link CommandContext}
-   * @param command {@link Command}
-   * @return Uni emitting the result of the command execution.
+   * @param commandContext The context for the command execution.
+   * @param initialCommand The command to be processed.
    * @param <CommandT> Type of the command.
-   * @param <SchemaT> Type of the schema object command operates on.
+   * @param <SchemaT> Type of the schema object the command operates on.
+   * @return A {@link Uni} emitting the {@link CommandResult} of the command execution.
    */
   public <CommandT extends Command, SchemaT extends SchemaObject> Uni<CommandResult> processCommand(
-      CommandContext<SchemaT> commandContext, CommandT command) {
+      CommandContext<SchemaT> commandContext, CommandT initialCommand) {
 
-    var debugMode = commandContext.config().get(DebugModeConfig.class).enabled();
-    var errorObjectV2 = commandContext.config().get(OperationsConfig.class).extendError();
-
+    // Initial tracing before the reactive pipeline starts
     commandContext
         .requestTracing()
         .maybeTrace(
@@ -70,88 +64,128 @@ public class CommandProcessor {
                 new TraceMessage(
                     "Starting to process '%s' command for schema object %s"
                         .formatted(
-                            command.commandName().getApiName(),
+                            initialCommand.commandName().getApiName(),
                             PrettyPrintable.print(commandContext.schemaObject().name())),
                     commandContext.schemaObject()));
 
-    // First bit of pre-processing: possible expansion of "$hybrid" alias
-    HybridFieldExpander.expandHybridField(commandContext, command);
-
-    // vectorize the data
-    return dataVectorizerService
-        .vectorize(commandContext, command)
+    return Uni.createFrom()
+        .item(initialCommand)
         .onItem()
-        .transformToUni(
-            vectorizedCommand -> {
-              // start by resolving the command, get resolver
-              return commandResolverService
-                  .resolverForCommand(vectorizedCommand)
 
-                  // resolver can be null, not handled in CommandResolverService for now
-                  .flatMap(
-                      resolver -> {
-                        // if we have resolver, resolve operation
-                        Operation<SchemaT> operation =
-                            resolver.resolveCommand(commandContext, vectorizedCommand);
-                        return Uni.createFrom().item(operation);
-                      });
+        // Step 1: Expand any hybrid fields in the command (synchronous, in-place modification)
+        .invoke(
+            commandToExpand -> {
+              HybridFieldExpander.expandHybridField(commandContext, commandToExpand);
             })
 
-        //  execute the operation
+        // Step 2: Vectorize relevant parts of the command (asynchronous)
+        .flatMap(
+            expandedCommand -> dataVectorizerService.vectorize(commandContext, expandedCommand))
+
+        // Step 3: Resolve the vectorized command to a runnable Operation (asynchronous)
+        .flatMap(vectorizedCommand -> resolveCommandToOperation(commandContext, vectorizedCommand))
+
+        // Step 4: Execute the operation (asynchronous)
         .flatMap(operation -> operation.execute(commandContext))
 
-        // handle failures here
+        // Step 5: Handle any failures from the preceding steps
         .onFailure()
         .recoverWithItem(
-            t ->
-                switch (t) {
-                  case APIException apiException -> {
-                    // new error object V2
-                    var errorBuilder =
-                        new APIExceptionCommandErrorBuilder(debugMode, errorObjectV2);
+            throwable -> handleProcessingFailure(commandContext, initialCommand, throwable))
 
-                    // yet more mucking about with suppliers everywhere :(
-                    yield (Supplier<CommandResult>)
-                        () ->
-                            CommandResult.statusOnlyBuilder(
-                                    errorObjectV2, debugMode, commandContext.requestTracing())
-                                .addCommandResultError(
-                                    errorBuilder.buildLegacyCommandResultError(apiException))
-                                .build();
-                  }
-                  case JsonApiException jsonApiException ->
-                      // old error objects, old comment below
-                      // Note: JsonApiException means that JSON API itself handled the situation
-                      // (created, or wrapped the exception) -- should not be logged (have already
-                      // been logged if necessary)
-                      jsonApiException;
-                  default -> {
-                    // Old error handling below, to be replaced eventually (aaron aug 28 2024)
-                    // But other exception types are unexpected, so log for now
-                    logger.warn(
-                        "Command '{}' failed with exception",
-                        command.getClass().getSimpleName(),
-                        t);
-                    yield new ThrowableCommandResultSupplier(t);
-                  }
-                })
-
-        // if we have a non-null item
-        // call supplier get to map to the command result
+        // Step 6: Transform the successful or recovered item (Supplier<CommandResult>) into
+        // CommandResult
         .onItem()
         .ifNotNull()
         .transform(Supplier::get)
-        // add possible warning for using a deprecated command
-        .map(
-            commandResult -> {
-              if (command instanceof DeprecatedCommand deprecatedCommand) {
-                // for the warnings we always want V2 errors and do not want / need debug ?
-                var errorV2 =
-                    new APIExceptionCommandErrorBuilder(false, true)
-                        .buildCommandErrorV2(deprecatedCommand.getDeprecationWarning());
-                commandResult.addWarning(errorV2);
-              }
-              return commandResult;
+
+        // Step 7: Perform any final post-processing on the CommandResult (e.g., add warnings)
+        .map(commandResult -> postProcessCommandResult(initialCommand, commandResult));
+  }
+
+  /**
+   * Resolves a {@link Command} to its corresponding {@link Operation}.
+   *
+   * @param commandContext The command context.
+   * @param commandToResolve The command to resolve.
+   * @param <SchemaT> Type of the schema object.
+   * @return A {@link Uni} emitting the resolved {@link Operation}.
+   */
+  private <SchemaT extends SchemaObject> Uni<Operation<SchemaT>> resolveCommandToOperation(
+      CommandContext<SchemaT> commandContext, Command commandToResolve) {
+    return commandResolverService
+        // Find resolver for command, it handles the case where resolver is null
+        .resolverForCommand(commandToResolve)
+        .flatMap(
+            resolver -> {
+              // Now the resolver is found, resolve the command to an operation.
+              // This resolution step itself is synchronous.
+              Operation<SchemaT> operation =
+                  resolver.resolveCommand(commandContext, commandToResolve);
+              return Uni.createFrom().item(operation);
             });
+  }
+
+  /**
+   * Handles failures that occur during the command processing pipeline. It attempts to convert
+   * known exceptions (APIException, JsonApiException) into a {@link CommandResult} supplier, and
+   * logs other unexpected exceptions.
+   *
+   * @param commandContext The command context.
+   * @param originalCommand The initial command that was being processed.
+   * @param throwable The failure.
+   * @return A {@link Supplier} of {@link CommandResult} representing the error.
+   */
+  private <SchemaT extends SchemaObject> Supplier<CommandResult> handleProcessingFailure(
+      CommandContext<SchemaT> commandContext, Command originalCommand, Throwable throwable) {
+    var debugMode = commandContext.config().get(DebugModeConfig.class).enabled();
+    var errorObjectV2 = commandContext.config().get(OperationsConfig.class).extendError();
+
+    return switch (throwable) {
+      case APIException apiException -> {
+        // new error object V2
+        var errorBuilder = new APIExceptionCommandErrorBuilder(debugMode, errorObjectV2);
+        yield () ->
+            CommandResult.statusOnlyBuilder(
+                    errorObjectV2, debugMode, commandContext.requestTracing())
+                .addCommandResultError(errorBuilder.buildLegacyCommandResultError(apiException))
+                .build();
+      }
+      case JsonApiException jsonApiException ->
+          // old error objects, old comment below
+          // Note: JsonApiException means that JSON API itself handled the situation
+          // (created, or wrapped the exception) -- should not be logged (have already
+          // been logged if necessary)
+          jsonApiException;
+      default -> {
+        // Old error handling below, to be replaced eventually (aaron aug 28 2024)
+        // But other exception types are unexpected, so log for now
+        logger.warn(
+            "Command '{}' failed with exception",
+            originalCommand.getClass().getSimpleName(),
+            throwable);
+        yield new ThrowableCommandResultSupplier(throwable);
+      }
+    };
+  }
+
+  /**
+   * Performs post-processing on the {@link CommandResult}, such as adding warnings for deprecated
+   * commands.
+   *
+   * @param originalCommand The initial command that was processed.
+   * @param commandResult The result of the command execution.
+   * @return The potentially modified {@link CommandResult}.
+   */
+  private CommandResult postProcessCommandResult(
+      Command originalCommand, CommandResult commandResult) {
+    if (originalCommand instanceof DeprecatedCommand deprecatedCommand) {
+      // (aaron) for the warnings we always want V2 errors and do not want / need debug ?
+      var errorV2 =
+          new APIExceptionCommandErrorBuilder(false, true)
+              .buildCommandErrorV2(deprecatedCommand.getDeprecationWarning());
+      commandResult.addWarning(errorV2);
+    }
+    return commandResult;
   }
 }
