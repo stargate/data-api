@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.Feature;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureUsage;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.stream.Stream;
@@ -82,24 +83,32 @@ public class HybridLimitsDeserializerTest {
             """
             99
             """,
-            new FindAndRerankCommand.HybridLimits(99, 99, FeatureUsage.EMPTY)),
+            new FindAndRerankCommand.HybridLimits(
+                99, 99, FeatureUsage.of(Feature.HYBRID_LIMITS_NUMBER))),
         Arguments.of(
             """
             0
             """,
-            new FindAndRerankCommand.HybridLimits(0, 0, FeatureUsage.EMPTY)),
+            new FindAndRerankCommand.HybridLimits(
+                0, 0, FeatureUsage.of(Feature.HYBRID_LIMITS_NUMBER))),
         // ----
         // all must tbe provided for the object form
         Arguments.of(
             """
             { "$vector" : 99, "$lexical" : 99}
             """,
-            new FindAndRerankCommand.HybridLimits(99, 99, FeatureUsage.EMPTY)),
+            new FindAndRerankCommand.HybridLimits(
+                99,
+                99,
+                FeatureUsage.of(Feature.HYBRID_LIMITS_VECTOR, Feature.HYBRID_LIMITS_LEXICAL))),
         Arguments.of(
             """
             { "$vector" : 9, "$lexical" : 99}
             """,
-            new FindAndRerankCommand.HybridLimits(9, 99, FeatureUsage.EMPTY)));
+            new FindAndRerankCommand.HybridLimits(
+                9,
+                99,
+                FeatureUsage.of(Feature.HYBRID_LIMITS_VECTOR, Feature.HYBRID_LIMITS_LEXICAL))));
   }
 
   @ParameterizedTest
