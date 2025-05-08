@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
+package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
-import io.stargate.sgv2.jsonapi.api.model.command.builders.SortClauseBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -23,8 +22,9 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-class SortClauseDeserializerTest {
-  final TestConstants testConstants = new TestConstants();
+class SortClauseBuilderTest {
+  // Needed to create the collection context to pass to the builder
+  private final TestConstants testConstants = new TestConstants();
 
   @Inject ObjectMapper objectMapper;
 
