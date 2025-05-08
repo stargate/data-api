@@ -16,8 +16,6 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Base64;
@@ -27,7 +25,13 @@ import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ApplicationScoped
+/**
+ * This is legacy class from the first versions of the API, this class is now created in {@link
+ * io.stargate.sgv2.jsonapi.service.operation.Operation#execute(RequestContext, QueryExecutor)} for
+ * backwards compatibility. From there is passed to the operation and used to execute.
+ *
+ * <p>It is no longer a bean and should not be injected.
+ */
 public class QueryExecutor {
   private static final Logger logger = LoggerFactory.getLogger(QueryExecutor.class);
   private final OperationsConfig operationsConfig;
@@ -37,7 +41,6 @@ public class QueryExecutor {
 
   private final RequestTracing requestTracing;
 
-  @Inject
   public QueryExecutor(CQLSessionCache cqlSessionCache, OperationsConfig operationsConfig) {
     this(cqlSessionCache, operationsConfig, RequestTracing.NO_OP);
   }
