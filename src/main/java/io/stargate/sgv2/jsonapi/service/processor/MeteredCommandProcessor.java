@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.service.processor;
 import static io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.MetricTags.ERROR_CODE;
 import static io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.MetricTags.EXCEPTION_CLASS;
 import static io.stargate.sgv2.jsonapi.config.constants.LoggingConstants.*;
+import static io.stargate.sgv2.jsonapi.service.operation.reranking.Feature.*;
+import static io.stargate.sgv2.jsonapi.service.operation.reranking.Feature.HYBRID_LIMITS_LEXICAL;
 
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +18,9 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.Feature;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureSource;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureUsage;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Collections;
@@ -306,9 +311,57 @@ public class MeteredCommandProcessor {
     JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(commandContext, command);
     Tag sortTypeTag = Tag.of(jsonApiMetricsConfig.sortType(), sortType.name());
 
+    // --- Command Feature Usage Tags ---
+    Tags commandFeatureTags = Tags.empty();
+    if (command instanceof FeatureSource fs) {
+      commandFeatureTags = getCommandFeatureTags(fs.getFeatureUsage());
+    }
+
     // --- Combine All Tags ---
     return Tags.of(
-        commandTag, tenantTag, errorTag, errorClassTag, errorCodeTag, vectorEnabled, sortTypeTag);
+            commandTag,
+            tenantTag,
+            errorTag,
+            errorClassTag,
+            errorCodeTag,
+            vectorEnabled,
+            sortTypeTag)
+        .and(commandFeatureTags);
+  }
+
+  /** Adds tags based on the features present in FeatureUsage. */
+  private Tags getCommandFeatureTags(FeatureUsage featureUsage) {
+    Tags tags = Tags.empty();
+    if (featureUsage == null || featureUsage.getFeatures().isEmpty()) {
+      return tags;
+    }
+
+    for (Feature feature : featureUsage.getFeatures()) {
+      tags =
+          switch (feature) {
+            case LEXICAL -> tags.and(Tag.of(LEXICAL.getTagName(), String.valueOf(true)));
+            case VECTOR -> tags.and(Tag.of(VECTOR.getTagName(), String.valueOf(true)));
+            case VECTORIZE -> tags.and(Tag.of(VECTORIZE.getTagName(), String.valueOf(true)));
+            case HYBRID -> tags.and(Tag.of(HYBRID.getTagName(), String.valueOf(true)));
+            case HYBRID_LEXICAL ->
+                tags.and(Tag.of(HYBRID_LEXICAL.getTagName(), String.valueOf(true)));
+            case HYBRID_VECTOR ->
+                tags.and(Tag.of(HYBRID_VECTOR.getTagName(), String.valueOf(true)));
+            case HYBRID_VECTORIZE ->
+                tags.and(Tag.of(HYBRID_VECTORIZE.getTagName(), String.valueOf(true)));
+            case HYBRID_LIMITS_NUMBER ->
+                tags.and(Tag.of(HYBRID_LIMITS_NUMBER.getTagName(), String.valueOf(true)));
+            case HYBRID_LIMITS_VECTOR ->
+                tags.and(Tag.of(HYBRID_LIMITS_VECTOR.getTagName(), String.valueOf(true)));
+            case HYBRID_LIMITS_LEXICAL ->
+                tags.and(Tag.of(HYBRID_LIMITS_LEXICAL.getTagName(), String.valueOf(true)));
+            default ->
+                // all the features should be mapped to a tag
+                throw new IllegalStateException("Unmapped feature value: " + feature);
+          };
+    }
+
+    return tags;
   }
 
   /**
