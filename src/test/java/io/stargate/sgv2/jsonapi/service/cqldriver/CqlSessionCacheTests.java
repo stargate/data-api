@@ -21,6 +21,9 @@ public class CqlSessionCacheTests {
   private final Duration CACHE_TTL = Duration.ofSeconds(1);
   private final int CACHE_MAX_SIZE = 10;
 
+  private final String SLA_USER_AGENT = "SLA_USER_AGENT";
+  private final Duration SLA_USER_TTL = Duration.ofMillis(500);
+
   @Test
   public void cacheStartsEmtpy() {
 
@@ -67,7 +70,7 @@ public class CqlSessionCacheTests {
   public void cassandraCache() {
 
     // only testing it works with the CASSANDRA db type, all other logic is tested with ASTRA
-    var fixture = newFixture(DatabaseType.CASSANDRA, List.of(), CACHE_TTL, CACHE_MAX_SIZE, true);
+    var fixture = newFixture(DatabaseType.CASSANDRA, List.of(), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, true);
 
     var actualSession = fixture.cache.getSession(tenantId, authToken, null);
     assertThat(actualSession)
@@ -90,7 +93,7 @@ public class CqlSessionCacheTests {
     // use  very long TTL so removal cause is not expired
     var fixture =
         newFixture(
-            DatabaseType.ASTRA, List.of(consumer), Duration.ofSeconds(20), CACHE_MAX_SIZE, false);
+            DatabaseType.ASTRA, List.of(consumer), Duration.ofSeconds(20), CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, false);
 
     for (int i = 0; i < CACHE_MAX_SIZE + 1; i++) {
       var thisTenantId = "%s-%s".formatted(tenantId, i);
@@ -121,7 +124,7 @@ public class CqlSessionCacheTests {
   public void sessionClosedAndEvictionListenerCalledOnForced() {
     var consumer = consumerWithLogging();
     var fixture =
-        newFixture(DatabaseType.ASTRA, List.of(consumer), CACHE_TTL, CACHE_MAX_SIZE, true);
+        newFixture(DatabaseType.ASTRA, List.of(consumer), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, true);
 
     var actualSession = fixture.cache.getSession(tenantId, authToken, null);
     assertThat(fixture.cache.cacheSize()).as("Cache size is 1 after getting item").isEqualTo(1);
@@ -144,7 +147,7 @@ public class CqlSessionCacheTests {
     var ttl = Duration.ofSeconds(1);
     var consumer = consumerWithLogging();
     var fixture =
-        newFixture(DatabaseType.ASTRA, List.of(consumer), CACHE_TTL, CACHE_MAX_SIZE, true);
+        newFixture(DatabaseType.ASTRA, List.of(consumer), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, true);
 
     var actualSession = fixture.cache.getSession(tenantId, authToken, null);
     assertThat(actualSession)
@@ -174,7 +177,7 @@ public class CqlSessionCacheTests {
 
     var longTTL = Duration.ofSeconds(5);
     var consumer = mock(CQLSessionCache.DeactivatedTenantConsumer.class);
-    var fixture = newFixture(DatabaseType.ASTRA, List.of(consumer), longTTL, CACHE_MAX_SIZE, true);
+    var fixture = newFixture(DatabaseType.ASTRA, List.of(consumer), longTTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, true);
 
     var actualSession = fixture.cache.getSession(tenantId, authToken, null);
 
@@ -197,7 +200,7 @@ public class CqlSessionCacheTests {
     // get a session added to the cache, then evict it, so the callbacks are run
     var fixture =
         newFixture(
-            DatabaseType.ASTRA, List.of(consumer1, consumer2), CACHE_TTL, CACHE_MAX_SIZE, true);
+            DatabaseType.ASTRA, List.of(consumer1, consumer2), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, true);
     var actualSession = fixture.cache.getSession(tenantId, authToken, null);
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
@@ -225,7 +228,7 @@ public class CqlSessionCacheTests {
 
   @Test
   public void nullTenantIdToEmptyString() {
-    var fixture = newFixture(DatabaseType.ASTRA, List.of(), CACHE_TTL, CACHE_MAX_SIZE, false);
+    var fixture = newFixture(DatabaseType.ASTRA, List.of(), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, false);
 
     var expectedCredentials = mock(CqlCredentials.class);
     when(fixture.credentialsFactory.apply(authToken)).thenReturn(expectedCredentials);
@@ -248,7 +251,7 @@ public class CqlSessionCacheTests {
     // only testing they are added to the registry with the expected name, not checking the values
     // that is a feature of the cache itself
 
-    var fixture = newFixture();
+    var fixture = newFixture(DatabaseType.ASTRA, List.of(), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL, true);
     var actualSession = fixture.cache.getSession(tenantId, authToken, null);
 
     // give ethe cache time to bookkeep
@@ -331,12 +334,14 @@ public class CqlSessionCacheTests {
     when(valueHolder.loadingKey()).thenReturn(highTTLKey);
 
     // actual call will pass the loading key for the first param,
-    // as a test I want to make sure it uses the key on the vaue holder
+    // as a test I want to make sure it uses the key on the value holder
     var actualNanos = expiry.expireAfterCreate(lowTTLKey, valueHolder, 0);
     assertThat(actualNanos)
         .as("Expire after create is from the loading key on value holder")
         .isEqualTo(highTTL.toNanos());
   }
+
+
   // =======================================================
   // Helpers / no more tests below
   // =======================================================
@@ -364,7 +369,7 @@ public class CqlSessionCacheTests {
       MeterRegistry meterRegistry) {}
 
   private Fixture newFixture() {
-    return newFixture(DatabaseType.ASTRA, List.of(), CACHE_TTL, CACHE_MAX_SIZE, true);
+    return newFixture(DatabaseType.ASTRA, List.of(), CACHE_TTL, CACHE_MAX_SIZE, null, null, true);
   }
 
   private Fixture newFixture(
@@ -372,6 +377,17 @@ public class CqlSessionCacheTests {
       List<CQLSessionCache.DeactivatedTenantConsumer> consumers,
       Duration cacheTTL,
       int cacheSize,
+      boolean setExpected) {
+    return newFixture(databaseType, consumers, cacheTTL, cacheSize, null, null, setExpected);
+  }
+
+  private Fixture newFixture(
+      DatabaseType databaseType,
+      List<CQLSessionCache.DeactivatedTenantConsumer> consumers,
+      Duration cacheTTL,
+      int cacheSize,
+      String slaUserAgent, // New parameter
+      Duration slaUserTTL, // New parameter
       boolean setExpected) {
 
     var credentialsFactory = mock(CqlCredentials.CqlCredentialsFactory.class);
@@ -397,8 +413,8 @@ public class CqlSessionCacheTests {
             databaseType,
             cacheTTL,
             cacheSize,
-            null,
-            null,
+            slaUserAgent, // Updated to use new parameter
+            slaUserTTL, // Updated to use new parameter
             credentialsFactory,
             sessionFactory,
             meterRegistry,
@@ -414,4 +430,3 @@ public class CqlSessionCacheTests {
         meterRegistry);
   }
 }
-
