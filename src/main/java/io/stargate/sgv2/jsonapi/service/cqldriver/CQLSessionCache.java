@@ -3,10 +3,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver;
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.Expiry;
-import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.*;
 import com.google.common.annotations.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
@@ -16,6 +13,7 @@ import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -62,6 +60,11 @@ public class CQLSessionCache {
 
   private List<DeactivatedTenantConsumer> deactivatedTenantConsumers;
 
+  /**
+   * Constructs a new instance of the {@link CQLSessionCache}.
+   * <p>
+   * Use this overload in production code, see other for detailed description of the parameters.
+   */
   public CQLSessionCache(
       DatabaseType databaseType,
       Duration cacheTTL,
@@ -82,11 +85,15 @@ public class CQLSessionCache {
         sessionFactory,
         meterRegistry,
         deactivatedTenantConsumer,
-        false);
+        false,
+        null);
   }
 
   /**
    * Constructs a new instance of the {@link CQLSessionCache}.
+   * <p>
+   * Use this ctor for testing only.
+   * </p>
    *
    * @param databaseType The type of database being used,
    * @param cacheTTL The time-to-live (TTL) duration for cache entries.
@@ -98,6 +105,8 @@ public class CQLSessionCache {
    * @param deactivatedTenantConsumer A list of consumers to handle tenant deactivation events.
    * @param asyncTaskOnCaller If true, asynchronous tasks (e.g., callbacks) will run on the caller
    *     thread. This is intended for testing purposes only. DO NOT USE in production.
+   * @param cacheTicker  If non-null, this is the ticker used by the cache to decide when to expire
+   *                     entries. If null, the default ticker is used. DO NOT USE in production.
    */
   CQLSessionCache(
       DatabaseType databaseType,
@@ -109,7 +118,8 @@ public class CQLSessionCache {
       SessionFactory sessionFactory,
       MeterRegistry meterRegistry,
       List<DeactivatedTenantConsumer> deactivatedTenantConsumer,
-      boolean asyncTaskOnCaller) {
+      boolean asyncTaskOnCaller,
+      Ticker cacheTicker) {
 
     this.databaseType = Objects.requireNonNull(databaseType, "databaseType must not be null");
     this.cacheTTL = Objects.requireNonNull(cacheTTL, "cacheTTL must not be null");
@@ -146,6 +156,10 @@ public class CQLSessionCache {
       LOGGER.warn(
           "CQLSessionCache CONFIGURED TO RUN ASYNC TASKS SUCH AS CALLBACKS ON THE CALLER THREAD, DO NOT USE IN PRODUCTION.");
       builder = builder.executor(Runnable::run);
+    }
+    if (cacheTicker != null) {
+      LOGGER.warn("CQLSessionCache CONFIGURED TO USE A CUSTOM TICKER, DO NOT USE IN PRODUCTION.");
+      builder = builder.ticker(cacheTicker);
     }
     LoadingCache<SessionCacheKey, SessionValueHolder> loadingCache = builder.build(this::onLoadSession);
     this.sessionCache =
@@ -190,6 +204,16 @@ public class CQLSessionCache {
       default -> sessionCache.get(cacheKey);
     };
     return holder == null ? null : holder.session();
+  }
+
+  /**
+   * For testing, peek into the cache to see if a session is present for the given tenantId,
+   * authToken, and userAgent.
+   */
+  @VisibleForTesting
+  protected Optional<CqlSession> peekSession(String tenantId, String authToken, String userAgent) {
+    var cacheKey = createCacheKey(tenantId, authToken, userAgent);
+    return Optional.ofNullable(sessionCache.getIfPresent(cacheKey)).map(SessionValueHolder::session);
   }
 
   /** Process a key being removed from the cache for any reason. */
@@ -265,7 +289,8 @@ public class CQLSessionCache {
     }
 
     // userAgent arg can be null
-    var keyTTL = slaUserAgent == null || !slaUserAgent.equals(userAgent) ? cacheTTL : slaUserTTL;
+    // slaUserAgent forced to lower case in the ctor
+    var keyTTL = slaUserAgent == null || userAgent == null || !slaUserAgent.equals(userAgent.toLowerCase()) ? cacheTTL : slaUserTTL;
     return switch (databaseType) {
       case CASSANDRA, OFFLINE_WRITER ->
           new SessionCacheKey(
