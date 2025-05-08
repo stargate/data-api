@@ -26,12 +26,9 @@ import java.util.Objects;
 
 /**
  * Object for converting {@link JsonNode} (from {@link SortSpec}) into {@link SortClause}. Process
- * will validate structure of the JSON, and also validate values of the filter operations.
- *
- * <p>TIDY: this class has a lot of string constants for filter operations that we have defined as
- * constants elsewhere
+ * will validate structure of the JSON, and also validate values of the sort expressions.
  */
-public class SortClauseBuilder<T extends SchemaObject> {
+public abstract class SortClauseBuilder<T extends SchemaObject> {
   protected final T schema;
 
   protected SortClauseBuilder(T schema) {
@@ -40,30 +37,34 @@ public class SortClauseBuilder<T extends SchemaObject> {
 
   public static SortClauseBuilder<?> builderFor(SchemaObject schema) {
     return switch (schema) {
-      case CollectionSchemaObject collection -> new SortClauseBuilder(collection);
-      case TableSchemaObject table -> new SortClauseBuilder(table);
+      case CollectionSchemaObject collection -> new CollectionSortClauseBuilder(collection);
+      case TableSchemaObject table -> new TableSortClauseBuilder(table);
       default ->
           throw new UnsupportedOperationException(
               String.format(
-                  "Unsupported schema object class for `FilterClauseBuilder`: %s",
+                  "Unsupported schema object class for `SortClauseBuilder`: %s",
                   schema.getClass()));
     };
   }
 
   public SortClause build(JsonNode node) {
-    // if missing or null, return null back
+    // if missing or null, return "empty" sort clause
     if (node.isMissingNode() || node.isNull()) {
       return SortClause.empty();
     }
 
     // otherwise, if it's not object throw exception
-    if (!node.isObject()) {
+    if (!(node instanceof ObjectNode sortNode)) {
       throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
           "Sort clause must be submitted as json object");
     }
 
-    ObjectNode sortNode = (ObjectNode) node;
+    return buildAndValidate(sortNode);
+  }
 
+  protected abstract SortClause buildAndValidate(ObjectNode sortNode);
+
+  protected SortClause defaultBuildAndValidate(ObjectNode sortNode) {
     // safe to iterate, we know it's an Object
     Iterator<Map.Entry<String, JsonNode>> fieldIter = sortNode.fields();
     int totalFields = sortNode.size();
