@@ -221,9 +221,11 @@ class ObjectMapperConfigurationTest {
       assertThat(result)
           .isInstanceOfSatisfying(
               FindOneCommand.class,
-              findOne ->
-                  Assertions.assertThat(findOne.sortClause(testConstants.collectionContext()))
-                      .isNull());
+              findOne -> {
+                SortClause sc = findOne.sortClause(testConstants.collectionContext());
+                Assertions.assertThat(sc).isNotNull();
+                Assertions.assertThat(sc.isEmpty()).isTrue();
+              });
     }
 
     @Test
