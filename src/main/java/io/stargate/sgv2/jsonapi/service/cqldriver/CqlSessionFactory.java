@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
-
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
