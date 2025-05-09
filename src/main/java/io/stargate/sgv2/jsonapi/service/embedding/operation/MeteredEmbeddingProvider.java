@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.Tags.TENANT_TAG;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.TENANT_TAG;
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.UNKNOWN_VALUE;
 
 import com.google.common.collect.Lists;
@@ -104,7 +104,7 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
             () ->
                 sample.stop(
                     meterRegistry.timer(
-                        MetricsConstants.Metrics.VECTORIZE_CALL_DURATION_METRIC, tags)));
+                        MetricsConstants.MetricNames.VECTORIZE_CALL_DURATION_METRIC, tags)));
   }
 
   @Override
