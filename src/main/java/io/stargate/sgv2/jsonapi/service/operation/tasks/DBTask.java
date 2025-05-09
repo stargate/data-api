@@ -179,6 +179,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
         new CommandQueryExecutor.DBRequestContext(
             commandContext.requestContext().getTenantId(),
             commandContext.requestContext().getCassandraToken(),
+            commandContext.requestContext().getUserAgent(),
             commandContext.requestTracing().enabled()),
         CommandQueryExecutor.QueryTarget.TABLE);
   }

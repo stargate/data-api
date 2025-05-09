@@ -158,7 +158,9 @@ public class CommandQueryExecutor {
 
   private CqlSession session() {
     return cqlSessionCache.getSession(
-        dbRequestContext.tenantId().orElse(""), dbRequestContext.authToken().orElse(""));
+        dbRequestContext.tenantId().orElse(""),
+        dbRequestContext.authToken().orElse(""),
+        dbRequestContext.userAgent().orElse(null));
   }
 
   private String getExecutionProfile(QueryType queryType) {
@@ -182,5 +184,8 @@ public class CommandQueryExecutor {
 
   // Aaron - Feb 3 - temp rename while factoring full RequestContext
   public record DBRequestContext(
-      Optional<String> tenantId, Optional<String> authToken, boolean tracingEnabled) {}
+      Optional<String> tenantId,
+      Optional<String> authToken,
+      Optional<String> userAgent,
+      boolean tracingEnabled) {}
 }
