@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortSpec;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -20,7 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public record FindOneAndUpdateCommand(
     @Valid @JsonProperty("filter") FilterSpec filterSpec,
     @JsonProperty("projection") JsonNode projectionDefinition,
-    @Valid @JsonProperty("sort") SortClause sortClause,
+    @Valid @JsonProperty("sort") SortSpec sortSpec,
     @NotNull @Valid @JsonProperty("update") UpdateClause updateClause,
     @Valid @Nullable Options options)
     implements ReadCommand, Filterable, Projectable, Sortable, Updatable {

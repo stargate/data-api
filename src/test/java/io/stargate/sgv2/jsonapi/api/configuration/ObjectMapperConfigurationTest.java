@@ -58,7 +58,8 @@ class ObjectMapperConfigurationTest {
   @Inject ObjectMapper objectMapper;
 
   @Inject DocumentLimitsConfig documentLimitsConfig;
-  private TestConstants testConstants = new TestConstants();
+
+  private final TestConstants testConstants = new TestConstants();
 
   @Nested
   class UnmatchedOperationCommandHandlerTest {
@@ -176,7 +177,7 @@ class ObjectMapperConfigurationTest {
           .isInstanceOfSatisfying(
               FindOneCommand.class,
               findOne -> {
-                SortClause sortClause = findOne.sortClause();
+                SortClause sortClause = findOne.sortClause(testConstants.collectionContext());
                 assertThat(sortClause).isNotNull();
                 assertThat(sortClause.sortExpressions())
                     .contains(
@@ -220,7 +221,11 @@ class ObjectMapperConfigurationTest {
       assertThat(result)
           .isInstanceOfSatisfying(
               FindOneCommand.class,
-              findOne -> Assertions.assertThat(findOne.sortClause()).isNull());
+              findOne -> {
+                SortClause sc = findOne.sortClause(testConstants.collectionContext());
+                Assertions.assertThat(sc).isNotNull();
+                Assertions.assertThat(sc.isEmpty()).isTrue();
+              });
     }
 
     @Test

@@ -29,7 +29,7 @@ public interface TableSimilarityFunction extends Function<Select, Select> {
     }
     var vectorSortable = (VectorSortable) command;
 
-    var sortExpressionOptional = vectorSortable.vectorSortExpression();
+    var sortExpressionOptional = vectorSortable.vectorSortExpression(table);
     if (sortExpressionOptional.isEmpty()) {
       // nothing to sort on, so nothing to return even if they asked for the similarity score
       return NO_OP;

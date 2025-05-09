@@ -17,18 +17,12 @@ import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class IntermediateCollectionReadTask
     extends BaseTask<
         CollectionSchemaObject,
         IntermediateCollectionReadTask.IntermediateReadResultSupplier,
         IntermediateCollectionReadTask.IntermediateReadResults> {
-
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(IntermediateCollectionReadTask.class);
-
   private final FindCommandResolver findCommandResolver;
   private final FindCommand findCommand;
   private final DeferredVectorize deferredVectorize;
@@ -65,15 +59,13 @@ public class IntermediateCollectionReadTask
   protected IntermediateReadResultSupplier buildResultSupplier(
       CommandContext<CollectionSchemaObject> commandContext) {
 
-    // If we have a deferred vectroize, we should use it to update the sort clause on the find
+    // If we have a deferred vectorize, we should use it to update the sort clause on the find
     // command
     if (deferredVectorize != null) {
-      findCommand.sortClause().sortExpressions().clear();
+      var sortClause = findCommand.sortClause(commandContext);
+      sortClause.sortExpressions().clear();
       // will throw if the deferred value is not complete
-      findCommand
-          .sortClause()
-          .sortExpressions()
-          .add(SortExpression.vsearch(deferredVectorize.getVector()));
+      sortClause.sortExpressions().add(SortExpression.vsearch(deferredVectorize.getVector()));
     }
 
     Operation<CollectionSchemaObject> findOperation =
@@ -106,7 +98,9 @@ public class IntermediateCollectionReadTask
         .append("deferredVectorize isNull", deferredVectorize == null)
         .append(
             "sortClause.sortExpression.paths",
-            findCommand.sortClause().sortExpressions().stream().map(SortExpression::path).toList());
+            findCommand.sortClause(schemaObject).sortExpressions().stream()
+                .map(SortExpression::path)
+                .toList());
   }
 
   // =================================================================================================

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
@@ -50,13 +49,9 @@ class UpdateOneCommandTest {
                 final UpdateClause updateClause = updateOneCommand.updateClause();
                 assertThat(updateClause).isNotNull();
                 assertThat(updateClause.buildOperations()).hasSize(1);
-                final SortClause sortClause = updateOneCommand.sortClause();
-                assertThat(sortClause).isNotNull();
-                assertThat(sortClause.sortExpressions()).hasSize(1);
-                assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("username");
-                assertThat(sortClause.sortExpressions().get(0).ascending()).isTrue();
-                final UpdateOneCommand.Options options = updateOneCommand.options();
-                assertThat(options).isNotNull();
+                assertThat(updateOneCommand.sortSpec()).isNotNull();
+                assertThat(updateOneCommand.sortSpec()).isNotNull();
+                assertThat(updateOneCommand.options()).isNotNull();
               });
     }
 

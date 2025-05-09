@@ -1,32 +1,23 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.stargate.sgv2.jsonapi.api.model.command.deserializers.SortClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import jakarta.validation.Valid;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
  * Internal model for the sort clause that can be used in the commands.
  *
  * @param sortExpressions Ordered list of sort expressions.
  */
-@JsonDeserialize(using = SortClauseDeserializer.class)
-@Schema(
-    type = SchemaType.OBJECT,
-    implementation = Map.class,
-    example =
-        """
-              {"user.age" : -1, "user.name" : 1}
-              """)
 public record SortClause(@Valid List<SortExpression> sortExpressions) {
+  public static SortClause empty() {
+    return new SortClause(Collections.emptyList());
+  }
 
   public boolean isEmpty() {
     return sortExpressions == null || sortExpressions.isEmpty();

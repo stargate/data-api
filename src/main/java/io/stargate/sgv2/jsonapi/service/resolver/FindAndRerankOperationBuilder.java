@@ -7,6 +7,7 @@ import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortSpec;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
@@ -298,7 +299,10 @@ class FindAndRerankOperationBuilder {
     var bm25SortClause = new SortClause(List.of(SortExpression.bm25Search(bm25SortTerm)));
     var bm25ReadCommand =
         new FindCommand(
-            command.filterSpec(), INCLUDE_ALL_PROJECTION, bm25SortClause, buildFindOptions(false));
+            command.filterSpec(),
+            INCLUDE_ALL_PROJECTION,
+            SortSpec.wrap(bm25SortClause),
+            buildFindOptions(false));
 
     return new IntermediateCollectionReadTask(
         0,
@@ -343,7 +347,10 @@ class FindAndRerankOperationBuilder {
     // The intermediate task will set the sort when we give it the deferred vectorize
     var vectorReadCommand =
         new FindCommand(
-            command.filterSpec(), INCLUDE_ALL_PROJECTION, sortClause, buildFindOptions(true));
+            command.filterSpec(),
+            INCLUDE_ALL_PROJECTION,
+            SortSpec.wrap(sortClause),
+            buildFindOptions(true));
     var readTask =
         new IntermediateCollectionReadTask(
             1,

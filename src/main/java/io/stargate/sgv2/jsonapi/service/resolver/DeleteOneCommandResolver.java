@@ -66,7 +66,7 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
       CommandContext<TableSchemaObject> commandContext, DeleteOneCommand command) {
 
     // Sort clause is not supported for table deleteOne command.
-    if (command.sortClause() != null && !command.sortClause().isEmpty()) {
+    if (!command.sortClause(commandContext).isEmpty()) {
       throw SortException.Code.UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND.get(
           errVars(commandContext.schemaObject(), map -> {}));
     }
@@ -105,7 +105,7 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
 
     var dbLogicalExpression = collectionFilterResolver.resolve(commandContext, command).target();
 
-    final SortClause sortClause = command.sortClause();
+    final SortClause sortClause = command.sortClause(commandContext);
     if (sortClause != null) {
       sortClause.validate(commandContext.schemaObject());
     }

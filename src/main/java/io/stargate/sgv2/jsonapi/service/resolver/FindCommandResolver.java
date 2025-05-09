@@ -95,7 +95,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
       includeSortVector = options.includeSortVector();
     }
 
-    final SortClause sortClause = command.sortClause();
+    final SortClause sortClause = command.sortClause(commandContext);
 
     // collection always uses in memory sorting, so we don't support page state with sort clause
     // empty sort clause and empty page state are treated as no sort clause and no page state
