@@ -30,7 +30,10 @@ public class CqlSessionCacheTests {
 
     var fixture = newFixture();
 
-    assertThat(fixture.cache.cacheSize()).as("Cache initialised with 0 sessions").isEqualTo(0);
+    // cache size is not reliable, peeking to see if our session is present
+    assertThat(fixture.cache.peekSession(TENANT_ID, AUTH_TOKEN, null))
+        .as("Cache is empty when started")
+        .isNotPresent();
   }
 
   @Test
@@ -100,29 +103,28 @@ public class CqlSessionCacheTests {
   public void limitedToMaxSize() {
 
     var consumer = consumerWithLogging();
-    // use  very long TTL so removal cause is not expired
     var fixture =
         newFixture(
             DatabaseType.ASTRA,
             List.of(consumer),
-            Duration.ofSeconds(20),
+            CACHE_TTL,
             CACHE_MAX_SIZE,
             SLA_USER_AGENT,
             SLA_USER_TTL,
-            false,
+            true,
             false);
 
     for (int i = 0; i < CACHE_MAX_SIZE + 1; i++) {
-      var thisTenantId = "%s-%s".formatted(TENANT_ID, i);
 
-      var expectedCredentials = mock(CqlCredentials.class);
-      when(fixture.credentialsFactory.apply(AUTH_TOKEN)).thenReturn(expectedCredentials);
+      // credentials are part of key equality, so we need to generate creds
+      // with the same quality here and below when testing with peek
+      var expectedCredentials = fixture.setTokenCredentials(thisAuthToken(i));
 
       var expectedSession = mock(CqlSession.class);
-      when(fixture.sessionFactory.apply(thisTenantId, expectedCredentials))
+      when(fixture.sessionFactory.apply(thisTenantId(i), expectedCredentials))
           .thenReturn(expectedSession);
 
-      var actualSession = fixture.cache.getSession(thisTenantId, AUTH_TOKEN, null);
+      var actualSession = fixture.cache.getSession(thisTenantId(i), thisAuthToken(i), null);
       assertThat(actualSession)
           .as("Session from cache is instance from factory")
           .isSameAs(expectedSession);
@@ -130,11 +132,22 @@ public class CqlSessionCacheTests {
 
     fixture.cache.cleanUp();
 
-    assertThat(fixture.cache.cacheSize()).as("Cache size is max size").isEqualTo(CACHE_MAX_SIZE);
-
     // consumer called with tenantId-0 because the size of the cache was exceeded
-    verify(consumer).accept("%s-%s".formatted(TENANT_ID, 0), RemovalCause.SIZE);
+    verify(consumer).accept(thisTenantId(0), RemovalCause.SIZE);
     verifyNoMoreInteractions(consumer);
+
+    // tenant 0 should not be in the cache
+    fixture.setTokenCredentials(thisAuthToken(0));
+    assertThat(fixture.cache.peekSession(thisTenantId(0), thisAuthToken(0), null))
+        .as("Tenant 0 session is not in cache after adding more than max size")
+        .isNotPresent();
+
+    for (int i = 1; i < CACHE_MAX_SIZE + 1; i++) {
+
+      assertThat(fixture.cache.peekSession(thisTenantId(i), thisAuthToken(i), null))
+          .as("Tenant `%s` session is in cache after adding more than max size", thisTenantId(i))
+          .isPresent();
+    }
   }
 
   @Test
@@ -152,7 +165,9 @@ public class CqlSessionCacheTests {
             true);
 
     var actualSession = fixture.cache.getSession(TENANT_ID, AUTH_TOKEN, null);
-    assertThat(fixture.cache.cacheSize()).as("Cache size is 1 after getting item").isEqualTo(1);
+    assertThat(actualSession)
+        .as("Session from cache is instance from factory")
+        .isSameAs(fixture.expectedSession);
 
     ///  we dont care why the tenant was marked inactive, so do not need to wait for TTL, clear the
     // cache to force eviction
@@ -163,13 +178,14 @@ public class CqlSessionCacheTests {
     // should have called our consumer when evicted
     verify(consumer).accept(eq(TENANT_ID), any());
 
-    assertThat(fixture.cache.cacheSize()).as("Cache size is 0 after eviction").isEqualTo(0);
+    assertThat(fixture.cache.peekSession(TENANT_ID, AUTH_TOKEN, null))
+        .as("Session is not in cache after eviction")
+        .isNotPresent();
   }
 
   @Test
-  public void sessionClosedAndEvictionListenerCalledOnExpired() throws InterruptedException {
+  public void sessionClosedAndEvictionListenerCalledOnExpired() {
 
-    var ttl = Duration.ofSeconds(1);
     var consumer = consumerWithLogging();
     var fixture =
         newFixture(
@@ -179,7 +195,7 @@ public class CqlSessionCacheTests {
             CACHE_MAX_SIZE,
             SLA_USER_AGENT,
             SLA_USER_TTL,
-            false,
+            true,
             true);
 
     var actualSession = fixture.cache.getSession(TENANT_ID, AUTH_TOKEN, null);
@@ -187,8 +203,8 @@ public class CqlSessionCacheTests {
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
 
-    // wait for the session to expire
-    Thread.sleep(ttl.toMillis() * 2);
+    // move the fake time forward to expire the session
+    fixture.ticker.advance(CACHE_TTL.plusSeconds(10));
 
     // let the cache cleanup
     fixture.cache.cleanUp();
@@ -199,7 +215,10 @@ public class CqlSessionCacheTests {
     // should have called our consumer when expired
     verify(consumer).accept(TENANT_ID, RemovalCause.EXPIRED);
 
-    assertThat(fixture.cache.cacheSize()).as("Cache size is 0 after expiration").isEqualTo(0);
+    // session should not be in the cache
+    assertThat(fixture.cache.peekSession(TENANT_ID, AUTH_TOKEN, null))
+        .as("Session is not in cache after expried")
+        .isNotPresent();
   }
 
   @Test
@@ -496,6 +515,15 @@ public class CqlSessionCacheTests {
   // =======================================================
   // Helpers / no more tests below
   // =======================================================
+
+  private String thisTenantId(int i) {
+    return "%s-%s".formatted(TENANT_ID, i);
+  }
+
+  private String thisAuthToken(int i) {
+    return "%s-%s".formatted(AUTH_TOKEN, i);
+  }
+
   private CQLSessionCache.DeactivatedTenantConsumer consumerWithLogging() {
     var consumer = mock(CQLSessionCache.DeactivatedTenantConsumer.class);
     doAnswer(
@@ -533,7 +561,14 @@ public class CqlSessionCacheTests {
       CqlSession expectedSession,
       CQLSessionCache.SessionFactory sessionFactory,
       MeterRegistry meterRegistry,
-      FakeTicker ticker) {}
+      FakeTicker ticker) {
+
+    CqlCredentials setTokenCredentials(String authToken) {
+      var expectedCredentials = new CqlCredentials.TokenCredentials(authToken);
+      when(this.credentialsFactory.apply(authToken)).thenReturn(expectedCredentials);
+      return expectedCredentials;
+    }
+  }
 
   private Fixture newFixture() {
     return newFixture(

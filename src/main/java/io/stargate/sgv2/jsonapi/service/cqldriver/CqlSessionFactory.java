@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
-import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
@@ -121,15 +120,11 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
   }
 
   @Override
-  public CqlSession apply(String tenantId, CqlCredentials cqlCredentials) {
-    Objects.requireNonNull(cqlCredentials, "credentials must not be null");
+  public CqlSession apply(String tenantId, CqlCredentials credentials) {
+    Objects.requireNonNull(credentials, "credentials must not be null");
 
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
-          "Creating CQL Session tenantId={}, credentials.class={}, credentials.isAnonymous={}",
-          tenantId,
-          classSimpleName(cqlCredentials.getClass()),
-          cqlCredentials.isAnonymous());
+      LOGGER.debug("Creating CQL Session tenantId={}, credentials={}", tenantId, credentials);
     }
 
     // the driver TypedDriverOption is only used with DriverConfigLoader.fromMap()
@@ -153,7 +148,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     for (var listener : schemaChangeListeners) {
       builder = builder.addSchemaChangeListener(listener);
     }
-    builder = cqlCredentials.addToSessionBuilder(builder);
+    builder = credentials.addToSessionBuilder(builder);
 
     // for astra it will default to 127.0.0.1 which is routed to the astra proxy
     if (databaseType == DatabaseType.CASSANDRA) {
