@@ -2,11 +2,13 @@ package io.stargate.sgv2.jsonapi.service.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
@@ -93,7 +95,7 @@ public class HybridFieldExpanderTest {
   void hybridOkTest(String inputJson, String outputJson) throws Exception {
     JsonNode doc = objectMapper.readTree(inputJson);
 
-    HybridFieldExpander.expandHybridField(0, 1, doc);
+    HybridFieldExpander.expandHybridField(mock(CommandContext.class), 0, 1, doc);
     assertThat(doc).isEqualTo(objectMapper.readTree(outputJson));
   }
 
@@ -207,7 +209,9 @@ public class HybridFieldExpanderTest {
   void hybridFailTest(String inputJson, ErrorCodeV1 errorCode, String errorMessage)
       throws Exception {
     final JsonNode doc = objectMapper.readTree(inputJson);
-    Throwable t = catchThrowable(() -> HybridFieldExpander.expandHybridField(0, 1, doc));
+    Throwable t =
+        catchThrowable(
+            () -> HybridFieldExpander.expandHybridField(mock(CommandContext.class), 0, 1, doc));
     assertThat(t)
         .isNotNull()
         .hasFieldOrPropertyWithValue("errorCode", errorCode)

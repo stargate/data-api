@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureUsage;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import java.util.Objects;
@@ -54,6 +55,9 @@ public class CommandContext<SchemaT extends SchemaObject> {
 
   // see accessors
   private FindAndRerankCommand.HybridLimits hybridLimits;
+
+  // used to track the features used in the command
+  private final FeatureUsage featureUsage;
 
   // created on demand or set via builder, otherwise we need to read from config too early when
   // running tests, See the {@link Builder#withApiFeatures}
@@ -98,6 +102,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
                 requestContext.getTenantId().orElse(""),
                 apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL))
             : RequestTracing.NO_OP;
+
+    this.featureUsage = FeatureUsage.EMPTY;
   }
 
   /** See doc comments for {@link CommandContext} */
@@ -158,6 +164,10 @@ public class CommandContext<SchemaT extends SchemaObject> {
       }
     }
     return apiFeatures;
+  }
+
+  public FeatureUsage featureUsage() {
+    return featureUsage;
   }
 
   public JsonProcessingMetricsReporter jsonProcessingMetricsReporter() {

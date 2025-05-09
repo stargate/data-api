@@ -312,10 +312,10 @@ public class MeteredCommandProcessor {
     Tag sortTypeTag = Tag.of(jsonApiMetricsConfig.sortType(), sortType.name());
 
     // --- Command Feature Usage Tags ---
-    Tags commandFeatureTags = Tags.empty();
     if (command instanceof FeatureSource fs) {
-      commandFeatureTags = getCommandFeatureTags(fs.getFeatureUsage());
+      commandContext.featureUsage().add(fs.getFeatureUsage());
     }
+    Tags commandFeatureTags = getCommandFeatureTags(commandContext.featureUsage());
 
     // --- Combine All Tags ---
     return Tags.of(

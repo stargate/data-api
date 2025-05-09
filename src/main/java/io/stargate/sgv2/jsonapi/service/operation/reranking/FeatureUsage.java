@@ -35,6 +35,13 @@ public final class FeatureUsage {
     this.features.add(feature);
   }
 
+  public void add(FeatureUsage other) {
+    if (other == null || other.features.isEmpty() || other == this) {
+      return;
+    }
+    this.features.addAll(other.features);
+  }
+
   public FeatureUsage unionWith(FeatureUsage other) {
     if (other == null || other.features.isEmpty() || other == this) {
       return this;
