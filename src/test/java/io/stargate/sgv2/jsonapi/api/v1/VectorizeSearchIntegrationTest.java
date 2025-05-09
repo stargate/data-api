@@ -352,7 +352,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
       assertThat(vectorizeInputBytesMetrics)
           .satisfies(
               lines -> {
-                assertThat(lines.size()).isEqualTo(3);
+                // aaron, this used to check the number of lines, that is linked to the number of
+                // percentiles and is very very fragle to include in a test
                 lines.forEach(
                     line -> {
                       assertThat(line).contains("embedding_provider=\"CustomITEmbeddingProvider\"");
