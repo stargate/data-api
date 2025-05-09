@@ -5,10 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Enum for API map component representation. It could be used in createIndex for map column,
- * filtering on map column.
- */
+/** Enum for API map component representation. It could be used in createIndex for map column. */
 public enum ApiMapComponent {
   KEYS(TableDescConstants.MapTypeComponent.keys),
   VALUES(TableDescConstants.MapTypeComponent.values);

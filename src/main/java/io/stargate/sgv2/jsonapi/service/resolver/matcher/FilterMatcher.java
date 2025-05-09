@@ -5,11 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * This class matches the filter clauses against the filter match rules defined. The match rules
@@ -80,7 +76,7 @@ public class FilterMatcher<T extends Command & Filterable> {
       ListIterator<Capture> captureIter = unmatchedCaptures.listIterator();
       while (captureIter.hasNext()) {
         Capture capture = captureIter.next();
-        List<FilterOperation> matched = capture.match(comparisonExpression);
+        List<FilterOperation<?>> matched = capture.match(comparisonExpression);
         if (!matched.isEmpty()) {
           currentCaptureGroups
               .getGroup(capture.marker)
@@ -124,35 +120,48 @@ public class FilterMatcher<T extends Command & Filterable> {
 
     private Object marker;
     private String matchPath;
-    private EnumSet operators;
+    private Set<? extends FilterOperator> operators;
     private JsonType type;
+    // boolean value to indicate if the match is for a map, set or list.
+    // This can be captured by a table filter against map/set/list column.
+    private boolean captureOfMapSetListComponent;
 
     protected Capture(Object marker) {
       this.marker = marker;
     }
 
-    public List<FilterOperation> match(ComparisonExpression t) {
-      return t.match(matchPath, operators, type);
+    /**
+     * Method to see if the comparisonExpression matches the capture. If so it will return a list of
+     * FilterOperation that satisfy the match, If not it will return an empty list.
+     */
+    public List<FilterOperation<?>> match(ComparisonExpression t) {
+      return t.match(matchPath, operators, type, captureOfMapSetListComponent);
     }
 
     /**
-     * The path is compared using an operator against a value of a type
-     *
-     * <p>e.g.
-     *
-     * <pre>
-     *  .compare("*", ValueComparisonOperator.GT, JsonType.NUMBER);
-     * </pre>
-     *
-     * @param path
-     * @param type
-     * @return
+     * Populate the current capture with the path, operators, JsonType. Return the current
+     * FilterMatcher to allow for fluent API.
      */
     public FilterMatcher<T> compareValues(
         String path, EnumSet<? extends FilterOperator> operators, JsonType type) {
       this.matchPath = path;
       this.operators = operators;
       this.type = type;
+      this.captureOfMapSetListComponent = false;
+      return FilterMatcher.this;
+    }
+
+    /**
+     * Populate the current capture with the path, operators, JsonType and set
+     * captureOfMapSetListComponent to indicate the capture against table map/set/list column.
+     * Return the current FilterMatcher to allow for fluent API.
+     */
+    public FilterMatcher<T> compareMapSetListFilterValues(
+        String path, Set<? extends FilterOperator> operators, JsonType type) {
+      this.matchPath = path;
+      this.operators = operators;
+      this.type = type;
+      this.captureOfMapSetListComponent = true;
       return FilterMatcher.this;
     }
   }

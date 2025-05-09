@@ -282,6 +282,24 @@ request-errors:
       Resend the command using only supported column values.
 
   - scope: FILTER
+    code: INVALID_MAP_SET_LIST_FILTER
+    title: Command has invalid filter against a map, set, or list column
+    body: |-
+      Command has an invalid filter, ${detailedReason}.
+      
+      Supported filter operators for map, set, list are '$in', '$nin', '$all'.
+      Filter examples for map column:
+      - filter on map keys {"mapColumn": {"$keys": {"$in": ["key1", "key2"]}}}
+      - filter on map values {"mapColumn": {"$values": {"$nin": ["value1", "value2"]}}}
+      - filter on map entries {"mapColumn": {"$all": [["key1", "value1"], ["key2", "value2"]]}}
+      Filter examples for list column:
+      - filter on list {"listColumn": {"$in": ["value1", "value2"]}}}
+      Filter examples for set column:
+      - filter on set {"setColumn": {"$nin": ["value1", "value2"]}}}
+      
+      Resend the command using correct filter.
+
+  - scope: FILTER
     code: UNSUPPORTED_COLUMN_TYPES
     title: Column types in the filter are not supported
     body: |-

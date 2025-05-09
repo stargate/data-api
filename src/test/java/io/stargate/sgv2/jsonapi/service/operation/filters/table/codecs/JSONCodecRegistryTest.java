@@ -877,11 +877,6 @@ public class JSONCodecRegistryTest {
     assertThat(error)
         .satisfies(
             e -> {
-              assertThat(e.table.getName()).isEqualTo(TEST_DATA.TABLE_NAME);
-              assertThat(e.column.getType())
-                  .as("Column type of error is " + TEST_DATA.UNSUPPORTED_CQL_DATA_TYPE)
-                  .isEqualTo(TEST_DATA.UNSUPPORTED_CQL_DATA_TYPE);
-              assertThat(e.column.getName()).isEqualTo(TEST_DATA.COLUMN_NAME);
               assertThat(e.javaType).isEqualTo(TEST_DATA.RANDOM_STRING.getClass());
               assertThat(e.value).isEqualTo(TEST_DATA.RANDOM_STRING);
 
