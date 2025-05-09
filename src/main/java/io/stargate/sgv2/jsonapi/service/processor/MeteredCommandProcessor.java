@@ -4,7 +4,6 @@ import static io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.M
 import static io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.MetricTags.EXCEPTION_CLASS;
 import static io.stargate.sgv2.jsonapi.config.constants.LoggingConstants.*;
 import static io.stargate.sgv2.jsonapi.service.operation.reranking.Feature.*;
-import static io.stargate.sgv2.jsonapi.service.operation.reranking.Feature.HYBRID_LIMITS_LEXICAL;
 
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -329,36 +328,21 @@ public class MeteredCommandProcessor {
         .and(commandFeatureTags);
   }
 
-  /** Adds tags based on the features present in FeatureUsage. */
+  /**
+   * Adds tags for all defined features. If a feature is present in FeatureUsage, its tag value is
+   * "true", otherwise "false".
+   */
   private Tags getCommandFeatureTags(FeatureUsage featureUsage) {
     Tags tags = Tags.empty();
-    if (featureUsage == null || featureUsage.getFeatures().isEmpty()) {
-      return tags;
+    Set<Feature> usedFeatures = Collections.emptySet();
+
+    if (featureUsage != null && featureUsage.getFeatures() != null) {
+      usedFeatures = featureUsage.getFeatures();
     }
 
-    for (Feature feature : featureUsage.getFeatures()) {
-      tags =
-          switch (feature) {
-            case LEXICAL -> tags.and(Tag.of(LEXICAL.getTagName(), String.valueOf(true)));
-            case VECTOR -> tags.and(Tag.of(VECTOR.getTagName(), String.valueOf(true)));
-            case VECTORIZE -> tags.and(Tag.of(VECTORIZE.getTagName(), String.valueOf(true)));
-            case HYBRID -> tags.and(Tag.of(HYBRID.getTagName(), String.valueOf(true)));
-            case HYBRID_LEXICAL ->
-                tags.and(Tag.of(HYBRID_LEXICAL.getTagName(), String.valueOf(true)));
-            case HYBRID_VECTOR ->
-                tags.and(Tag.of(HYBRID_VECTOR.getTagName(), String.valueOf(true)));
-            case HYBRID_VECTORIZE ->
-                tags.and(Tag.of(HYBRID_VECTORIZE.getTagName(), String.valueOf(true)));
-            case HYBRID_LIMITS_NUMBER ->
-                tags.and(Tag.of(HYBRID_LIMITS_NUMBER.getTagName(), String.valueOf(true)));
-            case HYBRID_LIMITS_VECTOR ->
-                tags.and(Tag.of(HYBRID_LIMITS_VECTOR.getTagName(), String.valueOf(true)));
-            case HYBRID_LIMITS_LEXICAL ->
-                tags.and(Tag.of(HYBRID_LIMITS_LEXICAL.getTagName(), String.valueOf(true)));
-            default ->
-                // all the features should be mapped to a tag
-                throw new IllegalStateException("Unmapped feature value: " + feature);
-          };
+    for (Feature feature : Feature.values()) {
+      boolean isFeaturePresent = usedFeatures.contains(feature);
+      tags = tags.and(Tag.of(feature.getTagName(), String.valueOf(isFeaturePresent)));
     }
 
     return tags;
