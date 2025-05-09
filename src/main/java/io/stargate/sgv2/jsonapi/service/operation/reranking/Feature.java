@@ -2,6 +2,10 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import java.util.Objects;
 
+/**
+ * Represents distinct features that can be used in the command. Each feature has an associated tag
+ * name, which can be used for metrics.
+ */
 public enum Feature {
   /** The usage of $lexical in the command */
   LEXICAL("feature.lexical"),

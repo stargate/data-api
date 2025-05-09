@@ -172,7 +172,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
   }
 
   public void addFeature(Feature feature) {
-    featureUsage = featureUsage.withFeature(feature);
+    this.featureUsage = this.featureUsage.withFeature(feature);
   }
 
   public void addFeatureUsage(FeatureUsage featureUsage) {
