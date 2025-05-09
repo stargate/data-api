@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.processor;
 import static io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.MetricTags.ERROR_CODE;
 import static io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.MetricTags.EXCEPTION_CLASS;
 import static io.stargate.sgv2.jsonapi.config.constants.LoggingConstants.*;
+import static io.stargate.sgv2.jsonapi.service.operation.reranking.Feature.*;
 
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +17,9 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.Feature;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureSource;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureUsage;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Collections;
@@ -306,9 +310,42 @@ public class MeteredCommandProcessor {
     JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(commandContext, command);
     Tag sortTypeTag = Tag.of(jsonApiMetricsConfig.sortType(), sortType.name());
 
+    // --- Command Feature Usage Tags ---
+    if (command instanceof FeatureSource fs) {
+      commandContext.addFeatureUsage(fs.getFeatureUsage());
+    }
+    Tags commandFeatureTags = getCommandFeatureTags(commandContext.featureUsage());
+
     // --- Combine All Tags ---
     return Tags.of(
-        commandTag, tenantTag, errorTag, errorClassTag, errorCodeTag, vectorEnabled, sortTypeTag);
+            commandTag,
+            tenantTag,
+            errorTag,
+            errorClassTag,
+            errorCodeTag,
+            vectorEnabled,
+            sortTypeTag)
+        .and(commandFeatureTags);
+  }
+
+  /**
+   * Adds tags for all defined features. If a feature is present in FeatureUsage, its tag value is
+   * "true", otherwise "false".
+   */
+  private Tags getCommandFeatureTags(FeatureUsage featureUsage) {
+    Tags tags = Tags.empty();
+    Set<Feature> usedFeatures = Collections.emptySet();
+
+    if (featureUsage != null && featureUsage.getFeatures() != null) {
+      usedFeatures = featureUsage.getFeatures();
+    }
+
+    for (Feature feature : Feature.values()) {
+      boolean isFeaturePresent = usedFeatures.contains(feature);
+      tags = tags.and(Tag.of(feature.getTagName(), String.valueOf(isFeaturePresent)));
+    }
+
+    return tags;
   }
 
   /**
