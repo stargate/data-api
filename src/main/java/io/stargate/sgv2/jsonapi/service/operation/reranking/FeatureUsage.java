@@ -30,16 +30,14 @@ public final class FeatureUsage {
     return new FeatureUsage(features);
   }
 
-  public void add(Feature feature) {
-    Objects.requireNonNull(feature);
-    this.features.add(feature);
-  }
-
-  public void add(FeatureUsage other) {
-    if (other == null || other.features.isEmpty() || other == this) {
-      return;
+  public FeatureUsage withFeature(Feature feature) {
+    Objects.requireNonNull(feature, "Feature cannot be null");
+    if (this.features.contains(feature)) {
+      return this;
     }
-    this.features.addAll(other.features);
+    EnumSet<Feature> newSet = EnumSet.copyOf(this.features);
+    newSet.add(feature);
+    return new FeatureUsage(newSet);
   }
 
   public FeatureUsage unionWith(FeatureUsage other) {

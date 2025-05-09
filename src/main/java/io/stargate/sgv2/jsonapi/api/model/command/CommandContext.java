@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.Feature;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureUsage;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -57,7 +58,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
   private FindAndRerankCommand.HybridLimits hybridLimits;
 
   // used to track the features used in the command
-  private final FeatureUsage featureUsage;
+  private FeatureUsage featureUsage;
 
   // created on demand or set via builder, otherwise we need to read from config too early when
   // running tests, See the {@link Builder#withApiFeatures}
@@ -168,6 +169,14 @@ public class CommandContext<SchemaT extends SchemaObject> {
 
   public FeatureUsage featureUsage() {
     return featureUsage;
+  }
+
+  public void addFeature(Feature feature) {
+    featureUsage = featureUsage.withFeature(feature);
+  }
+
+  public void addFeatureUsage(FeatureUsage featureUsage) {
+    this.featureUsage = this.featureUsage.unionWith(featureUsage);
   }
 
   public JsonProcessingMetricsReporter jsonProcessingMetricsReporter() {

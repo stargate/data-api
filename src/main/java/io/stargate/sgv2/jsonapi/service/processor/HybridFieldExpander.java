@@ -47,20 +47,35 @@ public class HybridFieldExpander {
       CommandContext context, int docIndex, int docCount, JsonNode docNode) {
     final JsonNode hybridField;
 
-    if ((docNode instanceof ObjectNode doc)
-        && (hybridField = doc.remove(DocumentConstants.Fields.HYBRID_FIELD)) != null) {
-      switch (hybridField) {
-          // this is {"$hybrid" : null}
-        case NullNode ignored -> addLexicalAndVectorize(doc, hybridField, hybridField);
-        case TextNode ignored -> {
-          context.featureUsage().add(Feature.HYBRID);
-          addLexicalAndVectorize(doc, hybridField, hybridField);
+    if (docNode instanceof ObjectNode doc) {
+      // Check for $hybrid field
+      if ((hybridField = doc.remove(DocumentConstants.Fields.HYBRID_FIELD)) != null) {
+        switch (hybridField) {
+            // this is {"$hybrid" : null}
+          case NullNode ignored -> addLexicalAndVectorize(doc, hybridField, hybridField);
+          case TextNode ignored -> {
+            context.addFeature(Feature.HYBRID);
+            addLexicalAndVectorize(doc, hybridField, hybridField);
+          }
+          case ObjectNode ob -> addFromObject(context, doc, ob, docIndex, docCount);
+          default ->
+              throw ErrorCodeV1.HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE.toApiException(
+                  "expected String, Object or `null` but received %s (Document %d of %d)",
+                  JsonUtil.nodeTypeAsString(hybridField), docIndex + 1, docCount);
         }
-        case ObjectNode ob -> addFromObject(context, doc, ob, docIndex, docCount);
-        default ->
-            throw ErrorCodeV1.HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE.toApiException(
-                "expected String, Object or `null` but received %s (Document %d of %d)",
-                JsonUtil.nodeTypeAsString(hybridField), docIndex + 1, docCount);
+      } else {
+        // No $hybrid field, check other fields and add feature usage to CommandContext
+        if (doc.get(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) != null) {
+          context.addFeature(Feature.VECTOR);
+        }
+        // `$vectorize` and `$vector` can't be used together - the check will be done later (in
+        // DataVectorizer)
+        if (doc.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD) != null) {
+          context.addFeature(Feature.VECTORIZE);
+        }
+        if (doc.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) != null) {
+          context.addFeature(Feature.LEXICAL);
+        }
       }
     }
   }
@@ -84,13 +99,13 @@ public class HybridFieldExpander {
         validateSubFieldType(
             lexical, DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, docIndex, docCount);
     if (!lexical.isNull()) {
-      context.featureUsage().add(Feature.HYBRID_LEXICAL);
+      context.addFeature(Feature.HYBRID_LEXICAL);
     }
     vectorize =
         validateSubFieldType(
             vectorize, DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, docIndex, docCount);
     if (!vectorize.isNull()) {
-      context.featureUsage().add(Feature.HYBRID_VECTORIZE);
+      context.addFeature(Feature.HYBRID_VECTORIZE);
     }
 
     addLexicalAndVectorize(doc, lexical, vectorize);
