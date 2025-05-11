@@ -144,6 +144,15 @@ public interface OperationsConfig {
   boolean tooManyIndexesRollbackEnabled();
 
   /**
+   * Optional string that is the case-insensitive user agent string that will be used to identify if
+   * a request is from an SLA checker. Requests from SLA checkers may be treated differently for
+   * features such as caching sessions.(Empty string is treated as unset / null)
+   */
+  @WithDefault("")
+  @Nullable
+  Optional<String> slaUserAgent();
+
+  /**
    * @return Defines the default page size for count operation, having separate from
    *     `defaultPageSize` config because count will read more keys per page, defaults to <code>100
    *     </code>.
@@ -220,9 +229,16 @@ public interface OperationsConfig {
     @WithDefault("datacenter1")
     String localDatacenter();
 
-    /** Time to live for CQLSession in cache in seconds. */
+    /** Time to live for CQLSession in cache in seconds, that are not from the slaUserAgent. */
     @WithDefault("300")
     long sessionCacheTtlSeconds();
+
+    /**
+     * Time to live for CQLSession created because of a request from with the SLA user-agent in
+     * cache in seconds.
+     */
+    @WithDefault("10")
+    long slaSessionCacheTtlSeconds();
 
     /** Maximum number of CQLSessions in cache. */
     @WithDefault("50")
