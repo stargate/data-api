@@ -125,7 +125,8 @@ public class CQLSessionCache {
 
     this.databaseType = Objects.requireNonNull(databaseType, "databaseType must not be null");
     this.cacheTTL = Objects.requireNonNull(cacheTTL, "cacheTTL must not be null");
-    this.slaUserAgent = slaUserAgent != null ? slaUserAgent.toLowerCase() : null;
+    // we use case-insensitive compare
+    this.slaUserAgent = slaUserAgent;
     if (slaUserAgent != null) {
       this.slaUserTTL =
           Objects.requireNonNull(slaUserTTL, "slaUserTTL must not be null is slaUserAgent is set");
@@ -273,7 +274,7 @@ public class CQLSessionCache {
             sessionFactory.apply(cacheKey.tenantId(), cacheKey.credentials()), cacheKey);
 
     if (LOGGER.isDebugEnabled()) {
-      // sowe get the identity hash code of the session holder
+      // so we get the identity hash code of the session holder
       LOGGER.debug("Loaded CQLSession into cache, holder={}", holder);
     }
     return holder;
@@ -291,9 +292,7 @@ public class CQLSessionCache {
     // userAgent arg can be null
     // slaUserAgent forced to lower case in the ctor
     var keyTTL =
-        slaUserAgent == null || userAgent == null || !slaUserAgent.equals(userAgent.toLowerCase())
-            ? cacheTTL
-            : slaUserTTL;
+        slaUserAgent == null || !slaUserAgent.equalsIgnoreCase(userAgent) ? cacheTTL : slaUserTTL;
 
     return switch (databaseType) {
       case CASSANDRA, OFFLINE_WRITER ->
@@ -415,8 +414,8 @@ public class CQLSessionCache {
     }
 
     /**
-     * Note that the cache can decide when it wants to actualy remove an expired key, so we may be
-     * closing a session for a tenant at the same time we are opening on. The {@link #toString()}
+     * Note that the cache can decide when it wants to actually remove an expired key, so we may be
+     * closing a session for a tenant at the same time we are opening one. The {@link #toString()}
      * includes the identity hash code to help with debugging.
      */
     @Override

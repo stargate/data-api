@@ -17,13 +17,13 @@ import org.junit.jupiter.api.Test;
 /** Tests for {@link CQLSessionCache}. */
 public class CqlSessionCacheTests {
 
-  private final String AUTH_TOKEN = "authToken";
-  private final String TENANT_ID = "tenantId";
-  private final Duration CACHE_TTL = Duration.ofSeconds(1);
+  private static final String AUTH_TOKEN = "authToken";
+  private static final String TENANT_ID = "tenantId";
+  private static final Duration CACHE_TTL = Duration.ofSeconds(1);
   private final int CACHE_MAX_SIZE = 10;
 
-  private final String SLA_USER_AGENT = "SLA_USER_AGENT";
-  private final Duration SLA_USER_TTL = Duration.ofMillis(500);
+  private static final String SLA_USER_AGENT = "SLA_USER_AGENT";
+  private static final Duration SLA_USER_TTL = Duration.ofMillis(500);
 
   @Test
   public void cacheStartsEmtpy() {

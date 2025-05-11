@@ -147,8 +147,6 @@ public interface OperationsConfig {
    * Optional string that is the case-insensitive user agent string that will be used to identify if
    * a request is from an SLA checker. Requests from SLA checkers may be treated differently for
    * features such as caching sessions.
-   *
-   * @return
    */
   @Nullable
   String slaUserAgent();
@@ -230,7 +228,7 @@ public interface OperationsConfig {
     @WithDefault("datacenter1")
     String localDatacenter();
 
-    /** Time to live for CQLSession in cache in seconds. */
+    /** Time to live for CQLSession in cache in seconds, that are not from the slaUserAgent. */
     @WithDefault("300")
     long sessionCacheTtlSeconds();
 
