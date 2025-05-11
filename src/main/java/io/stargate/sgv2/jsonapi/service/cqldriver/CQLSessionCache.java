@@ -126,7 +126,7 @@ public class CQLSessionCache {
     this.databaseType = Objects.requireNonNull(databaseType, "databaseType must not be null");
     this.cacheTTL = Objects.requireNonNull(cacheTTL, "cacheTTL must not be null");
     // we use case-insensitive compare
-    this.slaUserAgent = slaUserAgent;
+    this.slaUserAgent = slaUserAgent == null || slaUserAgent.isBlank() ? null : slaUserAgent;
     if (slaUserAgent != null) {
       this.slaUserTTL =
           Objects.requireNonNull(slaUserTTL, "slaUserTTL must not be null is slaUserAgent is set");

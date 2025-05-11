@@ -146,10 +146,11 @@ public interface OperationsConfig {
   /**
    * Optional string that is the case-insensitive user agent string that will be used to identify if
    * a request is from an SLA checker. Requests from SLA checkers may be treated differently for
-   * features such as caching sessions.
+   * features such as caching sessions.(Empty string is treated as unset / null)
    */
+  @WithDefault("")
   @Nullable
-  String slaUserAgent();
+  Optional<String> slaUserAgent();
 
   /**
    * @return Defines the default page size for count operation, having separate from
