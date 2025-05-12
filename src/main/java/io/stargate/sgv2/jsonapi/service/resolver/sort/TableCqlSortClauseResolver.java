@@ -63,7 +63,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     Objects.requireNonNull(commandContext, "commandContext is required");
     Objects.requireNonNull(command, "command is required");
 
-    var sortClause = command.sortClause();
+    var sortClause = command.sortClause(commandContext);
     if (sortClause == null || sortClause.isEmpty()) {
       LOGGER.debug("Sort clause is null or empty, no CQL ORDER BY needed.");
       return WithWarnings.of(OrderByCqlClause.NO_OP);

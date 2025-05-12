@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.Metrics.*;
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.Tags.*;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricNames.*;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.*;
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.UNKNOWN_VALUE;
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
@@ -72,12 +72,12 @@ public class RerankingMetrics {
    * <p>This involves recording the count against two distinct metrics:
    *
    * <ul>
-   *   <li>Tenant-specific: {@value MetricsConstants.Metrics#RERANK_TENANT_PASSAGE_COUNT_METRIC}
-   *       with tags {@value MetricsConstants.Tags#TENANT_TAG} and {@value
-   *       MetricsConstants.Tags#TABLE_TAG}.
-   *   <li>Overall: {@value MetricsConstants.Metrics#RERANK_ALL_PASSAGE_COUNT_METRIC} with tags
-   *       {@value MetricsConstants.Tags#RERANKING_PROVIDER_TAG} and {@value
-   *       MetricsConstants.Tags#RERANKING_MODEL_TAG}.
+   *   <li>Tenant-specific: {@value MetricsConstants.MetricNames#RERANK_TENANT_PASSAGE_COUNT_METRIC}
+   *       with tags {@value MetricsConstants.MetricTags#TENANT_TAG} and {@value
+   *       MetricsConstants.MetricTags#TABLE_TAG}.
+   *   <li>Overall: {@value MetricsConstants.MetricNames#RERANK_ALL_PASSAGE_COUNT_METRIC} with tags
+   *       {@value MetricsConstants.MetricTags#RERANKING_PROVIDER_TAG} and {@value
+   *       MetricsConstants.MetricTags#RERANKING_MODEL_TAG}.
    * </ul>
    *
    * @param passageCount The number of passages.
@@ -120,12 +120,12 @@ public class RerankingMetrics {
    * <p>This ensures the identical duration value is recorded for:
    *
    * <ul>
-   *   <li>Tenant-specific: {@value MetricsConstants.Metrics#RERANK_TENANT_CALL_DURATION_METRIC}
-   *       with tags {@value MetricsConstants.Tags#TENANT_TAG} and {@value
-   *       MetricsConstants.Tags#TABLE_TAG}.
-   *   <li>Overall: {@value MetricsConstants.Metrics#RERANK_ALL_CALL_DURATION_METRIC} with tags
-   *       {@value MetricsConstants.Tags#RERANKING_PROVIDER_TAG} and {@value
-   *       MetricsConstants.Tags#RERANKING_MODEL_TAG}.
+   *   <li>Tenant-specific: {@value MetricsConstants.MetricNames#RERANK_TENANT_CALL_DURATION_METRIC}
+   *       with tags {@value MetricsConstants.MetricTags#TENANT_TAG} and {@value
+   *       MetricsConstants.MetricTags#TABLE_TAG}.
+   *   <li>Overall: {@value MetricsConstants.MetricNames#RERANK_ALL_CALL_DURATION_METRIC} with tags
+   *       {@value MetricsConstants.MetricTags#RERANKING_PROVIDER_TAG} and {@value
+   *       MetricsConstants.MetricTags#RERANKING_MODEL_TAG}.
    * </ul>
    *
    * @param sample The {@link Timer.Sample} started by {@link #startCallLatency()}. Must not be

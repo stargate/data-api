@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.Objects;
 
 /**
@@ -22,7 +23,8 @@ public abstract class JsonDefinition {
   /**
    * @return JSON value that specifies the object
    */
-  protected JsonNode json() {
+  @VisibleForTesting
+  public JsonNode json() {
     return json;
   }
 }

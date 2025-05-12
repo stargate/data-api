@@ -1,9 +1,7 @@
 package io.stargate.sgv2.jsonapi.metrics;
 
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.Metrics.HTTP_SERVER_REQUESTS;
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.Metrics.RERANK_ALL_CALL_DURATION_METRIC;
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.Metrics.RERANK_TENANT_CALL_DURATION_METRIC;
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.Metrics.VECTORIZE_CALL_DURATION_METRIC;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.SESSION_TAG;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.TENANT_TAG;
 
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Tag;
@@ -13,10 +11,12 @@ import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import jakarta.enterprise.inject.Produces;
-import java.util.Collection;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Centralized configuration of Micrometer {@link MeterFilter}s.
@@ -25,15 +25,13 @@ import org.eclipse.microprofile.config.ConfigProvider;
  *
  * <ul>
  *   <li>Apply global tags (e.g., {@code module=sgv2-jsonapi}) to all metrics based on configuration
- *       provided by {@link MetricsConfig}.
- *   <li>Configure distribution statistics (client-side percentiles, Prometheus histogram buckets)
- *       for specific timer metrics using constants defined in {@link MetricsConstants}.
+ *       provided by {@link MetricsConfig}, see {@link #globalTagsMeterFilter()}.
+ *   <li>Configure distribution statistics percentiles for timer metrics such as HTTP server see
+ *       {@link #configureDistributionStatistics()}.
  * </ul>
  */
-public final class MicrometerConfiguration {
-
-  // Private constructor to prevent instantiation
-  private MicrometerConfiguration() {}
+public class MicrometerConfiguration {
+  private static final Logger LOGGER = LoggerFactory.getLogger(MicrometerConfiguration.class);
 
   /**
    * Produces a meter filter that applies configured global tags (e.g., {@code module=sgv2-jsonapi})
@@ -43,6 +41,7 @@ public final class MicrometerConfiguration {
    *     are configured.
    */
   @Produces
+  @SuppressWarnings("unused")
   public MeterFilter globalTagsMeterFilter() {
     MetricsConfig metricsConfig =
         ConfigProvider.getConfig()
@@ -50,14 +49,14 @@ public final class MicrometerConfiguration {
             .getConfigMapping(MetricsConfig.class);
 
     Map<String, String> globalTags = metricsConfig.globalTags();
+    LOGGER.info("Configuring metrics with common global tags: {}", globalTags);
 
     // if we have no global tags, use empty (no-op filter)
     if (null == globalTags || globalTags.isEmpty()) {
       return new MeterFilter() {};
     }
 
-    // transform to tags
-    Collection<Tag> tags =
+    var tags =
         globalTags.entrySet().stream()
             .map(e -> Tag.of(e.getKey(), e.getValue()))
             .collect(Collectors.toList());
@@ -70,72 +69,76 @@ public final class MicrometerConfiguration {
   }
 
   /**
-   * Produces a meter filter to configure distribution statistics for key timer metrics such as HTTP
+   * Produces a meter filter to configure distribution statistics for timer metrics such as HTTP
    * server requests, vectorization duration, and reranking calls.
    *
-   * <p>This filter enables Prometheus-compatible histogram buckets (allowing server-side {@code
-   * histogram_quantile} calculations) and configures specific client-side percentiles.
+   * <p>Tests in {@link MicrometerConfigurationTests} show what is expected to output for the
+   * different metric types.
    *
-   * <p>The percentile configuration strategy aims to balance detail with monitoring system load,
-   * particularly concerning metric cardinality:
+   * <p>For all distribution metrics, we supress the full histogram buckets to reduce overhead. And
+   * then we configure the percentiles based on the metric type:
    *
    * <ul>
-   *   <li>Metrics with high-cardinality tags (e.g., including {@code tenant}) like {@value
-   *       MetricsConstants.Metrics#RERANK_TENANT_CALL_DURATION_METRIC} are configured with a
-   *       limited set of essential percentiles (e.g., P98) to minimize overhead.
-   *   <li>Metrics aggregated across tenants or with lower cardinality tags, such as {@value
-   *       MetricsConstants.Metrics#HTTP_SERVER_REQUESTS} and {@value
-   *       MetricsConstants.Metrics#RERANK_ALL_CALL_DURATION_METRIC}, receive a more comprehensive
-   *       set of standard percentiles (e.g., P50, P90, P95, P99).
+   *   <li>Per tenant metrics (see {@link IsPerTenantPredicate}) have fewer percentiles because
+   *       there will be many more metrics of these types.
+   *   <li>Non per tenant metrics have more percentiles because they are less numerous.
    * </ul>
    *
-   * Note: The percentiles Pxx correspond to the quantiles 0.xx used in configuration.
+   * This is applied to all metrics, including the driver metrics.
    *
    * @return A {@link MeterFilter} for configuring distribution statistics.
    */
   @Produces
+  @SuppressWarnings("unused")
   public MeterFilter configureDistributionStatistics() {
-    // --- Define Percentile Values ---
-    final double[] allTenantLatencyPercentiles = {0.5, 0.90, 0.95, 0.99};
-    final double[] perTenantLatencyPercentiles = {0.98};
 
-    // --- Create A Map For Value Look Up ---
-    final Map<String, double[]> percentileConfigs =
-        Map.of(
-            HTTP_SERVER_REQUESTS,
-            allTenantLatencyPercentiles,
-            VECTORIZE_CALL_DURATION_METRIC,
-            allTenantLatencyPercentiles,
-            RERANK_TENANT_CALL_DURATION_METRIC,
-            perTenantLatencyPercentiles,
-            RERANK_ALL_CALL_DURATION_METRIC,
-            allTenantLatencyPercentiles);
+    final double[] allTenantLatencyPercentiles = {0.5, 0.90, 0.95, 0.98, 0.99};
+    final double[] perTenantLatencyPercentiles = {0.5, 0.98, 0.99};
+    final Predicate<Meter.Id> isPerTenantPredicate = new IsPerTenantPredicate();
 
     return new MeterFilter() {
       @Override
       public DistributionStatisticConfig configure(
           Meter.Id id, DistributionStatisticConfig config) {
 
-        // Look up using the above map to find the specific percentiles for the metric
-        double[] specificPercentiles = percentileConfigs.get(id.getName());
-
-        // If a specific configuration was found for this metric name
-        if (specificPercentiles != null) {
-          return DistributionStatisticConfig.builder()
-              .percentiles(specificPercentiles)
-              // Enable Prometheus histogram buckets (_bucket metrics) for this timer.
-              // This allows accurate server-side aggregation and enables the use of
-              // Prometheus's histogram_quantile() function for flexible quantile querying
-              // in Grafana, complementing the fixed client-side percentiles.
-              .percentilesHistogram(true)
-              .build()
-              // Merge the specific config with the existing/default config
-              .merge(config);
+        var builder = DistributionStatisticConfig.builder();
+        if (isPerTenantPredicate.test(id)) {
+          builder = builder.percentiles(perTenantLatencyPercentiles);
+        } else {
+          builder = builder.percentiles(allTenantLatencyPercentiles);
         }
 
-        // For all other metrics, return the default configuration
-        return config;
+        // make sure we do not publish the histogram buckets for all distribution metrics
+        // that can be 70 lines long for a single metric, and we don't need them because we have
+        // calc'd
+        // the percentiles
+        builder = builder.percentilesHistogram(false);
+
+        return builder.build().merge(config);
       }
     };
+  }
+
+  static class IsPerTenantPredicate implements Predicate<Meter.Id> {
+
+    @Override
+    public boolean test(Meter.Id id) {
+
+      // if the Metric has a "tenant" or "session" tag we assume it is a per-tenant metric
+      // the API code will use tenant, the Driver uses session
+      // getTags() iterates over the tags, but there will never be too many for it to be a problem
+      // and sanity check they are not blank strings
+
+      var tenantTag = id.getTag(TENANT_TAG);
+      if (tenantTag != null && !tenantTag.isBlank()) {
+        return true;
+      }
+
+      var sessionTag = id.getTag(SESSION_TAG);
+      if (sessionTag != null && !sessionTag.isBlank()) {
+        return true;
+      }
+      return false;
+    }
   }
 }

@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.util.Optional;
 
 /** Interface for commands that can have vector sort clause */
@@ -20,10 +22,15 @@ public interface VectorSortable extends Sortable {
    *
    * @return the vector sort expression if it exists.
    */
-  default Optional<SortExpression> vectorSortExpression() {
-    if (sortClause() != null && sortClause().sortExpressions() != null) {
+  default Optional<SortExpression> vectorSortExpression(CommandContext<?> ctx) {
+    return vectorSortExpression(ctx.schemaObject());
+  }
+
+  default Optional<SortExpression> vectorSortExpression(SchemaObject schema) {
+    SortClause sortClause = sortClause(schema);
+    if (sortClause.sortExpressions() != null) {
       var vectorSorts =
-          sortClause().sortExpressions().stream()
+          sortClause.sortExpressions().stream()
               .filter(expression -> expression.vector() != null)
               .toList();
       if (vectorSorts.size() > 1) {
