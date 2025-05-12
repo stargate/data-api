@@ -2,13 +2,12 @@ package io.stargate.sgv2.jsonapi.metrics;
 
 import java.util.EnumSet;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
- * Represents a collection of {@link CommandFeature}s in a command. This class is immutable and can
- * be used to track which commandFeatures are utilized in a command. This class is immutable;
- * methods that modify the set of commandFeatures return a new {@code CommandFeatures} instance. It
- * uses an {@link EnumSet} internally for efficient storage and operations on commandFeatures.
+ * Represents a collection of {@link CommandFeature}s used in a command. This class is mutable and
+ * designed to be used within a {@link io.stargate.sgv2.jsonapi.api.model.command.CommandContext} to
+ * accumulate features during command processing. Mutation is controlled via specific add methods.
+ * It uses an {@link EnumSet} internally for efficient storage and operations on commandFeatures.
  */
 public final class CommandFeatures {
   private final EnumSet<CommandFeature> commandFeatures;
@@ -17,78 +16,61 @@ public final class CommandFeatures {
   public static final CommandFeatures EMPTY =
       new CommandFeatures(EnumSet.noneOf(CommandFeature.class));
 
+  /** Private constructor, use factory methods 'of' or 'create' */
   private CommandFeatures(EnumSet<CommandFeature> commandFeatures) {
-    this.commandFeatures = EnumSet.copyOf(commandFeatures);
+    this.commandFeatures = commandFeatures;
   }
 
   /**
-   * Creates a {@code CommandFeatures} instance from an array of {@link CommandFeature}s.
+   * Creates a new, mutable {@code CommandFeatures} instance containing no features.
    *
-   * @param commandFeatures The commandFeatures to include. If null or empty, {@link #EMPTY} is
+   * @return A new, empty, mutable {@code CommandFeatures} instance.
+   */
+  public static CommandFeatures create() {
+    return new CommandFeatures(EnumSet.noneOf(CommandFeature.class));
+  }
+
+  /**
+   * Creates a {@code CommandFeatures} instance from an array of {@link CommandFeature}s. The
+   * returned instance will be mutable.
+   *
+   * @param initialFeatures The initial features to include. If null or empty, an empty instance is
    *     returned.
-   * @return A new {@code CommandFeatures} instance containing the specified commandFeatures.
+   * @return A new {@code CommandFeatures} instance containing the specified features.
    */
-  public static CommandFeatures of(CommandFeature... commandFeatures) {
-    if (commandFeatures == null || commandFeatures.length == 0) {
-      return EMPTY;
+  public static CommandFeatures of(CommandFeature... initialFeatures) {
+    if (initialFeatures == null || initialFeatures.length == 0) {
+      return create();
     }
-    return new CommandFeatures(EnumSet.of(commandFeatures[0], commandFeatures));
+    return new CommandFeatures(EnumSet.of(initialFeatures[0], initialFeatures));
   }
 
-  /**
-   * Creates a {@code CommandFeatures} instance from an {@link EnumSet} of {@link CommandFeature}s.
-   *
-   * @param commandFeatures The set of commandFeatures to include. If null or empty, {@link #EMPTY}
-   *     is returned.
-   * @return A new {@code CommandFeatures} instance containing the specified commandFeatures.
-   */
-  public static CommandFeatures of(EnumSet<CommandFeature> commandFeatures) {
-    if (commandFeatures == null || commandFeatures.isEmpty()) {
-      return EMPTY;
-    }
-    return new CommandFeatures(commandFeatures);
-  }
-
-  /**
-   * Returns a new {@code CommandFeatures} instance that includes the specified commandFeature in
-   * addition to the commandFeatures in this instance. If the commandFeature is already present,
-   * this instance is returned.
-   *
-   * @param commandFeature The commandFeature to add. Must not be null.
-   * @return A new {@code CommandFeatures} instance with the added commandFeature, or this instance
-   *     if the commandFeature was already present.
-   * @throws NullPointerException if the commandFeature is null.
-   */
-  public CommandFeatures withFeature(CommandFeature commandFeature) {
+  /** Adds the specified feature to this instance. */
+  public void addFeature(CommandFeature commandFeature) {
     Objects.requireNonNull(commandFeature, "CommandFeature cannot be null");
-    if (this.commandFeatures.contains(commandFeature)) {
-      return this;
-    }
-    EnumSet<CommandFeature> newSet = EnumSet.copyOf(this.commandFeatures);
-    newSet.add(commandFeature);
-    return new CommandFeatures(newSet);
+    this.commandFeatures.add(commandFeature);
   }
 
   /**
-   * Returns a new {@code CommandFeatures} instance that is the union of this instance's
-   * commandFeatures and the commandFeatures of another {@code CommandFeatures} instance.
+   * Adds all features from another {@code CommandFeatures} instance to this instance. Mutates the
+   * current object.
    *
-   * @param other The other {@code CommandFeatures} instance to combine with. If null, empty, or the
-   *     same as this instance, this instance is returned. If this instance is empty, the other
-   *     instance is returned.
-   * @return A new {@code CommandFeatures} instance representing the combined set of
-   *     commandFeatures.
+   * @param other The other {@code CommandFeatures} instance whose features should be added. If null
+   *     or empty, this instance remains unchanged.
    */
-  public CommandFeatures unionWith(CommandFeatures other) {
-    if (other == null || other.commandFeatures.isEmpty() || other == this) {
-      return this;
+  public void addAll(CommandFeatures other) {
+    if (other != null && !other.isEmpty()) {
+      this.commandFeatures.addAll(other.commandFeatures);
     }
-    if (this.commandFeatures.isEmpty()) {
-      return other;
-    }
-    EnumSet<CommandFeature> combined = EnumSet.copyOf(this.commandFeatures);
-    combined.addAll(other.commandFeatures);
-    return new CommandFeatures(combined);
+  }
+
+  /**
+   * Checks if this instance contains any features.
+   *
+   * @return {@code true} if no features are present, {@code false} otherwise.
+   */
+  public boolean isEmpty() {
+    return this.commandFeatures.isEmpty();
   }
 
   /**
@@ -121,8 +103,6 @@ public final class CommandFeatures {
 
   @Override
   public String toString() {
-    return "CommandFeatures{"
-        + commandFeatures.stream().map(Enum::name).collect(Collectors.joining(", "))
-        + '}';
+    return "CommandFeatures" + commandFeatures.toString();
   }
 }

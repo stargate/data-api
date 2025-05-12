@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
-import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -104,7 +103,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
                 apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL))
             : RequestTracing.NO_OP;
 
-    this.commandFeatures = CommandFeatures.EMPTY;
+    this.commandFeatures = CommandFeatures.create();
   }
 
   /** See doc comments for {@link CommandContext} */
@@ -171,13 +170,13 @@ public class CommandContext<SchemaT extends SchemaObject> {
     return commandFeatures;
   }
 
-  public void addCommandFeature(CommandFeature commandFeature) {
-    this.commandFeatures = this.commandFeatures.withFeature(commandFeature);
-  }
-
-  public void addCommandFeatures(CommandFeatures commandFeatures) {
-    this.commandFeatures = this.commandFeatures.unionWith(commandFeatures);
-  }
+  //  public void addCommandFeature(CommandFeature commandFeature) {
+  //    this.commandFeatures.addFeature(commandFeature);
+  //  }
+  //
+  //  public void addCommandFeatures(CommandFeatures commandFeatures) {
+  //    this.commandFeatures.addAll(commandFeatures);
+  //  }
 
   public JsonProcessingMetricsReporter jsonProcessingMetricsReporter() {
     return jsonProcessingMetricsReporter;

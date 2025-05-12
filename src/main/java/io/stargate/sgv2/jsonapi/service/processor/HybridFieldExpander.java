@@ -54,7 +54,7 @@ public class HybridFieldExpander {
             // this is {"$hybrid" : null}
           case NullNode ignored -> addLexicalAndVectorize(doc, hybridField, hybridField);
           case TextNode ignored -> {
-            context.addCommandFeature(CommandFeature.HYBRID);
+            context.commandFeatures().addFeature(CommandFeature.HYBRID);
             addLexicalAndVectorize(doc, hybridField, hybridField);
           }
           case ObjectNode ob -> addFromObject(context, doc, ob, docIndex, docCount);
@@ -66,15 +66,15 @@ public class HybridFieldExpander {
       } else {
         // No $hybrid field, check other fields and add feature usage to CommandContext
         if (doc.get(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) != null) {
-          context.addCommandFeature(CommandFeature.VECTOR);
+          context.commandFeatures().addFeature(CommandFeature.VECTOR);
         }
         // `$vectorize` and `$vector` can't be used together - the check will be done later (in
         // DataVectorizer)
         if (doc.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD) != null) {
-          context.addCommandFeature(CommandFeature.VECTORIZE);
+          context.commandFeatures().addFeature(CommandFeature.VECTORIZE);
         }
         if (doc.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) != null) {
-          context.addCommandFeature(CommandFeature.LEXICAL);
+          context.commandFeatures().addFeature(CommandFeature.LEXICAL);
         }
       }
     }
@@ -99,13 +99,13 @@ public class HybridFieldExpander {
         validateSubFieldType(
             lexical, DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, docIndex, docCount);
     if (!lexical.isNull()) {
-      context.addCommandFeature(CommandFeature.HYBRID_LEXICAL);
+      context.commandFeatures().addFeature(CommandFeature.HYBRID_LEXICAL);
     }
     vectorize =
         validateSubFieldType(
             vectorize, DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, docIndex, docCount);
     if (!vectorize.isNull()) {
-      context.addCommandFeature(CommandFeature.HYBRID_VECTORIZE);
+      context.commandFeatures().addFeature(CommandFeature.HYBRID_VECTORIZE);
     }
 
     addLexicalAndVectorize(doc, lexical, vectorize);

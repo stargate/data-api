@@ -53,13 +53,14 @@ public record FindAndRerankCommand(
 
   @Override
   public CommandFeatures getCommandFeatures() {
-    var sortFeatures =
-        (sortClause != null) ? sortClause.getCommandFeatures() : CommandFeatures.EMPTY;
-    var hybridLimitsFeatures =
+    var commandFeatures = CommandFeatures.create();
+    commandFeatures.addAll(
+        (sortClause != null) ? sortClause.getCommandFeatures() : CommandFeatures.EMPTY);
+    commandFeatures.addAll(
         (options != null && options.hybridLimits() != null)
             ? options.hybridLimits().getCommandFeatures()
-            : CommandFeatures.EMPTY;
-    return sortFeatures.unionWith(hybridLimitsFeatures);
+            : CommandFeatures.EMPTY);
+    return commandFeatures;
   }
 
   public record Options(

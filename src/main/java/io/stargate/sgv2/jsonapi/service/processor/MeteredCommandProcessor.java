@@ -311,7 +311,7 @@ public class MeteredCommandProcessor {
 
     // --- Command CommandFeature Usage Tags ---
     if (command instanceof FeatureSource fs) {
-      commandContext.addCommandFeatures(fs.getCommandFeatures());
+      commandContext.commandFeatures().addAll(fs.getCommandFeatures());
     }
     Tags commandFeatureTags = getCommandFeatureTags(commandContext.commandFeatures());
 

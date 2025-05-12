@@ -57,10 +57,11 @@ public record FindAndRerankSort(
    */
   @Override
   public boolean equals(Object obj) {
-    return Objects.equals(vectorizeSort, ((FindAndRerankSort) obj).vectorizeSort)
-        && Objects.equals(lexicalSort, ((FindAndRerankSort) obj).lexicalSort)
-        && Arrays.equals(vectorSort, ((FindAndRerankSort) obj).vectorSort)
-        && Objects.equals(commandFeatures, ((FindAndRerankSort) obj).commandFeatures);
+    return (obj instanceof FindAndRerankSort other)
+        && Objects.equals(vectorizeSort, other.vectorizeSort)
+        && Objects.equals(lexicalSort, other.lexicalSort)
+        && Arrays.equals(vectorSort, other.vectorSort)
+        && Objects.equals(commandFeatures, other.commandFeatures);
   }
 
   /** Override to do a value equality hash on the vector */
