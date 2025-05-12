@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -11,6 +12,7 @@ import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
+import java.io.IOException;
 import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -50,7 +52,8 @@ class UpdateOneCommandTest {
                 assertThat(updateClause).isNotNull();
                 assertThat(updateClause.buildOperations()).hasSize(1);
                 assertThat(updateOneCommand.sortSpec()).isNotNull();
-                assertThat(updateOneCommand.sortSpec()).isNotNull();
+                assertThat(updateOneCommand.sortSpec().json())
+                    .isEqualTo(readTree("{\"username\" : 1}"));
                 assertThat(updateOneCommand.options()).isNotNull();
               });
     }
@@ -73,6 +76,14 @@ class UpdateOneCommandTest {
           .isNotEmpty()
           .extracting(ConstraintViolation::getMessage)
           .contains("must not be null");
+    }
+  }
+
+  private JsonNode readTree(String json) {
+    try {
+      return objectMapper.readTree(json);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to parse JSON", e);
     }
   }
 }
