@@ -170,14 +170,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
     return commandFeatures;
   }
 
-  //  public void addCommandFeature(CommandFeature commandFeature) {
-  //    this.commandFeatures.addFeature(commandFeature);
-  //  }
-  //
-  //  public void addCommandFeatures(CommandFeatures commandFeatures) {
-  //    this.commandFeatures.addAll(commandFeatures);
-  //  }
-
   public JsonProcessingMetricsReporter jsonProcessingMetricsReporter() {
     return jsonProcessingMetricsReporter;
   }
