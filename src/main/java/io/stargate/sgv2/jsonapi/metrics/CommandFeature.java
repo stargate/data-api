@@ -1,12 +1,12 @@
-package io.stargate.sgv2.jsonapi.service.operation.reranking;
+package io.stargate.sgv2.jsonapi.metrics;
 
 import java.util.Objects;
 
 /**
- * Represents distinct features that can be used in the command. Each feature has an associated tag
- * name, which can be used for metrics.
+ * Represents distinct features that can be used in the general command. Each feature has an
+ * associated tag name, which can be used for metrics.
  */
-public enum Feature {
+public enum CommandFeature {
   /** The usage of $lexical in the command */
   LEXICAL("feature.lexical"),
   /** The usage of $vector in the command */
@@ -33,7 +33,7 @@ public enum Feature {
 
   private final String tagName;
 
-  Feature(String tagName) {
+  CommandFeature(String tagName) {
     this.tagName = Objects.requireNonNull(tagName);
   }
 

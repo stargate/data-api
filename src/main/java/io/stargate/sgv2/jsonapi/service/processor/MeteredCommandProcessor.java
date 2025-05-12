@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.processor;
 import static io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.MetricTags.ERROR_CODE;
 import static io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.MetricTags.EXCEPTION_CLASS;
 import static io.stargate.sgv2.jsonapi.config.constants.LoggingConstants.*;
-import static io.stargate.sgv2.jsonapi.service.operation.reranking.Feature.*;
 
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,10 +15,10 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
+import io.stargate.sgv2.jsonapi.metrics.FeatureSource;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.reranking.Feature;
-import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureSource;
-import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureUsage;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Collections;
@@ -305,16 +304,16 @@ public class MeteredCommandProcessor {
 
     // --- Sort Type Tag ---
     // Determine the type of sorting used (if any), primarily for FindCommand.
-    // NOTE: This logic might need refinement or replacement when FeatureUsage is fully integrated,
-    // especially for FindAndRerankCommand.
+    // NOTE: This logic might need refinement or replacement when CommandFeatures is fully
+    // integrated, especially for FindAndRerankCommand.
     JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(commandContext, command);
     Tag sortTypeTag = Tag.of(jsonApiMetricsConfig.sortType(), sortType.name());
 
-    // --- Command Feature Usage Tags ---
+    // --- Command CommandFeature Usage Tags ---
     if (command instanceof FeatureSource fs) {
-      commandContext.addFeatureUsage(fs.getFeatureUsage());
+      commandContext.addCommandFeatures(fs.getCommandFeatures());
     }
-    Tags commandFeatureTags = getCommandFeatureTags(commandContext.featureUsage());
+    Tags commandFeatureTags = getCommandFeatureTags(commandContext.commandFeatures());
 
     // --- Combine All Tags ---
     return Tags.of(
@@ -329,20 +328,20 @@ public class MeteredCommandProcessor {
   }
 
   /**
-   * Adds tags for all defined features. If a feature is present in FeatureUsage, its tag value is
-   * "true", otherwise "false".
+   * Adds tags for all defined features. If a feature is present in CommandFeatures, its tag value
+   * is "true", otherwise "false".
    */
-  private Tags getCommandFeatureTags(FeatureUsage featureUsage) {
+  private Tags getCommandFeatureTags(CommandFeatures commandFeatures) {
     Tags tags = Tags.empty();
-    Set<Feature> usedFeatures = Collections.emptySet();
+    Set<CommandFeature> usedCommandFeatures = Collections.emptySet();
 
-    if (featureUsage != null && featureUsage.getFeatures() != null) {
-      usedFeatures = featureUsage.getFeatures();
+    if (commandFeatures != null && commandFeatures.getFeatures() != null) {
+      usedCommandFeatures = commandFeatures.getFeatures();
     }
 
-    for (Feature feature : Feature.values()) {
-      boolean isFeaturePresent = usedFeatures.contains(feature);
-      tags = tags.and(Tag.of(feature.getTagName(), String.valueOf(isFeaturePresent)));
+    for (CommandFeature commandFeature : CommandFeature.values()) {
+      boolean isFeaturePresent = usedCommandFeatures.contains(commandFeature);
+      tags = tags.and(Tag.of(commandFeature.getTagName(), String.valueOf(isFeaturePresent)));
     }
 
     return tags;

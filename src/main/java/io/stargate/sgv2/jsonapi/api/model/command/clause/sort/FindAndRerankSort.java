@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureSource;
-import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureUsage;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
+import io.stargate.sgv2.jsonapi.metrics.FeatureSource;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -29,15 +29,15 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
               {"$sort" : {"$hybrid" : {"$vector" : [1,2,3] , "$lexical": "lexical sort" }}}
       """)
 public record FindAndRerankSort(
-    String vectorizeSort, String lexicalSort, float[] vectorSort, FeatureUsage featureUsage)
+    String vectorizeSort, String lexicalSort, float[] vectorSort, CommandFeatures commandFeatures)
     implements Recordable, FeatureSource {
 
   public static final FindAndRerankSort NO_ARG_SORT =
-      new FindAndRerankSort(null, null, null, FeatureUsage.EMPTY);
+      new FindAndRerankSort(null, null, null, CommandFeatures.EMPTY);
 
   @Override
-  public FeatureUsage getFeatureUsage() {
-    return featureUsage != null ? featureUsage : FeatureUsage.EMPTY;
+  public CommandFeatures getCommandFeatures() {
+    return commandFeatures != null ? commandFeatures : CommandFeatures.EMPTY;
   }
 
   @Override
@@ -46,7 +46,7 @@ public record FindAndRerankSort(
         .append("vectorizeSort", vectorizeSort)
         .append("lexicalSort", lexicalSort)
         .append("vectorSort", Arrays.toString(vectorSort))
-        .append("featureUsage", featureUsage);
+        .append("commandFeatures", commandFeatures);
   }
 
   /**
@@ -60,12 +60,12 @@ public record FindAndRerankSort(
     return Objects.equals(vectorizeSort, ((FindAndRerankSort) obj).vectorizeSort)
         && Objects.equals(lexicalSort, ((FindAndRerankSort) obj).lexicalSort)
         && Arrays.equals(vectorSort, ((FindAndRerankSort) obj).vectorSort)
-        && Objects.equals(featureUsage, ((FindAndRerankSort) obj).featureUsage);
+        && Objects.equals(commandFeatures, ((FindAndRerankSort) obj).commandFeatures);
   }
 
   /** Override to do a value equality hash on the vector */
   @Override
   public int hashCode() {
-    return Objects.hash(vectorizeSort, lexicalSort, Arrays.hashCode(vectorSort), featureUsage);
+    return Objects.hash(vectorizeSort, lexicalSort, Arrays.hashCode(vectorSort), commandFeatures);
   }
 }

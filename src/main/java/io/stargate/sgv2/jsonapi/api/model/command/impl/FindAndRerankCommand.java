@@ -16,9 +16,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.service.operation.reranking.Feature;
-import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureSource;
-import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureUsage;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
+import io.stargate.sgv2.jsonapi.metrics.FeatureSource;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.validation.Valid;
@@ -52,12 +52,13 @@ public record FindAndRerankCommand(
   }
 
   @Override
-  public FeatureUsage getFeatureUsage() {
-    var sortFeatures = (sortClause != null) ? sortClause.getFeatureUsage() : FeatureUsage.EMPTY;
+  public CommandFeatures getCommandFeatures() {
+    var sortFeatures =
+        (sortClause != null) ? sortClause.getCommandFeatures() : CommandFeatures.EMPTY;
     var hybridLimitsFeatures =
         (options != null && options.hybridLimits() != null)
-            ? options.hybridLimits().getFeatureUsage()
-            : FeatureUsage.EMPTY;
+            ? options.hybridLimits().getCommandFeatures()
+            : CommandFeatures.EMPTY;
     return sortFeatures.unionWith(hybridLimitsFeatures);
   }
 
@@ -111,21 +112,21 @@ public record FindAndRerankCommand(
       @JsonProperty(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) int vectorLimit,
       /** ---- */
       @JsonProperty(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) int lexicalLimit,
-      FeatureUsage featureUsage)
+      CommandFeatures commandFeatures)
       implements Recordable, FeatureSource {
-    public static final HybridLimits DEFAULT = new HybridLimits(50, 50, FeatureUsage.EMPTY);
+    public static final HybridLimits DEFAULT = new HybridLimits(50, 50, CommandFeatures.EMPTY);
 
     @Override
     public DataRecorder recordTo(DataRecorder dataRecorder) {
       return dataRecorder
           .append("vectorLimit", vectorLimit)
           .append("lexicalLimit", lexicalLimit)
-          .append("featureUsage", featureUsage);
+          .append("commandFeatures", commandFeatures);
     }
 
     @Override
-    public FeatureUsage getFeatureUsage() {
-      return featureUsage != null ? featureUsage : FeatureUsage.EMPTY;
+    public CommandFeatures getCommandFeatures() {
+      return commandFeatures != null ? commandFeatures : CommandFeatures.EMPTY;
     }
   }
 
@@ -169,7 +170,7 @@ public record FindAndRerankCommand(
       return new HybridLimits(
           normaliseLimit(jsonParser, limitsNumber, VECTOR_EMBEDDING_FIELD),
           normaliseLimit(jsonParser, limitsNumber, LEXICAL_CONTENT_FIELD),
-          FeatureUsage.of(Feature.HYBRID_LIMITS_NUMBER));
+          CommandFeatures.of(CommandFeature.HYBRID_LIMITS_NUMBER));
     }
 
     private HybridLimits deserialize(JsonParser jsonParser, ObjectNode limitsObject)
@@ -182,7 +183,8 @@ public record FindAndRerankCommand(
               jsonParser, limitMatch.matched().get(VECTOR_EMBEDDING_FIELD), VECTOR_EMBEDDING_FIELD),
           normaliseLimit(
               jsonParser, limitMatch.matched().get(LEXICAL_CONTENT_FIELD), LEXICAL_CONTENT_FIELD),
-          FeatureUsage.of(Feature.HYBRID_LIMITS_VECTOR, Feature.HYBRID_LIMITS_LEXICAL));
+          CommandFeatures.of(
+              CommandFeature.HYBRID_LIMITS_VECTOR, CommandFeature.HYBRID_LIMITS_LEXICAL));
     }
 
     private int normaliseLimit(JsonParser jsonParser, NumericNode limitNode, String fieldName)

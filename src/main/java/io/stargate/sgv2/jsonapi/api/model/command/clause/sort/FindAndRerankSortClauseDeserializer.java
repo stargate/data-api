@@ -13,8 +13,8 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
-import io.stargate.sgv2.jsonapi.service.operation.reranking.Feature;
-import io.stargate.sgv2.jsonapi.service.operation.reranking.FeatureUsage;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
 import java.io.IOException;
 import java.util.*;
@@ -92,7 +92,9 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
             normalizedText,
             normalizedText,
             null,
-            normalizedText == null ? FeatureUsage.EMPTY : FeatureUsage.of(Feature.HYBRID));
+            normalizedText == null
+                ? CommandFeatures.EMPTY
+                : CommandFeatures.of(CommandFeature.HYBRID));
       }
       case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
       case JsonNode node ->
@@ -105,7 +107,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       JsonParser jsonParser, ObjectNode hybridObject) throws JsonMappingException {
 
     var sortMatch = MATCH_SORT_FIELDS.matchAndThrow(hybridObject, jsonParser, ERROR_CONTEXT);
-    EnumSet<Feature> features = EnumSet.noneOf(Feature.class);
+    EnumSet<CommandFeature> commandFeatures = EnumSet.noneOf(CommandFeature.class);
 
     var vectorizeText =
         switch (sortMatch.matched().get(VECTOR_EMBEDDING_TEXT_FIELD)) {
@@ -124,7 +126,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
             // { "sort" : { "$hybrid" : { "$vectorize" : "I like cheese",
             var normalizedText = normalizedText(textNode.asText().trim());
             if (normalizedText != null) {
-              features.add(Feature.HYBRID_VECTORIZE);
+              commandFeatures.add(CommandFeature.HYBRID_VECTORIZE);
             }
             yield normalizedText;
           }
@@ -154,7 +156,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
             // { "sort" : { "$hybrid" : { "$lexical" : "cheese",
             var normalizedText = normalizedText(textNode.asText().trim());
             if (normalizedText != null) {
-              features.add(Feature.HYBRID_LEXICAL);
+              commandFeatures.add(CommandFeature.HYBRID_LEXICAL);
             }
             yield normalizedText;
           }
@@ -182,7 +184,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           }
           case ArrayNode arrayNode -> {
             // { "sort" : { "$hybrid" : { "vector" : [1,2,3],
-            features.add(Feature.HYBRID_VECTOR);
+            commandFeatures.add(CommandFeature.HYBRID_VECTOR);
             yield arrayNodeToVector(arrayNode);
           }
           case ObjectNode objectNode -> {
@@ -202,7 +204,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   ArrayNode.class,
                   ObjectNode.class);
             }
-            features.add(Feature.HYBRID_VECTOR);
+            commandFeatures.add(CommandFeature.HYBRID_VECTOR);
             yield ejson.getVectorValueForBinary();
           }
           case JsonNode node ->
@@ -216,7 +218,8 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   ObjectNode.class);
         };
 
-    return new FindAndRerankSort(vectorizeText, lexicalText, vector, FeatureUsage.of(features));
+    return new FindAndRerankSort(
+        vectorizeText, lexicalText, vector, CommandFeatures.of(commandFeatures));
   }
 
   /**

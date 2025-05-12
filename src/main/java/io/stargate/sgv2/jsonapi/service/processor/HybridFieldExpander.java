@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.operation.reranking.Feature;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.Iterator;
 
@@ -54,7 +54,7 @@ public class HybridFieldExpander {
             // this is {"$hybrid" : null}
           case NullNode ignored -> addLexicalAndVectorize(doc, hybridField, hybridField);
           case TextNode ignored -> {
-            context.addFeature(Feature.HYBRID);
+            context.addCommandFeature(CommandFeature.HYBRID);
             addLexicalAndVectorize(doc, hybridField, hybridField);
           }
           case ObjectNode ob -> addFromObject(context, doc, ob, docIndex, docCount);
@@ -66,15 +66,15 @@ public class HybridFieldExpander {
       } else {
         // No $hybrid field, check other fields and add feature usage to CommandContext
         if (doc.get(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) != null) {
-          context.addFeature(Feature.VECTOR);
+          context.addCommandFeature(CommandFeature.VECTOR);
         }
         // `$vectorize` and `$vector` can't be used together - the check will be done later (in
         // DataVectorizer)
         if (doc.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD) != null) {
-          context.addFeature(Feature.VECTORIZE);
+          context.addCommandFeature(CommandFeature.VECTORIZE);
         }
         if (doc.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) != null) {
-          context.addFeature(Feature.LEXICAL);
+          context.addCommandFeature(CommandFeature.LEXICAL);
         }
       }
     }
@@ -99,13 +99,13 @@ public class HybridFieldExpander {
         validateSubFieldType(
             lexical, DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, docIndex, docCount);
     if (!lexical.isNull()) {
-      context.addFeature(Feature.HYBRID_LEXICAL);
+      context.addCommandFeature(CommandFeature.HYBRID_LEXICAL);
     }
     vectorize =
         validateSubFieldType(
             vectorize, DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, docIndex, docCount);
     if (!vectorize.isNull()) {
-      context.addFeature(Feature.HYBRID_VECTORIZE);
+      context.addCommandFeature(CommandFeature.HYBRID_VECTORIZE);
     }
 
     addLexicalAndVectorize(doc, lexical, vectorize);
