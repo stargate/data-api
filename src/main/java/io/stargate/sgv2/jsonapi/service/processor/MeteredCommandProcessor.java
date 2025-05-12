@@ -365,10 +365,9 @@ public class MeteredCommandProcessor {
 
     // Check if the command supports sorting and has a sort clause defined
     if (command instanceof Sortable sc
-        && sc.sortClause() != null
-        && !sc.sortClause().sortExpressions().isEmpty()) {
+        && !sc.sortClause(commandContext).sortExpressions().isEmpty()) {
 
-      var sortExpressions = sc.sortClause().sortExpressions();
+      var sortExpressions = sc.sortClause(commandContext).sortExpressions();
 
       // Check if the only sort expression is for vector similarity ($vector or $vectorize)
       if (sortExpressions.size() == 1) {
