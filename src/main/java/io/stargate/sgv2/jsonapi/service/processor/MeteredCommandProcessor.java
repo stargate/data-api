@@ -15,8 +15,6 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
-import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.metrics.FeatureSource;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -313,7 +311,7 @@ public class MeteredCommandProcessor {
     if (command instanceof FeatureSource fs) {
       commandContext.commandFeatures().addAll(fs.getCommandFeatures());
     }
-    Tags commandFeatureTags = getCommandFeatureTags(commandContext.commandFeatures());
+    Tags commandFeatureTags = commandContext.commandFeatures().getAsTags();
 
     // --- Combine All Tags ---
     return Tags.of(
@@ -325,26 +323,6 @@ public class MeteredCommandProcessor {
             vectorEnabled,
             sortTypeTag)
         .and(commandFeatureTags);
-  }
-
-  /**
-   * Adds tags for all defined features. If a feature is present in CommandFeatures, its tag value
-   * is "true", otherwise "false".
-   */
-  private Tags getCommandFeatureTags(CommandFeatures commandFeatures) {
-    Tags tags = Tags.empty();
-    Set<CommandFeature> usedCommandFeatures = Collections.emptySet();
-
-    if (commandFeatures != null && commandFeatures.getFeatures() != null) {
-      usedCommandFeatures = commandFeatures.getFeatures();
-    }
-
-    for (CommandFeature commandFeature : CommandFeature.values()) {
-      boolean isFeaturePresent = usedCommandFeatures.contains(commandFeature);
-      tags = tags.and(Tag.of(commandFeature.getTagName(), String.valueOf(isFeaturePresent)));
-    }
-
-    return tags;
   }
 
   /**
