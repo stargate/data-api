@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.google.common.annotations.VisibleForTesting;
+import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.AccumulatingAsyncResultSet;
@@ -76,6 +77,8 @@ public class CommandQueryExecutor {
     Objects.requireNonNull(statement, "statement must not be null");
 
     statement = withExecutionProfile(statement, QueryType.READ);
+    // TODO, removal, debugging purpose for map/set/list filter feature.
+    Log.info("CQL statement " + statement.getQuery() + " " + statement.getPositionalValues());
     return executeAndWrap(statement);
   }
 

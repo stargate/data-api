@@ -193,8 +193,8 @@ class ObjectMapperConfigurationTest {
                     .singleElement()
                     .satisfies(
                         expression -> {
-                          ValueComparisonOperation<String> op =
-                              new ValueComparisonOperation<>(
+                          ValueComparisonOperation<?> op =
+                              ValueComparisonOperation.build(
                                   ValueComparisonOperator.EQ,
                                   new JsonLiteral<>("aaron", JsonType.STRING));
 
@@ -382,8 +382,8 @@ class ObjectMapperConfigurationTest {
 
                 assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
                     .isEqualTo("username");
-                ValueComparisonOperation<String> op =
-                    new ValueComparisonOperation<>(
+                ValueComparisonOperation<?> op =
+                    ValueComparisonOperation.build(
                         ValueComparisonOperator.EQ, new JsonLiteral<>("Aaron", JsonType.STRING));
                 assertThat(
                         filterClause
