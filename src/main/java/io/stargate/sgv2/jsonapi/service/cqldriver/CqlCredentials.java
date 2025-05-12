@@ -46,6 +46,11 @@ public interface CqlCredentials {
       // do nothing, there is no auth token
       return builder;
     }
+
+    @Override
+    public String toString() {
+      return "AnonymousCredentials{isAnonymous=true}";
+    }
   }
 
   /**
@@ -64,6 +69,19 @@ public interface CqlCredentials {
     @Override
     public CqlSessionBuilder addToSessionBuilder(CqlSessionBuilder builder) {
       return builder.withAuthCredentials("token", token);
+    }
+
+    @Override
+    public String toString() {
+      // Don't log the full token, just the first 4 chars
+      return new StringBuilder("TokenCredentials{")
+          .append("token='")
+          .append(token.substring(0, 4))
+          .append("...'")
+          .append(", isAnonymous=")
+          .append(isAnonymous())
+          .append('}')
+          .toString();
     }
   }
 
@@ -87,6 +105,18 @@ public interface CqlCredentials {
     @Override
     public CqlSessionBuilder addToSessionBuilder(CqlSessionBuilder builder) {
       return builder.withAuthCredentials(userName, password);
+    }
+
+    @Override
+    public String toString() {
+      // Don't include any username or password
+      return new StringBuilder("UsernamePasswordCredentials{")
+          .append("userName='REDACTED'")
+          .append(", password='REDACTED'")
+          .append(", isAnonymous=")
+          .append(isAnonymous())
+          .append('}')
+          .toString();
     }
 
     static UsernamePasswordCredentials fromToken(String encodedCredentials) {
