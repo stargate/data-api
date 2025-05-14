@@ -239,6 +239,13 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
               operator.getOperator());
         }
       } else if (operator == ValueComparisonOperator.MATCH) {
+        // $match operator can only be used with String value and for Collections
+        // only on $lexical field
+        if (!entryKey.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)) {
+          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+                  "%s operator can only be used with the '%s' field, not '%s'",
+                  operator.getOperator(), DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, entryKey);
+        }
         if (!(valueObject instanceof String)) {
           throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
               "%s operator must have `String` value, was `%s`",
@@ -558,9 +565,9 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
             "filter clause path cannot be empty String");
       }
+      // $lexical content is a special case, can be filtered with $match
       if (path.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)) {
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-            "Cannot filter on lexical content field '%s': only 'sort' clause supported", path);
+        return path;
       }
       throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
           "filter clause path ('%s') cannot start with `$`", path);

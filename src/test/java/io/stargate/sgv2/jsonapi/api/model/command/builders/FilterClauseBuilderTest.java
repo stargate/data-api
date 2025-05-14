@@ -1268,11 +1268,11 @@ public class FilterClauseBuilderTest {
     public void mustHandleMatchOperator() throws Exception {
       String json =
           """
-          {"content": {"$match": "search text"}}
+          {"$lexical": {"$match": "search text"}}
           """;
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
-              "content",
+              "$lexical",
               List.of(
                   new ValueComparisonOperation(
                       ValueComparisonOperator.MATCH,
@@ -1288,13 +1288,29 @@ public class FilterClauseBuilderTest {
           .isEqualTo(expectedResult.getPath());
     }
 
+    @Test
+    public void mustFailOnMatchWithNonLexicalField() throws Exception {
+      String json =
+          """
+          {"content": {"$match": "search text"}}
+          """;
+      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .contains("$match operator can only be used with the '$lexical' field, not 'content'");
+              });
+    }
+
     @ParameterizedTest
     @MethodSource("matchNonStringArgs")
     public void mustFailOnMatchWithNonString(String actualType, String jsonSnippet)
         throws Exception {
       String json =
               """
-          {"content": {"$match": %s}}
+          {"$lexical": {"$match": %s}}
           """
               .formatted(jsonSnippet);
       Throwable throwable = catchThrowable(() -> readFilterClause(json));
