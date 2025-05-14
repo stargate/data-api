@@ -101,9 +101,15 @@ public class HybridFieldExpander {
     lexical =
         validateSubFieldType(
             lexical, DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, docIndex, docCount);
+    if (!lexical.isNull()) {
+      context.commandFeatures().addFeature(CommandFeature.LEXICAL);
+    }
     vectorize =
         validateSubFieldType(
             vectorize, DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, docIndex, docCount);
+    if (!vectorize.isNull()) {
+      context.commandFeatures().addFeature(CommandFeature.VECTORIZE);
+    }
 
     addLexicalAndVectorize(doc, lexical, vectorize);
   }

@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
+import static io.stargate.sgv2.jsonapi.metrics.CommandFeature.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.mock;
@@ -40,7 +41,8 @@ public class HybridFieldExpanderTest {
                    "$lexical": "monkeys",
                    "$vectorize": "monkeys"
                }
-               """),
+               """,
+            CommandFeatures.of(HYBRID)),
         Arguments.of(
             """
                {
@@ -57,7 +59,8 @@ public class HybridFieldExpanderTest {
                    "$lexical": "banana monkey",
                    "$vectorize": "monkeys eating bananas"
                }
-               """),
+               """,
+            CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE)),
         Arguments.of(
             """
                    {
@@ -73,7 +76,8 @@ public class HybridFieldExpanderTest {
                        "$lexical": null,
                        "$vectorize": "monkeys eating bananas"
                    }
-                   """),
+                   """,
+            CommandFeatures.of(HYBRID, VECTORIZE)),
         Arguments.of(
             """
                  {
@@ -89,12 +93,14 @@ public class HybridFieldExpanderTest {
                      "$lexical": "banana monkey",
                      "$vectorize": null
                  }
-                 """));
+                 """,
+            CommandFeatures.of(HYBRID, LEXICAL)));
   }
 
   @ParameterizedTest
   @MethodSource("okCases")
-  void hybridOkTest(String inputJson, String outputJson) throws Exception {
+  void hybridOkTest(String inputJson, String outputJson, CommandFeatures features)
+      throws Exception {
     JsonNode doc = objectMapper.readTree(inputJson);
 
     // Setup mock CommandContext
@@ -104,6 +110,7 @@ public class HybridFieldExpanderTest {
 
     HybridFieldExpander.expandHybridField(mockContext, 0, 1, doc);
     assertThat(doc).isEqualTo(objectMapper.readTree(outputJson));
+    assertThat(commandFeatures).isEqualTo(features);
   }
 
   static List<Arguments> failCases() {
