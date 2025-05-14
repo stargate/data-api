@@ -112,7 +112,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       }
     } else {
       throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-          "Cannot filter on '%s' field using operator '$eq': only '$exists' is supported",
+          "Cannot filter on '%s' field using operator $eq: only $exists is supported",
           DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
     }
   }
@@ -136,7 +136,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
             case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
                     DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD ->
                 throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                    "Cannot filter on '%s' field using operator '$eq': only '$exists' is supported",
+                    "Cannot filter on '%s' field using operator $eq: only $exists is supported",
                     entry.getKey());
             default ->
                 throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
@@ -147,7 +147,18 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         populateExpression(innerLogicalExpression, next);
       }
       logicalExpression.addLogicalExpression(innerLogicalExpression);
-    } else {
+    } else { // neither Array nor Object, simple implicit "$eq" comparison
+      switch (entry.getKey()) {
+        case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
+                DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD ->
+            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+                "Cannot filter on '%s' field using operator $eq: only $exists is supported",
+                entry.getKey());
+        case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD ->
+            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+                "Cannot filter on '%s' field using operator $eq: only $match is supported",
+                entry.getKey());
+      }
       // the key should match pattern
       String key = validateFilterClausePath(entry.getKey());
       logicalExpression.addComparisonExpressions(
@@ -199,17 +210,16 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         return comparisonExpressionList;
       }
 
-      // Before validating Filter path, check for special cases:
-      // ($vector/$vectorize and $exist operator)
-      String entryKey = entry.getKey();
-      if ((entryKey.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
-              && updateField.getKey().equals("$exists"))
-          || (entryKey.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)
-              && updateField.getKey().equals("$exists"))) {
-        ; // fine, special cases
-      } else {
-        entryKey = validateFilterClausePath(entryKey);
+      String entryKey = validateFilterClausePath(entry.getKey());
+
+      // First things first: $lexical field can only be used with $match operator
+      if (entryKey.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)
+          && (operator != ValueComparisonOperator.MATCH)) {
+        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+            "Cannot filter on '%s' field using operator %s: only $match is supported",
+            entry.getKey(), operator.getOperator());
       }
+
       JsonNode value = updateField.getValue();
       Object valueObject = jsonNodeValue(entryKey, value);
       if (operator == ValueComparisonOperator.GT
@@ -243,8 +253,8 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         // only on $lexical field
         if (!entryKey.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)) {
           throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                  "%s operator can only be used with the '%s' field, not '%s'",
-                  operator.getOperator(), DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, entryKey);
+              "%s operator can only be used with the '%s' field, not '%s'",
+              operator.getOperator(), DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, entryKey);
         }
         if (!(valueObject instanceof String)) {
           throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
@@ -565,9 +575,13 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
             "filter clause path cannot be empty String");
       }
-      // $lexical content is a special case, can be filtered with $match
-      if (path.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)) {
-        return path;
+      // 3 special fields with $ prefix, skip here
+      switch (path) {
+        case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
+            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD -> {
+          return path;
+        }
       }
       throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
           "filter clause path ('%s') cannot start with `$`", path);

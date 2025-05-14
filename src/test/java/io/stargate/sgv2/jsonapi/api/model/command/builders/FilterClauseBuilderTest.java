@@ -44,7 +44,7 @@ public class FilterClauseBuilderTest {
                     {"username": "aaron"}
                     """;
 
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "username",
@@ -79,18 +79,14 @@ public class FilterClauseBuilderTest {
               ValueComparisonOperator.LTE,
               "stringColumn"),
           Arguments.of(
-              "{\"boolColumn\": {\"$lte\" : false}}", ValueComparisonOperator.LTE, "boolColumn"),
-          Arguments.of(
-              "{\"content\": {\"$match\" : \"search text\"}}",
-              ValueComparisonOperator.MATCH,
-              "content"));
+              "{\"boolColumn\": {\"$lte\" : false}}", ValueComparisonOperator.LTE, "boolColumn"));
     }
 
     @ParameterizedTest
     @MethodSource("provideRangeQueries")
     public void testRangeComparisonOperator(
         String json, ValueComparisonOperator operator, String column) throws Exception {
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause).isNotNull();
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
@@ -111,7 +107,7 @@ public class FilterClauseBuilderTest {
     public void mustHandleNull() throws Exception {
       String json = "null";
 
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
 
       assertThat(filterClause.isEmpty()).isTrue();
     }
@@ -123,7 +119,7 @@ public class FilterClauseBuilderTest {
                     {}
                     """;
 
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(0);
     }
@@ -141,7 +137,7 @@ public class FilterClauseBuilderTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ, new JsonLiteral("aaron", JsonType.STRING))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -165,7 +161,7 @@ public class FilterClauseBuilderTest {
                       ValueComparisonOperator.EQ,
                       new JsonLiteral(BigDecimal.valueOf(40), JsonType.NUMBER))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -188,7 +184,7 @@ public class FilterClauseBuilderTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ, new JsonLiteral(true, JsonType.BOOLEAN))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -212,7 +208,7 @@ public class FilterClauseBuilderTest {
                       ValueComparisonOperator.EQ,
                       new JsonLiteral(new Date(1672531200000L), JsonType.DATE))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -236,7 +232,7 @@ public class FilterClauseBuilderTest {
                       ValueComparisonOperator.EQ,
                       new JsonLiteral(new Date(1672531200000L), JsonType.DATE))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
       assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount()).isEqualTo(1);
       assertThat(
@@ -262,11 +258,11 @@ public class FilterClauseBuilderTest {
     @Test
     public void mustHandleDateAsEpoch() throws Exception {
       String json =
-         """
+          """
          {"dateType": {"$date": "2023-01-01"}}
         """;
 
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -284,7 +280,7 @@ public class FilterClauseBuilderTest {
          { "$or" : [{"dateType": {"$date": "2023-01-01"}}]}
         """;
 
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -309,7 +305,7 @@ public class FilterClauseBuilderTest {
                       ArrayComparisonOperator.ALL,
                       new JsonLiteral(List.of("a", "b"), JsonType.ARRAY))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -347,7 +343,7 @@ public class FilterClauseBuilderTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
       assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount()).isEqualTo(2);
       assertThat(
@@ -394,7 +390,7 @@ public class FilterClauseBuilderTest {
           """
           {"allPath" : {"$all": "abc"}}
         """;
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -409,7 +405,7 @@ public class FilterClauseBuilderTest {
           """
           {"allPath" : {"$all": []}}
         """;
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -432,7 +428,7 @@ public class FilterClauseBuilderTest {
                       ArrayComparisonOperator.SIZE,
                       new JsonLiteral(new BigDecimal(2), JsonType.NUMBER))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -456,7 +452,7 @@ public class FilterClauseBuilderTest {
                       ArrayComparisonOperator.SIZE,
                       new JsonLiteral(new BigDecimal(0), JsonType.NUMBER))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -477,7 +473,7 @@ public class FilterClauseBuilderTest {
                       ArrayComparisonOperator.SIZE,
                       new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
               null);
-      FilterClause filterClause1 = readFilterClause(json);
+      FilterClause filterClause1 = readCollectionFilterClause(json);
       assertThat(filterClause1.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause1.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -493,7 +489,7 @@ public class FilterClauseBuilderTest {
           """
             {"sizePath" : {"$size": "2"}}
           """;
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -509,7 +505,7 @@ public class FilterClauseBuilderTest {
           """
                         {"sizePath" : {"$size": "1.1"}}
                       """;
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -521,7 +517,7 @@ public class FilterClauseBuilderTest {
           """
                         {"sizePath" : {"$size": "5.4"}}
                       """;
-      Throwable throwable1 = catchThrowable(() -> readFilterClause(json1));
+      Throwable throwable1 = catchThrowable(() -> readCollectionFilterClause(json1));
       assertThat(throwable1)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -536,7 +532,7 @@ public class FilterClauseBuilderTest {
           """
                         {"sizePath" : {"$size": -2}}
                       """;
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -560,7 +556,7 @@ public class FilterClauseBuilderTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ, new JsonLiteral(value, JsonType.SUB_DOC))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -584,7 +580,7 @@ public class FilterClauseBuilderTest {
                       ValueComparisonOperator.NE,
                       new JsonLiteral(List.of("1", "2"), JsonType.ARRAY))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -608,7 +604,7 @@ public class FilterClauseBuilderTest {
                       ValueComparisonOperator.EQ,
                       new JsonLiteral(List.of("3", "4"), JsonType.ARRAY))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -633,7 +629,7 @@ public class FilterClauseBuilderTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.NE, new JsonLiteral(value, JsonType.SUB_DOC))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -670,7 +666,7 @@ public class FilterClauseBuilderTest {
                       ElementComparisonOperator.EXISTS, new JsonLiteral(true, JsonType.BOOLEAN))),
               null);
 
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(2);
       assertThat(
@@ -706,7 +702,7 @@ public class FilterClauseBuilderTest {
                           List.of(DocumentId.fromString("2"), DocumentId.fromString("3")),
                           JsonType.ARRAY))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -730,7 +726,7 @@ public class FilterClauseBuilderTest {
                       ValueComparisonOperator.IN,
                       new JsonLiteral(List.of("name1", "name2"), JsonType.ARRAY))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -768,7 +764,7 @@ public class FilterClauseBuilderTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
       assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount()).isEqualTo(2);
       assertThat(
@@ -835,7 +831,7 @@ public class FilterClauseBuilderTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
       assertThat(filterClause.logicalExpression().logicalExpressions.get(0).comparisonExpressions)
           .hasSize(2);
@@ -885,7 +881,7 @@ public class FilterClauseBuilderTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ, new JsonLiteral("testAge", JsonType.STRING))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
       assertThat(filterClause.logicalExpression().logicalExpressions.get(0).comparisonExpressions)
           .hasSize(2);
@@ -963,7 +959,7 @@ public class FilterClauseBuilderTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ, new JsonLiteral("testHeight", JsonType.STRING))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(1);
       assertThat(filterClause.logicalExpression().getTotalComparisonExpressionCount()).isEqualTo(4);
       assertThat(filterClause.logicalExpression().logicalExpressions.get(0).comparisonExpressions)
@@ -1033,7 +1029,7 @@ public class FilterClauseBuilderTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.IN, new JsonLiteral(List.of(), JsonType.ARRAY))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -1056,7 +1052,7 @@ public class FilterClauseBuilderTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.NIN, new JsonLiteral(List.of(), JsonType.ARRAY))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -1072,7 +1068,7 @@ public class FilterClauseBuilderTest {
           """
                        {"_id" : {"$in": "aaa"}}
                       """;
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -1087,7 +1083,7 @@ public class FilterClauseBuilderTest {
           """
                        {"_id" : {"$nin": "random"}}
                       """;
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -1109,7 +1105,7 @@ public class FilterClauseBuilderTest {
                                    ]
                                }
                       """;
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -1125,7 +1121,7 @@ public class FilterClauseBuilderTest {
           """
                        {"_id" : {"$in": ["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","96","97","98","99","100"]}}
                       """;
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -1145,7 +1141,7 @@ public class FilterClauseBuilderTest {
           """
                        {"_id" : {"$nin": ["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","96","97","98","99","100"]}}
                       """;
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -1177,7 +1173,7 @@ public class FilterClauseBuilderTest {
               ]
           }
         """;
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -1193,7 +1189,7 @@ public class FilterClauseBuilderTest {
           """
               {"$gt" : {"test" : 5}}
           """;
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
 
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
@@ -1211,7 +1207,7 @@ public class FilterClauseBuilderTest {
           {"$vector" : {"$exists": true}}
           """;
 
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
@@ -1234,7 +1230,7 @@ public class FilterClauseBuilderTest {
               {"$exists" : {"$vector": true}}
               """;
 
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
 
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
@@ -1250,7 +1246,7 @@ public class FilterClauseBuilderTest {
           """
               {"$exists" : {"$exists": true}}
               """;
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
 
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
@@ -1278,7 +1274,7 @@ public class FilterClauseBuilderTest {
                       ValueComparisonOperator.MATCH,
                       new JsonLiteral("search text", JsonType.STRING))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -1289,31 +1285,31 @@ public class FilterClauseBuilderTest {
     }
 
     @Test
-    public void mustFailOnMatchWithNonLexicalField() throws Exception {
+    public void mustFailOnMatchWithNonLexicalField() {
       String json =
           """
           {"content": {"$match": "search text"}}
           """;
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .contains("$match operator can only be used with the '$lexical' field, not 'content'");
+                    .contains(
+                        "$match operator can only be used with the '$lexical' field, not 'content'");
               });
     }
 
     @ParameterizedTest
     @MethodSource("matchNonStringArgs")
-    public void mustFailOnMatchWithNonString(String actualType, String jsonSnippet)
-        throws Exception {
+    public void mustFailOnMatchWithNonString(String actualType, String jsonSnippet) {
       String json =
               """
           {"$lexical": {"$match": %s}}
           """
               .formatted(jsonSnippet);
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -1331,6 +1327,42 @@ public class FilterClauseBuilderTest {
           Arguments.of("Null", "null"),
           Arguments.of("Number", "42"),
           Arguments.of("Object", "{\"key\": \"value\"}"));
+    }
+
+    // Verify explicit "$eq" not allowed for $lexical
+    @Test
+    public void mustFailOnLexicalWithExplicitEq() {
+      String json =
+          """
+              {"$lexical": { "$eq": "search text"} }
+              """;
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .contains(
+                        "Cannot filter on '$lexical' field using operator $eq: only $match is supported");
+              });
+    }
+
+    // Verify short-cut for "$eq" not allowed for $lexical
+    @Test
+    public void mustFailOnLexicalWithImplicitEq() {
+      String json =
+          """
+                  {"$lexical": "search text"}
+                  """;
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .contains(
+                        "Cannot filter on '$lexical' field using operator $eq: only $match is supported");
+              });
     }
   }
 
@@ -1356,7 +1388,7 @@ public class FilterClauseBuilderTest {
                               objectMapper.getNodeFactory().textNode(OBJECT_ID)),
                           JsonType.DOCUMENT_ID))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
@@ -1381,7 +1413,7 @@ public class FilterClauseBuilderTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ, new JsonLiteral(OBJECT_ID, JsonType.STRING))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -1410,7 +1442,7 @@ public class FilterClauseBuilderTest {
                               JsonExtensionType.UUID, objectMapper.getNodeFactory().textNode(UUID)),
                           JsonType.DOCUMENT_ID))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
@@ -1435,7 +1467,7 @@ public class FilterClauseBuilderTest {
                   new ValueComparisonOperation(
                       ValueComparisonOperator.EQ, new JsonLiteral(UUID, JsonType.STRING))),
               null);
-      FilterClause filterClause = readFilterClause(json);
+      FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(
@@ -1452,7 +1484,7 @@ public class FilterClauseBuilderTest {
          {"_id": {"$uuid": "abc"}}
         """;
 
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -1470,7 +1502,7 @@ public class FilterClauseBuilderTest {
          {"_id": {"$objectId": "xyz"}}
         """;
 
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -1488,7 +1520,7 @@ public class FilterClauseBuilderTest {
          {"_id": {"$GUID": "abc"}}
         """;
 
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -1504,7 +1536,7 @@ public class FilterClauseBuilderTest {
          {"field": {"$uuid": "abc"}}
         """;
 
-      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
@@ -1516,8 +1548,12 @@ public class FilterClauseBuilderTest {
     }
   }
 
-  FilterClause readFilterClause(String json) throws IOException {
-    return FilterClauseBuilder.builderFor(testConstants.COLLECTION_SCHEMA_OBJECT)
-        .build(operationsConfig, objectMapper.readTree(json));
+  FilterClause readCollectionFilterClause(String json) {
+    try {
+      return FilterClauseBuilder.builderFor(testConstants.COLLECTION_SCHEMA_OBJECT)
+          .build(operationsConfig, objectMapper.readTree(json));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }
