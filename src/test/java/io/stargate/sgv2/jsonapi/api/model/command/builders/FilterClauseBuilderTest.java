@@ -79,7 +79,11 @@ public class FilterClauseBuilderTest {
               ValueComparisonOperator.LTE,
               "stringColumn"),
           Arguments.of(
-              "{\"boolColumn\": {\"$lte\" : false}}", ValueComparisonOperator.LTE, "boolColumn"));
+              "{\"boolColumn\": {\"$lte\" : false}}", ValueComparisonOperator.LTE, "boolColumn"),
+          Arguments.of(
+              "{\"content\": {\"$match\" : \"search text\"}}",
+              ValueComparisonOperator.MATCH,
+              "content"));
     }
 
     @ParameterizedTest
@@ -1255,6 +1259,30 @@ public class FilterClauseBuilderTest {
                 assertThat(t.getMessage())
                     .startsWith("Invalid filter expression: filter clause path ('$exists')");
               });
+    }
+
+    @Test
+    public void mustHandleMatchOperator() throws Exception {
+      String json =
+          """
+          {"content": {"$match": "search text"}}
+          """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "content",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.MATCH,
+                      new JsonLiteral("search text", JsonType.STRING))),
+              null);
+      FilterClause filterClause = readFilterClause(json);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
     }
   }
 

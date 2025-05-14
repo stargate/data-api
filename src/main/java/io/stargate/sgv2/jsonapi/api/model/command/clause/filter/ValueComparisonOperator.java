@@ -12,7 +12,8 @@ public enum ValueComparisonOperator implements FilterOperator {
   GT("$gt"),
   GTE("$gte"),
   LT("$lt"),
-  LTE("$lte");
+  LTE("$lte"),
+  MATCH("$match");
 
   private String operator;
 
@@ -44,6 +45,8 @@ public enum ValueComparisonOperator implements FilterOperator {
         return GTE;
       case LTE:
         return GT;
+      case MATCH:
+        return this; // MATCH operator doesn't have a logical inverse
     }
     return this;
   }
