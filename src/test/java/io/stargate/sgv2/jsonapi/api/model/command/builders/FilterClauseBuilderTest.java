@@ -35,7 +35,7 @@ public class FilterClauseBuilderTest {
   private TestConstants testConstants = new TestConstants();
 
   @Nested
-  class Deserialize {
+  class BuildWithRegularOperators {
 
     @Test
     public void happyPath() throws Exception {
@@ -262,7 +262,7 @@ public class FilterClauseBuilderTest {
     @Test
     public void mustHandleDateAsEpoch() throws Exception {
       String json =
-          """
+         """
          {"dateType": {"$date": "2023-01-01"}}
         """;
 
@@ -299,8 +299,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleAll() throws Exception {
       String json =
           """
-                            {"allPath" : {"$all": ["a", "b"]}}
-                            """;
+          {"allPath" : {"$all": ["a", "b"]}}
+          """;
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "allPath",
@@ -331,7 +331,7 @@ public class FilterClauseBuilderTest {
                                }
                            ]
                        }
-                                """;
+                    """;
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "allPath",
@@ -422,8 +422,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleSize() throws Exception {
       String json =
           """
-          {"sizePath" : {"$size": 2}}
-        """;
+                        {"sizePath" : {"$size": 2}}
+                      """;
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "sizePath",
@@ -446,8 +446,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleIntegerWithTrailingZeroSize() throws Exception {
       String json =
           """
-          {"sizePath" : {"$size": 0.0}}
-        """;
+                        {"sizePath" : {"$size": 0.0}}
+                      """;
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "sizePath",
@@ -467,8 +467,8 @@ public class FilterClauseBuilderTest {
 
       String json1 =
           """
-          {"sizePath" : {"$size": 5.0}}
-        """;
+                        {"sizePath" : {"$size": 5.0}}
+                      """;
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "sizePath",
@@ -491,8 +491,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleSizeNonNumber() throws Exception {
       String json =
           """
-          {"sizePath" : {"$size": "2"}}
-        """;
+            {"sizePath" : {"$size": "2"}}
+          """;
       Throwable throwable = catchThrowable(() -> readFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
@@ -507,8 +507,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleSizeNonInteger() throws Exception {
       String json =
           """
-          {"sizePath" : {"$size": "1.1"}}
-        """;
+                        {"sizePath" : {"$size": "1.1"}}
+                      """;
       Throwable throwable = catchThrowable(() -> readFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
@@ -519,8 +519,8 @@ public class FilterClauseBuilderTest {
 
       String json1 =
           """
-          {"sizePath" : {"$size": "5.4"}}
-        """;
+                        {"sizePath" : {"$size": "5.4"}}
+                      """;
       Throwable throwable1 = catchThrowable(() -> readFilterClause(json1));
       assertThat(throwable1)
           .isInstanceOf(JsonApiException.class)
@@ -534,8 +534,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleSizeNegative() throws Exception {
       String json =
           """
-          {"sizePath" : {"$size": -2}}
-        """;
+                        {"sizePath" : {"$size": -2}}
+                      """;
       Throwable throwable = catchThrowable(() -> readFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
@@ -549,8 +549,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleSubDocEq() throws Exception {
       String json =
           """
-         {"sub_doc" : {"col": 2}}
-        """;
+                       {"sub_doc" : {"col": 2}}
+                      """;
       Map<String, Object> value = new LinkedHashMap<>();
       value.put("col", new BigDecimal(2));
       final ComparisonExpression expectedResult =
@@ -574,8 +574,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleArrayNe() throws Exception {
       String json =
           """
-         {"col" : {"$ne": ["1","2"]}}
-        """;
+                       {"col" : {"$ne": ["1","2"]}}
+                      """;
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "col",
@@ -598,8 +598,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleArrayEq() throws Exception {
       String json =
           """
-         {"col" : {"$eq": ["3","4"]}}
-        """;
+                       {"col" : {"$eq": ["3","4"]}}
+                      """;
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "col",
@@ -622,8 +622,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleSubDocNe() throws Exception {
       String json =
           """
-         {"sub_doc" : {"$ne" : {"col": 2}}}
-        """;
+                       {"sub_doc" : {"$ne" : {"col": 2}}}
+                      """;
       Map<String, Object> value = new LinkedHashMap<>();
       value.put("col", new BigDecimal(2));
       final ComparisonExpression expectedResult =
@@ -694,8 +694,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleIdFieldIn() throws Exception {
       String json =
           """
-               {"_id" : {"$in": ["2", "3"]}}
-              """;
+           {"_id" : {"$in": ["2", "3"]}}
+          """;
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "_id",
@@ -720,8 +720,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleNonIdFieldIn() throws Exception {
       String json =
           """
-               {"name" : {"$in": ["name1", "name2"]}}
-              """;
+           {"name" : {"$in": ["name1", "name2"]}}
+          """;
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "name",
@@ -744,15 +744,15 @@ public class FilterClauseBuilderTest {
     public void mustHandleNonIdFieldInAndOr() throws Exception {
       String json =
           """
-               {
-                           "$and": [
-                               {"name" : {"$in": ["name1", "name2"]}},
-                               {
-                                   "age": "testAge"
-                               }
-                           ]
-                       }
-              """;
+           {
+               "$and": [
+                   {"name" : {"$in": ["name1", "name2"]}},
+                   {
+                       "age": "testAge"
+                   }
+               ]
+           }
+          """;
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "name",
@@ -814,13 +814,13 @@ public class FilterClauseBuilderTest {
 
       String json =
           """
-              {
-                                "$or":[
-                                    {"name" : "testName"},
-                                    {"age" : "testAge"}
-                                 ]
-                              }
-              """;
+                      {
+                                        "$or":[
+                                            {"name" : "testName"},
+                                            {"age" : "testAge"}
+                                         ]
+                                      }
+                      """;
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "name",
@@ -864,13 +864,13 @@ public class FilterClauseBuilderTest {
 
       String json =
           """
-              {
-                                "$and":[
-                                    {"name" : "testName"},
-                                    {"age" : "testAge"}
-                                 ]
-                              }
-              """;
+                      {
+                                        "$and":[
+                                            {"name" : "testName"},
+                                            {"age" : "testAge"}
+                                         ]
+                                      }
+                      """;
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "name",
@@ -914,27 +914,27 @@ public class FilterClauseBuilderTest {
 
       String json =
           """
-        {
-          "$and": [
-            {
-                "name": "testName"
-            },
-            {
-                "age": "testAge"
-            },
-            {
-                "$or": [
-                    {
-                        "address": "testAddress"
-                    },
-                    {
-                        "height": "testHeight"
-                    }
-                ]
-            }
-          ]
-        }
-        """;
+                      {
+                        "$and": [
+                          {
+                              "name": "testName"
+                          },
+                          {
+                              "age": "testAge"
+                          },
+                          {
+                              "$or": [
+                                  {
+                                      "address": "testAddress"
+                                  },
+                                  {
+                                      "height": "testHeight"
+                                  }
+                              ]
+                          }
+                        ]
+                      }
+                      """;
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "name",
@@ -1024,8 +1024,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleInArrayNonEmpty() throws Exception {
       String json =
           """
-               {"_id" : {"$in": []}}
-              """;
+                       {"_id" : {"$in": []}}
+                      """;
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "_id",
@@ -1047,8 +1047,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleNinArrayNonEmpty() throws Exception {
       String json =
           """
-               {"_id" : {"$nin": []}}
-              """;
+                       {"_id" : {"$nin": []}}
+                      """;
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "_id",
@@ -1070,8 +1070,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleInArrayOnly() throws Exception {
       String json =
           """
-               {"_id" : {"$in": "aaa"}}
-              """;
+                       {"_id" : {"$in": "aaa"}}
+                      """;
       Throwable throwable = catchThrowable(() -> readFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
@@ -1085,8 +1085,8 @@ public class FilterClauseBuilderTest {
     public void mustHandleNinArrayOnly() throws Exception {
       String json =
           """
-               {"_id" : {"$nin": "random"}}
-              """;
+                       {"_id" : {"$nin": "random"}}
+                      """;
       Throwable throwable = catchThrowable(() -> readFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
@@ -1100,15 +1100,15 @@ public class FilterClauseBuilderTest {
     public void mustHandleNinArrayOnlyAnd() throws Exception {
       String json =
           """
-               {
-                           "$and": [
-                               {"age" : {"$nin": "aaa"}},
-                               {
-                                   "name": "testName"
+                       {
+                                   "$and": [
+                                       {"age" : {"$nin": "aaa"}},
+                                       {
+                                           "name": "testName"
+                                       }
+                                   ]
                                }
-                           ]
-                       }
-              """;
+                      """;
       Throwable throwable = catchThrowable(() -> readFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
@@ -1123,8 +1123,8 @@ public class FilterClauseBuilderTest {
       // String array with 100 unique numbers
       String json =
           """
-        {"_id" : {"$in": ["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","96","97","98","99","100"]}}
-       """;
+                       {"_id" : {"$in": ["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","96","97","98","99","100"]}}
+                      """;
       Throwable throwable = catchThrowable(() -> readFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
@@ -1143,8 +1143,8 @@ public class FilterClauseBuilderTest {
       // String array with 100 unique numbers
       String json =
           """
-            {"_id" : {"$nin": ["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","96","97","98","99","100"]}}
-           """;
+                       {"_id" : {"$nin": ["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","96","97","98","99","100"]}}
+                      """;
       Throwable throwable = catchThrowable(() -> readFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
@@ -1162,21 +1162,21 @@ public class FilterClauseBuilderTest {
     public void multipleIdFilterAndOr() throws Exception {
       String json =
           """
-               {
-                                  "_id": "testID1",
-                                  "$or": [
-                                      {
-                                          "name": "testName"
-                                      },
-                                      {
-                                          "age": "testAge"
-                                      },
-                                      {
-                                          "_id": "testID2"
-                                      }
-                                  ]
-                              }
-              """;
+         {
+              "_id": "testID1",
+              "$or": [
+                  {
+                      "name": "testName"
+                  },
+                  {
+                      "age": "testAge"
+                  },
+                  {
+                      "_id": "testID2"
+                  }
+              ]
+          }
+        """;
       Throwable throwable = catchThrowable(() -> readFilterClause(json));
       assertThat(throwable)
           .isInstanceOf(JsonApiException.class)
@@ -1208,8 +1208,8 @@ public class FilterClauseBuilderTest {
     public void valid$vectorPathName() throws Exception {
       String json =
           """
-              {"$vector" : {"$exists": true}}
-              """;
+          {"$vector" : {"$exists": true}}
+          """;
 
       FilterClause filterClause = readFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
@@ -1260,7 +1260,10 @@ public class FilterClauseBuilderTest {
                     .startsWith("Invalid filter expression: filter clause path ('$exists')");
               });
     }
+  }
 
+  @Nested
+  class BuildWithMatchOperator {
     @Test
     public void mustHandleMatchOperator() throws Exception {
       String json =
@@ -1316,7 +1319,7 @@ public class FilterClauseBuilderTest {
   }
 
   @Nested
-  class DeserializeWithJsonExtensions {
+  class BuildWithJsonExtensions {
     @Test
     public void mustHandleObjectIdAsId() throws Exception {
       final String OBJECT_ID = "5f3e3d1e1e6e6f1e6e6e6f1e";
