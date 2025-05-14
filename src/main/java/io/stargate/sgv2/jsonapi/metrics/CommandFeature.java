@@ -7,15 +7,14 @@ import java.util.Objects;
  * associated tag name, which can be used for metrics.
  */
 public enum CommandFeature {
+  /** The usage of $hybrid with String in the command */
+  HYBRID("feature.hybrid.string"),
   /** The usage of $lexical in the command */
   LEXICAL("feature.lexical"),
   /** The usage of $vector in the command */
   VECTOR("feature.vector"),
   /** The usage of $vectorize in the command */
   VECTORIZE("feature.vectorize"),
-
-  /** The usage of $hybrid with String in the command */
-  HYBRID("feature.hybrid.string"),
 
   /** The usage of `hybridLimits` with Number in the command */
   HYBRID_LIMITS_NUMBER("feature.hybrid.limits.number"),
