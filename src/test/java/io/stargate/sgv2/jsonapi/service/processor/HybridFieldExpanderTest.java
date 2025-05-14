@@ -94,7 +94,71 @@ public class HybridFieldExpanderTest {
                      "$vectorize": null
                  }
                  """,
-            CommandFeatures.of(HYBRID, LEXICAL)));
+            CommandFeatures.of(HYBRID, LEXICAL)),
+        Arguments.of(
+            """
+                 {
+                     "_id": 5,
+                     "$lexical": "I like cheese",
+                     "$vectorize": "I like cheese"
+                 }
+                 """,
+            """
+                  {
+                     "_id": 5,
+                     "$lexical": "I like cheese",
+                     "$vectorize": "I like cheese"
+                 }
+                 """,
+            CommandFeatures.of(LEXICAL, VECTORIZE)),
+        Arguments.of(
+            """
+                         {
+                             "_id": 5,
+                             "$lexical": "I like cheese",
+                             "$vector": "[1,2,3]"
+                         }
+                         """,
+            """
+                          {
+                             "_id": 5,
+                             "$lexical": "I like cheese",
+                             "$vector": "[1,2,3]"
+                         }
+                         """,
+            CommandFeatures.of(LEXICAL, VECTOR)),
+        Arguments.of(
+            """
+                 {
+                     "_id": 6,
+                     "$lexical": null,
+                     "$vectorize": "I like cheese"
+                 }
+                 """,
+            """
+                 {
+                     "_id": 6,
+                     "$lexical": null,
+                     "$vectorize": "I like cheese"
+                 }
+                 """,
+            CommandFeatures.of(VECTORIZE)),
+        Arguments.of(
+            """
+                 {
+                     "_id": 7,
+                     "$lexical": "I like cheese",
+                     "$vectorize": null
+                 }
+                 """,
+            """
+                 {
+                     "_id": 7,
+                     "$lexical": "I like cheese",
+                     "$vectorize": null
+                 }
+                 """,
+            CommandFeatures.of(LEXICAL)));
   }
 
   @ParameterizedTest

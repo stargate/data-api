@@ -68,15 +68,18 @@ public class HybridFieldExpander {
         }
       } else {
         // No $hybrid field, check other fields and add feature usage to CommandContext
-        if (doc.get(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) != null) {
+        if (doc.get(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) != null
+            && !doc.get(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD).isNull()) {
           context.commandFeatures().addFeature(CommandFeature.VECTOR);
         }
         // `$vectorize` and `$vector` can't be used together - the check will be done later (in
         // DataVectorizer)
-        if (doc.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD) != null) {
+        if (doc.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD) != null
+            && !doc.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD).isNull()) {
           context.commandFeatures().addFeature(CommandFeature.VECTORIZE);
         }
-        if (doc.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) != null) {
+        if (doc.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) != null
+            && !doc.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD).isNull()) {
           context.commandFeatures().addFeature(CommandFeature.LEXICAL);
         }
       }
