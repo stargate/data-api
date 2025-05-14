@@ -1284,6 +1284,35 @@ public class FilterClauseBuilderTest {
       assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
           .isEqualTo(expectedResult.getPath());
     }
+
+    @ParameterizedTest
+    @MethodSource("matchNonStringArgs")
+    public void mustFailOnMatchWithNonString(String actualType, String jsonSnippet)
+        throws Exception {
+      String json =
+              """
+          {"content": {"$match": %s}}
+          """
+              .formatted(jsonSnippet);
+      Throwable throwable = catchThrowable(() -> readFilterClause(json));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .contains(
+                        "$match operator must have `String` value, was `%s`".formatted(actualType));
+              });
+    }
+
+    private static Stream<Arguments> matchNonStringArgs() {
+      return Stream.of(
+          Arguments.of("Array", "[\"text1\", \"text2\"]"),
+          Arguments.of("Boolean", "true"),
+          Arguments.of("Null", "null"),
+          Arguments.of("Number", "42"),
+          Arguments.of("Object", "{\"key\": \"value\"}"));
+    }
   }
 
   @Nested

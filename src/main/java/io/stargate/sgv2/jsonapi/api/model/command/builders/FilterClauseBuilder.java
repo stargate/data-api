@@ -238,7 +238,14 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
               "%s operator must have `DATE` or `NUMBER` or `TEXT` or `BOOLEAN` value",
               operator.getOperator());
         }
+      } else if (operator == ValueComparisonOperator.MATCH) {
+        if (!(valueObject instanceof String)) {
+          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+              "%s operator must have `String` value, was `%s`",
+              operator.getOperator(), JsonUtil.nodeTypeAsString(value));
+        }
       }
+
       ComparisonExpression expression = new ComparisonExpression(entryKey, new ArrayList<>(), null);
       expression.add(operator, valueObject);
       comparisonExpressionList.add(expression);
