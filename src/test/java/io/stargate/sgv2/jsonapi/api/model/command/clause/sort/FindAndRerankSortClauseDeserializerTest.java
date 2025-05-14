@@ -146,7 +146,7 @@ public class FindAndRerankSortClauseDeserializerTest {
                 "vectorize sort",
                 "lexical sort",
                 new float[] {1.1f, 2.2f, 3.3f},
-                CommandFeatures.of(HYBRID_LEXICAL, HYBRID_VECTOR, HYBRID_VECTORIZE))),
+                CommandFeatures.of(HYBRID, LEXICAL, VECTOR, VECTORIZE))),
         Arguments.of(
             """
             { "$hybrid" : { "$vectorize" : "vectorize sort", "$lexical" : "lexical sort"} }
@@ -155,7 +155,7 @@ public class FindAndRerankSortClauseDeserializerTest {
                 "vectorize sort",
                 "lexical sort",
                 null,
-                CommandFeatures.of(HYBRID_LEXICAL, HYBRID_VECTORIZE))),
+                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE))),
         // ----
         // $lexical variations
         Arguments.of(
@@ -163,19 +163,19 @@ public class FindAndRerankSortClauseDeserializerTest {
             { "$hybrid" : { "$vectorize" : "vectorize sort", "$lexical" : null} }
             """,
             new FindAndRerankSort(
-                "vectorize sort", null, null, CommandFeatures.of(HYBRID_VECTORIZE))),
+                "vectorize sort", null, null, CommandFeatures.of(HYBRID, VECTORIZE))),
         Arguments.of(
             """
             { "$hybrid" : { "$vectorize" : "vectorize sort", "$lexical" : ""} }
             """,
             new FindAndRerankSort(
-                "vectorize sort", null, null, CommandFeatures.of(HYBRID_VECTORIZE))),
+                "vectorize sort", null, null, CommandFeatures.of(HYBRID, VECTORIZE))),
         Arguments.of(
             """
             { "$hybrid" : { "$vectorize" : "vectorize sort"} }
             """,
             new FindAndRerankSort(
-                "vectorize sort", null, null, CommandFeatures.of(HYBRID_VECTORIZE))),
+                "vectorize sort", null, null, CommandFeatures.of(HYBRID, VECTORIZE))),
         // ----
         // $vectorize variations
         Arguments.of(
@@ -186,22 +186,22 @@ public class FindAndRerankSortClauseDeserializerTest {
                 "vectorize sort",
                 "lexical sort",
                 null,
-                CommandFeatures.of(HYBRID_LEXICAL, HYBRID_VECTORIZE))),
+                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE))),
         Arguments.of(
             """
             { "$hybrid" : { "$vectorize" : null, "$lexical" : "lexical sort"} }
             """,
-            new FindAndRerankSort(null, "lexical sort", null, CommandFeatures.of(HYBRID_LEXICAL))),
+            new FindAndRerankSort(null, "lexical sort", null, CommandFeatures.of(HYBRID, LEXICAL))),
         Arguments.of(
             """
             { "$hybrid" : { "$vectorize" : "", "$lexical" : "lexical sort"} }
             """,
-            new FindAndRerankSort(null, "lexical sort", null, CommandFeatures.of(HYBRID_LEXICAL))),
+            new FindAndRerankSort(null, "lexical sort", null, CommandFeatures.of(HYBRID, LEXICAL))),
         Arguments.of(
             """
             { "$hybrid" : {"$lexical" : "lexical sort"} }
             """,
-            new FindAndRerankSort(null, "lexical sort", null, CommandFeatures.of(HYBRID_LEXICAL))),
+            new FindAndRerankSort(null, "lexical sort", null, CommandFeatures.of(HYBRID, LEXICAL))),
         // ----
         // $vector variations
         Arguments.of(
@@ -209,10 +209,7 @@ public class FindAndRerankSortClauseDeserializerTest {
             { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : null} }
             """,
             new FindAndRerankSort(
-                "vectorize",
-                "lexical",
-                null,
-                CommandFeatures.of(HYBRID_LEXICAL, HYBRID_VECTORIZE))),
+                "vectorize", "lexical", null, CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE))),
         Arguments.of(
             """
             { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : [0.1, 0.2, 0.3]} }
@@ -221,7 +218,7 @@ public class FindAndRerankSortClauseDeserializerTest {
                 "vectorize",
                 "lexical",
                 new float[] {0.1f, 0.2f, 0.3f},
-                CommandFeatures.of(HYBRID_LEXICAL, HYBRID_VECTORIZE, HYBRID_VECTOR))),
+                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE, VECTOR))),
         Arguments.of(
                 """
             { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : {"$binary": "%s"}} }
@@ -231,7 +228,7 @@ public class FindAndRerankSortClauseDeserializerTest {
                 "vectorize",
                 "lexical",
                 emptyVector,
-                CommandFeatures.of(HYBRID_LEXICAL, HYBRID_VECTORIZE, HYBRID_VECTOR))),
+                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE, VECTOR))),
         Arguments.of(
                 """
             { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : {"$binary": "%s"}} }
@@ -241,7 +238,7 @@ public class FindAndRerankSortClauseDeserializerTest {
                 "vectorize",
                 "lexical",
                 vector,
-                CommandFeatures.of(HYBRID_LEXICAL, HYBRID_VECTORIZE, HYBRID_VECTOR))));
+                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE, VECTOR))));
   }
 
   @ParameterizedTest

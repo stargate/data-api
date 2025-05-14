@@ -57,7 +57,10 @@ public class HybridFieldExpander {
             context.commandFeatures().addFeature(CommandFeature.HYBRID);
             addLexicalAndVectorize(doc, hybridField, hybridField);
           }
-          case ObjectNode ob -> addFromObject(context, doc, ob, docIndex, docCount);
+          case ObjectNode ob -> {
+            context.commandFeatures().addFeature(CommandFeature.HYBRID);
+            addFromObject(context, doc, ob, docIndex, docCount);
+          }
           default ->
               throw ErrorCodeV1.HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE.toApiException(
                   "expected String, Object or `null` but received %s (Document %d of %d)",
@@ -98,15 +101,9 @@ public class HybridFieldExpander {
     lexical =
         validateSubFieldType(
             lexical, DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, docIndex, docCount);
-    if (!lexical.isNull()) {
-      context.commandFeatures().addFeature(CommandFeature.HYBRID_LEXICAL);
-    }
     vectorize =
         validateSubFieldType(
             vectorize, DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, docIndex, docCount);
-    if (!vectorize.isNull()) {
-      context.commandFeatures().addFeature(CommandFeature.HYBRID_VECTORIZE);
-    }
 
     addLexicalAndVectorize(doc, lexical, vectorize);
   }

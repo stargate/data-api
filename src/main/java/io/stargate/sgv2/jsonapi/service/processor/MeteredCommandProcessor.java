@@ -15,7 +15,6 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.metrics.FeatureSource;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -308,9 +307,6 @@ public class MeteredCommandProcessor {
     Tag sortTypeTag = Tag.of(jsonApiMetricsConfig.sortType(), sortType.name());
 
     // --- Command CommandFeature Usage Tags ---
-    if (command instanceof FeatureSource fs) {
-      commandContext.commandFeatures().addAll(fs.getCommandFeatures());
-    }
     Tags commandFeatureTags = commandContext.commandFeatures().getAsTags();
 
     // --- Combine All Tags ---

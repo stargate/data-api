@@ -35,4 +35,6 @@ public interface Command {
    * publicCommandName -> createCollection
    */
   CommandName commandName();
+
+  default void addCommandFeaturesToCommandContext(CommandContext<?> context) {}
 }

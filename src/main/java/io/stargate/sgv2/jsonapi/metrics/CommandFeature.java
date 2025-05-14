@@ -16,12 +16,6 @@ public enum CommandFeature {
 
   /** The usage of $hybrid with String in the command */
   HYBRID("feature.hybrid.string"),
-  /** The usage of $hybrid Object with $lexical in the command */
-  HYBRID_LEXICAL("feature.hybrid.lexical"),
-  /** The usage of $hybrid Object with $vector in the command */
-  HYBRID_VECTOR("feature.hybrid.vector"),
-  /** The usage of $hybrid Object with $vectorize in the command */
-  HYBRID_VECTORIZE("feature.hybrid.vectorize"),
 
   /** The usage of `hybridLimits` with Number in the command */
   HYBRID_LIMITS_NUMBER("feature.hybrid.limits.number"),

@@ -89,16 +89,14 @@ public final class CommandFeatures {
   /**
    * Generates Micrometer Tags representing the features used. For every possible {@link
    * CommandFeature}, a tag is generated with the feature's tagName and a value of "true" if the
-   * feature is present in this set, or "false" otherwise.
+   * feature is present in this set
    *
    * @return A {@link Tags} object suitable for use with Micrometer metrics.
    */
   public Tags getAsTags() {
     Tags tags = Tags.empty();
-    for (CommandFeature feature : CommandFeature.values()) {
-      // Check presence directly against the internal set
-      boolean isFeaturePresent = this.commandFeatures.contains(feature);
-      tags = tags.and(Tag.of(feature.getTagName(), String.valueOf(isFeaturePresent)));
+    for (CommandFeature feature : commandFeatures) {
+      tags = tags.and(Tag.of(feature.getTagName(), String.valueOf(true)));
     }
     return tags;
   }

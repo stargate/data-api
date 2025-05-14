@@ -108,6 +108,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
 
     var sortMatch = MATCH_SORT_FIELDS.matchAndThrow(hybridObject, jsonParser, ERROR_CONTEXT);
     CommandFeatures commandFeatures = CommandFeatures.create();
+    commandFeatures.addFeature(CommandFeature.HYBRID);
 
     var vectorizeText =
         switch (sortMatch.matched().get(VECTOR_EMBEDDING_TEXT_FIELD)) {
@@ -126,7 +127,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
             // { "sort" : { "$hybrid" : { "$vectorize" : "I like cheese",
             var normalizedText = normalizedText(textNode.asText().trim());
             if (normalizedText != null) {
-              commandFeatures.addFeature(CommandFeature.HYBRID_VECTORIZE);
+              commandFeatures.addFeature(CommandFeature.VECTORIZE);
             }
             yield normalizedText;
           }
@@ -156,7 +157,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
             // { "sort" : { "$hybrid" : { "$lexical" : "cheese",
             var normalizedText = normalizedText(textNode.asText().trim());
             if (normalizedText != null) {
-              commandFeatures.addFeature(CommandFeature.HYBRID_LEXICAL);
+              commandFeatures.addFeature(CommandFeature.LEXICAL);
             }
             yield normalizedText;
           }
@@ -184,7 +185,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           }
           case ArrayNode arrayNode -> {
             // { "sort" : { "$hybrid" : { "vector" : [1,2,3],
-            commandFeatures.addFeature(CommandFeature.HYBRID_VECTOR);
+            commandFeatures.addFeature(CommandFeature.VECTOR);
             yield arrayNodeToVector(arrayNode);
           }
           case ObjectNode objectNode -> {
@@ -204,7 +205,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   ArrayNode.class,
                   ObjectNode.class);
             }
-            commandFeatures.addFeature(CommandFeature.HYBRID_VECTOR);
+            commandFeatures.addFeature(CommandFeature.VECTOR);
             yield ejson.getVectorValueForBinary();
           }
           case JsonNode node ->

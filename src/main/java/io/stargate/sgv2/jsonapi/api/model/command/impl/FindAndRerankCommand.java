@@ -38,7 +38,7 @@ public record FindAndRerankCommand(
     @JsonProperty("projection") JsonNode projectionDefinition,
     @Valid @JsonProperty("sort") FindAndRerankSort sortClause,
     @Valid @Nullable Options options)
-    implements ReadCommand, Filterable, Projectable, Windowable, FeatureSource {
+    implements ReadCommand, Filterable, Projectable, Windowable {
   public FindAndRerankCommand {
     sortClause = (sortClause == null) ? FindAndRerankSort.NO_ARG_SORT : sortClause;
   }
@@ -52,15 +52,16 @@ public record FindAndRerankCommand(
   }
 
   @Override
-  public CommandFeatures getCommandFeatures() {
-    var commandFeatures = CommandFeatures.create();
-    commandFeatures.addAll(
-        (sortClause != null) ? sortClause.getCommandFeatures() : CommandFeatures.EMPTY);
-    commandFeatures.addAll(
-        (options != null && options.hybridLimits() != null)
-            ? options.hybridLimits().getCommandFeatures()
-            : CommandFeatures.EMPTY);
-    return commandFeatures;
+  public void addCommandFeaturesToCommandContext(CommandContext<?> context) {
+    context
+        .commandFeatures()
+        .addAll((sortClause != null) ? sortClause.getCommandFeatures() : CommandFeatures.EMPTY);
+    context
+        .commandFeatures()
+        .addAll(
+            (options != null && options.hybridLimits() != null)
+                ? options.hybridLimits().getCommandFeatures()
+                : CommandFeatures.EMPTY);
   }
 
   public record Options(
