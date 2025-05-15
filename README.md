@@ -6,7 +6,6 @@ Data API is an HTTP service that gives access to data stored in a Cassandra clus
 
 Specifications and design documents for this service are defined in the [docs](docs) directory.
 
-
 ##### Table of Contents
 * [Quick Start](#quick-start)
 * [Concepts](#concepts)
