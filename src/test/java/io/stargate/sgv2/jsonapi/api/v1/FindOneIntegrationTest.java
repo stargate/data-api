@@ -837,7 +837,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     public void failForFilteringOnLexical() {
       for (String filter :
           new String[] {
-            "{\"$lexical\": \"quick brown fox\"}", "{\"$lexical\": {\"eq\": \"quick brown fox\"}}"
+            "{\"$lexical\": \"quick brown fox\"}", "{\"$lexical\": {\"$eq\": \"quick brown fox\"}}"
           }) {
         givenHeadersPostJsonThenOk("{ \"findOne\": { \"filter\" : %s}}".formatted(filter))
             .body("$", responseIsError())
