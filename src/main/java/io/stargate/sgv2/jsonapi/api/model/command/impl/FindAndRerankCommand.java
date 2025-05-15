@@ -51,12 +51,12 @@ public record FindAndRerankCommand(
   }
 
   @Override
-  public void addCommandFeatures(CommandContext<?> context) {
+  public void addCommandFeatures(CommandFeatures commandFeatures) {
     if (sortClause != null) {
-      context.commandFeatures().addAll(sortClause.commandFeatures());
+      commandFeatures.addAll(sortClause.commandFeatures());
     }
     if (options != null && options.hybridLimits() != null) {
-      context.commandFeatures().addAll(options.hybridLimits().commandFeatures());
+      commandFeatures.addAll(options.hybridLimits().commandFeatures());
     }
   }
 

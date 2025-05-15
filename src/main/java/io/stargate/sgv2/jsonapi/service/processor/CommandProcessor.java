@@ -77,7 +77,7 @@ public class CommandProcessor {
         .invoke(
             cmd -> {
               HybridFieldExpander.expandHybridField(commandContext, cmd);
-              cmd.addCommandFeatures(commandContext);
+              cmd.addCommandFeatures(commandContext.commandFeatures());
             })
 
         // Step 2: Vectorize relevant parts of the command (asynchronous)
