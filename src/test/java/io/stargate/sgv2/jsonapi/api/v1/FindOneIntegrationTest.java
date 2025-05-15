@@ -846,7 +846,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
             .body(
                 "errors[0].message",
                 containsString(
-                    "Cannot filter on lexical content field '$lexical': only 'sort' clause supported"));
+                    "Cannot filter on '$lexical' field using operator $eq: only $match is supported"));
       }
     }
   }
