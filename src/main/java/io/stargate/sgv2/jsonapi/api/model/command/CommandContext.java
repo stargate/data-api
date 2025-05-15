@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
@@ -55,6 +56,9 @@ public class CommandContext<SchemaT extends SchemaObject> {
   // see accessors
   private FindAndRerankCommand.HybridLimits hybridLimits;
 
+  // used to track the features used in the command
+  private final CommandFeatures commandFeatures;
+
   // created on demand or set via builder, otherwise we need to read from config too early when
   // running tests, See the {@link Builder#withApiFeatures}
   // access via {@link CommandContext#apiFeatures()}
@@ -98,6 +102,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
                 requestContext.getTenantId().orElse(""),
                 apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL))
             : RequestTracing.NO_OP;
+
+    this.commandFeatures = CommandFeatures.create();
   }
 
   /** See doc comments for {@link CommandContext} */
@@ -158,6 +164,10 @@ public class CommandContext<SchemaT extends SchemaObject> {
       }
     }
     return apiFeatures;
+  }
+
+  public CommandFeatures commandFeatures() {
+    return commandFeatures;
   }
 
   public JsonProcessingMetricsReporter jsonProcessingMetricsReporter() {

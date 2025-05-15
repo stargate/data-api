@@ -48,13 +48,13 @@ public class CommandProcessor {
    * Processes a single command through the full pipeline.
    *
    * @param commandContext The context for the command execution.
-   * @param initialCommand The command to be processed.
+   * @param command The command to be processed.
    * @param <CommandT> Type of the command.
    * @param <SchemaT> Type of the schema object the command operates on.
    * @return A {@link Uni} emitting the {@link CommandResult} of the command execution.
    */
   public <CommandT extends Command, SchemaT extends SchemaObject> Uni<CommandResult> processCommand(
-      CommandContext<SchemaT> commandContext, CommandT initialCommand) {
+      CommandContext<SchemaT> commandContext, CommandT command) {
 
     // Initial tracing before the reactive pipeline starts
     commandContext
@@ -64,34 +64,34 @@ public class CommandProcessor {
                 new TraceMessage(
                     "Starting to process '%s' command for schema object %s"
                         .formatted(
-                            initialCommand.commandName().getApiName(),
+                            command.commandName().getApiName(),
                             PrettyPrintable.print(commandContext.schemaObject().name())),
                     commandContext.schemaObject()));
 
     return Uni.createFrom()
-        .item(initialCommand)
+        .item(command)
         .onItem()
 
-        // Step 1: Expand any hybrid fields in the command (synchronous, in-place modification)
+        // Step 1: Expand any hybrid fields in the command (synchronous) and record the command
+        // features
         .invoke(
-            commandToExpand -> {
-              HybridFieldExpander.expandHybridField(commandContext, commandToExpand);
+            cmd -> {
+              HybridFieldExpander.expandHybridField(commandContext, cmd);
+              cmd.addCommandFeatures(commandContext.commandFeatures());
             })
 
         // Step 2: Vectorize relevant parts of the command (asynchronous)
-        .flatMap(
-            expandedCommand -> dataVectorizerService.vectorize(commandContext, expandedCommand))
+        .flatMap(cmd -> dataVectorizerService.vectorize(commandContext, cmd))
 
         // Step 3: Resolve the vectorized command to a runnable Operation (asynchronous)
-        .flatMap(vectorizedCommand -> resolveCommandToOperation(commandContext, vectorizedCommand))
+        .flatMap(cmd -> resolveCommandToOperation(commandContext, cmd))
 
         // Step 4: Execute the operation (asynchronous)
         .flatMap(operation -> operation.execute(commandContext))
 
         // Step 5: Handle any failures from the preceding steps
         .onFailure()
-        .recoverWithItem(
-            throwable -> handleProcessingFailure(commandContext, initialCommand, throwable))
+        .recoverWithItem(throwable -> handleProcessingFailure(commandContext, command, throwable))
 
         // Step 6: Transform the successful or recovered item (Supplier<CommandResult>) into
         // CommandResult
@@ -100,7 +100,7 @@ public class CommandProcessor {
         .transform(Supplier::get)
 
         // Step 7: Perform any final post-processing on the CommandResult (e.g., add warnings)
-        .map(commandResult -> postProcessCommandResult(initialCommand, commandResult));
+        .map(commandResult -> postProcessCommandResult(command, commandResult));
   }
 
   /**
