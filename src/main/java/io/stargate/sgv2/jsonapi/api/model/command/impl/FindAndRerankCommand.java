@@ -18,7 +18,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
-import io.stargate.sgv2.jsonapi.metrics.FeatureSource;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.validation.Valid;
@@ -52,12 +51,12 @@ public record FindAndRerankCommand(
   }
 
   @Override
-  public void addCommandFeaturesToCommandContext(CommandContext<?> context) {
+  public void addCommandFeatures(CommandContext<?> context) {
     if (sortClause != null) {
-      context.commandFeatures().addAll(sortClause.getCommandFeatures());
+      context.commandFeatures().addAll(sortClause.commandFeatures());
     }
     if (options != null && options.hybridLimits() != null) {
-      context.commandFeatures().addAll(options.hybridLimits().getCommandFeatures());
+      context.commandFeatures().addAll(options.hybridLimits().commandFeatures());
     }
   }
 
@@ -112,7 +111,7 @@ public record FindAndRerankCommand(
       /** ---- */
       @JsonProperty(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) int lexicalLimit,
       CommandFeatures commandFeatures)
-      implements Recordable, FeatureSource {
+      implements Recordable {
     public static final HybridLimits DEFAULT = new HybridLimits(50, 50, CommandFeatures.EMPTY);
 
     @Override
@@ -121,11 +120,6 @@ public record FindAndRerankCommand(
           .append("vectorLimit", vectorLimit)
           .append("lexicalLimit", lexicalLimit)
           .append("commandFeatures", commandFeatures);
-    }
-
-    @Override
-    public CommandFeatures getCommandFeatures() {
-      return commandFeatures != null ? commandFeatures : CommandFeatures.EMPTY;
     }
   }
 

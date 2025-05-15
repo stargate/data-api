@@ -50,7 +50,7 @@ public final class CommandFeatures {
   /** Adds the specified feature to this instance. */
   public void addFeature(CommandFeature commandFeature) {
     Objects.requireNonNull(commandFeature, "CommandFeature cannot be null");
-    this.commandFeatures.add(commandFeature);
+    commandFeatures.add(commandFeature);
   }
 
   /**
@@ -62,7 +62,7 @@ public final class CommandFeatures {
    */
   public void addAll(CommandFeatures other) {
     if (other != null && !other.isEmpty()) {
-      this.commandFeatures.addAll(other.commandFeatures);
+      commandFeatures.addAll(other.commandFeatures);
     }
   }
 
@@ -72,33 +72,20 @@ public final class CommandFeatures {
    * @return {@code true} if no features are present, {@code false} otherwise.
    */
   public boolean isEmpty() {
-    return this.commandFeatures.isEmpty();
+    return commandFeatures.isEmpty();
   }
 
   /**
-   * Gets a copy of the set of commandFeatures contained in this {@code CommandFeatures}. The
-   * returned set is a defensive copy and modifications to it will not affect this {@code
-   * CommandFeatures} instance.
+   * Generates Micrometer Tags representing the features in this instance. Each feature is
+   * represented as a tag with its name and a value of {@code true}.
    *
-   * @return An {@link EnumSet} containing the commandFeatures.
+   * @return A {@link Tags} object containing the tags for each feature.
    */
-  public EnumSet<CommandFeature> getFeatures() {
-    return EnumSet.copyOf(commandFeatures);
-  }
-
-  /**
-   * Generates Micrometer Tags representing the features used. For every possible {@link
-   * CommandFeature}, a tag is generated with the feature's tagName and a value of "true" if the
-   * feature is present in this set
-   *
-   * @return A {@link Tags} object suitable for use with Micrometer metrics.
-   */
-  public Tags getAsTags() {
-    Tags tags = Tags.empty();
-    for (CommandFeature feature : commandFeatures) {
-      tags = tags.and(Tag.of(feature.getTagName(), String.valueOf(true)));
-    }
-    return tags;
+  public Tags getTags() {
+    return Tags.of(
+        commandFeatures.stream()
+            .map(f -> Tag.of(f.getTagName(), String.valueOf(true)))
+            .toArray(Tag[]::new));
   }
 
   @Override
@@ -120,6 +107,7 @@ public final class CommandFeatures {
 
   @Override
   public String toString() {
+    // CommandFeatures[features…]
     return "CommandFeatures" + commandFeatures.toString();
   }
 }

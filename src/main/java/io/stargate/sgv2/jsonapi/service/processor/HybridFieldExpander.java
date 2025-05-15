@@ -50,17 +50,12 @@ public class HybridFieldExpander {
     if (docNode instanceof ObjectNode doc) {
       // Check for $hybrid field
       if ((hybridField = doc.remove(DocumentConstants.Fields.HYBRID_FIELD)) != null) {
+        context.commandFeatures().addFeature(CommandFeature.HYBRID);
         switch (hybridField) {
             // this is {"$hybrid" : null}
           case NullNode ignored -> addLexicalAndVectorize(doc, hybridField, hybridField);
-          case TextNode ignored -> {
-            context.commandFeatures().addFeature(CommandFeature.HYBRID);
-            addLexicalAndVectorize(doc, hybridField, hybridField);
-          }
-          case ObjectNode ob -> {
-            context.commandFeatures().addFeature(CommandFeature.HYBRID);
-            addFromObject(context, doc, ob, docIndex, docCount);
-          }
+          case TextNode ignored -> addLexicalAndVectorize(doc, hybridField, hybridField);
+          case ObjectNode ob -> addFromObject(context, doc, ob, docIndex, docCount);
           default ->
               throw ErrorCodeV1.HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE.toApiException(
                   "expected String, Object or `null` but received %s (Document %d of %d)",

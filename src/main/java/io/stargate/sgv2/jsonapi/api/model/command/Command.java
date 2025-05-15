@@ -36,5 +36,5 @@ public interface Command {
    */
   CommandName commandName();
 
-  default void addCommandFeaturesToCommandContext(CommandContext<?> context) {}
+  default void addCommandFeatures(CommandContext<?> context) {}
 }

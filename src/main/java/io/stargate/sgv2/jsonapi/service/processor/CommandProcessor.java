@@ -75,18 +75,16 @@ public class CommandProcessor {
         // Step 1: Expand any hybrid fields in the command (synchronous) and record the command
         // features
         .invoke(
-            commandToExpand -> {
-              HybridFieldExpander.expandHybridField(commandContext, commandToExpand);
-              // Add command features to the command context
-              commandToExpand.addCommandFeaturesToCommandContext(commandContext);
+            cmd -> {
+              HybridFieldExpander.expandHybridField(commandContext, cmd);
+              cmd.addCommandFeatures(commandContext);
             })
 
         // Step 2: Vectorize relevant parts of the command (asynchronous)
-        .flatMap(
-            expandedCommand -> dataVectorizerService.vectorize(commandContext, expandedCommand))
+        .flatMap(cmd -> dataVectorizerService.vectorize(commandContext, cmd))
 
         // Step 3: Resolve the vectorized command to a runnable Operation (asynchronous)
-        .flatMap(vectorizedCommand -> resolveCommandToOperation(commandContext, vectorizedCommand))
+        .flatMap(cmd -> resolveCommandToOperation(commandContext, cmd))
 
         // Step 4: Execute the operation (asynchronous)
         .flatMap(operation -> operation.execute(commandContext))

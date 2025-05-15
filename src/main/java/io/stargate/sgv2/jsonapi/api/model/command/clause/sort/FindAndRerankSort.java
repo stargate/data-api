@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
-import io.stargate.sgv2.jsonapi.metrics.FeatureSource;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -30,15 +29,10 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
       """)
 public record FindAndRerankSort(
     String vectorizeSort, String lexicalSort, float[] vectorSort, CommandFeatures commandFeatures)
-    implements Recordable, FeatureSource {
+    implements Recordable {
 
   public static final FindAndRerankSort NO_ARG_SORT =
       new FindAndRerankSort(null, null, null, CommandFeatures.EMPTY);
-
-  @Override
-  public CommandFeatures getCommandFeatures() {
-    return commandFeatures != null ? commandFeatures : CommandFeatures.EMPTY;
-  }
 
   @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {

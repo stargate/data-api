@@ -89,12 +89,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
         // using the same text for vectorize and for lexical, no vector
         var normalizedText = normalizedText(textNode.asText().trim());
         yield new FindAndRerankSort(
-            normalizedText,
-            normalizedText,
-            null,
-            normalizedText == null
-                ? CommandFeatures.EMPTY
-                : CommandFeatures.of(CommandFeature.HYBRID));
+            normalizedText, normalizedText, null, CommandFeatures.of(CommandFeature.HYBRID));
       }
       case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
       case JsonNode node ->
@@ -107,8 +102,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       JsonParser jsonParser, ObjectNode hybridObject) throws JsonMappingException {
 
     var sortMatch = MATCH_SORT_FIELDS.matchAndThrow(hybridObject, jsonParser, ERROR_CONTEXT);
-    CommandFeatures commandFeatures = CommandFeatures.create();
-    commandFeatures.addFeature(CommandFeature.HYBRID);
+    CommandFeatures commandFeatures = CommandFeatures.of(CommandFeature.HYBRID);
 
     var vectorizeText =
         switch (sortMatch.matched().get(VECTOR_EMBEDDING_TEXT_FIELD)) {
@@ -121,15 +115,13 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           case NullNode ignored -> {
             // explict setting to null is allowed
             // { "sort" : { "$hybrid" : { "$vectorize" : null,
+            commandFeatures.addFeature(CommandFeature.VECTORIZE);
             yield null;
           }
           case TextNode textNode -> {
             // { "sort" : { "$hybrid" : { "$vectorize" : "I like cheese",
-            var normalizedText = normalizedText(textNode.asText().trim());
-            if (normalizedText != null) {
-              commandFeatures.addFeature(CommandFeature.VECTORIZE);
-            }
-            yield normalizedText;
+            commandFeatures.addFeature(CommandFeature.VECTORIZE);
+            yield normalizedText(textNode.asText().trim());
           }
           case JsonNode node ->
               throw JsonFieldMatcher.errorForWrongType(
@@ -151,15 +143,13 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           case NullNode ignored -> {
             // explict setting to null is allowed
             // { "sort" : { "$hybrid" : { "$lexical" : null,
+            commandFeatures.addFeature(CommandFeature.LEXICAL);
             yield null;
           }
           case TextNode textNode -> {
             // { "sort" : { "$hybrid" : { "$lexical" : "cheese",
-            var normalizedText = normalizedText(textNode.asText().trim());
-            if (normalizedText != null) {
-              commandFeatures.addFeature(CommandFeature.LEXICAL);
-            }
-            yield normalizedText;
+            commandFeatures.addFeature(CommandFeature.LEXICAL);
+            yield normalizedText(textNode.asText().trim());
           }
           case JsonNode node ->
               throw JsonFieldMatcher.errorForWrongType(
@@ -181,6 +171,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           case NullNode ignored -> {
             // explict setting to null is allowed
             // { "sort" : { "$hybrid" : { "$vector" : null,
+            commandFeatures.addFeature(CommandFeature.VECTOR);
             yield null;
           }
           case ArrayNode arrayNode -> {

@@ -57,7 +57,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
   private FindAndRerankCommand.HybridLimits hybridLimits;
 
   // used to track the features used in the command
-  private CommandFeatures commandFeatures;
+  private final CommandFeatures commandFeatures;
 
   // created on demand or set via builder, otherwise we need to read from config too early when
   // running tests, See the {@link Builder#withApiFeatures}
