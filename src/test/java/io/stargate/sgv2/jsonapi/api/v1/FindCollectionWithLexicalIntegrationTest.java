@@ -316,6 +316,27 @@ public class FindCollectionWithLexicalIntegrationTest
               "errors[0].message",
               containsString("if sorting by '$lexical' no other sort expressions allowed"));
     }
+
+    // No way to do "$not" with "$match" (not supported by DBs)
+    @Test
+    void failForLexicalFilterWithNot() {
+      givenHeadersPostJsonThenOk(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                          {
+                            "find": {
+                              "filter" : {"$not": {"$lexical": {"$match": "banana" } }}}
+                            }
+                          }
+                          """)
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Invalid filter expression: cannot use $not to invert $match operator"));
+    }
   }
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
