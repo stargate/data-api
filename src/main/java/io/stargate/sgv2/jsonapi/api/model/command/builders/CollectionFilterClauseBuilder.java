@@ -11,6 +11,8 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
+import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +30,41 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
   @Override
   protected FilterClause validateAndBuild(LogicalExpression rootExpr) {
     return new FilterClause(validateWithSchema(rootExpr));
+  }
+
+  @Override
+  protected String validateFilterClausePath(String path) {
+    if (!NamingRules.FIELD.apply(path)) {
+      if (path.isEmpty()) {
+        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+            "filter clause path cannot be empty String");
+      }
+      // 3 special fields with $ prefix, skip here
+      switch (path) {
+        case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
+            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD -> {
+          return path;
+        }
+        case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD -> {
+          if (!schema.lexicalConfig().enabled()) {
+            throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
+                "Lexical search is not enabled for collection '%s'", schema.name());
+          }
+          return path;
+        }
+      }
+      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+          "filter clause path ('%s') cannot start with `$`", path);
+    }
+
+    try {
+      path = DocumentPath.verifyEncodedPath(path);
+    } catch (IllegalArgumentException e) {
+      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+          "filter clause path ('%s') is not a valid path. " + e.getMessage(), path);
+    }
+
+    return path;
   }
 
   private LogicalExpression validateWithSchema(LogicalExpression rootExpr) {

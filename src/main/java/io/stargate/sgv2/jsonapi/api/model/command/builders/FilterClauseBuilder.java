@@ -11,8 +11,6 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
-import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -569,31 +567,12 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
     }
   }
 
-  private String validateFilterClausePath(String path) {
-    if (!NamingRules.FIELD.apply(path)) {
-      if (path.isEmpty()) {
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-            "filter clause path cannot be empty String");
-      }
-      // 3 special fields with $ prefix, skip here
-      switch (path) {
-        case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
-            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD -> {
-          return path;
-        }
-      }
-      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-          "filter clause path ('%s') cannot start with `$`", path);
-    }
-
-    try {
-      path = DocumentPath.verifyEncodedPath(path);
-    } catch (IllegalArgumentException e) {
-      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-          "filter clause path ('%s') is not a valid path. " + e.getMessage(), path);
-    }
-
-    return path;
-  }
+  /**
+   * Method called to enforce the filter clause path to be valid. This method is called for each
+   * path.
+   *
+   * @param path Path to be validated
+   * @return Path after validation - currently not changed
+   */
+  protected abstract String validateFilterClausePath(String path);
 }
