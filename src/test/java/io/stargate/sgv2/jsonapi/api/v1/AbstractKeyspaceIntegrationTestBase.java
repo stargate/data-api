@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
@@ -244,7 +245,18 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
                 line ->
                     line.startsWith("session_cql_requests_seconds") && line.contains("session="))
             .findFirst();
-    assertThat(sessionLevelDriverMetricTenantId.isPresent()).isTrue();
+
+    List<String> lines = metrics.lines().toList();
+    if (!sessionLevelDriverMetricTenantId.isPresent()) {
+      long buckets =
+          lines.stream()
+              .filter(line -> line.startsWith("session_cql_requests_seconds_bucket"))
+              .count();
+      fail(
+          String.format(
+              "No tenant id found in 'session_cql_requests_seconds_bucket' (%d buckets; %d log lines)",
+              buckets, lines.size()));
+    }
   }
 
   public static void checkVectorMetrics(String commandName, String sortType) {
