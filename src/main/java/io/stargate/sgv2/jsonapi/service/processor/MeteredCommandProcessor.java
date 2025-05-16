@@ -121,7 +121,12 @@ public class MeteredCommandProcessor {
             result -> {
               // --- Metrics Recording ---
               Tags tags = getCustomTags(commandContext, command, result);
-              sample.stop(meterRegistry.timer(jsonApiMetricsConfig.metricsName(), tags));
+              Timer timer = meterRegistry.timer(jsonApiMetricsConfig.metricsName(), tags);
+              sample.stop(timer);
+              String tenantId = commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE);
+              commandContext
+                  .metricsTenantDeactivationConsumer()
+                  .trackMeterId(tenantId, timer.getId());
 
               // --- Command Level Logging (Success) ---
               if (isCommandLevelLoggingEnabled(commandContext, result, false)) {
