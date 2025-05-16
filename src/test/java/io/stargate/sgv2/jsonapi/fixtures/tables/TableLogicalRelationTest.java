@@ -17,6 +17,7 @@ public class TableLogicalRelationTest {
     return TEST_DATA.names;
   }
 
+  /** The filter is empty so only an implicitAnd, so the where clause should be empty as well. */
   @Test
   public void emptyFilter() {
     var fixture = TEST_DATA.tableWhereCQLClause().tableWithAllDataTypes("AND()");
@@ -31,6 +32,9 @@ public class TableLogicalRelationTest {
         .assertNoPositionalValues();
   }
 
+  /**
+   * Implicit AND with two eq filters, so two filters should be AND together in the where clause.
+   */
   @Test
   public void simpleAnd() {
     var fixture = TEST_DATA.tableWhereCQLClause().tableWithAllDataTypes("AND(eq,eq)");
@@ -50,6 +54,7 @@ public class TableLogicalRelationTest {
         .assertWherePositionalValues(List.of(names().CQL_INT_COLUMN, names().CQL_TEXT_COLUMN));
   }
 
+  /** Implicit AND with an explicit OR includes two eq filters. */
   @Test
   public void simpleOR() {
     var fixture = TEST_DATA.tableWhereCQLClause().tableWithAllDataTypes("AND(OR(eq,eq))");
@@ -67,6 +72,7 @@ public class TableLogicalRelationTest {
         .assertWherePositionalValues(List.of(names().CQL_INT_COLUMN, names().CQL_TEXT_COLUMN));
   }
 
+  /** Implicit AND with a root-level filter and an explicit OR includes two other eq filters. */
   @Test
   public void tableFilterWithLogicalExpressionOR() {
     var fixture = TEST_DATA.tableWhereCQLClause().tableWithAllDataTypes("AND(eq, OR(eq,eq))");
@@ -88,6 +94,10 @@ public class TableLogicalRelationTest {
             List.of(names().CQL_DATE_COLUMN, names().CQL_INT_COLUMN, names().CQL_TEXT_COLUMN));
   }
 
+  /**
+   * Implicit AND with a root-level filter and an explicit empty OR. However, the OR is empty, so
+   * just empty parentheses are added.
+   */
   @Test
   public void tableFilterWithPartialEmptyOR() {
     var fixture = TEST_DATA.tableWhereCQLClause().tableWithAllDataTypes("AND(eq, OR())");
@@ -104,6 +114,7 @@ public class TableLogicalRelationTest {
         .assertWherePositionalValues(List.of(names().CQL_DATE_COLUMN));
   }
 
+  /** Implicit AND with two explicit ORs, each with two eq filters. */
   @Test
   public void twoLogicalExpressionOR() {
     var fixture =
@@ -137,6 +148,7 @@ public class TableLogicalRelationTest {
                 names().CQL_BOOLEAN_COLUMN));
   }
 
+  /** Implicit AND with two explicit ORs, The second OR is nested inside the first OR. */
   @Test
   public void nested_AND_OR() {
     var fixture = TEST_DATA.tableWhereCQLClause().tableWithAllDataTypes("AND(OR(OR(eq,eq)))");
