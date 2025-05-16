@@ -134,7 +134,22 @@ public class QueryBuilderTest {
               .bm25Sort("query_lexical_value", "tags")
               .build(),
           "SELECT a, b, c FROM ks.tbl ORDER BY query_lexical_value BM25 OF ? LIMIT 100",
-          List.of("tags"))
+          List.of("tags")),
+      arguments(
+          new QueryBuilder()
+              .select()
+              .column("id", "value")
+              .from("ks", "tbl")
+              .where(
+                  ExpressionUtils.andOf(
+                      Variable.of(
+                          BuiltCondition.of(
+                              "$lexical",
+                              BuiltConditionPredicate.TEXT_SEARCH,
+                              new JsonTerm("search tokens")))))
+              .build(),
+          "SELECT id, value FROM ks.tbl WHERE \"$lexical\" : ?",
+          List.of("search tokens"))
     };
   }
 

@@ -1363,7 +1363,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body(
               "errors[0].message",
               containsString(
-                  "Cannot filter on '$vector' field using operator '$eq': only '$exists' is supported"));
+                  "Cannot filter on '$vector' field using operator $eq: only $exists is supported"));
     }
   }
 

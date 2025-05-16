@@ -105,6 +105,23 @@ public class ComparisonExpressionTest {
       assertThat(result.getFilterOperations()).isEqualTo(expectedResult.getFilterOperations());
       assertThat(result.getPath()).isEqualTo(expectedResult.getPath());
     }
+
+    @Test
+    public void matchValueComparisonExpression() throws Exception {
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "content",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.MATCH,
+                      new JsonLiteral("search text", JsonType.STRING))),
+              null);
+
+      ComparisonExpression result = new ComparisonExpression("content", new ArrayList<>(), null);
+      result.add(ValueComparisonOperator.MATCH, "search text");
+      assertThat(result.getFilterOperations()).isEqualTo(expectedResult.getFilterOperations());
+      assertThat(result.getPath()).isEqualTo(expectedResult.getPath());
+    }
   }
 
   @Nested
