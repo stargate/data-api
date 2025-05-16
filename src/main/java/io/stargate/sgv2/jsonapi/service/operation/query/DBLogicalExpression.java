@@ -4,7 +4,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -66,14 +65,21 @@ public class DBLogicalExpression implements Recordable {
   }
 
   /**
-   * Add a sub dbLogicalExpression as subExpression to current caller dbLogicalExpression.
-   *
-   * @param DBLogicalExpression subExpression
-   * @return subExpression
+   * Add a sub dbLogicalExpression as subExpression to current caller dbLogicalExpression. Return
+   * the passing sub dbLogicalExpression.
    */
   public DBLogicalExpression addSubExpressionReturnSub(DBLogicalExpression subExpression) {
     subExpressions.add(Objects.requireNonNull(subExpression, "subExpressions cannot be null"));
     return subExpression;
+  }
+
+  /**
+   * Add a sub dbLogicalExpression as subExpression to current caller dbLogicalExpression. Return
+   * the current caller dbLogicalExpression.
+   */
+  public DBLogicalExpression addSubExpressionReturnCurrent(DBLogicalExpression subExpression) {
+    subExpressions.add(Objects.requireNonNull(subExpression, "subExpressions cannot be null"));
+    return this;
   }
 
   /**
@@ -122,37 +128,5 @@ public class DBLogicalExpression implements Recordable {
         .append("operator", operator)
         .append("subExpressions", subExpressions)
         .append("filters", filters);
-  }
-
-  // ==================================================================================================================
-  // Methods below are created to help construct DBLogicalExpression in unit tests
-  public static DBLogicalExpression and() {
-    return new DBLogicalExpression(DBLogicalOperator.AND);
-  }
-
-  public static DBLogicalExpression and(TableFilter... filters) {
-    var and = and();
-    Arrays.stream(filters).forEach(and::addFilter);
-    return and;
-  }
-
-  public static DBLogicalExpression or() {
-    return new DBLogicalExpression(DBLogicalOperator.OR);
-  }
-
-  public static DBLogicalExpression or(TableFilter... filters) {
-    var or = or();
-    Arrays.stream(filters).forEach(or::addFilter);
-    return or;
-  }
-
-  public DBLogicalExpression addFilters(TableFilter... filters) {
-    Arrays.stream(filters).forEach(this::addFilter);
-    return this;
-  }
-
-  public DBLogicalExpression addSubExpression(DBLogicalExpression subExpression) {
-    subExpressions.add(Objects.requireNonNull(subExpression, "subExpressions cannot be null"));
-    return this;
   }
 }

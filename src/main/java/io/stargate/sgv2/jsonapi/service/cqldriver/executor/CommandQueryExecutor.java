@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.google.common.annotations.VisibleForTesting;
+import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.AccumulatingAsyncResultSet;
@@ -74,7 +75,7 @@ public class CommandQueryExecutor {
 
   public Uni<AsyncResultSet> executeRead(SimpleStatement statement) {
     Objects.requireNonNull(statement, "statement must not be null");
-
+    Log.error("executeRead111: " + statement.getQuery() + " " + statement.getPositionalValues());
     statement = withExecutionProfile(statement, QueryType.READ);
     return executeAndWrap(statement);
   }

@@ -10,9 +10,9 @@ import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.DefaultSubConditionRelation;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * Builds the WHERE clause in a CQL statment when using the Java Driver Query Builder.
@@ -89,10 +89,10 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
    */
   @Override
   public T apply(T tOngoingWhereClause, List<Object> objects) {
-    var tableFilters =
-        dbLogicalExpression.filters().stream().map(dbFilter -> (TableFilter) dbFilter).toList();
 
-    // If no filters at all, just return the ongoingWhereClause.
+    // If there is no filter in the entire logicalExpression tree
+    // Just return the ongoingWhereClause without apply anything.
+    // This could happen when user provides no filter or empty filter in the request.
     if (dbLogicalExpression.isEmpty()) {
       return tOngoingWhereClause;
     }
@@ -101,9 +101,8 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
   }
 
   /**
-   * The helper method to recursively resolve the DBLogicalExpression into regular relation {@link
-   * Relation} or AND/OR relation {@link DefaultSubConditionRelation} that Driver QueryBuilder
-   * expects.
+   * Method to recursively resolve the DBLogicalExpression into regular relation {@link Relation} or
+   * AND/OR relation {@link DefaultSubConditionRelation} that Driver QueryBuilder expects.
    *
    * @param currentLogicalExpression currentLogicalExpression.
    * @param objects positionalValues to append in order.
@@ -112,33 +111,41 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
   private Relation applyLogicalRelation(
       DBLogicalExpression currentLogicalExpression, List<Object> objects) {
 
-    // create the default relation to represent the current level of AND/OR
+    // create the default relation to represent the current level of AND/OR, E.G.
+    // implicit and: {"name": "John"} -> WHERE (name=?)
+    // implicit and with explicit or: {"$or": [{"name": "John"}, {"age": 30}]} -> WHERE ((name=? OR
+    // age=?))
+    // Ideally, we don't need the parenthesis in the root level
+    // but this is how the driver override works current, see DefaultSubConditionRelation.java
+    // We can not remove the root level parenthesis currently to build the logical relation
     var relationWhere = DefaultSubConditionRelation.subCondition();
 
-    // recursively build relations from sub_levels.
-    List<Relation> subLevelRelations =
-        Stream.concat(
-                currentLogicalExpression.filters().stream()
-                    .map(filter -> ((TableFilter) filter).apply(tableSchemaObject, objects)),
-                currentLogicalExpression.subExpressions().stream()
-                    .map(subExpression -> applyLogicalRelation(subExpression, objects)))
-            .toList();
+    List<Relation> relations = new ArrayList<>();
+    // First, add all simple filters
+    currentLogicalExpression
+        .filters()
+        .forEach(filter -> relations.add(((TableFilter) filter).apply(tableSchemaObject, objects)));
 
-    // construct and() relation
+    // Then, recursively build relations from sub_levels
+    currentLogicalExpression
+        .subExpressions()
+        .forEach(subExpr -> relations.add(applyLogicalRelation(subExpr, objects)));
+
+    // if current logical operator is AND, construct and() relation
     if (currentLogicalExpression.operator() == DBLogicalExpression.DBLogicalOperator.AND
-        && !subLevelRelations.isEmpty()) {
-      relationWhere = relationWhere.where(subLevelRelations.getFirst());
-      for (int i = 1; i < subLevelRelations.size(); i++) {
-        relationWhere = relationWhere.and().where(subLevelRelations.get(i));
+        && !relations.isEmpty()) {
+      relationWhere = relationWhere.where(relations.getFirst());
+      for (int i = 1; i < relations.size(); i++) {
+        relationWhere = relationWhere.and().where(relations.get(i));
       }
     }
 
-    // construct or() relation
+    // if current logical operator is AND, construct and() relation
     if (currentLogicalExpression.operator() == DBLogicalExpression.DBLogicalOperator.OR
-        && !subLevelRelations.isEmpty()) {
-      relationWhere = relationWhere.where(subLevelRelations.getFirst());
-      for (int i = 1; i < subLevelRelations.size(); i++) {
-        relationWhere = relationWhere.or().where(subLevelRelations.get(i));
+        && !relations.isEmpty()) {
+      relationWhere = relationWhere.where(relations.getFirst());
+      for (int i = 1; i < relations.size(); i++) {
+        relationWhere = relationWhere.or().where(relations.get(i));
       }
     }
 
