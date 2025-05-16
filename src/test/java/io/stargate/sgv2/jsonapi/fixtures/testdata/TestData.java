@@ -68,6 +68,10 @@ public class TestData {
     return getOrCache(WhereAnalyzerTestData.class);
   }
 
+  public TableWhereCQLClauseTestData tableWhereCQLClause() {
+    return getOrCache(TableWhereCQLClauseTestData.class);
+  }
+
   public SelectCQLClauseTestData selectCQLClause() {
     return getOrCache(SelectCQLClauseTestData.class);
   }

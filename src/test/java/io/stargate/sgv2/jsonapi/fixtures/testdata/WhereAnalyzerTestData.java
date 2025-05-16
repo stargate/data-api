@@ -38,7 +38,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     return new WhereAnalyzerFixture(
         message,
         tableMetaData,
-        testData.logicalExpression().andExpression(tableMetaData),
+        testData.logicalExpression().implicitAndExpression(tableMetaData),
         statementType);
   }
 
@@ -48,7 +48,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     return new WhereAnalyzerFixture(
         message,
         tableMetaData,
-        testData.logicalExpression().andExpression(tableMetaData),
+        testData.logicalExpression().implicitAndExpression(tableMetaData),
         statementType);
   }
 
@@ -58,7 +58,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     return new WhereAnalyzerFixture(
         message,
         tableMetaData,
-        testData.logicalExpression().andExpression(tableMetaData),
+        testData.logicalExpression().implicitAndExpression(tableMetaData),
         statementType);
   }
 
@@ -68,7 +68,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     return new WhereAnalyzerFixture(
         message,
         tableMetaData,
-        testData.logicalExpression().andExpression(tableMetaData),
+        testData.logicalExpression().implicitAndExpression(tableMetaData),
         statementType);
   }
 
@@ -138,7 +138,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
       analysisResult =
           analyzer.analyse(
               TableWhereCQLClause.forSelect(
-                      tableSchemaObject, WithWarnings.of(expression.expression))
+                      tableSchemaObject, WithWarnings.of(expression.rootImplicitAnd))
                   .target());
       LOGGER.warn("Analysis result: {}", analysisResult);
     }
@@ -312,7 +312,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     @Override
     public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
       return dataRecorder
-          .append("expression", expression.expression)
+          .append("expression", expression.rootImplicitAnd)
           .append("table", tableMetadata.describe(true));
     }
   }

@@ -74,7 +74,6 @@ public class CommandQueryExecutor {
 
   public Uni<AsyncResultSet> executeRead(SimpleStatement statement) {
     Objects.requireNonNull(statement, "statement must not be null");
-
     statement = withExecutionProfile(statement, QueryType.READ);
     return executeAndWrap(statement);
   }
