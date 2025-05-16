@@ -32,7 +32,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class FindCollectionWithLexicalSortIntegrationTest
+public class FindCollectionWithLexicalIntegrationTest
     extends AbstractCollectionIntegrationTestBase {
   static final String COLLECTION_WITH_LEXICAL =
       "coll_lexical_sort_" + RandomStringUtils.randomNumeric(16);
@@ -112,6 +112,27 @@ public class FindCollectionWithLexicalSortIntegrationTest
           .body("data.documents", hasSize(2))
           .body("data.documents[0]._id", is("lexical-1"))
           .body("data.documents[1]._id", is("lexical-4"));
+    }
+
+    @Test
+    void findManyWithLexicalFilter() {
+      givenHeadersPostJsonThenOkNoErrors(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                          {
+                            "find": {
+                              "filter" : {
+                                 "$lexical": {
+                                    "$match": "biking"
+                                  }
+                               }
+                            }
+                          }
+                          """)
+              .body("$", responseIsFindSuccess())
+              .body("data.documents", hasSize(1))
+              .body("data.documents[0]._id", is("lexical-3"));
     }
   }
 
