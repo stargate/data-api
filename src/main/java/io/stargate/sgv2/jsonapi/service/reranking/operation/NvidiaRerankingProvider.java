@@ -10,6 +10,9 @@ import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.RerankingResponseErrorMessageMapper;
+import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
+import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
+import io.stargate.sgv2.jsonapi.service.provider.ProviderType;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import jakarta.ws.rs.HeaderParam;
@@ -84,11 +87,12 @@ public class NvidiaRerankingProvider extends RerankingProvider {
 
   @RegisterRestClient
   @RegisterProvider(RerankingProviderResponseValidation.class)
+  @RegisterProvider(ProviderHttpInterceptor.class)
   public interface NvidiaRerankingClient {
 
     @POST
     @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
-    Uni<RerankingResponse> rerank(
+    Uni<jakarta.ws.rs.core.Response> rerank(
         @HeaderParam("Authorization") String accessToken, RerankingRequest request);
 
     @ClientExceptionMapper
@@ -146,7 +150,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
           "In order to rerank, please provide the reranking API key.");
     }
 
-    Uni<RerankingResponse> response =
+    Uni<jakarta.ws.rs.core.Response> response =
         applyRetry(
             nvidiaRerankingClient.rerank(
                 HttpConstants.BEARER_PREFIX_FOR_API_KEY + rerankingCredentials.apiKey().get(),
@@ -155,13 +159,19 @@ public class NvidiaRerankingProvider extends RerankingProvider {
     return response
         .onItem()
         .transform(
-            resp -> {
+            interceptedResp -> {
+              RerankingResponse providerResp = interceptedResp.readEntity(RerankingResponse.class);
               List<Rank> ranks =
-                  resp.rankings().stream()
+                  providerResp.rankings().stream()
                       .map(rank -> new Rank(rank.index(), rank.logit()))
                       .toList();
-              Usage usage = new Usage(resp.usage().prompt_tokens(), resp.usage().total_tokens());
-              return RerankingBatchResponse.of(batchId, ranks, usage);
+
+              ModelUsage modelUsage =
+                  new ModelUsage(ProviderType.RERANKING_PROVIDER, providerId, modelName)
+                      .setPromptTokens(providerResp.usage().prompt_tokens)
+                      .setTotalTokens(providerResp.usage().total_tokens)
+                      .parseSentReceivedBytes(interceptedResp);
+              return RerankingBatchResponse.of(batchId, ranks, modelUsage);
             });
   }
 }

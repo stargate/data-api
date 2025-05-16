@@ -8,6 +8,7 @@ import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import java.util.*;
@@ -115,7 +116,7 @@ public class RerankingEGWClient extends RerankingProvider {
                   resp.getRanksList().stream()
                       .map(rank -> new Rank(rank.getIndex(), rank.getScore()))
                       .collect(Collectors.toList()),
-                  new Usage(resp.getUsage().getPromptTokens(), resp.getUsage().getTotalTokens()));
+                  ModelUsage.fromGrpcResponse(resp.getModelUsage()));
             });
   }
 }
