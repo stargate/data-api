@@ -40,11 +40,11 @@ public class FindCollectionWithLexicalIntegrationTest
   static final String COLLECTION_WITHOUT_LEXICAL =
       "coll_no_lexical_sort_" + RandomStringUtils.randomNumeric(16);
 
-  static final String DOC1_JSON = lexicalDoc(1, "monkey banana", "value1");
-  static final String DOC2_JSON = lexicalDoc(2, "monkey", "value2");
-  static final String DOC3_JSON = lexicalDoc(3, "biking fun", "value3");
-  static final String DOC4_JSON = lexicalDoc(4, "banana bread with butter", "value4");
-  static final String DOC5_JSON = lexicalDoc(5, "fun", "value5");
+  static final String DOC1_JSON = lexicalDoc(1, "monkey banana", "value1", "top");
+  static final String DOC2_JSON = lexicalDoc(2, "monkey", "value2", "top");
+  static final String DOC3_JSON = lexicalDoc(3, "biking fun", "value3", "middle");
+  static final String DOC4_JSON = lexicalDoc(4, "banana bread with butter", "value4", "bottom");
+  static final String DOC5_JSON = lexicalDoc(5, "fun", "value5", "bottom");
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
@@ -115,7 +115,7 @@ public class FindCollectionWithLexicalIntegrationTest
     }
 
     @Test
-    void findManyWithLexicalFilter() {
+    void findManyWithOnlyLexicalFilter() {
       givenHeadersPostJsonThenOkNoErrors(
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
@@ -133,6 +133,29 @@ public class FindCollectionWithLexicalIntegrationTest
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body("data.documents[0]._id", is("lexical-3"));
+    }
+
+    @Test
+    void findManyWithLexicalAndOtherFilter() {
+      // Lexical brings 2, tag 2; intersection is 1
+      givenHeadersPostJsonThenOkNoErrors(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                          {
+                            "find": {
+                              "filter" : {
+                                 "$and": [
+                                   { "$lexical": { "$match": "banana" } },
+                                   { "tag": "bottom" }
+                                  ]
+                               }
+                            }
+                          }
+                          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]._id", is("lexical-4"));
     }
   }
 
@@ -246,7 +269,7 @@ public class FindCollectionWithLexicalIntegrationTest
   class HappyCasesFindOneAndUpdate {
     @Test
     void findOneAndUpdateWithSort() {
-      final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-updated");
+      final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-updated", "top");
       givenHeadersPostJsonThenOkNoErrors(
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
@@ -286,7 +309,7 @@ public class FindCollectionWithLexicalIntegrationTest
   class HappyCasesUpdateOne {
     @Test
     void updateOneWithSort() {
-      final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-updated-2");
+      final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-updated-2", "top");
       givenHeadersPostJsonThenOkNoErrors(
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
@@ -323,7 +346,7 @@ public class FindCollectionWithLexicalIntegrationTest
   class HappyCasesFindOneAndReplace {
     @Test
     void findOneAndReplaceWithSort() {
-      final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-replaced");
+      final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-replaced", "top");
       givenHeadersPostJsonThenOkNoErrors(
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
@@ -385,7 +408,7 @@ public class FindCollectionWithLexicalIntegrationTest
               """
           {
             "find": {
-              "projection": {"_id": 1, "value": 0 }
+              "projection": {"_id": 1, "value": 0, "tag": 0 }
             }
           }
           """)
@@ -436,21 +459,22 @@ public class FindCollectionWithLexicalIntegrationTest
           .body(
               "data.documents",
               containsInAnyOrder(
-                  Map.of("_id", "lexical-1"),
-                  Map.of("_id", "lexical-4"),
-                  Map.of("_id", "lexical-5")));
+                  Map.of("_id", "lexical-1", "tag", "top"),
+                  Map.of("_id", "lexical-4", "tag", "bottom"),
+                  Map.of("_id", "lexical-5", "tag", "bottom")));
     }
   }
 
-  static String lexicalDoc(int id, String keywords, String value) {
+  static String lexicalDoc(int id, String keywords, String value, String tag) {
     return
         """
             {
               "_id": "lexical-%d",
               "$lexical": "%s",
-              "value": "%s"
+              "value": "%s",
+              "tag": "%s"
             }
         """
-        .formatted(id, keywords, value);
+        .formatted(id, keywords, value, tag);
   }
 }
