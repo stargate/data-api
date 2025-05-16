@@ -198,6 +198,25 @@ public class FindCollectionWithLexicalIntegrationTest
           // Needs to get "lexical-1" with "monkey banana"
           .body("data.document", jsonEquals(DOC1_JSON));
     }
+
+    @Test
+    void findOneWithOnlyLexicalFilter() {
+      givenHeadersPostJsonThenOkNoErrors(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                      {
+                        "findOne": {
+                          "projection": {"$lexical": 1 },
+                          "filter" : {"$lexical": {"$match": "bread butter" } }
+                        }
+                      }
+                      """)
+              .body("$", responseIsFindSuccess())
+              // Needs to get "lexical-4"
+              .body("data.document", jsonEquals(DOC4_JSON));
+    }
+
   }
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
@@ -205,7 +224,7 @@ public class FindCollectionWithLexicalIntegrationTest
   @Order(3)
   class FailingCasesFindMany {
     @Test
-    void failIfLexicalDisabledForCollection() {
+    void failSortIfLexicalDisabledForCollection() {
       givenHeadersPostJsonThenOk(
               keyspaceName,
               COLLECTION_WITHOUT_LEXICAL,
