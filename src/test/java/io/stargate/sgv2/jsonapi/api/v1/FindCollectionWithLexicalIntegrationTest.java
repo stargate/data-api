@@ -130,9 +130,9 @@ public class FindCollectionWithLexicalIntegrationTest
                             }
                           }
                           """)
-              .body("$", responseIsFindSuccess())
-              .body("data.documents", hasSize(1))
-              .body("data.documents[0]._id", is("lexical-3"));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]._id", is("lexical-3"));
     }
   }
 
