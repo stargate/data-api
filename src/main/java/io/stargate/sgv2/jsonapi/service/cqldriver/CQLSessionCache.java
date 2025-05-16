@@ -265,6 +265,10 @@ public class CQLSessionCache {
     }
   }
 
+  public void addDeactivatedTenantConsumer(DeactivatedTenantConsumer consumer) {
+    deactivatedTenantConsumers.add(consumer);
+  }
+
   /** Callback to create a new session when one is needed for the cache */
   private SessionValueHolder onLoadSession(SessionCacheKey cacheKey) {
 
