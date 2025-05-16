@@ -212,11 +212,10 @@ public class FindCollectionWithLexicalIntegrationTest
                         }
                       }
                       """)
-              .body("$", responseIsFindSuccess())
-              // Needs to get "lexical-4"
-              .body("data.document", jsonEquals(DOC4_JSON));
+          .body("$", responseIsFindSuccess())
+          // Needs to get "lexical-4"
+          .body("data.document", jsonEquals(DOC4_JSON));
     }
-
   }
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
