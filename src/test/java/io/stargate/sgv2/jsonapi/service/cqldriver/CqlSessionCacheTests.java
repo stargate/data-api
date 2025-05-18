@@ -225,7 +225,7 @@ public class CqlSessionCacheTests {
   public void evictionListenerNotCalledUntilEvicted() {
 
     var longTTL = Duration.ofSeconds(5);
-    var consumer = mock(CQLSessionCache.DeactivatedTenantConsumer.class);
+    var consumer = mock(CQLSessionCache.DeactivatedTenantListener.class);
     var fixture =
         newFixture(
             DatabaseType.ASTRA,
@@ -524,8 +524,8 @@ public class CqlSessionCacheTests {
     return "%s-%s".formatted(AUTH_TOKEN, i);
   }
 
-  private CQLSessionCache.DeactivatedTenantConsumer consumerWithLogging() {
-    var consumer = mock(CQLSessionCache.DeactivatedTenantConsumer.class);
+  private CQLSessionCache.DeactivatedTenantListener consumerWithLogging() {
+    var consumer = mock(CQLSessionCache.DeactivatedTenantListener.class);
     doAnswer(
             invocation -> {
               var tenantId = invocation.getArgument(0);
@@ -584,7 +584,7 @@ public class CqlSessionCacheTests {
 
   private Fixture newFixture(
       DatabaseType databaseType,
-      List<CQLSessionCache.DeactivatedTenantConsumer> consumers,
+      List<CQLSessionCache.DeactivatedTenantListener> consumers,
       Duration cacheTTL,
       int cacheSize,
       boolean setExpected) {
@@ -601,7 +601,7 @@ public class CqlSessionCacheTests {
 
   private Fixture newFixture(
       DatabaseType databaseType,
-      List<CQLSessionCache.DeactivatedTenantConsumer> consumers,
+      List<CQLSessionCache.DeactivatedTenantListener> consumers,
       Duration cacheTTL,
       int cacheSize,
       String slaUserAgent,

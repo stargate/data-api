@@ -26,7 +26,7 @@ import org.junit.Test;
 
 public class SchemaCacheTests {
 
-  private static final String TENANT_ID = "tenant-id" + System.currentTimeMillis();
+  private static final Optional<String> TENANT_ID = Optional.of("tenant-id" + System.currentTimeMillis());
 
   @Test
   public void deactivatedTenantRemovesAllKeyspaces() {
@@ -41,7 +41,7 @@ public class SchemaCacheTests {
 
     var deactivatedListener = fixture.schemaCache.getDeactivatedTenantConsumer();
 
-    deactivatedListener.accept(TENANT_ID, RemovalCause.EXPLICIT);
+    deactivatedListener.accept(TENANT_ID);
 
     // all of TENANT_ID should be removed, and the non TENANT_ID can stay
     assertThat(fixture.schemaCache.peekSchemaObject(TENANT_ID, "keyspace1", "table1"))

@@ -13,6 +13,8 @@ import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -22,7 +24,7 @@ public class CqlSessionFactoryTests {
   private static final String APP_NAME = "appName" + System.currentTimeMillis();
   private static final String DATACENTER = "datacenter";
   private static final int CASSANDRA_PORT = 9042;
-  private static final String TENANT_ID = "tenantId" + System.currentTimeMillis();
+  private static final Optional<String> TENANT_ID = Optional.of( "tenantId" + System.currentTimeMillis());
 
   @Test
   public void createAstraDbSession() {

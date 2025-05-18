@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.DEFAULT_TENANT;
-
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListenerBase;
@@ -40,6 +38,8 @@ import org.slf4j.LoggerFactory;
 @ApplicationScoped
 public class SchemaCache {
   private static final Logger LOGGER = LoggerFactory.getLogger(SchemaCache.class);
+
+  public static final String DEFAULT_TENANT = "default_tenant";
 
   private final CqlSessionCacheSupplier sessionCacheSupplier;
   private final DatabaseType databaseType;
@@ -99,7 +99,7 @@ public class SchemaCache {
    * Gets a consumer to use with the {@link CQLSessionCache} to remove the schema cache entries when
    * a tenant is deactivated.
    */
-  public CQLSessionCache.DeactivatedTenantConsumer getDeactivatedTenantConsumer() {
+  public CQLSessionCache.DeactivatedTenantListener getDeactivatedTenantConsumer() {
     return new SchemaCacheDeactivatedTenantConsumer(this);
   }
 
@@ -293,7 +293,7 @@ public class SchemaCache {
    * tenant is deactivated.
    */
   private static class SchemaCacheDeactivatedTenantConsumer
-      implements CQLSessionCache.DeactivatedTenantConsumer {
+      implements CQLSessionCache.DeactivatedTenantListener {
 
     private final SchemaCache schemaCache;
 
@@ -302,10 +302,10 @@ public class SchemaCache {
     }
 
     @Override
-    public void accept(String tenantId, RemovalCause cause) {
+    public void accept(Optional<String> tenantId) {
       // the sessions are keyed on the tenantID and the credentials, and one session can work with
       // multiple keyspaces. So we need to evict all the keyspaces for the tenantId
-      schemaCache.evictAllKeyspaces(tenantId);
+      tenantId.ifPresent(schemaCache::evictAllKeyspaces);
     }
   }
 

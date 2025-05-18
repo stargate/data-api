@@ -12,6 +12,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,7 +120,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
   }
 
   @Override
-  public CqlSession apply(String tenantId, CqlCredentials credentials) {
+  public CqlSession apply(Optional<String> tenantId, CqlCredentials credentials) {
     Objects.requireNonNull(credentials, "credentials must not be null");
 
     if (LOGGER.isDebugEnabled()) {
@@ -133,7 +134,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     // used in logging and metrics
     var configLoader =
         DriverConfigLoader.programmaticBuilder()
-            .withString(DefaultDriverOption.SESSION_NAME, tenantId == null ? "" : tenantId)
+            .withString(DefaultDriverOption.SESSION_NAME, tenantId.orElse("unset"))
             .build();
 
     var builder =

@@ -30,7 +30,7 @@ public class CqlSessionCacheSupplierTests {
     var schemaCache = mock(SchemaCache.class);
     when(schemaCache.getSchemaChangeListener()).thenReturn(mock(SchemaChangeListener.class));
     when(schemaCache.getDeactivatedTenantConsumer())
-        .thenReturn(mock(CQLSessionCache.DeactivatedTenantConsumer.class));
+        .thenReturn(mock(CQLSessionCache.DeactivatedTenantListener.class));
 
     var factory =
         new CqlSessionCacheSupplier(
