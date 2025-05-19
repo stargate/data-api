@@ -770,7 +770,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body(
               "errors[0].message",
               containsString(
-                  "Invalid filter expression: filter clause path ('pricing&price&aud') is not a valid path."));
+                  "Invalid filter expression: filter clause path ('pricing&price&aud') is not a valid path: "));
     }
   }
 
