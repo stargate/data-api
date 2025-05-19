@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortSpec;
 import jakarta.validation.Valid;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -17,7 +17,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public record FindOneCommand(
     @Valid @JsonProperty("filter") FilterSpec filterSpec,
     @JsonProperty("projection") JsonNode projectionDefinition,
-    @Valid @JsonProperty("sort") SortClause sortClause,
+    @Valid @JsonProperty("sort") SortSpec sortSpec,
     @Valid @Nullable Options options)
     implements ReadCommand, Filterable, Projectable, Sortable, Windowable, VectorSortable {
 

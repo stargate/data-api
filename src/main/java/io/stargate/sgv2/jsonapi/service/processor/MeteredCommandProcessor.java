@@ -100,9 +100,21 @@ public class MeteredCommandProcessor {
     commandContext.schemaObject().name().addToMDC();
     MDC.put("tenantId", commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE));
 
-    // Delegate the actual command processing
-    return commandProcessor
-        .processCommand(commandContext, command)
+    // --- Defer Command Processing (from PR2076) ---
+    // We wrap the call to `commandProcessor.processCommand` in `Uni.createFrom().deferred()`
+    // for two main reasons:
+    // 1. Defensive Programming for Synchronous Failures:
+    //    Ensures that if `commandProcessor.processCommand` itself (or code executed synchronously
+    //    within it before its own reactive chain fully forms and handles errors) throws a
+    //    synchronous exception, this MeteredCommandProcessor can still catch it in its
+    //    `.onFailure()` block for consistent logging (no metrics currently). This acts as a safety
+    //    net.
+    // 2. Lazy Execution (Benefit of `deferred`):
+    //    The `commandProcessor.processCommand` method, which kicks off potentially significant
+    //    work and returns a Uni, will only be invoked when this resulting Uni is actually
+    //    subscribed to.
+    return Uni.createFrom()
+        .deferred(() -> commandProcessor.processCommand(commandContext, command))
         .onItem()
         .invoke(
             // Success path handling
@@ -129,7 +141,10 @@ public class MeteredCommandProcessor {
 
               // --- Command Level Logging
               if (isCommandLevelLoggingEnabled(commandContext, null, true)) {
-                logger.error(buildCommandLog(commandContext, command, null), throwable);
+                logger.error(
+                    "Command processing failed. Details: {}",
+                    buildCommandLog(commandContext, command, null),
+                    throwable);
               }
             })
         .eventually(
@@ -286,13 +301,16 @@ public class MeteredCommandProcessor {
 
     // --- Sort Type Tag ---
     // Determine the type of sorting used (if any), primarily for FindCommand.
-    // NOTE: This logic might need refinement or replacement when FeatureUsage is fully integrated,
-    // especially for FindAndRerankCommand.
+    // NOTE: This logic might need refinement or replacement when CommandFeatures is fully
+    // integrated, especially for FindAndRerankCommand.
     JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(commandContext, command);
     Tag sortTypeTag = Tag.of(jsonApiMetricsConfig.sortType(), sortType.name());
 
+    // --- Command Feature Usage Tags ---
+    Tags commandFeatureTags = commandContext.commandFeatures().getTags();
+
     // --- Combine All Tags ---
-    return Tags.of(
+    return commandFeatureTags.and(
         commandTag, tenantTag, errorTag, errorClassTag, errorCodeTag, vectorEnabled, sortTypeTag);
   }
 
@@ -314,10 +332,9 @@ public class MeteredCommandProcessor {
 
     // Check if the command supports sorting and has a sort clause defined
     if (command instanceof Sortable sc
-        && sc.sortClause() != null
-        && !sc.sortClause().sortExpressions().isEmpty()) {
+        && !sc.sortClause(commandContext).sortExpressions().isEmpty()) {
 
-      var sortExpressions = sc.sortClause().sortExpressions();
+      var sortExpressions = sc.sortClause(commandContext).sortExpressions();
 
       // Check if the only sort expression is for vector similarity ($vector or $vectorize)
       if (sortExpressions.size() == 1) {

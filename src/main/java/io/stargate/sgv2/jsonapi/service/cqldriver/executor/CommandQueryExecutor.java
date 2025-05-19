@@ -75,7 +75,6 @@ public class CommandQueryExecutor {
 
   public Uni<AsyncResultSet> executeRead(SimpleStatement statement) {
     Objects.requireNonNull(statement, "statement must not be null");
-
     statement = withExecutionProfile(statement, QueryType.READ);
     // TODO, removal, debugging purpose for map/set/list filter feature.
     Log.info("CQL statement " + statement.getQuery() + " " + statement.getPositionalValues());
@@ -161,7 +160,9 @@ public class CommandQueryExecutor {
 
   private CqlSession session() {
     return cqlSessionCache.getSession(
-        dbRequestContext.tenantId().orElse(""), dbRequestContext.authToken().orElse(""));
+        dbRequestContext.tenantId().orElse(""),
+        dbRequestContext.authToken().orElse(""),
+        dbRequestContext.userAgent().orElse(null));
   }
 
   private String getExecutionProfile(QueryType queryType) {
@@ -185,5 +186,8 @@ public class CommandQueryExecutor {
 
   // Aaron - Feb 3 - temp rename while factoring full RequestContext
   public record DBRequestContext(
-      Optional<String> tenantId, Optional<String> authToken, boolean tracingEnabled) {}
+      Optional<String> tenantId,
+      Optional<String> authToken,
+      Optional<String> userAgent,
+      boolean tracingEnabled) {}
 }

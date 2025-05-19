@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -20,6 +21,8 @@ public class FindOneAndDeleteCommandTest {
   @Inject ObjectMapper objectMapper;
 
   @Inject Validator validator;
+
+  private final TestConstants testConstants = new TestConstants();
 
   @Nested
   class Validation {
@@ -63,7 +66,8 @@ public class FindOneAndDeleteCommandTest {
               FindOneAndDeleteCommand.class,
               findOneAndDeleteCommand -> {
                 assertThat(findOneAndDeleteCommand.filterSpec()).isNotNull();
-                final SortClause sortClause = findOneAndDeleteCommand.sortClause();
+                final SortClause sortClause =
+                    findOneAndDeleteCommand.sortClause(testConstants.collectionContext());
                 assertThat(sortClause).isNotNull();
                 assertThat(sortClause)
                     .satisfies(
@@ -93,7 +97,8 @@ public class FindOneAndDeleteCommandTest {
               FindOneAndDeleteCommand.class,
               findOneAndDeleteCommand -> {
                 assertThat(findOneAndDeleteCommand.filterSpec()).isNotNull();
-                final SortClause sortClause = findOneAndDeleteCommand.sortClause();
+                final SortClause sortClause =
+                    findOneAndDeleteCommand.sortClause(testConstants.collectionContext());
                 assertThat(sortClause).isNotNull();
                 assertThat(sortClause)
                     .satisfies(

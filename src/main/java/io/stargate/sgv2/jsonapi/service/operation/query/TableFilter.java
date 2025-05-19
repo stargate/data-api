@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.query;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
+import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.IndexUsage;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -67,19 +67,15 @@ public abstract class TableFilter extends DBFilterBase implements FilterBehaviou
    * java driver.
    *
    * @param tableSchemaObject The table the filter is being applied to.
-   * @param ongoingWhereClause The class from the Java Driver that implements the {@link
-   *     OngoingWhereClause} that is used to build the WHERE in a CQL clause. This is the type of
-   *     the statement the where is being added to such {@link Select} or {@link
-   *     com.datastax.oss.driver.api.querybuilder.update.Update}
    * @param positionalValues Mutable array of values that are used when the {@link
    *     com.datastax.oss.driver.api.querybuilder.QueryBuilder#bindMarker()} method is used, the
    *     values are added to the select statement using {@link Select#build(Object...)}
-   * @return The {@link Select} to use to continue building the query. NOTE: the query builder is a
-   *     fluent builder that returns immutable that are used in a chain, see the
+   * @return The {@link Relation} to use to continue building the query. NOTE: the query builder is
+   *     a fluent builder that returns immutable that are used in a chain, see the
    *     https://docs.datastax.com/en/developer/java-driver/4.3/manual/query_builder/index.html
    */
-  public abstract <StmtT extends OngoingWhereClause<StmtT>> StmtT apply(
-      TableSchemaObject tableSchemaObject, StmtT ongoingWhereClause, List<Object> positionalValues);
+  public abstract Relation apply(
+      TableSchemaObject tableSchemaObject, List<Object> positionalValues);
 
   /** Default "NO OP" implementation to keep the code above cleaner. */
   private static final FilterBehaviour UNSUPPORTED_BEHAVIOUR =
