@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
@@ -336,6 +337,27 @@ public class FindCollectionWithLexicalIntegrationTest
               "errors[0].message",
               containsString(
                   "Invalid filter expression: cannot use $not to invert $match operator"));
+    }
+
+    // Can only use $match with $lexical, not $eq, $ne, etc.
+    @Test
+    public void failForEqFilteringOnLexical() {
+      for (String filter :
+          new String[] {
+            "{\"$lexical\": \"quick brown fox\"}", "{\"$lexical\": {\"$eq\": \"quick brown fox\"}}"
+          }) {
+        givenHeadersPostJsonThenOk(
+                keyspaceName,
+                COLLECTION_WITH_LEXICAL,
+                "{ \"findOne\": { \"filter\" : %s}}".formatted(filter))
+            .body("$", responseIsError())
+            .body("errors", hasSize(1))
+            .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+            .body(
+                "errors[0].message",
+                containsString(
+                    "Cannot filter on '$lexical' field using operator $eq: only $match is supported"));
+      }
     }
   }
 
