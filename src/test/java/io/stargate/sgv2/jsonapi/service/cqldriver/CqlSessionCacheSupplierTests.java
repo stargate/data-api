@@ -8,6 +8,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.metrics.MetricsTenantDeactivationConsumer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,11 @@ public class CqlSessionCacheSupplierTests {
 
     var factory =
         new CqlSessionCacheSupplier(
-            "testApp", operationsConfig, new SimpleMeterRegistry(), schemaCache);
+            "testApp",
+            operationsConfig,
+            new SimpleMeterRegistry(),
+            schemaCache,
+            mock(MetricsTenantDeactivationConsumer.class));
 
     var sessionCache1 = factory.get();
     var sessionCache2 = factory.get();

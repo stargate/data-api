@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.metrics.MetricsTenantDeactivationConsumer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -51,6 +52,7 @@ public class MeteredCommandProcessor {
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
   private final MetricsConfig.TenantRequestCounterConfig tenantConfig;
   private final CommandLevelLoggingConfig commandLevelLoggingConfig;
+  private final MetricsTenantDeactivationConsumer metricsTenantDeactivationConsumer;
 
   // Pre-computed common tags for efficiency
   private final Tag errorTrue;
@@ -65,12 +67,14 @@ public class MeteredCommandProcessor {
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       MetricsConfig metricsConfig,
-      CommandLevelLoggingConfig commandLevelLoggingConfig) {
+      CommandLevelLoggingConfig commandLevelLoggingConfig,
+      MetricsTenantDeactivationConsumer metricsTenantDeactivationConsumer) {
     this.commandProcessor = commandProcessor;
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
     this.tenantConfig = metricsConfig.tenantRequestCounter();
     this.commandLevelLoggingConfig = commandLevelLoggingConfig;
+    this.metricsTenantDeactivationConsumer = metricsTenantDeactivationConsumer;
 
     // Pre-compute common tags for efficiency
     errorTrue = Tag.of(tenantConfig.errorTag(), "true");
@@ -124,9 +128,7 @@ public class MeteredCommandProcessor {
               Timer timer = meterRegistry.timer(jsonApiMetricsConfig.metricsName(), tags);
               sample.stop(timer);
               String tenantId = commandContext.requestContext().getTenantId().orElse(UNKNOWN_VALUE);
-              commandContext
-                  .metricsTenantDeactivationConsumer()
-                  .trackMeterId(tenantId, timer.getId());
+              metricsTenantDeactivationConsumer.trackMeterId(tenantId, timer.getId());
 
               // --- Command Level Logging (Success) ---
               if (isCommandLevelLoggingEnabled(commandContext, result, false)) {
