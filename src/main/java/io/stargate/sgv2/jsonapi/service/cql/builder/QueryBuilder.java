@@ -233,7 +233,7 @@ public class QueryBuilder {
         BuiltCondition condition = variable.getValue();
         condition.lhs.appendToBuilder(sb);
         condition.rhsTerm.appendPositionalValue(values);
-        sb.append(" ").append(condition.predicate.getSpaceWrappedCql()).append(" ?");
+        sb.append(condition.predicate.getSpaceWrappedCql()).append("?");
       }
       default ->
           throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(

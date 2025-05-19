@@ -825,33 +825,4 @@ public class SelectWhereAnalyzerTest {
           .assertWarnOnUnindexedColumns(cqlDatatypeColumn);
     }
   }
-
-  @Nested
-  class ComplexDataType {
-
-    // ==================================================================================================================
-    // Currently, only PrimitiveApiDataType(Scalar) is supported for table filter
-    // ==================================================================================================================
-
-    private static Stream<Arguments> complexDataTypes() {
-      return names().ALL_COLLECTION_DATATYPE_COLUMNS.stream().map((Arguments::of));
-    }
-
-    @ParameterizedTest
-    @MethodSource("complexDataTypes")
-    public void eq_complex_column(CqlIdentifier complexColumnIdentifier) {
-      var fixture =
-          TEST_DATA
-              .whereAnalyzer()
-              .tableAllColumnDatatypesIndexed(
-                  "$eq_on_%s".formatted(complexColumnIdentifier.asInternal()),
-                  WhereCQLClauseAnalyzer.StatementType.SELECT);
-      fixture
-          .expression()
-          .eqOn(complexColumnIdentifier)
-          .analyzeThrows(FilterException.class)
-          .assertFilterExceptionCode(FilterException.Code.UNSUPPORTED_FILTERING_FOR_COLUMN_TYPES)
-          .assertExceptionOnComplexColumns(complexColumnIdentifier);
-    }
-  }
 }

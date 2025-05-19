@@ -6,7 +6,8 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
+import io.stargate.sgv2.jsonapi.api.model.command.table.MapSetListComponent;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -214,11 +216,6 @@ public class TableFilterClauseBuilderTest {
               "Invalid filter for map column",
               mapSetListTableSchema),
           Arguments.of(
-              "{\"%s\": {\"$keys\": {\"$in\" : [\"cherry\"], \"$nin\" : [\"apple\"]}}}"
-                  .formatted(mapColumnName),
-              "Invalid filter for map column",
-              mapSetListTableSchema),
-          Arguments.of(
               "{\"%s\": { \"$valueee\": {\"$in\" : \"cherry\"} } }".formatted(mapColumnName),
               "Invalid filter operator '$valueee'",
               mapSetListTableSchema),
@@ -296,6 +293,59 @@ public class TableFilterClauseBuilderTest {
                       .isEqualTo(FilterException.Code.INVALID_MAP_SET_LIST_FILTER.name()))
           .satisfies(
               e -> assertThat((e).getMessage()).contains("must be followed by an array of values"));
+    }
+
+    //    private static Stream<Arguments> mapEntryFilter() {
+    //      return Stream.of(
+    //              Arguments.of(
+    //                      "{\"username\": {\"$eq\" : \"aaron\"}}", ValueComparisonOperator.EQ,
+    // "username"));
+    //    }
+    //
+    //    @ParameterizedTest
+    //    @MethodSource("mapEntryFilter")
+    @Test
+    public void multipleMapSetListFilters() throws Exception {
+      TestData td = new TestData();
+      mapSetListTableSchema = td.schemaObject().tableWithMapSetList();
+      listColumnName = td.names.CQL_LIST_COLUMN.asInternal();
+      setColumnName = td.names.CQL_SET_COLUMN.asInternal();
+      mapColumnName = td.names.CQL_MAP_COLUMN.asInternal();
+      String filterJson =
+              """
+              {
+               "%s" : {"$in" : ["apple", "orange"], "$nin" : ["banana", "watermelon"]},
+                "%s" : {"$all" : ["banana", "watermelon"]},
+                "%s" : {"$keys" : {"$in" : ["key1", "key2"], "$nin" : ["key3", "key4"]}}
+              }
+              """
+              .formatted(listColumnName, setColumnName, mapColumnName);
+      FilterClause filterClause = buildTableFilterClause(filterJson, mapSetListTableSchema);
+      assertThat(filterClause).isNotNull();
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(5);
+
+      FilterOperator[] expectedOperators = {
+        ValueComparisonOperator.IN,
+        ValueComparisonOperator.NIN,
+        ArrayComparisonOperator.ALL,
+        ValueComparisonOperator.IN,
+        ValueComparisonOperator.NIN
+      };
+      MapSetListComponent[] expectedComponent = {
+        MapSetListComponent.LIST_VALUE,
+        MapSetListComponent.LIST_VALUE,
+        MapSetListComponent.SET_VALUE,
+        MapSetListComponent.MAP_KEY,
+        MapSetListComponent.MAP_KEY
+      };
+      for (int i = 0; i < 5; i++) {
+        var comparisonExpression = filterClause.logicalExpression().comparisonExpressions.get(i);
+        assertThat(comparisonExpression.getFilterOperations().get(0).operator())
+            .isEqualTo(expectedOperators[i]);
+        assertThat(comparisonExpression.getFilterOperations().get(0).mapSetListComponent())
+            .isEqualTo(expectedComponent[i]);
+      }
     }
   }
 

@@ -146,7 +146,8 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
               }));
     }
 
-    return Relation.column(getPathAsCqlIdentifier()).build(operator.predicate.getSpaceWrappedCql(), bindMarker());
+    return Relation.column(getPathAsCqlIdentifier())
+        .build(operator.predicate.getSpaceWrappedCql(), bindMarker());
   }
 
   public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {

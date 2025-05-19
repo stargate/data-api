@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.checked.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.checked.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.override.DefaultSubConditionRelation;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
@@ -71,14 +72,40 @@ public class MapSetListTableFilter extends TableFilter {
    * FilterOperator}, but it is made on purpose to avoid coupling of the API and Operation.
    */
   public enum Operator {
-    IN,
-    NIN,
-    ALL,
+    IN(SubLogicalRelation.OR),
+    NIN(SubLogicalRelation.AND),
+    ALL(SubLogicalRelation.AND),
     /**
      * NOT_ANY is used internally to support $not operation to negate $all. It is not supported in
      * the API level.
      */
-    NOT_ANY;
+    NOT_ANY(SubLogicalRelation.OR);
+
+    /**
+     * One MapSetListTableFilter could resolve as multiple predicates grouped together by AND/OR
+     * according to different Operators. E.G.
+     *
+     * <ul>
+     *   <li>list({@link Operator#IN})-> <code>
+     *       where listColumn contains 'a' OR listColumn contains 'b'</code</li>
+     *   <li>list({@link Operator#NIN})-> <code>
+     *       where listColumn not contains 'a' AND listColumn not contains 'b'</code</li>
+     *   <li>list({@link Operator#ALL})-> <code>
+     *       where listColumn contains 'a' AND listColumn contains 'b'</code</li>
+     *   <li>list({@link Operator#NOT_ANY})-> <code>
+     *       where listColumn not contains 'a' OR listColumn not contains 'b'</code</li>
+     * </ul>
+     */
+    public enum SubLogicalRelation {
+      AND,
+      OR
+    }
+
+    public final SubLogicalRelation subLogicalRelation;
+
+    Operator(SubLogicalRelation subLogicalRelation) {
+      this.subLogicalRelation = subLogicalRelation;
+    }
 
     public static Operator from(FilterOperator ApiFilterOperator) {
       return switch (ApiFilterOperator) {
@@ -115,6 +142,9 @@ public class MapSetListTableFilter extends TableFilter {
       List<Object> positionalValues, CollectionApiDataType<?> listOrSetApiType)
       throws MissingJSONCodecException, ToCQLCodecException {
 
+    var relation = DefaultSubConditionRelation.subCondition();
+    // boolean flag to help build the logical relation inside this filter
+    boolean isFirst = true;
     // feed each value to the codec and append to statement positionalValues
     for (Object singleValue : arrayValue) {
       var codec =
@@ -122,11 +152,11 @@ public class MapSetListTableFilter extends TableFilter {
               listOrSetApiType.getValueType().cqlType(), singleValue);
       positionalValues.add(codec.toCQL(singleValue));
 
-      // TODO, need Driver logic OR/AND ability, currently works for single element
+      // build up the logical relation according to the operator applied to the map/set/list.
+      relation = buildSubRelationForSingleFilter(relation, isFirst);
+      isFirst = false;
     }
-    // With the and/or ability, then we can logically connect the Relation here
-    return Relation.column(getPathAsCqlIdentifier())
-        .build(operatorToPredicate().getSpaceWrappedCql(), bindMarker());
+    return relation;
   }
 
   /**
@@ -152,6 +182,9 @@ public class MapSetListTableFilter extends TableFilter {
   private Relation applyAgainstMapEntry(List<Object> positionalValues, ApiMapType apiMapType)
       throws MissingJSONCodecException, ToCQLCodecException {
 
+    var relation = DefaultSubConditionRelation.subCondition();
+    // boolean flag to help build the logical relation inside this filter
+    boolean isFirst = true;
     for (Object singleEntry : arrayValue) {
       List<Object> mapKeyAndValue = (List<Object>) singleEntry;
       var keyCodec =
@@ -162,12 +195,11 @@ public class MapSetListTableFilter extends TableFilter {
               apiMapType.getValueType().cqlType(), mapKeyAndValue.get(1));
       positionalValues.add(keyCodec.toCQL(mapKeyAndValue.get(0)));
       positionalValues.add(valueCodec.toCQL(mapKeyAndValue.get(1)));
-      // here and/or relation together
-
-      // TODO, need Driver logic OR/AND ability, currently works for single element
-
+      // build up the logical relation according to the operator applied to the map/set/list.
+      relation = buildSubRelationForSingleFilter(relation, isFirst);
+      isFirst = false;
     }
-    return new DefaultRaw("%s[?] = ?".formatted(path));
+    return relation;
   }
 
   /** Apply the table filter(against the key/value of map column). */
@@ -178,14 +210,19 @@ public class MapSetListTableFilter extends TableFilter {
         mapSetListFilterComponent == MapSetListFilterComponent.MAP_KEY
             ? apiMapType.getKeyType().cqlType()
             : apiMapType.getValueType().cqlType();
+
+    var relation = DefaultSubConditionRelation.subCondition();
+    // boolean flag to help build the logical relation inside this filter
+    boolean isFirst = true;
     for (Object singleKeyOrValue : arrayValue) {
       var keyOrValueCodec =
           JSONCodecRegistries.DEFAULT_REGISTRY.codecToCQL(keyOrValueType, singleKeyOrValue);
       positionalValues.add(keyOrValueCodec.toCQL(singleKeyOrValue));
-      // TODO, need Driver logic OR/AND ability, currently works for single element
+      // build up the logical relation according to the operator applied to the map/set/list.
+      relation = buildSubRelationForSingleFilter(relation, isFirst);
+      isFirst = false;
     }
-    return Relation.column(getPathAsCqlIdentifier())
-        .build(operatorToPredicate().getSpaceWrappedCql(), bindMarker());
+    return relation;
   }
 
   /**
@@ -248,9 +285,50 @@ public class MapSetListTableFilter extends TableFilter {
     };
   }
 
+  /**
+   * Build up the logical relation for single filter according to the operator applied to the
+   * map/set/list. E.G.
+   *
+   * <ul>
+   *   <li>list({@link Operator#IN})-> <code>
+   *       where listColumn contains 'a' OR listColumn contains 'b'</code</li>
+   *   <li>list({@link Operator#NIN})-> <code>
+   *       where listColumn not contains 'a' AND listColumn not contains 'b'</code</li>
+   *   <li>map entries ({@link Operator#IN}-> <code>
+   *       where mapColumn['a'] = 'a1' OR mapColumn['b'] = 'b1'</code>
+   *   <li>map entries ({@link Operator#NIN}-> <code>
+   *       where mapColumn['a'] != 'a1' AND mapColumn['b'] != 'b1'</code>
+   * </ul>
+   */
+  private DefaultSubConditionRelation buildSubRelationForSingleFilter(
+      DefaultSubConditionRelation relation, boolean isFirst) {
+
+    if (mapSetListFilterComponent == MapSetListFilterComponent.MAP_ENTRY) {
+      // E.G. map_column[?] = ?
+      String raw = "%s[?]%s?".formatted(path, operatorToPredicate());
+      return switch (operator.subLogicalRelation) {
+        case AND ->
+            isFirst
+                ? relation.where(new DefaultRaw(raw))
+                : relation.and().where(new DefaultRaw(raw));
+        case OR ->
+            isFirst
+                ? relation.where(new DefaultRaw(raw))
+                : relation.or().where(new DefaultRaw(raw));
+      };
+    } else {
+      Relation rel =
+          Relation.column(getPathAsCqlIdentifier())
+              .build(operatorToPredicate().getSpaceWrappedCql(), bindMarker());
+      return switch (operator.subLogicalRelation) {
+        case AND -> isFirst ? relation.where(rel) : relation.and().where(rel);
+        case OR -> isFirst ? relation.where(rel) : relation.or().where(rel);
+      };
+    }
+  }
+
   @Override
-  public <StmtT extends OngoingWhereClause<StmtT>> StmtT apply(
-      TableSchemaObject table, StmtT ongoingWhereClause, List<Object> positionalValues) {
+  public Relation apply(TableSchemaObject table, List<Object> positionalValues) {
 
     // get the column and its DataType
     var column = getPathAsCqlIdentifier();
@@ -304,7 +382,7 @@ public class MapSetListTableFilter extends TableFilter {
               }));
     }
 
-    return ongoingWhereClause.where(relation);
+    return relation;
   }
 
   /**
