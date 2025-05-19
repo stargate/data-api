@@ -61,7 +61,7 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
       path = DocumentPath.verifyEncodedPath(path);
     } catch (IllegalArgumentException e) {
       throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-          "filter clause path ('%s') is not a valid path. " + e.getMessage(), path);
+          "filter clause path ('%s') is not a valid path: %s", path, e.getMessage());
     }
 
     return path;
