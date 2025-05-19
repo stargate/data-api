@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortSpec;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -25,8 +25,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Object for converting {@link JsonNode} (from {@link SortSpec}) into {@link SortClause}. Process
- * will validate structure of the JSON, and also validate values of the sort expressions.
+ * Object for converting {@link JsonNode} (from {@link SortDefinition}) into {@link SortClause}.
+ * Process will validate structure of the JSON, and also validate values of the sort expressions.
  */
 public abstract class SortClauseBuilder<T extends SchemaObject> {
   protected final T schema;

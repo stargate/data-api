@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.annotations.VisibleForTesting;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import java.util.Objects;
 
 /**
@@ -10,9 +11,9 @@ import java.util.Objects;
  * intermediate form ({@link JsonNode}) from which actual deserialization and validation can be
  * deferred until we have context we need
  *
- * @see io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec
+ * @see FilterDefinition
  */
-public abstract class JsonDefinition {
+public abstract class JsonDefinition<T> {
   /** The wrapped JSON value */
   private final JsonNode json;
 

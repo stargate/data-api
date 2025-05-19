@@ -22,7 +22,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         """
                   {"user.age" : -1, "user.name" : 1}
                   """)
-public class SortSpec extends JsonDefinition {
+public class SortDefinition extends JsonDefinition<SortClause> {
   /**
    * Lazily deserialized {@link SortClause} from the JSON value. We need this due to existing
    * reliance on specific stateful instances of {@link SortClause}.
@@ -33,11 +33,11 @@ public class SortSpec extends JsonDefinition {
    * To deserialize the whole JSON value, need to ensure DELEGATING mode (instead of PROPERTIES).
    */
   @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
-  public SortSpec(JsonNode json) {
+  public SortDefinition(JsonNode json) {
     super(json);
   }
 
-  private SortSpec(SortClause sortClause) {
+  private SortDefinition(SortClause sortClause) {
     // We do not really provide actual JSON value, but need to pass something to the parent
     super(JsonNodeFactory.instance.nullNode());
     this.sortClause = sortClause;
@@ -45,13 +45,13 @@ public class SortSpec extends JsonDefinition {
 
   /**
    * Alternate constructor used to "wrap" already constructed {@link SortClause} into a {@link
-   * SortSpec} instance. Used by Find-and-Rerank functionality to pass already resolved {@link
+   * SortDefinition} instance. Used by Find-and-Rerank functionality to pass already resolved {@link
    * SortClause}s.
    *
    * @param sortClause Actual sort clause to be wrapped.
    */
-  public static SortSpec wrap(SortClause sortClause) {
-    return new SortSpec(sortClause);
+  public static SortDefinition wrap(SortClause sortClause) {
+    return new SortDefinition(sortClause);
   }
 
   /**

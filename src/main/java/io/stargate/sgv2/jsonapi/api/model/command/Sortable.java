@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortSpec;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 
@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
  */
 public interface Sortable {
   /** Accessor for the Sort specification in its intermediate for */
-  SortSpec sortSpec();
+  SortDefinition sortDefinition();
 
   /**
    * Convenience accessor for fully processed SortClause: will convert the intermediate JSON value
@@ -31,7 +31,7 @@ public interface Sortable {
    * @param schema Collection or Table for the current command.
    */
   default SortClause sortClause(SchemaObject schema) {
-    SortSpec spec = sortSpec();
+    SortDefinition spec = sortDefinition();
     return (spec == null) ? SortClause.empty() : spec.toSortClause(schema);
   }
 }
