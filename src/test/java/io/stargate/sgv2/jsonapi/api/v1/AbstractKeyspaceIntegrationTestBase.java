@@ -282,11 +282,6 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     assertThat(countMetrics.size()).isGreaterThan(0);
   }
 
-  /** Utility method for reducing boilerplate code for sending JSON commands */
-  protected RequestSpecification givenHeadersAndJson(String json) {
-    return given().headers(getHeaders()).contentType(ContentType.JSON).body(json);
-  }
-
   protected String generateBase64EncodedBinaryVector(float[] vector) {
     {
       final byte[] byteArray = CqlVectorUtil.floatsToBytes(vector);
@@ -340,6 +335,11 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   /** Helper method for determining if lexical search is available for the database backend */
   protected boolean isLexicalAvailableForDB() {
     return !"true".equals(System.getProperty("testing.db.lexical-disabled"));
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected RequestSpecification givenHeadersAndJson(String json) {
+    return given().headers(getHeaders()).contentType(ContentType.JSON).body(json);
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */
