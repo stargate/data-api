@@ -1,17 +1,14 @@
 package io.stargate.sgv2.jsonapi.metrics;
 
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.SESSION_TAG;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.TENANT_TAG;
+
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,49 +27,14 @@ import org.slf4j.LoggerFactory;
  * crucially, attempts to remove them from the {@code MeterRegistry}, thus stopping the reporting of
  * stale metrics.
  */
-@ApplicationScoped
 public class MetricsTenantDeactivationConsumer
     implements CQLSessionCache.DeactivatedTenantConsumer {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(MetricsTenantDeactivationConsumer.class);
   private final MeterRegistry meterRegistry;
 
-  private final Map<String, List<Meter.Id>> tenantMetrics = new ConcurrentHashMap<>();
-
-  @Inject
   public MetricsTenantDeactivationConsumer(MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
-  }
-
-  /**
-   * Tracks a specific {@link Meter.Id} for a given tenant. This method should be called by
-   * components that create tenant-specific metrics that need to be cleaned up when the tenant
-   * becomes inactive.
-   *
-   * @param tenantId The identifier of the tenant.
-   * @param meterId The {@link Meter.Id} of the metric to track.
-   * @throws IllegalArgumentException if {@code tenantId} or {@code meterId} is null.
-   */
-  public void trackMeterId(String tenantId, Meter.Id meterId) {
-    if (tenantId == null || meterId == null) {
-      LOGGER.error(
-          "Attempted to track meter with null tenantId or meterId. TenantId: {}, MeterId: {}",
-          tenantId,
-          meterId);
-      // TODO: should we throw an exception here?
-      throw new IllegalArgumentException("Tenant ID and Meter ID must not be null");
-    }
-    tenantMetrics
-        .computeIfAbsent(tenantId, k -> Collections.synchronizedList(new ArrayList<>()))
-        .add(meterId);
-  }
-
-  /**
-   * Returns an unmodifiable view of the currently tracked tenant metrics. Intended primarily for
-   * testing purposes.
-   */
-  public Map<String, List<Meter.Id>> getTenantMetrics() {
-    return Collections.unmodifiableMap(tenantMetrics);
   }
 
   /**
@@ -85,10 +47,17 @@ public class MetricsTenantDeactivationConsumer
    */
   @Override
   public void accept(String tenantId, RemovalCause cause) {
-    List<Meter.Id> meterIdsForTenant = tenantMetrics.remove(tenantId);
-    if (meterIdsForTenant != null && !meterIdsForTenant.isEmpty()) {
-      for (Meter.Id meterId : meterIdsForTenant) {
-        meterRegistry.remove(meterId);
+    if (tenantId == null) {
+      LOGGER.info("Received null tenantId for deactivation");
+      return;
+    }
+
+    // iterate all the metrics in the meterRegistry
+    for (Meter meter : meterRegistry.getMeters()) {
+      String tenantTagValue = meter.getId().getTag(TENANT_TAG);
+      String sessionTagValue = meter.getId().getTag(SESSION_TAG);
+      if (Objects.equals(tenantTagValue, tenantId) || Objects.equals(sessionTagValue, tenantId)) {
+        meterRegistry.remove(meter.getId());
       }
     }
   }

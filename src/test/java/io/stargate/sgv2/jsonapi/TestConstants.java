@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
-import io.stargate.sgv2.jsonapi.metrics.MetricsTenantDeactivationConsumer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -117,7 +116,6 @@ public class TestConstants {
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
         .withMeterRegistry(mock(MeterRegistry.class))
-        .withMetricsTenantDeactivationConsumer(mock(MetricsTenantDeactivationConsumer.class))
         .getBuilder(schema)
         .withEmbeddingProvider(embeddingProvider)
         .withCommandName(commandName)
@@ -143,7 +141,6 @@ public class TestConstants {
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
         .withMeterRegistry(mock(MeterRegistry.class))
-        .withMetricsTenantDeactivationConsumer(mock(MetricsTenantDeactivationConsumer.class))
         .getBuilder(schema)
         .withCommandName(commandName)
         .withRequestContext(new RequestContext(Optional.of("test-tenant")))
@@ -158,7 +155,6 @@ public class TestConstants {
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
         .withMeterRegistry(mock(MeterRegistry.class))
-        .withMetricsTenantDeactivationConsumer(mock(MetricsTenantDeactivationConsumer.class))
         .getBuilder(DATABASE_SCHEMA_OBJECT)
         .withCommandName(TEST_COMMAND_NAME)
         .withRequestContext(new RequestContext(Optional.of("test-tenant")))

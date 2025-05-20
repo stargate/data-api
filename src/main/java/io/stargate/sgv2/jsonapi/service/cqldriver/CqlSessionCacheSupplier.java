@@ -28,8 +28,7 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
       @ConfigProperty(name = "quarkus.application.name") String applicationName,
       OperationsConfig operationsConfig,
       MeterRegistry meterRegistry,
-      SchemaCache schemaCache,
-      MetricsTenantDeactivationConsumer metricsTenantDeactivationConsumer) {
+      SchemaCache schemaCache) {
 
     Objects.requireNonNull(applicationName, "applicationName must not be null");
     Objects.requireNonNull(operationsConfig, "operationsConfig must not be null");
@@ -64,7 +63,9 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
             credentialsFactory,
             sessionFactory,
             meterRegistry,
-            List.of(schemaCache.getDeactivatedTenantConsumer(), metricsTenantDeactivationConsumer));
+            List.of(
+                schemaCache.getDeactivatedTenantConsumer(),
+                new MetricsTenantDeactivationConsumer(meterRegistry)));
   }
 
   /** Gets the singleton instance of the {@link CQLSessionCache}. */
