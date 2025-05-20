@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.everyItem;
@@ -12,7 +11,6 @@ import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -34,38 +32,30 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
 
     private void insert(int countOfDocument) {
       for (int i = 1; i <= countOfDocument; i++) {
-        String json =
-            """
+        insertDoc(
+                """
             {
               "_id": "doc%s",
               "username": "user%s",
               "active_user" : true
             }
-            """;
-        insertDoc(json.formatted(i, i));
+            """
+                .formatted(i, i));
       }
     }
 
     @Test
     public void byId() {
       insert(2);
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "updateMany": {
               "filter" : {"_id" : "doc1"},
               "update" : {"$set" : {"active_user": false}}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsStatusOnly())
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
@@ -73,66 +63,52 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.nextPageState", nullValue());
 
       // assert state after update, first changed document
-      String expected =
-          """
-          {
-            "_id":"doc1",
-            "username":"user1",
-            "active_user":false
-          }
-          """;
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "find": {
               "filter" : {"_id" : "doc1"}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+          {
+            "_id":"doc1",
+            "username":"user1",
+            "active_user":false
+          }
+          """));
 
       // then not changed document
-      expected =
-          """
-          {
-            "_id":"doc2",
-            "username":"user2",
-            "active_user":true
-          }
-          """;
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "find": {
               "filter" : {"_id" : "doc2"}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+          {
+            "_id":"doc2",
+            "username":"user2",
+            "active_user":true
+          }
+          """));
     }
 
     @Test
     public void emptyOptionsAllowed() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "updateMany": {
               "filter" : {"_id" : "doc1"},
@@ -140,16 +116,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               "options": {}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsStatusOnly())
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
@@ -160,23 +127,15 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
     @Test
     public void byColumn() {
       insert(5);
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "updateMany": {
               "filter" : {"active_user": true},
               "update" : {"$set" : {"active_user": false}}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsStatusOnly())
           .body("status.matchedCount", is(5))
           .body("status.modifiedCount", is(5))
@@ -184,21 +143,13 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.nextPageState", nullValue());
 
       // assert all updated
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "find": {
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents.active_user", everyItem(is(false)));
     }
@@ -206,45 +157,29 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
     @Test
     public void limit() {
       insert(20);
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "updateMany": {
               "filter" : {"active_user": true},
               "update" : {"$set" : {"active_user": false}}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsStatusOnly())
           .body("status.matchedCount", is(20))
           .body("status.modifiedCount", is(20))
           .body("status.moreData", is(true))
           .body("status.nextPageState", not(isEmptyOrNullString()));
 
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "find": {
               "filter" : {"active_user": false}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents.active_user", everyItem(is(false)));
     }
@@ -252,45 +187,29 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
     @Test
     public void limitMoreDataFlag() {
       insert(25);
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "updateMany": {
               "filter" : {"active_user" : true},
               "update" : {"$set" : {"active_user": false}}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsStatusOnly())
           .body("status.matchedCount", is(20))
           .body("status.modifiedCount", is(20))
           .body("status.moreData", is(true))
           .body("status.nextPageState", not(isEmptyOrNullString()));
 
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "find": {
               "filter" : {"active_user": true}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents.active_user", everyItem(is(true)));
     }
@@ -298,24 +217,16 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
     @Test
     public void updatePagination() {
       insert(25);
-      String json =
-          """
+      String nextPageState =
+          givenHeadersPostJsonThenOkNoErrors(
+                  """
               {
                 "updateMany": {
                   "filter" : {"active_user" : true},
                   "update" : {"$set" : {"new_data": "new_data_value"}}
                 }
               }
-              """;
-      String nextPageState =
-          given()
-              .headers(getHeaders())
-              .contentType(ContentType.JSON)
-              .body(json)
-              .when()
-              .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-              .then()
-              .statusCode(200)
+              """)
               .body("$", responseIsStatusOnly())
               .body("status.matchedCount", is(20))
               .body("status.modifiedCount", is(20))
@@ -325,8 +236,8 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               .body()
               .path("status.nextPageState");
 
-      json =
-              """
+      givenHeadersPostJsonThenOkNoErrors(
+                  """
               {
                 "updateMany": {
                   "filter" : {"active_user" : true},
@@ -335,36 +246,20 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
                 }
               }
               """
-              .formatted(nextPageState);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  .formatted(nextPageState))
           .body("$", responseIsStatusOnly())
           .body("status.matchedCount", is(5))
           .body("status.modifiedCount", is(5))
           .body("status.moreData", nullValue())
           .body("status.nextPageState", nullValue());
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
         {
           "find": {
             "filter" : {"active_user": true}
           }
         }
-        """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+        """)
           .body("$", responseIsFindSuccess())
           .body("data.documents.new_data", everyItem(is("new_data_value")));
     }
@@ -372,8 +267,8 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
     @Test
     public void upsert() {
       insert(5);
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "updateMany": {
               "filter" : {"_id": "doc6"},
@@ -381,15 +276,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               "options" : {"upsert" : true}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsStatusOnly())
           .body("status.upsertedId", is("doc6"))
           .body("status.matchedCount", is(0))
@@ -398,38 +285,31 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.nextPageState", nullValue());
 
       // assert upsert
-      String expected =
-          """
-          {
-            "_id":"doc6",
-            "active_user":false
-          }
-          """;
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "find": {
               "filter" : {"_id" : "doc6"}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+          {
+            "_id":"doc6",
+            "active_user":false
+          }
+          """));
     }
 
     @Test
     public void upsertWithSetOnInsert() {
       insert(2);
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
               {
                 "updateMany": {
                   "filter" : {"_id": "no-such-doc"},
@@ -440,15 +320,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
                   "options" : {"upsert" : true}
                 }
               }
-              """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+              """)
           .body("$", responseIsStatusOnly())
           .body("status.upsertedId", is("docX"))
           .body("status.matchedCount", is(0))
@@ -457,92 +329,69 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.nextPageState", nullValue());
 
       // assert upsert
-      String expected =
-          """
-              {
-                "_id": "docX",
-                "active_user": true
-              }
-              """;
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
               {
                 "find": {
                   "filter" : {"_id" : "docX"}
                 }
               }
-              """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+              """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+              {
+                "_id": "docX",
+                "active_user": true
+              }
+              """));
     }
 
     @Test
     public void byIdNoChange() {
       insert(2);
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "updateMany": {
               "filter" : {"_id" : "doc1"},
               "update" : {"$set" : {"active_user": true}}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsStatusOnly())
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(0))
           .body("status.moreData", nullValue())
           .body("status.nextPageState", nullValue());
 
-      String expected =
-          """
-          {
-            "_id":"doc1",
-            "username":"user1",
-            "active_user":true
-          }
-          """;
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "find": {
               "filter" : {"_id" : "doc1"}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+          {
+            "_id":"doc1",
+            "username":"user1",
+            "active_user":true
+          }
+          """));
     }
 
     @Test
     public void upsertManyByColumnUpsert() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
               {
                 "updateMany": {
                   "filter" : {"location" : "my_city"},
@@ -550,39 +399,21 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
                   "options" : {"upsert" : true}
                 }
               }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+              """)
           .body("$", responseIsStatusOnly())
           .body("status.upsertedId", is(notNullValue()))
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0));
 
       // assert state after update
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
             {
               "find": {
                 "filter" : {"location" : "my_city"}
               }
             }
-            """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+            """)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", is(notNullValue()));
     }
@@ -590,8 +421,8 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
     @Test
     public void upsertAddFilterColumn() {
       insert(5);
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "updateMany": {
               "filter" : {"_id": "doc6", "answer" : 42},
@@ -599,15 +430,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               "options" : {"upsert" : true}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsStatusOnly())
           .body("status.upsertedId", is("doc6"))
           .body("status.matchedCount", is(0))
@@ -616,32 +439,25 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.nextPageState", nullValue());
 
       // assert state after update
-      String expected =
-          """
-          {
-            "_id":"doc6",
-            "answer": 42,
-            "active_user": false
-          }
-          """;
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "find": {
               "filter" : {"_id" : "doc6"}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+          {
+            "_id":"doc6",
+            "answer": 42,
+            "active_user": false
+          }
+          """));
     }
   }
 
@@ -667,17 +483,6 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
       int threads = 3;
       CountDownLatch latch = new CountDownLatch(threads);
 
-      // find all documents
-      String updateJson =
-          """
-          {
-            "updateMany": {
-              "update" : {
-                "$inc" : {"count": 1}
-              }
-            }
-          }
-          """;
       // start all threads
       AtomicReferenceArray<Exception> exceptions = new AtomicReferenceArray<>(threads);
       for (int i = 0; i < threads; i++) {
@@ -685,14 +490,16 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
         new Thread(
                 () -> {
                   try {
-                    given()
-                        .headers(getHeaders())
-                        .contentType(ContentType.JSON)
-                        .body(updateJson)
-                        .when()
-                        .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-                        .then()
-                        .statusCode(200)
+                    givenHeadersPostJsonThenOkNoErrors(
+                            """
+          {
+            "updateMany": {
+              "update" : {
+                "$inc" : {"count": 1}
+              }
+            }
+          }
+          """)
                         .body("$", responseIsStatusOnly())
                         .body("status.matchedCount", is(5))
                         .body("status.modifiedCount", is(5));
@@ -721,21 +528,13 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
       }
 
       // assert state after all updates
-      String findJson =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "find": {
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(findJson)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body("data.documents.count", everyItem(is(3)));
     }
@@ -747,22 +546,14 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
 
     @Test
     public void invalidCommand() {
-      String updateJson =
-          """
+      givenHeadersPostJsonThenOk(
+              """
           {
             "updateMany": {
               "filter" : {"something" : "matching"}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(updateJson)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
