@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.github.benmanes.caffeine.cache.RemovalCause;
@@ -110,5 +111,37 @@ public class MetricsTenantDeactivationConsumerTests {
     assertThat(meterRegistry.find(t2m1.getName()).tags(t2m1.getTags()).timer())
         .as("Metric t2m1 for tenant2 should still be in registry")
         .isNotNull();
+  }
+
+  @Test
+  void noTrackedMeters() {
+    // Register some other metric not related to any tenant being deactivated
+    Timer.builder("other.metric").register(meterRegistry);
+
+    assertThatCode(() -> consumer.accept("nonExistentTenant", RemovalCause.SIZE))
+        .doesNotThrowAnyException();
+
+    // Ensure the unrelated metric is still there
+    assertThat(meterRegistry.find("other.metric").timer()).isNotNull();
+    assertThat(consumer.getTenantMetrics()).isEmpty();
+  }
+
+  @Test
+  void trackedMeterNotFoundInRegistry() {
+    String tenantId = "tenant-ghost-metric";
+    // Create a Meter.Id for a metric that we will NOT register
+    Meter.Id ghostMeterId =
+        new Meter.Id("ghost.timer", Tags.of("tenant", tenantId), null, null, Meter.Type.TIMER);
+
+    consumer.trackMeterId(tenantId, ghostMeterId);
+
+    // Act: Deactivate tenant
+    // This should not throw an exception even if meterRegistry.remove(ghostMeterId) returns null
+    assertThatCode(() -> consumer.accept(tenantId, RemovalCause.EXPIRED))
+        .doesNotThrowAnyException();
+
+    assertThat(consumer.getTenantMetrics().get(tenantId)).isNullOrEmpty();
+    // And nothing was actually removed from the (empty for this name) registry
+    assertThat(meterRegistry.find("ghost.timer").timer()).isNull();
   }
 }
