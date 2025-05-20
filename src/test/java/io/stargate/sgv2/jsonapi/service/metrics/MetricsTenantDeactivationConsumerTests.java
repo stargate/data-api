@@ -1,41 +1,49 @@
 package io.stargate.sgv2.jsonapi.service.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.github.benmanes.caffeine.cache.RemovalCause;
-import io.micrometer.core.instrument.Meter;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.stargate.sgv2.jsonapi.metrics.MetricsTenantDeactivationConsumer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class MetricsTenantDeactivationConsumerTests {
-  MeterRegistry meterRegistryMock; // Mock the registry for verify remove
+  MeterRegistry meterRegistry;
   MetricsTenantDeactivationConsumer consumer;
 
   @BeforeEach
-  void setUp() {
-    meterRegistryMock = mock(MeterRegistry.class);
-    consumer = new MetricsTenantDeactivationConsumer(meterRegistryMock);
+  public void setUp() {
+    meterRegistry = new SimpleMeterRegistry();
+    consumer = new MetricsTenantDeactivationConsumer(meterRegistry);
+  }
+
+  @AfterEach
+  public void tearDown() {
+    Metrics.globalRegistry.clear();
+    if (meterRegistry != null) {
+      meterRegistry.clear();
+      meterRegistry.close();
+    }
   }
 
   @Test
-  void trackMeterId_shouldStoreMeterIdForTenant() {
+  public void storeMeterIdForTenant() {
     String tenantId = "tenant1";
     Meter.Id meterId1 =
         Timer.builder("my.timer")
-            .tag("type", "a")
+            .tag("command", "test1")
             .tag("tenant", tenantId)
-            .register(new SimpleMeterRegistry())
+            .register(meterRegistry)
             .getId();
     Meter.Id meterId2 =
         Timer.builder("my.timer")
-            .tag("type", "b")
+            .tag("command", "test2")
             .tag("tenant", tenantId)
-            .register(new SimpleMeterRegistry())
+            .register(meterRegistry)
             .getId();
 
     consumer.trackMeterId(tenantId, meterId1);
@@ -43,47 +51,64 @@ public class MetricsTenantDeactivationConsumerTests {
 
     assertThat(consumer.getTenantMetrics().get(tenantId))
         .containsExactlyInAnyOrder(meterId1, meterId2);
+    assertThat(this.meterRegistry.find("my.timer").tag("command", "test1").timer()).isNotNull();
+    assertThat(this.meterRegistry.find("my.timer").tag("command", "test2").timer()).isNotNull();
   }
 
   @Test
-  void accept_shouldRemoveTrackedMetersForTenantAndFromRegistry() {
+  public void nullTenantOrMeterId() {
+    Meter.Id meterId = Timer.builder("my.timer").register(this.meterRegistry).getId();
+
+    assertThatThrownBy(() -> consumer.trackMeterId(null, meterId))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> consumer.trackMeterId("someTenant", null))
+        .isInstanceOf(IllegalArgumentException.class);
+
+    assertThat(consumer.getTenantMetrics()).isEmpty();
+    // Metric registered above is still there
+    assertThat(this.meterRegistry.find("my.timer").timer()).isNotNull();
+  }
+
+  @Test
+  void removeTrackedMetersForTenantAndFromRegistry() {
     String tenant1 = "tenant1";
     String tenant2 = "tenant2";
-    Meter.Id t1m1 =
-        Timer.builder("t1.m1").tag("tenant", tenant1).register(new SimpleMeterRegistry()).getId();
-    Meter.Id t1m2 =
-        Timer.builder("t1.m2").tag("tenant", tenant1).register(new SimpleMeterRegistry()).getId();
-    Meter.Id t2m1 =
-        Timer.builder("t2.m1").tag("tenant", tenant2).register(new SimpleMeterRegistry()).getId();
+    // Register metrics
+    Meter.Id t1m1 = Timer.builder("t1.m1").tag("tenant", tenant1).register(meterRegistry).getId();
+    Meter.Id t1m2 = Timer.builder("t1.m2").tag("tenant", tenant1).register(meterRegistry).getId();
+    Meter.Id t2m1 = Timer.builder("t2.m1").tag("tenant", tenant2).register(meterRegistry).getId();
 
+    // Track them
     consumer.trackMeterId(tenant1, t1m1);
     consumer.trackMeterId(tenant1, t1m2);
     consumer.trackMeterId(tenant2, t2m1);
 
-    // Stub meterRegistry.remove to return the meter if found, null otherwise
-    when(meterRegistryMock.remove(any(Meter.Id.class)))
-        .thenAnswer(
-            invocation -> {
-              Meter.Id id = invocation.getArgument(0);
-              // Simulate finding and removing for these specific IDs
-              if (id.equals(t1m1) || id.equals(t1m2)) {
-                // Return a dummy Meter to indicate success for these IDs
-                return mock(Meter.class);
-              }
-              return null;
-            });
+    // Verify they are in the registry before removal
+    assertThat(meterRegistry.find(t1m1.getName()).tags(t1m1.getTags()).timer()).isNotNull();
+    assertThat(meterRegistry.find(t1m2.getName()).tags(t1m2.getTags()).timer()).isNotNull();
+    assertThat(meterRegistry.find(t2m1.getName()).tags(t2m1.getTags()).timer()).isNotNull();
 
     // Act: Deactivate tenant1
     consumer.accept(tenant1, RemovalCause.EXPIRED);
 
     // Assert
+    // 1. Check internal tracking map
     assertThat(consumer.getTenantMetrics().get(tenant1))
-        .isNullOrEmpty(); // Metrics for tenant1 removed from tracking
+        .as("Metrics for tenant1 removed from tracking")
+        .isNullOrEmpty();
     assertThat(consumer.getTenantMetrics().get(tenant2))
-        .containsExactly(t2m1); // Metrics for tenant2 remain
+        .as("Metrics for tenant2 remain in tracking")
+        .containsExactly(t2m1);
 
-    verify(meterRegistryMock).remove(t1m1);
-    verify(meterRegistryMock).remove(t1m2);
-    verify(meterRegistryMock, never()).remove(t2m1); // Ensure tenant2's metric wasn't removed
+    // 2. Check the actual MeterRegistry
+    assertThat(meterRegistry.find(t1m1.getName()).tags(t1m1.getTags()).timer())
+        .as("Metric t1m1 should be removed from registry")
+        .isNull();
+    assertThat(meterRegistry.find(t1m2.getName()).tags(t1m2.getTags()).timer())
+        .as("Metric t1m2 should be removed from registry")
+        .isNull();
+    assertThat(meterRegistry.find(t2m1.getName()).tags(t2m1.getTags()).timer())
+        .as("Metric t2m1 for tenant2 should still be in registry")
+        .isNotNull();
   }
 }
