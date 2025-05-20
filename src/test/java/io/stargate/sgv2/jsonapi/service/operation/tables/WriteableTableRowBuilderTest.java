@@ -23,6 +23,7 @@ import io.stargate.sgv2.jsonapi.fixtures.tables.AllUnderflowTypes;
 import io.stargate.sgv2.jsonapi.fixtures.tables.AllUnsupportedTypes;
 import io.stargate.sgv2.jsonapi.fixtures.types.CqlTypesForTesting;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.metrics.MetricsTenantDeactivationConsumer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
@@ -65,6 +66,7 @@ public class WriteableTableRowBuilderTest {
             .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
             .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
             .withMeterRegistry(mock(MeterRegistry.class))
+            .withMetricsTenantDeactivationConsumer(mock(MetricsTenantDeactivationConsumer.class))
             .getBuilder(fixture.cqlFixture().tableSchemaObject())
             .withEmbeddingProvider(mock(EmbeddingProvider.class))
             .withCommandName("testCommand")
