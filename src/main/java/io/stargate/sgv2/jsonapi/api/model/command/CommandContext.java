@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
-import io.stargate.sgv2.jsonapi.metrics.MetricsTenantDeactivationConsumer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -241,7 +240,6 @@ public class CommandContext<SchemaT extends SchemaObject> {
     private EmbeddingProviderFactory embeddingProviderFactory;
     private RerankingProviderFactory rerankingProviderFactory;
     private MeterRegistry meterRegistry;
-    private MetricsTenantDeactivationConsumer metricsTenantDeactivationConsumer;
 
     BuilderSupplier() {}
 
