@@ -4,8 +4,6 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.vertx.core.impl.logging.Logger;
-import io.vertx.core.impl.logging.LoggerFactory;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
@@ -13,6 +11,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 public class MetricsTenantDeactivationConsumer
@@ -30,7 +30,9 @@ public class MetricsTenantDeactivationConsumer
   public void trackMeterId(String tenantId, Meter.Id meterId) {
     if (tenantId == null || meterId == null) {
       LOGGER.error(
-          "Attempted to track meter with null tenantId or meterId. TenantId: {}, MeterId: {}");
+          "Attempted to track meter with null tenantId or meterId. TenantId: {}, MeterId: {}",
+          tenantId,
+          meterId);
       // TODO: should we throw an exception here?
       throw new IllegalArgumentException("Tenant ID and Meter ID must not be null");
     }
