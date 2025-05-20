@@ -575,8 +575,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
   class InsertManyCollection {
     @Test
     public void insertVectorSearch() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                       {
                          "insertMany": {
                             "documents": [
@@ -598,9 +598,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                             }
                          }
                       }
-                      """;
-
-      givenHeadersAndJson(json)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -609,32 +607,31 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("status.insertedIds[0]", is("2"))
           .body("status.insertedIds[1]", is("3"));
 
-      json =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "find": {
                           "filter" : {"_id" : "2"},
                           "projection": { "*": 1 }
                         }
                       }
-                      """;
-      String expected =
-          """
+                      """)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("$", responseIsFindSuccess())
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
                       {
                           "_id": "2",
                           "name": "Logic Layers",
                           "description": "An AI quilt to help you sleep forever",
                           "$vector": [0.25, 0.25, 0.25, 0.25, 0.25]
                       }
-                      """;
-
-      givenHeadersAndJson(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+                      """));
     }
   }
 
@@ -654,8 +651,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
         .extract()
         .path("status.moreData");
 
-    String json =
-        """
+    givenHeadersAndJson(
+            """
                     {
                        "insertMany": {
                           "documents": [
@@ -680,8 +677,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                           ]
                        }
                     }
-                    """;
-    givenHeadersAndJson(json)
+                    """)
         .when()
         .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
         .then()
@@ -1498,7 +1494,6 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("data.documents[0].$vector", is(nullValue()));
 
       // then set the vector
-      final String vectorStr = buildVectorElements(2, BIG_VECTOR_SIZE);
       givenHeadersAndJson(
                   """
                     {
@@ -1510,7 +1505,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                       }
                     }
                     """
-                  .formatted(vectorStr))
+                  .formatted(buildVectorElements(2, BIG_VECTOR_SIZE)))
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, bigVectorCollectionName)
           .then()
@@ -1609,7 +1604,6 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     public void insertVectorWithUnmatchedSize() {
       createVectorCollection(keyspaceName, vectorSizeTestCollectionName, 5);
       // Insert data with $vector array size less than vector index defined size.
-      final String vectorStrCount3 = buildVectorElements(0, 3);
       givenHeadersAndJson(
                   """
                       {
@@ -1623,7 +1617,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                          }
                       }
                       """
-                  .formatted(vectorStrCount3))
+                  .formatted(buildVectorElements(0, 3)))
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, vectorSizeTestCollectionName)
           .then()
@@ -1637,7 +1631,6 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                   "Length of vector parameter different from declared '$vector' dimension: root cause ="));
 
       // Insert data with $vector array size greater than vector index defined size.
-      final String vectorStrCount7 = buildVectorElements(0, 7);
       givenHeadersAndJson(
                   """
                       {
@@ -1651,7 +1644,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                          }
                       }
                       """
-                  .formatted(vectorStrCount7))
+                  .formatted(buildVectorElements(0, 7)))
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, vectorSizeTestCollectionName)
           .then()
@@ -1669,7 +1662,6 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     @Order(9)
     public void findVectorWithUnmatchedSize() {
       // Sort clause with $vector array size greater than vector index defined size.
-      final String vectorStrCount3 = buildVectorElements(0, 3);
       givenHeadersAndJson(
                   """
                        {
@@ -1681,7 +1673,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                           }
                         }
                        """
-                  .formatted(vectorStrCount3))
+                  .formatted(buildVectorElements(0, 3)))
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, vectorSizeTestCollectionName)
           .then()
@@ -1695,7 +1687,6 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                   "Length of vector parameter different from declared '$vector' dimension: root cause ="));
 
       // Insert data with $vector array size greater than vector index defined size.
-      final String vectorStrCount7 = buildVectorElements(0, 7);
       givenHeadersAndJson(
                   """
                        {
@@ -1707,7 +1698,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                           }
                         }
                         """
-                  .formatted(vectorStrCount7))
+                  .formatted(buildVectorElements(0, 7)))
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, vectorSizeTestCollectionName)
           .then()

@@ -967,8 +967,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
     @Test
     @Order(9)
     public void createDropDifferentVectorDimension() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                   {
                       "createCollection": {
                           "name": "cacheTestTable",
@@ -990,8 +990,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                           }
                       }
                   }
-                  """;
-      givenHeadersAndJson(json)
+                  """)
           .when()
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
@@ -1038,8 +1037,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("status.ok", is(1));
 
       // Create a new collection with same name, but dimension as 6
-      json =
-          """
+      givenHeadersAndJson(
+              """
                   {
                       "createCollection": {
                           "name": "cacheTestTable",
@@ -1061,8 +1060,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
                           }
                       }
                   }
-                  """;
-      givenHeadersAndJson(json)
+                  """)
           .when()
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
@@ -1149,10 +1147,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
       executeCqlStatement(
           SimpleStatement.newInstance(
               tableWithBadModel.formatted(keyspaceName, collection, collection)));
-      givenHeadersAndJson(
-              """
-                        { "findOne": {} }
-                        """)
+      givenHeadersAndJson("{ \"findOne\": {} } ")
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collection)
           .then()

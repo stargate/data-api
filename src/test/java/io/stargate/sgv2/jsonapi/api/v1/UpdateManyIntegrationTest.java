@@ -367,14 +367,6 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.moreData", nullValue())
           .body("status.nextPageState", nullValue());
 
-      String expected =
-          """
-          {
-            "_id":"doc1",
-            "username":"user1",
-            "active_user":true
-          }
-          """;
       givenHeadersPostJsonThenOkNoErrors(
               """
           {
@@ -384,7 +376,16 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+          {
+            "_id":"doc1",
+            "username":"user1",
+            "active_user":true
+          }
+          """));
     }
 
     @Test
