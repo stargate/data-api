@@ -44,8 +44,16 @@ public interface DocumentConstants {
      */
     String DATA_CONTAINS_COLUMN_NAME = "array_contains";
 
+    String QUERY_BOOLEAN_MAP_COLUMN_NAME = "query_bool_values";
+
+    String QUERY_DOUBLE_MAP_COLUMN_NAME = "query_dbl_values";
+
+    String QUERY_NULL_MAP_COLUMN_NAME = "query_null_values";
+
     /** Text map support _id $ne and _id $nin on both atomic value and array element */
     String QUERY_TEXT_MAP_COLUMN_NAME = "query_text_values";
+
+    String QUERY_TIMESTAMP_MAP_COLUMN_NAME = "query_timestamp_values";
 
     /** Physical table column name that stores the vector field. */
     String VECTOR_SEARCH_INDEX_COLUMN_NAME = "query_vector_value";

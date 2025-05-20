@@ -40,6 +40,11 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
     return new FilterClause(implicitAnd);
   }
 
+  @Override
+  protected String validateFilterClausePath(String path) {
+    return path;
+  }
+
   /**
    * Create the list of ComparisonExpressions from a single path entry. (NOTE, this is builder for
    * tables. So the path also refers to the column name.)

@@ -895,7 +895,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("$", responseIsError())
           .body(
               "errors[0].message",
-              containsString("filter clause path ('pricing.price&jpy') is not a valid path."))
+              containsString("filter clause path ('pricing.price&jpy') is not a valid path: "))
           .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
