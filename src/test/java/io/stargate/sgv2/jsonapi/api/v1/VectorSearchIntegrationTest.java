@@ -1,13 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
@@ -1187,8 +1185,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     @Test
     @Order(2)
     public void setOperation() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "findOneAndUpdate": {
                           "filter" : {"_id": "2"},
@@ -1197,12 +1195,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                           "options" : {"returnDocument" : "after"}
                         }
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1217,8 +1210,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     @Test
     @Order(3)
     public void unsetOperation() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "findOneAndUpdate": {
                           "filter" : {"name": "Coded Cleats"},
@@ -1226,12 +1219,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                           "options" : {"returnDocument" : "after"}
                         }
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1246,8 +1234,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     @Test
     @Order(4)
     public void setOnInsertOperation() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "findOneAndUpdate": {
                           "filter" : {"_id": "11"},
@@ -1256,12 +1244,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                           "options" : {"returnDocument" : "after", "upsert": true}
                         }
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1277,8 +1260,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     @Test
     @Order(5)
     public void errorOperationForVector() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "findOneAndUpdate": {
                           "filter" : {"_id": "3"},
@@ -1286,12 +1269,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                           "options" : {"returnDocument" : "after"}
                         }
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1309,10 +1287,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
       insertBigVectorDoc("bigVectorForSet", "Bob", "Desc for Bob.", null);
 
       // and verify we have null for it
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
               """
                 {
                   "find": {
@@ -1332,8 +1307,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
 
       // then set the vector
       final String vectorStr = buildVectorElements(7, BIG_VECTOR_SIZE);
-      String json =
-              """
+      givenHeadersAndJson(
+                  """
                       {
                         "findOneAndUpdate": {
                           "filter" : {"_id": "bigVectorForSet"},
@@ -1343,12 +1318,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                         }
                       }
                       """
-              .formatted(vectorStr);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  .formatted(vectorStr))
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, bigVectorCollectionName)
           .then()
@@ -1361,10 +1331,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("data.document.$vector", hasSize(BIG_VECTOR_SIZE));
 
       // and verify it was set to value with expected size
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
               """
                         {
                           "find": {
@@ -1393,8 +1360,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     @Order(1)
     public void findOneAndUpdate() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "findOneAndUpdate": {
                           "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
@@ -1402,12 +1369,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                           "options" : {"returnDocument" : "after"}
                         }
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1423,19 +1385,15 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     @Order(2)
     public void updateOne() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "updateOne": {
                           "update" : {"$set" : {"new_col": "new_val"}},
                           "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
                         }
                       }
-                      """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1444,18 +1402,14 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("status.moreData", is(nullValue()));
-      json =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "findOne": {
                           "filter" : {"_id" : "3"}
                         }
                       }
-                      """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1469,8 +1423,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     @Order(3)
     public void findOneAndReplace() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "findOneAndReplace": {
                           "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
@@ -1479,12 +1433,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                           "options" : {"returnDocument" : "after"}
                         }
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1501,8 +1450,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     @Order(4)
     public void findOneAndReplaceWithoutVector() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "findOneAndReplace": {
                           "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
@@ -1510,12 +1459,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                           "options" : {"returnDocument" : "after"}
                         }
                       }
-                      """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1535,10 +1479,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
       insertBigVectorDoc("bigVectorForFindReplace", "Alice", "Desc for Alice.", null);
 
       // and verify we have null for it
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
               """
           {
             "find": {
@@ -1558,8 +1499,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
 
       // then set the vector
       final String vectorStr = buildVectorElements(2, BIG_VECTOR_SIZE);
-      String json =
-              """
+      givenHeadersAndJson(
+                  """
                     {
                       "findOneAndReplace": {
                         "filter" : {"_id" : "bigVectorForFindReplace"},
@@ -1569,12 +1510,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                       }
                     }
                     """
-              .formatted(vectorStr);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  .formatted(vectorStr))
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, bigVectorCollectionName)
           .then()
@@ -1587,10 +1523,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("data.document.$vector", hasSize(BIG_VECTOR_SIZE));
 
       // and verify it was set to value with expected size
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
               """
                       {
                         "find": {
@@ -1614,20 +1547,15 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     @Order(6)
     public void findOneAndDelete() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
             {
               "findOneAndDelete": {
                 "projection": { "*": 1 },
                 "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
               }
             }
-            """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+            """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1643,20 +1571,15 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     @Order(7)
     public void deleteOne() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
             {
               "deleteOne": {
                 "filter" : {"$vector" : {"$exists" : true}},
                 "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
               }
             }
-            """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+            """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1665,19 +1588,14 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("status.deletedCount", is(1));
 
       // ensure find does not find the document
-      json =
-          """
+      givenHeadersAndJson(
+              """
         {
           "findOne": {
             "filter" : {"_id" : "3"}
           }
         }
-        """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1692,8 +1610,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
       createVectorCollection(keyspaceName, vectorSizeTestCollectionName, 5);
       // Insert data with $vector array size less than vector index defined size.
       final String vectorStrCount3 = buildVectorElements(0, 3);
-      String jsonVectorStrCount3 =
-              """
+      givenHeadersAndJson(
+                  """
                       {
                          "insertOne": {
                             "document": {
@@ -1705,12 +1623,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                          }
                       }
                       """
-              .formatted(vectorStrCount3);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(jsonVectorStrCount3)
+                  .formatted(vectorStrCount3))
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, vectorSizeTestCollectionName)
           .then()
@@ -1725,8 +1638,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
 
       // Insert data with $vector array size greater than vector index defined size.
       final String vectorStrCount7 = buildVectorElements(0, 7);
-      String jsonVectorStrCount7 =
-              """
+      givenHeadersAndJson(
+                  """
                       {
                          "insertOne": {
                             "document": {
@@ -1738,12 +1651,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                          }
                       }
                       """
-              .formatted(vectorStrCount7);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(jsonVectorStrCount7)
+                  .formatted(vectorStrCount7))
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, vectorSizeTestCollectionName)
           .then()
@@ -1762,8 +1670,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     public void findVectorWithUnmatchedSize() {
       // Sort clause with $vector array size greater than vector index defined size.
       final String vectorStrCount3 = buildVectorElements(0, 3);
-      String jsonVectorStrCount3 =
-              """
+      givenHeadersAndJson(
+                  """
                        {
                           "find": {
                             "sort" : {"$vector" : [ %s ]},
@@ -1772,13 +1680,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                             }
                           }
                         }
-                        """
-              .formatted(vectorStrCount3);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(jsonVectorStrCount3)
+                       """
+                  .formatted(vectorStrCount3))
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, vectorSizeTestCollectionName)
           .then()
@@ -1793,8 +1696,8 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
 
       // Insert data with $vector array size greater than vector index defined size.
       final String vectorStrCount7 = buildVectorElements(0, 7);
-      String jsonVectorStrCount7 =
-              """
+      givenHeadersAndJson(
+                  """
                        {
                           "find": {
                             "sort" : {"$vector" : [ %s ]},
@@ -1804,12 +1707,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                           }
                         }
                         """
-              .formatted(vectorStrCount7);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(jsonVectorStrCount7)
+                  .formatted(vectorStrCount7))
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, vectorSizeTestCollectionName)
           .then()
@@ -1833,20 +1731,15 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     @Order(1)
     public void findOneSimilarityOption() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
             {
               "findOne": {
                 "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
                 "options" : {"includeSimilarity" : true}
               }
             }
-            """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+            """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1860,20 +1753,15 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     @Order(2)
     public void findSimilarityOption() {
       insertVectorDocuments();
-      String json =
-          """
+      givenHeadersAndJson(
+              """
         {
           "find": {
             "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
             "options" : {"includeSimilarity" : true}
           }
         }
-        """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -1890,10 +1778,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
   }
 
   private void createVectorCollection(String namespaceName, String collectionName, int vectorSize) {
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(
+    givenHeadersAndJson(
                 """
                             {
                               "createCollection": {
@@ -1931,10 +1816,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
 
     // First insert a document with a big vector
 
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(
+    givenHeadersAndJson(
                 """
                             {
                                "insertOne": {
