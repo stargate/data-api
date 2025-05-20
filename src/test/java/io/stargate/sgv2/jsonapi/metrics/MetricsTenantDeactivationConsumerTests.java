@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.metrics;
+package io.stargate.sgv2.jsonapi.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
@@ -7,7 +7,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import io.stargate.sgv2.jsonapi.metrics.MetricsTenantDeactivationConsumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
