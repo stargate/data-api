@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.metrics.MetricsTenantDeactivationConsumer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -44,6 +45,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
   private final EmbeddingProviderFactory embeddingProviderFactory;
   private final RerankingProviderFactory rerankingProviderFactory;
   private final MeterRegistry meterRegistry;
+  private final MetricsTenantDeactivationConsumer metricsTenantDeactivationConsumer;
 
   // Request specific
   private final SchemaT schemaObject;
@@ -75,7 +77,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
       ApiFeatures apiFeatures,
       EmbeddingProviderFactory embeddingProviderFactory,
       RerankingProviderFactory rerankingProviderFactory,
-      MeterRegistry meterRegistry) {
+      MeterRegistry meterRegistry,
+      MetricsTenantDeactivationConsumer metricsTenantDeactivationConsumer) {
 
     this.schemaObject = schemaObject;
     this.embeddingProvider = embeddingProvider;
@@ -90,6 +93,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
 
     this.apiFeatures = apiFeatures;
     this.meterRegistry = meterRegistry;
+    this.metricsTenantDeactivationConsumer = metricsTenantDeactivationConsumer;
 
     var anyTracing =
         apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING)
@@ -190,6 +194,10 @@ public class CommandContext<SchemaT extends SchemaObject> {
     return meterRegistry;
   }
 
+  public MetricsTenantDeactivationConsumer metricsTenantDeactivationConsumer() {
+    return metricsTenantDeactivationConsumer;
+  }
+
   public boolean isCollectionContext() {
     return schemaObject().type() == CollectionSchemaObject.TYPE;
   }
@@ -240,6 +248,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
     private EmbeddingProviderFactory embeddingProviderFactory;
     private RerankingProviderFactory rerankingProviderFactory;
     private MeterRegistry meterRegistry;
+    private MetricsTenantDeactivationConsumer metricsTenantDeactivationConsumer;
 
     BuilderSupplier() {}
 
@@ -276,6 +285,12 @@ public class CommandContext<SchemaT extends SchemaObject> {
       return this;
     }
 
+    public BuilderSupplier withMetricsTenantDeactivationConsumer(
+        MetricsTenantDeactivationConsumer metricsTenantDeactivationConsumer) {
+      this.metricsTenantDeactivationConsumer = metricsTenantDeactivationConsumer;
+      return this;
+    }
+
     public <SchemaT extends SchemaObject> Builder<SchemaT> getBuilder(SchemaT schemaObject) {
 
       Objects.requireNonNull(
@@ -285,6 +300,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
       Objects.requireNonNull(embeddingProviderFactory, "embeddingProviderFactory must not be null");
       Objects.requireNonNull(rerankingProviderFactory, "rerankingProviderFactory must not be null");
       Objects.requireNonNull(meterRegistry, "meterRegistry must not be null");
+      Objects.requireNonNull(
+          metricsTenantDeactivationConsumer, "metricsTenantDeactivationConsumer must not be null");
 
       // SchemaObject is passed here so the generics gets locked here, makes call chaining easier
       Objects.requireNonNull(schemaObject, "schemaObject must not be null");
@@ -352,7 +369,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
             apiFeatures,
             embeddingProviderFactory,
             rerankingProviderFactory,
-            meterRegistry);
+            meterRegistry,
+            metricsTenantDeactivationConsumer);
       }
     }
   }

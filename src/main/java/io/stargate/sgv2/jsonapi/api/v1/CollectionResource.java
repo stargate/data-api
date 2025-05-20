@@ -32,6 +32,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.metrics.MetricsTenantDeactivationConsumer;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -90,7 +91,8 @@ public class CollectionResource {
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CqlSessionCacheSupplier sessionCacheSupplier,
       EmbeddingProviderFactory embeddingProviderFactory,
-      RerankingProviderFactory rerankingProviderFactory) {
+      RerankingProviderFactory rerankingProviderFactory,
+      MetricsTenantDeactivationConsumer metricsTenantDeactivationConsumer) {
     this.embeddingProviderFactory = embeddingProviderFactory;
     this.meteredCommandProcessor = meteredCommandProcessor;
 
@@ -101,7 +103,8 @@ public class CollectionResource {
             .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
             .withEmbeddingProviderFactory(embeddingProviderFactory)
             .withRerankingProviderFactory(rerankingProviderFactory)
-            .withMeterRegistry(meterRegistry);
+            .withMeterRegistry(meterRegistry)
+            .withMetricsTenantDeactivationConsumer(metricsTenantDeactivationConsumer);
   }
 
   @Operation(
