@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Projectable;
 import io.stargate.sgv2.jsonapi.api.model.command.VectorSortable;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -22,14 +23,14 @@ public interface TableSimilarityFunction extends Function<Select, Select> {
   String SIMILARITY_SCORE_ALIAS = "similarityScore" + System.currentTimeMillis();
 
   static <CmdT extends Projectable> TableSimilarityFunction from(
-      CmdT command, TableSchemaObject table) {
-
+      CommandContext<TableSchemaObject> ctx, CmdT command) {
+    final TableSchemaObject table = ctx.schemaObject();
     if (!(command instanceof VectorSortable)) {
       return NO_OP;
     }
     var vectorSortable = (VectorSortable) command;
 
-    var sortExpressionOptional = vectorSortable.vectorSortExpression(table);
+    var sortExpressionOptional = vectorSortable.vectorSortExpression(ctx);
     if (sortExpressionOptional.isEmpty()) {
       // nothing to sort on, so nothing to return even if they asked for the similarity score
       return NO_OP;

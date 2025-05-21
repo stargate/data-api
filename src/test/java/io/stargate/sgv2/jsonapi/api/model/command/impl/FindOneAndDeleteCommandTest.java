@@ -43,7 +43,7 @@ public class FindOneAndDeleteCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndDeleteCommand.class,
               findOneAndDeleteCommand -> {
-                assertThat(findOneAndDeleteCommand.filterSpec()).isNotNull();
+                assertThat(findOneAndDeleteCommand.filterDefinition()).isNotNull();
               });
     }
 
@@ -65,7 +65,7 @@ public class FindOneAndDeleteCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndDeleteCommand.class,
               findOneAndDeleteCommand -> {
-                assertThat(findOneAndDeleteCommand.filterSpec()).isNotNull();
+                assertThat(findOneAndDeleteCommand.filterDefinition()).isNotNull();
                 final SortClause sortClause =
                     findOneAndDeleteCommand.sortClause(testConstants.collectionContext());
                 assertThat(sortClause).isNotNull();
@@ -96,7 +96,7 @@ public class FindOneAndDeleteCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndDeleteCommand.class,
               findOneAndDeleteCommand -> {
-                assertThat(findOneAndDeleteCommand.filterSpec()).isNotNull();
+                assertThat(findOneAndDeleteCommand.filterDefinition()).isNotNull();
                 final SortClause sortClause =
                     findOneAndDeleteCommand.sortClause(testConstants.collectionContext());
                 assertThat(sortClause).isNotNull();

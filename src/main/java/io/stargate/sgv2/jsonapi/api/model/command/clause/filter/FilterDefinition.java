@@ -20,7 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         """
        {"name": "Aaron", "country": {"$eq": "NZ"}, "age": {"$gt": 40}}
         """)
-public class FilterSpec extends JsonDefinition {
+public class FilterDefinition extends JsonDefinition<FilterClause> {
   /**
    * Lazily deserialized {@link FilterClause} from the JSON value. We need this due to existing
    * reliance on specific stateful instances of {@link FilterClause}.
@@ -31,7 +31,7 @@ public class FilterSpec extends JsonDefinition {
    * To deserialize the whole JSON value, need to ensure DELEGATING mode (instead of PROPERTIES).
    */
   @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
-  public FilterSpec(JsonNode json) {
+  public FilterDefinition(JsonNode json) {
     super(json);
   }
 
@@ -42,7 +42,8 @@ public class FilterSpec extends JsonDefinition {
    * @param ctx The command context to resolve the filter clause.
    * @return The resolved filter clause.
    */
-  public FilterClause toFilterClause(CommandContext<?> ctx) {
+  @Override
+  public FilterClause build(CommandContext<?> ctx) {
     if (filterClause == null) {
       filterClause =
           FilterClauseBuilder.builderFor(ctx.schemaObject())

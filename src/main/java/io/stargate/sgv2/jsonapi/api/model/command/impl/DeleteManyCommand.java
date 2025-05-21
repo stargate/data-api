@@ -4,14 +4,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import jakarta.validation.Valid;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
  * Representation of the deleteMany API {@link Command}.
  *
- * @param filterSpec {@link FilterClause} used to identify documents.
+ * @param filterDefinition {@link FilterClause} used to identify documents.
  */
 @Schema(
     description =
@@ -23,7 +23,7 @@ public record DeleteManyCommand(
             implementation = FilterClause.class)
         @Valid
         @JsonProperty("filter")
-        FilterSpec filterSpec)
+        FilterDefinition filterDefinition)
     implements ModifyCommand, NoOptionsCommand, Filterable {
 
   /** {@inheritDoc} */
