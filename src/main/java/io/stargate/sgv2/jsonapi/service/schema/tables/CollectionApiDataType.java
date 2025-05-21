@@ -13,13 +13,13 @@ public abstract class CollectionApiDataType<T extends DataType> implements ApiDa
   // Default collection support, they cannot be used in filtering
   private static final ApiSupportDef DEFAULT_API_SUPPORT =
       new ApiSupportDef.Support(
-          true, ApiSupportDef.Collection.NONE, true, true, false, ApiSupportDef.Update.FULL);
+          true, ApiSupportDef.Collection.NONE, true, true, true, ApiSupportDef.Update.FULL);
 
   // Default collection support when the type is frozen, they cannot be used for create but we can
   // insert them
   private static final ApiSupportDef DEFAULT_API_SUPPORT_FROZEN =
       new ApiSupportDef.Support(
-          false, ApiSupportDef.Collection.NONE, true, true, false, ApiSupportDef.Update.NONE);
+          false, ApiSupportDef.Collection.NONE, true, true, true, ApiSupportDef.Update.NONE);
 
   protected static ApiSupportDef defaultApiSupport(boolean isFrozen) {
     return isFrozen ? DEFAULT_API_SUPPORT_FROZEN : DEFAULT_API_SUPPORT;

@@ -1,28 +1,48 @@
 package io.stargate.sgv2.jsonapi.service.operation.builder;
 
 public enum BuiltConditionPredicate {
+  CONTAINS("CONTAINS"),
+  CONTAINS_KEY("CONTAINS KEY"),
   EQ("="),
-  NEQ("!="),
-  LT("<"),
   GT(">"),
-  LTE("<="),
   GTE(">="),
   IN("IN"),
-  CONTAINS("CONTAINS"),
+  LT("<"),
+  LTE("<="),
+  NEQ("!="),
   NOT_CONTAINS("NOT CONTAINS"),
-  CONTAINS_KEY("CONTAINS KEY"),
+  NOT_CONTAINS_KEY("NOT CONTAINS KEY"),
   TEXT_SEARCH(":");
 
-  public final String cql;
+  private final String cql;
+
+  /**
+   * Stores the CQL string representation of the predicate, wrapped with spaces on both sides. While
+   * simple operators like "=" or "<" can work without surrounding spaces in CQL statements,
+   * keywords such as "CONTAINS" or "IN" can cause syntax errors if not properly spaced. To ensure
+   * consistency and avoid such issues, all predicates are uniformly wrapped with spaces.
+   */
+  private final String spaceWrappedCql;
 
   BuiltConditionPredicate(String cql) {
     this.cql = cql;
+    this.spaceWrappedCql = " " + cql + " ";
   }
 
-  // TIDY - remove this use of toString() it should be used for log msg's etc, not core
-  // functionality. This is called to build the CQL string we execute.
+  /**
+   * Returns the CQL representation of the predicate, with surrounding spaces. Use this public
+   * method for building CQL statements.
+   */
+  public String getSpaceWrappedCql() {
+    return spaceWrappedCql;
+  }
+
+  /**
+   * Returns the CQL representation of the predicate without surrounding spaces, this is useful for
+   * logs. To build the CQL statement, use {@link #getSpaceWrappedCql() instead.
+   */
   @Override
   public String toString() {
-    return cql;
+    return spaceWrappedCql;
   }
 }

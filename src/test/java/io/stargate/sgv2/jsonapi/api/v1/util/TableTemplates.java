@@ -104,10 +104,10 @@ public class TableTemplates extends TemplateRunner {
   public DataApiResponseValidator find(String filter) {
     var json =
             """
-         {
-          "filter": %s
-         }
-      """
+               {
+                "filter": %s
+               }
+            """
             .formatted(filter);
     return sender.postFind(json);
   }
@@ -218,6 +218,34 @@ public class TableTemplates extends TemplateRunner {
               }
         """
             .formatted(indexName, column);
+    return sender.postCreateIndex(json);
+  }
+
+  public DataApiResponseValidator createIndexOnMapKeys(String indexName, String columnName) {
+    var json =
+            """
+            {
+                "name": "%s",
+                "definition": {
+                    "column": {"$keys":"%s"}
+                }
+            }
+            """
+            .formatted(indexName, columnName);
+    return sender.postCreateIndex(json);
+  }
+
+  public DataApiResponseValidator createIndexOnMapValues(String indexName, String columnName) {
+    var json =
+            """
+            {
+                "name": "%s",
+                "definition": {
+                    "column": {"$values":"%s"}
+                }
+            }
+            """
+            .formatted(indexName, columnName);
     return sender.postCreateIndex(json);
   }
 

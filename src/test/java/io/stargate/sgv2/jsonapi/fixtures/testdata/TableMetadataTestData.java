@@ -9,6 +9,7 @@ import com.datastax.oss.driver.internal.core.metadata.schema.DefaultIndexMetadat
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultTableMetadata;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexFunction;
 import java.util.Map;
 import java.util.UUID;
 
@@ -202,19 +203,23 @@ public class TableMetadataTestData extends TestDataSuplier {
             Map.entry(
                 names.CQL_TIMEUUID_COLUMN_INDEX,
                 indexMetadata(names.CQL_TIMEUUID_COLUMN_INDEX, names.CQL_TIMEUUID_COLUMN)),
-            // index collection datatypes column in the table
-            Map.entry(
-                names.CQL_SET_COLUMN_INDEX,
-                indexMetadata(names.CQL_SET_COLUMN_INDEX, names.CQL_SET_COLUMN)),
-            Map.entry(
-                names.CQL_LIST_COLUMN,
-                indexMetadata(names.CQL_LIST_COLUMN_INDEX, names.CQL_LIST_COLUMN)),
-            Map.entry(
-                names.CQL_MAP_COLUMN_INDEX,
-                indexMetadata(names.CQL_MAP_COLUMN_INDEX, names.CQL_MAP_COLUMN)),
             Map.entry(
                 names.CQL_VECTOR_COLUMN_INDEX,
-                indexMetadata(names.CQL_VECTOR_COLUMN_INDEX, names.CQL_VECTOR_COLUMN))));
+                indexMetadata(names.CQL_VECTOR_COLUMN_INDEX, names.CQL_VECTOR_COLUMN)),
+            // index map/set/list datatypes column in the table
+            Map.entry(
+                names.CQL_SET_COLUMN_INDEX,
+                indexMetadataForMapSetList(
+                    names.CQL_SET_COLUMN_INDEX, names.CQL_SET_COLUMN, ApiIndexFunction.VALUES)),
+            Map.entry(
+                names.CQL_LIST_COLUMN,
+                indexMetadataForMapSetList(
+                    names.CQL_LIST_COLUMN_INDEX, names.CQL_LIST_COLUMN, ApiIndexFunction.VALUES)),
+            // index on map entries
+            Map.entry(
+                names.CQL_MAP_COLUMN_INDEX,
+                indexMetadataForMapSetList(
+                    names.CQL_MAP_COLUMN_INDEX, names.CQL_MAP_COLUMN, ApiIndexFunction.ENTRIES))));
   }
 
   public TableMetadata tableAllDatatypesNotIndexed() {
@@ -295,6 +300,26 @@ public class TableMetadataTestData extends TestDataSuplier {
         indexName,
         IndexKind.CUSTOM, // SAI are all these
         targetColumn.asInternal(),
+        options);
+  }
+
+  public IndexMetadata indexMetadataForMapSetList(
+      CqlIdentifier indexName, CqlIdentifier targetColumn, ApiIndexFunction indexFunction) {
+
+    String target =
+        switch (indexFunction) {
+          case KEYS -> String.format("keys(%s)", targetColumn.asInternal());
+          case ENTRIES -> String.format("entries(%s)", targetColumn.asInternal());
+          case VALUES -> String.format("values(%s)", targetColumn.asInternal());
+        };
+    var options = ImmutableMap.of("class_name", "StorageAttachedIndex", "target", target);
+
+    return new DefaultIndexMetadata(
+        names.KEYSPACE_NAME,
+        names.TABLE_NAME,
+        indexName,
+        IndexKind.CUSTOM, // SAI are all these
+        target,
         options);
   }
 }

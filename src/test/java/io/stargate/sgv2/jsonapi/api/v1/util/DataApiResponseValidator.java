@@ -353,6 +353,10 @@ public class DataApiResponseValidator {
     return body("data.documents[%s]".formatted(position), jsonEquals(documentJSON));
   }
 
+  public DataApiResponseValidator hasDocumentsMatchedByIds(List<Object> ids) {
+    return body("data.documents.id", containsInAnyOrder(ids.toArray()));
+  }
+
   public DataApiResponseValidator hasDocumentUnknowingPosition(String documentJSON) {
     return body("data.documents", hasItem(jsonEquals(documentJSON)));
   }

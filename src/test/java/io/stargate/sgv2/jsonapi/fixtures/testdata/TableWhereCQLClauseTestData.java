@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
@@ -36,7 +37,7 @@ public class TableWhereCQLClauseTestData extends TestDataSuplier {
   public static class TableWhereCQLClauseFixture implements Recordable {
 
     private final String message;
-    private final TableMetadata tableMetadata;
+    public final TableMetadata tableMetadata;
     private final TableSchemaObject tableSchemaObject;
     public final LogicalExpressionTestData.ExpressionBuilder<TableWhereCQLClauseFixture>
         expressionBuilder;
@@ -90,6 +91,21 @@ public class TableWhereCQLClauseTestData extends TestDataSuplier {
         List<CqlIdentifier> expectedColumnIdentifiers) {
       List<Object> expectedPositionalValues =
           expectedColumnIdentifiers.stream().map(expressionBuilder::CqlValue).toList();
+      LOGGER.warn("Expected positional values: {}\n", expectedPositionalValues);
+      LOGGER.warn("Actual positional values:: {}\n", positionalValues);
+
+      // The order of positional values matters here.
+      // E.G.
+      // Expected values [25, "text-value"], Actual values [25, "text-value"]
+      assertThat(expectedPositionalValues).containsExactlyElementsOf(positionalValues);
+
+      return this;
+    }
+
+    public TableWhereCQLClauseFixture assertWherePositionalValuesByDataType(
+        List<DataType> dataTypes) {
+      List<Object> expectedPositionalValues =
+          dataTypes.stream().map(LogicalExpressionTestData.ExpressionBuilder::value).toList();
       LOGGER.warn("Expected positional values: {}\n", expectedPositionalValues);
       LOGGER.warn("Actual positional values:: {}\n", positionalValues);
 
