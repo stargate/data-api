@@ -59,7 +59,7 @@ public class SortDefinition extends JsonDefinition<SortClause> {
    * Convert the JSON value to a {@link SortClause} instance and cache it, so further calls will
    * return the same instance.
    */
-  public SortClause toClause(CommandContext<?> ctx) {
+  public SortClause build(CommandContext<?> ctx) {
     if (sortClause == null) {
       sortClause = SortClauseBuilder.builderFor(ctx.schemaObject()).build(json());
     }

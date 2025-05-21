@@ -12,6 +12,6 @@ public interface Filterable {
 
   default FilterClause filterClause(CommandContext<?> ctx) {
     FilterDefinition def = filterDefinition();
-    return (def == null) ? FilterClause.empty() : def.toClause(ctx);
+    return (def == null) ? FilterClause.empty() : def.build(ctx);
   }
 }

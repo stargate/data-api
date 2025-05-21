@@ -43,7 +43,7 @@ public class FilterDefinition extends JsonDefinition<FilterClause> {
    * @return The resolved filter clause.
    */
   @Override
-  public FilterClause toClause(CommandContext<?> ctx) {
+  public FilterClause build(CommandContext<?> ctx) {
     if (filterClause == null) {
       filterClause =
           FilterClauseBuilder.builderFor(ctx.schemaObject())

@@ -21,6 +21,6 @@ public interface Sortable {
    */
   default SortClause sortClause(CommandContext<?> ctx) {
     SortDefinition def = sortDefinition();
-    return (def == null) ? SortClause.empty() : def.toClause(ctx);
+    return (def == null) ? SortClause.empty() : def.build(ctx);
   }
 }
