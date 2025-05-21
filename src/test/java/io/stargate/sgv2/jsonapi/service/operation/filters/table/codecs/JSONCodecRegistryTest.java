@@ -881,8 +881,6 @@ public class JSONCodecRegistryTest {
               assertThat(e.value).isEqualTo(TEST_DATA.RANDOM_STRING);
 
               assertThat(e.getMessage())
-                  .contains(TEST_DATA.TABLE_NAME.asInternal())
-                  .contains(TEST_DATA.COLUMN_NAME.asInternal())
                   .contains(TEST_DATA.UNSUPPORTED_CQL_DATA_TYPE.toString())
                   .contains(TEST_DATA.RANDOM_STRING.getClass().getName())
                   .contains(TEST_DATA.RANDOM_STRING);

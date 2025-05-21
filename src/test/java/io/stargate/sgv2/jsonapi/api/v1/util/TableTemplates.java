@@ -104,10 +104,10 @@ public class TableTemplates extends TemplateRunner {
   public DataApiResponseValidator find(String filter) {
     var json =
             """
-         {
-          "filter": %s
-         }
-      """
+               {
+                "filter": %s
+               }
+            """
             .formatted(filter);
     return sender.postFind(json);
   }
