@@ -40,107 +40,133 @@ public class MetricsTenantDeactivationConsumerTests {
 
   @Test
   void testTenantMetricRemovalLifecycle() {
-    String tenant1 = "tenant1";
-    String tenant2 = "tenant2";
-    String tenant3 = "tenant3";
+    final String tenant1 = "tenant1";
+    final String tenant2 = "tenant2";
+    final String tenant3 = "tenant3";
+    final String counterMetrics = "counterMetrics";
+    final String summaryMetrics = "summaryMetrics";
+    final String timerMetrics = "timerMetrics";
+    final String otherTag = "otherTag";
+    final String otherTagValue = "otherTagValue";
 
-    // Create metrics for tenant1 (all are TENANT_TAG) and make sure they are registered
-    meterRegistry.counter("metrics1", TENANT_TAG, tenant1, "command", "find").increment();
-    meterRegistry.summary("metrics1", TENANT_TAG, tenant1, "command", "create").record(10);
-    meterRegistry
-        .timer("metrics2", TENANT_TAG, tenant1, "command", "insert")
-        .record(java.time.Duration.ofMillis(10));
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant1).counter()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant1).summary()).isNotNull();
-    assertThat(meterRegistry.find("metrics2").tags(TENANT_TAG, tenant1).timer()).isNotNull();
+    // Create metrics for tenant1 (all use TENANT_TAG) and verify they are registered
+    createCounter(counterMetrics, TENANT_TAG, tenant1, otherTag, otherTagValue);
+    createSummary(summaryMetrics, TENANT_TAG, tenant1, otherTag, otherTagValue);
+    createTimer(timerMetrics, TENANT_TAG, tenant1, otherTag, otherTagValue);
+    assertMetricExists(counterMetrics, TENANT_TAG, tenant1);
+    assertMetricExists(summaryMetrics, TENANT_TAG, tenant1);
+    assertMetricExists(timerMetrics, TENANT_TAG, tenant1);
 
-    // Create metrics for tenant2(all are SESSION_TAG) and make sure they are registered
-    meterRegistry.counter("metrics1", SESSION_TAG, tenant2, "command", "find").increment();
-    meterRegistry.summary("metrics1", SESSION_TAG, tenant2, "command", "create").record(20);
-    meterRegistry
-        .timer("metrics2", SESSION_TAG, tenant2, "command", "insert")
-        .record(java.time.Duration.ofMillis(20));
-    assertThat(meterRegistry.find("metrics1").tags(SESSION_TAG, tenant2).counter()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(SESSION_TAG, tenant2).summary()).isNotNull();
-    assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant2).timer()).isNotNull();
+    // Create metrics for tenant2 (all use SESSION_TAG) and verify they are registered
+    createCounter(counterMetrics, SESSION_TAG, tenant2, otherTag, otherTagValue);
+    createSummary(summaryMetrics, SESSION_TAG, tenant2, otherTag, otherTagValue);
+    createTimer(timerMetrics, SESSION_TAG, tenant2, otherTag, otherTagValue);
+    assertMetricExists(counterMetrics, SESSION_TAG, tenant2);
+    assertMetricExists(summaryMetrics, SESSION_TAG, tenant2);
+    assertMetricExists(timerMetrics, SESSION_TAG, tenant2);
 
-    // Create metrics for tenant3 (mix SESSION_TAG and TENANT_TAG) and make sure they are registered
-    meterRegistry.counter("metrics1", TENANT_TAG, tenant3, "command", "find").increment();
-    meterRegistry.summary("metrics1", TENANT_TAG, tenant3, "command", "create").record(30);
-    meterRegistry
-        .timer("metrics2", SESSION_TAG, tenant3, "command", "insert")
-        .record(java.time.Duration.ofMillis(30));
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).counter()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).summary()).isNotNull();
-    assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant3).timer()).isNotNull();
+    // Create metrics for tenant3 (mixed tags) and verify they are registered
+    createCounter(counterMetrics, TENANT_TAG, tenant3, otherTag, otherTagValue);
+    createSummary(summaryMetrics, TENANT_TAG, tenant3, otherTag, otherTagValue);
+    createTimer(timerMetrics, SESSION_TAG, tenant3, otherTag, otherTagValue);
+    assertMetricExists(counterMetrics, TENANT_TAG, tenant3);
+    assertMetricExists(summaryMetrics, TENANT_TAG, tenant3);
+    assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
-    // Case 1: Remove `null` tenantId and it should not remove anything
+    // Case 1: Removing with null tenantId should not remove any metrics
     assertThatCode(() -> consumer.accept(null, RemovalCause.SIZE)).doesNotThrowAnyException();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant1).counter()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant1).summary()).isNotNull();
-    assertThat(meterRegistry.find("metrics2").tags(TENANT_TAG, tenant1).timer()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(SESSION_TAG, tenant2).counter()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(SESSION_TAG, tenant2).summary()).isNotNull();
-    assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant2).timer()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).counter()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).summary()).isNotNull();
-    assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant3).timer()).isNotNull();
+    assertMetricExists(counterMetrics, TENANT_TAG, tenant1);
+    assertMetricExists(summaryMetrics, TENANT_TAG, tenant1);
+    assertMetricExists(timerMetrics, TENANT_TAG, tenant1);
+    assertMetricExists(counterMetrics, SESSION_TAG, tenant2);
+    assertMetricExists(summaryMetrics, SESSION_TAG, tenant2);
+    assertMetricExists(timerMetrics, SESSION_TAG, tenant2);
+    assertMetricExists(counterMetrics, TENANT_TAG, tenant3);
+    assertMetricExists(summaryMetrics, TENANT_TAG, tenant3);
+    assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
-    // Case 2: Remove a non-existent tenantId and it should not remove anything
+    // Case 2: Removing a non-existent tenantId should not remove any metrics
     assertThatCode(() -> consumer.accept("nonExistentTenant", RemovalCause.SIZE))
         .doesNotThrowAnyException();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant1).counter()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant1).summary()).isNotNull();
-    assertThat(meterRegistry.find("metrics2").tags(TENANT_TAG, tenant1).timer()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(SESSION_TAG, tenant2).counter()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(SESSION_TAG, tenant2).summary()).isNotNull();
-    assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant2).timer()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).counter()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).summary()).isNotNull();
-    assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant3).timer()).isNotNull();
+    assertMetricExists(counterMetrics, TENANT_TAG, tenant1);
+    assertMetricExists(summaryMetrics, TENANT_TAG, tenant1);
+    assertMetricExists(timerMetrics, TENANT_TAG, tenant1);
+    assertMetricExists(counterMetrics, SESSION_TAG, tenant2);
+    assertMetricExists(summaryMetrics, SESSION_TAG, tenant2);
+    assertMetricExists(timerMetrics, SESSION_TAG, tenant2);
+    assertMetricExists(counterMetrics, TENANT_TAG, tenant3);
+    assertMetricExists(summaryMetrics, TENANT_TAG, tenant3);
+    assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
-    // Case 3: Remove tenant1 and it should remove all metrics for tenant1 and remain all metrics
-    // for tenant2
+    // Case 3: Removing tenant1 should remove only tenant1's metrics; others remain
     assertThatCode(() -> consumer.accept(tenant1, RemovalCause.EXPIRED)).doesNotThrowAnyException();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant1).counter()).isNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant1).summary()).isNull();
-    assertThat(meterRegistry.find("metrics2").tags(TENANT_TAG, tenant1).timer()).isNull();
-    assertThat(meterRegistry.find("metrics1").tags(SESSION_TAG, tenant2).counter()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(SESSION_TAG, tenant2).summary()).isNotNull();
-    assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant2).timer()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).counter()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).summary()).isNotNull();
-    assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant3).timer()).isNotNull();
+    assertMetricNotExists(counterMetrics, TENANT_TAG, tenant1);
+    assertMetricNotExists(summaryMetrics, TENANT_TAG, tenant1);
+    assertMetricNotExists(timerMetrics, TENANT_TAG, tenant1);
+    assertMetricExists(counterMetrics, SESSION_TAG, tenant2);
+    assertMetricExists(summaryMetrics, SESSION_TAG, tenant2);
+    assertMetricExists(timerMetrics, SESSION_TAG, tenant2);
+    assertMetricExists(counterMetrics, TENANT_TAG, tenant3);
+    assertMetricExists(summaryMetrics, TENANT_TAG, tenant3);
+    assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
-    // Case 4: Remove tenant1 again and it should not remove anything
+    // Case 4: Removing tenant1 again (already removed) should not affect other metrics
     assertThatCode(() -> consumer.accept(tenant1, RemovalCause.REPLACED))
         .doesNotThrowAnyException();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant1).counter()).isNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant1).summary()).isNull();
-    assertThat(meterRegistry.find("metrics2").tags(TENANT_TAG, tenant1).timer()).isNull();
-    assertThat(meterRegistry.find("metrics1").tags(SESSION_TAG, tenant2).counter()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(SESSION_TAG, tenant2).summary()).isNotNull();
-    assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant2).timer()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).counter()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).summary()).isNotNull();
-    assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant3).timer()).isNotNull();
+    assertMetricNotExists(counterMetrics, TENANT_TAG, tenant1);
+    assertMetricNotExists(summaryMetrics, TENANT_TAG, tenant1);
+    assertMetricNotExists(timerMetrics, TENANT_TAG, tenant1);
+    assertMetricExists(counterMetrics, SESSION_TAG, tenant2);
+    assertMetricExists(summaryMetrics, SESSION_TAG, tenant2);
+    assertMetricExists(timerMetrics, SESSION_TAG, tenant2);
+    assertMetricExists(counterMetrics, TENANT_TAG, tenant3);
+    assertMetricExists(summaryMetrics, TENANT_TAG, tenant3);
+    assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
-    // Case 5: Remove tenant2 and it should remove all metrics for tenant2 and only tenant3 metrics
-    // remain
+    // Case 5: Removing tenant2 should remove only tenant2's metrics; only tenant3's remain
     assertThatCode(() -> consumer.accept(tenant2, RemovalCause.EXPIRED)).doesNotThrowAnyException();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant1).counter()).isNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant1).summary()).isNull();
-    assertThat(meterRegistry.find("metrics2").tags(TENANT_TAG, tenant1).timer()).isNull();
-    assertThat(meterRegistry.find("metrics1").tags(SESSION_TAG, tenant2).counter()).isNull();
-    assertThat(meterRegistry.find("metrics1").tags(SESSION_TAG, tenant2).summary()).isNull();
-    assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant2).timer()).isNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).counter()).isNotNull();
-    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).summary()).isNotNull();
-    assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant3).timer()).isNotNull();
+    assertMetricNotExists(counterMetrics, TENANT_TAG, tenant1);
+    assertMetricNotExists(summaryMetrics, TENANT_TAG, tenant1);
+    assertMetricNotExists(timerMetrics, TENANT_TAG, tenant1);
+    assertMetricNotExists(counterMetrics, SESSION_TAG, tenant2);
+    assertMetricNotExists(summaryMetrics, SESSION_TAG, tenant2);
+    assertMetricNotExists(timerMetrics, SESSION_TAG, tenant2);
+    assertMetricExists(counterMetrics, TENANT_TAG, tenant3);
+    assertMetricExists(summaryMetrics, TENANT_TAG, tenant3);
+    assertMetricExists(timerMetrics, SESSION_TAG, tenant3);
 
-    // Case 6: Remove tenant3 and it should remove all metrics for tenant3 and nothing remain
+    // Case 6: Removing tenant3 should remove all remaining metrics (registry empty)
     assertThatCode(() -> consumer.accept(tenant3, RemovalCause.EXPLICIT))
         .doesNotThrowAnyException();
     assertThat(meterRegistry.getMeters()).isEmpty();
+  }
+
+  // Helper to create a counter metric with the given name and tags
+  private void createCounter(String metricName, String... tags) {
+    meterRegistry.counter(metricName, Tags.of(tags)).increment();
+  }
+
+  // Helper to create a summary metric with the given name and tags
+  private void createSummary(String metricName, String... tags) {
+    meterRegistry.summary(metricName, Tags.of(tags)).record(10);
+  }
+
+  // Helper to create a timer metric with the given name and tags
+  private void createTimer(String metricName, String... tags) {
+    meterRegistry.timer(metricName, Tags.of(tags)).record(java.time.Duration.ofMillis(10));
+  }
+
+  // Helper assertions
+  private void assertMetricExists(String metricName, String tagKey, String tagValue) {
+    assertThat(meterRegistry.find(metricName).tag(tagKey, tagValue).meter())
+        .as("Metric %s for tenant %s should exist", metricName, tagValue)
+        .isNotNull();
+  }
+
+  // Helper assertions
+  private void assertMetricNotExists(String metricName, String tagKey, String tagValue) {
+    assertThat(meterRegistry.find(metricName).tag(tagKey, tagValue).meter())
+        .as("Metric %s for tenant %s should NOT exist", metricName, tagValue)
+        .isNull();
   }
 }
