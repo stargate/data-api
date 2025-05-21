@@ -40,7 +40,7 @@ public class MetricsTenantDeactivationConsumerTests {
   }
 
   @Test
-  void removeTenantMetricsFromRegistry() {
+  void testTenantMetricRemovalLifecycle() {
     String tenant1 = "tenant1";
     String tenant2 = "tenant2";
     String tenant3 = "tenant3";
@@ -113,7 +113,20 @@ public class MetricsTenantDeactivationConsumerTests {
     assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).summary()).isNotNull();
     assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant3).timer()).isNotNull();
 
-    // Case 4: Remove tenant2 and it should remove all metrics for tenant2 and only tenant3 metrics
+    // Case 4: Remove tenant1 again and it should not remove anything
+    assertThatCode(() -> consumer.accept(tenant1, RemovalCause.REPLACED))
+        .doesNotThrowAnyException();
+    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant1).counter()).isNull();
+    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant1).summary()).isNull();
+    assertThat(meterRegistry.find("metrics2").tags(TENANT_TAG, tenant1).timer()).isNull();
+    assertThat(meterRegistry.find("metrics1").tags(SESSION_TAG, tenant2).counter()).isNotNull();
+    assertThat(meterRegistry.find("metrics1").tags(SESSION_TAG, tenant2).summary()).isNotNull();
+    assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant2).timer()).isNotNull();
+    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).counter()).isNotNull();
+    assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).summary()).isNotNull();
+    assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant3).timer()).isNotNull();
+
+    // Case 5: Remove tenant2 and it should remove all metrics for tenant2 and only tenant3 metrics
     // remain
     assertThatCode(() -> consumer.accept(tenant2, RemovalCause.EXPIRED)).doesNotThrowAnyException();
     assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant1).counter()).isNull();
@@ -126,7 +139,7 @@ public class MetricsTenantDeactivationConsumerTests {
     assertThat(meterRegistry.find("metrics1").tags(TENANT_TAG, tenant3).summary()).isNotNull();
     assertThat(meterRegistry.find("metrics2").tags(SESSION_TAG, tenant3).timer()).isNotNull();
 
-    // Case 5: Remove tenant3 and it should remove all metrics for tenant3 and nothing remain
+    // Case 6: Remove tenant3 and it should remove all metrics for tenant3 and nothing remain
     assertThatCode(() -> consumer.accept(tenant3, RemovalCause.EXPLICIT))
         .doesNotThrowAnyException();
     assertThat(meterRegistry.getMeters()).isEmpty();
