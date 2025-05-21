@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
@@ -32,7 +33,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class FindCollectionWithLexicalSortIntegrationTest
+public class FindCollectionWithLexicalIntegrationTest
     extends AbstractCollectionIntegrationTestBase {
   static final String COLLECTION_WITH_LEXICAL =
       "coll_lexical_sort_" + RandomStringUtils.randomNumeric(16);
@@ -40,11 +41,11 @@ public class FindCollectionWithLexicalSortIntegrationTest
   static final String COLLECTION_WITHOUT_LEXICAL =
       "coll_no_lexical_sort_" + RandomStringUtils.randomNumeric(16);
 
-  static final String DOC1_JSON = lexicalDoc(1, "monkey banana", "value1");
-  static final String DOC2_JSON = lexicalDoc(2, "monkey", "value2");
-  static final String DOC3_JSON = lexicalDoc(3, "biking fun", "value3");
-  static final String DOC4_JSON = lexicalDoc(4, "banana bread with butter", "value4");
-  static final String DOC5_JSON = lexicalDoc(5, "fun", "value5");
+  static final String DOC1_JSON = lexicalDoc(1, "monkey banana", "value1", "top");
+  static final String DOC2_JSON = lexicalDoc(2, "monkey", "value2", "top");
+  static final String DOC3_JSON = lexicalDoc(3, "biking fun", "value3", "middle");
+  static final String DOC4_JSON = lexicalDoc(4, "banana bread with butter", "value4", "bottom");
+  static final String DOC5_JSON = lexicalDoc(5, "fun", "value5", "bottom");
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
@@ -113,6 +114,50 @@ public class FindCollectionWithLexicalSortIntegrationTest
           .body("data.documents[0]._id", is("lexical-1"))
           .body("data.documents[1]._id", is("lexical-4"));
     }
+
+    @Test
+    void findManyWithOnlyLexicalFilter() {
+      givenHeadersPostJsonThenOkNoErrors(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                          {
+                            "find": {
+                              "filter" : {
+                                 "$lexical": {
+                                    "$match": "biking"
+                                  }
+                               }
+                            }
+                          }
+                          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]._id", is("lexical-3"));
+    }
+
+    @Test
+    void findManyWithLexicalAndOtherFilter() {
+      // Lexical brings 2, tag 2; intersection is 1
+      givenHeadersPostJsonThenOkNoErrors(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                          {
+                            "find": {
+                              "filter" : {
+                                 "$and": [
+                                   { "$lexical": { "$match": "banana" } },
+                                   { "tag": "bottom" }
+                                  ]
+                               }
+                            }
+                          }
+                          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]._id", is("lexical-4"));
+    }
   }
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
@@ -154,6 +199,24 @@ public class FindCollectionWithLexicalSortIntegrationTest
           // Needs to get "lexical-1" with "monkey banana"
           .body("data.document", jsonEquals(DOC1_JSON));
     }
+
+    @Test
+    void findOneWithOnlyLexicalFilter() {
+      givenHeadersPostJsonThenOkNoErrors(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                      {
+                        "findOne": {
+                          "projection": {"$lexical": 1 },
+                          "filter" : {"$lexical": {"$match": "bread butter" } }
+                        }
+                      }
+                      """)
+          .body("$", responseIsFindSuccess())
+          // Needs to get "lexical-4"
+          .body("data.document", jsonEquals(DOC4_JSON));
+    }
   }
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
@@ -161,7 +224,7 @@ public class FindCollectionWithLexicalSortIntegrationTest
   @Order(3)
   class FailingCasesFindMany {
     @Test
-    void failIfLexicalDisabledForCollection() {
+    void failSortIfLexicalDisabledForCollection() {
       givenHeadersPostJsonThenOk(
               keyspaceName,
               COLLECTION_WITHOUT_LEXICAL,
@@ -169,6 +232,23 @@ public class FindCollectionWithLexicalSortIntegrationTest
                           {
                             "find": {
                               "sort" : {"$lexical": "banana" }
+                            }
+                          }
+                          """)
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
+          .body("errors[0].message", containsString("Lexical search is not enabled"));
+    }
+
+    @Test
+    void failFilterIfLexicalDisabledForCollection() {
+      givenHeadersPostJsonThenOk(
+              keyspaceName,
+              COLLECTION_WITHOUT_LEXICAL,
+              """
+                          {
+                            "find": {
+                              "filter" : {"$lexical": {"$match": "banana" } }
                             }
                           }
                           """)
@@ -197,6 +277,26 @@ public class FindCollectionWithLexicalSortIntegrationTest
     }
 
     @Test
+    void failForBadLexicalFilterValueType() {
+      givenHeadersPostJsonThenOk(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                          {
+                            "find": {
+                              "filter" : {"$lexical": {"$match": [ 1, 2, 3 ] } }
+                            }
+                          }
+                          """)
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Invalid filter expression: $match operator must have `String` value, was `Array`"));
+    }
+
+    @Test
     void failForLexicalSortWithOtherExpressions() {
       givenHeadersPostJsonThenOk(
               keyspaceName,
@@ -217,6 +317,48 @@ public class FindCollectionWithLexicalSortIntegrationTest
               "errors[0].message",
               containsString("if sorting by '$lexical' no other sort expressions allowed"));
     }
+
+    // No way to do "$not" with "$match" (not supported by DBs)
+    @Test
+    void failForLexicalFilterWithNot() {
+      givenHeadersPostJsonThenOk(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                          {
+                            "find": {
+                              "filter" : {"$not": {"$lexical": {"$match": "banana" } }}}
+                            }
+                          }
+                          """)
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Invalid filter expression: cannot use $not to invert $match operator"));
+    }
+
+    // Can only use $match with $lexical, not $eq, $ne, etc.
+    @Test
+    public void failForEqFilteringOnLexical() {
+      for (String filter :
+          new String[] {
+            "{\"$lexical\": \"quick brown fox\"}", "{\"$lexical\": {\"$eq\": \"quick brown fox\"}}"
+          }) {
+        givenHeadersPostJsonThenOk(
+                keyspaceName,
+                COLLECTION_WITH_LEXICAL,
+                "{ \"findOne\": { \"filter\" : %s}}".formatted(filter))
+            .body("$", responseIsError())
+            .body("errors", hasSize(1))
+            .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+            .body(
+                "errors[0].message",
+                containsString(
+                    "Cannot filter on '$lexical' field using operator $eq: only $match is supported"));
+      }
+    }
   }
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
@@ -225,7 +367,7 @@ public class FindCollectionWithLexicalSortIntegrationTest
   class HappyCasesFindOneAndUpdate {
     @Test
     void findOneAndUpdateWithSort() {
-      final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-updated");
+      final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-updated", "top");
       givenHeadersPostJsonThenOkNoErrors(
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
@@ -265,7 +407,7 @@ public class FindCollectionWithLexicalSortIntegrationTest
   class HappyCasesUpdateOne {
     @Test
     void updateOneWithSort() {
-      final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-updated-2");
+      final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-updated-2", "top");
       givenHeadersPostJsonThenOkNoErrors(
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
@@ -302,7 +444,7 @@ public class FindCollectionWithLexicalSortIntegrationTest
   class HappyCasesFindOneAndReplace {
     @Test
     void findOneAndReplaceWithSort() {
-      final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-replaced");
+      final String expectedAfterChange = lexicalDoc(1, "monkey banana", "value1-replaced", "top");
       givenHeadersPostJsonThenOkNoErrors(
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
@@ -364,7 +506,7 @@ public class FindCollectionWithLexicalSortIntegrationTest
               """
           {
             "find": {
-              "projection": {"_id": 1, "value": 0 }
+              "projection": {"_id": 1, "value": 0, "tag": 0 }
             }
           }
           """)
@@ -415,21 +557,22 @@ public class FindCollectionWithLexicalSortIntegrationTest
           .body(
               "data.documents",
               containsInAnyOrder(
-                  Map.of("_id", "lexical-1"),
-                  Map.of("_id", "lexical-4"),
-                  Map.of("_id", "lexical-5")));
+                  Map.of("_id", "lexical-1", "tag", "top"),
+                  Map.of("_id", "lexical-4", "tag", "bottom"),
+                  Map.of("_id", "lexical-5", "tag", "bottom")));
     }
   }
 
-  static String lexicalDoc(int id, String keywords, String value) {
+  static String lexicalDoc(int id, String keywords, String value, String tag) {
     return
         """
             {
               "_id": "lexical-%d",
               "$lexical": "%s",
-              "value": "%s"
+              "value": "%s",
+              "tag": "%s"
             }
         """
-        .formatted(id, keywords, value);
+        .formatted(id, keywords, value, tag);
   }
 }

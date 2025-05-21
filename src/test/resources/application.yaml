@@ -12,3 +12,8 @@ quarkus:
     access-log:
       enabled: false
     test-port: 9080
+  log:
+    category:
+      # production log level for this categoy is DEBUG, way too noisy for tests
+      'io.stargate':
+        level: WARN

@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.ReadCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import jakarta.validation.Valid;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -14,7 +14,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     description =
         "Command that returns count of documents in a collection based on the collection.")
 @JsonTypeName(CommandName.Names.COUNT_DOCUMENTS)
-public record CountDocumentsCommand(@Valid @JsonProperty("filter") FilterSpec filterSpec)
+public record CountDocumentsCommand(
+    @Valid @JsonProperty("filter") FilterDefinition filterDefinition)
     implements ReadCommand, NoOptionsCommand, Filterable {
 
   /** {@inheritDoc} */
