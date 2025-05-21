@@ -8,9 +8,9 @@ import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
+import java.util.*;
 import java.util.List;
 import java.util.Map;
-import java.util.*;
 
 public class CollectionFilterClauseBuilder extends FilterClauseBuilder<CollectionSchemaObject> {
   public CollectionFilterClauseBuilder(CollectionSchemaObject schema) {

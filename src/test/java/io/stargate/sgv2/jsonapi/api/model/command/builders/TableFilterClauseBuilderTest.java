@@ -31,8 +31,6 @@ public class TableFilterClauseBuilderTest {
   @Inject ObjectMapper objectMapper;
   @Inject OperationsConfig operationsConfig;
 
-  //  private static final TestData TEST_DATA = new TestData();
-
   @Nested
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   class TableMapSetListFilter {
@@ -295,15 +293,6 @@ public class TableFilterClauseBuilderTest {
               e -> assertThat((e).getMessage()).contains("must be followed by an array of values"));
     }
 
-    //    private static Stream<Arguments> mapEntryFilter() {
-    //      return Stream.of(
-    //              Arguments.of(
-    //                      "{\"username\": {\"$eq\" : \"aaron\"}}", ValueComparisonOperator.EQ,
-    // "username"));
-    //    }
-    //
-    //    @ParameterizedTest
-    //    @MethodSource("mapEntryFilter")
     @Test
     public void multipleMapSetListFilters() throws Exception {
       TestData td = new TestData();

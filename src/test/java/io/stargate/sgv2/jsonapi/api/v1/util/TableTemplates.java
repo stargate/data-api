@@ -221,6 +221,34 @@ public class TableTemplates extends TemplateRunner {
     return sender.postCreateIndex(json);
   }
 
+  public DataApiResponseValidator createIndexOnMapKeys(String indexName, String columnName) {
+    var json =
+            """
+            {
+                "name": "%s",
+                "definition": {
+                    "column": {"$keys":"%s"}
+                }
+            }
+            """
+            .formatted(indexName, columnName);
+    return sender.postCreateIndex(json);
+  }
+
+  public DataApiResponseValidator createIndexOnMapValues(String indexName, String columnName) {
+    var json =
+            """
+            {
+                "name": "%s",
+                "definition": {
+                    "column": {"$values":"%s"}
+                }
+            }
+            """
+            .formatted(indexName, columnName);
+    return sender.postCreateIndex(json);
+  }
+
   public DataApiResponseValidator createVectorIndex(String indexName, String column) {
     var json =
             """

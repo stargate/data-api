@@ -83,6 +83,14 @@ public class LogicalExpressionTestData extends TestDataSuplier {
       return fixture;
     }
 
+    public FixtureT mapListSetTableFilter(
+        CqlIdentifier column,
+        MapSetListTableFilter.Operator operator,
+        MapSetListTableFilter.MapSetListFilterComponent component) {
+      rootImplicitAnd.addFilter(filterOnMapSetList(column, operator, component));
+      return fixture;
+    }
+
     public FixtureT eqAllPrimaryKeys() {
       eqAllPartitionKeys();
       return eqAllClusteringKeys();

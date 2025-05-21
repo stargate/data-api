@@ -411,4 +411,8 @@ public class MapSetListTableFilter extends TableFilter {
     throw new UnsupportedOperationException(
         "Not supported - will be modified when we migrate collections filters java driver");
   }
+
+  public MapSetListFilterComponent getMapSetListFilterComponent() {
+    return mapSetListFilterComponent;
+  }
 }

@@ -1,18 +1,18 @@
 package io.stargate.sgv2.jsonapi.service.operation.builder;
 
 public enum BuiltConditionPredicate {
+  CONTAINS("CONTAINS"),
+  CONTAINS_KEY("CONTAINS KEY"),
   EQ("="),
-  NEQ("!="),
-  LT("<"),
   GT(">"),
-  LTE("<="),
   GTE(">="),
   IN("IN"),
-    TEXT_SEARCH(":"),
-  CONTAINS("CONTAINS"),
+  LT("<"),
+  LTE("<="),
+  NEQ("!="),
   NOT_CONTAINS("NOT CONTAINS"),
-  CONTAINS_KEY("CONTAINS KEY"),
-  NOT_CONTAINS_KEY("NOT CONTAINS KEY");
+  NOT_CONTAINS_KEY("NOT CONTAINS KEY"),
+  TEXT_SEARCH(":");
 
   private final String cql;
 

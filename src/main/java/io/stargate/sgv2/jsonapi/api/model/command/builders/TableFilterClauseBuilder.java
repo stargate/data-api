@@ -305,7 +305,7 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
               map -> {
                 map.put(
                     "detailedReason",
-                    "Invalid filter operator '%s' for column column '%s', allowed operators are '$in', '$nin', '$all'"
+                    "Invalid filter operator '%s' for column '%s', allowed operators are '$in', '$nin', '$all'"
                         .formatted(operatorString, columnName));
               }));
     }

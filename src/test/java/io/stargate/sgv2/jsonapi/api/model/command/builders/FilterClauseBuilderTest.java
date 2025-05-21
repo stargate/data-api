@@ -1213,7 +1213,8 @@ public class FilterClauseBuilderTest {
               List.of(
                   new ValueComparisonOperation(
                       ValueComparisonOperator.MATCH,
-                      new JsonLiteral("search text", JsonType.STRING))),
+                      new JsonLiteral("search text", JsonType.STRING),
+                      null)),
               null);
       FilterClause filterClause = readCollectionFilterClause(json);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);

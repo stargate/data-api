@@ -15,9 +15,11 @@ import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.InTableFilter;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.MapSetListTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexFunction;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import java.util.*;
 import java.util.function.Consumer;
@@ -54,11 +56,10 @@ public class WhereCQLClauseAnalyzer {
         case SELECT ->
             new AnalysisStrategy(
                 List.of(
-                    analyzer::checkAllColumnsExist,
-                    analyzer::checkComparisonFilterAgainstDuration,
-                    analyzer::checkFilteringOnComplexColumns),
+                    analyzer::checkAllColumnsExist, analyzer::checkComparisonFilterAgainstDuration),
                 List.of(
                     analyzer::warnMissingIndexOnScalar,
+                    analyzer::warnMissingIndexOnMapSetList,
                     analyzer::warnNotEqUnsupportedByIndexing,
                     analyzer::warnComparisonUnsupportedByIndexing,
                     analyzer::warnNotInUnsupportedByIndexing,
@@ -71,8 +72,7 @@ public class WhereCQLClauseAnalyzer {
                     analyzer::checkAllColumnsExist,
                     analyzer::checkNonPrimaryKeyFilters,
                     analyzer::checkOnlyEqUsage,
-                    analyzer::checkFullPrimaryKey,
-                    analyzer::checkFilteringOnComplexColumns),
+                    analyzer::checkFullPrimaryKey),
                 List.of());
         case DELETE_MANY ->
             new AnalysisStrategy(
@@ -80,8 +80,7 @@ public class WhereCQLClauseAnalyzer {
                     analyzer::checkNoFilters,
                     analyzer::checkAllColumnsExist,
                     analyzer::checkNonPrimaryKeyFilters,
-                    analyzer::checkValidPrimaryKey,
-                    analyzer::checkFilteringOnComplexColumns),
+                    analyzer::checkValidPrimaryKey),
                 List.of());
       };
     }
@@ -219,27 +218,6 @@ public class WhereCQLClauseAnalyzer {
     }
   }
 
-  /** In first tables feature preview, only scalar column types are supported for filter */
-  private void checkFilteringOnComplexColumns(Map<CqlIdentifier, TableFilter> identifierToFilter) {
-
-    var filterOnComplexColumns =
-        identifierToFilter.keySet().stream()
-            .filter(identifier -> !apiTableDef.allColumns().get(identifier).type().isPrimitive())
-            .sorted(CQL_IDENTIFIER_COMPARATOR)
-            .toList();
-
-    //    if (!filterOnComplexColumns.isEmpty()) {
-    //      throw FilterException.Code.UNSUPPORTED_FILTERING_FOR_COLUMN_TYPES.get(
-    //          errVars(
-    //              tableSchemaObject,
-    //              map -> {
-    //                map.put("allColumns",
-    // errFmtColumnMetadata(tableMetadata.getColumns().values()));
-    //                map.put("complexColumns", errFmtCqlIdentifier(filterOnComplexColumns));
-    //              }));
-    //    }
-  }
-
   /**
    * Check if any non $eq filter is used.
    *
@@ -356,10 +334,10 @@ public class WhereCQLClauseAnalyzer {
   }
 
   /**
-   * Warn if the filter is on columns that do not have an index on them, special handling for
+   * Warn if the filter is on scalar columns that do not have an index on them, special handling for
    * primary key columns.
    *
-   * <p>Only considers filters on the native, non collection types,
+   * <p>Only considers filters on the native, not on map/set/list types,
    */
   private Optional<WarningException> warnMissingIndexOnScalar(
       Map<CqlIdentifier, TableFilter> identifierToFilter) {
@@ -406,6 +384,51 @@ public class WhereCQLClauseAnalyzer {
                   map.put("primaryKey", errFmtColumnMetadata(tableMetadata.getPrimaryKey()));
                   map.put("indexedColumns", errFmtJoin(indexedColumns));
                   map.put("unindexedFilters", errFmtCqlIdentifier(missingSAIColumns));
+                })));
+  }
+
+  /**
+   * Warn if the filter is on map/set/list columns that do not have an index on them.
+   *
+   * <p>Only frozen map/set/list can be part of primary key in Cassandra. But still needs additional
+   * SAI index to use Data API map/set/list filtering.
+   */
+  private Optional<WarningException> warnMissingIndexOnMapSetList(
+      Map<CqlIdentifier, TableFilter> identifierToFilter) {
+
+    var mapSetListFilters =
+        identifierToFilter.entrySet().stream()
+            .filter(entry -> entry.getValue() instanceof MapSetListTableFilter)
+            .map(entry -> Map.entry(entry.getKey(), (MapSetListTableFilter) entry.getValue()))
+            .toList();
+
+    // filter out the map/set/list column that user wants to filter on, but does not have the index
+    // or does not
+    // have the correct index function on it.
+    var missingIndexColumns =
+        mapSetListFilters.stream()
+            .filter(
+                entry ->
+                    !isIndexOnMapSetList(
+                        entry.getKey(), entry.getValue().getMapSetListFilterComponent()))
+            .map(Map.Entry::getKey)
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
+            .toList();
+
+    var indexedColumns =
+        tableMetadata.getIndexes().values().stream()
+            .map(IndexMetadata::getTarget)
+            .sorted(String::compareTo)
+            .toList();
+
+    return Optional.of(
+        WarningException.Code.MISSING_INDEX.get(
+            errVars(
+                tableSchemaObject,
+                map -> {
+                  map.put("primaryKey", errFmtColumnMetadata(tableMetadata.getPrimaryKey()));
+                  map.put("indexedColumns", errFmtJoin(indexedColumns));
+                  map.put("unindexedFilters", errFmtCqlIdentifier(missingIndexColumns));
                 })));
   }
 
@@ -634,6 +657,26 @@ public class WhereCQLClauseAnalyzer {
     // TODO: confirm it is OK to not check the index type and properties
     return tableMetadata.getIndexes().values().stream()
         .anyMatch(index -> index.getTarget().equals(column.asInternal()));
+  }
+
+  /** Check if the map/set/list column has an index on correct component that aims to filter on. */
+  private boolean isIndexOnMapSetList(
+      CqlIdentifier column, MapSetListTableFilter.MapSetListFilterComponent targetFilterComponent) {
+
+    // map the filterComponent into indexFunction first.
+    var toCheckIndexFunction =
+        switch (targetFilterComponent) {
+          case MAP_KEY -> ApiIndexFunction.KEYS;
+          case MAP_VALUE, LIST_VALUE, SET_VALUE -> ApiIndexFunction.VALUES;
+          case MAP_ENTRY -> ApiIndexFunction.ENTRIES;
+        };
+    // check if the target index exists on the tableDefinition
+    return apiTableDef
+        .indexes()
+        .firstIndexFor(column)
+        .filter(index -> index.targetColumn().equals(column))
+        .filter(index -> index.indexFunction() == toCheckIndexFunction)
+        .isPresent();
   }
 
   private List<ColumnMetadata> outOfOrderClusteringKeys(
