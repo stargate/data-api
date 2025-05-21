@@ -55,8 +55,7 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractKeyspaceInteg
 
     // First create maximum number of collections
     for (int i = 1; i <= COLLECTIONS_TO_CREATE; ++i) {
-      String json = createTemplate.formatted(i);
-      givenHeadersAndJson(json)
+      givenHeadersAndJson(createTemplate.formatted(i))
           .when()
           .post(KeyspaceResource.BASE_PATH, NS)
           .then()
@@ -65,8 +64,7 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractKeyspaceInteg
           .body("status.ok", is(1));
     }
     // And then failure
-    String json = createTemplate.formatted(99);
-    givenHeadersAndJson(json)
+    givenHeadersAndJson(createTemplate.formatted(99))
         .when()
         .post(KeyspaceResource.BASE_PATH, NS)
         .then()

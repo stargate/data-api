@@ -67,8 +67,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractKeyspaceInte
           .body("status.ok", is(1));
     }
     // And then failure
-    String json = createTemplate.formatted(99);
-    givenHeadersAndJson(json)
+    givenHeadersAndJson(createTemplate.formatted(99))
         .when()
         .post(KeyspaceResource.BASE_PATH, NS)
         .then()
