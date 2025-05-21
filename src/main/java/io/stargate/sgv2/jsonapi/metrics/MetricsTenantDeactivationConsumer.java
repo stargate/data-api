@@ -23,8 +23,7 @@ public class MetricsTenantDeactivationConsumer
   private final MeterRegistry meterRegistry;
 
   public MetricsTenantDeactivationConsumer(MeterRegistry meterRegistry) {
-    Objects.requireNonNull(meterRegistry, "MeterRegistry cannot be null.");
-    this.meterRegistry = meterRegistry;
+    this.meterRegistry = Objects.requireNonNull(meterRegistry, "MeterRegistry cannot be null");
   }
 
   /**
