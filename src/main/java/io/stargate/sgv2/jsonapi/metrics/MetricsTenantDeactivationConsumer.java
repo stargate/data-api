@@ -44,12 +44,11 @@ public class MetricsTenantDeactivationConsumer
     }
 
     for (Meter meter : meterRegistry.getMeters()) {
-      String tenantTagValue = meter.getId().getTag(TENANT_TAG);
-      String sessionTagValue = meter.getId().getTag(SESSION_TAG);
-      if (Objects.equals(tenantTagValue, tenantId) || Objects.equals(sessionTagValue, tenantId)) {
-        Meter removedMeter = meterRegistry.remove(meter.getId());
-        if (removedMeter == null) {
-          LOGGER.warn(
+      // Check TENANT_TAG first, if not found, check SESSION_TAG
+      if (Objects.equals(meter.getId().getTag(TENANT_TAG), tenantId)
+          || Objects.equals(meter.getId().getTag(SESSION_TAG), tenantId)) {
+        if (meterRegistry.remove(meter.getId()) == null) {
+          LOGGER.debug(
               "Attempted to remove metric with ID {} for tenant {} but it was not found in the registry during the removal phase.",
               meter.getId(),
               tenantId);

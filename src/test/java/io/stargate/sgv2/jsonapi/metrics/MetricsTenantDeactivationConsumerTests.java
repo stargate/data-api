@@ -24,7 +24,6 @@ public class MetricsTenantDeactivationConsumerTests {
 
   @AfterEach
   public void tearDown() {
-    Metrics.globalRegistry.clear();
     if (meterRegistry != null) {
       meterRegistry.clear();
       meterRegistry.close();
