@@ -42,23 +42,13 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
      * this default keyspace.
      */
     public void checkNamespaceHasNoCollections() {
-      // then find
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
               {
                 "findCollections": {
                 }
               }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+              """)
           .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(0));
     }
@@ -67,10 +57,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
     @Order(2)
     public void happyPath() {
       // create first
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                 {
                   "createCollection": {
@@ -78,27 +65,16 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                   }
                 }
                 """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // then find
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                   {
                     "findCollections": { }
                   }
                   """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(greaterThanOrEqualTo(1)))
           .body("status.collections", hasItem("collection1"));
@@ -110,8 +86,8 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
       // To create Collection with Lexical, it must be available for the database
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
               {
                 "createCollection": {
                   "name": "collection2",
@@ -137,16 +113,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                   }
                 }
               }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+              """)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
@@ -197,8 +164,8 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                 }
               """;
 
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
               {
                 "findCollections": {
                   "options": {
@@ -206,16 +173,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                   }
                 }
               }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+              """)
           .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(2))
           .body(
@@ -226,10 +184,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
     @Test
     @Order(4)
     public void happyPathWithMixedCase() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                                 {
                                   "createCollection": {
@@ -237,27 +192,16 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                                   }
                                 }
                                 """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // then find
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                                 {
                                   "findCollections": { }
                                 }
                                 """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(greaterThanOrEqualTo(1)))
           .body("status.collections", hasItem("TableName"));
@@ -268,20 +212,15 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
     public void emptyNamespace() {
       // create namespace first
       String namespace = "nam" + RandomStringUtils.randomNumeric(16);
-      String json =
-              """
+      givenHeadersAndJson(
+                  """
           {
             "createNamespace": {
               "name": "%s"
             }
           }
           """
-              .formatted(namespace);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  .formatted(namespace))
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -290,18 +229,13 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .body("status.ok", is(1));
 
       // then find
-      json =
-          """
+      givenHeadersAndJson(
+              """
           {
             "findCollections": {
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+          """)
           .when()
           .post(KeyspaceResource.BASE_PATH, namespace)
           .then()
@@ -310,20 +244,18 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .body("status.collections", hasSize(0));
 
       // cleanup
-      json =
-              """
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+                  """
           {
             "dropNamespace": {
               "name": "%s"
             }
           }
           """
-              .formatted(namespace);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+                  .formatted(namespace))
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -335,19 +267,16 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
     @Test
     @Order(6)
     public void notExistingNamespace() {
-      // then find
-      String json =
-          """
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
               {
                 "findCollections": {
                 }
               }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+              """)
           .when()
           .post(KeyspaceResource.BASE_PATH, "should_not_be_there")
           .then()
@@ -365,8 +294,8 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
       // To create Collection with Lexical, it must be available for the database
       Assumptions.assumeTrue(isLexicalAvailableForDB());
 
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                   {
                     "createCollection": {
                       "name": "collection4",
@@ -386,22 +315,14 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                       }
                     }
                   }
-                  """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+                  """)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       String expected1 =
           """
-      {"name":"TableName","options":{
+      {"name":"TableName",
+       "options":{
         "lexical": {
           "enabled": true,
           "analyzer": "standard"
@@ -467,8 +388,9 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                 }
               }
               """;
-      json =
-          """
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                   {
                     "findCollections": {
                       "options": {
@@ -476,16 +398,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
                       }
                     }
                   }
-                  """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+                  """)
           .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(4))
           .body(
