@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.JsonDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.builders.SortClauseBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -72,6 +73,22 @@ public class SortDefinition extends JsonDefinition<SortClause> {
    * @return True if the Sort clause definition contains a vector search clause.
    */
   public boolean hasVsearchClause() {
+    // We will either be wrapping the clause or have a json value:
+    if (sortClause != null) {
+      return sortClause.hasVsearchClause();
+    }
     return json().has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+  }
+
+  /**
+   * Helper method needed for logging purposes, where caller does not have access to the {@link
+   * CommandContext}.
+   */
+  public List<String> getSortExpressionPaths() {
+    // We will either be wrapping the clause or have a json value:
+    if (sortClause != null) {
+      return sortClause.sortExpressions().stream().map(expr -> expr.path()).toList();
+    }
+    return json().properties().stream().map(entry -> entry.getKey()).toList();
   }
 }
