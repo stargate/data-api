@@ -415,6 +415,9 @@ public class WhereCQLClauseAnalyzer {
             .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
+    if (missingIndexColumns.isEmpty()) {
+      return Optional.empty();
+    }
     var indexedColumns =
         tableMetadata.getIndexes().values().stream()
             .map(IndexMetadata::getTarget)

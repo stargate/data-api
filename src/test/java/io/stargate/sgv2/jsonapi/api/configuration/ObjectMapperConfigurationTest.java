@@ -16,8 +16,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
@@ -194,9 +192,7 @@ class ObjectMapperConfigurationTest {
                     .satisfies(
                         expression -> {
                           ValueComparisonOperation<?> op =
-                              ValueComparisonOperation.build(
-                                  ValueComparisonOperator.EQ,
-                                  new JsonLiteral<>("aaron", JsonType.STRING));
+                              ValueComparisonOperation.build(ValueComparisonOperator.EQ, "aaron");
 
                           assertThat(expression.getPath()).isEqualTo("username");
                           assertThat(expression.getFilterOperations())
@@ -383,8 +379,7 @@ class ObjectMapperConfigurationTest {
                 assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
                     .isEqualTo("username");
                 ValueComparisonOperation<?> op =
-                    ValueComparisonOperation.build(
-                        ValueComparisonOperator.EQ, new JsonLiteral<>("Aaron", JsonType.STRING));
+                    ValueComparisonOperation.build(ValueComparisonOperator.EQ, "Aaron");
                 assertThat(
                         filterClause
                             .logicalExpression()
