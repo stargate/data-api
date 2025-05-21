@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 import java.util.*;
 
 /**
- * Object for converting {@link JsonNode} (from {@link FilterSpec}) into {@link FilterClause}.
+ * Object for converting {@link JsonNode} (from {@link FilterDefinition}) into {@link FilterClause}.
  * Process will validate structure of the JSON, and also validate values of the filter operations.
  *
  * <p>TIDY: this class has a lot of string constants for filter operations that we have defined as

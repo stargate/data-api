@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
@@ -33,7 +33,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         "Finds documents using using vector and lexical sorting, then reranks the results.")
 @JsonTypeName(CommandName.Names.FIND_AND_RERANK)
 public record FindAndRerankCommand(
-    @Valid @JsonProperty("filter") FilterSpec filterSpec,
+    @Valid @JsonProperty("filter") FilterDefinition filterDefinition,
     @JsonProperty("projection") JsonNode projectionDefinition,
     @Valid @JsonProperty("sort") FindAndRerankSort sortClause,
     @Valid @Nullable Options options)

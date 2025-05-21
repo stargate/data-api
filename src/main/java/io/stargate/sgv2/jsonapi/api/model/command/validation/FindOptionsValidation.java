@@ -22,7 +22,7 @@ public class FindOptionsValidation implements ConstraintValidator<CheckFindOptio
     final FindCommand.Options options = value.options();
     if (options == null) return true;
 
-    var sortSpec = value.sortSpec();
+    var sortSpec = value.sortDefinition();
     context.disableDefaultConstraintViolation();
     if (options.skip() != null && sortSpec == null) {
       context
