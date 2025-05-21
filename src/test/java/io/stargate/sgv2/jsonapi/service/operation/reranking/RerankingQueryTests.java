@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
@@ -44,7 +44,8 @@ public class RerankingQueryTests {
 
   private static FindAndRerankCommand command(
       FindAndRerankSort sort, FindAndRerankCommand.Options options) {
-    return new FindAndRerankCommand(mock(FilterSpec.class), mock(JsonNode.class), sort, options);
+    return new FindAndRerankCommand(
+        mock(FilterDefinition.class), mock(JsonNode.class), sort, options);
   }
 
   @Test

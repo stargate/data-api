@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.resolver.FindCommandResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -94,13 +95,12 @@ public class IntermediateCollectionReadTask
 
   @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {
+    final var sortDef = findCommand.sortDefinition();
     return super.recordTo(dataRecorder)
         .append("deferredVectorize isNull", deferredVectorize == null)
         .append(
             "sortClause.sortExpression.paths",
-            findCommand.sortClause(schemaObject).sortExpressions().stream()
-                .map(SortExpression::path)
-                .toList());
+            (sortDef == null) ? Collections.emptyList() : sortDef.getSortExpressionPaths());
   }
 
   // =================================================================================================
