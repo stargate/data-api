@@ -91,6 +91,7 @@ See [Debugging](https://quarkus.io/guides/maven-tooling#debugging) for more info
 
 ### Running integration tests
 
+
 Integration tests are using the [Testcontainers](https://www.testcontainers.org/) library in order to set up all needed dependencies, a Stargate coordinator and a Cassandra data store.
 They are separated from the unit tests and are running as part of the `integration-test` and `verify` Maven phases:
 
