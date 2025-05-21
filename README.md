@@ -88,6 +88,7 @@ If you wish to debug from the start of the application, start with `-Ddebug=clie
 
 See [Debugging](https://quarkus.io/guides/maven-tooling#debugging) for more information.
 
+
 ### Running integration tests
 
 Integration tests are using the [Testcontainers](https://www.testcontainers.org/) library in order to set up all needed dependencies, a Stargate coordinator and a Cassandra data store.
