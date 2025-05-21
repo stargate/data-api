@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata modelVersion="1.1.0">
+  <groupId>org.apache.cassandra</groupId>
+  <artifactId>java-driver-guava-shaded</artifactId>
+  <versioning>
+    <lastUpdated>20250521231354</lastUpdated>
+    <snapshot>
+      <localCopy>true</localCopy>
+    </snapshot>
+    <snapshotVersions>
+      <snapshotVersion>
+        <classifier>javadoc</classifier>
+        <extension>jar</extension>
+        <value>4.19.1-SNAPSHOT</value>
+        <updated>20250521231354</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <classifier>sources</classifier>
+        <extension>jar</extension>
+        <value>4.19.1-SNAPSHOT</value>
+        <updated>20250521231354</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <extension>jar</extension>
+        <value>4.19.1-SNAPSHOT</value>
+        <updated>20250521231354</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <extension>pom</extension>
+        <value>4.19.1-SNAPSHOT</value>
+        <updated>20250521231354</updated>
+      </snapshotVersion>
+    </snapshotVersions>
+  </versioning>
+  <version>4.19.1-SNAPSHOT</version>
+</metadata>
