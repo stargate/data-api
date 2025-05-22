@@ -57,6 +57,10 @@ public interface EmbeddingProvidersConfig {
       boolean enabled();
 
       @JsonProperty
+      @WithDefault("false")
+      boolean authTokenPassThrough();
+
+      @JsonProperty
       List<TokenConfig> tokens();
     }
 

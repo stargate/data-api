@@ -306,6 +306,7 @@ stargate:
           supported-authentications:
             NONE:
               enabled: true
+              auth-token-pass-through: true
           properties:
             max-batch-size: 8
           models:
