@@ -38,7 +38,7 @@
     <!-- 14-Mar-2025, tatu: no more use of Stargate Coordinator -->
     <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
     <!-- Cassandra driver -->
-    <driver.version>4.18.0</driver.version>
+    <driver.version>4.18.1</driver.version>
     <!-- Compiler -->
     <compiler-plugin.version>3.11.0</compiler-plugin.version>
     <maven.compiler.source>21</maven.compiler.source>
