@@ -1,7 +1,0 @@
-#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 21 16:33:28 PDT 2025
-java-driver-mapper-processor-4.18.2-SNAPSHOT-tests.jar>=
-java-driver-mapper-processor-4.18.2-SNAPSHOT-sources.jar>=
-java-driver-mapper-processor-4.18.2-SNAPSHOT.jar>=
-java-driver-mapper-processor-4.18.2-SNAPSHOT-javadoc.jar>=
-java-driver-mapper-processor-4.18.2-SNAPSHOT.pom>=
