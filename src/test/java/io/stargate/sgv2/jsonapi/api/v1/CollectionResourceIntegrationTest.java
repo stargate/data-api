@@ -106,9 +106,8 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
 
     @Test
     public void emptyBody() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
+      // Note: no body specified
+      givenHeaders()
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()

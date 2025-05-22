@@ -27,6 +27,7 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
 
     @Test
     public void tokenMissing() {
+      // No headers added on purpose
       given()
           .contentType(ContentType.JSON)
           .body("{}")
