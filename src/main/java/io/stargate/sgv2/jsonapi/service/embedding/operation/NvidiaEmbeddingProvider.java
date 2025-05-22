@@ -6,6 +6,8 @@ import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
@@ -117,8 +119,16 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
     EmbeddingRequest request =
         new EmbeddingRequest(texts.toArray(textArray), model.name(), input_type);
 
+    if (embeddingCredentials.apiKey().isEmpty()) {
+      throw ErrorCodeV1.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
+          "In order to embed, please provide the embedding API key.");
+    }
+
     Uni<EmbeddingResponse> response =
-        applyRetry(nvidiaEmbeddingProviderClient.embed("Bearer ", request));
+        applyRetry(
+            nvidiaEmbeddingProviderClient.embed(
+                HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get(),
+                request));
 
     return response
         .onItem()
