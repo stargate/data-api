@@ -3,7 +3,7 @@
   <groupId>org.apache.cassandra</groupId>
   <artifactId>java-driver-parent</artifactId>
   <versioning>
-    <lastUpdated>20250522064252</lastUpdated>
+    <lastUpdated>20250522143310</lastUpdated>
     <snapshot>
       <localCopy>true</localCopy>
     </snapshot>
@@ -11,7 +11,7 @@
       <snapshotVersion>
         <extension>pom</extension>
         <value>4.18.1-SNAPSHOT</value>
-        <updated>20250522064252</updated>
+        <updated>20250522143310</updated>
       </snapshotVersion>
     </snapshotVersions>
   </versioning>
