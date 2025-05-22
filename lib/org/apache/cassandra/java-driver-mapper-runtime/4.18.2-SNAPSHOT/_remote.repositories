@@ -1,0 +1,5 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Thu May 22 16:49:33 PDT 2025
+java-driver-mapper-runtime-4.18.2-SNAPSHOT.pom>=
+java-driver-mapper-runtime-4.18.2-SNAPSHOT-sources.jar>=
+java-driver-mapper-runtime-4.18.2-SNAPSHOT.jar>=
