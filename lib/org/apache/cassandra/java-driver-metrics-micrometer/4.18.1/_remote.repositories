@@ -1,6 +1,0 @@
-#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 21 20:26:46 PDT 2025
-java-driver-metrics-micrometer-4.18.1.pom>=
-java-driver-metrics-micrometer-4.18.1-javadoc.jar>=
-java-driver-metrics-micrometer-4.18.1.jar>=
-java-driver-metrics-micrometer-4.18.1-sources.jar>=

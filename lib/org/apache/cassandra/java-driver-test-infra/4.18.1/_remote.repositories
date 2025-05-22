@@ -1,5 +1,0 @@
-#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 21 20:26:48 PDT 2025
-java-driver-test-infra-4.18.1.pom>=
-java-driver-test-infra-4.18.1-sources.jar>=
-java-driver-test-infra-4.18.1.jar>=

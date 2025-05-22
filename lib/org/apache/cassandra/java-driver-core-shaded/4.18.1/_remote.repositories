@@ -1,5 +1,0 @@
-#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 21 20:26:39 PDT 2025
-java-driver-core-shaded-4.18.1.jar>=
-java-driver-core-shaded-4.18.1.pom>=
-java-driver-core-shaded-4.18.1-sources.jar>=

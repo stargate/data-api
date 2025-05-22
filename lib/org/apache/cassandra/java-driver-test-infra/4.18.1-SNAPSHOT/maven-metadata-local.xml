@@ -3,7 +3,7 @@
   <groupId>org.apache.cassandra</groupId>
   <artifactId>java-driver-test-infra</artifactId>
   <versioning>
-    <lastUpdated>20250522025641</lastUpdated>
+    <lastUpdated>20250522064252</lastUpdated>
     <snapshot>
       <localCopy>true</localCopy>
     </snapshot>
@@ -12,17 +12,17 @@
         <classifier>sources</classifier>
         <extension>jar</extension>
         <value>4.18.1-SNAPSHOT</value>
-        <updated>20250522025641</updated>
+        <updated>20250522064252</updated>
       </snapshotVersion>
       <snapshotVersion>
         <extension>jar</extension>
         <value>4.18.1-SNAPSHOT</value>
-        <updated>20250522025641</updated>
+        <updated>20250522064252</updated>
       </snapshotVersion>
       <snapshotVersion>
         <extension>pom</extension>
         <value>4.18.1-SNAPSHOT</value>
-        <updated>20250522025641</updated>
+        <updated>20250522064252</updated>
       </snapshotVersion>
     </snapshotVersions>
   </versioning>
