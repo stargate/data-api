@@ -363,7 +363,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
     @MethodSource("documentIds")
     @Order(2)
     // Take $lte as example, we can use equal to test the filter value against inserted value.
-    public void rangeTest(Object id) throws JsonProcessingException {
+    public void rangeTest(Object id) throws Exception {
       givenHeadersPostJsonThenOkNoErrors(
                   """
                       {
