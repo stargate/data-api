@@ -107,8 +107,8 @@ message GetSupportedProvidersResponse {
 
     message AuthenticationConfig{
       bool enabled = 1;
-      bool authTokenPassThrough = 2;
-      repeated TokenConfig tokens = 3;
+      repeated TokenConfig tokens = 2;
+      bool authTokenPassThrough = 3;
 
       message TokenConfig{
         string accepted = 1;

@@ -56,6 +56,7 @@ public interface EmbeddingProvidersConfig {
       @JsonProperty
       boolean enabled();
 
+      /** a boolean to flag if the Astra token should be passed through to the provider. */
       @JsonProperty
       @WithDefault("false")
       boolean authTokenPassThrough();
