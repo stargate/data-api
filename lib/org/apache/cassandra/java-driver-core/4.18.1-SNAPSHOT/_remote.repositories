@@ -1,0 +1,6 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Wed May 21 18:52:55 PDT 2025
+java-driver-core-4.18.1-SNAPSHOT-sources.jar>=
+java-driver-core-4.18.1-SNAPSHOT.jar>=
+java-driver-core-4.18.1-SNAPSHOT-tests.jar>=
+java-driver-core-4.18.1-SNAPSHOT.pom>=
