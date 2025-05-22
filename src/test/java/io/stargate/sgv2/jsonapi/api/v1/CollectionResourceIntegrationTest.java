@@ -21,8 +21,7 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
 
     @Test
     public void tokenMissing() {
-      // NOTE: not passing headers, on purpose
-      given()
+      given() // NOTE: not passing headers, on purpose
           .contentType(ContentType.JSON)
           .body("{}")
           .when()
