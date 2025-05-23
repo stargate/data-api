@@ -26,11 +26,15 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Abstract class for all int tests that needs a keyspace to execute tests in. This class
@@ -43,6 +47,9 @@ import org.junit.jupiter.api.TestInstance;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractKeyspaceIntegrationTestBase {
+
+  private static final Logger LOG =
+          LoggerFactory.getLogger(AbstractKeyspaceIntegrationTestBase.class);
 
   // keyspace automatically created in this test
   protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
@@ -244,6 +251,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
                 line ->
                     line.startsWith("session_cql_requests_seconds") && line.contains("session="))
             .findFirst();
+    LOG.info(metrics.lines().collect(Collectors.joining("\n")));
     assertThat(sessionLevelDriverMetricTenantId.isPresent()).isTrue();
   }
 
