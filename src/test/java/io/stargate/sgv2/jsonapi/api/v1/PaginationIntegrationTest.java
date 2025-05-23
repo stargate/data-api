@@ -1,13 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsWriteSuccess;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
@@ -43,71 +41,45 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
     }
 
     private void insert(String json) {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("$", responseIsWriteSuccess());
+      givenHeadersPostJsonThenOkNoErrors(json).body("$", responseIsWriteSuccess());
     }
 
     @Test
     @Order(2)
     public void threePagesCheck() {
-      String json =
-          """
+      String nextPageState =
+          givenHeadersPostJsonThenOkNoErrors(
+                  """
                             {
                               "find": {
                               }
                             }
-                            """;
-
-      String nextPageState =
-          given()
-              .headers(getHeaders())
-              .contentType(ContentType.JSON)
-              .body(json)
-              .when()
-              .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-              .then()
-              .statusCode(200)
+                            """)
               .body("$", responseIsFindSuccess())
               .body("data.documents", hasSize(defaultPageSize))
               .extract()
               .path("data.nextPageState");
 
-      String json1 =
-              """
-                            {
-                              "find": {
-                                        "options":{
-                                                  "pageState" : "%s"
-                                              }
-                              }
-                            }
-                            """
-              .formatted(nextPageState);
-
       nextPageState =
-          given()
-              .headers(getHeaders())
-              .contentType(ContentType.JSON)
-              .body(json1)
-              .when()
-              .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-              .then()
-              .statusCode(200)
+          givenHeadersPostJsonThenOkNoErrors(
+                      """
+                    {
+                      "find": {
+                                "options":{
+                                          "pageState" : "%s"
+                                      }
+                      }
+                    }
+                    """
+                      .formatted(nextPageState))
               .body("$", responseIsFindSuccess())
               .body("data.documents", hasSize(defaultPageSize))
               .extract()
               .path("data.nextPageState");
 
       // should be fine with the empty sort clause
-      String json2 =
-              """
+      givenHeadersPostJsonThenOkNoErrors(
+                  """
                   {
                       "find": {
                           "sort": {},
@@ -117,15 +89,7 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
                       }
                   }
                 """
-              .formatted(nextPageState);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json2)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  .formatted(nextPageState))
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(documentAmount - 2 * defaultPageSize))
           .body("data.nextPageState", nullValue());
@@ -134,8 +98,8 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
     @Test
     @Order(3)
     public void pageLimitCheck() {
-      String json =
-              """
+      givenHeadersPostJsonThenOkNoErrors(
+                  """
                             {
                               "find": {
                                         "options": {
@@ -144,16 +108,7 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
                               }
                             }
                             """
-              .formatted(documentLimit);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  .formatted(documentLimit))
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(documentLimit))
           .body("data.nextPageState", nullValue());
