@@ -48,8 +48,7 @@ import org.slf4j.LoggerFactory;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractKeyspaceIntegrationTestBase {
 
-  private static final Logger LOG =
-          LoggerFactory.getLogger(AbstractKeyspaceIntegrationTestBase.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractKeyspaceIntegrationTestBase.class);
 
   // keyspace automatically created in this test
   protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
