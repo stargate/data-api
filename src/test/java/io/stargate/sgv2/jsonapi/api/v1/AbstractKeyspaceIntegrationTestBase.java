@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterAll;
@@ -48,7 +47,8 @@ import org.slf4j.LoggerFactory;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractKeyspaceIntegrationTestBase {
 
-  private static final Logger LOG = LoggerFactory.getLogger(AbstractKeyspaceIntegrationTestBase.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(AbstractKeyspaceIntegrationTestBase.class);
 
   // keyspace automatically created in this test
   protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
