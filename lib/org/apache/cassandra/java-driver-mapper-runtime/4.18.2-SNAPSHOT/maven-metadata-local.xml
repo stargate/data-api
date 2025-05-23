@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata modelVersion="1.1.0">
+  <groupId>org.apache.cassandra</groupId>
+  <artifactId>java-driver-mapper-runtime</artifactId>
+  <versioning>
+    <lastUpdated>20250523173426</lastUpdated>
+    <snapshot>
+      <localCopy>true</localCopy>
+    </snapshot>
+    <snapshotVersions>
+      <snapshotVersion>
+        <classifier>sources</classifier>
+        <extension>jar</extension>
+        <value>4.18.2-SNAPSHOT</value>
+        <updated>20250523173426</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <extension>jar</extension>
+        <value>4.18.2-SNAPSHOT</value>
+        <updated>20250523173426</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <extension>pom</extension>
+        <value>4.18.2-SNAPSHOT</value>
+        <updated>20250523173426</updated>
+      </snapshotVersion>
+    </snapshotVersions>
+  </versioning>
+  <version>4.18.2-SNAPSHOT</version>
+</metadata>
