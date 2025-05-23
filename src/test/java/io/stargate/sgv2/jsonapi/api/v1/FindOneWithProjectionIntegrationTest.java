@@ -1,12 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
@@ -68,14 +66,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           }
           """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body(
               "data.document",
@@ -107,14 +98,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           }
           """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body(
               "data.document",
@@ -152,14 +136,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           }
           """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body(
               "data.document",
@@ -200,10 +177,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
     @Test
     public void byIdDefaultProjection() {
       insertDoc(EXT_DOC1);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                       {
                         "findOne": {
@@ -211,10 +185,6 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                         }
                       }
                       """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(EXT_DOC1));
     }
@@ -222,10 +192,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
     @Test
     public void byIdIncludeExtValues() {
       insertDoc(EXT_DOC1);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
               {
                 "findOne": {
@@ -234,10 +201,6 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                 }
               }
               """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body(
               "data.document",
@@ -255,10 +218,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
     @Test
     public void byIdExcludeExtValues() {
       insertDoc(EXT_DOC1);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
               {
                 "findOne": {
@@ -267,10 +227,6 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                 }
               }
               """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body(
               "data.document",
@@ -307,14 +263,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           }
           """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body(
               "data.document",
@@ -344,14 +293,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                       }
                       """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(json)
           .body("$", responseIsFindSuccess())
           .body(
               "data.document",
@@ -379,8 +321,9 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
       insertDoc(DOC1_JSON);
       insertDoc(DOC2_JSON);
       insertDoc(DOC3_JSON);
-      String json =
-          """
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"_id" : "doc2"},
@@ -390,16 +333,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
               }
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body(
               "data.document",
@@ -418,8 +352,9 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
       insertDoc(DOC1_JSON);
       insertDoc(DOC2_JSON);
       insertDoc(DOC3_JSON);
-      String json =
-          """
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"_id" : "doc2"},
@@ -431,16 +366,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
               }
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("$", responseIsFindSuccess())
           .body(
               "data.document",
@@ -460,8 +386,8 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
       insertDoc(DOC2_JSON);
       insertDoc(DOC3_JSON);
 
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
               {
                 "findOne": {
                   "filter" : {"_id" : "doc2"},
@@ -473,16 +399,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                   }
                 }
               }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+              """)
           .body("$", responseIsFindSuccess())
           .body(
               "data.document",
