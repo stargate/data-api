@@ -101,7 +101,9 @@ public class EmbeddingProvidersConfigProducer {
                                         .collect(Collectors.toList());
                             return new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl
                                 .AuthenticationConfigImpl(
-                                grpcProviderAuthConfig.getEnabled(), tokenConfigs);
+                                grpcProviderAuthConfig.getEnabled(),
+                                grpcProviderAuthConfig.getAuthTokenPassThrough(),
+                                tokenConfigs);
                           }));
 
       // 2. construct parameterConfig list for the provider

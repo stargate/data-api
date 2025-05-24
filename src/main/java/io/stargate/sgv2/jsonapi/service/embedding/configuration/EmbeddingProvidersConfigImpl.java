@@ -19,7 +19,8 @@ public record EmbeddingProvidersConfigImpl(
       List<ModelConfig> models)
       implements EmbeddingProviderConfig {
 
-    public record AuthenticationConfigImpl(boolean enabled, List<TokenConfig> tokens)
+    public record AuthenticationConfigImpl(
+        boolean enabled, boolean authTokenPassThrough, List<TokenConfig> tokens)
         implements AuthenticationConfig {
 
       public record TokenConfigImpl(String accepted, String forwarded) implements TokenConfig {}

@@ -58,8 +58,6 @@ public class RequestContext {
       Instance<DataApiTokenResolver> tokenResolver,
       Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
 
-    this.embeddingCredentials =
-        embeddingCredentialsResolver.get().resolveEmbeddingCredentials(routingContext);
     this.tenantId = tenantResolver.get().resolve(routingContext, securityContext);
     this.cassandraToken = tokenResolver.get().resolve(routingContext, securityContext);
 
@@ -67,9 +65,24 @@ public class RequestContext {
     requestId = generateRequestId();
     userAgent = httpHeaders.getHeader(HttpHeaders.USER_AGENT);
 
+    var embeddingCredentialsFromHeader =
+        embeddingCredentialsResolver.get().resolveEmbeddingCredentials(routingContext);
+
+    // if x-embedding-api-key is present, then use it, else use cassandraToken
+    this.embeddingCredentials =
+        embeddingCredentialsFromHeader
+            .apiKey()
+            .map(apiKey -> embeddingCredentialsFromHeader)
+            .orElse(
+                new EmbeddingCredentials(
+                    this.cassandraToken,
+                    embeddingCredentialsFromHeader.accessId(),
+                    embeddingCredentialsFromHeader.secretId()));
+
     Optional<String> rerankingApiKeyFromHeader =
         HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext);
 
+    // if x-reranking-api-key is present, then use it, else use cassandraToken
     this.rerankingCredentials =
         rerankingApiKeyFromHeader
             .map(apiKey -> new RerankingCredentials(Optional.of(apiKey)))
