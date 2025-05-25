@@ -8,6 +8,8 @@ import com.datastax.oss.driver.api.querybuilder.select.OngoingSelection;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -20,6 +22,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.TableProjection;
 import java.util.List;
 
 public class ReadDBTaskTestData {
+  private static final Tenant TENANT = Tenant.create(DatabaseType.ASTRA, "test-tenant");
 
   public ReadDBTaskTestData() {}
 
@@ -46,7 +49,7 @@ public class ReadDBTaskTestData {
       exceptionHandlerFactory = TableDriverExceptionHandler::new;
     }
 
-    var mockTable = BaseTaskAssertions.mockTable(keyspaceName, tableName);
+    var mockTable = BaseTaskAssertions.mockTable(TENANT,keyspaceName, tableName);
     CommandContext<TableSchemaObject> mockCommandContext = mock(CommandContext.class);
     when(mockCommandContext.requestTracing()).thenReturn(RequestTracing.NO_OP);
 

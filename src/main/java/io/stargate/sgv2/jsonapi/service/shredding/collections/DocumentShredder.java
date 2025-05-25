@@ -172,7 +172,7 @@ public class DocumentShredder {
     if (!collectionSettings.lexicalConfig().enabled() && shreddedDoc.queryLexicalValue() != null) {
       throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
           "Document contains lexical content, but lexical indexing is not enabled for collection '%s'",
-          collectionSettings.name().table());
+          collectionSettings.identifier().fullName());
     }
 
     return shreddedDoc;

@@ -12,6 +12,8 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -26,6 +28,8 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class EmbeddingGatewayClientTest {
+
+  private static final Tenant TENANT = Tenant.create(DatabaseType.ASTRA, "test-tenant");
 
   public static final String TESTING_COMMAND_NAME = "test_command";
 
@@ -82,8 +86,8 @@ public class EmbeddingGatewayClientTest {
                 5, 5, 5, 5, 0.5, Optional.empty(), Optional.empty(), 2048),
             "openai",
             1536,
-            Optional.of("default"),
-            Optional.of("default"),
+            TENANT,
+            "default",
             "https://api.openai.com/v1/",
             "text-embedding-3-small",
             embeddingService,
@@ -132,8 +136,8 @@ public class EmbeddingGatewayClientTest {
                 5, 5, 5, 5, 0.5, Optional.empty(), Optional.empty(), 2048),
             "openai",
             1536,
-            Optional.of("default"),
-            Optional.of("default"),
+            TENANT,
+            "default",
             "https://api.openai.com/v1/",
             "text-embedding-3-small",
             embeddingService,

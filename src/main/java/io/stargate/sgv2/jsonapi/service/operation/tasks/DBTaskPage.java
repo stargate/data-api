@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import java.util.Optional;
 
 public abstract class DBTaskPage<TaskT extends DBTask<SchemaT>, SchemaT extends SchemaObject>

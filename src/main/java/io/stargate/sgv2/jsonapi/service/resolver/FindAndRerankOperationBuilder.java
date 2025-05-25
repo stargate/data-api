@@ -160,7 +160,7 @@ class FindAndRerankOperationBuilder {
         // See SortClause.validate()
         throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
             "Lexical search is not enabled for collection '%s'",
-            commandContext.schemaObject().name().table());
+            commandContext.schemaObject().identifier().table());
       }
     }
 
@@ -198,8 +198,8 @@ class FindAndRerankOperationBuilder {
         commandContext
             .rerankingProviderFactory()
             .getConfiguration(
-                commandContext.requestContext().getTenantId(),
-                commandContext.requestContext().getCassandraToken(),
+                commandContext.requestContext().getTenant(),
+                commandContext.requestContext().getAuthToken(),
                 providerConfig.provider(),
                 providerConfig.modelName(),
                 providerConfig.authentication(),

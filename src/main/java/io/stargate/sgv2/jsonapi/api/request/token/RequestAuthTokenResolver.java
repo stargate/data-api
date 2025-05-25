@@ -15,22 +15,26 @@
  *
  */
 
-package io.stargate.sgv2.jsonapi.api.request.tenant;
+package io.stargate.sgv2.jsonapi.api.request.token;
 
 import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.core.SecurityContext;
-import java.util.Optional;
 
-/** Resolver of the tenant ID, in case multi-tenancy is used. */
+/**
+ * Resolver of the Cassandra token.
+ *
+ * <p>The implementation can use any information from the {@link RoutingContext} or {@link
+ * SecurityContext} to obtain the token.
+ */
 @FunctionalInterface
-public interface DataApiTenantResolver {
+public interface RequestAuthTokenResolver {
 
   /**
-   * Returns a tenant identifier given a {@link RoutingContext} and a {@link SecurityContext}.
+   * Returns a Cassandra token given a {@link RoutingContext} and a {@link SecurityContext}.
    *
    * @param context the routing context
    * @param securityContext the security context
-   * @return The tenant identifier. If empty, indicates that the multi-tenancy is disabled.
+   * @return The Cassandra token. If empty, indicates that no token should be used.
    */
-  Optional<String> resolve(RoutingContext context, SecurityContext securityContext);
+  String resolve(RoutingContext context, SecurityContext securityContext);
 }

@@ -3,10 +3,14 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import static org.mockito.Mockito.*;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import java.time.Duration;
 
 public class BaseTaskTestData {
+
+  private static final Tenant TENANT = Tenant.create(DatabaseType.ASTRA, "test-tenant");
 
   public BaseTaskTestData() {}
 
@@ -39,7 +43,7 @@ public class BaseTaskTestData {
     }
 
     var mockTable =
-        BaseTaskAssertions.mockTable(
+        BaseTaskAssertions.mockTable(TENANT,
             "keyspace" + System.currentTimeMillis(), "table" + System.currentTimeMillis());
     CommandContext<TableSchemaObject> mockCommandContext = mock(CommandContext.class);
 

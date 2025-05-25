@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricNames.*;
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.*;
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.UNKNOWN_VALUE;
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 import io.micrometer.core.instrument.*;
@@ -10,8 +9,8 @@ import io.micrometer.core.instrument.Timer;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.metrics.MetricsConstants;
 import io.stargate.sgv2.jsonapi.metrics.MicrometerConfiguration;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -86,9 +85,9 @@ public class RerankingMetrics {
     // Record the passage count for the specific tenant and table
     Tags tenantTags =
         new RerankingTagsBuilder()
-            .withTenant(requestContext.getTenantId().orElse(UNKNOWN_VALUE))
-            .withKeyspace(schemaObject.name().keyspace())
-            .withTable(schemaObject.name().table())
+            .withTenant(requestContext.getTenant().tenantId())
+            .withKeyspace(schemaObject.identifier().keyspace())
+            .withTable(schemaObject.identifier().table())
             .build();
     meterRegistry.summary(RERANK_TENANT_PASSAGE_COUNT_METRIC, tenantTags).record(passageCount);
 
@@ -138,9 +137,9 @@ public class RerankingMetrics {
     // Build tags for the tenant timer
     Tags tenantTags =
         new RerankingTagsBuilder()
-            .withTenant(requestContext.getTenantId().orElse(UNKNOWN_VALUE))
-            .withKeyspace(schemaObject.name().keyspace())
-            .withTable(schemaObject.name().table())
+            .withTenant(requestContext.getTenant().tenantId())
+            .withKeyspace(schemaObject.identifier().keyspace())
+            .withTable(schemaObject.identifier().table())
             .build();
     // Get the tenant timer instance
     Timer tenantTimer = meterRegistry.timer(RERANK_TENANT_CALL_DURATION_METRIC, tenantTags);

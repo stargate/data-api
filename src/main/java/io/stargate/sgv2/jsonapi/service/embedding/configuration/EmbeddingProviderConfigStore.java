@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.util.Map;
 import java.util.Optional;
@@ -83,5 +84,5 @@ public interface EmbeddingProviderConfigStore {
 
   void saveConfiguration(Optional<String> tenant, ServiceConfig serviceConfig);
 
-  ServiceConfig getConfiguration(Optional<String> tenant, String serviceName);
+  ServiceConfig getConfiguration(Tenant tenant, String serviceName);
 }

@@ -8,9 +8,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.InsertOperationPage;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDocument;
@@ -79,10 +79,11 @@ public record InsertCollectionOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
+
     final boolean vectorEnabled = commandContext().schemaObject().vectorConfig().vectorEnabled();
     if (!vectorEnabled && insertions.stream().anyMatch(insertion -> insertion.hasVectorValues())) {
       throw ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
-          commandContext().schemaObject().name().table());
+          commandContext().schemaObject().identifier().table());
     }
     // create json doc write metrics
     if (commandContext.jsonProcessingMetricsReporter() != null) {
@@ -237,7 +238,7 @@ public record InsertCollectionOperation(
   public String buildInsertQuery(boolean vectorEnabled) {
     final boolean lexicalEnabled = commandContext().schemaObject().lexicalConfig().enabled();
     StringBuilder insertQuery = new StringBuilder(200);
-    final SchemaObjectName tableName = commandContext.schemaObject().name();
+    final SchemaObjectIdentifier tableName = commandContext.schemaObject().identifier();
 
     insertQuery
         .append("INSERT INTO \"")

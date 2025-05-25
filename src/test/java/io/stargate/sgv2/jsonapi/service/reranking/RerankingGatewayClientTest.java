@@ -12,6 +12,8 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.reranking.gateway.RerankingEGWClient;
@@ -31,10 +33,12 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class RerankingGatewayClientTest {
 
+  private static final Tenant TENANT = Tenant.create(DatabaseType.ASTRA, "test-tenant");
+
   public static final String TESTING_COMMAND_NAME = "test_command";
 
   private static final RerankingCredentials RERANK_CREDENTIALS =
-      new RerankingCredentials(Optional.of("mocked reranking api key"));
+      new RerankingCredentials("mocked reranking api key");
 
   @Test
   void handleValidResponse() {
@@ -63,8 +67,8 @@ public class RerankingGatewayClientTest {
             "https://xxx",
             null,
             "xxx",
-            Optional.of("default"),
-            Optional.of("default"),
+            TENANT,
+            "default",
             "xxx",
             rerankService,
             Map.of(),
@@ -109,8 +113,8 @@ public class RerankingGatewayClientTest {
             "https://xxx",
             null,
             "xxx",
-            Optional.of("default"),
-            Optional.of("default"),
+            TENANT,
+            "default",
             "xxx",
             rerankService,
             Map.of(),

@@ -10,11 +10,11 @@ public class SchemaObjectTestData extends TestDataSuplier {
   }
 
   public TableSchemaObject emptyTableSchemaObject() {
-    return TableSchemaObject.from(testData.tableMetadata().empty(), new ObjectMapper());
+    return TableSchemaObject.from(testData.TENANT, testData.tableMetadata().empty(), new ObjectMapper());
   }
 
   public TableSchemaObject tableWithMapSetList() {
-    return TableSchemaObject.from(
+    return TableSchemaObject.from(testData.TENANT,
         testData.tableMetadata().tableAllDatatypesIndexed(), new ObjectMapper());
   }
 }

@@ -15,26 +15,23 @@
  *
  */
 
-package io.stargate.sgv2.jsonapi.api.request.token.impl;
+package io.stargate.sgv2.jsonapi.api.request.tenant;
 
-import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
-import io.stargate.sgv2.jsonapi.config.AuthConfig;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.core.SecurityContext;
-import java.util.Optional;
 
-/** The {@link DataApiTokenResolver} that uses a fixed token supplied by the configuration. */
-public class FixedTokenResolver implements DataApiTokenResolver {
+/** The {@link RequestTenantResolver} that uses a fixed tenant ID supplied by the configuration. */
+public class FixedTenantResolver implements RequestTenantResolver {
 
-  private final AuthConfig.TokenResolverConfig.FixedTokenResolverConfig config;
+  private final Tenant fixedTenantId;
 
-  public FixedTokenResolver(AuthConfig.TokenResolverConfig.FixedTokenResolverConfig config) {
-    this.config = config;
+  public FixedTenantResolver(String fixedTenantId) {
+    this.fixedTenantId = TenantFactory.instance().create(fixedTenantId);
   }
 
   /** {@inheritDoc} */
   @Override
-  public Optional<String> resolve(RoutingContext context, SecurityContext securityContext) {
-    return config.token();
+  public Tenant resolve(RoutingContext context, SecurityContext securityContext) {
+    return fixedTenantId;
   }
 }

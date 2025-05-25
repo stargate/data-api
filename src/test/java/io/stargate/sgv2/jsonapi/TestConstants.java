@@ -6,6 +6,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -14,11 +16,10 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
+import io.stargate.sgv2.jsonapi.service.schema.collections.*;
+
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -35,7 +36,8 @@ public class TestConstants {
   public final String TEST_COMMAND_NAME = "testCommand";
   public final String KEYSPACE_NAME;
   public final String COLLECTION_NAME;
-  public final SchemaObjectName SCHEMA_OBJECT_NAME;
+  public final SchemaObjectIdentifier SCHEMA_OBJECT_NAME;
+  public final Tenant TENANT;
 
   // Schema objects for testing
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
@@ -46,15 +48,17 @@ public class TestConstants {
 
   public TestConstants() {
 
+    TENANT = Tenant.create(DatabaseType.ASTRA, "test-tenant");
     KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
     COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-    SCHEMA_OBJECT_NAME = new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
+    SCHEMA_OBJECT_NAME = SchemaObjectIdentifier.forCollection(TENANT, KEYSPACE_NAME, COLLECTION_NAME);
 
     // Schema objects for testing
     COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
-            SCHEMA_OBJECT_NAME,
-            null,
+            SCHEMA_OBJECT_NAME.tenant(),
+            SCHEMA_OBJECT_NAME.keyspace(),
+            SCHEMA_OBJECT_NAME.table(),
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
@@ -68,8 +72,9 @@ public class TestConstants {
     // Schema object for testing with legacy (pre-lexical-config) defaults
     COLLECTION_SCHEMA_OBJECT_LEGACY =
         new CollectionSchemaObject(
-            SCHEMA_OBJECT_NAME,
-            null,
+            SCHEMA_OBJECT_NAME.tenant(),
+            SCHEMA_OBJECT_NAME.keyspace(),
+            SCHEMA_OBJECT_NAME.table(),
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
@@ -78,8 +83,9 @@ public class TestConstants {
 
     VECTOR_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
-            SCHEMA_OBJECT_NAME,
-            null,
+            SCHEMA_OBJECT_NAME.tenant(),
+            SCHEMA_OBJECT_NAME.keyspace(),
+            SCHEMA_OBJECT_NAME.table(),
             IdConfig.defaultIdConfig(),
             VectorConfig.fromColumnDefinitions(
                 List.of(
@@ -93,8 +99,8 @@ public class TestConstants {
             CollectionLexicalConfig.configForDisabled(),
             CollectionRerankDef.configForPreRerankingCollection());
 
-    KEYSPACE_SCHEMA_OBJECT = KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
-    DATABASE_SCHEMA_OBJECT = new DatabaseSchemaObject();
+    KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(TENANT, KEYSPACE_NAME);
+    DATABASE_SCHEMA_OBJECT = new DatabaseSchemaObject(TENANT);
   }
 
   // CommandContext for working on the schema objects above
@@ -119,7 +125,7 @@ public class TestConstants {
         .getBuilder(schema)
         .withEmbeddingProvider(embeddingProvider)
         .withCommandName(commandName)
-        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+        .withRequestContext(new RequestContext(TENANT))
         .build();
   }
 
@@ -143,7 +149,7 @@ public class TestConstants {
         .withMeterRegistry(mock(MeterRegistry.class))
         .getBuilder(schema)
         .withCommandName(commandName)
-        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+        .withRequestContext(new RequestContext(TENANT))
         .build();
   }
 
@@ -157,7 +163,37 @@ public class TestConstants {
         .withMeterRegistry(mock(MeterRegistry.class))
         .getBuilder(DATABASE_SCHEMA_OBJECT)
         .withCommandName(TEST_COMMAND_NAME)
-        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+        .withRequestContext(new RequestContext(TENANT))
         .build();
+  }
+
+  public CollectionSchemaObject cloneWithIdConfig(
+      CollectionSchemaObject original, CollectionIdType idType) {
+
+    var idConfig = new IdConfig(idType);
+
+    // because the TableMetadata was not used for the collections originally it is not required
+    // tests often don't set it
+
+    if (original.tableMetadata() == null) {
+      return new CollectionSchemaObject(
+          original.identifier().tenant(),
+          original.identifier().keyspace(),
+          original.identifier().table(),
+          idConfig,
+          original.vectorConfig(),
+          original.indexingConfig(),
+          original.lexicalConfig(),
+          original.rerankingConfig());
+    }
+
+    return new CollectionSchemaObject(
+        original.identifier().tenant(),
+        original.tableMetadata(),
+        idConfig,
+        original.vectorConfig(),
+        original.indexingConfig(),
+        original.lexicalConfig(),
+        original.rerankingConfig());
   }
 }

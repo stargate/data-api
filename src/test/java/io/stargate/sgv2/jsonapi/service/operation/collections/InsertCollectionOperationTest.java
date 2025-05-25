@@ -57,7 +57,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class InsertCollectionOperationTest extends OperationTestBase {
 
-  private TestConstants testConstants = new TestConstants();
+  private static final TestConstants TEST_CONSTANTS = new TestConstants();
 
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_NON_VECTOR;
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_VECTOR;
@@ -105,11 +105,12 @@ public class InsertCollectionOperationTest extends OperationTestBase {
     COMMAND_CONTEXT_NON_VECTOR = createCommandContextWithCommandName("testCommand");
 
     COMMAND_CONTEXT_VECTOR =
-        testConstants.collectionContext(
+        TEST_CONSTANTS.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
-                SCHEMA_OBJECT_NAME,
-                null,
+                SCHEMA_OBJECT_NAME.tenant(),
+                SCHEMA_OBJECT_NAME.keyspace(),
+                SCHEMA_OBJECT_NAME.table(),
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(

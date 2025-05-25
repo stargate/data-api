@@ -10,6 +10,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
@@ -37,6 +38,8 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(PropertyBasedOverrideProfile.class)
 public class DataVectorizerTest {
+
+  private static final TestConstants TEST_CONSTANTS = new TestConstants();
 
   @Inject ObjectMapper objectMapper;
   private final TestEmbeddingProvider testEmbeddingProvider =
@@ -241,9 +244,9 @@ public class DataVectorizerTest {
       // new collection settings with different expected vector size
       CollectionSchemaObject collectionSettings =
           new CollectionSchemaObject(
+              TEST_CONSTANTS.TENANT,
               "namespace",
               "collections",
-              null,
               IdConfig.defaultIdConfig(),
               VectorConfig.fromColumnDefinitions(
                   List.of(

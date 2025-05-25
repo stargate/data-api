@@ -45,7 +45,7 @@ public class CreateTableDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
 
   protected SimpleStatement buildStatement() {
 
-    var keyspaceIdentifier = cqlIdentifierFromUserInput(schemaObject.name().keyspace());
+    var keyspaceIdentifier = cqlIdentifierFromUserInput(schemaObject.identifier().keyspace());
 
     CreateTableStart create = createTable(keyspaceIdentifier, tableDef.name());
 

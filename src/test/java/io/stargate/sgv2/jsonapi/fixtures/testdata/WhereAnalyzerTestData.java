@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.exception.WithWarnings;
@@ -37,6 +38,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     var tableMetaData = testData.tableMetadata().table2PK3Clustering1Index();
     return new WhereAnalyzerFixture(
         message,
+        testData.TENANT,
         tableMetaData,
         testData.logicalExpression().andExpression(tableMetaData),
         statementType);
@@ -47,6 +49,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     var tableMetaData = testData.tableMetadata().keyAndTwoDuration();
     return new WhereAnalyzerFixture(
         message,
+        testData.TENANT,
         tableMetaData,
         testData.logicalExpression().andExpression(tableMetaData),
         statementType);
@@ -57,6 +60,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     var tableMetaData = testData.tableMetadata().tableAllDatatypesIndexed();
     return new WhereAnalyzerFixture(
         message,
+        testData.TENANT,
         tableMetaData,
         testData.logicalExpression().andExpression(tableMetaData),
         statementType);
@@ -67,6 +71,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     var tableMetaData = testData.tableMetadata().tableAllDatatypesNotIndexed();
     return new WhereAnalyzerFixture(
         message,
+        testData.TENANT,
         tableMetaData,
         testData.logicalExpression().andExpression(tableMetaData),
         statementType);
@@ -85,6 +90,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
 
     public WhereAnalyzerFixture(
         String message,
+        Tenant tenant,
         TableMetadata tableMetadata,
         DBLogicalExpression expression,
         WhereCQLClauseAnalyzer.StatementType statementType) {
@@ -93,8 +99,8 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
       this.tableMetadata = tableMetadata;
       this.analyzer =
           new WhereCQLClauseAnalyzer(
-              TableSchemaObject.from(tableMetadata, new ObjectMapper()), statementType);
-      this.tableSchemaObject = TableSchemaObject.from(tableMetadata, new ObjectMapper());
+              TableSchemaObject.from(tenant, tableMetadata, new ObjectMapper()), statementType);
+      this.tableSchemaObject = TableSchemaObject.from(tenant, tableMetadata, new ObjectMapper());
       this.expression =
           new LogicalExpressionTestData.ExpressionBuilder<>(this, expression, tableMetadata);
     }

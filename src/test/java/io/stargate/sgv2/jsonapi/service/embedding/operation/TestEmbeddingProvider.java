@@ -56,8 +56,9 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
     return testConstants.collectionContext(
         "testCommand",
         new CollectionSchemaObject(
-            testConstants.SCHEMA_OBJECT_NAME,
-            null,
+            testConstants.TENANT,
+            testConstants.KEYSPACE_NAME,
+            testConstants.COLLECTION_NAME,
             IdConfig.defaultIdConfig(),
             VectorConfig.fromColumnDefinitions(
                 List.of(

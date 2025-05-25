@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -21,7 +22,8 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
 
   @Override
   public EmbeddingProviderConfigStore.ServiceConfig getConfiguration(
-      Optional<String> tenant, String serviceName) {
+      Tenant tenant, String serviceName) {
+
     // already checked if the service exists and enabled in CreateCollectionCommandResolver
     if (serviceName.equals(ProviderConstants.CUSTOM)) {
       return ServiceConfig.custom(config.custom().clazz());
@@ -30,6 +32,7 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
         || !config.providers().get(serviceName).enabled()) {
       throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(serviceName);
     }
+
     final var properties = config.providers().get(serviceName).properties();
     Map<String, Optional<String>> modelwiseServiceUrlOverrides =
         Objects.requireNonNull(config.providers().get(serviceName).models()).stream()
@@ -37,6 +40,7 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
                 HashMap::new,
                 (map, modelConfig) -> map.put(modelConfig.name(), modelConfig.serviceUrlOverride()),
                 HashMap::putAll);
+
     return ServiceConfig.provider(
         serviceName,
         serviceName,

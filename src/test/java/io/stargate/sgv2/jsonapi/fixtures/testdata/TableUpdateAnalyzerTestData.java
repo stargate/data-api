@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -24,7 +25,7 @@ public class TableUpdateAnalyzerTestData extends TestDataSuplier {
 
   public TableUpdateAnalyzerFixture table2PK3Clustering1Index(String message) {
     var tableMetaData = testData.tableMetadata().table2PK3Clustering1Index();
-    return new TableUpdateAnalyzerFixture(message, tableMetaData);
+    return new TableUpdateAnalyzerFixture(message, testData.TENANT, tableMetaData);
   }
 
   public static class TableUpdateAnalyzerFixture implements Recordable {
@@ -37,12 +38,14 @@ public class TableUpdateAnalyzerTestData extends TestDataSuplier {
         columnAssignments;
     public Throwable exception = null;
 
-    public TableUpdateAnalyzerFixture(String message, TableMetadata tableMetadata) {
+    public TableUpdateAnalyzerFixture(String message,
+                                      Tenant tenant,
+                                      TableMetadata tableMetadata) {
       this.message = message;
       this.tableMetadata = tableMetadata;
       this.analyzer =
-          new TableUpdateAnalyzer(TableSchemaObject.from(tableMetadata, new ObjectMapper()));
-      this.tableSchemaObject = TableSchemaObject.from(tableMetadata, new ObjectMapper());
+          new TableUpdateAnalyzer(TableSchemaObject.from(tenant, tableMetadata, new ObjectMapper()));
+      this.tableSchemaObject = TableSchemaObject.from(tenant, tableMetadata, new ObjectMapper());
       this.columnAssignments =
           new UpdateClauseTestData.ColumnAssignmentsBuilder<>(this, tableMetadata);
     }

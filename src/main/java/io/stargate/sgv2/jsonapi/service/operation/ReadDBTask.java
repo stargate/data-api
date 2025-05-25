@@ -102,11 +102,11 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
 
   /** {@inheritDoc} */
   @Override
-  public void onSuccess(AsyncResultSet result) {
+  public void onSuccess(AsyncResultSetSupplier resultSetSupplier, AsyncResultSet result) {
     readResult = new ReadResult(rowSorter, result);
 
     // call to make sure status is set
-    super.onSuccess(result);
+    super.onSuccess(resultSetSupplier, result);
   }
 
   /** {@inheritDoc} */

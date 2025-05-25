@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.collections;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
@@ -119,114 +120,126 @@ public record CreateCollectionOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
+      RequestContext requestContext, QueryExecutor queryExecutor) {
+
     logger.info(
         "Executing CreateCollectionOperation for {}.{} with definition: {}",
-        commandContext.schemaObject().name().keyspace(),
+        commandContext.schemaObject().identifier().keyspace(),
         name,
         comment);
-    // validate Data API collection limit guard rail and get tableMetadata
-    Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces =
-        cqlSessionCache.getSession(dataApiRequestInfo).getMetadata().getKeyspaces();
-    KeyspaceMetadata currKeyspace =
-        allKeyspaces.get(
-            CqlIdentifier.fromInternal(commandContext.schemaObject().name().keyspace()));
-    if (currKeyspace == null) {
-      return Uni.createFrom()
-          .failure(
-              ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException(
-                  "Unknown keyspace '%s', you must create it first",
-                  commandContext.schemaObject().name().keyspace()));
-    }
-    TableMetadata tableMetadata = findTableAndValidateLimits(allKeyspaces, currKeyspace, name);
 
-    // if table doesn't exist, continue to create collection
-    if (tableMetadata == null) {
-      return executeCollectionCreation(dataApiRequestInfo, queryExecutor, lexicalConfig(), false);
-    }
-    // if table exists, compare existingCollectionSettings and newCollectionSettings
-    CollectionSchemaObject existingCollectionSettings =
-        CollectionSchemaObject.getCollectionSettings(tableMetadata, objectMapper);
+    return queryExecutor
+        .getDriverMetadata(requestContext)
+        .map(Metadata::getKeyspaces)
+        .flatMap(allKeyspaces -> {
 
-    // Use the fromNameOrDefault() so if not specified it will default
-    var embeddingSourceModel =
-        EmbeddingSourceModel.fromApiNameOrDefault(sourceModel)
-            .orElseThrow(() -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModel));
+          //  aaron - 23 may 2025, having this huge lambda is not great. This is a partial refactor to make
+          // this operation fully Async, without refactoring all the logic.
+          KeyspaceMetadata currKeyspace =
+              allKeyspaces.get(
+                  CqlIdentifier.fromInternal(commandContext.schemaObject().identifier().keyspace()));
 
-    var similarityFunction =
-        SimilarityFunction.fromApiNameOrDefault(vectorFunction)
-            .orElseThrow(() -> SimilarityFunction.getUnknownFunctionException(vectorFunction));
+          if (currKeyspace == null) {
+            return Uni.createFrom()
+                .failure(
+                    ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException(
+                        "Unknown keyspace '%s', you must create it first",
+                        commandContext.schemaObject().identifier().keyspace()));
+          }
 
-    CollectionSchemaObject newCollectionSettings =
-        CollectionSchemaObject.getCollectionSettings(
-            currKeyspace.getName().asInternal(),
-            name,
-            tableMetadata,
-            vectorSearch,
-            vectorSize,
-            similarityFunction,
-            embeddingSourceModel,
-            comment,
-            objectMapper);
-    // If Collection exists we have a choice:
-    // (1) trying to create with same options -> ok, proceed
-    // (2) trying to create with different options -> error out
-    // but before deciding (2), we need to consider one specific backwards-compatibility
-    // case: that of existing pre-lexical/pre-reranking collection, being re-created
-    // without definitions for lexical/pre-ranking. Although it would create a new
-    // Collection with both enabled, it should NOT fail if attempted on an existing
-    // Collection with pre-lexical/pre-reranking settings but silently succeed.
+          TableMetadata tableMetadata = findTableAndValidateLimits(allKeyspaces, currKeyspace, name);
 
-    boolean settingsAreEqual = existingCollectionSettings.equals(newCollectionSettings);
+          // if table doesn't exist, continue to create collection
+          if (tableMetadata == null) {
+            return executeCollectionCreation(requestContext, queryExecutor, lexicalConfig(), false);
+          }
 
-    if (!settingsAreEqual) {
-      final var oldLexical = existingCollectionSettings.lexicalConfig();
-      final var newLexical = lexicalConfig();
-      final var oldReranking = existingCollectionSettings.rerankingConfig();
-      final var newReranking = rerankDef();
+          // if table exists, compare existingCollectionSettings and newCollectionSettings
+          CollectionSchemaObject existingCollectionSettings =
+              CollectionSchemaObject.getCollectionSettings( requestContext.getTenant(), tableMetadata, objectMapper);
 
-      // So: for backwards compatibility reasons we may need to override settings if
-      // (and only if) the collection was created before lexical and reranking.
-      // In addition, we need to check that new lexical settings are for defaults
-      // (difficult to check the same for reranking; for now assume that if lexical
-      // is default, reranking is also default).
-      if (oldLexical == CollectionLexicalConfig.configForPreLexical()
-          && newLexical == CollectionLexicalConfig.configForDefault()
-          && oldReranking == CollectionRerankDef.configForPreRerankingCollection()
-          && newReranking == CollectionRerankDef.configForDefault()) {
-        var originalNewSettings = newCollectionSettings;
-        newCollectionSettings =
-            newCollectionSettings.withLexicalAndRerankOverrides(
-                oldLexical, existingCollectionSettings.rerankingConfig());
-        // and now re-check if settings are the same
-        settingsAreEqual = existingCollectionSettings.equals(newCollectionSettings);
-        logger.info(
-            "CreateCollectionOperation for {}.{} with existing legacy lexical/reranking settings, new settings differ. Tried to unify, result: {}"
-                + " Old settings: {}, New settings: {}",
-            commandContext.schemaObject().name().keyspace(),
-            name,
-            settingsAreEqual,
-            existingCollectionSettings,
-            originalNewSettings);
-      } else {
-        logger.info(
-            "CreateCollectionOperation for {}.{} with different settings (but not old legacy lexical/reranking settings), cannot unify."
-                + " Old settings: {}, New settings: {}",
-            commandContext.schemaObject().name().keyspace(),
-            name,
-            existingCollectionSettings,
-            newCollectionSettings);
-      }
-    }
+          // Use the fromNameOrDefault() so if not specified it will default
+          var embeddingSourceModel =
+              EmbeddingSourceModel.fromApiNameOrDefault(sourceModel)
+                  .orElseThrow(() -> EmbeddingSourceModel.getUnknownSourceModelException(sourceModel));
 
-    if (settingsAreEqual) {
-      return executeCollectionCreation(
-          dataApiRequestInfo, queryExecutor, newCollectionSettings.lexicalConfig(), true);
-    }
-    return Uni.createFrom()
-        .failure(
-            ErrorCodeV1.EXISTING_COLLECTION_DIFFERENT_SETTINGS.toApiException(
-                "trying to create Collection ('%s') with different settings", name));
+          var similarityFunction =
+              SimilarityFunction.fromApiNameOrDefault(vectorFunction)
+                  .orElseThrow(() -> SimilarityFunction.getUnknownFunctionException(vectorFunction));
+
+          CollectionSchemaObject newCollectionSettings =
+              CollectionSchemaObject.getCollectionSettings(
+                  requestContext.getTenant(),
+                  currKeyspace.getName().asInternal(),
+                  name,
+                  tableMetadata,
+                  vectorSearch,
+                  vectorSize,
+                  similarityFunction,
+                  embeddingSourceModel,
+                  comment,
+                  objectMapper);
+          // If Collection exists we have a choice:
+          // (1) trying to create with same options -> ok, proceed
+          // (2) trying to create with different options -> error out
+          // but before deciding (2), we need to consider one specific backwards-compatibility
+          // case: that of existing pre-lexical/pre-reranking collection, being re-created
+          // without definitions for lexical/pre-ranking. Although it would create a new
+          // Collection with both enabled, it should NOT fail if attempted on an existing
+          // Collection with pre-lexical/pre-reranking settings but silently succeed.
+
+          boolean settingsAreEqual = existingCollectionSettings.equals(newCollectionSettings);
+
+          if (!settingsAreEqual) {
+            final var oldLexical = existingCollectionSettings.lexicalConfig();
+            final var newLexical = lexicalConfig();
+            final var oldReranking = existingCollectionSettings.rerankingConfig();
+            final var newReranking = rerankDef();
+
+            // So: for backwards compatibility reasons we may need to override settings if
+            // (and only if) the collection was created before lexical and reranking.
+            // In addition, we need to check that new lexical settings are for defaults
+            // (difficult to check the same for reranking; for now assume that if lexical
+            // is default, reranking is also default).
+            if (oldLexical == CollectionLexicalConfig.configForPreLexical()
+                && newLexical == CollectionLexicalConfig.configForDefault()
+                && oldReranking == CollectionRerankDef.configForPreRerankingCollection()
+                && newReranking == CollectionRerankDef.configForDefault()) {
+              var originalNewSettings = newCollectionSettings;
+              newCollectionSettings =
+                  newCollectionSettings.withLexicalAndRerankOverrides(
+                      oldLexical, existingCollectionSettings.rerankingConfig());
+              // and now re-check if settings are the same
+              settingsAreEqual = existingCollectionSettings.equals(newCollectionSettings);
+              logger.info(
+                  "CreateCollectionOperation for {}.{} with existing legacy lexical/reranking settings, new settings differ. Tried to unify, result: {}"
+                      + " Old settings: {}, New settings: {}",
+                  commandContext.schemaObject().identifier().keyspace(),
+                  name,
+                  settingsAreEqual,
+                  existingCollectionSettings,
+                  originalNewSettings);
+            } else {
+              logger.info(
+                  "CreateCollectionOperation for {}.{} with different settings (but not old legacy lexical/reranking settings), cannot unify."
+                      + " Old settings: {}, New settings: {}",
+                  commandContext.schemaObject().identifier().keyspace(),
+                  name,
+                  existingCollectionSettings,
+                  newCollectionSettings);
+            }
+          }
+
+          if (settingsAreEqual) {
+            return executeCollectionCreation(
+                requestContext, queryExecutor, newCollectionSettings.lexicalConfig(), true);
+          }
+          return Uni.createFrom()
+              .failure(
+                  ErrorCodeV1.EXISTING_COLLECTION_DIFFERENT_SETTINGS.toApiException(
+                      "trying to create Collection ('%s') with different settings", name));
+
+        });
   }
 
   /**
@@ -247,7 +260,7 @@ public record CreateCollectionOperation(
         queryExecutor.executeCreateSchemaChange(
             dataApiRequestInfo,
             getCreateTable(
-                commandContext.schemaObject().name().keyspace(),
+                commandContext.schemaObject().identifier().keyspace(),
                 name,
                 vectorSearch,
                 vectorSize,
@@ -264,7 +277,7 @@ public record CreateCollectionOperation(
                   if (res.wasApplied()) {
                     final List<SimpleStatement> indexStatements =
                         getIndexStatements(
-                            commandContext.schemaObject().name().keyspace(),
+                            commandContext.schemaObject().identifier().keyspace(),
                             name,
                             lexicalConfig,
                             collectionExisted);
@@ -428,6 +441,7 @@ public record CreateCollectionOperation(
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces,
       KeyspaceMetadata currKeyspace,
       String tableName) {
+
     // First: do we already have a Table with the same name?
     for (TableMetadata table : currKeyspace.getTables().values()) {
       if (table.getName().asInternal().equals(tableName)) {
@@ -440,6 +454,8 @@ public record CreateCollectionOperation(
         return table;
       }
     }
+
+
     // Otherwise we need to check if we can create a new Collection based on limits;
     // limits are calculated across the whole Database, so all Keyspaces need to be checked.
     final List<TableMetadata> allTables =
@@ -454,6 +470,7 @@ public record CreateCollectionOperation(
           "number of collections in database cannot exceed %d, already have %d",
           MAX_COLLECTIONS, collectionCount);
     }
+
     // And then see how many Indexes have been created, how many available
     int saisUsed = allTables.stream().mapToInt(table -> table.getIndexes().size()).sum();
     if ((saisUsed + dbLimitsConfig.indexesNeededPerCollection())

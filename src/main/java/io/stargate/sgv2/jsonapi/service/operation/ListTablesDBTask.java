@@ -33,10 +33,10 @@ public class ListTablesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
   @Override
   protected List<String> getNames() {
 
-    // TODO: BETTER CONTROL on KEYSPACE OPTIONAL
+    if (keyspaceMetadata == null) {
+      throw new IllegalStateException("keyspaceMetadata should not be null when generating result");
+    }
     return keyspaceMetadata
-        .get()
-        // get all tables
         .getTables()
         .values()
         .stream()
@@ -52,15 +52,16 @@ public class ListTablesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
    */
   @Override
   protected Object getSchema() {
-    // TODO: BETTER CONTROL on KEYSPACE OPTIONAL
+
+    if (keyspaceMetadata == null) {
+      throw new IllegalStateException("keyspaceMetadata should not be null when generating result");
+    }
     return keyspaceMetadata
-        .get()
-        // get all tables
         .getTables()
         .values()
         .stream()
         .filter(TABLE_MATCHER)
-        .map(tableMetadata -> TableSchemaObject.from(tableMetadata, OBJECT_MAPPER))
+        .map(tableMetadata -> TableSchemaObject.from(lastResultSupplier().commandContext().requestContext().getTenant(), tableMetadata, OBJECT_MAPPER))
         .map(tableSchemaObject -> tableSchemaObject.apiTableDef().toTableDesc())
         .toList();
   }

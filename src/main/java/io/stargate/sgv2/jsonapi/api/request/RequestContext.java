@@ -2,16 +2,24 @@ package io.stargate.sgv2.jsonapi.api.request;
 
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
-import io.stargate.sgv2.jsonapi.api.request.tenant.DataApiTenantResolver;
-import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
+import com.google.common.annotations.VisibleForTesting;
+import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
+import io.stargate.sgv2.jsonapi.api.request.token.RequestAuthTokenResolver;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.logging.LoggingMDCContext;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.SecurityContext;
+import org.slf4j.MDC;
+
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+
+import static io.stargate.sgv2.jsonapi.util.StringUtil.normalizeOptionalString;
 
 /**
  * This class is used to get the request info like tenantId, cassandraToken and embeddingApiKey.
@@ -21,62 +29,57 @@ import java.util.Optional;
  * sense but moving it to be part of the CommandContext rather than handed around everywhere.
  */
 @RequestScoped
-public class RequestContext {
+public class RequestContext implements LoggingMDCContext {
 
   private static final NoArgGenerator UUID_V7_GENERATOR = Generators.timeBasedEpochGenerator();
 
-  private final Optional<String> tenantId;
-  private final Optional<String> cassandraToken;
-  private final EmbeddingCredentials embeddingCredentials;
-  private final RerankingCredentials rerankingCredentials;
-  private final HttpHeaderAccess httpHeaders;
+  private final String authToken;
   private final String requestId;
+  private final UserAgent userAgent;
+  private final Tenant tenant;
 
-  private final String userAgent;
+  private final EmbeddingCredentials embeddingCredentials;
+  private final HttpHeaderAccess httpHeaders;
+  private final RerankingCredentials rerankingCredentials;
 
   /**
-   * Constructor that will be useful in the offline library mode, where only the tenant will be set
-   * and accessed.
-   *
-   * @param tenantId Tenant Id
+   * For testing purposes only.
    */
-  public RequestContext(Optional<String> tenantId) {
-    this.tenantId = tenantId;
-    this.cassandraToken = Optional.empty();
+  @VisibleForTesting
+  public RequestContext(Tenant tenant) {
+
+    this.authToken = normalizeOptionalString((String)null);
+    this.requestId = generateRequestId();
+    this.userAgent = new UserAgent(null);
+    this.tenant = Objects.requireNonNull(tenant, "tenant must not be null");
+
     this.embeddingCredentials = null;
     this.rerankingCredentials = null;
-    httpHeaders = null;
-    requestId = generateRequestId();
-    userAgent = null;
+    this.httpHeaders = null;
   }
 
   @Inject
   public RequestContext(
       RoutingContext routingContext,
       SecurityContext securityContext,
-      Instance<DataApiTenantResolver> tenantResolver,
-      Instance<DataApiTokenResolver> tokenResolver,
+      Instance<RequestTenantResolver> tenantResolver,
+      Instance<RequestAuthTokenResolver> tokenResolver,
       Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
+
+    this.httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
+
+    this.authToken = tokenResolver.get().resolve(routingContext, securityContext);
+    this.requestId = generateRequestId();
+    this.userAgent = new UserAgent(httpHeaders.getHeader(HttpHeaders.USER_AGENT));
+    this.tenant = tenantResolver.get().resolve(routingContext, securityContext);
 
     this.embeddingCredentials =
         embeddingCredentialsResolver.get().resolveEmbeddingCredentials(routingContext);
-    this.tenantId = tenantResolver.get().resolve(routingContext, securityContext);
-    this.cassandraToken = tokenResolver.get().resolve(routingContext, securityContext);
-
-    httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
-    requestId = generateRequestId();
-    userAgent = httpHeaders.getHeader(HttpHeaders.USER_AGENT);
-
-    Optional<String> rerankingApiKeyFromHeader =
-        HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext);
-
-    this.rerankingCredentials =
-        rerankingApiKeyFromHeader
-            .map(apiKey -> new RerankingCredentials(Optional.of(apiKey)))
-            .orElse(
-                this.cassandraToken
-                    .map(cassandraToken -> new RerankingCredentials(Optional.of(cassandraToken)))
-                    .orElse(new RerankingCredentials(Optional.empty())));
+    // user specified the reranking key in the request header, use that.
+    // fall back to whatever they provided as the auth token for the API
+    this.rerankingCredentials = HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext)
+        .map(s -> new RerankingCredentials(normalizeOptionalString(s)))
+        .orElseGet(() -> new RerankingCredentials(normalizeOptionalString(this.authToken)));
   }
 
   private static String generateRequestId() {
@@ -87,16 +90,28 @@ public class RequestContext {
     return requestId;
   }
 
-  public Optional<String> getTenantId() {
-    return tenantId;
+  /**
+   *
+   * @return Non-null {@link Tenant} object
+   */
+  public Tenant getTenant() {
+    return tenant;
   }
 
-  public Optional<String> getCassandraToken() {
-    return cassandraToken;
+  /**
+   *
+   * @return Non-null authToken from the request processed with {@link io.stargate.sgv2.jsonapi.util.StringUtil#normalizeOptionalString(String)}
+   */
+  public String getAuthToken() {
+    return authToken;
   }
 
-  public Optional<String> getUserAgent() {
-    return Optional.ofNullable(userAgent);
+  /**
+   *
+   * @return Non-null userAgent from the request processed with {@link io.stargate.sgv2.jsonapi.util.StringUtil#normalizeOptionalString(String)}
+   */
+  public UserAgent getUserAgent() {
+    return userAgent;
   }
 
   public EmbeddingCredentials getEmbeddingCredentials() {
@@ -109,6 +124,16 @@ public class RequestContext {
 
   public HttpHeaderAccess getHttpHeaders() {
     return this.httpHeaders;
+  }
+
+  @Override
+  public void addToMDC() {
+    MDC.put("tenantId", tenant.tenantId());
+  }
+
+  @Override
+  public void removeFromMDC() {
+    MDC.remove("tenantId");
   }
 
   /**

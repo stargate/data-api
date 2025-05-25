@@ -43,7 +43,7 @@ public class DropIndexDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
     // KeyspaceMetadata
     Drop drop =
         SchemaBuilder.dropIndex(
-            CqlIdentifier.fromInternal(schemaObject.name().keyspace()), indexName);
+            CqlIdentifier.fromInternal(schemaObject.identifier().keyspace()), indexName);
 
     // Apply any additional options
     drop = cqlOptions.applyBuilderOptions(drop);

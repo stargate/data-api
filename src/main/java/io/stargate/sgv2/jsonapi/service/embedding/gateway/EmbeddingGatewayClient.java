@@ -6,6 +6,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -39,8 +40,8 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
 
   private int dimension;
 
-  private Optional<String> tenant;
-  private Optional<String> authToken;
+  private Tenant tenant;
+  private String authToken;
   private String modelName;
   private String baseUrl;
   private EmbeddingService embeddingService;
@@ -63,8 +64,8 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String provider,
       int dimension,
-      Optional<String> tenant,
-      Optional<String> authToken,
+      Tenant tenant,
+      String authToken,
       String baseUrl,
       String modelName,
       EmbeddingService embeddingService,
@@ -145,9 +146,9 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
     final EmbeddingGateway.ProviderEmbedRequest.ProviderContext.Builder builder =
         EmbeddingGateway.ProviderEmbedRequest.ProviderContext.newBuilder()
             .setProviderName(provider)
-            .setTenantId(tenant.orElse(DEFAULT_TENANT_ID));
+            .setTenantId(tenant.tenantId());
     // Add the value of `Token` in the header
-    builder.putAuthTokens(DATA_API_TOKEN, authToken.orElse(""));
+    builder.putAuthTokens(DATA_API_TOKEN, authToken);
     // Add the value of `x-embedding-api-key` in the header
     if (embeddingCredentials.apiKey().isPresent()) {
       builder.putAuthTokens(EMBEDDING_API_KEY, embeddingCredentials.apiKey().get());

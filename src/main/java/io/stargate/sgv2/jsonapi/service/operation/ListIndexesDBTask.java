@@ -31,16 +31,20 @@ public class ListIndexesDBTask extends MetadataDBTask<TableSchemaObject> {
   }
 
   private Optional<ApiIndexDefContainer> indexesForTable() {
-    // TODO: better option checking
+
+    if (keyspaceMetadata == null) {
+      throw new IllegalStateException("keyspace metadata is null, should not happen if task is marked as success");
+    }
+
     var tableMetadata =
-        keyspaceMetadata.get().getTable(schemaObject.tableMetadata().getName()).get();
+        keyspaceMetadata.getTable(schemaObject.tableMetadata().getName()).get();
 
     // aaron - this should not happen ?
     if (!TABLE_MATCHER.test(tableMetadata)) {
       return Optional.empty();
     }
     var indexesContainer =
-        TableSchemaObject.from(tableMetadata, OBJECT_MAPPER)
+        TableSchemaObject.from( lastResultSupplier().commandContext().requestContext().getTenant(), tableMetadata, OBJECT_MAPPER)
             .apiTableDef()
             .indexesIncludingUnsupported();
     if (LOGGER.isDebugEnabled()) {

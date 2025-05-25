@@ -35,6 +35,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class DocumentShredderDocLimitsTest {
+
+  private static final TestConstants TEST_CONSTANTS = new TestConstants();
+
   @Inject ObjectMapper objectMapper;
 
   @Inject DocumentShredder documentShredder;
@@ -42,8 +45,6 @@ public class DocumentShredderDocLimitsTest {
   @Inject DocumentLimitsConfig docLimits;
 
   @InjectMock protected RequestContext dataApiRequestInfo;
-
-  private final TestConstants testConstants = new TestConstants();
 
   // Tests for Document size/depth violations
   @Nested
@@ -143,7 +144,7 @@ public class DocumentShredderDocLimitsTest {
           IndexingProjector.createForIndexing(null, Collections.singleton("no_index"));
       assertThat(
               documentShredder.shred(
-                  doc, null, indexProjector, "testCommand", CollectionSchemaObject.MISSING, null))
+                  doc, null, indexProjector, "testCommand", TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT, null))
           .isNotNull();
     }
 
@@ -224,7 +225,7 @@ public class DocumentShredderDocLimitsTest {
           IndexingProjector.createForIndexing(null, Collections.singleton("no_index"));
       assertThat(
               documentShredder.shred(
-                  doc, null, indexProjector, "testCommand", CollectionSchemaObject.MISSING, null))
+                  doc, null, indexProjector, "testCommand", TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT, null))
           .isNotNull();
     }
 
@@ -491,6 +492,6 @@ public class DocumentShredderDocLimitsTest {
   }
 
   private CommandContext<CollectionSchemaObject> commandContext() {
-    return testConstants.collectionContext();
+    return TEST_CONSTANTS.collectionContext();
   }
 }

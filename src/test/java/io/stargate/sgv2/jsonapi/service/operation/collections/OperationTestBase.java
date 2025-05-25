@@ -21,9 +21,9 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -48,8 +48,8 @@ public class OperationTestBase {
 
   protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  protected final SchemaObjectName SCHEMA_OBJECT_NAME =
-      new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
+  protected final SchemaObjectIdentifier SCHEMA_OBJECT_NAME =
+      SchemaObjectIdentifier.forCollection(testConstants.TENANT, KEYSPACE_NAME, COLLECTION_NAME);
 
   protected CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
   protected KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
@@ -65,15 +65,16 @@ public class OperationTestBase {
     // must do this here to avoid touching quarkus config before it is initialized
     COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
-            SCHEMA_OBJECT_NAME,
-            null,
+            SCHEMA_OBJECT_NAME.tenant(),
+            SCHEMA_OBJECT_NAME.keyspace(),
+            SCHEMA_OBJECT_NAME.table(),
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
             CollectionLexicalConfig.configForDisabled(),
             CollectionRerankDef.configForPreRerankingCollection());
 
-    KEYSPACE_SCHEMA_OBJECT = KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
+    KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(SCHEMA_OBJECT_NAME.tenant(), SCHEMA_OBJECT_NAME.keyspace());
 
     COLLECTION_CONTEXT =
         testConstants.collectionContext(

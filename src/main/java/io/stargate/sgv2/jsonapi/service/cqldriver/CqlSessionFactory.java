@@ -6,13 +6,14 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.google.common.annotations.VisibleForTesting;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,21 +121,23 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
   }
 
   @Override
-  public CqlSession apply(Optional<String> tenantId, CqlCredentials credentials) {
+  public CompletionStage<CqlSession> apply(Tenant tenant, CqlCredentials credentials) {
+    Objects.requireNonNull(tenant, "tenant must not be null");
     Objects.requireNonNull(credentials, "credentials must not be null");
 
+
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Creating CQL Session tenantId={}, credentials={}", tenantId, credentials);
+      LOGGER.debug("Creating CQL Session tenant={}, credentials={}", tenant, credentials);
     }
 
     // the driver TypedDriverOption is only used with DriverConfigLoader.fromMap()
     // The ConfigLoader is held by the session and closed when the session closes, do not close it
     // here.
-    // Setting the session name to the tenantId, this is used by the driver to identify the session,
+    // Setting the session name to the tenant, this is used by the driver to identify the session,
     // used in logging and metrics
     var configLoader =
         DriverConfigLoader.programmaticBuilder()
-            .withString(DefaultDriverOption.SESSION_NAME, tenantId.orElse("unset"))
+            .withString(DefaultDriverOption.SESSION_NAME, tenant.toString())
             .build();
 
     var builder =
@@ -161,6 +164,6 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     // aaron - this used to have an if / else that threw an exception if the database type was not
     // known but we test that when creating the credentials for the cache key so no need to do it
     // here.
-    return builder.build();
+    return builder.buildAsync();
   }
 }

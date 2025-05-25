@@ -1,11 +1,14 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
+
 public class DatabaseSchemaObject extends SchemaObject {
 
-  public static final SchemaObjectType TYPE = SchemaObjectType.DATABASE;
-
-  public DatabaseSchemaObject() {
-    super(TYPE, SchemaObjectName.MISSING);
+  public DatabaseSchemaObject(Tenant tenant) {
+    super(SchemaObjectType.DATABASE, SchemaObjectIdentifier.forDatabase(tenant));
   }
 
   @Override

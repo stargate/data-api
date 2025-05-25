@@ -94,7 +94,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       CQLSessionCache sessionCache = mock(CQLSessionCache.class);
       CqlSession session = mock(CqlSession.class);
-      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(session);
+      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(Uni.createFrom().item(session));
       Metadata metadata = mock(Metadata.class);
       when(session.getMetadata()).thenReturn(metadata);
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
@@ -154,7 +154,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       CQLSessionCache sessionCache = mock(CQLSessionCache.class);
       CqlSession session = mock(CqlSession.class);
-      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(session);
+      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(Uni.createFrom().item(session));
       Metadata metadata = mock(Metadata.class);
       when(session.getMetadata()).thenReturn(metadata);
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
@@ -217,7 +217,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       CQLSessionCache sessionCache = mock(CQLSessionCache.class);
       CqlSession session = mock(CqlSession.class);
-      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(session);
+      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(Uni.createFrom().item(session));
       Metadata metadata = mock(Metadata.class);
       when(session.getMetadata()).thenReturn(metadata);
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
@@ -277,7 +277,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       CQLSessionCache sessionCache = mock(CQLSessionCache.class);
       CqlSession session = mock(CqlSession.class);
-      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(session);
+      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(Uni.createFrom().item(session));
       Metadata metadata = mock(Metadata.class);
       when(session.getMetadata()).thenReturn(metadata);
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
@@ -365,7 +365,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               });
       CQLSessionCache sessionCache = mock(CQLSessionCache.class);
       CqlSession session = mock(CqlSession.class);
-      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(session);
+      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(Uni.createFrom().item(session));
       Metadata metadata = mock(Metadata.class);
       when(session.getMetadata()).thenReturn(metadata);
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();

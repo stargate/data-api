@@ -42,7 +42,7 @@ public class DocumentShredderWithExtendedTypesTest {
   @Inject DocumentShredder documentShredder;
   @InjectMock protected RequestContext bogusRequestInfo;
 
-  private final TestConstants testConstants = new TestConstants();
+  private static final TestConstants TEST_CONSTANTS = new TestConstants();
 
   @Nested
   class OkCasesExplicitId {
@@ -204,7 +204,7 @@ public class DocumentShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              CollectionSchemaObject.MISSING.withIdType(CollectionIdType.UNDEFINED),
+              TEST_CONSTANTS.cloneWithIdConfig(TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT, CollectionIdType.UNDEFINED),
               null);
 
       DocumentId docId = doc.id();
@@ -244,7 +244,7 @@ public class DocumentShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              CollectionSchemaObject.MISSING.withIdType(CollectionIdType.OBJECT_ID),
+              TEST_CONSTANTS.cloneWithIdConfig(TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT, CollectionIdType.OBJECT_ID),
               null);
 
       DocumentId docId = doc.id();
@@ -300,7 +300,7 @@ public class DocumentShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              CollectionSchemaObject.MISSING.withIdType(idType),
+              TEST_CONSTANTS.cloneWithIdConfig(TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT, idType),
               null);
 
       DocumentId docId = doc.id();
@@ -508,6 +508,6 @@ public class DocumentShredderWithExtendedTypesTest {
   }
 
   private CommandContext<CollectionSchemaObject> commandContext() {
-    return testConstants.collectionContext();
+    return TEST_CONSTANTS.collectionContext();
   }
 }

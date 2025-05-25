@@ -18,6 +18,9 @@ package io.stargate.sgv2.jsonapi.config;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
+import io.stargate.sgv2.jsonapi.api.request.tenant.FixedTenantResolver;
+import io.stargate.sgv2.jsonapi.api.request.tenant.SubdomainTenantResolver;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import java.util.Optional;
@@ -55,7 +58,7 @@ public interface MultiTenancyConfig {
      *
      * If unset, noop resolver will be used.
      *
-     * @return The type of the {@link TenantResolver} used.
+     * @return The type of the {@link RequestTenantResolver} used.
      */
     Optional<@Pattern(regexp = "subdomain|fixed|custom") String> type();
 

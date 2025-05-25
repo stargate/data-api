@@ -18,6 +18,10 @@ package io.stargate.sgv2.jsonapi.config;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import io.stargate.sgv2.jsonapi.api.request.token.FixedTokenResolver;
+import io.stargate.sgv2.jsonapi.api.request.token.HeaderTokenResolver;
+import io.stargate.sgv2.jsonapi.api.request.token.PrincipalTokenResolver;
+import io.stargate.sgv2.jsonapi.api.request.token.RequestAuthTokenResolver;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -72,21 +76,20 @@ public interface AuthConfig {
      *
      * <ol>
      *   <li><code>header</code> - reads Cassandra token from the HTTP request header (see {@link
-     *       io.stargate.sgv2.jsonapi.api.request.token.impl.HeaderTokenResolver}}
+     *       HeaderTokenResolver}}
      *   <li><code>principal</code> - reads Cassandra token from the security {@link
      *       java.security.Principal} name (see {@link
-     *       io.stargate.sgv2.jsonapi.api.request.token.impl.PrincipalTokenResolver}}
+     *       PrincipalTokenResolver}}
      *   <li><code>fixed</code> - fixed token supplied by the configuration (see {@link
-     *       io.stargate.sgv2.jsonapi.api.request.token.impl.FixedTokenResolver}}
-     *   <li><code>custom</code> - allows configuring custom token resolver
+     *       FixedTokenResolver}}
      * </ol>
      *
      * If unset, noop resolver will be used.
      *
-     * @return The type of the {@link DataApiTokenResolver} used.
+     * @return The type of the {@link RequestAuthTokenResolver} used.
      */
     @WithDefault("principal")
-    Optional<@Pattern(regexp = "header|principal|fixed|custom") String> type();
+    Optional<@Pattern(regexp = "header|principal|fixed") String> type();
 
     /**
      * @return Specific settings for the <code>header</code> token resolver type.

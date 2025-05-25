@@ -34,12 +34,12 @@ import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
@@ -62,6 +62,8 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path(CollectionResource.BASE_PATH)
 @Produces(MediaType.APPLICATION_JSON)
@@ -69,6 +71,8 @@ import org.jboss.resteasy.reactive.RestResponse;
 @SecurityRequirement(name = OpenApiConstants.SecuritySchemes.TOKEN)
 @Tag(ref = "Documents")
 public class CollectionResource {
+  private static final Logger LOGGER = LoggerFactory.getLogger(CollectionResource.class);
+
 
   public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}/{collection}";
 
@@ -220,7 +224,7 @@ public class CollectionResource {
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
                 // TODO No need for the else clause here, simplify
-                if (schemaObject.type() == SchemaObject.SchemaObjectType.TABLE) {
+                if (schemaObject.type() == SchemaObjectType.TABLE) {
                   var apiFeatures =
                       ApiFeatures.fromConfigAndRequest(
                           apiFeatureConfig, requestContext.getHttpHeaders());
@@ -234,13 +238,13 @@ public class CollectionResource {
                 // for the $vector column in a collection
 
                 VectorColumnDefinition vectorColDef = null;
-                if (schemaObject.type() == SchemaObject.SchemaObjectType.COLLECTION) {
+                if (schemaObject.type() == SchemaObjectType.COLLECTION) {
                   vectorColDef =
                       schemaObject
                           .vectorConfig()
                           .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
                           .orElse(null);
-                } else if (schemaObject.type() == SchemaObject.SchemaObjectType.TABLE) {
+                } else if (schemaObject.type() == SchemaObjectType.TABLE) {
                   vectorColDef =
                       schemaObject
                           .vectorConfig()
@@ -251,8 +255,8 @@ public class CollectionResource {
                     (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)
                         ? null
                         : embeddingProviderFactory.getConfiguration(
-                            requestContext.getTenantId(),
-                            requestContext.getCassandraToken(),
+                            requestContext.getTenant(),
+                            requestContext.getAuthToken(),
                             vectorColDef.vectorizeDefinition().provider(),
                             vectorColDef.vectorizeDefinition().modelName(),
                             vectorColDef.vectorSize(),
@@ -268,7 +272,18 @@ public class CollectionResource {
                         .withRequestContext(requestContext)
                         .build();
 
-                return meteredCommandProcessor.processCommand(commandContext, command);
+                return meteredCommandProcessor
+                    .processCommand(commandContext, command)
+                    .onTermination()
+                    .invoke(() -> {
+
+                      try{
+                        commandContext.close();
+                      }
+                      catch (Exception e) {
+                        LOGGER.error("Error closing the command context for requestContext={}", requestContext, e);
+                      }
+                    });
               }
             })
         .map(commandResult -> commandResult.toRestResponse());

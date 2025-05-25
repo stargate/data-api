@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.TENANT_TAG;
-import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.UNKNOWN_VALUE;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
@@ -23,6 +22,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.naming.SchemaObjectNamingRule;
 import java.util.Map;
@@ -170,7 +170,7 @@ public interface CommandResolver<C extends Command> {
     // throw error as a fallback to make sure method is implemented, commands are tested well
     throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Keyspaces, target was %s",
-        command.getClass().getSimpleName(), ctx.schemaObject().name());
+        command.getClass().getSimpleName(), ctx.schemaObject().identifier().fullName());
   }
 
   /**
@@ -185,7 +185,7 @@ public interface CommandResolver<C extends Command> {
     // throw error as a fallback to make sure method is implemented, commands are tested well
     throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Databases, target was %s",
-        command.getClass().getSimpleName(), ctx.schemaObject().name());
+        command.getClass().getSimpleName(), ctx.schemaObject().identifier().fullName());
   }
 
   /**
@@ -214,7 +214,7 @@ public interface CommandResolver<C extends Command> {
     // that
     // it's only here because of the use of records and interfaces, move to a base class
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
-    Tag tenantTag = Tag.of(TENANT_TAG, requestContext.getTenantId().orElse(UNKNOWN_VALUE));
+    Tag tenantTag = Tag.of(TENANT_TAG, requestContext.getTenant().tenantId());
     Tags tags = Tags.of(commandTag, tenantTag);
 
     getIndexUsageTags(dbLogicalExpression, baseIndexUsage);

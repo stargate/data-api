@@ -1,23 +1,28 @@
 package io.stargate.sgv2.jsonapi.util;
 
+import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
+
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.github.benmanes.caffeine.cache.*;
 import com.google.common.annotations.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
+import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlCredentials;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
-
-import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
+import java.util.function.Predicate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A cache for managing and reusing {@link CqlSession} instances based on tenant and authentication
@@ -42,12 +47,12 @@ import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
  * measure, it's only an estimate. We can assume the size feature works. For testing use {@link
  * #peekSession(String, String, String)}
  */
-public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey,  ValueT> {
+public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, ValueT> {
   private static final Logger LOGGER = LoggerFactory.getLogger(DynamicTTLCache.class);
 
   private final String cacheName;
 
-  private final LoadingCache<KeyT, ValueHolder<KeyT, ValueT>> cache;
+  private final AsyncLoadingCache<KeyT, ValueHolder<KeyT, ValueT>> cache;
   private final ValueFactory<KeyT, ValueT> valueFactory;
   private final List<DynamicTTLCacheListener<KeyT, ValueT>> listeners;
 
@@ -62,14 +67,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey,  Va
       ValueFactory<KeyT, ValueT> valueFactory,
       List<DynamicTTLCacheListener<KeyT, ValueT>> listeners,
       MeterRegistry meterRegistry) {
-    this(
-        cacheName,
-        cacheMaxSize,
-        valueFactory,
-        listeners,
-        meterRegistry,
-        false,
-        null);
+    this(cacheName, cacheMaxSize, valueFactory, listeners, meterRegistry, false, null);
   }
 
   /**
@@ -90,7 +88,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey,  Va
    * @param cacheTicker If non-null, this is the ticker used by the cache to decide when to expire
    *     entries. If null, the default ticker is used. DO NOT USE in production.
    */
-  DynamicTTLCache(
+  protected DynamicTTLCache(
       String cacheName,
       long cacheMaxSize,
       ValueFactory<KeyT, ValueT> valueFactory,
@@ -100,14 +98,12 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey,  Va
       Ticker cacheTicker) {
 
     this.cacheName = Objects.requireNonNull(cacheName, "cacheName must not be null");
-    if (this.cacheName.isBlank()){
+    if (this.cacheName.isBlank()) {
       throw new IllegalArgumentException("cacheName must not be blank");
     }
 
-    this.valueFactory =
-        Objects.requireNonNull(valueFactory, "valueFactory must not be null");
-    this.listeners =
-        listeners == null ? List.of() : List.copyOf(listeners);
+    this.valueFactory = Objects.requireNonNull(valueFactory, "valueFactory must not be null");
+    this.listeners = listeners == null ? List.of() : List.copyOf(listeners);
 
     LOGGER.info(
         "Initializing CQLSessionCache with cacheMaxSize={}, deactivatedTenantConsumers.count={}",
@@ -116,27 +112,32 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey,  Va
 
     var builder =
         Caffeine.newBuilder()
-            .expireAfter(new SessionExpiry<KeyT, ValueT>())
+            .expireAfter(new DynamicExpiryPolicy<KeyT, ValueT>())
             .maximumSize(cacheMaxSize)
             .removalListener(this::onKeyRemoved)
             .recordStats();
 
     if (asyncTaskOnCaller) {
       LOGGER.warn(
-          "Cache {} - CONFIGURED TO RUN ASYNC TASKS SUCH AS CALLBACKS ON THE CALLER THREAD, DO NOT USE IN PRODUCTION.", this.cacheName);
+          "Cache {} - CONFIGURED TO RUN ASYNC TASKS SUCH AS CALLBACKS ON THE CALLER THREAD, DO NOT USE IN PRODUCTION.",
+          this.cacheName);
       builder = builder.executor(Runnable::run);
     }
     if (cacheTicker != null) {
-      LOGGER.warn("Cache {} - CONFIGURED TO USE A CUSTOM TICKER, DO NOT USE IN PRODUCTION.", this.cacheName);
+      LOGGER.warn(
+          "Cache {} - CONFIGURED TO USE A CUSTOM TICKER, DO NOT USE IN PRODUCTION.",
+          this.cacheName);
       builder = builder.ticker(cacheTicker);
     }
-    LoadingCache<KeyT, ValueHolder<KeyT, ValueT>> loadingCache =
-        builder.build(this::onLoadSession);
+    AsyncLoadingCache<KeyT, ValueHolder<KeyT, ValueT>> loadingCache =
+        builder.buildAsync(this::onLoadValue);
 
-    this.cache =
-        CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, this.cacheName);
+    this.cache = CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, this.cacheName);
   }
 
+  protected Uni<ValueT> get(KeyT key) {
+    return get(key, false);
+  }
 
   /**
    * Retrieves or creates a {@link CqlSession} for the specified tenant and authentication token.
@@ -151,26 +152,45 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey,  Va
    *     the session will use the TTL for the SLA user.
    * @return a {@link CqlSession} associated with the given tenantId and authToken
    */
-  protected ValueT get(KeyT key) {
+  protected Uni<ValueT> get(KeyT key, boolean forceRefresh) {
 
     Objects.requireNonNull(key, "key must not be null");
-    var holder = cache.get(key);
-    if (holder == null) {
-      // sanity check
-      throw new IllegalStateException("Value from cache was null for key: " + key);
+
+    if (forceRefresh) {
+      return Uni.createFrom()
+          .completionStage(onLoadValue(key, Runnable::run))
+          .invoke(
+              (valueHolder) -> {
+                cache.put(key, CompletableFuture.completedFuture(valueHolder));
+                if (LOGGER.isDebugEnabled()) {
+                  LOGGER.debug("Force loaded value into cache, holder={}", valueHolder);
+                }
+              })
+          .map(ValueHolder::value);
     }
-    return holder.value();
+
+    return Uni.createFrom().completionStage(cache.get(key)).map(ValueHolder::value);
   }
 
   @VisibleForTesting
-  protected Optional<ValueT> getIfPresent(KeyT value) {
-    return Optional.ofNullable(cache.getIfPresent(value))
-        .map(ValueHolder::value);
+  protected Optional<ValueT> getIfPresent(KeyT key) {
+    var future = cache.getIfPresent(key);
+    if (future == null) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(future.join()).map(ValueHolder::value);
+  }
+
+  protected void evict(KeyT key) {
+    cache.synchronous().invalidate(key);
+  }
+
+  protected void evictIf(Predicate<KeyT> predicate) {
+    cache.synchronous().asMap().keySet().removeIf(predicate);
   }
 
   /** Process a key being removed from the cache for any reason. */
-  private void onKeyRemoved(
-      KeyT key, ValueHolder<KeyT, ValueT> valueHolder, RemovalCause cause) {
+  private void onKeyRemoved(KeyT key, ValueHolder<KeyT, ValueT> valueHolder, RemovalCause cause) {
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("onKeyRemoved for valueHolder={}, cause={}", valueHolder, cause);
@@ -179,7 +199,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey,  Va
     listeners.forEach(
         consumer -> {
           try {
-            consumer.onRemoved(key, valueHolder.value,  cause);
+            consumer.onRemoved(key, valueHolder.value, cause);
           } catch (Exception e) {
             LOGGER.warn(
                 "Error calling removal listener: valueHolder={}, cause={}, consumer.class={}",
@@ -192,23 +212,25 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey,  Va
   }
 
   /** Callback to create a new session when one is needed for the cache */
-  private ValueHolder<KeyT, ValueT> onLoadSession(KeyT key) {
+  private CompletableFuture<ValueHolder<KeyT, ValueT>> onLoadValue(KeyT key, Executor executor) {
 
-    var value = valueFactory.apply(key);
-    if (value == null) {
-      // sanity check
-      throw new IllegalStateException("valueFactory returned null for key: " + key);
-    }
-
-    var holder = new ValueHolder<>(value, key);
-
-    if (LOGGER.isDebugEnabled()) {
-      // so we get the identity hash code of the session holder
-      LOGGER.debug("Loaded value into cache, holder={}", holder);
-    }
-    return holder;
+    return valueFactory
+        .apply(key)
+        .thenApply(
+            value -> {
+              if (value == null) {
+                // sanity check
+                throw new IllegalStateException("valueFactory returned null for key: " + key);
+              }
+              var holder = new ValueHolder<>(value, key);
+              if (LOGGER.isDebugEnabled()) {
+                // so we get the identity hash code of the session holder
+                LOGGER.debug("Loaded value into cache, holder={}", holder);
+              }
+              return holder;
+            })
+        .toCompletableFuture();
   }
-
 
   /**
    * Invalidate all entries and cleanup, for testing when items are invalidated.
@@ -216,10 +238,10 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey,  Va
    * <p>Note: Removal cause will be {@link RemovalCause#EXPLICIT} for items.
    */
   @VisibleForTesting
-  void clearCache() {
+  public void clearCache() {
     LOGGER.info("Manually clearing cache");
-    cache.invalidateAll();
-    cache.cleanUp();
+    cache.synchronous().invalidateAll();
+    cache.synchronous().cleanUp();
   }
 
   /**
@@ -227,8 +249,8 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey,  Va
    * things like evictions may not happen exactly at the TTL, this is a way to force it.
    */
   @VisibleForTesting
-  void cleanUp() {
-    cache.cleanUp();
+  public void cleanUp() {
+    cache.synchronous().cleanUp();
   }
 
   /** Key for CQLSession cache. */
@@ -275,9 +297,10 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey,  Va
    * <p>The laster user who access the session will set the TTL for the session if their TTL is
    * higher.
    */
-  static class SessionExpiry<KeyT extends CacheKey, ValueT> implements Expiry<KeyT, ValueHolder<KeyT, ValueT>> {
+  static class DynamicExpiryPolicy<KeyT extends CacheKey, ValueT>
+      implements Expiry<KeyT, ValueHolder<KeyT, ValueT>> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SessionExpiry.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DynamicExpiryPolicy.class);
 
     @Override
     public long expireAfterCreate(KeyT key, ValueHolder<KeyT, ValueT> value, long currentTime) {
@@ -308,15 +331,63 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey,  Va
     }
   }
 
+  protected static class DynamicTTLSupplier {
+
+    private final Duration cacheTTL;
+    private final UserAgent slaUserAgent;
+    private final Duration slaUserTTL;
+
+    public DynamicTTLSupplier(Duration cacheTTL, UserAgent slaUserAgent, Duration slaUserTTL) {
+
+      this.cacheTTL = Objects.requireNonNull(cacheTTL, "cacheTTL must not be null");
+      if (cacheTTL.isNegative() || cacheTTL.isZero()) {
+        throw new IllegalArgumentException("cacheTTL must be positive");
+      }
+
+      this.slaUserAgent = slaUserAgent;
+      if (this.slaUserAgent != null) {
+        this.slaUserTTL =
+            Objects.requireNonNull(
+                slaUserTTL, "slaUserTTL must not be null is slaUserAgent is set");
+        if (slaUserTTL.isNegative() || slaUserTTL.isZero()) {
+          throw new IllegalArgumentException("slaUserTTL must be positive");
+        }
+      } else {
+        this.slaUserTTL = null;
+      }
+    }
+
+    public Duration ttlForUsageAgent(UserAgent userAgent) {
+      // slaUserAgent can be null
+      return slaUserAgent == null || !slaUserAgent.equals(userAgent)
+          ? cacheTTL
+          : slaUserTTL;
+    }
+
+    @Override
+    public String toString() {
+      return new StringBuilder("DynamicTTLSupplier{")
+          .append("cacheTTL=")
+          .append(cacheTTL)
+          .append(", slaUserAgent=")
+          .append(slaUserAgent)
+          .append(", slaUserTTL=")
+          .append(slaUserTTL)
+          .append('}')
+          .toString();
+    }
+  }
+
   /** Callback when a tenant is deactivated. */
   @FunctionalInterface
-  public interface DynamicTTLCacheListener<KeyT extends CacheKey, ValueT>  {
+  public interface DynamicTTLCacheListener<KeyT extends CacheKey, ValueT> {
     void onRemoved(KeyT key, ValueT value, RemovalCause cause);
   }
 
   /** Called to create a new session when one is needed. */
   @FunctionalInterface
-  public interface ValueFactory<KeyT extends CacheKey, ValueT> extends Function<KeyT, ValueT> {
-    ValueT apply(KeyT key);
+  public interface ValueFactory<KeyT extends CacheKey, ValueT>
+      extends Function<KeyT, CompletionStage<ValueT>> {
+    CompletionStage<ValueT> apply(KeyT key);
   }
 }

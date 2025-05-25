@@ -9,10 +9,12 @@ import static org.mockito.Mockito.times;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.time.Duration;
 import java.util.Objects;
@@ -38,13 +40,13 @@ public class BaseTaskAssertions<
   }
 
   /** Mock a table schema object with the given keyspace and table name. */
-  public static TableSchemaObject mockTable(String keyspaceName, String tableName) {
+  public static TableSchemaObject mockTable(Tenant tenant, String keyspaceName, String tableName) {
     TableSchemaObject mockTable = mock(TableSchemaObject.class);
 
     when(mockTable.keyspaceName()).thenReturn(CqlIdentifier.fromInternal(keyspaceName));
     when(mockTable.tableName()).thenReturn(CqlIdentifier.fromInternal(tableName));
-    when(mockTable.type()).thenReturn(SchemaObject.SchemaObjectType.TABLE);
-    when(mockTable.name()).thenReturn(new SchemaObjectName(keyspaceName, tableName));
+    when(mockTable.type()).thenReturn(SchemaObjectType.TABLE);
+    when(mockTable.identifier()).thenReturn(SchemaObjectIdentifier.forTable (tenant, keyspaceName, tableName));
     return mockTable;
   }
 
@@ -198,7 +200,7 @@ public class BaseTaskAssertions<
             task,
             times(times)
                 .description("onSuccess() called %s times when: %s".formatted(times, message)))
-        .onSuccess(any());
+        .onSuccess(any(), any());
     return this;
   }
 
@@ -210,7 +212,7 @@ public class BaseTaskAssertions<
                 .description(
                     "onSuccess() called with assertions result %s when: %s"
                         .formatted(expected, message)))
-        .onSuccess(expected);
+        .onSuccess(any(), expected);
     return this;
   }
 

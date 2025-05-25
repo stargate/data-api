@@ -37,13 +37,13 @@ public class MeteredCommandProcessorTest {
   @InjectMock protected RequestContext dataApiRequestInfo;
   @Inject ObjectMapper objectMapper;
 
-  private TestConstants testConstants = new TestConstants();
+  private static final TestConstants TEST_CONSTANTS = new TestConstants();
 
   CommandContext<CollectionSchemaObject> commandContext;
 
   @BeforeEach
   public void beforeEach() {
-    commandContext = testConstants.collectionContext();
+    commandContext = TEST_CONSTANTS.collectionContext();
   }
 
   @Nested
@@ -67,7 +67,7 @@ public class MeteredCommandProcessorTest {
 
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
-      Mockito.when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));
+      Mockito.when(dataApiRequestInfo.getTenant()).thenReturn(TEST_CONSTANTS.TENANT);
       meteredCommandProcessor
           .processCommand(commandContext, countCommand)
           .await()
@@ -124,7 +124,7 @@ public class MeteredCommandProcessorTest {
 
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
-      Mockito.when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));
+      Mockito.when(dataApiRequestInfo.getTenant()).thenReturn(TEST_CONSTANTS.TENANT);
       meteredCommandProcessor
           .processCommand(commandContext, countCommand)
           .await()
@@ -183,7 +183,7 @@ public class MeteredCommandProcessorTest {
               .build();
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
-      Mockito.when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of("test-tenant"));
+      Mockito.when(dataApiRequestInfo.getTenant()).thenReturn(TEST_CONSTANTS.TENANT);
       meteredCommandProcessor
           .processCommand(commandContext, countCommand)
           .await()

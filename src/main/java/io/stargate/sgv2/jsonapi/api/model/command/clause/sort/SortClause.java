@@ -105,7 +105,8 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
     if (bm25Expr != null) {
       if (!collection.lexicalConfig().enabled()) {
         throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
-            "Lexical search is not enabled for collection '%s'", collection.name());
+            "Lexical search is not enabled for collection '%s'",
+            collection.identifier().fullName());
       }
       // But it must be the only sort expression so we can stop here
       return;

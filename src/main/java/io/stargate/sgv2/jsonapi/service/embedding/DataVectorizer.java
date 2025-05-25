@@ -16,10 +16,10 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType;
@@ -99,7 +99,7 @@ public class DataVectorizer {
       if (!vectorizeTexts.isEmpty()) {
         if (embeddingProvider == null) {
           throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-              schemaObject.name().table());
+              schemaObject.identifier().table());
         }
         Uni<List<float[]>> vectors =
             embeddingProvider
@@ -166,7 +166,7 @@ public class DataVectorizer {
   public Uni<float[]> vectorize(String vectorizeContent) {
     if (embeddingProvider == null) {
       throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-          schemaObject.name().table());
+          schemaObject.identifier().table());
     }
     Uni<List<float[]>> vectors =
         embeddingProvider
@@ -213,7 +213,7 @@ public class DataVectorizer {
         String text = expression.vectorize();
         if (embeddingProvider == null) {
           throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-              schemaObject.name().table());
+              schemaObject.identifier().table());
         }
         Uni<List<float[]>> vectors =
             embeddingProvider
@@ -296,7 +296,7 @@ public class DataVectorizer {
     // Copied from vectorize(List<JsonNode> documents) above leaving as is for now
     if (embeddingProvider == null) {
       throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-          schemaObject.name().table());
+          schemaObject.identifier().table());
     }
 
     return embeddingProvider

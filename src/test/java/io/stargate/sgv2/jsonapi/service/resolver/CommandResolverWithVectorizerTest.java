@@ -19,11 +19,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
@@ -35,6 +36,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollecti
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
@@ -81,6 +83,8 @@ public class CommandResolverWithVectorizerTest {
   private final TestConstants testConstants = new TestConstants();
   private final TestEmbeddingProvider testEmbeddingProvider = new TestEmbeddingProvider();
 
+  private static final Tenant TENANT = Tenant.create(DatabaseType.ASTRA, "test-tenant");
+
   @Nested
   class Resolve {
     // TODO: do these need to be unique to this test ? Can we use TestConstants ?
@@ -94,8 +98,10 @@ public class CommandResolverWithVectorizerTest {
           testConstants.collectionContext(
               "testCommand",
               new CollectionSchemaObject(
-                  new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME),
-                  null,
+                      TENANT,
+                      KEYSPACE_NAME,
+                      COLLECTION_NAME,
+
                   IdConfig.defaultIdConfig(),
                   VectorConfig.fromColumnDefinitions(
                       List.of(
@@ -183,7 +189,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(exception.getMessage())
                     .isEqualTo(
                         "Unable to vectorize data, embedding service not configured for the collection : "
-                            + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
+                            + VECTOR_COMMAND_CONTEXT.schemaObject().identifier().table());
                 assertThat(exception.getErrorCode())
                     .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
@@ -344,7 +350,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(exception.getMessage())
                     .isEqualTo(
                         "Unable to vectorize data, embedding service not configured for the collection : "
-                            + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
+                            + VECTOR_COMMAND_CONTEXT.schemaObject().identifier().table());
                 assertThat(exception.getErrorCode())
                     .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
@@ -543,7 +549,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(exception.getMessage())
                     .isEqualTo(
                         "Unable to vectorize data, embedding service not configured for the collection : "
-                            + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
+                            + VECTOR_COMMAND_CONTEXT.schemaObject().identifier().table());
                 assertThat(exception.getErrorCode())
                     .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });

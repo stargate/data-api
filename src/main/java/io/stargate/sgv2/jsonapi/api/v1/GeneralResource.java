@@ -100,7 +100,7 @@ public class GeneralResource {
 
     var commandContext =
         contextBuilderSupplier
-            .getBuilder(new DatabaseSchemaObject())
+            .getBuilder(new DatabaseSchemaObject(requestContext.getTenant()))
             .withCommandName(command.getClass().getSimpleName())
             .withRequestContext(requestContext)
             .build();

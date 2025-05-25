@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import io.quarkus.grpc.GrpcClient;
 import io.stargate.embedding.gateway.EmbeddingService;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -50,8 +51,8 @@ public class EmbeddingProviderFactory {
           Map.entry(ProviderConstants.BEDROCK, AwsBedrockEmbeddingProvider::new));
 
   public EmbeddingProvider getConfiguration(
-      Optional<String> tenant,
-      Optional<String> authToken,
+      Tenant tenant,
+      String authToken,
       String serviceName,
       String modelName,
       int dimension,
@@ -73,8 +74,8 @@ public class EmbeddingProviderFactory {
   }
 
   private synchronized EmbeddingProvider addService(
-      Optional<String> tenant,
-      Optional<String> authToken,
+      Tenant tenant,
+      String authToken,
       String serviceName,
       String modelName,
       int dimension,

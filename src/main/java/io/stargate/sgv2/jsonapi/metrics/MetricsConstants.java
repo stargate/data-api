@@ -2,8 +2,6 @@ package io.stargate.sgv2.jsonapi.metrics;
 
 /** Defines constants for metric names and tag keys used in the Data API. */
 public interface MetricsConstants {
-  /** Default value used for tags when the actual value is unknown or unavailable. */
-  String UNKNOWN_VALUE = "unknown";
 
   /** Defines common tag keys used across various metrics. */
   interface MetricTags {

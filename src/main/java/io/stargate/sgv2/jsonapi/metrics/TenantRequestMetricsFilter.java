@@ -27,12 +27,20 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.core.HttpHeaders;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 
 /**
  * The filter for counting HTTP requests per tenant. Controlled by {@link
  * MetricsConfig.TenantRequestCounterConfig}.
+ * <p>
+ * Changes:
+ * <ul>
+ *   <li>previously the tenant tag would be "unknown" if it was not know, see Tenant class now. </li>
+ * </ul>
  */
 @ApplicationScoped
 public class TenantRequestMetricsFilter {
@@ -40,91 +48,59 @@ public class TenantRequestMetricsFilter {
   // split pattern for the user agent, extract only first part of the agent
   private static final Pattern USER_AGENT_SPLIT = Pattern.compile("[\\s/]");
 
-  // same as V1 io.stargate.core.metrics.StargateMetricConstants#UNKNOWN
-  private static final String UNKNOWN_VALUE = "unknown";
 
-  /** The {@link MeterRegistry} to report to. */
   private final MeterRegistry meterRegistry;
-
-  /** The configuration for metrics. */
   private final MetricsConfig.TenantRequestCounterConfig config;
+  // using different name to avoid name collision in record()
+  private final RequestContext apiRequestContext;
 
-  /** The request info bean. */
-  private final RequestContext requestContext;
+  private final Tag errorTrueTag;
+  private final Tag errorFalseTag;
 
-  /** The tag for error being true, created only once. */
-  private final Tag errorTrue;
-
-  /** The tag for error being false, created only once. */
-  private final Tag errorFalse;
-
-  /** The tag for tenant being unknown, created only once. */
-  Tag tenantUnknown;
 
   /** Default constructor. */
   @Inject
   public TenantRequestMetricsFilter(
-      MeterRegistry meterRegistry, RequestContext requestContext, MetricsConfig metricsConfig) {
+      MeterRegistry meterRegistry,
+      // NOTE: RequestContext is request scoped.
+      RequestContext apiRequestContext,
+      MetricsConfig metricsConfig) {
+
     this.meterRegistry = meterRegistry;
-    this.requestContext = requestContext;
+    this.apiRequestContext = apiRequestContext;
     this.config = metricsConfig.tenantRequestCounter();
-    errorTrue = Tag.of(config.errorTag(), "true");
-    errorFalse = Tag.of(config.errorTag(), "false");
-    tenantUnknown = Tag.of(config.tenantTag(), UNKNOWN_VALUE);
+
+    this.errorTrueTag = Tag.of(config.errorTag(), "true");
+    this.errorFalseTag = Tag.of(config.errorTag(), "false");
   }
 
   /**
    * Filter that this bean produces.
-   *
+   * <p>
+   *   see https://quarkus.io/guides/resteasy-reactive#request-or-response-filters
+   * </p>
    * @param requestContext {@link ContainerRequestContext}
    * @param responseContext {@link ContainerResponseContext}
-   * @see https://quarkus.io/guides/resteasy-reactive#request-or-response-filters
+   *
    */
   @ServerResponseFilter
   public void record(
       ContainerRequestContext requestContext, ContainerResponseContext responseContext) {
-    // only if enabled
-    if (config.enabled()) {
 
-      // resolve tenant
-      Tag tenantTag =
-          this.requestContext
-              .getTenantId()
-              .map(id -> Tag.of(config.tenantTag(), id))
-              .orElse(tenantUnknown);
+    if (!config.enabled()) {
+      return;
+    }
 
-      // resolve error
-      boolean error = responseContext.getStatus() >= 500;
-      Tag errorTag = error ? errorTrue : errorFalse;
+    List<Tag> tags = new ArrayList<>(4);
+    tags.add(Tag.of(config.tenantTag(), apiRequestContext.getTenant().toString()));
+    tags.add(responseContext.getStatus() >= 500 ? errorTrueTag : errorFalseTag);
 
-      // check if we need user agent as well
-      Tags tags = Tags.of(tenantTag, errorTag);
       if (config.userAgentTagEnabled()) {
-        String userAgentValue = getUserAgentValue(requestContext);
-        tags = tags.and(Tag.of(config.userAgentTag(), userAgentValue));
+        tags.add(Tag.of(config.userAgentTag(), apiRequestContext.getUserAgent().product()));
       }
-
-      // add http status code
       if (config.statusTagEnabled()) {
-        tags = tags.and(Tag.of(config.statusTag(), String.valueOf(responseContext.getStatus())));
+        tags.add(Tag.of(config.statusTag(), String.valueOf(responseContext.getStatus())));
       }
-
-      // record
       meterRegistry.counter(config.metricName(), tags).increment();
-    }
-  }
-
-  private String getUserAgentValue(ContainerRequestContext requestContext) {
-    String headerString = requestContext.getHeaderString(HttpHeaders.USER_AGENT);
-    if (null != headerString && !headerString.isBlank()) {
-      String[] split = USER_AGENT_SPLIT.split(headerString);
-      if (split.length > 0) {
-        return split[0];
-      } else {
-        return headerString;
-      }
-    } else {
-      return UNKNOWN_VALUE;
-    }
   }
 }

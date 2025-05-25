@@ -65,10 +65,11 @@ import org.mockito.Mockito;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class FindCollectionOperationTest extends OperationTestBase {
+  private static final TestConstants TEST_CONSTANTS = new TestConstants();
+
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT;
 
   private CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT;
-  private TestConstants testConstants = new TestConstants();
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
@@ -84,11 +85,12 @@ public class FindCollectionOperationTest extends OperationTestBase {
 
     COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
     VECTOR_COMMAND_CONTEXT =
-        testConstants.collectionContext(
+        TEST_CONSTANTS.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
-                SCHEMA_OBJECT_NAME,
-                null,
+                SCHEMA_OBJECT_NAME.tenant(),
+                SCHEMA_OBJECT_NAME.keyspace(),
+                SCHEMA_OBJECT_NAME.table(),
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(

@@ -5,6 +5,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -95,8 +96,8 @@ public class GenericOperation<
         new CommandQueryExecutor(
             commandContext.cqlSessionCache(),
             new CommandQueryExecutor.DBRequestContext(
-                commandContext.requestContext().getTenantId(),
-                commandContext.requestContext().getCassandraToken(),
+                commandContext.requestContext().getTenant(),
+                commandContext.requestContext().getAuthToken(),
                 commandContext.requestContext().getUserAgent(),
                 commandContext.requestTracing().enabled()),
             CommandQueryExecutor.QueryTarget.TABLE);

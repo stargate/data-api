@@ -4,11 +4,15 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultTableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.TestConstants;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 public class DefaultDriverExceptionHandlerTestData {
+
+  private static final TestConstants TEST_CONSTANTS = new TestConstants();
 
   public final DriverExceptionHandler DRIVER_HANDLER;
 
@@ -38,7 +42,7 @@ public class DefaultDriverExceptionHandlerTestData {
             Map.of(),
             Map.of(),
             Map.of());
-    TABLE_SCHEMA_OBJECT = TableSchemaObject.from(tableMetadata, new ObjectMapper());
+    TABLE_SCHEMA_OBJECT = TableSchemaObject.from(TEST_CONSTANTS.TENANT, tableMetadata, new ObjectMapper());
 
     DRIVER_HANDLER = new DefaultDriverExceptionHandler<>(TABLE_SCHEMA_OBJECT, STATEMENT);
   }

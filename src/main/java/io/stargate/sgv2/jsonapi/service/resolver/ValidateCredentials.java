@@ -22,22 +22,25 @@ public class ValidateCredentials {
 
   private ManagedChannel channel = null;
 
-  @Inject RequestContext dataApiRequestInfo;
+  @Inject RequestContext requestContext;
 
   public boolean validate(String provider, String value) {
+
     if (channel == null) {
       channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
     }
+
     EmbeddingGateway.ValidateCredentialRequest.Builder validateCredentialRequest =
         EmbeddingGateway.ValidateCredentialRequest.newBuilder();
     validateCredentialRequest.setCredential(value);
-    validateCredentialRequest.setTenantId(dataApiRequestInfo.getTenantId().orElse("default"));
+    validateCredentialRequest.setTenantId(requestContext.getTenant().toString());
     validateCredentialRequest.setProviderName(provider);
-    validateCredentialRequest.setToken(dataApiRequestInfo.getCassandraToken().orElse(""));
+    validateCredentialRequest.setToken(requestContext.getAuthToken());
     EmbeddingServiceGrpc.EmbeddingServiceBlockingStub embeddingService =
         EmbeddingServiceGrpc.newBlockingStub(channel);
     final EmbeddingGateway.ValidateCredentialResponse validateCredentialResponse =
         embeddingService.validateCredential(validateCredentialRequest.build());
+
     if (validateCredentialResponse.hasError()) {
       throw ErrorCodeV1.VECTORIZE_CREDENTIAL_INVALID.toApiException(
           " with error: %s", validateCredentialResponse.getError().getErrorMessage());

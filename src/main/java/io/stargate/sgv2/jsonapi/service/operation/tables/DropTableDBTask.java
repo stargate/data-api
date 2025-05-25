@@ -38,7 +38,8 @@ public class DropTableDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
 
   @Override
   protected SimpleStatement buildStatement() {
-    CqlIdentifier keyspaceIdentifier = cqlIdentifierFromUserInput(schemaObject.name().keyspace());
+    CqlIdentifier keyspaceIdentifier =
+        cqlIdentifierFromUserInput(schemaObject.identifier().keyspace());
 
     // Set as StorageAttachedIndex as default
     Drop drop = SchemaBuilder.dropTable(keyspaceIdentifier, name);

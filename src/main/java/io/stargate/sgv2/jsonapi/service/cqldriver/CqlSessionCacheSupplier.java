@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -54,10 +55,11 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
 
     singleton =
         new CQLSessionCache(
-            dbConfig.type(),
-            Duration.ofSeconds(dbConfig.sessionCacheTtlSeconds()),
             dbConfig.sessionCacheMaxSize(),
-            operationsConfig.slaUserAgent().orElse(null),
+            Duration.ofSeconds(dbConfig.sessionCacheTtlSeconds()),
+            operationsConfig.slaUserAgent()
+                .map(UserAgent::new)
+                .orElse(null),
             Duration.ofSeconds(dbConfig.slaSessionCacheTtlSeconds()),
             credentialsFactory,
             sessionFactory,

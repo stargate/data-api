@@ -87,8 +87,9 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
         testConstants.collectionContext(
             "testCommand",
             new CollectionSchemaObject(
-                SCHEMA_OBJECT_NAME,
-                null,
+                SCHEMA_OBJECT_NAME.tenant(),
+                SCHEMA_OBJECT_NAME.keyspace(),
+                SCHEMA_OBJECT_NAME.table(),
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(

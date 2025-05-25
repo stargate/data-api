@@ -8,16 +8,17 @@ import com.datastax.oss.driver.api.core.session.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.google.common.annotations.VisibleForTesting;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionFactory;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Objects;
@@ -115,10 +116,12 @@ public class SchemaCache {
     // Aaron 1 may 2025 - Based on existing logic I thought we should have a non null tenantId in
     // all cases other than
     // when using cassandra as a backend.
-    var resolvedTenantId =
-        (databaseType == DatabaseType.CASSANDRA)
-            ? requestContext.getTenantId().orElse(DEFAULT_TENANT)
-            : requestContext.getTenantId().orElseThrow();
+
+    // TODO: XXX: THIS SHOULD HAVE BEEN DELETED BY MERGE TIME
+    var resolvedTenantId = "";
+//        (databaseType == DatabaseType.CASSANDRA)
+//            ? requestContext.getTenant().orElse(DEFAULT_TENANT)
+//            : requestContext.getTenant().orElseThrow();
 
     var tableBasedSchemaCache =
         keyspaceCache.get(new KeyspaceCacheKey(resolvedTenantId, namespace));
@@ -170,7 +173,7 @@ public class SchemaCache {
     }
   }
 
-  /** Removes all keyspaces and table entries for the given tenantId from the cache. */
+  /** Removes all keyspaces and table entries for the given tenant from the cache. */
   void evictAllKeyspaces(String tenantId) {
 
     if (LOGGER.isTraceEnabled()) {
@@ -181,13 +184,13 @@ public class SchemaCache {
   }
 
   /** Removes the keyspace from the cache if present. */
-  void evictKeyspace(String tenant, String keyspace) {
+  void evictKeyspace(String tenantId, String keyspace) {
 
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("evictKeyspace() - tenantId: {}, keyspace: {}", tenant, keyspace);
+      LOGGER.trace("evictKeyspace() - tenantId: {}, keyspace: {}", tenantId, keyspace);
     }
 
-    keyspaceCache.invalidate(new KeyspaceCacheKey(tenant, keyspace));
+    keyspaceCache.invalidate(new KeyspaceCacheKey(tenantId, keyspace));
   }
 
   /** Key for the Keyspace cache, we rely on the record hash and equals */
@@ -302,10 +305,10 @@ public class SchemaCache {
     }
 
     @Override
-    public void accept(Optional<String> tenantId) {
+    public void accept(Tenant tenant) {
       // the sessions are keyed on the tenantID and the credentials, and one session can work with
-      // multiple keyspaces. So we need to evict all the keyspaces for the tenantId
-      tenantId.ifPresent(schemaCache::evictAllKeyspaces);
+      // multiple keyspaces. So we need to evict all the keyspaces for the tenant
+      schemaCache.evictAllKeyspaces(tenant.tenantId());
     }
   }
 

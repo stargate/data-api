@@ -2,29 +2,35 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.google.common.annotations.VisibleForTesting;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
+import java.util.Objects;
 
 public abstract class TableBasedSchemaObject extends SchemaObject {
 
   private final TableMetadata tableMetadata;
 
-  protected TableBasedSchemaObject(SchemaObjectType type, TableMetadata tableMetadata) {
-    // uses asCql(pretty) so the names do not always include double quotes
-    this(
-        type,
-        tableMetadata == null
-            ? SchemaObjectName.MISSING
-            : new SchemaObjectName(
-                tableMetadata.getKeyspace().asCql(true), tableMetadata.getName().asCql(true)),
-        tableMetadata);
+  protected TableBasedSchemaObject(
+      SchemaObjectType type, Tenant tenant, TableMetadata tableMetadata) {
+    super(type, SchemaObjectIdentifier.fromTableMetadata(type, tenant, tableMetadata));
+
+    this.tableMetadata = Objects.requireNonNull(tableMetadata, "tableMetadata must not be null");
   }
 
-  // aaron- adding this ctor so for now the CollectionSchemaObject can set the schemaObjectName and
-  // have the tablemetdata
-  // be null because it is not used by any collection processing (currently).
+  /**
+   * For use by the CollectionSchemaObject, for old test that do not have TableMetadata
+   * Use other ctor in prod code.
+   */
+  @VisibleForTesting
   protected TableBasedSchemaObject(
-      SchemaObjectType type, SchemaObjectName name, TableMetadata tableMetadata) {
-    // uses asCql(pretty) so the names do not always include double quotes
-    super(type, name);
+      SchemaObjectType expectedType,
+      SchemaObjectIdentifier schemaObjectIdentifier,
+      TableMetadata tableMetadata) {
+    super(expectedType, schemaObjectIdentifier);
+
     this.tableMetadata = tableMetadata;
   }
 

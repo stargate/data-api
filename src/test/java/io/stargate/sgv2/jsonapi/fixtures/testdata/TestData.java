@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.fixtures.testdata;
 
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTaskTestData;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.ReadDBTaskTestData;
 import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdateOperatorTestData;
@@ -9,6 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TestData {
+
+  public final Tenant TENANT = Tenant.create(DatabaseType.ASTRA, "test-tenant");
 
   public final TestDataNames names;
 

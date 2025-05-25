@@ -39,23 +39,18 @@ public class FindKeyspacesOperation implements Operation {
   /** {@inheritDoc} */
   @Override
   public Uni<Supplier<CommandResult>> execute(
-      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
+      RequestContext requestContext, QueryExecutor queryExecutor) {
 
-    return Uni.createFrom()
-        .item(
-            () -> {
-              // get all existing keyspaces
-              List<String> keyspacesList =
-                  queryExecutor
-                      .getCqlSessionCache()
-                      .getSession(dataApiRequestInfo)
-                      .getMetadata()
-                      .getKeyspaces()
-                      .keySet()
-                      .stream()
-                      .map(CqlIdentifier::asInternal)
-                      .toList();
-              return new Result(keyspacesList, useKeyspaceNaming);
+    return queryExecutor
+        .getDriverMetadata(requestContext)
+        .map(
+            driverMetadata -> {
+              var keyspaces = driverMetadata.getKeyspaces()
+                  .keySet()
+                  .stream()
+                  .map(CqlIdentifier::asInternal)
+                  .toList();
+              return new Result(keyspaces, useKeyspaceNaming);
             });
   }
 

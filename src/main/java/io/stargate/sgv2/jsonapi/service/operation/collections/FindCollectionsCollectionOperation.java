@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
@@ -53,40 +54,29 @@ public record FindCollectionsCollectionOperation(
 
   /** {@inheritDoc} */
   @Override
-  public Uni<Supplier<CommandResult>> execute(
-      RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
-    KeyspaceMetadata keyspaceMetadata =
-        cqlSessionCache
-            .getSession(dataApiRequestInfo)
-            .getMetadata()
-            .getKeyspaces()
-            .get(CqlIdentifier.fromInternal(commandContext.schemaObject().name().keyspace()));
-    if (keyspaceMetadata == null) {
-      return Uni.createFrom()
-          .failure(
-              ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException(
-                  "Unknown keyspace '%s', you must create it first",
-                  commandContext.schemaObject().name().keyspace()));
-    }
-    return Uni.createFrom()
-        .item(
-            () -> {
-              List<CollectionSchemaObject> properties =
-                  keyspaceMetadata
-                      // get all tables
+  public Uni<Supplier<CommandResult>> execute(RequestContext requestContext, QueryExecutor queryExecutor) {
+
+    return queryExecutor
+        .getDriverMetadata(requestContext)
+        .map(Metadata::getKeyspaces)
+        .map(keyspaces -> keyspaces.get(CqlIdentifier.fromInternal(commandContext.schemaObject().identifier().keyspace())))
+        .map(
+            keyspaceMetadata -> {
+              if (keyspaceMetadata == null) {
+                throw ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException(
+                            "Unknown keyspace '%s', you must create it first",
+                            commandContext.schemaObject().identifier().keyspace());
+              }
+              var  collections = keyspaceMetadata
                       .getTables()
                       .values()
                       .stream()
-                      // filter for valid collections
                       .filter(tableMatcher)
-                      // map to name
                       .map(
                           table ->
-                              CollectionSchemaObject.getCollectionSettings(table, objectMapper))
-                      // get as list
+                              CollectionSchemaObject.getCollectionSettings(requestContext.getTenant(), table, objectMapper))
                       .toList();
-              // Wrap the properties list into a command result
-              return new Result(explain, properties);
+              return new Result(explain, collections);
             });
   }
 
@@ -106,7 +96,7 @@ public record FindCollectionsCollectionOperation(
         builder.addStatus(CommandStatus.EXISTING_COLLECTIONS, createCollectionCommands);
       } else {
         List<String> tables =
-            collections.stream().map(schemaObject -> schemaObject.name().table()).toList();
+            collections.stream().map(schemaObject -> schemaObject.identifier().table()).toList();
         builder.addStatus(CommandStatus.EXISTING_COLLECTIONS, tables);
       }
       return builder.build();

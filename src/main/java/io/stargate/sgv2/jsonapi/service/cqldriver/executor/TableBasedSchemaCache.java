@@ -7,6 +7,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.time.Duration;
@@ -93,7 +94,7 @@ public class TableBasedSchemaCache {
   private Uni<SchemaObject> loadSchemaObject(RequestContext requestContext, String collectionName) {
 
     return queryExecutor
-        .getSchema(requestContext, namespace, collectionName)
+        .getTableMetadata(requestContext, namespace, collectionName)
         .onItem()
         .transform(
             optionalTable -> {
@@ -107,10 +108,11 @@ public class TableBasedSchemaCache {
               // TODO: re-use the table matcher this is on the request hot path
               if (new CollectionTableMatcher().test(table)) {
                 return CollectionSchemaObject.getCollectionSettings(
-                    optionalTable.get(), objectMapper);
+                    requestContext.getTenant(), optionalTable.get(), objectMapper);
               }
 
-              return TableSchemaObject.from(table, objectMapper);
+              return TableSchemaObject.from(
+                  requestContext.getTenant(), table, objectMapper);
             });
   }
 

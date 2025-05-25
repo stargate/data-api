@@ -603,7 +603,7 @@ public class DocumentShredderTest {
               new HashSet<>(Arrays.asList("name", "metadata")), null);
       WritableShreddedDocument doc =
           documentShredder.shred(
-              inputDoc, null, indexProjector, "testCommand", CollectionSchemaObject.MISSING, null);
+              inputDoc, null, indexProjector, "testCommand", testConstants.COLLECTION_SCHEMA_OBJECT, null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
@@ -672,7 +672,7 @@ public class DocumentShredderTest {
               new HashSet<>(Arrays.asList("name", "metadata")), null);
       WritableShreddedDocument doc =
           documentShredder.shred(
-              inputDoc, null, indexProjector, "testCommand", CollectionSchemaObject.MISSING, null);
+              inputDoc, null, indexProjector, "testCommand", testConstants.COLLECTION_SCHEMA_OBJECT, null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
@@ -735,7 +735,7 @@ public class DocumentShredderTest {
               new HashSet<>(Arrays.asList("name", "metadata")), null);
       WritableShreddedDocument doc =
           documentShredder.shred(
-              inputDoc, null, indexProjector, "testCommand", CollectionSchemaObject.MISSING, null);
+              inputDoc, null, indexProjector, "testCommand", testConstants.COLLECTION_SCHEMA_OBJECT, null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
@@ -793,7 +793,7 @@ public class DocumentShredderTest {
           IndexingProjector.createForIndexing(null, new HashSet<>(Arrays.asList("name", "values")));
       WritableShreddedDocument doc =
           documentShredder.shred(
-              inputDoc, null, indexProjector, "testCommand", CollectionSchemaObject.MISSING, null);
+              inputDoc, null, indexProjector, "testCommand", testConstants.COLLECTION_SCHEMA_OBJECT, null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
@@ -856,7 +856,7 @@ public class DocumentShredderTest {
           IndexingProjector.createForIndexing(null, new HashSet<>(Arrays.asList("*")));
       WritableShreddedDocument doc =
           documentShredder.shred(
-              inputDoc, null, indexProjector, "testCommand", CollectionSchemaObject.MISSING, null);
+              inputDoc, null, indexProjector, "testCommand", testConstants.COLLECTION_SCHEMA_OBJECT, null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
 
       List<JsonPath> expPaths =
@@ -900,7 +900,7 @@ public class DocumentShredderTest {
           IndexingProjector.createForIndexing(null, new HashSet<>(Arrays.asList("blob")));
       WritableShreddedDocument doc =
           documentShredder.shred(
-              inputDoc, null, indexProjector, "testCommand", CollectionSchemaObject.MISSING, null);
+              inputDoc, null, indexProjector, "testCommand", testConstants.COLLECTION_SCHEMA_OBJECT, null);
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(1)));
       List<JsonPath> expPaths = Arrays.asList(JsonPath.from("_id"), JsonPath.from("name"));
       assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
@@ -940,7 +940,7 @@ public class DocumentShredderTest {
           null,
           IndexingProjector.identityProjector(),
           "jsonBytesWriteCommand",
-          CollectionSchemaObject.MISSING,
+          testConstants.COLLECTION_SCHEMA_OBJECT,
           null);
 
       // verify metrics

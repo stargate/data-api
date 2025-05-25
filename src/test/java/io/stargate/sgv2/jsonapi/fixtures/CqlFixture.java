@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.fixtures;
 
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.fixtures.data.DefaultData;
 import io.stargate.sgv2.jsonapi.fixtures.data.FixtureData;
 import io.stargate.sgv2.jsonapi.fixtures.identifiers.BaseFixtureIdentifiers;
@@ -24,6 +26,8 @@ import java.util.List;
  * <p>Note using record because we want private instance state
  */
 public class CqlFixture {
+
+  private static final Tenant TENANT = Tenant.create(DatabaseType.ASTRA, "test-tenant");
 
   /**
    * Returns all the possible combinations of CQL configurations of the {@link FixtureIdentifiers},
@@ -63,7 +67,7 @@ public class CqlFixture {
     this.cqlData = cqlData;
     this.tableFixture = tableFixture;
     this.tableMetadata = tableFixture.tableMetadata(identifiers);
-    this.tableSchemaObject = TableSchemaObject.from(tableMetadata, new ObjectMapper());
+    this.tableSchemaObject = TableSchemaObject.from(TENANT, tableMetadata, new ObjectMapper());
   }
 
   public FixtureIdentifiers identifiers() {

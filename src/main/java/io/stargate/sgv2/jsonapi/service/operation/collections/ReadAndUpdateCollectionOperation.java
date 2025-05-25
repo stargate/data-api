@@ -9,11 +9,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -269,7 +269,7 @@ public record ReadAndUpdateCollectionOperation(
   }
 
   private String buildUpdateQuery(boolean vectorEnabled, boolean lexicalEnabled) {
-    final SchemaObjectName tableName = commandContext.schemaObject().name();
+    final SchemaObjectIdentifier tableName = commandContext.schemaObject().identifier();
     return buildUpdateQuery(tableName.keyspace(), tableName.table(), vectorEnabled, lexicalEnabled);
   }
 

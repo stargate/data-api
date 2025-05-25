@@ -25,15 +25,16 @@ public record TruncateCollectionOperation(CommandContext<CollectionSchemaObject>
   @Override
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
-    logger.info("Executing TruncateCollectionOperation for {}", context.schemaObject().name());
+
+    logger.info("Executing TruncateCollectionOperation for {}", context.schemaObject().identifier());
+
     String cql =
         TRUNCATE_TABLE_CQL.formatted(
-            context.schemaObject().name().keyspace(), context.schemaObject().name().table());
+            context.schemaObject().identifier().keyspace(), context.schemaObject().identifier().table());
     SimpleStatement query = SimpleStatement.newInstance(cql);
-    // execute
+
     return queryExecutor
         .executeTruncateSchemaChange(dataApiRequestInfo, query)
-
         // if we have a result always respond positively
         .map(any -> new DeleteOperationPage(null, false, false, false));
   }

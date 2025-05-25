@@ -17,25 +17,24 @@
 
 package io.stargate.sgv2.jsonapi.api.request.token;
 
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.core.SecurityContext;
 import java.util.Optional;
 
-/**
- * Resolver of the Cassandra token.
- *
- * <p>The implementation can use any information from the {@link RoutingContext} or {@link
- * SecurityContext} to obtain the token.
- */
-@FunctionalInterface
-public interface DataApiTokenResolver {
+/** The {@link RequestAuthTokenResolver} that resolves a token from the HTTP header. */
+public class HeaderTokenResolver implements RequestAuthTokenResolver {
 
-  /**
-   * Returns a Cassandra token given a {@link RoutingContext} and a {@link SecurityContext}.
-   *
-   * @param context the routing context
-   * @param securityContext the security context
-   * @return The Cassandra token. If empty, indicates that no token should be used.
-   */
-  Optional<String> resolve(RoutingContext context, SecurityContext securityContext);
+  /** The name of the header to extract the token from. */
+  private final String headerName;
+
+  public HeaderTokenResolver(String headerName) {
+    this.headerName = headerName;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public String resolve(RoutingContext context, SecurityContext securityContext) {
+    return context.request().getHeader(headerName);
+  }
 }

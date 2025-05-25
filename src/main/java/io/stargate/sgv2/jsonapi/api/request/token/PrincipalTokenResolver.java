@@ -15,29 +15,20 @@
  *
  */
 
-package io.stargate.sgv2.jsonapi.api.request.token.impl;
+package io.stargate.sgv2.jsonapi.api.request.token;
 
-import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.core.SecurityContext;
+import java.security.Principal;
 import java.util.Optional;
 
-/** The {@link DataApiTokenResolver} that resolves a token from the HTTP header. */
-public class HeaderTokenResolver implements DataApiTokenResolver {
-
-  /** The name of the header to extract the token from. */
-  private final String headerName;
-
-  public HeaderTokenResolver(String headerName) {
-    this.headerName = headerName;
-  }
+/** {@link RequestAuthTokenResolver} that reads the token from the {@link Principal#getName()}. */
+public class PrincipalTokenResolver implements RequestAuthTokenResolver {
 
   /** {@inheritDoc} */
   @Override
-  public Optional<String> resolve(RoutingContext context, SecurityContext securityContext) {
-    HttpServerRequest request = context.request();
-    String headerValue = request.getHeader(headerName);
-    return Optional.ofNullable(headerValue);
+  public String resolve(RoutingContext context, SecurityContext securityContext) {
+    var principal = securityContext.getUserPrincipal();
+    return principal != null ? principal.getName() : null;
   }
 }

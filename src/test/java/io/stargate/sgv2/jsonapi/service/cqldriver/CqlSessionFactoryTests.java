@@ -9,22 +9,23 @@ import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.optvector.SubtypeOnlyFloatVectorToArrayCodec;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Optional;
-
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 /** Tests for {@link CqlSessionFactory}. */
 public class CqlSessionFactoryTests {
 
+  private static final TestConstants TEST_CONSTANTS = new TestConstants();
+
   private static final String APP_NAME = "appName" + System.currentTimeMillis();
   private static final String DATACENTER = "datacenter";
   private static final int CASSANDRA_PORT = 9042;
-  private static final Optional<String> TENANT_ID = Optional.of( "tenantId" + System.currentTimeMillis());
 
   @Test
   public void createAstraDbSession() {
@@ -72,7 +73,7 @@ public class CqlSessionFactoryTests {
   private void assertions(
       Fixture fixture, List<String> endpoints, SchemaChangeListener schemaListener) {
 
-    var actualSession = fixture.factory.apply(TENANT_ID, fixture.credentials);
+    var actualSession = fixture.factory.apply(TEST_CONSTANTS.TENANT, fixture.credentials);
     assertThat(actualSession)
         .as("session is same as returned from session builder")
         .isSameAs(fixture.session);
@@ -93,7 +94,7 @@ public class CqlSessionFactoryTests {
         .isTrue();
     assertThat(defaultDriverProfile.getString(DefaultDriverOption.SESSION_NAME))
         .as("sessionName set to tenantId")
-        .isEqualTo(TENANT_ID);
+        .isEqualTo(TEST_CONSTANTS.TENANT.toString());
 
     verify(fixture.sessionBuilder).withApplicationName(APP_NAME);
     verify(fixture.sessionBuilder).addSchemaChangeListener(schemaListener);
