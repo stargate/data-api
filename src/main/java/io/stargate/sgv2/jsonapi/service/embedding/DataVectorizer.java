@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.embedding;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
 import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -99,7 +100,7 @@ public class DataVectorizer {
       if (!vectorizeTexts.isEmpty()) {
         if (embeddingProvider == null) {
           throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-              schemaObject.identifier().table());
+              schemaObject.identifier().fullName());
         }
         Uni<List<float[]>> vectors =
             embeddingProvider
@@ -166,7 +167,7 @@ public class DataVectorizer {
   public Uni<float[]> vectorize(String vectorizeContent) {
     if (embeddingProvider == null) {
       throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-          schemaObject.identifier().table());
+          schemaObject.identifier().fullName());
     }
     Uni<List<float[]>> vectors =
         embeddingProvider
@@ -213,7 +214,7 @@ public class DataVectorizer {
         String text = expression.vectorize();
         if (embeddingProvider == null) {
           throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-              schemaObject.identifier().table());
+              schemaObject.identifier().fullName());
         }
         Uni<List<float[]>> vectors =
             embeddingProvider
@@ -296,7 +297,7 @@ public class DataVectorizer {
     // Copied from vectorize(List<JsonNode> documents) above leaving as is for now
     if (embeddingProvider == null) {
       throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-          schemaObject.identifier().table());
+          schemaObject.identifier().fullName());
     }
 
     return embeddingProvider

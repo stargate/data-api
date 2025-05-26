@@ -57,8 +57,6 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class InsertCollectionOperationTest extends OperationTestBase {
 
-  private static final TestConstants TEST_CONSTANTS = new TestConstants();
-
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_NON_VECTOR;
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_VECTOR;
 
@@ -102,15 +100,13 @@ public class InsertCollectionOperationTest extends OperationTestBase {
   public void beforeEach() {
     super.beforeEach();
 
-    COMMAND_CONTEXT_NON_VECTOR = createCommandContextWithCommandName("testCommand");
+    COMMAND_CONTEXT_NON_VECTOR = createCommandContextWithCommandName(TEST_CONSTANTS.COMMAND_NAME);
 
     COMMAND_CONTEXT_VECTOR =
         TEST_CONSTANTS.collectionContext(
-            "testCommand",
+            TEST_CONSTANTS.COMMAND_NAME,
             new CollectionSchemaObject(
-                SCHEMA_OBJECT_NAME.tenant(),
-                SCHEMA_OBJECT_NAME.keyspace(),
-                SCHEMA_OBJECT_NAME.table(),
+                TEST_CONSTANTS.COLLECTION_IDENTIFIER,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(
@@ -1012,7 +1008,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
   }
 
   private SimpleStatement nonVectorInsertStatement(WritableShreddedDocument shredDocument) {
-    String insertCql = INSERT_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+    String insertCql = INSERT_CQL.formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     return SimpleStatement.newInstance(
         insertCql,
         CQLBindValues.getDocumentIdValue(shredDocument.id()),
@@ -1029,7 +1025,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
   }
 
   private SimpleStatement vectorInsertStatement(WritableShreddedDocument shredDocument) {
-    String insertCql = INSERT_VECTOR_CQL.formatted(KEYSPACE_NAME, COLLECTION_NAME);
+    String insertCql = INSERT_VECTOR_CQL.formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     return SimpleStatement.newInstance(
         insertCql,
         CQLBindValues.getDocumentIdValue(shredDocument.id()),

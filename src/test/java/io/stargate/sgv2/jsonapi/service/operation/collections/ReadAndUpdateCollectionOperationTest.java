@@ -72,7 +72,6 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
   @Inject DocumentShredder documentShredder;
   @Inject ObjectMapper objectMapper;
   @Inject DataVectorizerService dataVectorizerService;
-  private TestConstants testConstants = new TestConstants();
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
@@ -82,14 +81,12 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
   public void beforeEach() {
     super.beforeEach();
 
-    COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
+    COMMAND_CONTEXT = createCommandContextWithCommandName(TEST_CONSTANTS.COMMAND_NAME);
     COMMAND_VECTOR_CONTEXT =
-        testConstants.collectionContext(
-            "testCommand",
+        TEST_CONSTANTS.collectionContext(
+            TEST_CONSTANTS.COMMAND_NAME,
             new CollectionSchemaObject(
-                SCHEMA_OBJECT_NAME.tenant(),
-                SCHEMA_OBJECT_NAME.keyspace(),
-                SCHEMA_OBJECT_NAME.table(),
+                TEST_CONSTANTS.COLLECTION_IDENTIFIER,
                 IdConfig.defaultIdConfig(),
                 VectorConfig.fromColumnDefinitions(
                     List.of(
@@ -124,7 +121,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
   private SimpleStatement nonVectorUpdateStatement(WritableShreddedDocument shredDocument) {
     String updateCql =
         ReadAndUpdateCollectionOperation.buildUpdateQuery(
-            KEYSPACE_NAME, COLLECTION_NAME, false, false);
+            TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME, false, false);
     return ReadAndUpdateCollectionOperation.bindUpdateValues(
         updateCql, shredDocument, false, false);
   }
@@ -132,7 +129,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
   private SimpleStatement vectorUpdateStatement(WritableShreddedDocument shredDocument) {
     String updateCql =
         ReadAndUpdateCollectionOperation.buildUpdateQuery(
-            KEYSPACE_NAME, COLLECTION_NAME, true, false);
+            TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME, true, false);
     return ReadAndUpdateCollectionOperation.bindUpdateValues(updateCql, shredDocument, true, false);
   }
 
@@ -146,7 +143,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
             {
@@ -253,7 +250,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
                 {
@@ -474,7 +471,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       UUID tx_id2 = UUID.randomUUID();
       String collectionReadCql =
           "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
               {
@@ -758,7 +755,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
                 {
@@ -866,7 +863,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1_select_update =
           """
                 {
@@ -969,7 +966,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       UUID tx_id2 = UUID.randomUUID();
       String collectionReadCql =
           "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
               {
@@ -1136,7 +1133,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       UUID tx_id2 = UUID.randomUUID();
       String collectionReadCql =
           "SELECT key, tx_id, doc_json, query_text_values['username'], query_dbl_values['username'], query_bool_values['username'], query_null_values['username'], query_timestamp_values['username'] FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 10000"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       String doc1 =
           """
               {
@@ -1296,7 +1293,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       SimpleStatement stmt1 =
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
@@ -1393,7 +1390,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 1"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       SimpleStatement stmt1 =
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
@@ -1471,7 +1468,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 21"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       UUID tx_id1 = UUID.randomUUID();
       UUID tx_id2 = UUID.randomUUID();
@@ -1618,7 +1615,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 21"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       SimpleStatement stmt1 =
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
@@ -1716,7 +1713,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
       // read
       String collectionReadCql =
           "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 21"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
       SimpleStatement stmt1 =
           SimpleStatement.newInstance(

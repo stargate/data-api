@@ -52,7 +52,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
     @Test
     public void countWithNoFilter() {
       String collectionReadCql =
-          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
+          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       List<Row> rows =
           Arrays.asList(new MockRow(COUNT_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(5L))));
@@ -96,7 +96,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
     public void countWithDynamic() {
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user1").hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
       List<Row> rows =
@@ -142,7 +142,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
     public void countWithDynamicNoMatch() {
       String collectionReadCql =
           "SELECT COUNT(1) AS count FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ?"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user_all").hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
       List<Row> rows =
@@ -189,7 +189,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
       // failures are propagated down
       RuntimeException failure = new RuntimeException("Test failure message.");
       String collectionReadCql =
-          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(KEYSPACE_NAME, COLLECTION_NAME);
+          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
@@ -228,7 +228,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
     @Test
     public void countWithNoFilter() {
       String collectionReadCql =
-          "SELECT key FROM \"%s\".\"%s\" LIMIT 11".formatted(KEYSPACE_NAME, COLLECTION_NAME);
+          "SELECT key FROM \"%s\".\"%s\" LIMIT 11".formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       List<Row> rows =
           Arrays.asList(
@@ -275,7 +275,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
     public void countWithDynamic() {
       String collectionReadCql =
           "SELECT key FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 11"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user2").hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
       List<Row> rows = Arrays.asList(resultRow(0, "key1"), resultRow(1, "key2"));
@@ -320,7 +320,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
     public void countWithDynamicNoMatch() {
       String collectionReadCql =
           "SELECT key FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 11"
-              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       final String filterValue = "username " + new DocValueHasher().getHash("user_all").hash();
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, filterValue);
       List<Row> rows = Arrays.asList();
@@ -367,7 +367,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
       // failures are propagated down
       RuntimeException failure = new RuntimeException("Test failure message.");
       String collectionReadCql =
-          "SELECT key FROM \"%s\".\"%s\" LIMIT 11".formatted(KEYSPACE_NAME, COLLECTION_NAME);
+          "SELECT key FROM \"%s\".\"%s\" LIMIT 11".formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);

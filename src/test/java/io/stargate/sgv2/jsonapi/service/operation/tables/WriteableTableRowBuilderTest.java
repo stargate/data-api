@@ -22,7 +22,6 @@ import io.stargate.sgv2.jsonapi.fixtures.identifiers.BaseFixtureIdentifiers;
 import io.stargate.sgv2.jsonapi.fixtures.tables.AllOverflowTypes;
 import io.stargate.sgv2.jsonapi.fixtures.tables.AllUnderflowTypes;
 import io.stargate.sgv2.jsonapi.fixtures.tables.AllUnsupportedTypes;
-import io.stargate.sgv2.jsonapi.fixtures.testdata.TestData;
 import io.stargate.sgv2.jsonapi.fixtures.types.CqlTypesForTesting;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -34,7 +33,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -46,7 +44,7 @@ public class WriteableTableRowBuilderTest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(WriteableTableRowBuilderTest.class);
 
-  private static final TestConstants testConstants = new TestConstants();
+  private static final TestConstants TEST_CONSTANTS = new TestConstants();
 
   private static void logFixture(String testName, JsonContainerFixture fixture) {
     // 24-Jan-2025, tatu: This produces thousands of lines noise in logs, so let's
@@ -71,8 +69,8 @@ public class WriteableTableRowBuilderTest {
             .withMeterRegistry(mock(MeterRegistry.class))
             .getBuilder(fixture.cqlFixture().tableSchemaObject())
             .withEmbeddingProvider(mock(EmbeddingProvider.class))
-            .withCommandName("testCommand")
-            .withRequestContext(new RequestContext(testConstants.TENANT))
+            .withCommandName(TEST_CONSTANTS.COMMAND_NAME)
+            .withRequestContext(new RequestContext(TEST_CONSTANTS.TENANT))
             .withApiFeatures(ApiFeatures.empty())
             .build();
 

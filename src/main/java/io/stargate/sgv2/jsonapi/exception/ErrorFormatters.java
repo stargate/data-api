@@ -166,8 +166,8 @@ public abstract class ErrorFormatters {
     Map<String, String> map = new HashMap<>();
     if (schemaObject != null) {
       map.put(TemplateVars.SCHEMA_TYPE, schemaObject.type().name());
-      map.put(TemplateVars.KEYSPACE, schemaObject.identifier().keyspace());
-      map.put(TemplateVars.TABLE, schemaObject.identifier().table());
+      map.put(TemplateVars.KEYSPACE, cqlIdentifierToMessageString(schemaObject.identifier().keyspace()));
+      map.put(TemplateVars.TABLE, cqlIdentifierToMessageString(schemaObject.identifier().table()));
     }
     if (exception != null) {
       map.put(TemplateVars.ERROR_CLASS, exception.getClass().getSimpleName());

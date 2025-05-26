@@ -1,13 +1,17 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.AsyncPagingIterable;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.service.cqldriver.AccumulatingAsyncResultSet;
@@ -39,7 +43,8 @@ public class CommandQueryExecutor {
 
   public enum QueryTarget {
     TABLE,
-    COLLECTION;
+    COLLECTION,
+    SCHEMA;
 
     final String profilePrefix;
 
@@ -140,18 +145,28 @@ public class CommandQueryExecutor {
     return executeAndWrap(statement);
   }
 
+  public Uni<Metadata> getMetadata(boolean forceRefresh) {
+
+    if (forceRefresh) {
+      return session()
+          .flatMap(session -> Uni.createFrom().completionStage(session.refreshSchemaAsync()));
+    }
+
+    return session()
+        .map(CqlSession::getMetadata);
+  }
   /**
    * Get the metadata for the given keyspace using session.
    *
    * @param keyspace The keyspace name.
    * @return The keyspace metadata if it exists.
    */
-  public Uni<Optional<KeyspaceMetadata>> getKeyspaceMetadata(String keyspace) {
-    return session()
-        .map(CqlSession::getMetadata)
+  public Uni<Optional<KeyspaceMetadata>> getKeyspaceMetadata(CqlIdentifier keyspace, boolean forceRefresh) {
+
+    return getMetadata(forceRefresh)
         .map(
             metadata ->
-                metadata.getKeyspace(CqlIdentifierUtil.cqlIdentifierFromUserInput(keyspace)));
+                metadata.getKeyspace(keyspace));
   }
 
   public Uni<AsyncResultSet> executeCreateSchema(SimpleStatement statement) {
@@ -192,5 +207,22 @@ public class CommandQueryExecutor {
       Tenant tenant,
       String authToken,
       UserAgent userAgent,
-      boolean tracingEnabled) {}
+      boolean tracingEnabled) {
+
+    public DBRequestContext(RequestContext requestContext){
+      this(
+          requestContext.getTenant(),
+          requestContext.getAuthToken(),
+          requestContext.getUserAgent(),
+          false);
+    }
+
+    public DBRequestContext(CommandContext<?> commandContext) {
+      this(
+          commandContext.requestContext().getTenant(),
+          commandContext.requestContext().getAuthToken(),
+          commandContext.requestContext().getUserAgent(),
+          commandContext.requestTracing().enabled());
+    }
+  }
 }

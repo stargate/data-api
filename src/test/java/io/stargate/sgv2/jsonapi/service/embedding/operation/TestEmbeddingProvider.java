@@ -50,15 +50,13 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
   public static final TestEmbeddingProvider TEST_EMBEDDING_PROVIDER =
       new TestEmbeddingProvider(null, null, TEST_MODEL_CONFIG, 3, Map.of());
 
-  private TestConstants testConstants = new TestConstants();
+  private static final TestConstants TEST_CONSTANTS = new TestConstants();
 
   public CommandContext<CollectionSchemaObject> commandContextWithVectorize() {
-    return testConstants.collectionContext(
-        "testCommand",
+    return TEST_CONSTANTS.collectionContext(
+        TEST_CONSTANTS.COMMAND_NAME,
         new CollectionSchemaObject(
-            testConstants.TENANT,
-            testConstants.KEYSPACE_NAME,
-            testConstants.COLLECTION_NAME,
+            TEST_CONSTANTS.COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),
             VectorConfig.fromColumnDefinitions(
                 List.of(

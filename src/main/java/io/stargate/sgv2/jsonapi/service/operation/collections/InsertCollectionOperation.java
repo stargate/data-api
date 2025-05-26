@@ -83,7 +83,7 @@ public record InsertCollectionOperation(
     final boolean vectorEnabled = commandContext().schemaObject().vectorConfig().vectorEnabled();
     if (!vectorEnabled && insertions.stream().anyMatch(insertion -> insertion.hasVectorValues())) {
       throw ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
-          commandContext().schemaObject().identifier().table());
+          commandContext().schemaObject().identifier().fullName());
     }
     // create json doc write metrics
     if (commandContext.jsonProcessingMetricsReporter() != null) {

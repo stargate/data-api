@@ -15,6 +15,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -65,7 +66,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
   @BeforeEach
   public void beforeEach() {
     super.beforeEach();
-    COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
+    COMMAND_CONTEXT = createCommandContextWithCommandName(TEST_CONSTANTS.COMMAND_NAME);
   }
 
   private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {
@@ -86,7 +87,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
   private SimpleStatement nonVectorUpdateStatement(WritableShreddedDocument shredDocument) {
     final String updateCql =
         ReadAndUpdateCollectionOperation.buildUpdateQuery(
-            KEYSPACE_NAME, COLLECTION_NAME, false, false);
+            TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME, false, false);
     return ReadAndUpdateCollectionOperation.bindUpdateValues(
         updateCql, shredDocument, false, false);
   }
@@ -98,7 +99,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     // read1
     String collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     UUID tx_id1 = UUID.randomUUID();
     UUID tx_id2 = UUID.randomUUID();
@@ -126,7 +127,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     //     read2
     collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     SimpleStatement stmt2 =
         SimpleStatement.newInstance(
@@ -239,7 +240,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     // read1
     String collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     UUID tx_id1 = UUID.randomUUID();
     UUID tx_id2 = UUID.randomUUID();
@@ -268,7 +269,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     // read2
     collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     SimpleStatement stmt2 =
         SimpleStatement.newInstance(
@@ -390,7 +391,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     // read1
     String collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     UUID tx_id1 = UUID.randomUUID();
     UUID tx_id2 = UUID.randomUUID();
@@ -419,7 +420,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     // read2
     collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 1"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     SimpleStatement stmt2 =
         SimpleStatement.newInstance(
@@ -539,7 +540,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     QueryExecutor queryExecutor = mock(QueryExecutor.class);
     String collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     UUID tx_id1 = UUID.randomUUID();
     UUID tx_id2 = UUID.randomUUID();
@@ -598,7 +599,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     SimpleStatement stmt2 =
         SimpleStatement.newInstance(
@@ -725,7 +726,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
     QueryExecutor queryExecutor = mock(QueryExecutor.class);
     String collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE array_contains CONTAINS ? LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
 
     UUID tx_id1 = UUID.randomUUID();
     UUID tx_id2 = UUID.randomUUID();
@@ -783,7 +784,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
             });
     collectionReadCql =
         "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE (key = ? AND array_contains CONTAINS ?) LIMIT 3"
-            .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+            .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     SimpleStatement stmt2 =
         SimpleStatement.newInstance(
             collectionReadCql,

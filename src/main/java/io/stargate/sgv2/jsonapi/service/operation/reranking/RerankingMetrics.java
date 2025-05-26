@@ -4,9 +4,11 @@ import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricNames.*;
 import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.*;
 import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.Timer;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.metrics.MetricsConstants;
 import io.stargate.sgv2.jsonapi.metrics.MicrometerConfiguration;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
@@ -85,7 +87,7 @@ public class RerankingMetrics {
     // Record the passage count for the specific tenant and table
     Tags tenantTags =
         new RerankingTagsBuilder()
-            .withTenant(requestContext.getTenant().tenantId())
+            .withTenant(requestContext.getTenant())
             .withKeyspace(schemaObject.identifier().keyspace())
             .withTable(schemaObject.identifier().table())
             .build();
@@ -137,7 +139,7 @@ public class RerankingMetrics {
     // Build tags for the tenant timer
     Tags tenantTags =
         new RerankingTagsBuilder()
-            .withTenant(requestContext.getTenant().tenantId())
+            .withTenant(requestContext.getTenant())
             .withKeyspace(schemaObject.identifier().keyspace())
             .withTable(schemaObject.identifier().table())
             .build();
@@ -175,18 +177,18 @@ public class RerankingMetrics {
       this.tagsMap = new HashMap<>();
     }
 
-    public RerankingTagsBuilder withTenant(String tenantId) {
-      putOrThrow(TENANT_TAG, tenantId);
+    public RerankingTagsBuilder withTenant(Tenant tenant) {
+      putOrThrow(TENANT_TAG, tenant.toString());
       return this;
     }
 
-    public RerankingTagsBuilder withKeyspace(String keyspace) {
-      putOrThrow(KEYSPACE_TAG, keyspace);
+    public RerankingTagsBuilder withKeyspace(CqlIdentifier keyspace) {
+      putOrThrow(KEYSPACE_TAG, keyspace.asInternal());
       return this;
     }
 
-    public RerankingTagsBuilder withTable(String table) {
-      putOrThrow(TABLE_TAG, table);
+    public RerankingTagsBuilder withTable(CqlIdentifier table) {
+      putOrThrow(TABLE_TAG, table.asInternal());
       return this;
     }
 

@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema;
 
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.logging.LoggingMDCContext;
@@ -10,54 +11,61 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 import org.slf4j.MDC;
 
-public class SchemaObjectIdentifier implements Recordable, LoggingMDCContext {
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
+
+public class SchemaObjectIdentifier implements KeyspaceScopedName,  Recordable, LoggingMDCContext {
 
   private final SchemaObjectType type;
   private final Tenant tenant;
-  private final String keyspace;
-  private final String table;
+  private final CqlIdentifier keyspace;
+  private final CqlIdentifier table;
 
   private final String fullName;
 
   private SchemaObjectIdentifier(
-      SchemaObjectType type, Tenant tenant, String keyspace, String table) {
+      SchemaObjectType type, Tenant tenant, CqlIdentifier keyspace, CqlIdentifier table) {
+
     this.type = type;
     this.tenant = tenant;
     this.keyspace = keyspace;
     this.table = table;
 
-    this.fullName = table == null ? keyspace : keyspace + "." + table;
+    this.fullName = table == null ?
+        cqlIdentifierToMessageString(keyspace)
+        :
+        cqlIdentifierToMessageString(keyspace) + "." + cqlIdentifierToMessageString(table);
   }
 
   public static SchemaObjectIdentifier forDatabase(Tenant tenant) {
+
     checkTeantId(tenant);
     return new SchemaObjectIdentifier(SchemaObjectType.DATABASE, tenant, null, null);
   }
 
-  public static SchemaObjectIdentifier forKeyspace(Tenant tenant, String keyspace) {
+  public static SchemaObjectIdentifier forKeyspace(Tenant tenant, CqlIdentifier keyspace) {
+
     checkTeantId(tenant);
     checkKeyspaceName(keyspace);
     return new SchemaObjectIdentifier(SchemaObjectType.KEYSPACE, tenant, keyspace, null);
   }
 
-  // factory for a collection
   public static SchemaObjectIdentifier forCollection(
-      Tenant tenant, String keyspace, String collection) {
+      Tenant tenant, CqlIdentifier keyspace, CqlIdentifier collection) {
+
     checkTeantId(tenant);
     checkKeyspaceName(keyspace);
     checkTableName("collection", collection);
     return new SchemaObjectIdentifier(SchemaObjectType.COLLECTION, tenant, keyspace, collection);
   }
 
-  // factory for a table
-  public static SchemaObjectIdentifier forTable(Tenant tenant, String keyspace, String table) {
+  public static SchemaObjectIdentifier forTable(Tenant tenant, CqlIdentifier keyspace, CqlIdentifier table) {
+
     checkTeantId(tenant);
     checkKeyspaceName(keyspace);
     checkTableName("table", table);
     return new SchemaObjectIdentifier(SchemaObjectType.TABLE, tenant, keyspace, table);
   }
 
-  // fatopry takes TableMetadata and type
   public static SchemaObjectIdentifier fromTableMetadata(
       SchemaObjectType type, Tenant tenant, TableMetadata tableMetadata) {
 
@@ -68,13 +76,13 @@ public class SchemaObjectIdentifier implements Recordable, LoggingMDCContext {
       case TABLE ->
           forTable(
               tenant,
-              tableMetadata.getKeyspace().asInternal(),
-              tableMetadata.getName().asInternal());
+              tableMetadata.getKeyspace(),
+              tableMetadata.getName());
       case COLLECTION ->
           forCollection(
               tenant,
-              tableMetadata.getKeyspace().asInternal(),
-              tableMetadata.getName().asInternal());
+              tableMetadata.getKeyspace(),
+              tableMetadata.getName());
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }
@@ -91,12 +99,19 @@ public class SchemaObjectIdentifier implements Recordable, LoggingMDCContext {
     return tenant;
   }
 
-  public String keyspace() {
+  @Override
+  @Nullable
+  public CqlIdentifier keyspace() {
     return keyspace;
   }
 
   @Nullable
-  public String table() {
+  public CqlIdentifier table() {
+    return table;
+  }
+
+  @Override
+  public CqlIdentifier objectName() {
     return table;
   }
 
@@ -108,23 +123,23 @@ public class SchemaObjectIdentifier implements Recordable, LoggingMDCContext {
     Objects.requireNonNull(tenant, "tenant name must not be null");
   }
 
-  private static void checkKeyspaceName(String keyspace) {
+  private static void checkKeyspaceName(CqlIdentifier keyspace) {
     Objects.requireNonNull(keyspace, "keyspace name must not be null");
-    Preconditions.checkArgument(!keyspace.isBlank(), "keyspace name must not be blank");
+    Preconditions.checkArgument(!keyspace.asInternal().isBlank(), "keyspace name must not be blank");
   }
 
-  private static void checkTableName(String context, String table) {
+  private static void checkTableName(String context, CqlIdentifier table) {
     Objects.requireNonNull(table, context + " name must not be null");
-    Preconditions.checkArgument(!table.isBlank(), context + " name must not be blank");
+    Preconditions.checkArgument(!table.asInternal().isBlank(), context + " name must not be blank");
   }
 
   @Override
   public void addToMDC() {
     // NOTE: MUST stay as namespace for logging analysis
-    MDC.put("namespace", keyspace);
+    MDC.put("namespace", keyspace.asInternal());
 
     // NOTE: MUST stay as collection for logging analysis
-    MDC.put("collection", table);
+    MDC.put("collection", table == null ? null : table.asInternal());
   }
 
   @Override
@@ -144,7 +159,7 @@ public class SchemaObjectIdentifier implements Recordable, LoggingMDCContext {
     }
     return type == that.type
         && Objects.equals(tenant, that.tenant)
-        && keyspace.equals(that.keyspace)
+        && Objects.equals(keyspace, that.keyspace)
         && Objects.equals(table, that.table);
   }
 

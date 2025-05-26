@@ -11,6 +11,10 @@ public class DatabaseSchemaObject extends SchemaObject {
     super(SchemaObjectType.DATABASE, SchemaObjectIdentifier.forDatabase(tenant));
   }
 
+  public DatabaseSchemaObject(SchemaObjectIdentifier identifier) {
+    super(SchemaObjectType.DATABASE, identifier);
+  }
+
   @Override
   public VectorConfig vectorConfig() {
     return VectorConfig.NOT_ENABLED_CONFIG;

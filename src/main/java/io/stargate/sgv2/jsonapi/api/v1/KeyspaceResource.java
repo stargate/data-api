@@ -25,6 +25,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
@@ -48,6 +50,8 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestResponse;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+
 @Path(KeyspaceResource.BASE_PATH)
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -59,17 +63,21 @@ public class KeyspaceResource {
 
   @Inject private RequestContext requestContext;
 
+  private final SchemaObjectCacheSupplier schemaObjectCacheSupplier;
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
   private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject
   public KeyspaceResource(
+      SchemaObjectCacheSupplier schemaObjectCacheSupplier,
       MeteredCommandProcessor meteredCommandProcessor,
       MeterRegistry meterRegistry,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CqlSessionCacheSupplier sessionCacheSupplier,
       EmbeddingProviderFactory embeddingProviderFactory,
       RerankingProviderFactory rerankingProviderFactory) {
+
+    this.schemaObjectCacheSupplier = schemaObjectCacheSupplier;
     this.meteredCommandProcessor = meteredCommandProcessor;
 
     contextBuilderSupplier =
@@ -141,28 +149,35 @@ public class KeyspaceResource {
     //    CommandContext commandContext = new CommandContext(keyspace, null);
     // HACK TODO: The above did not set a command name on the command context, how did that work ?
 
-    var commandContext =
-        contextBuilderSupplier
-            .getBuilder(new KeyspaceSchemaObject(requestContext.getTenant(), keyspace))
-            .withEmbeddingProvider(null)
-            .withCommandName(command.getClass().getSimpleName())
-            .withRequestContext(requestContext)
-            .build();
+    var keyspaceIdentifier = SchemaObjectIdentifier.forKeyspace(requestContext.getTenant(),
+        cqlIdentifierFromUserInput(keyspace));
 
-    // Need context first to check if feature is enabled
-    if (command instanceof TableOnlyCommand
-        && !commandContext.apiFeatures().isFeatureEnabled(ApiFeature.TABLES)) {
-      return Uni.createFrom()
-          .item(
-              new ThrowableCommandResultSupplier(
-                  ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException()))
-          .map(commandResult -> commandResult.toRestResponse());
-    }
+    // Force refresh on all keyspace commands because they are all DDL commands
+    return schemaObjectCacheSupplier.get()
+        .getKeyspace(requestContext, keyspaceIdentifier, requestContext.getUserAgent(), true)
+        .flatMap(keyspaceSchemaObject -> {
 
-    // call processor
-    return meteredCommandProcessor
-        .processCommand(commandContext, command)
-        // map to 2xx unless overridden by error
-        .map(commandResult -> commandResult.toRestResponse());
+          var commandContext =
+              contextBuilderSupplier
+                  .getBuilder(keyspaceSchemaObject)
+                  .withEmbeddingProvider(null)
+                  .withCommandName(command.getClass().getSimpleName())
+                  .withRequestContext(requestContext)
+                  .build();
+
+          // Need context first to check if feature is enabled, because of request overrides
+          if (command instanceof TableOnlyCommand
+              && !commandContext.apiFeatures().isFeatureEnabled(ApiFeature.TABLES)) {
+            return Uni.createFrom()
+                .item(
+                    new ThrowableCommandResultSupplier(
+                        ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException()))
+                .map(commandResult -> commandResult.toRestResponse());
+          }
+
+          return meteredCommandProcessor
+              .processCommand(commandContext, command)
+              .map(commandResult -> commandResult.toRestResponse());
+        });
   }
 }

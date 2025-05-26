@@ -42,8 +42,7 @@ public class DropIndexDBTask extends SchemaDBTask<KeyspaceSchemaObject> {
     // The keyspace name always comes from the metadata, we need to add support to hold the
     // KeyspaceMetadata
     Drop drop =
-        SchemaBuilder.dropIndex(
-            CqlIdentifier.fromInternal(schemaObject.identifier().keyspace()), indexName);
+        SchemaBuilder.dropIndex(schemaObject.identifier().keyspace(), indexName);
 
     // Apply any additional options
     drop = cqlOptions.applyBuilderOptions(drop);

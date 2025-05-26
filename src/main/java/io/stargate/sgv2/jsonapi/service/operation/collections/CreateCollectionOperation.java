@@ -136,8 +136,7 @@ public record CreateCollectionOperation(
           //  aaron - 23 may 2025, having this huge lambda is not great. This is a partial refactor to make
           // this operation fully Async, without refactoring all the logic.
           KeyspaceMetadata currKeyspace =
-              allKeyspaces.get(
-                  CqlIdentifier.fromInternal(commandContext.schemaObject().identifier().keyspace()));
+              allKeyspaces.get(commandContext.schemaObject().identifier().keyspace());
 
           if (currKeyspace == null) {
             return Uni.createFrom()
@@ -260,7 +259,7 @@ public record CreateCollectionOperation(
         queryExecutor.executeCreateSchemaChange(
             dataApiRequestInfo,
             getCreateTable(
-                commandContext.schemaObject().identifier().keyspace(),
+                commandContext.schemaObject().identifier().keyspace().asInternal(),
                 name,
                 vectorSearch,
                 vectorSize,
@@ -277,7 +276,7 @@ public record CreateCollectionOperation(
                   if (res.wasApplied()) {
                     final List<SimpleStatement> indexStatements =
                         getIndexStatements(
-                            commandContext.schemaObject().identifier().keyspace(),
+                            commandContext.schemaObject().identifier().keyspace().asInternal(),
                             name,
                             lexicalConfig,
                             collectionExisted);

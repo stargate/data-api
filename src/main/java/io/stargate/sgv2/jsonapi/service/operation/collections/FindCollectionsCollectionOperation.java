@@ -21,6 +21,8 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatche
 import java.util.List;
 import java.util.function.Supplier;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
+
 /**
  * Find collection operation. Uses {@link CQLSessionCache} to fetch all valid jsonapi tables for a
  * namespace. The schema check against the table is done in the {@link CollectionTableMatcher}.
@@ -59,7 +61,7 @@ public record FindCollectionsCollectionOperation(
     return queryExecutor
         .getDriverMetadata(requestContext)
         .map(Metadata::getKeyspaces)
-        .map(keyspaces -> keyspaces.get(CqlIdentifier.fromInternal(commandContext.schemaObject().identifier().keyspace())))
+        .map(keyspaces -> keyspaces.get(commandContext.schemaObject().identifier().keyspace()))
         .map(
             keyspaceMetadata -> {
               if (keyspaceMetadata == null) {
@@ -96,7 +98,7 @@ public record FindCollectionsCollectionOperation(
         builder.addStatus(CommandStatus.EXISTING_COLLECTIONS, createCollectionCommands);
       } else {
         List<String> tables =
-            collections.stream().map(schemaObject -> schemaObject.identifier().table()).toList();
+            collections.stream().map(schemaObject -> cqlIdentifierToMessageString( schemaObject.identifier().table())).toList();
         builder.addStatus(CommandStatus.EXISTING_COLLECTIONS, tables);
       }
       return builder.build();

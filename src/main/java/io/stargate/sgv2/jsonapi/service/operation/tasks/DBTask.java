@@ -186,11 +186,7 @@ public abstract class DBTask<SchemaT extends SchemaObject>
     // , improve later
     return new CommandQueryExecutor(
         commandContext.cqlSessionCache(),
-        new CommandQueryExecutor.DBRequestContext(
-            commandContext.requestContext().getTenant(),
-            commandContext.requestContext().getAuthToken(),
-            commandContext.requestContext().getUserAgent(),
-            commandContext.requestTracing().enabled()),
+        new CommandQueryExecutor.DBRequestContext(commandContext),
         CommandQueryExecutor.QueryTarget.TABLE);
   }
 

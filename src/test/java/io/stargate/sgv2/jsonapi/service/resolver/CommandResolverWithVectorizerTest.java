@@ -36,7 +36,6 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollecti
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
-import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
@@ -57,6 +56,8 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class CommandResolverWithVectorizerTest {
+  private static final TestConstants TEST_CONSTANTS = new TestConstants();
+
   @Inject ObjectMapper objectMapper;
   @Inject OperationsConfig operationsConfig;
   @Inject DocumentShredder documentShredder;
@@ -80,7 +81,6 @@ public class CommandResolverWithVectorizerTest {
   @Inject InsertOneCommandResolver insertOneCommandResolver;
 
   @Inject DataVectorizerService dataVectorizerService;
-  private final TestConstants testConstants = new TestConstants();
   private final TestEmbeddingProvider testEmbeddingProvider = new TestEmbeddingProvider();
 
   private static final Tenant TENANT = Tenant.create(DatabaseType.ASTRA, "test-tenant");
@@ -95,13 +95,10 @@ public class CommandResolverWithVectorizerTest {
     @BeforeEach
     public void beforeEach() {
       VECTOR_COMMAND_CONTEXT =
-          testConstants.collectionContext(
-              "testCommand",
+          TEST_CONSTANTS.collectionContext(
+              TEST_CONSTANTS.COMMAND_NAME,
               new CollectionSchemaObject(
-                      TENANT,
-                      KEYSPACE_NAME,
-                      COLLECTION_NAME,
-
+                  TEST_CONSTANTS.COLLECTION_IDENTIFIER,
                   IdConfig.defaultIdConfig(),
                   VectorConfig.fromColumnDefinitions(
                       List.of(

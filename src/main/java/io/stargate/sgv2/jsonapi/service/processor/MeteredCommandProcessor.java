@@ -160,8 +160,8 @@ public class MeteredCommandProcessor {
         new CommandLog(
             command.getClass().getSimpleName(),
             commandContext.requestContext().getTenant().tenantId(),
-            commandContext.schemaObject().identifier().keyspace(),
-            commandContext.schemaObject().identifier().table(),
+            commandContext.schemaObject().identifier().keyspace().asInternal(),
+            commandContext.schemaObject().identifier().table().asInternal(),
             commandContext.schemaObject().type().name(),
             getIncomingDocumentsCount(command),
             getOutgoingDocumentsCount(result),

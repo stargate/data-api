@@ -55,8 +55,6 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class CreateCollectionOperationTest extends OperationTestBase {
 
-  private TestConstants testConstants = new TestConstants();
-
   @Inject DatabaseLimitsConfig databaseLimitsConfig;
 
   @Inject ObjectMapper objectMapper;
@@ -100,7 +98,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
       DefaultKeyspaceMetadata keyspaceMetadata =
           new DefaultKeyspaceMetadata(
-              CqlIdentifier.fromInternal(KEYSPACE_NAME),
+              TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace(),
               false,
               false,
               new HashMap<>(),
@@ -109,7 +107,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               new HashMap<>(),
               new HashMap<>(),
               new HashMap<>());
-      allKeyspaces.put(CqlIdentifier.fromInternal(KEYSPACE_NAME), keyspaceMetadata);
+      allKeyspaces.put(TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace(), keyspaceMetadata);
       when(metadata.getKeyspaces()).thenReturn(allKeyspaces);
 
       CreateCollectionOperation operation =
@@ -118,7 +116,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               databaseLimitsConfig,
               objectMapper,
               sessionCache,
-              COLLECTION_NAME,
+              TEST_CONSTANTS.COLLECTION_NAME,
               "",
               10,
               false,
@@ -160,7 +158,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
       DefaultKeyspaceMetadata keyspaceMetadata =
           new DefaultKeyspaceMetadata(
-              CqlIdentifier.fromInternal(KEYSPACE_NAME),
+              TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace(),
               false,
               false,
               new HashMap<>(),
@@ -169,7 +167,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               new HashMap<>(),
               new HashMap<>(),
               new HashMap<>());
-      allKeyspaces.put(CqlIdentifier.fromInternal(KEYSPACE_NAME), keyspaceMetadata);
+      allKeyspaces.put(TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace(), keyspaceMetadata);
       when(metadata.getKeyspaces()).thenReturn(allKeyspaces);
 
       CreateCollectionOperation operation =
@@ -178,7 +176,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               databaseLimitsConfig,
               objectMapper,
               sessionCache,
-              COLLECTION_NAME,
+              TEST_CONSTANTS.COLLECTION_NAME,
               5,
               "cosine",
               "",
@@ -223,7 +221,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
       DefaultKeyspaceMetadata keyspaceMetadata =
           new DefaultKeyspaceMetadata(
-              CqlIdentifier.fromInternal(KEYSPACE_NAME),
+              TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace(),
               false,
               false,
               new HashMap<>(),
@@ -232,7 +230,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               new HashMap<>(),
               new HashMap<>(),
               new HashMap<>());
-      allKeyspaces.put(CqlIdentifier.fromInternal(KEYSPACE_NAME), keyspaceMetadata);
+      allKeyspaces.put(TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace(), keyspaceMetadata);
       when(metadata.getKeyspaces()).thenReturn(allKeyspaces);
 
       CreateCollectionOperation operation =
@@ -241,7 +239,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               databaseLimitsConfig,
               objectMapper,
               sessionCache,
-              COLLECTION_NAME,
+              TEST_CONSTANTS.COLLECTION_NAME,
               "",
               10,
               false,
@@ -283,7 +281,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
       DefaultKeyspaceMetadata keyspaceMetadata =
           new DefaultKeyspaceMetadata(
-              CqlIdentifier.fromInternal(KEYSPACE_NAME),
+              TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace(),
               false,
               false,
               new HashMap<>(),
@@ -292,7 +290,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               new HashMap<>(),
               new HashMap<>(),
               new HashMap<>());
-      allKeyspaces.put(CqlIdentifier.fromInternal(KEYSPACE_NAME), keyspaceMetadata);
+      allKeyspaces.put(TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace(), keyspaceMetadata);
       when(metadata.getKeyspaces()).thenReturn(allKeyspaces);
 
       CreateCollectionOperation operation =
@@ -301,7 +299,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               databaseLimitsConfig,
               objectMapper,
               sessionCache,
-              COLLECTION_NAME,
+              TEST_CONSTANTS.COLLECTION_NAME,
               5,
               "cosine",
               "",
@@ -371,7 +369,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
       DefaultKeyspaceMetadata keyspaceMetadata =
           new DefaultKeyspaceMetadata(
-              CqlIdentifier.fromInternal(KEYSPACE_NAME),
+              TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace(),
               false,
               false,
               new HashMap<>(),
@@ -380,7 +378,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               new HashMap<>(),
               new HashMap<>(),
               new HashMap<>());
-      allKeyspaces.put(CqlIdentifier.fromInternal(KEYSPACE_NAME), keyspaceMetadata);
+      allKeyspaces.put(TEST_CONSTANTS.KEYSPACE_IDENTIFIER.keyspace(), keyspaceMetadata);
       when(metadata.getKeyspaces()).thenReturn(allKeyspaces);
 
       CreateCollectionOperation operation =
@@ -389,7 +387,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               databaseLimitsConfig,
               objectMapper,
               sessionCache,
-              COLLECTION_NAME,
+              TEST_CONSTANTS.COLLECTION_NAME,
               "",
               10,
               true,

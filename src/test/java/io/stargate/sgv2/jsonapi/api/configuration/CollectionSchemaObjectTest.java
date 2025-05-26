@@ -25,9 +25,7 @@ public class CollectionSchemaObjectTest {
         new CollectionIndexingConfig(new HashSet<>(Arrays.asList("abc")), null);
     CollectionSchemaObject settings =
         new CollectionSchemaObject(
-            TEST_CONSTANTS.TENANT,
-            "namespace",
-            "collectionName",
+            TEST_CONSTANTS.COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             indexingConfig,

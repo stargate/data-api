@@ -23,7 +23,6 @@ import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
-import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -32,7 +31,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.*;
-import org.apache.commons.lang3.RandomStringUtils;
+
 import org.junit.jupiter.api.BeforeEach;
 
 public class OperationTestBase {
@@ -44,12 +43,13 @@ public class OperationTestBase {
   // this will work even though the base class is not managed by Quarkus
   @InjectMock protected RequestContext dataApiRequestInfo;
 
-  private final TestConstants testConstants = new TestConstants();
+  protected static final TestConstants TEST_CONSTANTS = new TestConstants();
 
-  protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-  protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  protected final SchemaObjectIdentifier SCHEMA_OBJECT_NAME =
-      SchemaObjectIdentifier.forCollection(testConstants.TENANT, KEYSPACE_NAME, COLLECTION_NAME);
+//  protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
+//  protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
+//  protected final SchemaObjectIdentifier SCHEMA_OBJECT_NAME =
+//      SchemaObjectIdentifier.forCollection(TEST_CONSTANTS.TENANT,
+//          CqlIdentifier.fromInternal(KEYSPACE_NAME), CqlIdentifier.fromInternal(COLLECTION_NAME));
 
   protected CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
   protected KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
@@ -65,31 +65,29 @@ public class OperationTestBase {
     // must do this here to avoid touching quarkus config before it is initialized
     COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
-            SCHEMA_OBJECT_NAME.tenant(),
-            SCHEMA_OBJECT_NAME.keyspace(),
-            SCHEMA_OBJECT_NAME.table(),
+            TEST_CONSTANTS.COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
             CollectionLexicalConfig.configForDisabled(),
             CollectionRerankDef.configForPreRerankingCollection());
 
-    KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(SCHEMA_OBJECT_NAME.tenant(), SCHEMA_OBJECT_NAME.keyspace());
+    KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(TEST_CONSTANTS.KEYSPACE_IDENTIFIER);
 
     COLLECTION_CONTEXT =
-        testConstants.collectionContext(
-            testConstants.TEST_COMMAND_NAME,
+        TEST_CONSTANTS.collectionContext(
+            TEST_CONSTANTS.COMMAND_NAME,
             COLLECTION_SCHEMA_OBJECT,
             jsonProcessingMetricsReporter,
             null);
     KEYSPACE_CONTEXT =
-        testConstants.keyspaceContext(
-            testConstants.TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
+        TEST_CONSTANTS.keyspaceContext(
+            TEST_CONSTANTS.COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, jsonProcessingMetricsReporter);
   }
 
   protected CommandContext<CollectionSchemaObject> createCommandContextWithCommandName(
       String commandName) {
-    return testConstants.collectionContext(
+    return TEST_CONSTANTS.collectionContext(
         commandName, COLLECTION_SCHEMA_OBJECT, jsonProcessingMetricsReporter, null);
   }
 
@@ -98,7 +96,7 @@ public class OperationTestBase {
   }
 
   protected ColumnDefinitions buildColumnDefs(List<TestColumn> columns) {
-    return buildColumnDefs(KEYSPACE_NAME, COLLECTION_NAME, columns);
+    return buildColumnDefs(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME, columns);
   }
 
   protected ColumnDefinitions buildColumnDefs(

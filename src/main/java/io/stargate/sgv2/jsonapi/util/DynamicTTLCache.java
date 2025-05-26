@@ -135,10 +135,6 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     this.cache = CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, this.cacheName);
   }
 
-  protected Uni<ValueT> get(KeyT key) {
-    return get(key, false);
-  }
-
   /**
    * Retrieves or creates a {@link CqlSession} for the specified tenant and authentication token.
    *
@@ -152,11 +148,11 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
    *     the session will use the TTL for the SLA user.
    * @return a {@link CqlSession} associated with the given tenantId and authToken
    */
-  protected Uni<ValueT> get(KeyT key, boolean forceRefresh) {
+  protected Uni<ValueT> get(KeyT key) {
 
     Objects.requireNonNull(key, "key must not be null");
 
-    if (forceRefresh) {
+    if (key.forceRefresh()) {
       return Uni.createFrom()
           .completionStage(onLoadValue(key, Runnable::run))
           .invoke(
@@ -256,6 +252,10 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
   /** Key for CQLSession cache. */
   public interface CacheKey {
     Duration ttl();
+
+    default boolean forceRefresh() {
+      return false;
+    }
   }
 
   /**

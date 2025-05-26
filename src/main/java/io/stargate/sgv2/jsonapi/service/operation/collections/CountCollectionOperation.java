@@ -56,8 +56,8 @@ public record CountCollectionOperation(
               .count()
               .as("count")
               .from(
-                  commandContext.schemaObject().identifier().keyspace(),
-                  commandContext.schemaObject().identifier().table())
+                  commandContext.schemaObject().identifier().keyspace().asInternal(),
+                  commandContext.schemaObject().identifier().table().asInternal())
               .where(expressions.get(0))
               .build();
     } else {
@@ -66,8 +66,8 @@ public record CountCollectionOperation(
               .select()
               .column("key")
               .from(
-                  commandContext.schemaObject().identifier().keyspace(),
-                  commandContext.schemaObject().identifier().table())
+                  commandContext.schemaObject().identifier().keyspace().asInternal(),
+                  commandContext.schemaObject().identifier().table().asInternal())
               .where(expressions.get(0))
               .limit(limit + 1)
               .build();

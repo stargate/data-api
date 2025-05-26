@@ -516,8 +516,8 @@ public record FindCollectionOperation(
                             ? documentColumns
                             : documentKeyColumns)
                     .from(
-                        commandContext.schemaObject().identifier().keyspace(),
-                        commandContext.schemaObject().identifier().table())
+                        commandContext.schemaObject().identifier().keyspace().asInternal(),
+                        commandContext.schemaObject().identifier().table().asInternal())
                     .where(expression)
                     .limit(limit);
             var bm25Expr = bm25SearchExpression();
@@ -549,8 +549,8 @@ public record FindCollectionOperation(
               DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME,
               commandContext().schemaObject().similarityFunction())
           .from(
-              commandContext.schemaObject().identifier().keyspace(),
-              commandContext.schemaObject().identifier().table())
+              commandContext.schemaObject().identifier().keyspace().asInternal(),
+              commandContext.schemaObject().identifier().table().asInternal())
           .where(expression)
           .limit(limit)
           .vsearch(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
@@ -560,8 +560,8 @@ public record FindCollectionOperation(
           .select()
           .column(CollectionReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
           .from(
-              commandContext.schemaObject().identifier().keyspace(),
-              commandContext.schemaObject().identifier().table())
+              commandContext.schemaObject().identifier().keyspace().asInternal(),
+              commandContext.schemaObject().identifier().table().asInternal())
           .where(expression)
           .limit(limit)
           .vsearch(DocumentConstants.Columns.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
@@ -598,8 +598,8 @@ public record FindCollectionOperation(
                   .select()
                   .column(columnsToAdd)
                   .from(
-                      commandContext.schemaObject().identifier().keyspace(),
-                      commandContext.schemaObject().identifier().table())
+                      commandContext.schemaObject().identifier().keyspace().asInternal(),
+                      commandContext.schemaObject().identifier().table().asInternal())
                   .where(expression)
                   .limit(maxSortReadLimit())
                   .build();

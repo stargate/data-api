@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi;
 
 import static org.mockito.Mockito.mock;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -21,7 +22,7 @@ import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.*;
 
 import java.util.List;
-import java.util.Optional;
+
 import org.apache.commons.lang3.RandomStringUtils;
 
 /**
@@ -33,11 +34,15 @@ import org.apache.commons.lang3.RandomStringUtils;
 public class TestConstants {
 
   // Names
-  public final String TEST_COMMAND_NAME = "testCommand";
+  public final String COMMAND_NAME;
+  public final String CORRELATION_ID;
   public final String KEYSPACE_NAME;
   public final String COLLECTION_NAME;
-  public final SchemaObjectIdentifier SCHEMA_OBJECT_NAME;
+
   public final Tenant TENANT;
+  public final SchemaObjectIdentifier DATABASE_IDENTIFIER;
+  public final SchemaObjectIdentifier KEYSPACE_IDENTIFIER;
+  public final SchemaObjectIdentifier COLLECTION_IDENTIFIER;
 
   // Schema objects for testing
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
@@ -48,17 +53,21 @@ public class TestConstants {
 
   public TestConstants() {
 
-    TENANT = Tenant.create(DatabaseType.ASTRA, "test-tenant");
-    KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-    COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-    SCHEMA_OBJECT_NAME = SchemaObjectIdentifier.forCollection(TENANT, KEYSPACE_NAME, COLLECTION_NAME);
+    CORRELATION_ID = "test-id-" + RandomStringUtils.randomAlphanumeric(16);
+
+    COMMAND_NAME = "command-" + CORRELATION_ID;
+    TENANT = Tenant.create(DatabaseType.ASTRA, "tenant-"+ CORRELATION_ID);
+    KEYSPACE_NAME = "keyspace-" + CORRELATION_ID;
+    COLLECTION_NAME = "collection-" + CORRELATION_ID;
+
+    DATABASE_IDENTIFIER = SchemaObjectIdentifier.forDatabase(TENANT);
+    KEYSPACE_IDENTIFIER = SchemaObjectIdentifier.forKeyspace(TENANT, CqlIdentifier.fromInternal(KEYSPACE_NAME));
+    COLLECTION_IDENTIFIER = SchemaObjectIdentifier.forCollection(TENANT, CqlIdentifier.fromInternal(KEYSPACE_NAME), CqlIdentifier.fromInternal(COLLECTION_NAME));
 
     // Schema objects for testing
     COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
-            SCHEMA_OBJECT_NAME.tenant(),
-            SCHEMA_OBJECT_NAME.keyspace(),
-            SCHEMA_OBJECT_NAME.table(),
+            COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
@@ -72,9 +81,7 @@ public class TestConstants {
     // Schema object for testing with legacy (pre-lexical-config) defaults
     COLLECTION_SCHEMA_OBJECT_LEGACY =
         new CollectionSchemaObject(
-            SCHEMA_OBJECT_NAME.tenant(),
-            SCHEMA_OBJECT_NAME.keyspace(),
-            SCHEMA_OBJECT_NAME.table(),
+            COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
@@ -83,9 +90,7 @@ public class TestConstants {
 
     VECTOR_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
-            SCHEMA_OBJECT_NAME.tenant(),
-            SCHEMA_OBJECT_NAME.keyspace(),
-            SCHEMA_OBJECT_NAME.table(),
+            COLLECTION_IDENTIFIER,
             IdConfig.defaultIdConfig(),
             VectorConfig.fromColumnDefinitions(
                 List.of(
@@ -99,13 +104,13 @@ public class TestConstants {
             CollectionLexicalConfig.configForDisabled(),
             CollectionRerankDef.configForPreRerankingCollection());
 
-    KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(TENANT, KEYSPACE_NAME);
-    DATABASE_SCHEMA_OBJECT = new DatabaseSchemaObject(TENANT);
+    KEYSPACE_SCHEMA_OBJECT = new KeyspaceSchemaObject(KEYSPACE_IDENTIFIER);
+    DATABASE_SCHEMA_OBJECT = new DatabaseSchemaObject(DATABASE_IDENTIFIER);
   }
 
   // CommandContext for working on the schema objects above
   public CommandContext<CollectionSchemaObject> collectionContext() {
-    return collectionContext(TEST_COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null, null);
+    return collectionContext(COMMAND_NAME, COLLECTION_SCHEMA_OBJECT, null, null);
   }
 
   public CommandContext<CollectionSchemaObject> collectionContext(
@@ -131,7 +136,7 @@ public class TestConstants {
 
   public CommandContext<KeyspaceSchemaObject> keyspaceContext() {
     return keyspaceContext(
-        TEST_COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, mock(JsonProcessingMetricsReporter.class));
+        COMMAND_NAME, KEYSPACE_SCHEMA_OBJECT, mock(JsonProcessingMetricsReporter.class));
   }
 
   public CommandContext<KeyspaceSchemaObject> keyspaceContext(
@@ -162,7 +167,7 @@ public class TestConstants {
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
         .withMeterRegistry(mock(MeterRegistry.class))
         .getBuilder(DATABASE_SCHEMA_OBJECT)
-        .withCommandName(TEST_COMMAND_NAME)
+        .withCommandName(COMMAND_NAME)
         .withRequestContext(new RequestContext(TENANT))
         .build();
   }
@@ -177,9 +182,7 @@ public class TestConstants {
 
     if (original.tableMetadata() == null) {
       return new CollectionSchemaObject(
-          original.identifier().tenant(),
-          original.identifier().keyspace(),
-          original.identifier().table(),
+          original.identifier(),
           idConfig,
           original.vectorConfig(),
           original.indexingConfig(),

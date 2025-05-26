@@ -1,39 +1,65 @@
 package io.stargate.sgv2.jsonapi.service.schema;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListenerBase;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.session.Session;
 import com.github.benmanes.caffeine.cache.Ticker;
+import com.google.common.annotations.VisibleForTesting;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.DynamicTTLCache;
+
+import java.lang.ref.WeakReference;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.swing.text.html.Option;
 
 public class SchemaObjectCache
     extends DynamicTTLCache<SchemaObjectCache.SchemaCacheKey, SchemaObject> {
   private static final Logger LOGGER = LoggerFactory.getLogger(SchemaObjectCache.class);
 
   private final DynamicTTLSupplier ttlSupplier;
-  private final SchemaObjectFactory schemaObjectFactory;
 
   SchemaObjectCache(
-      DatabaseType databaseType,
+      long cacheMaxSize,
+      Duration cacheTTL,
+      UserAgent slaUserAgent,
+      Duration slaUserTTL,
+      SchemaObjectFactory schemaObjectFactory,
+      MeterRegistry meterRegistry){
+    this(
+        cacheMaxSize,
+        cacheTTL,
+        slaUserAgent,
+        slaUserTTL,
+        schemaObjectFactory,
+        meterRegistry,
+        false,
+        null);
+  }
+
+  @VisibleForTesting
+  SchemaObjectCache(
       long cacheMaxSize,
       Duration cacheTTL,
       UserAgent slaUserAgent,
@@ -45,50 +71,111 @@ public class SchemaObjectCache
     super(
         "schema_object_cache",
         cacheMaxSize,
-        cacheKey -> schemaObjectFactory.apply(cacheKey.schemaIdentifier()),
+        cacheKey -> schemaObjectFactory.apply(
+            cacheKey.requestContext().orElseThrow(() -> new IllegalStateException(
+                "SchemaCacheKey requestContext is null, weak reference was cleared")),
+            cacheKey.schemaIdentifier(),
+            cacheKey.forceRefresh()),
         List.of(),
         meterRegistry,
         asyncTaskOnCaller,
         cacheTicker);
 
-    this.schemaObjectFactory =
-        Objects.requireNonNull(schemaObjectFactory, "schemaObjectFactory must not be null");
+    Objects.requireNonNull(schemaObjectFactory, "schemaObjectFactory must not be null");
     this.ttlSupplier = new DynamicTTLSupplier(cacheTTL, slaUserAgent, slaUserTTL);
 
     LOGGER.info(
-        "Initializing SchemaObjectCache with databaseType={}, cacheMaxSize={}, ttlSupplier={}",
-        databaseType,
+        "Initializing SchemaObjectCache with cacheMaxSize={}, ttlSupplier={}",
         cacheMaxSize,
         ttlSupplier);
   }
 
-  public CollectionSchemaObject getCollection(
-      RequestContext requestContext, String keyspace, String collection, boolean forceRefresh) {
-    return get(
-        SchemaObjectIdentifier.forCollection(requestContext.getTenant(), keyspace, collection),
-        requestContext.getUserAgent(),
-        forceRefresh);
+  public Uni<DatabaseSchemaObject> getDatabase(
+      RequestContext requestContext, SchemaObjectIdentifier identifier, UserAgent userAgent, boolean forceRefresh) {
+    return get(requestContext, identifier, userAgent, forceRefresh);
   }
 
-  public TableSchemaObject getTable(
-      RequestContext requestContext, String keyspace, String table, boolean forceRefresh) {
-    return get(
-        SchemaObjectIdentifier.forTable(requestContext.getTenant(), keyspace, table),
-        requestContext.getUserAgent(),
-        forceRefresh);
+  // get keyspace
+  public Uni<KeyspaceSchemaObject> getKeyspace(
+      RequestContext requestContext, SchemaObjectIdentifier identifier, UserAgent userAgent, boolean forceRefresh) {
+
+    return get(requestContext, identifier, userAgent, forceRefresh);
   }
 
-  private <T extends SchemaObject> T get(
+  public Uni<? extends TableBasedSchemaObject> getTableBased(
+      RequestContext requestContext, KeyspaceScopedName name, UserAgent userAgent, boolean forceRefresh) {
+
+    var collectionKey = createCacheKey(
+        requestContext,
+        SchemaObjectIdentifier.forCollection(requestContext.getTenant(), name.keyspace(), name.objectName()),
+        userAgent,
+        forceRefresh);
+
+    var tableKey = createCacheKey(
+        requestContext,
+        SchemaObjectIdentifier.forTable(requestContext.getTenant(), name.keyspace(), name.objectName()),
+        userAgent,
+        false);
+
+    // we do not know if this is a collection or a table until we load it, and we
+    // cannot change the key once it is loaded, so we need to check both
+
+    // As an optimization, we getifPresent incase the object is a table - we would get a cache miss for
+    // the collection key, then try to load, then discover it is a table, fail the load, then get again
+    // and potentially cache hit for the table.
+
+    if (! forceRefresh) {
+      var optExisting = getIfPresent(collectionKey)
+          .or(() -> getIfPresent(tableKey))
+          .map(obj -> (TableBasedSchemaObject) obj);
+
+      if (optExisting.isPresent()) {
+        // we have a cache hit, return it
+        return Uni.createFrom().item(optExisting.get());
+      }
+    }
+
+    // we do not have a cache hit, or we wanted to force refresh, so we need to load it
+    // force refresh on the collection cache key will cause the cache to load and replace the entry
+    // and if we will refresh the driver metadata. So no need to also do that on the table key.
+    return get(collectionKey)
+        .onFailure(io.stargate.sgv2.jsonapi.service.schema.SchemaObjectFactory.SchemaObjectTypeMismatchException.class)
+        .recoverWithUni(() -> get(tableKey))
+        .map(obj -> (TableBasedSchemaObject) obj);
+
+  }
+
+  private <T extends SchemaObject> Uni<T> get(
+      RequestContext requestContext,
       SchemaObjectIdentifier identifier,
       UserAgent userAgent,
       boolean forceRefresh) {
+
     // todo, check and cast somehow
-    return (T) get(createCacheKey(identifier, userAgent), forceRefresh);
+    return (Uni<T>) get(createCacheKey(requestContext, identifier, userAgent, forceRefresh));
   }
 
-  protected void evictTable(Tenant tenant, String keyspace, String table) {
+  private <T extends SchemaObject> Optional<T> getIfPresent(
+      RequestContext requestContext,
+      SchemaObjectIdentifier identifier,
+      UserAgent userAgent) {
+
+    return (Optional<T>)getIfPresent(createCacheKey(requestContext, identifier, userAgent, false));
+  }
+
+//
+//  private <T extends SchemaObject> Optional<T> getIfPresent(SchemaCacheKey key) {
+//
+//    // todo, check and cast somehow
+//    return (Optional<T>) getIfPresent(key);
+//  }
+  protected void evictTable(Tenant tenant, CqlIdentifier keyspace, CqlIdentifier table) {
     // no need to normalize the keyspace name, it is already normalized
-    var evictKey = createCacheKey(SchemaObjectIdentifier.forTable(tenant, keyspace, table), null);
+    var evictKey = createCacheKey(
+        null,
+        SchemaObjectIdentifier.forTable(tenant, keyspace, table),
+        null,
+        false);
 
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("evictTable() - evictKey: {}", evictKey);
@@ -97,9 +184,13 @@ public class SchemaObjectCache
     evict(evictKey);
   }
 
-  protected void evictKeyspace(Tenant tenant, String keyspace, boolean evictAll) {
+  protected void evictKeyspace(Tenant tenant, CqlIdentifier keyspace, boolean evictAll) {
     // no need to normalize the keyspace name, it is already normalized
-    var evictKey = createCacheKey(SchemaObjectIdentifier.forKeyspace(tenant, keyspace), null);
+    var evictKey = createCacheKey(
+        null,
+        SchemaObjectIdentifier.forKeyspace(tenant, keyspace),
+        null,
+        false);
 
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("evictKeyspace() - evictKey: {}", evictKey);
@@ -108,17 +199,21 @@ public class SchemaObjectCache
     evict(evictKey);
     if (evictAll) {
       // we need to remove all the tables, collections, etc that are in this keyspace
-      evictIf(evictKey::isSameKeyspace);
+      evictIf(key ->  evictKey.schemaIdentifier.isSameKeyspace(key.schemaIdentifier));
     }
   }
 
   private SchemaCacheKey createCacheKey(
+      RequestContext requestContext,
       SchemaObjectIdentifier schemaIdentifier,
-      UserAgent userAgent) {
+      UserAgent userAgent,
+      boolean forceRefresh) {
 
     return new SchemaCacheKey(
+        requestContext,
         schemaIdentifier,
         ttlSupplier.ttlForUsageAgent(userAgent),
+        forceRefresh,
         userAgent);
   }
 
@@ -127,22 +222,34 @@ public class SchemaObjectCache
     private final SchemaObjectIdentifier schemaIdentifier;
     // ttl is not part of the key identity
     private final Duration ttl;
+    private final boolean forceRefresh;
     // user agent only added for logging and debugging, not part of the key identity
     private final UserAgent userAgent;
+    // held as weak because a cache key can be very long-lived, this is the context we loaded it in
+    private WeakReference<RequestContext> requestContextWeakReference;
 
     SchemaCacheKey(
+        RequestContext requestContext,
         SchemaObjectIdentifier schemaIdentifier,
         Duration ttl,
+        boolean forceRefresh,
         UserAgent userAgent) {
 
       this.schemaIdentifier =
           Objects.requireNonNull(schemaIdentifier, "schemaIdentifier must not be null");
       this.ttl = Objects.requireNonNull(ttl, "ttl must not be null");
+      this.forceRefresh = forceRefresh;
       this.userAgent = userAgent;
+      // requestContext may be null, it is only used when we will need to load the schema object
+      this.requestContextWeakReference = new WeakReference<>(requestContext);
     }
 
     SchemaObjectIdentifier schemaIdentifier() {
       return schemaIdentifier;
+    }
+
+    Optional<RequestContext> requestContext() {
+      return Optional.ofNullable(requestContextWeakReference.get());
     }
 
     @Override
@@ -150,8 +257,9 @@ public class SchemaObjectCache
       return ttl;
     }
 
-    boolean isSameKeyspace(SchemaCacheKey other) {
-      return schemaIdentifier.isSameKeyspace(other.schemaIdentifier);
+    @Override
+    public boolean forceRefresh() {
+      return forceRefresh;
     }
 
     @Override
@@ -233,8 +341,8 @@ public class SchemaObjectCache
       if (isSessionReady(context)) {
         schemaObjectCache.evictTable(
             tenant,
-            tableMetadata.getKeyspace().asInternal(),
-            tableMetadata.getName().asInternal());
+            tableMetadata.getKeyspace(),
+            tableMetadata.getName());
       }
     }
 
@@ -242,7 +350,7 @@ public class SchemaObjectCache
         String context, KeyspaceMetadata keyspaceMetadata, boolean evictAll) {
       if (isSessionReady(context)) {
         schemaObjectCache.evictKeyspace(
-            tenant, keyspaceMetadata.getName().asInternal(), evictAll);
+            tenant, keyspaceMetadata.getName(), evictAll);
       }
     }
 
@@ -297,9 +405,7 @@ public class SchemaObjectCache
   }
 
   /** Called to create a new session when one is needed. */
-  @FunctionalInterface
-  interface SchemaObjectFactory
-      extends Function<SchemaObjectIdentifier, CompletionStage<SchemaObject>> {
-    CompletionStage<SchemaObject> apply(SchemaObjectIdentifier identifier);
+  interface SchemaObjectFactory {
+    CompletionStage<SchemaObject> apply(RequestContext requestContext, SchemaObjectIdentifier identifier, boolean forceRefresh);
   }
 }
