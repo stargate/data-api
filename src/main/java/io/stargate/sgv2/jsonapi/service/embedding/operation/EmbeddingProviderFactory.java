@@ -88,7 +88,7 @@ public class EmbeddingProviderFactory {
     final EmbeddingProviderConfigStore.ServiceConfig configuration =
         embeddingProviderConfigStore.get().getConfiguration(tenant, serviceName);
     if (config.enableEmbeddingGateway()) {
-      // TODO: changes for EGW
+      // TODO(Hazel): changes for EGW
       return new EmbeddingGatewayClient(
           configuration.requestConfiguration(),
           configuration.serviceProvider(),
@@ -140,6 +140,7 @@ public class EmbeddingProviderFactory {
                         "unknown model '%s' for service provider '%s'",
                         modelName, configuration.serviceProvider()));
 
+    // TODO(Hazel): changes for hardcoded NONE
     embeddingCredentialsSupplier.withAuthenticationConfig(
         providerConfig
             .supportedAuthentications()

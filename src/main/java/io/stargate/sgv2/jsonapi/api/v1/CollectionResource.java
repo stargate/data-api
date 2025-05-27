@@ -80,6 +80,7 @@ public class CollectionResource {
   @Inject private FeaturesConfig apiFeatureConfig;
   @Inject private RequestContext requestContext;
   @Inject private SchemaCache schemaCache;
+  @Inject private HttpConstants httpConstants;
 
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
   private final EmbeddingProviderFactory embeddingProviderFactory;
@@ -251,16 +252,10 @@ public class CollectionResource {
                 }
                 var embeddingCredentialsSupplier =
                     new EmbeddingCredentialsSupplier(
-                        ConfigPreLoader.getPreLoadOrEmpty().get(HttpConstants.class).token(),
-                        ConfigPreLoader.getPreLoadOrEmpty()
-                            .get(HttpConstants.class)
-                            .embeddingApiKey(),
-                        ConfigPreLoader.getPreLoadOrEmpty()
-                            .get(HttpConstants.class)
-                            .embeddingAccessId(),
-                        ConfigPreLoader.getPreLoadOrEmpty()
-                            .get(HttpConstants.class)
-                            .embeddingSecretId());
+                        httpConstants.token(),
+                        httpConstants.embeddingApiKey(),
+                        httpConstants.embeddingAccessId(),
+                        httpConstants.embeddingSecretId());
 
                 EmbeddingProvider embeddingProvider =
                     (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)

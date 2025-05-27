@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.request;
 
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
-import java.util.Objects;
 import java.util.Optional;
 
 public class EmbeddingCredentialsSupplier {
@@ -29,7 +28,6 @@ public class EmbeddingCredentialsSupplier {
   }
 
   public EmbeddingCredentials create(RequestContext requestContext) {
-    Objects.requireNonNull(authConfig, "Authentication config cannot be null");
 
     String token = requestContext.getHttpHeaders().getHeader(this.tokenHeaderName);
     String embeddingApi = requestContext.getHttpHeaders().getHeader(this.embeddingApiKeyHeaderName);
@@ -38,9 +36,11 @@ public class EmbeddingCredentialsSupplier {
 
     // if x-embedding-api-key is present, then use it, else use cassandraToken
     return new EmbeddingCredentials(
-        authConfig.authTokenPassThrough()
-            ? Optional.ofNullable(token)
-            : Optional.ofNullable(embeddingApi),
+        authConfig == null
+            ? Optional.ofNullable(embeddingApi)
+            : authConfig.authTokenPassThrough()
+                ? Optional.ofNullable(token)
+                : Optional.ofNullable(embeddingApi),
         Optional.ofNullable(accessId),
         Optional.ofNullable(secretId));
   }

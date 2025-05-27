@@ -14,7 +14,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.DropIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListTablesCommand;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsSupplier;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -58,6 +60,7 @@ public class KeyspaceResource {
   public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}";
 
   @Inject private RequestContext requestContext;
+  @Inject private HttpConstants httpConstants;
 
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
   private final MeteredCommandProcessor meteredCommandProcessor;
@@ -141,10 +144,18 @@ public class KeyspaceResource {
     //    CommandContext commandContext = new CommandContext(keyspace, null);
     // HACK TODO: The above did not set a command name on the command context, how did that work ?
 
+    var embeddingCredentialsSupplier =
+        new EmbeddingCredentialsSupplier(
+            httpConstants.token(),
+            httpConstants.embeddingApiKey(),
+            httpConstants.embeddingAccessId(),
+            httpConstants.embeddingSecretId());
+
     var commandContext =
         contextBuilderSupplier
             .getBuilder(new KeyspaceSchemaObject(keyspace))
             .withEmbeddingProvider(null)
+            .withEmbeddingCredentialsSupplier(embeddingCredentialsSupplier)
             .withCommandName(command.getClass().getSimpleName())
             .withRequestContext(requestContext)
             .build();
