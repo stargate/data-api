@@ -27,7 +27,7 @@ public class RequestContext {
 
   private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
-  private final EmbeddingCredentials embeddingCredentials;
+  //  private final EmbeddingCredentials embeddingCredentials;
   private final RerankingCredentials rerankingCredentials;
   private final HttpHeaderAccess httpHeaders;
   private final String requestId;
@@ -43,7 +43,7 @@ public class RequestContext {
   public RequestContext(Optional<String> tenantId) {
     this.tenantId = tenantId;
     this.cassandraToken = Optional.empty();
-    this.embeddingCredentials = null;
+    //    this.embeddingCredentials = null;
     this.rerankingCredentials = null;
     httpHeaders = null;
     requestId = generateRequestId();
@@ -55,8 +55,9 @@ public class RequestContext {
       RoutingContext routingContext,
       SecurityContext securityContext,
       Instance<DataApiTenantResolver> tenantResolver,
-      Instance<DataApiTokenResolver> tokenResolver,
-      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
+      Instance<DataApiTokenResolver> tokenResolver
+      //      ,Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver
+      ) {
 
     this.tenantId = tenantResolver.get().resolve(routingContext, securityContext);
     this.cassandraToken = tokenResolver.get().resolve(routingContext, securityContext);
@@ -65,19 +66,19 @@ public class RequestContext {
     requestId = generateRequestId();
     userAgent = httpHeaders.getHeader(HttpHeaders.USER_AGENT);
 
-    var embeddingCredentialsFromHeader =
-        embeddingCredentialsResolver.get().resolveEmbeddingCredentials(routingContext);
-
-    // if x-embedding-api-key is present, then use it, else use cassandraToken
-    this.embeddingCredentials =
-        embeddingCredentialsFromHeader
-            .apiKey()
-            .map(apiKey -> embeddingCredentialsFromHeader)
-            .orElse(
-                new EmbeddingCredentials(
-                    this.cassandraToken,
-                    embeddingCredentialsFromHeader.accessId(),
-                    embeddingCredentialsFromHeader.secretId()));
+    //    var embeddingCredentialsFromHeader =
+    //        embeddingCredentialsResolver.get().resolveEmbeddingCredentials(routingContext);
+    //
+    //    // if x-embedding-api-key is present, then use it, else use cassandraToken
+    //    this.embeddingCredentials =
+    //        embeddingCredentialsFromHeader
+    //            .apiKey()
+    //            .map(apiKey -> embeddingCredentialsFromHeader)
+    //            .orElse(
+    //                new EmbeddingCredentials(
+    //                    this.cassandraToken,
+    //                    embeddingCredentialsFromHeader.accessId(),
+    //                    embeddingCredentialsFromHeader.secretId()));
 
     Optional<String> rerankingApiKeyFromHeader =
         HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext);
@@ -112,9 +113,9 @@ public class RequestContext {
     return Optional.ofNullable(userAgent);
   }
 
-  public EmbeddingCredentials getEmbeddingCredentials() {
-    return embeddingCredentials;
-  }
+  //  public EmbeddingCredentials getEmbeddingCredentials() {
+  //    return embeddingCredentials;
+  //  }
 
   public RerankingCredentials getRerankingCredentials() {
     return rerankingCredentials;

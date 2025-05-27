@@ -80,6 +80,7 @@ public class EmbeddingTaskGroupBuilder<SchemaT extends TableBasedSchemaObject> {
                   .withRetryPolicy(TaskRetryPolicy.NO_RETRY)
                   .withOriginalCommandName(commandContext.commandName())
                   .withRequestType(requestType)
+                  .withEmbeddingCredentialsSupplier(commandContext.embeddingCredentialsSupplier())
                   .build();
           taskGroup.add(embeddingTask);
         });

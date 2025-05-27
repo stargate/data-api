@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.embeddings;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -31,6 +32,7 @@ public class EmbeddingTaskBuilder<SchemaT extends TableBasedSchemaObject>
   private List<EmbeddingDeferredAction> embeddingActions;
   private TaskRetryPolicy retryPolicy = null;
   private EmbeddingProvider.EmbeddingRequestType requestType;
+  private EmbeddingCredentialsSupplier embeddingCredentialsSupplier;
 
   public EmbeddingTaskBuilder(CommandContext<SchemaT> commandContext) {
     super(commandContext.schemaObject());
@@ -70,6 +72,12 @@ public class EmbeddingTaskBuilder<SchemaT extends TableBasedSchemaObject>
     return this;
   }
 
+  public EmbeddingTaskBuilder<SchemaT> withEmbeddingCredentialsSupplier(
+      EmbeddingCredentialsSupplier embeddingCredentialsSupplier) {
+    this.embeddingCredentialsSupplier = embeddingCredentialsSupplier;
+    return this;
+  }
+
   public EmbeddingTask<SchemaT> build() {
     Objects.requireNonNull(dimension, "dimension cannot be null");
     Objects.requireNonNull(vectorizeDefinition, "vectorizeDefinition cannot be null");
@@ -77,6 +85,8 @@ public class EmbeddingTaskBuilder<SchemaT extends TableBasedSchemaObject>
     Objects.requireNonNull(retryPolicy, "retryPolicy cannot be null");
     Objects.requireNonNull(originalCommandName, "originalCommand cannot be null");
     Objects.requireNonNull(requestType, "requestType cannot be null");
+    Objects.requireNonNull(
+        embeddingCredentialsSupplier, "embeddingCredentialsSupplier cannot be null");
 
     var embeddingProvider =
         commandContext
@@ -89,7 +99,8 @@ public class EmbeddingTaskBuilder<SchemaT extends TableBasedSchemaObject>
                 dimension,
                 vectorizeDefinition.parameters(),
                 vectorizeDefinition.authentication(),
-                originalCommandName);
+                originalCommandName,
+                embeddingCredentialsSupplier);
 
     return new EmbeddingTask<>(
         nextPosition(),

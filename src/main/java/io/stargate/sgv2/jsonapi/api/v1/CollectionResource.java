@@ -23,7 +23,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListIndexesCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsSupplier;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
@@ -247,6 +249,19 @@ public class CollectionResource {
                           .getFirstVectorColumnWithVectorizeDefinition()
                           .orElse(null);
                 }
+                var embeddingCredentialsSupplier =
+                    new EmbeddingCredentialsSupplier(
+                        ConfigPreLoader.getPreLoadOrEmpty().get(HttpConstants.class).token(),
+                        ConfigPreLoader.getPreLoadOrEmpty()
+                            .get(HttpConstants.class)
+                            .embeddingApiKey(),
+                        ConfigPreLoader.getPreLoadOrEmpty()
+                            .get(HttpConstants.class)
+                            .embeddingAccessId(),
+                        ConfigPreLoader.getPreLoadOrEmpty()
+                            .get(HttpConstants.class)
+                            .embeddingSecretId());
+
                 EmbeddingProvider embeddingProvider =
                     (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)
                         ? null
@@ -258,12 +273,14 @@ public class CollectionResource {
                             vectorColDef.vectorSize(),
                             vectorColDef.vectorizeDefinition().parameters(),
                             vectorColDef.vectorizeDefinition().authentication(),
-                            command.getClass().getSimpleName());
+                            command.getClass().getSimpleName(),
+                            embeddingCredentialsSupplier);
 
                 var commandContext =
                     contextBuilderSupplier
                         .getBuilder(schemaObject)
                         .withEmbeddingProvider(embeddingProvider)
+                        .withEmbeddingCredentialsSupplier(embeddingCredentialsSupplier)
                         .withCommandName(command.getClass().getSimpleName())
                         .withRequestContext(requestContext)
                         .build();

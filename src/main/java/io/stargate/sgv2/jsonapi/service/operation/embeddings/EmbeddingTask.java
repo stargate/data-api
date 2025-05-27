@@ -74,7 +74,9 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
             embeddingProvider.vectorize(
                 1, // always use 1, microbatching happens in the provider.
                 vectorizeTexts,
-                commandContext.requestContext().getEmbeddingCredentials(),
+                commandContext
+                    .embeddingCredentialsSupplier()
+                    .create(commandContext.requestContext()),
                 requestType),
         embeddingActions,
         vectorizeTexts);

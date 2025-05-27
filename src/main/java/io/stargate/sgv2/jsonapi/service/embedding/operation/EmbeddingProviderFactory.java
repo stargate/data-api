@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import io.quarkus.grpc.GrpcClient;
 import io.stargate.embedding.gateway.EmbeddingService;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsSupplier;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -57,7 +58,8 @@ public class EmbeddingProviderFactory {
       int dimension,
       Map<String, Object> vectorizeServiceParameters,
       Map<String, String> authentication,
-      String commandName) {
+      String commandName,
+      EmbeddingCredentialsSupplier embeddingCredentialsSupplier) {
     if (vectorizeServiceParameters == null) {
       vectorizeServiceParameters = Map.of();
     }
@@ -69,7 +71,8 @@ public class EmbeddingProviderFactory {
         dimension,
         vectorizeServiceParameters,
         authentication,
-        commandName);
+        commandName,
+        embeddingCredentialsSupplier);
   }
 
   private synchronized EmbeddingProvider addService(
@@ -80,10 +83,12 @@ public class EmbeddingProviderFactory {
       int dimension,
       Map<String, Object> vectorizeServiceParameters,
       Map<String, String> authentication,
-      String commandName) {
+      String commandName,
+      EmbeddingCredentialsSupplier embeddingCredentialsSupplier) {
     final EmbeddingProviderConfigStore.ServiceConfig configuration =
         embeddingProviderConfigStore.get().getConfiguration(tenant, serviceName);
     if (config.enableEmbeddingGateway()) {
+      // TODO: changes for EGW
       return new EmbeddingGatewayClient(
           configuration.requestConfiguration(),
           configuration.serviceProvider(),
@@ -134,6 +139,12 @@ public class EmbeddingProviderFactory {
                     ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
                         "unknown model '%s' for service provider '%s'",
                         modelName, configuration.serviceProvider()));
+
+    embeddingCredentialsSupplier.withAuthenticationConfig(
+        providerConfig
+            .supportedAuthentications()
+            .get(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE));
+
     return ctor.create(
         configuration.requestConfiguration(),
         configuration.getBaseUrl(modelName),

@@ -5,6 +5,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.DefaultRequestTracing;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsSupplier;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
@@ -64,9 +65,12 @@ public class CommandContext<SchemaT extends SchemaObject> {
   // access via {@link CommandContext#apiFeatures()}
   private ApiFeatures apiFeatures;
 
+  private EmbeddingCredentialsSupplier embeddingCredentialsSupplier;
+
   private CommandContext(
       SchemaT schemaObject,
       EmbeddingProvider embeddingProvider,
+      EmbeddingCredentialsSupplier embeddingCredentialsSupplier,
       String commandName,
       RequestContext requestContext,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
@@ -104,6 +108,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
             : RequestTracing.NO_OP;
 
     this.commandFeatures = CommandFeatures.create();
+
+    this.embeddingCredentialsSupplier = embeddingCredentialsSupplier;
   }
 
   /** See doc comments for {@link CommandContext} */
@@ -188,6 +194,10 @@ public class CommandContext<SchemaT extends SchemaObject> {
 
   public MeterRegistry meterRegistry() {
     return meterRegistry;
+  }
+
+  public EmbeddingCredentialsSupplier embeddingCredentialsSupplier() {
+    return embeddingCredentialsSupplier;
   }
 
   public boolean isCollectionContext() {
@@ -306,6 +316,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
       private String commandName;
       private RequestContext requestContext;
       private ApiFeatures apiFeatures;
+      private EmbeddingCredentialsSupplier embeddingCredentialsSupplier;
 
       Builder(SchemaT schemaObject) {
         this.schemaObject = schemaObject;
@@ -335,6 +346,12 @@ public class CommandContext<SchemaT extends SchemaObject> {
         return this;
       }
 
+      public Builder<SchemaT> withEmbeddingCredentialsSupplier(
+          EmbeddingCredentialsSupplier embeddingCredentialsSupplier) {
+        this.embeddingCredentialsSupplier = embeddingCredentialsSupplier;
+        return this;
+      }
+
       public CommandContext<SchemaT> build() {
         // embeddingProvider may be null, e.g. a keyspace command this will change when we pass in
         // all the providers
@@ -344,6 +361,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
         return new CommandContext<>(
             schemaObject,
             embeddingProvider,
+            embeddingCredentialsSupplier,
             commandName,
             requestContext,
             jsonProcessingMetricsReporter,
