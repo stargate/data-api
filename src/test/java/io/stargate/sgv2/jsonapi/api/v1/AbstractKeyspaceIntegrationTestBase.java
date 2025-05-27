@@ -250,7 +250,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
                 line ->
                     line.startsWith("session_cql_requests_seconds") && line.contains("session="))
             .findFirst();
-    LOG.info(metrics.lines().collect(Collectors.joining("\n")));
+    LOG.info("/metrics: " + metrics.lines().collect(Collectors.joining("\n")));
     assertThat(sessionLevelDriverMetricTenantId.isPresent()).isTrue();
   }
 
