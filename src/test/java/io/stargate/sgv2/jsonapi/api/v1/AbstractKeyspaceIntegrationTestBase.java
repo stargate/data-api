@@ -338,8 +338,13 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected RequestSpecification givenHeaders() {
+    return given().headers(getHeaders()).contentType(ContentType.JSON);
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
   protected RequestSpecification givenHeadersAndJson(String json) {
-    return given().headers(getHeaders()).contentType(ContentType.JSON).body(json);
+    return givenHeaders().body(json);
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */

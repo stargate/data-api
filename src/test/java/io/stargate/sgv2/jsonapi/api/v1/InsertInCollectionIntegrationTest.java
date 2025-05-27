@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -13,7 +12,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -502,10 +500,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
                         }
                       """;
       Response response =
-          given()
-              .headers(getHeaders())
-              .contentType(ContentType.JSON)
-              .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          givenHeadersAndJson("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
               .when()
               .post(CollectionResource.BASE_PATH, keyspaceName, COLLECTION_WITH_AUTO_OBJECTID)
               .then()
@@ -525,10 +520,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
       assertThat(objectId).isNotNull();
 
       // And with that, we should be able to find the document
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
               "{\"find\": { \"filter\" : {\"_id\": {\"$objectId\":\"%s\"}}}}"
                   .formatted(objectId.toString()))
           .when()
@@ -1576,10 +1568,7 @@ public class InsertInCollectionIntegrationTest extends AbstractCollectionIntegra
               }
               """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+      givenHeadersAndJson(json)
           .when()
           .post(CollectionResource.BASE_PATH, "something_else", collectionName)
           .then()
