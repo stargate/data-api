@@ -45,11 +45,10 @@ public class FindKeyspacesOperation implements Operation {
         .getDriverMetadata(requestContext)
         .map(
             driverMetadata -> {
-              var keyspaces = driverMetadata.getKeyspaces()
-                  .keySet()
-                  .stream()
-                  .map(CqlIdentifier::asInternal)
-                  .toList();
+              var keyspaces =
+                  driverMetadata.getKeyspaces().keySet().stream()
+                      .map(CqlIdentifier::asInternal)
+                      .toList();
               return new Result(keyspaces, useKeyspaceNaming);
             });
   }

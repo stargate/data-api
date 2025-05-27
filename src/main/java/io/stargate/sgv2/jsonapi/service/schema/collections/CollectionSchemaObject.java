@@ -82,8 +82,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   }
 
   /**
-   * we have a lot of old tests that created a collection without having table meta data.
-   * Use the ctor with TableMetadata in prod code
+   * we have a lot of old tests that created a collection without having table meta data. Use the
+   * ctor with TableMetadata in prod code
    */
   @VisibleForTesting
   public CollectionSchemaObject(
@@ -94,9 +94,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       CollectionLexicalConfig lexicalConfig,
       CollectionRerankDef rerankDef) {
 
-    super(SchemaObjectType.COLLECTION,
-        identifier,
-        null);
+    super(SchemaObjectType.COLLECTION, identifier, null);
 
     this.idConfig = idConfig;
     this.vectorConfig = vectorConfig;
@@ -370,8 +368,13 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         switch (collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY).asInt()) {
           case 1:
             return new CollectionSettingsV1Reader()
-                .readCollectionSettings(tenant,
-                    collectionNode, keyspaceName, collectionName, tableMetadata, objectMapper);
+                .readCollectionSettings(
+                    tenant,
+                    collectionNode,
+                    keyspaceName,
+                    collectionName,
+                    tableMetadata,
+                    objectMapper);
           default:
             throw ErrorCodeV1.INVALID_SCHEMA_VERSION.toApiException();
         }
@@ -463,8 +466,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     // CreateCollectionCommand object is created for convenience to generate json
     // response. The code is not creating a collection here.
     return new CreateCollectionCommand(
-        cqlIdentifierToMessageString(collectionSetting.identifier().table()),
-        options);
+        cqlIdentifierToMessageString(collectionSetting.identifier().table()), options);
   }
 
   public IdConfig idConfig() {

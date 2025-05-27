@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
@@ -12,7 +14,6 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.EmptyAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.Task;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
@@ -20,10 +21,7 @@ import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Predicate;
-
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
 
 /**
  * A task to read metadata from the database, such as list tables.
@@ -59,28 +57,25 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
       CommandContext<SchemaT> commandContext, CommandQueryExecutor queryExecutor) {
 
     return new MetadataAsyncResultSetSupplier(
-        commandContext,
-        this,
-        null,
-        queryExecutor,
-        schemaObject.identifier().keyspace());
-//    this.keyspaceMetadata = queryExecutor.getKeyspaceMetadata(schemaObject.identifier().keyspace());
-//
-//    // TODO: BETTER ERROR
-//    return new AsyncResultSetSupplier(
-//        commandContext,
-//        this,
-//        null,
-//        () ->
-//            queryExecutor
-//                .getKeyspaceMetadata(schemaObject.identifier().keyspace())
-//
-//            keyspaceMetadata.isEmpty()
-//                ? Uni.createFrom()
-//                    .failure(
-//                        SchemaException.Code.INVALID_KEYSPACE.get(
-//                            Map.of("keyspace", schemaObject.identifier().keyspace())))
-//                : Uni.createFrom().item(new EmptyAsyncResultSet()));
+        commandContext, this, null, queryExecutor, schemaObject.identifier().keyspace());
+    //    this.keyspaceMetadata =
+    // queryExecutor.getKeyspaceMetadata(schemaObject.identifier().keyspace());
+    //
+    //    // TODO: BETTER ERROR
+    //    return new AsyncResultSetSupplier(
+    //        commandContext,
+    //        this,
+    //        null,
+    //        () ->
+    //            queryExecutor
+    //                .getKeyspaceMetadata(schemaObject.identifier().keyspace())
+    //
+    //            keyspaceMetadata.isEmpty()
+    //                ? Uni.createFrom()
+    //                    .failure(
+    //                        SchemaException.Code.INVALID_KEYSPACE.get(
+    //                            Map.of("keyspace", schemaObject.identifier().keyspace())))
+    //                : Uni.createFrom().item(new EmptyAsyncResultSet()));
   }
 
   @Override
@@ -90,7 +85,7 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
     this.keyspaceMetadata = ((MetadataAsyncResultSetSupplier) resultSupplier).keyspaceMetadata;
   }
 
-  static class MetadataAsyncResultSetSupplier extends  AsyncResultSetSupplier{
+  static class MetadataAsyncResultSetSupplier extends AsyncResultSetSupplier {
 
     KeyspaceMetadata keyspaceMetadata;
 
@@ -114,14 +109,17 @@ public abstract class MetadataDBTask<SchemaT extends SchemaObject> extends DBTas
       return () ->
           queryExecutor
               .getKeyspaceMetadata(keyspaceName, false)
-              .flatMap(optMetadata ->{
-                this.keyspaceMetadata = optMetadata.orElse(null);
+              .flatMap(
+                  optMetadata -> {
+                    this.keyspaceMetadata = optMetadata.orElse(null);
 
-                return optMetadata.isEmpty() ?
-                    Uni.createFrom().failure(SchemaException.Code.INVALID_KEYSPACE.get(Map.of("keyspace", cqlIdentifierToMessageString(keyspaceName) )))
-                    :
-                    Uni.createFrom().item(new EmptyAsyncResultSet());
-              });
+                    return optMetadata.isEmpty()
+                        ? Uni.createFrom()
+                            .failure(
+                                SchemaException.Code.INVALID_KEYSPACE.get(
+                                    Map.of("keyspace", cqlIdentifierToMessageString(keyspaceName))))
+                        : Uni.createFrom().item(new EmptyAsyncResultSet());
+                  });
     }
   }
 }

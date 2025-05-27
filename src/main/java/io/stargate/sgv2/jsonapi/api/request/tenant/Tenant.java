@@ -1,12 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.request.tenant;
 
+import static io.stargate.sgv2.jsonapi.util.StringUtil.normalizeOptionalString;
+
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.validation.constraints.NotNull;
-
 import java.util.Objects;
-
-import static io.stargate.sgv2.jsonapi.util.StringUtil.normalizeOptionalString;
 
 public class Tenant implements Recordable {
 
@@ -33,7 +32,7 @@ public class Tenant implements Recordable {
 
     var normalizedTenantId = normalizeAndValidateTenantId(databaseType, tenantId);
 
-    if (databaseType.isSingleTenant()){
+    if (databaseType.isSingleTenant()) {
       // use switch to reduce static instance based on database type
       return switch (databaseType) {
         case ASTRA -> SINGLE_TENANT_ASTRA;
@@ -53,23 +52,26 @@ public class Tenant implements Recordable {
     return databaseType;
   }
 
-   static String normalizeAndValidateTenantId(DatabaseType databaseType, String tenantId) {
+  static String normalizeAndValidateTenantId(DatabaseType databaseType, String tenantId) {
 
-     var normalized = normalizeOptionalString(tenantId);
+    var normalized = normalizeOptionalString(tenantId);
 
-     if (databaseType.isSingleTenant()) {
-       if (!normalized.isBlank()) {
-         throw new IllegalArgumentException(
-             "tenantId must be null or blank, got '" + normalized + "' for database type " + databaseType);
-       }
-       return SINGLE_TENANT_ID;
-     }
+    if (databaseType.isSingleTenant()) {
+      if (!normalized.isBlank()) {
+        throw new IllegalArgumentException(
+            "tenantId must be null or blank, got '"
+                + normalized
+                + "' for database type "
+                + databaseType);
+      }
+      return SINGLE_TENANT_ID;
+    }
 
-     if (normalized.isBlank()) {
-       throw new IllegalArgumentException(
-           "tenantId must not be null or blank for database type " + databaseType);
-     }
-     return normalized;
+    if (normalized.isBlank()) {
+      throw new IllegalArgumentException(
+          "tenantId must not be null or blank for database type " + databaseType);
+    }
+    return normalized;
   }
 
   @Override
@@ -90,13 +92,12 @@ public class Tenant implements Recordable {
     if (!(obj instanceof Tenant that)) {
       return false;
     }
-    return Objects.equals(databaseType, that.databaseType) && Objects.equals(tenantId, that.tenantId);
+    return Objects.equals(databaseType, that.databaseType)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public Recordable.DataRecorder recordTo(Recordable.DataRecorder dataRecorder) {
-    return dataRecorder
-        .append("tenantId", tenantId)
-        .append("databaseType", databaseType);
+    return dataRecorder.append("tenantId", tenantId).append("databaseType", databaseType);
   }
 }

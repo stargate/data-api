@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
@@ -14,7 +15,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.DBTraceMessages;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -266,8 +269,7 @@ public class QueryExecutor {
         .atMost(2);
   }
 
-  public Uni<Metadata> getDriverMetadata(
-      RequestContext requestContext) {
+  public Uni<Metadata> getDriverMetadata(RequestContext requestContext) {
 
     return cqlSessionCache
         .getSession(requestContext)
@@ -291,7 +293,8 @@ public class QueryExecutor {
                   metadata.getKeyspaces().get(cqlIdentifierFromUserInput(namespace));
 
               if (keyspaceMetadata == null) {
-                throw ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException("%s", namespace);
+                throw SchemaException.Code.UNKNOWN_KEYSPACE.get(
+                    ErrorObjectV2Constants.TemplateVars.KEYSPACE, namespace);
               }
 
               return keyspaceMetadata.getTable(cqlIdentifierFromUserInput(collectionName));

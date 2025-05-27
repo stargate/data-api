@@ -1,8 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
+
 import com.datastax.oss.driver.api.core.metadata.Metadata;
-import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -12,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -20,8 +22,6 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.util.List;
 import java.util.function.Supplier;
-
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
 
 /**
  * Find collection operation. Uses {@link CQLSessionCache} to fetch all valid jsonapi tables for a
@@ -56,7 +56,8 @@ public record FindCollectionsCollectionOperation(
 
   /** {@inheritDoc} */
   @Override
-  public Uni<Supplier<CommandResult>> execute(RequestContext requestContext, QueryExecutor queryExecutor) {
+  public Uni<Supplier<CommandResult>> execute(
+      RequestContext requestContext, QueryExecutor queryExecutor) {
 
     return queryExecutor
         .getDriverMetadata(requestContext)
@@ -65,18 +66,16 @@ public record FindCollectionsCollectionOperation(
         .map(
             keyspaceMetadata -> {
               if (keyspaceMetadata == null) {
-                throw ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException(
-                            "Unknown keyspace '%s', you must create it first",
-                            commandContext.schemaObject().identifier().keyspace());
+                throw SchemaException.Code.UNKNOWN_KEYSPACE.get(
+                    errVars(commandContext.schemaObject()));
               }
-              var  collections = keyspaceMetadata
-                      .getTables()
-                      .values()
-                      .stream()
+              var collections =
+                  keyspaceMetadata.getTables().values().stream()
                       .filter(tableMatcher)
                       .map(
                           table ->
-                              CollectionSchemaObject.getCollectionSettings(requestContext.getTenant(), table, objectMapper))
+                              CollectionSchemaObject.getCollectionSettings(
+                                  requestContext.getTenant(), table, objectMapper))
                       .toList();
               return new Result(explain, collections);
             });
@@ -98,7 +97,10 @@ public record FindCollectionsCollectionOperation(
         builder.addStatus(CommandStatus.EXISTING_COLLECTIONS, createCollectionCommands);
       } else {
         List<String> tables =
-            collections.stream().map(schemaObject -> cqlIdentifierToMessageString( schemaObject.identifier().table())).toList();
+            collections.stream()
+                .map(
+                    schemaObject -> cqlIdentifierToMessageString(schemaObject.identifier().table()))
+                .toList();
         builder.addStatus(CommandStatus.EXISTING_COLLECTIONS, tables);
       }
       return builder.build();

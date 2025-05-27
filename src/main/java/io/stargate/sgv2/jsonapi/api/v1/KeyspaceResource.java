@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.ConfigPreLoader;
@@ -21,7 +23,6 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
@@ -49,8 +50,6 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestResponse;
-
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 @Path(KeyspaceResource.BASE_PATH)
 @Produces(MediaType.APPLICATION_JSON)
@@ -149,35 +148,37 @@ public class KeyspaceResource {
     //    CommandContext commandContext = new CommandContext(keyspace, null);
     // HACK TODO: The above did not set a command name on the command context, how did that work ?
 
-    var keyspaceIdentifier = SchemaObjectIdentifier.forKeyspace(requestContext.getTenant(),
-        cqlIdentifierFromUserInput(keyspace));
+    var keyspaceIdentifier =
+        SchemaObjectIdentifier.forKeyspace(
+            requestContext.getTenant(), cqlIdentifierFromUserInput(keyspace));
 
     // Force refresh on all keyspace commands because they are all DDL commands
-    return schemaObjectCacheSupplier.get()
+    return schemaObjectCacheSupplier
+        .get()
         .getKeyspace(requestContext, keyspaceIdentifier, requestContext.getUserAgent(), true)
-        .flatMap(keyspaceSchemaObject -> {
+        .flatMap(
+            keyspaceSchemaObject -> {
+              var commandContext =
+                  contextBuilderSupplier
+                      .getBuilder(keyspaceSchemaObject)
+                      .withEmbeddingProvider(null)
+                      .withCommandName(command.getClass().getSimpleName())
+                      .withRequestContext(requestContext)
+                      .build();
 
-          var commandContext =
-              contextBuilderSupplier
-                  .getBuilder(keyspaceSchemaObject)
-                  .withEmbeddingProvider(null)
-                  .withCommandName(command.getClass().getSimpleName())
-                  .withRequestContext(requestContext)
-                  .build();
+              // Need context first to check if feature is enabled, because of request overrides
+              if (command instanceof TableOnlyCommand
+                  && !commandContext.apiFeatures().isFeatureEnabled(ApiFeature.TABLES)) {
+                return Uni.createFrom()
+                    .item(
+                        new ThrowableCommandResultSupplier(
+                            ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException()))
+                    .map(commandResult -> commandResult.toRestResponse());
+              }
 
-          // Need context first to check if feature is enabled, because of request overrides
-          if (command instanceof TableOnlyCommand
-              && !commandContext.apiFeatures().isFeatureEnabled(ApiFeature.TABLES)) {
-            return Uni.createFrom()
-                .item(
-                    new ThrowableCommandResultSupplier(
-                        ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException()))
-                .map(commandResult -> commandResult.toRestResponse());
-          }
-
-          return meteredCommandProcessor
-              .processCommand(commandContext, command)
-              .map(commandResult -> commandResult.toRestResponse());
-        });
+              return meteredCommandProcessor
+                  .processCommand(commandContext, command)
+                  .map(commandResult -> commandResult.toRestResponse());
+            });
   }
 }

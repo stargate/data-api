@@ -17,10 +17,8 @@
 
 package io.stargate.sgv2.jsonapi.api.request.token;
 
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.core.SecurityContext;
-import java.util.Optional;
 
 /** The {@link RequestAuthTokenResolver} that resolves a token from the HTTP header. */
 public class HeaderTokenResolver implements RequestAuthTokenResolver {

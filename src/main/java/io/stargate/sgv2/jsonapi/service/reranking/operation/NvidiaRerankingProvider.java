@@ -149,8 +149,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
     Uni<RerankingResponse> response =
         applyRetry(
             nvidiaRerankingClient.rerank(
-                HttpConstants.BEARER_PREFIX_FOR_API_KEY + rerankingCredentials.apiKey(),
-                request));
+                HttpConstants.BEARER_PREFIX_FOR_API_KEY + rerankingCredentials.apiKey(), request));
 
     return response
         .onItem()

@@ -1,10 +1,8 @@
 package io.stargate.sgv2.jsonapi.config;
 
-import static io.stargate.sgv2.jsonapi.util.StringUtil.normalizeOptionalString;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlCredentialsFactory;
 import java.util.Objects;
-
 import org.eclipse.microprofile.config.spi.Converter;
 
 /**
@@ -14,7 +12,7 @@ import org.eclipse.microprofile.config.spi.Converter;
  * CqlCredentialsFactory}.
  */
 public enum DatabaseType {
-  ASTRA (false),
+  ASTRA(false),
   CASSANDRA(true),
   OFFLINE_WRITER(false);
 

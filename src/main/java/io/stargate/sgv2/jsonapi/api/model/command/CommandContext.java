@@ -20,7 +20,6 @@ import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFac
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -51,7 +50,8 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
   private final RerankingProviderFactory rerankingProviderFactory;
 
   // Request specific
-  private final EmbeddingProvider embeddingProvider; // to be removed later, this is a single provider
+  private final EmbeddingProvider
+      embeddingProvider; // to be removed later, this is a single provider
   private final RequestContext requestContext;
   private final RequestTracing requestTracing;
   private final SchemaT schemaObject;
@@ -239,8 +239,8 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
   }
 
   /**
-   * NOTE: Not using AutoCloseable because it created a lot of linting warnings, we only want to close
-   * this in the request resource handler.
+   * NOTE: Not using AutoCloseable because it created a lot of linting warnings, we only want to
+   * close this in the request resource handler.
    */
   public void close() throws Exception {
     removeFromMDC();
@@ -361,18 +361,19 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
         Objects.requireNonNull(commandName, "commandName must not be null");
         Objects.requireNonNull(requestContext, "requestContext must not be null");
 
-        var context= new CommandContext<>(
-            schemaObject,
-            embeddingProvider,
-            commandName,
-            requestContext,
-            jsonProcessingMetricsReporter,
-            cqlSessionCache,
-            commandConfig,
-            apiFeatures,
-            embeddingProviderFactory,
-            rerankingProviderFactory,
-            meterRegistry);
+        var context =
+            new CommandContext<>(
+                schemaObject,
+                embeddingProvider,
+                commandName,
+                requestContext,
+                jsonProcessingMetricsReporter,
+                cqlSessionCache,
+                commandConfig,
+                apiFeatures,
+                embeddingProviderFactory,
+                rerankingProviderFactory,
+                meterRegistry);
         context.addToMDC();
         return context;
       }

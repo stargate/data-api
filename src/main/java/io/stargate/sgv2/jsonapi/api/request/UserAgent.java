@@ -1,18 +1,16 @@
 package io.stargate.sgv2.jsonapi.api.request;
 
-import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import static io.stargate.sgv2.jsonapi.util.StringUtil.normalizeOptionalString;
+
 import io.stargate.sgv2.jsonapi.metrics.TenantRequestMetricsFilter;
 import io.stargate.sgv2.jsonapi.metrics.TenantRequestMetricsTagProvider;
-
-import java.util.Objects;
 import java.util.regex.Pattern;
-
-import static io.stargate.sgv2.jsonapi.util.StringUtil.normalizeOptionalString;
 
 public class UserAgent {
 
   // Match on the product name, and then optional version. See usage
-  private static final Pattern PRODUCT_VERSION_REGEX = Pattern.compile("^([^\\s\\/]+)(?:\\/([^\\s]+))?");
+  private static final Pattern PRODUCT_VERSION_REGEX =
+      Pattern.compile("^([^\\s\\/]+)(?:\\/([^\\s]+))?");
 
   private final String rawUserAgent;
   private final ProductVersion productVersion;
@@ -24,8 +22,8 @@ public class UserAgent {
 
   /**
    * Extract the first product from the user agent.
-   * <p>
-   * We assume the agent string has the following format:
+   *
+   * <p>We assume the agent string has the following format:
    *
    * <pre>
    *   User-Agent: product/version (system-information) [additional-details]
@@ -33,11 +31,10 @@ public class UserAgent {
    *   e.g. Mozilla/5.0 (Macintosh; Intel Mac OS X 13_3_1)
    * </pre>
    *
-   *  In the above example, the product is "Mozilla".
-   *  <p>
-   *  This logic used to be in {@link TenantRequestMetricsFilter} and
-   *  {@link TenantRequestMetricsTagProvider}
+   * In the above example, the product is "Mozilla".
    *
+   * <p>This logic used to be in {@link TenantRequestMetricsFilter} and {@link
+   * TenantRequestMetricsTagProvider}
    */
   private static ProductVersion extractProduct(String rawUserAgent) {
 
@@ -47,7 +44,8 @@ public class UserAgent {
       return new ProductVersion(matcher.group(1), matcher.group(2));
     }
     // no match, default to using the full user agent as the product name
-    return new ProductVersion(normalizeOptionalString(rawUserAgent), normalizeOptionalString((String)null));
+    return new ProductVersion(
+        normalizeOptionalString(rawUserAgent), normalizeOptionalString((String) null));
   }
 
   public String product() {
@@ -56,6 +54,7 @@ public class UserAgent {
 
   /**
    * Gets the raw user agent string from the request.
+   *
    * @return
    */
   @Override
@@ -73,7 +72,6 @@ public class UserAgent {
       return false;
     }
     return rawUserAgent.equalsIgnoreCase(that.rawUserAgent);
-
   }
 
   @Override
@@ -81,5 +79,5 @@ public class UserAgent {
     return rawUserAgent.toLowerCase().hashCode();
   }
 
-  private record ProductVersion(String product, String version) { }
+  private record ProductVersion(String product, String version) {}
 }

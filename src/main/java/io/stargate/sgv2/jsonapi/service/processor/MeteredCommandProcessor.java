@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 /**
  * A processor that wraps the core {@link CommandProcessor} to add metrics and command-level logging
@@ -230,8 +229,7 @@ public class MeteredCommandProcessor {
     Set<String> allowedTenants =
         commandLevelLoggingConfig.enabledTenants().orElse(Collections.singleton(ALL_TENANTS));
     if (!allowedTenants.contains(ALL_TENANTS)
-        && !allowedTenants.contains(
-            commandContext.requestContext().getTenant().tenantId())) {
+        && !allowedTenants.contains(commandContext.requestContext().getTenant().tenantId())) {
       // Logging disabled for this tenant
       return false;
     }
@@ -263,7 +261,8 @@ public class MeteredCommandProcessor {
     // --- Basic Tags ---
     // Identify the command being executed and the tenant associated with the request
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
-    Tag tenantTag = Tag.of(tenantConfig.tenantTag(), commandContext.requestContext().getTenant().tenantId());
+    Tag tenantTag =
+        Tag.of(tenantConfig.tenantTag(), commandContext.requestContext().getTenant().tenantId());
 
     // --- Error Tags ---
     // Determine if the command resulted in an error and capture details

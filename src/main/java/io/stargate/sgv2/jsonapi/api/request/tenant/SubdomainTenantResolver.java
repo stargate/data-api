@@ -20,11 +20,11 @@ package io.stargate.sgv2.jsonapi.api.request.tenant;
 import io.stargate.sgv2.jsonapi.config.MultiTenancyConfig;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.core.SecurityContext;
-
 import java.util.regex.Pattern;
 
 /**
- * {@link RequestTenantResolver} that finds the tenant ID in the left most domain part of the host name.
+ * {@link RequestTenantResolver} that finds the tenant ID in the left most domain part of the host
+ * name.
  *
  * <p>For example, having <code>tenant-id.domain.com</code> will resolve tenant identifier to the
  * <code>tenant-id</code>. In case of top-level domain, <code>domain.com</code> will resolve tenant
@@ -76,9 +76,9 @@ public class SubdomainTenantResolver implements RequestTenantResolver {
 
         // TODO: this was returned as empty, but we cannot have a missing tenant
         throw new RuntimeException("TODO XXX BANG!");
-//        if (!matches) {
-//          return Optional.empty();
-//        }
+        //        if (!matches) {
+        //          return Optional.empty();
+        //        }
       }
 
       return TenantFactory.instance().create(tenantId);

@@ -26,11 +26,13 @@ public record TruncateCollectionOperation(CommandContext<CollectionSchemaObject>
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
 
-    logger.info("Executing TruncateCollectionOperation for {}", context.schemaObject().identifier());
+    logger.info(
+        "Executing TruncateCollectionOperation for {}", context.schemaObject().identifier());
 
     String cql =
         TRUNCATE_TABLE_CQL.formatted(
-            context.schemaObject().identifier().keyspace(), context.schemaObject().identifier().table());
+            context.schemaObject().identifier().keyspace(),
+            context.schemaObject().identifier().table());
     SimpleStatement query = SimpleStatement.newInstance(cql);
 
     return queryExecutor

@@ -5,38 +5,31 @@ import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.github.benmanes.caffeine.cache.Ticker;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
-import io.stargate.sgv2.jsonapi.config.DatabaseType;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import io.stargate.sgv2.jsonapi.util.CacheTestsBase;
+import io.stargate.sgv2.jsonapi.util.DynamicTTLCacheTests;
 import org.junit.jupiter.api.Test;
 
 /** Tests for {@link CQLSessionCache}. */
-public class CqlSessionCacheTests {
+public class CqlSessionCacheTests extends CacheTestsBase  {
 
   // None of these TTLs are real, we are using hte Fake Ticker to control the time
-  private static final String AUTH_TOKEN = "authToken";
-  private static final Tenant TENANT = Tenant.create(DatabaseType.ASTRA, "test-tenant");
-  private static final Duration CACHE_TTL = Duration.ofSeconds(10);
-  private final int CACHE_MAX_SIZE = 10;
-
-  private static final String SLA_USER_AGENT_STRING = "SLA_USER_AGENT";
-  private static final UserAgent SLA_USER_AGENT = new UserAgent(SLA_USER_AGENT_STRING);
-  private static final Duration SLA_USER_TTL = Duration.ofSeconds(5);
-
+  private final String AUTH_TOKEN = "authToken-" + TEST_CONSTANTS.CORRELATION_ID;
 
   @Test
   public void sessionFactoryCalledOnceOnly() {
 
     var fixture = newFixture();
 
-    var actualSession = fixture.cache.getSession(TENANT, AUTH_TOKEN, null);
+    var actualSession = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
@@ -45,7 +38,7 @@ public class CqlSessionCacheTests {
     verify(fixture.credentialsFactory).apply(AUTH_TOKEN);
 
     // tenant and expected credentials passed to the session factory
-    verify(fixture.sessionFactory).apply(TENANT, fixture.expectedCredentials);
+    verify(fixture.sessionFactory).apply(TEST_CONSTANTS.TENANT, fixture.expectedCredentials);
 
     verifyNoMoreInteractions(fixture.credentialsFactory, fixture.sessionFactory);
 
@@ -53,7 +46,7 @@ public class CqlSessionCacheTests {
     clearInvocations(fixture.credentialsFactory, fixture.sessionFactory);
 
     // Second call to check cache hit
-    var actualSession2 = fixture.cache.getSession(TENANT, AUTH_TOKEN, null);
+    var actualSession2 = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
     assertThat(actualSession2)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
@@ -65,12 +58,11 @@ public class CqlSessionCacheTests {
     verifyNoInteractions(fixture.sessionFactory);
   }
 
-
   @Test
   public void sessionClosedAndListenerCalledOnForced() {
     var fixture = newFixture();
 
-    var actualSession = fixture.cache.getSession(TENANT, AUTH_TOKEN, null);
+    var actualSession = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
@@ -81,9 +73,9 @@ public class CqlSessionCacheTests {
     verify(fixture.expectedSession).close();
 
     // should have called our listener when evicted
-    verify(fixture.listener).accept(eq(TENANT));
+    verify(fixture.listener).accept(eq(TEST_CONSTANTS.TENANT));
 
-    assertThat(fixture.cache.peekSession(TENANT, AUTH_TOKEN, null))
+    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null))
         .as("Session is not in cache after eviction")
         .isNotPresent();
   }
@@ -93,7 +85,7 @@ public class CqlSessionCacheTests {
 
     var fixture = newFixture();
 
-    var actualSession = fixture.cache.getSession(TENANT, AUTH_TOKEN, null);
+    var actualSession = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
@@ -108,10 +100,10 @@ public class CqlSessionCacheTests {
     verify(fixture.expectedSession).close();
 
     // should have called our consumer when expired
-    verify(fixture.listener).accept(TENANT);
+    verify(fixture.listener).accept(TEST_CONSTANTS.TENANT);
 
     // session should not be in the cache
-    assertThat(fixture.cache.peekSession(TENANT, AUTH_TOKEN, null))
+    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null))
         .as("Session is not in cache after expried")
         .isNotPresent();
   }
@@ -121,14 +113,14 @@ public class CqlSessionCacheTests {
 
     var fixture = newFixture();
 
-    var actualSession = fixture.cache.getSession(TENANT, AUTH_TOKEN, null);
+    var actualSession = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
 
     // must not call consumer until evicted
     verifyNoInteractions(fixture.listener);
 
     // force eviction
     fixture.cache.clearCache();
-    verify(fixture.listener).accept(TENANT);
+    verify(fixture.listener).accept(TEST_CONSTANTS.TENANT);
     verifyNoMoreInteractions(fixture.listener);
   }
 
@@ -139,10 +131,11 @@ public class CqlSessionCacheTests {
     doThrow(new RuntimeException("test exception")).when(listener1).accept(any());
     var listener2 = listenerWithLogging();
 
-    var fixture = newFixture(
-        List.of(listener1, listener2), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL);
+    var fixture =
+        newFixture(
+            List.of(listener1, listener2), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL);
 
-    var actualSession = fixture.cache.getSession(TENANT, AUTH_TOKEN, null);
+    var actualSession = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
@@ -151,8 +144,8 @@ public class CqlSessionCacheTests {
     fixture.cache.clearCache();
 
     // should call both consumers, even though consumer 1 throws an exception
-    verify(listener1).accept(TENANT);
-    verify(listener2).accept(TENANT);
+    verify(listener1).accept(TEST_CONSTANTS.TENANT);
+    verify(listener2).accept(TEST_CONSTANTS.TENANT);
     verifyNoMoreInteractions(listener1, listener2);
   }
 
@@ -165,17 +158,16 @@ public class CqlSessionCacheTests {
     assertThrows(
         IllegalStateException.class,
         () -> {
-          fixture.cache.getSession(TENANT, AUTH_TOKEN, null);
+          fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
         });
   }
-
 
   /**
    * {@link io.stargate.sgv2.jsonapi.util.DynamicTTLCacheTests} tests that the dynamic TTL works,
    * this checks that because we can have multiple CqlSession instances in flights for the same
    * tenant + credentials we are closing and handling that.
-   * <p>
-   * There can be multiple CqlSession instances in flight because the cache is lazy, it may not
+   *
+   * <p>There can be multiple CqlSession instances in flight because the cache is lazy, it may not
    * evict the items until the next time the cache is accessed.
    */
   @Test
@@ -187,7 +179,7 @@ public class CqlSessionCacheTests {
     var expectedSlaSession = mock(CqlSession.class);
     when(fixture.sessionFactory.apply(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(expectedSlaSession));
-    var actualSlaSession = fixture.cache.getSession(TENANT, AUTH_TOKEN, SLA_USER_AGENT);
+    var actualSlaSession = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, SLA_USER_AGENT);
 
     assertThat(actualSlaSession)
         .as("Session from cache is expectedSlaSession")
@@ -200,7 +192,7 @@ public class CqlSessionCacheTests {
     var expectedNonSlaSession = mock(CqlSession.class);
     when(fixture.sessionFactory.apply(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(expectedNonSlaSession));
-    var actualNonSlaSession = fixture.cache.getSession(TENANT, AUTH_TOKEN, null);
+    var actualNonSlaSession = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
 
     assertThat(actualNonSlaSession)
         .as("Session from cache is expectedNonSlaSession, new session obtained")
@@ -212,12 +204,13 @@ public class CqlSessionCacheTests {
     // the user agent is not part of the key, only tenant and auth, user agent is used to
     // create the TTL for the key
     // for sanity, peeking session is not present with either
-    assertThat(fixture.cache.peekSession(TENANT, AUTH_TOKEN, SLA_USER_AGENT))
-        .as("SLA Session is not present in cache when peeking with SLA agent - after non SLA expiry")
+    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, SLA_USER_AGENT))
+        .as(
+            "SLA Session is not present in cache when peeking with SLA agent - after non SLA expiry")
         .isNotPresent();
-    assertThat(fixture.cache.peekSession(TENANT, AUTH_TOKEN, null))
+    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null))
         .as("SLA Session is not present in cache when peeking non SLA agent - after non SLA expiry")
-            .isNotPresent();
+        .isNotPresent();
 
     // Now give the cache time to clean, which means it should actually evict items
     fixture.cache.cleanUp();
@@ -232,7 +225,7 @@ public class CqlSessionCacheTests {
   // =======================================================
 
   private Tenant thisTenant(int i) {
-    return Tenant.create(TENANT.databaseType(), "%s-%s".formatted(TENANT.toString(), i));
+    return Tenant.create(TEST_CONSTANTS.TENANT.databaseType(), "%s-%s".formatted(TEST_CONSTANTS.TENANT.toString(), i));
   }
 
   private String thisAuthToken(int i) {
@@ -254,20 +247,7 @@ public class CqlSessionCacheTests {
     return consumer;
   }
 
-  /** {@link Ticker} for the cache so we can control the time for testing differentiated TTL */
-  static class FakeTicker implements Ticker {
 
-    private long nanos = 0;
-
-    @Override
-    public long read() {
-      return nanos;
-    }
-
-    public void advance(Duration duration) {
-      nanos += duration.toNanos();
-    }
-  }
 
   private record Fixture(
       CQLSessionCache cache,
@@ -277,7 +257,7 @@ public class CqlSessionCacheTests {
       CqlSession expectedSession,
       CQLSessionCache.SessionFactory sessionFactory,
       MeterRegistry meterRegistry,
-      FakeTicker ticker) {
+      DynamicTTLCacheTests.FakeTicker ticker) {
 
     CqlCredentials setTokenCredentials(String authToken) {
       var expectedCredentials = new CqlCredentials.TokenCredentials(authToken);
@@ -287,14 +267,8 @@ public class CqlSessionCacheTests {
   }
 
   private Fixture newFixture() {
-    return newFixture(
-        List.of(),
-        CACHE_TTL,
-        CACHE_MAX_SIZE,
-        SLA_USER_AGENT,
-        SLA_USER_TTL);
+    return newFixture(List.of(), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL);
   }
-
 
   private Fixture newFixture(
       List<CQLSessionCache.DeactivatedTenantListener> listeners,
@@ -313,12 +287,12 @@ public class CqlSessionCacheTests {
 
     var sessionFactory = mock(CQLSessionCache.SessionFactory.class);
     var expectedSession = mock(CqlSession.class);
-      when(sessionFactory.apply(TENANT, expectedCredentials))
-          .thenReturn(CompletableFuture.completedFuture(expectedSession));
+    when(sessionFactory.apply(TEST_CONSTANTS.TENANT, expectedCredentials))
+        .thenReturn(CompletableFuture.completedFuture(expectedSession));
 
     var meterRegistry = new SimpleMeterRegistry();
 
-    var fakeTicker = new FakeTicker();
+    var fakeTicker = new DynamicTTLCacheTests.FakeTicker();
 
     // run async on caller thread so they will reliably complete before the test ends, used for
     // removal callback

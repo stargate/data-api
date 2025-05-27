@@ -15,27 +15,21 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
-import io.stargate.sgv2.jsonapi.config.DatabaseType;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionFactory;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.DynamicTTLCache;
-
 import java.lang.ref.WeakReference;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.text.html.Option;
-
 public class SchemaObjectCache
     extends DynamicTTLCache<SchemaObjectCache.SchemaCacheKey, SchemaObject> {
+
   private static final Logger LOGGER = LoggerFactory.getLogger(SchemaObjectCache.class);
 
   private final DynamicTTLSupplier ttlSupplier;
@@ -46,7 +40,7 @@ public class SchemaObjectCache
       UserAgent slaUserAgent,
       Duration slaUserTTL,
       SchemaObjectFactory schemaObjectFactory,
-      MeterRegistry meterRegistry){
+      MeterRegistry meterRegistry) {
     this(
         cacheMaxSize,
         cacheTTL,
@@ -71,11 +65,16 @@ public class SchemaObjectCache
     super(
         "schema_object_cache",
         cacheMaxSize,
-        cacheKey -> schemaObjectFactory.apply(
-            cacheKey.requestContext().orElseThrow(() -> new IllegalStateException(
-                "SchemaCacheKey requestContext is null, weak reference was cleared")),
-            cacheKey.schemaIdentifier(),
-            cacheKey.forceRefresh()),
+        cacheKey ->
+            schemaObjectFactory.apply(
+                cacheKey
+                    .requestContext()
+                    .orElseThrow(
+                        () ->
+                            new IllegalStateException(
+                                "SchemaCacheKey requestContext is null, weak reference was cleared")),
+                cacheKey.schemaIdentifier(),
+                cacheKey.forceRefresh()),
         List.of(),
         meterRegistry,
         asyncTaskOnCaller,
@@ -90,48 +89,82 @@ public class SchemaObjectCache
         ttlSupplier);
   }
 
+  /**
+   * Gets a listener to use with the {@link CqlSessionFactory} to remove the schema cache entries
+   * when the DB sends schema change events.
+   */
+  public SchemaChangeListener getSchemaChangeListener() {
+    return new SchemaObjectCache.SchemaCacheSchemaChangeListener(this);
+  }
+
+
   public Uni<DatabaseSchemaObject> getDatabase(
-      RequestContext requestContext, SchemaObjectIdentifier identifier, UserAgent userAgent, boolean forceRefresh) {
+      RequestContext requestContext,
+      SchemaObjectIdentifier identifier,
+      UserAgent userAgent,
+      boolean forceRefresh) {
     return get(requestContext, identifier, userAgent, forceRefresh);
   }
 
   // get keyspace
   public Uni<KeyspaceSchemaObject> getKeyspace(
-      RequestContext requestContext, SchemaObjectIdentifier identifier, UserAgent userAgent, boolean forceRefresh) {
+      RequestContext requestContext,
+      SchemaObjectIdentifier identifier,
+      UserAgent userAgent,
+      boolean forceRefresh) {
 
     return get(requestContext, identifier, userAgent, forceRefresh);
   }
 
   public Uni<? extends TableBasedSchemaObject> getTableBased(
-      RequestContext requestContext, KeyspaceScopedName name, UserAgent userAgent, boolean forceRefresh) {
+      RequestContext requestContext,
+      KeyspaceScopedName name,
+      UserAgent userAgent,
+      boolean forceRefresh) {
 
-    var collectionKey = createCacheKey(
-        requestContext,
-        SchemaObjectIdentifier.forCollection(requestContext.getTenant(), name.keyspace(), name.objectName()),
-        userAgent,
-        forceRefresh);
+    var collectionKey =
+        createCacheKey(
+            requestContext,
+            SchemaObjectIdentifier.forCollection(
+                requestContext.getTenant(), name.keyspace(), name.objectName()),
+            userAgent,
+            forceRefresh);
 
-    var tableKey = createCacheKey(
-        requestContext,
-        SchemaObjectIdentifier.forTable(requestContext.getTenant(), name.keyspace(), name.objectName()),
-        userAgent,
-        false);
+    var tableKey =
+        createCacheKey(
+            requestContext,
+            SchemaObjectIdentifier.forTable(
+                requestContext.getTenant(), name.keyspace(), name.objectName()),
+            userAgent,
+            false);
 
     // we do not know if this is a collection or a table until we load it, and we
     // cannot change the key once it is loaded, so we need to check both
 
-    // As an optimization, we getifPresent incase the object is a table - we would get a cache miss for
-    // the collection key, then try to load, then discover it is a table, fail the load, then get again
+    // As an optimization, we getifPresent incase the object is a table - we would get a cache miss
+    // for
+    // the collection key, then try to load, then discover it is a table, fail the load, then get
+    // again
     // and potentially cache hit for the table.
 
-    if (! forceRefresh) {
-      var optExisting = getIfPresent(collectionKey)
-          .or(() -> getIfPresent(tableKey))
-          .map(obj -> (TableBasedSchemaObject) obj);
+    if (!forceRefresh) {
 
-      if (optExisting.isPresent()) {
-        // we have a cache hit, return it
-        return Uni.createFrom().item(optExisting.get());
+      var existingCollection = getIfPresent(collectionKey);
+      if (existingCollection.isPresent()) {
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("getTableBased() - found existing collection schema object collectionKey: {}",
+              collectionKey);
+          return Uni.createFrom().item((TableBasedSchemaObject) existingCollection.get());
+        }
+      }
+
+      var existingTable = getIfPresent(tableKey);
+      if (existingTable.isPresent()) {
+        // we have a cache hit for the table, return it
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("getTableBased() - found existing table schema object tableKey: {}", tableKey);
+        }
+        return Uni.createFrom().item((TableBasedSchemaObject) existingTable.get());
       }
     }
 
@@ -139,10 +172,28 @@ public class SchemaObjectCache
     // force refresh on the collection cache key will cause the cache to load and replace the entry
     // and if we will refresh the driver metadata. So no need to also do that on the table key.
     return get(collectionKey)
-        .onFailure(io.stargate.sgv2.jsonapi.service.schema.SchemaObjectFactory.SchemaObjectTypeMismatchException.class)
-        .recoverWithUni(() -> get(tableKey))
+        .onFailure(
+            io.stargate.sgv2.jsonapi.service.schema.SchemaObjectFactory
+                .SchemaObjectTypeMismatchException.class)
+        .recoverWithUni(() -> {
+          if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace(
+                "getTableBased() - collection key load resulted in SchemaObjectTypeMismatchException, retrying collectionKey.identifier: {}, tableKey.identifier: {}",
+                collectionKey.schemaIdentifier,
+                tableKey.schemaIdentifier);
+          }
+          return get(tableKey);
+        })
+        .invoke(schemaObject -> {
+          if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace(
+                "getTableBased() - loaded schema object with identifier: {}, collectionKey.identifier: {}, tableKey.identifier: {}",
+                schemaObject.identifier(),
+                collectionKey.schemaIdentifier,
+                tableKey.schemaIdentifier);
+          }
+        })
         .map(obj -> (TableBasedSchemaObject) obj);
-
   }
 
   private <T extends SchemaObject> Uni<T> get(
@@ -155,27 +206,23 @@ public class SchemaObjectCache
     return (Uni<T>) get(createCacheKey(requestContext, identifier, userAgent, forceRefresh));
   }
 
-  private <T extends SchemaObject> Optional<T> getIfPresent(
-      RequestContext requestContext,
-      SchemaObjectIdentifier identifier,
-      UserAgent userAgent) {
+  @VisibleForTesting
+  <T extends SchemaObject> Optional<T> getIfPresent(
+      RequestContext requestContext, SchemaObjectIdentifier identifier, UserAgent userAgent) {
 
-    return (Optional<T>)getIfPresent(createCacheKey(requestContext, identifier, userAgent, false));
+    return (Optional<T>) getIfPresent(createCacheKey(requestContext, identifier, userAgent, false));
   }
 
-//
-//  private <T extends SchemaObject> Optional<T> getIfPresent(SchemaCacheKey key) {
-//
-//    // todo, check and cast somehow
-//    return (Optional<T>) getIfPresent(key);
-//  }
+  //
+  //  private <T extends SchemaObject> Optional<T> getIfPresent(SchemaCacheKey key) {
+  //
+  //    // todo, check and cast somehow
+  //    return (Optional<T>) getIfPresent(key);
+  //  }
   protected void evictTable(Tenant tenant, CqlIdentifier keyspace, CqlIdentifier table) {
     // no need to normalize the keyspace name, it is already normalized
-    var evictKey = createCacheKey(
-        null,
-        SchemaObjectIdentifier.forTable(tenant, keyspace, table),
-        null,
-        false);
+    var evictKey =
+        createCacheKey(null, SchemaObjectIdentifier.forTable(tenant, keyspace, table), null, false);
 
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("evictTable() - evictKey: {}", evictKey);
@@ -186,11 +233,8 @@ public class SchemaObjectCache
 
   protected void evictKeyspace(Tenant tenant, CqlIdentifier keyspace, boolean evictAll) {
     // no need to normalize the keyspace name, it is already normalized
-    var evictKey = createCacheKey(
-        null,
-        SchemaObjectIdentifier.forKeyspace(tenant, keyspace),
-        null,
-        false);
+    var evictKey =
+        createCacheKey(null, SchemaObjectIdentifier.forKeyspace(tenant, keyspace), null, false);
 
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("evictKeyspace() - evictKey: {}", evictKey);
@@ -199,7 +243,7 @@ public class SchemaObjectCache
     evict(evictKey);
     if (evictAll) {
       // we need to remove all the tables, collections, etc that are in this keyspace
-      evictIf(key ->  evictKey.schemaIdentifier.isSameKeyspace(key.schemaIdentifier));
+      evictIf(key -> evictKey.schemaIdentifier.isSameKeyspace(key.schemaIdentifier));
     }
   }
 
@@ -339,18 +383,14 @@ public class SchemaObjectCache
 
     private void evictTable(String context, TableMetadata tableMetadata) {
       if (isSessionReady(context)) {
-        schemaObjectCache.evictTable(
-            tenant,
-            tableMetadata.getKeyspace(),
-            tableMetadata.getName());
+        schemaObjectCache.evictTable(tenant, tableMetadata.getKeyspace(), tableMetadata.getName());
       }
     }
 
     private void evictKeyspace(
         String context, KeyspaceMetadata keyspaceMetadata, boolean evictAll) {
       if (isSessionReady(context)) {
-        schemaObjectCache.evictKeyspace(
-            tenant, keyspaceMetadata.getName(), evictAll);
+        schemaObjectCache.evictKeyspace(tenant, keyspaceMetadata.getName(), evictAll);
       }
     }
 
@@ -406,6 +446,7 @@ public class SchemaObjectCache
 
   /** Called to create a new session when one is needed. */
   interface SchemaObjectFactory {
-    CompletionStage<SchemaObject> apply(RequestContext requestContext, SchemaObjectIdentifier identifier, boolean forceRefresh);
+    CompletionStage<SchemaObject> apply(
+        RequestContext requestContext, SchemaObjectIdentifier identifier, boolean forceRefresh);
   }
 }

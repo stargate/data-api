@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
+import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
+
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.github.benmanes.caffeine.cache.*;
 import com.google.common.annotations.VisibleForTesting;
@@ -8,9 +10,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
-import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
-import io.stargate.sgv2.jsonapi.util.ClassUtils;
 import io.stargate.sgv2.jsonapi.util.DynamicTTLCache;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -21,11 +21,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.stargate.sgv2.jsonapi.util.ClassUtils.classSimpleName;
 
 /**
  * A cache for managing and reusing {@link CqlSession} instances based on tenant and authentication
@@ -127,11 +124,9 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
     this.ttlSupplier = new DynamicTTLSupplier(cacheTTL, slaUserAgent, slaUserTTL);
 
     LOGGER.info(
-        "Initializing CQLSessionCache with cacheMaxSize={}, cacheTTL={}, slaUserAgent={}, slaUserTTL={}, deactivatedTenantConsumers.count={}",
-        cacheTTL,
+        "Initializing CQLSessionCache with cacheMaxSize={}, ttlSupplier={}, deactivatedTenantConsumers.count={}",
         cacheMaxSize,
-        slaUserAgent,
-        slaUserTTL,
+        ttlSupplier,
         deactivatedTenantConsumer.size());
   }
 
@@ -156,7 +151,11 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
                   try {
                     deactivedTenantListener.accept(key.tenant());
                   } catch (Exception e) {
-                    LOGGER.warn("Error calling deactivatedTenantListener for tenant={}, listener.class={}", key.tenant(), classSimpleName(deactivedTenantListener.getClass()), e);
+                    LOGGER.warn(
+                        "Error calling deactivatedTenantListener for tenant={}, listener.class={}",
+                        key.tenant(),
+                        classSimpleName(deactivedTenantListener.getClass()),
+                        e);
                   }
                 });
           });
@@ -175,9 +174,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return getSession(
-        requestContext.getTenant(),
-        requestContext.getAuthToken(),
-        requestContext.getUserAgent());
+        requestContext.getTenant(), requestContext.getAuthToken(), requestContext.getUserAgent());
   }
 
   public Uni<CqlSession> getSession(CommandQueryExecutor.DBRequestContext requestContext) {
@@ -185,9 +182,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return getSession(
-        requestContext.tenant(),
-        requestContext.authToken(),
-        requestContext.userAgent());
+        requestContext.tenant(), requestContext.authToken(), requestContext.userAgent());
   }
 
   /**
@@ -229,7 +224,8 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
       throw new IllegalStateException("credentialsFactory returned null");
     }
 
-    return new SessionCacheKey(tenant, credentials, ttlSupplier.ttlForUsageAgent(userAgent), userAgent);
+    return new SessionCacheKey(
+        tenant, credentials, ttlSupplier.ttlForUsageAgent(userAgent), userAgent);
   }
 
   /** Key for CQLSession cache. */
@@ -251,11 +247,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
      * @param userAgent Optional user agent for the request, not used in the equality of the key
      *     just for logging.
      */
-    SessionCacheKey(
-        Tenant tenant,
-        CqlCredentials credentials,
-        Duration ttl,
-        UserAgent userAgent) {
+    SessionCacheKey(Tenant tenant, CqlCredentials credentials, Duration ttl, UserAgent userAgent) {
 
       // tenant is only used to identify the session, not passed to backend db
       // normalising the unset value to null
@@ -331,7 +323,8 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
       // This will be running on a cache tread, any error will not make it to the user
       // So we log errors and swallow
-      // getting name from the session now so we don't touch it after closing it, may not be reliable
+      // getting name from the session now so we don't touch it after closing it, may not be
+      // reliable
       var sessionName = value.getName();
       try {
         value.close();

@@ -21,7 +21,6 @@ import io.quarkus.arc.lookup.LookupIfProperty;
 import io.stargate.sgv2.jsonapi.config.AuthConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
-import java.util.Optional;
 
 /** Configuration for activating a correct {@link RequestAuthTokenResolver}. */
 public class RequestAuthTokenResolverProducer {

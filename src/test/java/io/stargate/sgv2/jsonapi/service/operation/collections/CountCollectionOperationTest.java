@@ -52,7 +52,8 @@ public class CountCollectionOperationTest extends OperationTestBase {
     @Test
     public void countWithNoFilter() {
       String collectionReadCql =
-          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
+          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\""
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       List<Row> rows =
           Arrays.asList(new MockRow(COUNT_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(5L))));
@@ -189,7 +190,8 @@ public class CountCollectionOperationTest extends OperationTestBase {
       // failures are propagated down
       RuntimeException failure = new RuntimeException("Test failure message.");
       String collectionReadCql =
-          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\"".formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
+          "SELECT COUNT(1) AS count FROM \"%s\".\"%s\""
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
@@ -228,7 +230,8 @@ public class CountCollectionOperationTest extends OperationTestBase {
     @Test
     public void countWithNoFilter() {
       String collectionReadCql =
-          "SELECT key FROM \"%s\".\"%s\" LIMIT 11".formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
+          "SELECT key FROM \"%s\".\"%s\" LIMIT 11"
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       List<Row> rows =
           Arrays.asList(
@@ -367,7 +370,8 @@ public class CountCollectionOperationTest extends OperationTestBase {
       // failures are propagated down
       RuntimeException failure = new RuntimeException("Test failure message.");
       String collectionReadCql =
-          "SELECT key FROM \"%s\".\"%s\" LIMIT 11".formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
+          "SELECT key FROM \"%s\".\"%s\" LIMIT 11"
+              .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
       SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);

@@ -16,7 +16,6 @@ import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.service.cqldriver.AccumulatingAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -152,21 +151,19 @@ public class CommandQueryExecutor {
           .flatMap(session -> Uni.createFrom().completionStage(session.refreshSchemaAsync()));
     }
 
-    return session()
-        .map(CqlSession::getMetadata);
+    return session().map(CqlSession::getMetadata);
   }
+
   /**
    * Get the metadata for the given keyspace using session.
    *
    * @param keyspace The keyspace name.
    * @return The keyspace metadata if it exists.
    */
-  public Uni<Optional<KeyspaceMetadata>> getKeyspaceMetadata(CqlIdentifier keyspace, boolean forceRefresh) {
+  public Uni<Optional<KeyspaceMetadata>> getKeyspaceMetadata(
+      CqlIdentifier keyspace, boolean forceRefresh) {
 
-    return getMetadata(forceRefresh)
-        .map(
-            metadata ->
-                metadata.getKeyspace(keyspace));
+    return getMetadata(forceRefresh).map(metadata -> metadata.getKeyspace(keyspace));
   }
 
   public Uni<AsyncResultSet> executeCreateSchema(SimpleStatement statement) {
@@ -204,12 +201,9 @@ public class CommandQueryExecutor {
 
   // Aaron - Feb 3 - temp rename while factoring full RequestContext
   public record DBRequestContext(
-      Tenant tenant,
-      String authToken,
-      UserAgent userAgent,
-      boolean tracingEnabled) {
+      Tenant tenant, String authToken, UserAgent userAgent, boolean tracingEnabled) {
 
-    public DBRequestContext(RequestContext requestContext){
+    public DBRequestContext(RequestContext requestContext) {
       this(
           requestContext.getTenant(),
           requestContext.getAuthToken(),

@@ -28,7 +28,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -404,10 +403,11 @@ public interface CollectionReadOperation extends CollectionOperation {
     return queryExecutor
         .executeCount(dataApiRequestInfo, simpleStatement)
         .onItemOrFailure()
-        .transform((rs, failure) -> {
-          getCount(rs, failure, counter);
-          return new CountResponse(counter.get());
-        });
+        .transform(
+            (rs, failure) -> {
+              getCount(rs, failure, counter);
+              return new CountResponse(counter.get());
+            });
   }
 
   /**
@@ -462,10 +462,11 @@ public interface CollectionReadOperation extends CollectionOperation {
     return queryExecutor
         .executeEstimatedCount(dataApiRequestInfo, simpleStatement)
         .onItemOrFailure()
-        .transform((rs, failure) -> {
-          getEstimatedCount(rs, failure, counter);
-          return new CountResponse(counter.get());
-        });
+        .transform(
+            (rs, failure) -> {
+              getEstimatedCount(rs, failure, counter);
+              return new CountResponse(counter.get());
+            });
   }
 
   private void getEstimatedCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {

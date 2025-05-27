@@ -17,7 +17,8 @@ public abstract class SchemaObject implements Recordable {
     if (identifier.type() != expectedType) {
       throw new IllegalArgumentException(
           String.format(
-              "Invalid SchemaObjectIdentifier, expected schemaType %s but got identifier: %s", expectedType, identifier));
+              "Invalid SchemaObjectIdentifier, expected schemaType %s but got identifier: %s",
+              expectedType, identifier));
     }
   }
 

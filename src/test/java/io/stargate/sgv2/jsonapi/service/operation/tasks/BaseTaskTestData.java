@@ -43,8 +43,8 @@ public class BaseTaskTestData {
     }
 
     var mockTable =
-        BaseTaskAssertions.mockTable(TENANT,
-            "keyspace" + System.currentTimeMillis(), "table" + System.currentTimeMillis());
+        BaseTaskAssertions.mockTable(
+            TENANT, "keyspace" + System.currentTimeMillis(), "table" + System.currentTimeMillis());
     CommandContext<TableSchemaObject> mockCommandContext = mock(CommandContext.class);
 
     // spy() the attempt so we get default behaviour and can track calls to the methods

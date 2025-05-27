@@ -21,8 +21,8 @@ public abstract class TableBasedSchemaObject extends SchemaObject {
   }
 
   /**
-   * For use by the CollectionSchemaObject, for old test that do not have TableMetadata
-   * Use other ctor in prod code.
+   * For use by the CollectionSchemaObject, for old test that do not have TableMetadata Use other
+   * ctor in prod code.
    */
   @VisibleForTesting
   protected TableBasedSchemaObject(

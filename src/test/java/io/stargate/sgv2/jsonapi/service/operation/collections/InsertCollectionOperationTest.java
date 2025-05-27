@@ -17,7 +17,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
-import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -1008,7 +1007,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
   }
 
   private SimpleStatement nonVectorInsertStatement(WritableShreddedDocument shredDocument) {
-    String insertCql = INSERT_CQL.formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
+    String insertCql =
+        INSERT_CQL.formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     return SimpleStatement.newInstance(
         insertCql,
         CQLBindValues.getDocumentIdValue(shredDocument.id()),
@@ -1025,7 +1025,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
   }
 
   private SimpleStatement vectorInsertStatement(WritableShreddedDocument shredDocument) {
-    String insertCql = INSERT_VECTOR_CQL.formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
+    String insertCql =
+        INSERT_VECTOR_CQL.formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME);
     return SimpleStatement.newInstance(
         insertCql,
         CQLBindValues.getDocumentIdValue(shredDocument.id()),

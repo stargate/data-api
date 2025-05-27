@@ -36,10 +36,7 @@ public class ListTablesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
     if (keyspaceMetadata == null) {
       throw new IllegalStateException("keyspaceMetadata should not be null when generating result");
     }
-    return keyspaceMetadata
-        .getTables()
-        .values()
-        .stream()
+    return keyspaceMetadata.getTables().values().stream()
         .filter(TABLE_MATCHER)
         .map(tableMetadata -> cqlIdentifierToJsonKey(tableMetadata.getName()))
         .toList();
@@ -56,12 +53,14 @@ public class ListTablesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
     if (keyspaceMetadata == null) {
       throw new IllegalStateException("keyspaceMetadata should not be null when generating result");
     }
-    return keyspaceMetadata
-        .getTables()
-        .values()
-        .stream()
+    return keyspaceMetadata.getTables().values().stream()
         .filter(TABLE_MATCHER)
-        .map(tableMetadata -> TableSchemaObject.from(lastResultSupplier().commandContext().requestContext().getTenant(), tableMetadata, OBJECT_MAPPER))
+        .map(
+            tableMetadata ->
+                TableSchemaObject.from(
+                    lastResultSupplier().commandContext().requestContext().getTenant(),
+                    tableMetadata,
+                    OBJECT_MAPPER))
         .map(tableSchemaObject -> tableSchemaObject.apiTableDef().toTableDesc())
         .toList();
   }

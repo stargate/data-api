@@ -204,7 +204,8 @@ public class DocumentShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              TEST_CONSTANTS.cloneWithIdConfig(TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT, CollectionIdType.UNDEFINED),
+              TEST_CONSTANTS.cloneWithIdConfig(
+                  TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT, CollectionIdType.UNDEFINED),
               null);
 
       DocumentId docId = doc.id();
@@ -244,7 +245,8 @@ public class DocumentShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              TEST_CONSTANTS.cloneWithIdConfig(TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT, CollectionIdType.OBJECT_ID),
+              TEST_CONSTANTS.cloneWithIdConfig(
+                  TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT, CollectionIdType.OBJECT_ID),
               null);
 
       DocumentId docId = doc.id();

@@ -129,7 +129,8 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  protected void onSuccess(RerankingTask.RerankingResultSupplier resultSupplier, RerankingTaskResult result) {
+  protected void onSuccess(
+      RerankingTask.RerankingResultSupplier resultSupplier, RerankingTaskResult result) {
     this.rerankingTaskResult = result;
     super.onSuccess(resultSupplier, result);
   }

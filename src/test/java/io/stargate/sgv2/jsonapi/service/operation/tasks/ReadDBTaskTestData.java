@@ -49,7 +49,7 @@ public class ReadDBTaskTestData {
       exceptionHandlerFactory = TableDriverExceptionHandler::new;
     }
 
-    var mockTable = BaseTaskAssertions.mockTable(TENANT,keyspaceName, tableName);
+    var mockTable = BaseTaskAssertions.mockTable(TENANT, keyspaceName, tableName);
     CommandContext<TableSchemaObject> mockCommandContext = mock(CommandContext.class);
     when(mockCommandContext.requestTracing()).thenReturn(RequestTracing.NO_OP);
 

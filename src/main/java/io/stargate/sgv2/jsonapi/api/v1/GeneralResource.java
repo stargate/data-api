@@ -11,10 +11,11 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -44,17 +45,21 @@ public class GeneralResource {
 
   @Inject private RequestContext requestContext;
 
+  private final SchemaObjectCacheSupplier schemaObjectCacheSupplier;
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
   private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject
   public GeneralResource(
+      SchemaObjectCacheSupplier schemaObjectCacheSupplier,
       MeteredCommandProcessor meteredCommandProcessor,
       MeterRegistry meterRegistry,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
       CqlSessionCacheSupplier sessionCacheSupplier,
       EmbeddingProviderFactory embeddingProviderFactory,
       RerankingProviderFactory rerankingProviderFactory) {
+
+    this.schemaObjectCacheSupplier = schemaObjectCacheSupplier;
     this.meteredCommandProcessor = meteredCommandProcessor;
 
     contextBuilderSupplier =
@@ -98,16 +103,23 @@ public class GeneralResource {
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid GeneralCommand command) {
 
-    var commandContext =
-        contextBuilderSupplier
-            .getBuilder(new DatabaseSchemaObject(requestContext.getTenant()))
-            .withCommandName(command.getClass().getSimpleName())
-            .withRequestContext(requestContext)
-            .build();
+    var dbIdentifier = SchemaObjectIdentifier.forDatabase(requestContext.getTenant());
 
-    return meteredCommandProcessor
-        .processCommand(commandContext, command)
-        // map to 2xx unless overridden by error
-        .map(commandResult -> commandResult.toRestResponse());
+    return schemaObjectCacheSupplier
+        .get()
+        .getDatabase(requestContext, dbIdentifier, requestContext.getUserAgent(), false)
+        .flatMap(
+            databaseSchemaObject -> {
+              var commandContext =
+                  contextBuilderSupplier
+                      .getBuilder(databaseSchemaObject)
+                      .withCommandName(command.getClass().getSimpleName())
+                      .withRequestContext(requestContext)
+                      .build();
+
+              return meteredCommandProcessor
+                  .processCommand(commandContext, command)
+                  .map(commandResult -> commandResult.toRestResponse());
+            });
   }
 }

@@ -17,10 +17,8 @@
 
 package io.stargate.sgv2.jsonapi.api.request.token;
 
-import io.stargate.sgv2.jsonapi.config.AuthConfig;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.core.SecurityContext;
-import java.util.Optional;
 
 /** The {@link RequestAuthTokenResolver} that uses a fixed token supplied by the configuration. */
 public class FixedTokenResolver implements RequestAuthTokenResolver {

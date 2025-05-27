@@ -71,13 +71,16 @@ public class TableBasedSchemaCache {
                   // collection does not exist
                   // TODO: DO NOT do a string starts with, use proper error structures
                   // again, why is this here, looks like it returns the same error code ?
-                  if (error instanceof RuntimeException rte
-                      && rte.getMessage()
-                          .startsWith(ErrorCodeV1.COLLECTION_NOT_EXIST.getMessage())) {
-                    return Uni.createFrom()
-                        .failure(
-                            ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
-                  }
+
+                  // TODO: XXXX: THIS CLASS WILL BE DELETED BEFORE MERGE !!!!
+//                  if (error instanceof RuntimeException rte
+//                      && rte.getMessage()
+//                          .startsWith(ErrorCodeV1.COLLECTION_NOT_EXIST.getMessage())) {
+//                    return Uni.createFrom()
+//                        .failure(
+//                            ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
+//                  }
+
                   return Uni.createFrom().failure(error);
                 } else {
                   schemaObjectCache.put(collectionName, result);
@@ -100,9 +103,14 @@ public class TableBasedSchemaCache {
             optionalTable -> {
               // TODO: AARON - I changed the logic here, needs to be checked
               // TODO: error code here needs to be for collections and tables
+
+              // TODO: XXXX: THIS CLASS WILL BE DELETED BEFORE MERGE !!!!
+//              var table =
+//                  optionalTable.orElseThrow(
+//                      () -> ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
+
               var table =
-                  optionalTable.orElseThrow(
-                      () -> ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
+                  optionalTable.orElse(null);
 
               // check if its a valid json API Table
               // TODO: re-use the table matcher this is on the request hot path
@@ -111,8 +119,7 @@ public class TableBasedSchemaCache {
                     requestContext.getTenant(), optionalTable.get(), objectMapper);
               }
 
-              return TableSchemaObject.from(
-                  requestContext.getTenant(), table, objectMapper);
+              return TableSchemaObject.from(requestContext.getTenant(), table, objectMapper);
             });
   }
 

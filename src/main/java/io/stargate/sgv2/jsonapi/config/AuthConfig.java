@@ -78,8 +78,7 @@ public interface AuthConfig {
      *   <li><code>header</code> - reads Cassandra token from the HTTP request header (see {@link
      *       HeaderTokenResolver}}
      *   <li><code>principal</code> - reads Cassandra token from the security {@link
-     *       java.security.Principal} name (see {@link
-     *       PrincipalTokenResolver}}
+     *       java.security.Principal} name (see {@link PrincipalTokenResolver}}
      *   <li><code>fixed</code> - fixed token supplied by the configuration (see {@link
      *       FixedTokenResolver}}
      * </ol>

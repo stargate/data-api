@@ -91,8 +91,8 @@ public abstract class DBTask<SchemaT extends SchemaObject>
       this.supplier = supplier;
     }
 
-    protected BaseTask.UniSupplier<AsyncResultSet> getSupplier(){
-      //to support subclasses building supplier on demand
+    protected BaseTask.UniSupplier<AsyncResultSet> getSupplier() {
+      // to support subclasses building supplier on demand
       Objects.requireNonNull(supplier, "supplier must not be null");
       return supplier;
     }

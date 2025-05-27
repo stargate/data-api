@@ -270,7 +270,11 @@ public record ReadAndUpdateCollectionOperation(
 
   private String buildUpdateQuery(boolean vectorEnabled, boolean lexicalEnabled) {
     final SchemaObjectIdentifier tableName = commandContext.schemaObject().identifier();
-    return buildUpdateQuery(tableName.keyspace().asInternal(), tableName.table().asInternal(), vectorEnabled, lexicalEnabled);
+    return buildUpdateQuery(
+        tableName.keyspace().asInternal(),
+        tableName.table().asInternal(),
+        vectorEnabled,
+        lexicalEnabled);
   }
 
   // NOTE: This method is used in the test code (to avoid having to copy query Strings verbatim),

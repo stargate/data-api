@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
@@ -28,12 +28,12 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
       @ConfigProperty(name = "quarkus.application.name") String applicationName,
       OperationsConfig operationsConfig,
       MeterRegistry meterRegistry,
-      SchemaCache schemaCache) {
+      SchemaObjectCacheSupplier schemaObjectCacheSupplier) {
 
     Objects.requireNonNull(applicationName, "applicationName must not be null");
     Objects.requireNonNull(operationsConfig, "operationsConfig must not be null");
     Objects.requireNonNull(meterRegistry, "meterRegistry must not be null");
-    Objects.requireNonNull(schemaCache, "schemaCache must not be null");
+    Objects.requireNonNull(schemaObjectCacheSupplier, "schemaObjectCacheSupplier must not be null");
 
     var dbConfig = operationsConfig.databaseConfig();
 
@@ -51,20 +51,18 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
             dbConfig.localDatacenter(),
             dbConfig.cassandraEndPoints(),
             dbConfig.cassandraPort(),
-            List.of(schemaCache.getSchemaChangeListener()));
+            List.of(schemaObjectCacheSupplier.get().getSchemaChangeListener()));
 
     singleton =
         new CQLSessionCache(
             dbConfig.sessionCacheMaxSize(),
             Duration.ofSeconds(dbConfig.sessionCacheTtlSeconds()),
-            operationsConfig.slaUserAgent()
-                .map(UserAgent::new)
-                .orElse(null),
+            operationsConfig.slaUserAgent().map(UserAgent::new).orElse(null),
             Duration.ofSeconds(dbConfig.slaSessionCacheTtlSeconds()),
             credentialsFactory,
             sessionFactory,
             meterRegistry,
-            List.of(schemaCache.getDeactivatedTenantConsumer()));
+            List.of());
   }
 
   /** Gets the singleton instance of the {@link CQLSessionCache}. */

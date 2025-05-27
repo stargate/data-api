@@ -1,11 +1,13 @@
 package io.stargate.sgv2.jsonapi.api.request;
 
+import static io.stargate.sgv2.jsonapi.util.StringUtil.normalizeOptionalString;
+
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
 import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
-import io.stargate.sgv2.jsonapi.api.request.token.RequestAuthTokenResolver;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
+import io.stargate.sgv2.jsonapi.api.request.token.RequestAuthTokenResolver;
 import io.stargate.sgv2.jsonapi.logging.LoggingMDCContext;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.RequestScoped;
@@ -13,13 +15,9 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.SecurityContext;
-import org.slf4j.MDC;
-
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-
-import static io.stargate.sgv2.jsonapi.util.StringUtil.normalizeOptionalString;
+import org.slf4j.MDC;
 
 /**
  * This class is used to get the request info like tenantId, cassandraToken and embeddingApiKey.
@@ -42,13 +40,11 @@ public class RequestContext implements LoggingMDCContext {
   private final HttpHeaderAccess httpHeaders;
   private final RerankingCredentials rerankingCredentials;
 
-  /**
-   * For testing purposes only.
-   */
+  /** For testing purposes only. */
   @VisibleForTesting
   public RequestContext(Tenant tenant) {
 
-    this.authToken = normalizeOptionalString((String)null);
+    this.authToken = normalizeOptionalString((String) null);
     this.requestId = generateRequestId();
     this.userAgent = new UserAgent(null);
     this.tenant = Objects.requireNonNull(tenant, "tenant must not be null");
@@ -77,9 +73,10 @@ public class RequestContext implements LoggingMDCContext {
         embeddingCredentialsResolver.get().resolveEmbeddingCredentials(routingContext);
     // user specified the reranking key in the request header, use that.
     // fall back to whatever they provided as the auth token for the API
-    this.rerankingCredentials = HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext)
-        .map(s -> new RerankingCredentials(normalizeOptionalString(s)))
-        .orElseGet(() -> new RerankingCredentials(normalizeOptionalString(this.authToken)));
+    this.rerankingCredentials =
+        HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext)
+            .map(s -> new RerankingCredentials(normalizeOptionalString(s)))
+            .orElseGet(() -> new RerankingCredentials(normalizeOptionalString(this.authToken)));
   }
 
   private static String generateRequestId() {
@@ -91,7 +88,6 @@ public class RequestContext implements LoggingMDCContext {
   }
 
   /**
-   *
    * @return Non-null {@link Tenant} object
    */
   public Tenant getTenant() {
@@ -99,16 +95,16 @@ public class RequestContext implements LoggingMDCContext {
   }
 
   /**
-   *
-   * @return Non-null authToken from the request processed with {@link io.stargate.sgv2.jsonapi.util.StringUtil#normalizeOptionalString(String)}
+   * @return Non-null authToken from the request processed with {@link
+   *     io.stargate.sgv2.jsonapi.util.StringUtil#normalizeOptionalString(String)}
    */
   public String getAuthToken() {
     return authToken;
   }
 
   /**
-   *
-   * @return Non-null userAgent from the request processed with {@link io.stargate.sgv2.jsonapi.util.StringUtil#normalizeOptionalString(String)}
+   * @return Non-null userAgent from the request processed with {@link
+   *     io.stargate.sgv2.jsonapi.util.StringUtil#normalizeOptionalString(String)}
    */
   public UserAgent getUserAgent() {
     return userAgent;

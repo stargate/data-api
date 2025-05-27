@@ -1,7 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.schema;
 
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
+import static io.stargate.sgv2.jsonapi.util.StringUtil.normalizeOptionalString;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.logging.LoggingMDCContext;
@@ -11,9 +14,7 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 import org.slf4j.MDC;
 
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
-
-public class SchemaObjectIdentifier implements KeyspaceScopedName,  Recordable, LoggingMDCContext {
+public class SchemaObjectIdentifier implements KeyspaceScopedName, Recordable, LoggingMDCContext {
 
   private final SchemaObjectType type;
   private final Tenant tenant;
@@ -30,10 +31,10 @@ public class SchemaObjectIdentifier implements KeyspaceScopedName,  Recordable, 
     this.keyspace = keyspace;
     this.table = table;
 
-    this.fullName = table == null ?
-        cqlIdentifierToMessageString(keyspace)
-        :
-        cqlIdentifierToMessageString(keyspace) + "." + cqlIdentifierToMessageString(table);
+    this.fullName =
+        table == null
+            ? cqlIdentifierToMessageString(keyspace)
+            : cqlIdentifierToMessageString(keyspace) + "." + cqlIdentifierToMessageString(table);
   }
 
   public static SchemaObjectIdentifier forDatabase(Tenant tenant) {
@@ -58,7 +59,8 @@ public class SchemaObjectIdentifier implements KeyspaceScopedName,  Recordable, 
     return new SchemaObjectIdentifier(SchemaObjectType.COLLECTION, tenant, keyspace, collection);
   }
 
-  public static SchemaObjectIdentifier forTable(Tenant tenant, CqlIdentifier keyspace, CqlIdentifier table) {
+  public static SchemaObjectIdentifier forTable(
+      Tenant tenant, CqlIdentifier keyspace, CqlIdentifier table) {
 
     checkTeantId(tenant);
     checkKeyspaceName(keyspace);
@@ -73,16 +75,9 @@ public class SchemaObjectIdentifier implements KeyspaceScopedName,  Recordable, 
     Objects.requireNonNull(tableMetadata, "tableMetadata must not be null");
 
     return switch (type) {
-      case TABLE ->
-          forTable(
-              tenant,
-              tableMetadata.getKeyspace(),
-              tableMetadata.getName());
+      case TABLE -> forTable(tenant, tableMetadata.getKeyspace(), tableMetadata.getName());
       case COLLECTION ->
-          forCollection(
-              tenant,
-              tableMetadata.getKeyspace(),
-              tableMetadata.getName());
+          forCollection(tenant, tableMetadata.getKeyspace(), tableMetadata.getName());
       default -> throw new IllegalArgumentException("Unsupported type: " + type);
     };
   }
@@ -125,7 +120,8 @@ public class SchemaObjectIdentifier implements KeyspaceScopedName,  Recordable, 
 
   private static void checkKeyspaceName(CqlIdentifier keyspace) {
     Objects.requireNonNull(keyspace, "keyspace name must not be null");
-    Preconditions.checkArgument(!keyspace.asInternal().isBlank(), "keyspace name must not be blank");
+    Preconditions.checkArgument(
+        !keyspace.asInternal().isBlank(), "keyspace name must not be blank");
   }
 
   private static void checkTableName(String context, CqlIdentifier table) {
@@ -139,7 +135,7 @@ public class SchemaObjectIdentifier implements KeyspaceScopedName,  Recordable, 
     MDC.put("namespace", keyspace.asInternal());
 
     // NOTE: MUST stay as collection for logging analysis
-    MDC.put("collection", table == null ? null : table.asInternal());
+    MDC.put("collection", normalizeOptionalString( table == null ? null : table.asInternal()));
   }
 
   @Override
@@ -147,7 +143,6 @@ public class SchemaObjectIdentifier implements KeyspaceScopedName,  Recordable, 
     MDC.remove("namespace");
     MDC.remove("collection");
   }
-
 
   @Override
   public boolean equals(Object o) {
@@ -181,5 +176,4 @@ public class SchemaObjectIdentifier implements KeyspaceScopedName,  Recordable, 
         .append("keyspace", keyspace)
         .append("table", table);
   }
-
 }

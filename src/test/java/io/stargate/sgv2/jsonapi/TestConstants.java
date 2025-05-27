@@ -7,6 +7,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -20,9 +21,7 @@ import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.*;
-
 import java.util.List;
-
 import org.apache.commons.lang3.RandomStringUtils;
 
 /**
@@ -33,16 +32,23 @@ import org.apache.commons.lang3.RandomStringUtils;
  */
 public class TestConstants {
 
+  public final DatabaseType DATABASE_TYPE = DatabaseType.ASTRA;
+
   // Names
   public final String COMMAND_NAME;
   public final String CORRELATION_ID;
   public final String KEYSPACE_NAME;
   public final String COLLECTION_NAME;
+  public final String TABLE_NAME;
 
   public final Tenant TENANT;
+  public final UserAgent USER_AGENT;
+
   public final SchemaObjectIdentifier DATABASE_IDENTIFIER;
   public final SchemaObjectIdentifier KEYSPACE_IDENTIFIER;
   public final SchemaObjectIdentifier COLLECTION_IDENTIFIER;
+  public final SchemaObjectIdentifier TABLE_IDENTIFIER;
+
 
   // Schema objects for testing
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
@@ -55,14 +61,28 @@ public class TestConstants {
 
     CORRELATION_ID = "test-id-" + RandomStringUtils.randomAlphanumeric(16);
 
+    TENANT = Tenant.create(DATABASE_TYPE, "tenant-" + CORRELATION_ID);
+    USER_AGENT = new UserAgent("user-agent/" + CORRELATION_ID);
+
     COMMAND_NAME = "command-" + CORRELATION_ID;
-    TENANT = Tenant.create(DatabaseType.ASTRA, "tenant-"+ CORRELATION_ID);
+
     KEYSPACE_NAME = "keyspace-" + CORRELATION_ID;
     COLLECTION_NAME = "collection-" + CORRELATION_ID;
+    TABLE_NAME = "table-" + CORRELATION_ID;
 
     DATABASE_IDENTIFIER = SchemaObjectIdentifier.forDatabase(TENANT);
-    KEYSPACE_IDENTIFIER = SchemaObjectIdentifier.forKeyspace(TENANT, CqlIdentifier.fromInternal(KEYSPACE_NAME));
-    COLLECTION_IDENTIFIER = SchemaObjectIdentifier.forCollection(TENANT, CqlIdentifier.fromInternal(KEYSPACE_NAME), CqlIdentifier.fromInternal(COLLECTION_NAME));
+    KEYSPACE_IDENTIFIER =
+        SchemaObjectIdentifier.forKeyspace(TENANT, CqlIdentifier.fromInternal(KEYSPACE_NAME));
+    COLLECTION_IDENTIFIER =
+        SchemaObjectIdentifier.forCollection(
+            TENANT,
+            CqlIdentifier.fromInternal(KEYSPACE_NAME),
+            CqlIdentifier.fromInternal(COLLECTION_NAME));
+    TABLE_IDENTIFIER =
+        SchemaObjectIdentifier.forTable(
+            TENANT,
+            CqlIdentifier.fromInternal(KEYSPACE_NAME),
+            CqlIdentifier.fromInternal(TABLE_NAME));
 
     // Schema objects for testing
     COLLECTION_SCHEMA_OBJECT =

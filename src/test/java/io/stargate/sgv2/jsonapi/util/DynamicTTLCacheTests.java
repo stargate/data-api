@@ -1,35 +1,25 @@
 package io.stargate.sgv2.jsonapi.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.Ticker;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import io.stargate.sgv2.jsonapi.config.DatabaseType;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import org.junit.jupiter.api.Test;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.Test;
 
 /** Tests for {@link DynamicTTLCache}. */
-public class DynamicTTLCacheTests {
+public class DynamicTTLCacheTests extends CacheTestsBase {
 
-  // Note - using the FakeTicker to control the time for testing, so we dont actally wait 10 seconds
-  private static final String CACHE_NAME = "test-cache";
-  private static final Duration LONG_TTL = Duration.ofSeconds(10);
-  private static final int CACHE_MAX_SIZE = 10;
-  private static final Duration SHORT_TTL = Duration.ofSeconds(5);
-
-  private static final String KEY = "key-" + System.currentTimeMillis();
-  private static final String VALUE = "value-" + System.currentTimeMillis();
-  private static final TestDynamicTTLCache.TestKey CACHE_KEY = new TestDynamicTTLCache.TestKey(KEY, LONG_TTL);
+  private final String KEY = "key-" + TEST_CONSTANTS.CORRELATION_ID;
+  private final String VALUE = "value-" + TEST_CONSTANTS.CORRELATION_ID;
+  private final TestDynamicTTLCache.TestKey CACHE_KEY =
+      new TestDynamicTTLCache.TestKey(KEY, LONG_TTL);
 
   @Test
   public void cacheStartsEmtpy() {
@@ -37,9 +27,7 @@ public class DynamicTTLCacheTests {
     var fixture = newFixture();
 
     // cache size is not reliable, peeking to see if our session is present
-    assertThat(fixture.cache.peekValue(CACHE_KEY))
-        .as("Cache is empty when started")
-        .isNotPresent();
+    assertThat(fixture.cache.peekValue(CACHE_KEY)).as("Cache is empty when started").isNotPresent();
   }
 
   @Test
@@ -65,9 +53,7 @@ public class DynamicTTLCacheTests {
     assertThat(actualValue2)
         .as("Value from cache is instance from factory")
         .isSameAs(fixture.expectedValue);
-    assertThat(actualValue2)
-        .as("Value from second call is same as first")
-        .isSameAs(actualValue);
+    assertThat(actualValue2).as("Value from second call is same as first").isSameAs(actualValue);
 
     // Verify that session factory is not called again
     verifyNoInteractions(fixture.valueFactory);
@@ -95,8 +81,7 @@ public class DynamicTTLCacheTests {
     fixture.cache.cleanUp();
 
     // listener called with key-0 because the size of the cache was exceeded
-    verify(fixture.listener).onRemoved(eq(thisCacheKey(0, LONG_TTL)),
-        any(), any());
+    verify(fixture.listener).onRemoved(eq(thisCacheKey(0, LONG_TTL)), any(), any());
     verifyNoMoreInteractions(fixture.listener);
 
     // key 0 should not be in the cache
@@ -157,9 +142,7 @@ public class DynamicTTLCacheTests {
   public void listenerErrorSwallowed() {
 
     var consumer1 = listenerWithLogging();
-    doThrow(new RuntimeException("test exception"))
-        .when(consumer1)
-        .onRemoved(any(), any(), any());
+    doThrow(new RuntimeException("test exception")).when(consumer1).onRemoved(any(), any(), any());
     var consumer2 = listenerWithLogging();
 
     // get a session added to the cache, then evict it, so the callbacks are run
@@ -175,7 +158,6 @@ public class DynamicTTLCacheTests {
     verifyNoMoreInteractions(consumer1, consumer2);
   }
 
-
   @Test
   public void metricsAdded() {
     // only testing they are added to the registry with the expected name, not checking the values
@@ -187,20 +169,13 @@ public class DynamicTTLCacheTests {
     // give ethe cache time to bookkeep
     fixture.cache.cleanUp();
 
-    var cacheSizeMetric = fixture.meterRegistry
-        .find("cache.size")
-        .tag("cache", CACHE_NAME)
-        .gauge();
+    var cacheSizeMetric = fixture.meterRegistry.find("cache.size").tag("cache", CACHE_NAME).gauge();
     assertThat(cacheSizeMetric)
         .as("cache.size metric added to registry with cache name - {}", CACHE_NAME)
         .isNotNull();
 
     var cachePutMetric =
-        fixture
-            .meterRegistry
-            .find("cache.puts")
-            .tag("cache", CACHE_NAME)
-            .functionCounter();
+        fixture.meterRegistry.find("cache.puts").tag("cache", CACHE_NAME).functionCounter();
     assertThat(cachePutMetric)
         .as("cache.puts metric added to registry with expected name - {}", CACHE_NAME)
         .isNotNull();
@@ -343,43 +318,27 @@ public class DynamicTTLCacheTests {
     return "%s-%s".formatted(VALUE, i);
   }
 
-  /** {@link Ticker} for the cache so we can control the time for testing differentiated TTL */
-  static class FakeTicker implements Ticker {
-
-    private long nanos = 0;
-
-    @Override
-    public long read() {
-      return nanos;
-    }
-
-    public void advance(Duration duration) {
-      nanos += duration.toNanos();
-    }
-  }
-
   private record Fixture(
       TestDynamicTTLCache cache,
       String expectedValue,
       DynamicTTLCache.ValueFactory<TestDynamicTTLCache.TestKey, String> valueFactory,
       DynamicTTLCache.DynamicTTLCacheListener<TestDynamicTTLCache.TestKey, String> listener,
       MeterRegistry meterRegistry,
-      FakeTicker ticker) {
-
-  }
+      FakeTicker ticker) {}
 
   private Fixture newFixture() {
     return newFixture(null);
   }
 
   private Fixture newFixture(
-      List<DynamicTTLCache.DynamicTTLCacheListener<TestDynamicTTLCache.TestKey, String>> listeners
-  ) {
+      List<DynamicTTLCache.DynamicTTLCacheListener<TestDynamicTTLCache.TestKey, String>>
+          listeners) {
 
-    var valueFactory = (DynamicTTLCache.ValueFactory<TestDynamicTTLCache.TestKey, String>) mock(DynamicTTLCache.ValueFactory.class);
+    var valueFactory =
+        (DynamicTTLCache.ValueFactory<TestDynamicTTLCache.TestKey, String>)
+            mock(DynamicTTLCache.ValueFactory.class);
 
-    when(valueFactory.apply(any()))
-        .thenReturn(CompletableFuture.completedFuture(VALUE));
+    when(valueFactory.apply(any())).thenReturn(CompletableFuture.completedFuture(VALUE));
 
     var meterRegistry = new SimpleMeterRegistry();
     var fakeTicker = new FakeTicker();
@@ -390,50 +349,41 @@ public class DynamicTTLCacheTests {
       listeners = List.of(listener);
     }
 
-
     // run async on caller thread so they will reliably complete before the test ends, used for
     // removal callback
-    var cache = new TestDynamicTTLCache(
-        CACHE_NAME,
-        CACHE_MAX_SIZE,
-        valueFactory,
-        listeners,
-        meterRegistry,
-        true,
-        fakeTicker);
+    var cache =
+        new TestDynamicTTLCache(
+            CACHE_NAME, CACHE_MAX_SIZE, valueFactory, listeners, meterRegistry, true, fakeTicker);
 
-    return new Fixture(
-        cache,
-        VALUE,
-        valueFactory,
-        listener,
-        meterRegistry,
-        fakeTicker);
+    return new Fixture(cache, VALUE, valueFactory, listener, meterRegistry, fakeTicker);
   }
 
-  private DynamicTTLCache.DynamicTTLCacheListener<TestDynamicTTLCache.TestKey, String> listenerWithLogging() {
-    var listener = (DynamicTTLCache.DynamicTTLCacheListener<TestDynamicTTLCache.TestKey, String>) mock (DynamicTTLCache.DynamicTTLCacheListener.class);
+  private DynamicTTLCache.DynamicTTLCacheListener<TestDynamicTTLCache.TestKey, String>
+      listenerWithLogging() {
+    var listener =
+        (DynamicTTLCache.DynamicTTLCacheListener<TestDynamicTTLCache.TestKey, String>)
+            mock(DynamicTTLCache.DynamicTTLCacheListener.class);
 
     doAnswer(
-        invocation -> {
-          var key = invocation.getArgument(0);
-          var value = invocation.getArgument(1);
-          var cause = invocation.getArgument(2);
-          System.out.println(
-              "DynamicTTLCacheListener - onRemoved called with key: "
-                  + key
-                  + ", value: "
-                  + value
-                  + ", cause: "
-                  + cause);
-          return null;
-        })
+            invocation -> {
+              var key = invocation.getArgument(0);
+              var value = invocation.getArgument(1);
+              var cause = invocation.getArgument(2);
+              System.out.println(
+                  "DynamicTTLCacheListener - onRemoved called with key: "
+                      + key
+                      + ", value: "
+                      + value
+                      + ", cause: "
+                      + cause);
+              return null;
+            })
         .when(listener)
         .onRemoved(any(), any(), any());
     return listener;
   }
 
-  static class TestDynamicTTLCache  extends DynamicTTLCache<TestDynamicTTLCache.TestKey, String> {
+  static class TestDynamicTTLCache extends DynamicTTLCache<TestDynamicTTLCache.TestKey, String> {
 
     TestDynamicTTLCache(
         String cacheName,
@@ -442,7 +392,7 @@ public class DynamicTTLCacheTests {
         List<DynamicTTLCacheListener<TestDynamicTTLCache.TestKey, String>> listeners,
         MeterRegistry meterRegistry,
         boolean asyncOnCaller,
-        Ticker cacheTicker){
+        Ticker cacheTicker) {
       super(
           cacheName,
           cacheMaxSize,
@@ -462,9 +412,6 @@ public class DynamicTTLCacheTests {
       return getIfPresent(key);
     }
 
-
-    record TestKey(String key, Duration ttl) implements DynamicTTLCache.CacheKey {
-
-    }
+    record TestKey(String key, Duration ttl) implements DynamicTTLCache.CacheKey {}
   }
 }

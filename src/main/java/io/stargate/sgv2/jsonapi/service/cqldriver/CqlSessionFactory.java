@@ -125,9 +125,8 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     Objects.requireNonNull(tenant, "tenant must not be null");
     Objects.requireNonNull(credentials, "credentials must not be null");
 
-
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Creating CQL Session tenant={}, credentials={}", tenant, credentials);
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Creating CQL Session tenant={}, credentials={}", tenant, credentials);
     }
 
     // the driver TypedDriverOption is only used with DriverConfigLoader.fromMap()

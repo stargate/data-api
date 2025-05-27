@@ -38,13 +38,12 @@ public class TableUpdateAnalyzerTestData extends TestDataSuplier {
         columnAssignments;
     public Throwable exception = null;
 
-    public TableUpdateAnalyzerFixture(String message,
-                                      Tenant tenant,
-                                      TableMetadata tableMetadata) {
+    public TableUpdateAnalyzerFixture(String message, Tenant tenant, TableMetadata tableMetadata) {
       this.message = message;
       this.tableMetadata = tableMetadata;
       this.analyzer =
-          new TableUpdateAnalyzer(TableSchemaObject.from(tenant, tableMetadata, new ObjectMapper()));
+          new TableUpdateAnalyzer(
+              TableSchemaObject.from(tenant, tableMetadata, new ObjectMapper()));
       this.tableSchemaObject = TableSchemaObject.from(tenant, tableMetadata, new ObjectMapper());
       this.columnAssignments =
           new UpdateClauseTestData.ColumnAssignmentsBuilder<>(this, tableMetadata);

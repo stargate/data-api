@@ -20,7 +20,6 @@ package io.stargate.sgv2.jsonapi.api.request.token;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.core.SecurityContext;
 import java.security.Principal;
-import java.util.Optional;
 
 /** {@link RequestAuthTokenResolver} that reads the token from the {@link Principal#getName()}. */
 public class PrincipalTokenResolver implements RequestAuthTokenResolver {

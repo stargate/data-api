@@ -41,4 +41,15 @@ public class RequestTenantResolverProducer {
     return new FixedTenantResolver(config.tenantResolver().fixed().tenantId().orElse(""));
   }
 
+  @Produces
+  @ApplicationScoped
+  @LookupIfProperty(
+      name = "stargate.multi-tenancy.enabled",
+      stringValue = "false",
+      lookupIfMissing = true)
+  RequestTenantResolver noopTenantResolver() {
+    var none = TenantFactory.instance().create(null);
+
+    return (context, securityContext) -> none;
+  }
 }

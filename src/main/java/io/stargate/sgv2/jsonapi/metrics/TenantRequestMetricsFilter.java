@@ -19,15 +19,12 @@ package io.stargate.sgv2.jsonapi.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
-import io.micrometer.core.instrument.Tags;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
-import jakarta.ws.rs.core.HttpHeaders;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -36,10 +33,11 @@ import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 /**
  * The filter for counting HTTP requests per tenant. Controlled by {@link
  * MetricsConfig.TenantRequestCounterConfig}.
- * <p>
- * Changes:
+ *
+ * <p>Changes:
+ *
  * <ul>
- *   <li>previously the tenant tag would be "unknown" if it was not know, see Tenant class now. </li>
+ *   <li>previously the tenant tag would be "unknown" if it was not know, see Tenant class now.
  * </ul>
  */
 @ApplicationScoped
@@ -48,7 +46,6 @@ public class TenantRequestMetricsFilter {
   // split pattern for the user agent, extract only first part of the agent
   private static final Pattern USER_AGENT_SPLIT = Pattern.compile("[\\s/]");
 
-
   private final MeterRegistry meterRegistry;
   private final MetricsConfig.TenantRequestCounterConfig config;
   // using different name to avoid name collision in record()
@@ -56,7 +53,6 @@ public class TenantRequestMetricsFilter {
 
   private final Tag errorTrueTag;
   private final Tag errorFalseTag;
-
 
   /** Default constructor. */
   @Inject
@@ -76,12 +72,11 @@ public class TenantRequestMetricsFilter {
 
   /**
    * Filter that this bean produces.
-   * <p>
-   *   see https://quarkus.io/guides/resteasy-reactive#request-or-response-filters
-   * </p>
+   *
+   * <p>see https://quarkus.io/guides/resteasy-reactive#request-or-response-filters
+   *
    * @param requestContext {@link ContainerRequestContext}
    * @param responseContext {@link ContainerResponseContext}
-   *
    */
   @ServerResponseFilter
   public void record(
@@ -95,12 +90,12 @@ public class TenantRequestMetricsFilter {
     tags.add(Tag.of(config.tenantTag(), apiRequestContext.getTenant().toString()));
     tags.add(responseContext.getStatus() >= 500 ? errorTrueTag : errorFalseTag);
 
-      if (config.userAgentTagEnabled()) {
-        tags.add(Tag.of(config.userAgentTag(), apiRequestContext.getUserAgent().product()));
-      }
-      if (config.statusTagEnabled()) {
-        tags.add(Tag.of(config.statusTag(), String.valueOf(responseContext.getStatus())));
-      }
-      meterRegistry.counter(config.metricName(), tags).increment();
+    if (config.userAgentTagEnabled()) {
+      tags.add(Tag.of(config.userAgentTag(), apiRequestContext.getUserAgent().product()));
+    }
+    if (config.statusTagEnabled()) {
+      tags.add(Tag.of(config.statusTag(), String.valueOf(responseContext.getStatus())));
+    }
+    meterRegistry.counter(config.metricName(), tags).increment();
   }
 }

@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.TemplateVars;
+import io.stargate.sgv2.jsonapi.service.schema.KeyspaceScopedName;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
@@ -114,6 +115,23 @@ public abstract class ErrorFormatters {
     return errVars(schemaObject, null, null);
   }
 
+  public static Map<String, String> errVars(KeyspaceScopedName name) {
+    return errVars(name, null);
+  }
+
+    public static Map<String, String> errVars(KeyspaceScopedName name, Consumer<Map<String, String>> consumer) {
+
+    Map<String, String> map = new HashMap<>();
+
+    map.put(TemplateVars.KEYSPACE, cqlIdentifierToMessageString(name.keyspace()));
+    map.put(TemplateVars.TABLE, name.objectName() == null ? "" : cqlIdentifierToMessageString(name.objectName()));
+
+    if (consumer != null) {
+      consumer.accept(map);
+    }
+    return map;
+  }
+
   public static Map<String, String> errVars(
       SchemaObject schemaObject, Consumer<Map<String, String>> consumer) {
     return errVars(schemaObject, null, consumer);
@@ -166,7 +184,9 @@ public abstract class ErrorFormatters {
     Map<String, String> map = new HashMap<>();
     if (schemaObject != null) {
       map.put(TemplateVars.SCHEMA_TYPE, schemaObject.type().name());
-      map.put(TemplateVars.KEYSPACE, cqlIdentifierToMessageString(schemaObject.identifier().keyspace()));
+      map.put(
+          TemplateVars.KEYSPACE,
+          cqlIdentifierToMessageString(schemaObject.identifier().keyspace()));
       map.put(TemplateVars.TABLE, cqlIdentifierToMessageString(schemaObject.identifier().table()));
     }
     if (exception != null) {

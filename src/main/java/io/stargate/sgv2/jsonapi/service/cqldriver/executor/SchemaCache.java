@@ -119,9 +119,9 @@ public class SchemaCache {
 
     // TODO: XXX: THIS SHOULD HAVE BEEN DELETED BY MERGE TIME
     var resolvedTenantId = "";
-//        (databaseType == DatabaseType.CASSANDRA)
-//            ? requestContext.getTenant().orElse(DEFAULT_TENANT)
-//            : requestContext.getTenant().orElseThrow();
+    //        (databaseType == DatabaseType.CASSANDRA)
+    //            ? requestContext.getTenant().orElse(DEFAULT_TENANT)
+    //            : requestContext.getTenant().orElseThrow();
 
     var tableBasedSchemaCache =
         keyspaceCache.get(new KeyspaceCacheKey(resolvedTenantId, namespace));

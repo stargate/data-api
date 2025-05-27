@@ -31,7 +31,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import jakarta.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.*;
-
 import org.junit.jupiter.api.BeforeEach;
 
 public class OperationTestBase {
@@ -45,11 +44,12 @@ public class OperationTestBase {
 
   protected static final TestConstants TEST_CONSTANTS = new TestConstants();
 
-//  protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-//  protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-//  protected final SchemaObjectIdentifier SCHEMA_OBJECT_NAME =
-//      SchemaObjectIdentifier.forCollection(TEST_CONSTANTS.TENANT,
-//          CqlIdentifier.fromInternal(KEYSPACE_NAME), CqlIdentifier.fromInternal(COLLECTION_NAME));
+  //  protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
+  //  protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
+  //  protected final SchemaObjectIdentifier SCHEMA_OBJECT_NAME =
+  //      SchemaObjectIdentifier.forCollection(TEST_CONSTANTS.TENANT,
+  //          CqlIdentifier.fromInternal(KEYSPACE_NAME),
+  // CqlIdentifier.fromInternal(COLLECTION_NAME));
 
   protected CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
   protected KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;

@@ -106,7 +106,8 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     this.listeners = listeners == null ? List.of() : List.copyOf(listeners);
 
     LOGGER.info(
-        "Initializing CQLSessionCache with cacheMaxSize={}, deactivatedTenantConsumers.count={}",
+        "Initializing DynamicTTLCache with cacheName={}, cacheMaxSize={}, deactivatedTenantConsumers.count={}",
+        cacheName,
         cacheMaxSize,
         listeners.size());
 
@@ -219,9 +220,9 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
                 throw new IllegalStateException("valueFactory returned null for key: " + key);
               }
               var holder = new ValueHolder<>(value, key);
-              if (LOGGER.isDebugEnabled()) {
+              if (LOGGER.isTraceEnabled()) {
                 // so we get the identity hash code of the session holder
-                LOGGER.debug("Loaded value into cache, holder={}", holder);
+                LOGGER.trace("Loaded value into cache, holder={}", holder);
               }
               return holder;
             })
@@ -276,7 +277,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
      */
     @Override
     public String toString() {
-      return new StringBuilder("SessionValueHolder{")
+      return new StringBuilder("ValueHolder{")
           .append("identityHashCode=")
           .append(System.identityHashCode(this))
           .append(", loadingKey=")
@@ -319,15 +320,18 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
 
       long accessTTL = key.ttl().toNanos();
       long loadTTL = value.loadingKey().ttl().toNanos();
+
+      var newExpiryNano = Math.max(accessTTL, loadTTL);
       if (LOGGER.isTraceEnabled()) {
         LOGGER.trace(
-            "expireAfterRead() - key.ttl={}, key.identityHashCode={}, value.loadingKey.ttl={}, value.loadingKey.identityHashCode={}",
+            "expireAfterRead() - newExpiryNano={}, key.ttl={}, key.identityHashCode={}, value.loadingKey.ttl={}, value.loadingKey.identityHashCode={}",
+            newExpiryNano,
             key.ttl(),
             System.identityHashCode(key),
             value.loadingKey.ttl(),
             System.identityHashCode(value.loadingKey));
       }
-      return Math.max(accessTTL, loadTTL);
+      return newExpiryNano;
     }
   }
 
@@ -359,9 +363,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
 
     public Duration ttlForUsageAgent(UserAgent userAgent) {
       // slaUserAgent can be null
-      return slaUserAgent == null || !slaUserAgent.equals(userAgent)
-          ? cacheTTL
-          : slaUserTTL;
+      return slaUserAgent == null || !slaUserAgent.equals(userAgent) ? cacheTTL : slaUserTTL;
     }
 
     @Override
