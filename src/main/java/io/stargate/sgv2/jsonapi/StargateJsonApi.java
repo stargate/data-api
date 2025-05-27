@@ -908,10 +908,11 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   value =
                       """
                                       {
-                                             "createVectorIndex": {
+                                             "createTextIndex": {
                                                  "name": "lexical_idx",
                                                  "definition": {
-                                                     "column": "keywords"
+                                                     "column": "keywords",
+                                                     "analyzer": "english"
                                                  },
                                                  "options" : {
                                                      "ifNotExists" : true
