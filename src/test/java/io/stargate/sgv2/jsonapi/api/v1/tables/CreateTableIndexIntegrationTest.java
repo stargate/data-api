@@ -22,6 +22,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   String testTableName = "tableForCreateIndexTest";
+  String vectorTableName = "tableForCreateVectorIndexTest";
 
   private void verifyCreatedIndex(String indexName) {
     assertTableCommand(keyspaceName, testTableName)
@@ -31,8 +32,17 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
         .hasIndex(indexName);
   }
 
+  private void verifyCreatedVectorIndex(String indexName) {
+    assertTableCommand(keyspaceName, vectorTableName)
+        .templated()
+        .listIndexes(false)
+        .wasSuccessful()
+        .hasIndex(indexName);
+  }
+
   @BeforeAll
-  public final void createSimpleTable() {
+  public final void createTestTables() {
+    // Create test tables for indexing: first one for "regular" indexes
     assertNamespaceCommand(keyspaceName)
         .templated()
         .createTable(
@@ -60,7 +70,17 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                     Map.of("type", "map", "keyType", "int", "valueType", "text")),
                 Map.entry(
                     "map_type_float_value",
-                    Map.of("type", "map", "keyType", "text", "valueType", "float")),
+                    Map.of("type", "map", "keyType", "text", "valueType", "float"))),
+            "id")
+        .wasSuccessful();
+
+    // and then the second table for vector indexes
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            vectorTableName,
+            Map.ofEntries(
+                Map.entry("id", Map.of("type", "text")),
                 Map.entry("vector_type_1", Map.of("type", "vector", "dimension", 1024)),
                 Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1536)),
                 Map.entry("vector_type_3", Map.of("type", "vector", "dimension", 1024)),
@@ -460,7 +480,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   class CreateVectorIndexSuccess {
     @Test
     public void createVectorIndex() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                                           {
@@ -472,12 +492,12 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                           """)
           .wasSuccessful();
 
-      verifyCreatedIndex("vector_type_1_idx");
+      verifyCreatedVectorIndex("vector_type_1_idx");
     }
 
     @Test
     public void createVectorIndexWithSourceModel() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                                           {
@@ -492,12 +512,12 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                           """)
           .wasSuccessful();
 
-      verifyCreatedIndex("vector_type_2_idx");
+      verifyCreatedVectorIndex("vector_type_2_idx");
     }
 
     @Test
     public void createVectorIndexWithMetric() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                       {
@@ -512,12 +532,12 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                       """)
           .wasSuccessful();
 
-      verifyCreatedIndex("vector_type_3_idx");
+      verifyCreatedVectorIndex("vector_type_3_idx");
     }
 
     @Test
     public void createVectorIndexWithMetricAndSourceModel() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                               {
@@ -533,12 +553,12 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                               """)
           .wasSuccessful();
 
-      verifyCreatedIndex("vector_type_4_idx");
+      verifyCreatedVectorIndex("vector_type_4_idx");
     }
 
     @Test
     public void createVectorIndexWithCorrectIndexType() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                                 {
@@ -551,7 +571,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                 """)
           .wasSuccessful();
 
-      verifyCreatedIndex("vector_type_6_idx");
+      verifyCreatedVectorIndex("vector_type_6_idx");
     }
   }
 
@@ -817,7 +837,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   class CreateVectorIndexFailure {
     @Test
     public void createIndexWithEmptyName() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateIndex(
               """
                               {
@@ -838,7 +858,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     @Test
     public void createIndexWithBlankName() {
 
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                               {
@@ -859,7 +879,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void createIndexWithNameTooLong() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateIndex(
               """
                               {
@@ -879,7 +899,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void createIndexWithSpecialCharacterInName() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateIndex(
               """
                               {
@@ -899,7 +919,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void tryCreateIndexMissingColumn() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                               {
@@ -918,7 +938,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     @Test
     public void invalidSourceModel() {
 
-      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
+      DataApiCommandSenders.assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                 {
@@ -939,7 +959,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void createVectorIndexWithUnsupportedIndexType() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                               {
@@ -959,7 +979,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void createVectorIndexWithUnknownIndexType() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                                 {
