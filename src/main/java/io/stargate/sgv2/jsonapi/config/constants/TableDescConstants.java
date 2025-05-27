@@ -46,6 +46,10 @@ public interface TableDescConstants {
     String NORMALIZE = "normalize";
   }
 
+  interface TextIndexDefinitionDescOptions {
+    String ANALYZER = "analyzer";
+  }
+
   interface VectorIndexDefinitionDescOptions {
     String SOURCE_MODEL = "source_model";
     String SIMILARITY_FUNCTION = "similarity_function";
