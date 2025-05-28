@@ -30,6 +30,13 @@ public class EmbeddingCredentialsSupplier {
     var accessId = requestContext.getHttpHeaders().getHeader(this.embeddingAccessIdHeaderName);
     var secretId = requestContext.getHttpHeaders().getHeader(this.embeddingsecretIdHeaderName);
 
+    if (providerConfig == null) {
+      return new EmbeddingCredentials(
+          Optional.ofNullable(embeddingApi),
+          Optional.ofNullable(accessId),
+          Optional.ofNullable(secretId));
+    }
+
     // if x-embedding-api-key is present, then use it, else use cassandraToken
     return new EmbeddingCredentials(
         providerConfig.authTokenPassThroughForNoneAuth()
