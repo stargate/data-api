@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
@@ -51,7 +52,11 @@ public abstract class EmbeddingProvider {
     this.model = model;
     this.dimension = dimension;
     this.vectorizeServiceParameters = vectorizeServiceParameters;
-    this.providerConfig = providerConfig;
+    this.providerConfig = Objects.requireNonNull(providerConfig, "Provider config cannot be null");
+  }
+
+  public EmbeddingProvidersConfig.EmbeddingProviderConfig getProviderConfig() {
+    return providerConfig;
   }
 
   /**
