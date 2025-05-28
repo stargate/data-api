@@ -7,8 +7,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.Index
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Base for Factories that can create a {@link ApiIndexDef} subclass from the user description in a
@@ -20,13 +18,11 @@ import org.slf4j.LoggerFactory;
 public abstract class IndexFactoryFromIndexDesc<
         ApiT extends ApiIndexDef, DescT extends IndexDefinitionDesc>
     extends FactoryFromDesc {
-  private static final Logger LOGGER = LoggerFactory.getLogger(IndexFactoryFromIndexDesc.class);
-
   /**
    * Called to create an index from the user description in a command
    *
-   * @param apiTableDef
-   * @param name
+   * @param tableSchemaObject
+   * @param indexName
    * @param indexDesc
    * @return
    * @throws UnsupportedUserIndexException The factory should throw this if the user description

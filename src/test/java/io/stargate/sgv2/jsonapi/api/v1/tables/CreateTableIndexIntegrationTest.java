@@ -22,10 +22,19 @@ import org.junit.jupiter.params.provider.MethodSource;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   String testTableName = "tableForCreateIndexTest";
+  String lexicalTableName = "tableForCreateTextIndexTest";
   String vectorTableName = "tableForCreateVectorIndexTest";
 
   private void verifyCreatedIndex(String indexName) {
     assertTableCommand(keyspaceName, testTableName)
+        .templated()
+        .listIndexes(false)
+        .wasSuccessful()
+        .hasIndex(indexName);
+  }
+
+  private void verifyCreatedTextIndex(String indexName) {
+    assertTableCommand(keyspaceName, lexicalTableName)
         .templated()
         .listIndexes(false)
         .wasSuccessful()
@@ -90,11 +99,25 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 Map.entry("vector_type_7", Map.of("type", "vector", "dimension", 1024))),
             "id")
         .wasSuccessful();
+
+    // and then the third table for text (aka "lexical") indexes
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            lexicalTableName,
+            Map.ofEntries(
+                Map.entry("id", Map.of("type", "text")),
+                Map.entry("text_field_1", Map.of("type", "text")),
+                Map.entry("text_field_2", Map.of("type", "text")),
+                Map.entry("text_field_3", Map.of("type", "text")),
+                Map.entry("text_field_4", Map.of("type", "text"))),
+            "id")
+        .wasSuccessful();
   }
 
   @Nested
   @Order(1)
-  class CreateIndexSuccess {
+  class CreateRegularIndexSuccess {
 
     @Test
     public void createIndexBasic() {
@@ -576,8 +599,83 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   }
 
   @Nested
-  @Order(3)
-  class CreateIndexFailure {
+  @Order(0)
+  class CreateTextIndexSuccess {
+    // First, a test for the default text index creation (no options specified)
+    @Test
+    public void createTextIndexWithDefaults() {
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .postCreateTextIndex(
+              """
+                              {
+                                "name": "text_field_1_idx",
+                                "definition": {
+                                  "column": "text_field_1"
+                                }
+                              }
+                              """)
+          .wasSuccessful();
+
+      verifyCreatedTextIndex("text_field_1_idx");
+    }
+
+    // Then a test with "named" analyzer like "standard" or "english"
+    @Test
+    public void createTextIndexWithNamed() {
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .postCreateTextIndex(
+              """
+              {
+                "name": "text_field_2_idx",
+                "definition": {
+                  "column": "text_field_2",
+                  "options": {
+                    "analyzer": "english"
+                  }
+                },
+                "options": {
+                  "ifNotExists": true
+                 }
+              }
+              """)
+          .wasSuccessful();
+
+      verifyCreatedTextIndex("text_field_2_idx");
+    }
+
+    // Then a test with explicit settings
+    @Test
+    public void createTextIndexWithFullDefinition() {
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .postCreateTextIndex(
+              """
+              {
+                "name": "text_field_3_idx",
+                "definition": {
+                  "column": "text_field_3",
+                  "options": {
+                   "analyzer": {
+                    "tokenizer" : {"name" : "standard"},
+                    "filters": [
+                      { "name": "lowercase" },
+                      { "name": "stop" },
+                      { "name": "porterstem" },
+                      { "name": "asciifolding" }
+                     ]
+                    }
+                   }
+                }
+              }
+              """)
+          .wasSuccessful();
+
+      verifyCreatedTextIndex("text_field_3_idx");
+    }
+  }
+
+  @Nested
+  @Order(4)
+  class CreateRegularIndexFailure {
     @Test
     public void createIndexWithEmptyName() {
 
@@ -833,7 +931,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   }
 
   @Nested
-  @Order(4)
+  @Order(5)
   class CreateVectorIndexFailure {
     @Test
     public void createIndexWithEmptyName() {
