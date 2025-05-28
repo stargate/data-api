@@ -6,12 +6,12 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.core.Base64Variants;
-import io.quarkus.logging.Log;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
@@ -27,7 +27,6 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterAll;
@@ -235,10 +234,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
 
   public static void checkDriverMetricsTenantId() {
     String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-    // Example line
-    // session_cql_requests_seconds{module="sgv2-jsonapi",session="default_tenant",quantile="0.5",}
-    // 0.238944256
-
+    List<String> lines = metrics.lines().toList();
     Optional<String> sessionLevelDriverMetricTenantId =
         metrics
             .lines()
@@ -246,7 +242,9 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
                 line ->
                     line.startsWith("session_cql_requests_seconds") && line.contains("session="))
             .findFirst();
-    Log.info("/metrics: " + metrics.lines().collect(Collectors.joining("\n")));
+    if (!sessionLevelDriverMetricTenantId.isPresent()) {
+      fail("/metrics: " + String.join("\n", lines));
+    }
     assertThat(sessionLevelDriverMetricTenantId.isPresent()).isTrue();
   }
 
