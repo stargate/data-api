@@ -246,15 +246,13 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
                     line.startsWith("session_cql_requests_seconds") && line.contains("session="))
             .findFirst();
 
-    List<String> lines = metrics.lines().toList();
     if (!sessionLevelDriverMetricTenantId.isPresent()) {
+      List<String> lines = metrics.lines().toList();
       long buckets =
-          lines.stream()
-              .filter(line -> line.startsWith("session_cql_requests_seconds_bucket"))
-              .count();
+          lines.stream().filter(line -> line.startsWith("session_cql_requests_seconds")).count();
       fail(
           String.format(
-              "No tenant id found in 'session_cql_requests_seconds_bucket' (%d buckets; %d log lines)",
+              "No tenant id found in any of 'session_cql_requests_seconds' entries (%d buckets; %d log lines)",
               buckets, lines.size()));
     }
   }
