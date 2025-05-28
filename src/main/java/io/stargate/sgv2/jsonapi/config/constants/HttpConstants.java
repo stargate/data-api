@@ -28,7 +28,7 @@ public interface HttpConstants {
   String BEARER_PREFIX_FOR_API_KEY = "Bearer ";
 
   @WithDefault(AUTHENTICATION_TOKEN_HEADER_NAME)
-  String apiToken();
+  String authToken();
 
   /**
    * @return Embedding service header name for token.

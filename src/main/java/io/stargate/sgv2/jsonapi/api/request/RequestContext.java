@@ -67,7 +67,7 @@ public class RequestContext {
 
     embeddingCredentialsSupplier =
         new EmbeddingCredentialsSupplier(
-            httpConstants.apiToken(),
+            httpConstants.authToken(),
             httpConstants.embeddingApiKey(),
             httpConstants.embeddingAccessId(),
             httpConstants.embeddingSecretId());

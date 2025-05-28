@@ -247,18 +247,38 @@ public class CollectionResource {
                           .getFirstVectorColumnWithVectorizeDefinition()
                           .orElse(null);
                 }
-                EmbeddingProvider embeddingProvider =
-                    (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)
-                        ? null
-                        : embeddingProviderFactory.getConfiguration(
-                            requestContext.getTenantId(),
-                            requestContext.getCassandraToken(),
-                            vectorColDef.vectorizeDefinition().provider(),
-                            vectorColDef.vectorizeDefinition().modelName(),
-                            vectorColDef.vectorSize(),
-                            vectorColDef.vectorizeDefinition().parameters(),
-                            vectorColDef.vectorizeDefinition().authentication(),
-                            command.getClass().getSimpleName());
+                //                EmbeddingProvider embeddingProvider =
+                //                    (vectorColDef == null || vectorColDef.vectorizeDefinition() ==
+                // null)
+                //                        ? null
+                //                        : embeddingProviderFactory.getConfiguration(
+                //                            requestContext.getTenantId(),
+                //                            requestContext.getCassandraToken(),
+                //                            vectorColDef.vectorizeDefinition().provider(),
+                //                            vectorColDef.vectorizeDefinition().modelName(),
+                //                            vectorColDef.vectorSize(),
+                //                            vectorColDef.vectorizeDefinition().parameters(),
+                //                            vectorColDef.vectorizeDefinition().authentication(),
+                //                            command.getClass().getSimpleName());
+
+                EmbeddingProvider embeddingProvider = null;
+
+                if (vectorColDef != null && vectorColDef.vectorizeDefinition() != null) {
+                  embeddingProvider =
+                      embeddingProviderFactory.getConfiguration(
+                          requestContext.getTenantId(),
+                          requestContext.getCassandraToken(),
+                          vectorColDef.vectorizeDefinition().provider(),
+                          vectorColDef.vectorizeDefinition().modelName(),
+                          vectorColDef.vectorSize(),
+                          vectorColDef.vectorizeDefinition().parameters(),
+                          vectorColDef.vectorizeDefinition().authentication(),
+                          command.getClass().getSimpleName());
+                  requestContext
+                      .getEmbeddingCredentialsSupplier()
+                      .withAuthConfigFromCollection(
+                          vectorColDef.vectorizeDefinition().authentication());
+                }
 
                 var commandContext =
                     contextBuilderSupplier
