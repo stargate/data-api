@@ -33,8 +33,6 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Abstract class for all int tests that needs a keyspace to execute tests in. This class
@@ -47,9 +45,6 @@ import org.slf4j.LoggerFactory;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractKeyspaceIntegrationTestBase {
-
-  private static final Logger LOG =
-      LoggerFactory.getLogger(AbstractKeyspaceIntegrationTestBase.class);
 
   // keyspace automatically created in this test
   protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
