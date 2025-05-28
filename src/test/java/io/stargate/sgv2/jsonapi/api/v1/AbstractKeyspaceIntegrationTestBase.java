@@ -245,7 +245,6 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     if (!sessionLevelDriverMetricTenantId.isPresent()) {
       fail("/metrics: " + String.join("\n", lines));
     }
-    assertThat(sessionLevelDriverMetricTenantId.isPresent()).isTrue();
   }
 
   public static void checkVectorMetrics(String commandName, String sortType) {

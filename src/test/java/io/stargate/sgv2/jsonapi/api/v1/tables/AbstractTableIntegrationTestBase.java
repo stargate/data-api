@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.v1.AbstractKeyspaceIntegrationTestBase;
 
-/** Abstract class for all table int tests that needs a collection to execute tests in. */
+/** Abstract class for all table int tests that needs a table to execute tests in. */
 public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegrationTestBase {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
