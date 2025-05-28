@@ -11,6 +11,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.core.Base64Variants;
+import io.quarkus.logging.Log;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
@@ -250,7 +251,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
                 line ->
                     line.startsWith("session_cql_requests_seconds") && line.contains("session="))
             .findFirst();
-    LOG.info("/metrics: " + metrics.lines().collect(Collectors.joining("\n")));
+    Log.info("/metrics: " + metrics.lines().collect(Collectors.joining("\n")));
     assertThat(sessionLevelDriverMetricTenantId.isPresent()).isTrue();
   }
 
