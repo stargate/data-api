@@ -4,6 +4,13 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvide
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * A supplier for creating {@link EmbeddingCredentials} based on the current request context,
+ * collection authentication configuration, and embedding provider configuration.
+ *
+ * <p>This class centralizes the logic for determining which credentials to use for embedding
+ * service calls.
+ */
 public class EmbeddingCredentialsSupplier {
   private final String authTokenHeaderName;
   private final String embeddingApiKeyHeaderName;
@@ -22,10 +29,19 @@ public class EmbeddingCredentialsSupplier {
     this.embeddingsecretIdHeaderName = embeddingsecretIdHeaderName;
   }
 
+  /** Sets the authentication configuration defined at the createCollection command. */
   public void withAuthConfigFromCollection(Map<String, String> authConfigFromCollection) {
     this.authConfigFromCollection = authConfigFromCollection;
   }
 
+  /**
+   * Creates an {@link EmbeddingCredentials} instance based on the current request context and
+   * provider configuration.
+   *
+   * @param requestContext The current request context containing HTTP headers.
+   * @param providerConfig The configuration for the embedding provider.
+   * @return An instance of {@link EmbeddingCredentials} with the appropriate credentials.
+   */
   public EmbeddingCredentials create(
       RequestContext requestContext,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
