@@ -353,6 +353,10 @@ public class DataApiResponseValidator {
     return body("data.documents[%s]".formatted(position), jsonEquals(documentJSON));
   }
 
+  public DataApiResponseValidator hasDocumentUnknowingPosition(String documentJSON) {
+    return body("data.documents", hasItem(jsonEquals(documentJSON)));
+  }
+
   public DataApiResponseValidator mayFoundSingleDocumentIdByFindOne(
       FilterException.Code expectedFilterException, String sampleId) {
     if (expectedFilterException != null) {

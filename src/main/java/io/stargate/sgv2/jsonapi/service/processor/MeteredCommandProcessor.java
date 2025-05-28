@@ -301,13 +301,16 @@ public class MeteredCommandProcessor {
 
     // --- Sort Type Tag ---
     // Determine the type of sorting used (if any), primarily for FindCommand.
-    // NOTE: This logic might need refinement or replacement when FeatureUsage is fully integrated,
-    // especially for FindAndRerankCommand.
+    // NOTE: This logic might need refinement or replacement when CommandFeatures is fully
+    // integrated, especially for FindAndRerankCommand.
     JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(commandContext, command);
     Tag sortTypeTag = Tag.of(jsonApiMetricsConfig.sortType(), sortType.name());
 
+    // --- Command Feature Usage Tags ---
+    Tags commandFeatureTags = commandContext.commandFeatures().getTags();
+
     // --- Combine All Tags ---
-    return Tags.of(
+    return commandFeatureTags.and(
         commandTag, tenantTag, errorTag, errorClassTag, errorCodeTag, vectorEnabled, sortTypeTag);
   }
 
@@ -329,10 +332,9 @@ public class MeteredCommandProcessor {
 
     // Check if the command supports sorting and has a sort clause defined
     if (command instanceof Sortable sc
-        && sc.sortClause() != null
-        && !sc.sortClause().sortExpressions().isEmpty()) {
+        && !sc.sortClause(commandContext).sortExpressions().isEmpty()) {
 
-      var sortExpressions = sc.sortClause().sortExpressions();
+      var sortExpressions = sc.sortClause(commandContext).sortExpressions();
 
       // Check if the only sort expression is for vector similarity ($vector or $vectorize)
       if (sortExpressions.size() == 1) {

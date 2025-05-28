@@ -43,7 +43,7 @@ public class FindOneAndReplaceCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndReplaceCommand.class,
               findOneAndReplaceCommand -> {
-                assertThat(findOneAndReplaceCommand.filterSpec()).isNotNull();
+                assertThat(findOneAndReplaceCommand.filterDefinition()).isNotNull();
                 final JsonNode replacementDocument = findOneAndReplaceCommand.replacementDocument();
                 assertThat(replacementDocument).isNotNull();
                 final FindOneAndReplaceCommand.Options options = findOneAndReplaceCommand.options();
@@ -71,7 +71,7 @@ public class FindOneAndReplaceCommandTest {
           .isInstanceOfSatisfying(
               FindOneAndReplaceCommand.class,
               findOneAndReplaceCommand -> {
-                assertThat(findOneAndReplaceCommand.filterSpec()).isNotNull();
+                assertThat(findOneAndReplaceCommand.filterDefinition()).isNotNull();
                 final JsonNode replacementDocument = findOneAndReplaceCommand.replacementDocument();
                 assertThat(replacementDocument).isNotNull();
                 final FindOneAndReplaceCommand.Options options = findOneAndReplaceCommand.options();

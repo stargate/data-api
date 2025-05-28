@@ -1,55 +1,70 @@
-package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
+package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
 import static io.stargate.sgv2.jsonapi.util.JsonUtil.arrayNodeToVector;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-/** {@link StdDeserializer} for the {@link SortClause}. */
-public class SortClauseDeserializer extends StdDeserializer<SortClause> {
+/**
+ * Object for converting {@link JsonNode} (from {@link SortDefinition}) into {@link SortClause}.
+ * Process will validate structure of the JSON, and also validate values of the sort expressions.
+ */
+public abstract class SortClauseBuilder<T extends SchemaObject> {
+  protected final T schema;
 
-  /** No-arg constructor explicitly needed. */
-  protected SortClauseDeserializer() {
-    super(SortClause.class);
+  protected SortClauseBuilder(T schema) {
+    this.schema = Objects.requireNonNull(schema);
   }
 
-  /** {@inheritDoc} */
-  @Override
-  public SortClause deserialize(JsonParser parser, DeserializationContext ctxt) throws IOException {
-    JsonNode node = ctxt.readTree(parser);
+  public static SortClauseBuilder<?> builderFor(SchemaObject schema) {
+    return switch (schema) {
+      case CollectionSchemaObject collection -> new CollectionSortClauseBuilder(collection);
+      case TableSchemaObject table -> new TableSortClauseBuilder(table);
+      default ->
+          throw new UnsupportedOperationException(
+              String.format(
+                  "Unsupported schema object class for `SortClauseBuilder`: %s",
+                  schema.getClass()));
+    };
+  }
 
-    // if missing or null, return null back
+  public SortClause build(JsonNode node) {
+    // if missing or null, return "empty" sort clause
     if (node.isMissingNode() || node.isNull()) {
-      // TODO should we return empty sort clause instead?
-      return null;
+      return SortClause.empty();
     }
 
     // otherwise, if it's not object throw exception
-    if (!node.isObject()) {
+    if (!(node instanceof ObjectNode sortNode)) {
       throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
           "Sort clause must be submitted as json object");
     }
 
-    ObjectNode sortNode = (ObjectNode) node;
+    return buildAndValidate(sortNode);
+  }
 
+  protected abstract SortClause buildAndValidate(ObjectNode sortNode);
+
+  protected SortClause defaultBuildAndValidate(ObjectNode sortNode) {
     // safe to iterate, we know it's an Object
     Iterator<Map.Entry<String, JsonNode>> fieldIter = sortNode.fields();
     int totalFields = sortNode.size();

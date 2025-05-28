@@ -60,14 +60,14 @@ public class TableMemorySortClauseResolver<CmdT extends Command & Sortable>
     if (orderByCqlClause.fullyCoversCommand()) {
       // Cql Order by is enough to handle the sort clause, no need for a row sorter
       // this will also cover where there is no sorting.
-      LOGGER.debug("No in memory sort needed, using CQL order by");
+      LOGGER.debug("No in-memory sort needed, using CQL order by");
       return WithWarnings.of(RowSorter.NO_OP);
     }
 
     // Just a sanity check,
-    var sortClause = command.sortClause();
+    var sortClause = command.sortClause(commandContext);
     if (sortClause == null || sortClause.isEmpty()) {
-      LOGGER.debug("No in memory sort needed, sort clause was null or empty");
+      LOGGER.debug("No in-memory sort needed, sort clause was null or empty");
       return WithWarnings.of(RowSorter.NO_OP);
     }
 

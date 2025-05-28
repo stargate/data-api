@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -13,7 +13,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 /**
  * Representation of the deleteOne API {@link Command}.
  *
- * @param filterSpec {@link FilterClause} used to identify a document.
+ * @param filterDefinition {@link FilterClause} used to identify a document.
  */
 @Schema(description = "Command that finds a single document and deletes it from a collection")
 @JsonTypeName(CommandName.Names.DELETE_ONE)
@@ -24,8 +24,8 @@ public record DeleteOneCommand(
             implementation = FilterClause.class)
         @Valid
         @JsonProperty("filter")
-        FilterSpec filterSpec,
-    @Valid @JsonProperty("sort") SortClause sortClause)
+        FilterDefinition filterDefinition,
+    @Valid @JsonProperty("sort") SortDefinition sortDefinition)
     implements ModifyCommand, NoOptionsCommand, Filterable, Sortable {
 
   /** {@inheritDoc} */

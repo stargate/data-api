@@ -1,9 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.any;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -11,7 +11,6 @@ import static org.hamcrest.Matchers.startsWith;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.ClassOrderer;
@@ -29,7 +28,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
   class FindOneAndReplace {
     @Test
     public void byId() {
-      String document =
+      final String document =
           """
             {
               "_id": "doc3",
@@ -39,61 +38,45 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
             """;
       insertDoc(document);
 
-      String expected =
-          """
-            {
-              "_id": "doc3",
-              "username": "user3",
-              "status" : false
-            }
-            """;
-
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
             {
               "findOneAndReplace": {
                 "filter" : {"_id" : "doc3"},
                 "replacement" : { "username": "user3", "status" : false }
               }
             }
-            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+            """)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
 
       // assert state after update
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
             {
               "find": {
                 "filter" : {"_id" : "doc3"}
               }
             }
-            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+            """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+            {
+              "_id": "doc3",
+              "username": "user3",
+              "status" : false
+            }
+            """));
     }
 
     @Test
     public void byIdWithId() {
-      String document =
+      final String document =
           """
             {
               "_id": "doc3",
@@ -103,61 +86,45 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
             """;
       insertDoc(document);
 
-      String expected =
-          """
-            {
-              "_id": "doc3",
-              "username": "user3",
-              "status" : false
-            }
-            """;
-
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
             {
               "findOneAndReplace": {
                 "filter" : {"_id" : "doc3"},
                 "replacement" : {"_id" : "doc3", "username": "user3", "status" : false }
               }
             }
-            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+            """)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
 
       // assert state after update
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
             {
               "find": {
                 "filter" : {"_id" : "doc3"}
               }
             }
-            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+            """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+            {
+              "_id": "doc3",
+              "username": "user3",
+              "status" : false
+            }
+            """));
     }
 
     @Test
     public void byIdWithIdNoChange() {
-      String document =
+      final String document =
           """
             {
               "_id": "doc3",
@@ -167,52 +134,36 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
             """;
       insertDoc(document);
 
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
             {
               "findOneAndReplace": {
                 "filter" : {"_id" : "doc3"},
                 "replacement" : {"_id" : "doc3", "username": "user3", "active_user" : true }
               }
             }
-            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+            """)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(0));
 
       // assert state after update
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                 {
                   "find": {
                     "filter" : {"_id" : "doc3"}
                   }
                 }
-                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                """)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(document));
     }
 
     @Test
     public void withSort() {
-      String document =
+      final String document =
           """
           {
             "_id": "doc3",
@@ -222,7 +173,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           """;
       insertDoc(document);
 
-      String document1 =
+      final String document1 =
           """
           {
             "_id": "doc2",
@@ -231,7 +182,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           }
           """;
       insertDoc(document1);
-      String expected =
+      final String expected =
           """
               {
                 "_id": "doc2",
@@ -240,8 +191,8 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
               }
               """;
 
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
               {
                 "findOneAndReplace": {
                   "filter" : {"active_user" : true},
@@ -250,44 +201,28 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                   "options" : {"returnDocument" : "after"}
                 }
               }
-              """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+              """)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(expected))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
 
       // assert state after update
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                 {
                   "find": {
                     "filter" : {"_id" : "doc2"}
                   }
                 }
-                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                """)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
 
     @Test
     public void withUpsert() {
-      String expected =
+      final String expected =
           """
         {
           "_id": "doc2",
@@ -296,8 +231,8 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
         }
         """;
 
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
         {
           "findOneAndReplace": {
             "filter" : {"_id" : "doc2"},
@@ -305,15 +240,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
             "options" : {"returnDocument" : "after", "upsert" : true}
           }
         }
-        """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+        """)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(expected))
           .body("status.matchedCount", is(0))
@@ -321,22 +248,14 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .body("status.upsertedId", is("doc2"));
 
       // assert state after update
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
         {
           "find": {
             "filter" : {"_id" : "doc2"}
           }
         }
-        """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+        """)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
@@ -344,8 +263,8 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
     @Test
     public void withUpsertNewId() {
       final String newId = "new-id-1234";
-      String json =
-              """
+      givenHeadersPostJsonThenOkNoErrors(
+                  """
                 {
                   "findOneAndReplace": {
                     "filter" : {},
@@ -360,15 +279,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                   }
                 }
                 """
-              .formatted(newId);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                  .formatted(newId))
           .body("$", responseIsFindAndSuccess())
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
@@ -377,30 +288,22 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .body("status.upsertedId", is(newId));
 
       // assert state after update
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                 {
                   "find": {
                     "filter" : {"username" : "aaronm"}
                   }
                 }
-                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                """)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]._id", is(newId));
     }
 
     @Test
     public void withUpsertNoId() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
             {
               "findOneAndReplace": {
                 "filter" : {"username" : "username2"},
@@ -408,15 +311,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                 "options" : {"returnDocument" : "after", "upsert" : true}
               }
             }
-            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+            """)
           .body("$", responseIsFindAndSuccess())
           .body("data.document._id", is(notNullValue()))
           .body("data.document._id", any(String.class))
@@ -426,30 +321,23 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .body("status.upsertedId", any(String.class));
 
       // assert state after update
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
             {
               "find": {
                 "filter" : {"username" : "username2"}
               }
             }
-            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+            """)
           .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(1))
           .body("data.documents[0]._id", is(notNullValue()))
           .body("data.documents[0]._id", any(String.class));
     }
 
     @Test
     public void byIdWithDifferentId() {
-      String document =
+      final String document =
           """
             {
               "_id": "doc3",
@@ -458,24 +346,15 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
             }
             """;
       insertDoc(document);
-
-      String json =
-          """
-            {
-              "findOneAndReplace": {
-                "filter" : {"_id" : "doc3"},
-                "replacement" : {"_id" : "doc4", "username": "user3", "status" : false }
-              }
-            }
-            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(
+              """
+                {
+                  "findOneAndReplace": {
+                    "filter" : {"_id" : "doc3"},
+                    "replacement" : {"_id" : "doc4", "username": "user3", "status" : false }
+                  }
+                }
+                """)
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("DOCUMENT_REPLACE_DIFFERENT_DOCID"))
           .body(
@@ -486,7 +365,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
 
     @Test
     public void byIdWithEmptyDocument() {
-      String document =
+      final String document =
           """
                 {
                   "_id": "doc3",
@@ -496,54 +375,38 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                 """;
       insertDoc(document);
 
-      String expected =
-          """
-                {
-                  "_id": "doc3"
-                }
-                """;
-
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                 {
                   "findOneAndReplace": {
                     "filter" : {"_id" : "doc3"},
                     "replacement" : {}
                   }
                 }
-                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                """)
           .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
 
       // assert state after update
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                 {
                   "find": {
                     "filter" : {"_id" : "doc3"}
                   }
                 }
-                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                """)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expected));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                {
+                  "_id": "doc3"
+                }
+                """));
     }
   }
 
@@ -561,17 +424,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                 }
                 """);
 
-      String expectedAfterProjection =
-          """
-                {
-                  "_id": "docProjAfter",
-                  "status" : false
-                }
-                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                 {
                   "findOneAndReplace": {
@@ -582,28 +435,21 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                   }
                 }
                 """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindAndSuccess())
-          .body("data.document", jsonEquals(expectedAfterProjection))
+          .body(
+              "data.document",
+              jsonEquals(
+                  """
+                {
+                  "_id": "docProjAfter",
+                  "status" : false
+                }
+                """))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
 
       // assert state after update
-      String expectedAfterReplace =
-          """
-                {
-                  "_id": "docProjAfter",
-                  "username": "userP",
-                  "status" : false
-                }
-                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                 {
                   "find": {
@@ -611,12 +457,17 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                   }
                 }
                 """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expectedAfterReplace));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                {
+                  "_id": "docProjAfter",
+                  "username": "userP",
+                  "status" : false
+                }
+                """));
     }
 
     @Test
@@ -630,17 +481,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                 }
                 """);
 
-      String expectedWithProjectionBefore =
-          """
-                {
-                  "_id": "docProjBefore",
-                  "active_user" : true
-                }
-                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                 {
                   "findOneAndReplace": {
@@ -651,28 +492,21 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                   }
                 }
                 """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindAndSuccess())
-          .body("data.document", jsonEquals(expectedWithProjectionBefore))
+          .body(
+              "data.document",
+              jsonEquals(
+                  """
+                {
+                  "_id": "docProjBefore",
+                  "active_user" : true
+                }
+                """))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
 
       // assert state after update
-      String expectedAfterReplace =
-          """
-                {
-                  "_id": "docProjBefore",
-                  "username": "userP",
-                  "status" : false
-                }
-                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
               """
                 {
                   "find": {
@@ -680,12 +514,17 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                   }
                 }
                 """)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
-          .body("data.documents[0]", jsonEquals(expectedAfterReplace));
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                {
+                  "_id": "docProjBefore",
+                  "username": "userP",
+                  "status" : false
+                }
+                """));
     }
 
     // Reproduction to verify https://github.com/stargate/data-api/issues/1000
@@ -701,10 +540,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
               """);
 
       String upsertedId =
-          given()
-              .headers(getHeaders())
-              .contentType(ContentType.JSON)
-              .body(
+          givenHeadersPostJsonThenOkNoErrors(
                   """
                         {
                           "findOneAndReplace": {
@@ -715,10 +551,6 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                           }
                         }
                         """)
-              .when()
-              .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-              .then()
-              .statusCode(200)
               .body("$", responseIsFindAndSuccess())
               .body("status.matchedCount", is(0))
               .body("status.modifiedCount", is(0))
@@ -731,10 +563,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
 
       // assert state after update
       String expectedAfterReplace = "{\"_id\":\"%s\"}".formatted(upsertedId);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOkNoErrors(
                   """
                         {
                           "find": {
@@ -743,10 +572,6 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                         }
                         """
                   .formatted(upsertedId))
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expectedAfterReplace));
     }
@@ -762,14 +587,13 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
   class FindOneAndReplaceFailing {
     @Test
     public void tryReplaceWithTooLongNumber() {
-      String document =
+      insertDoc(
           """
                 {
                   "_id": "tooLongNumber1",
                   "value" : 123
                 }
-                """;
-      insertDoc(document);
+                """);
 
       // Max number length: 100; use 110
       String tooLongNumStr = "1234567890".repeat(11);
@@ -786,14 +610,8 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                 }
                 """
               .formatted(tooLongNumStr);
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(json)
+          .body("errors", hasSize(1))
           .body("$", responseIsError())
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(

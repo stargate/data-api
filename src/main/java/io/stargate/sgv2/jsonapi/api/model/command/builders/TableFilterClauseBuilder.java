@@ -19,4 +19,9 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
   protected FilterClause validateAndBuild(LogicalExpression implicitAnd) {
     return new FilterClause(implicitAnd);
   }
+
+  @Override
+  protected String validateFilterClausePath(String path) {
+    return path;
+  }
 }
