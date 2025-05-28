@@ -38,13 +38,15 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
       String baseUrl,
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
-      Map<String, Object> vectorizeServiceParameters) {
+      Map<String, Object> vectorizeServiceParameters,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
     super(
         requestProperties,
         baseUrl,
         model,
         acceptsJinaAIDimensions(model.name()) ? dimension : 0,
-        vectorizeServiceParameters);
+        vectorizeServiceParameters,
+        providerConfig);
 
     jinaAIEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()

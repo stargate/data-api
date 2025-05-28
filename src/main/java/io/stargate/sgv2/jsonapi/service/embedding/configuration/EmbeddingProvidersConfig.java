@@ -31,6 +31,11 @@ public interface EmbeddingProvidersConfig {
     @JsonProperty
     Optional<String> url();
 
+    /** a boolean to flag if the Astra token should be passed through to the provider. */
+    @JsonProperty
+    @WithDefault("false")
+    boolean authTokenPassThroughForNoneAuth();
+
     /**
      * A map of supported authentications. HEADER, SHARED_SECRET and NONE are the only techniques
      * the DataAPI supports (i.e. the key of map can only be HEADER, SHARED_SECRET or NONE).

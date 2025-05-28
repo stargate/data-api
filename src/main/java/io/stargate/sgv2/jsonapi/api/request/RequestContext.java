@@ -70,6 +70,7 @@ public class RequestContext {
     Optional<String> rerankingApiKeyFromHeader =
         HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext);
 
+    // if x-reranking-api-key is present, then use it, else use cassandraToken
     this.rerankingCredentials =
         rerankingApiKeyFromHeader
             .map(apiKey -> new RerankingCredentials(Optional.of(apiKey)))

@@ -103,6 +103,7 @@ message GetSupportedProvidersResponse {
     repeated ParameterConfig parameters = 5;
     RequestProperties properties = 6;
     repeated ModelConfig models = 7;
+    bool authTokenPassThroughForNoneAuth = 8;
 
 
     message AuthenticationConfig{

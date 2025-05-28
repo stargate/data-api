@@ -38,8 +38,9 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
       String baseUrl,
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
-      Map<String, Object> vectorizeServiceParameters) {
-    super(requestProperties, baseUrl, model, dimension, vectorizeServiceParameters);
+      Map<String, Object> vectorizeServiceParameters,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
+    super(requestProperties, baseUrl, model, dimension, vectorizeServiceParameters, providerConfig);
 
     nvidiaEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()

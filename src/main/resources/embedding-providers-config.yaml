@@ -303,6 +303,7 @@ stargate:
           display-name: Nvidia
           enabled: true
           url: https://ai.api.nvidia.com/v1/retrieval/nvidia/embeddings
+          authTokenPassThroughForNoneAuth: true
           supported-authentications:
             NONE:
               enabled: true
