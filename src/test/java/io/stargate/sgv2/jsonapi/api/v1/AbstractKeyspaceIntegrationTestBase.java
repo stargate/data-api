@@ -245,7 +245,6 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
                 line ->
                     line.startsWith("session_cql_requests_seconds") && line.contains("session="))
             .findFirst();
-
     if (!sessionLevelDriverMetricTenantId.isPresent()) {
       List<String> lines = metrics.lines().toList();
       long buckets =
