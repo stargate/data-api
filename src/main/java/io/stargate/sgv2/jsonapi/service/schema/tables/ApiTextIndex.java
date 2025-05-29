@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** An index of type {@link ApiIndexType#TEXT} on text column */
 public class ApiTextIndex extends ApiSupportedIndex {
@@ -72,8 +70,6 @@ public class ApiTextIndex extends ApiSupportedIndex {
    */
   private static class UserDescFactory
       extends IndexFactoryFromIndexDesc<ApiTextIndex, TextIndexDefinitionDesc> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(UserDescFactory.class);
-
     @Override
     public ApiTextIndex create(
         TableSchemaObject tableSchemaObject, String indexName, TextIndexDefinitionDesc indexDesc) {
@@ -113,7 +109,7 @@ public class ApiTextIndex extends ApiSupportedIndex {
       JsonNode analyzerDef = indexDesc.options() == null ? null : indexDesc.options().analyzer();
       if (analyzerDef != null) {
         indexOptions.put(
-            TableDescConstants.TextIndexDefinitionDescOptions.ANALYZER,
+            TableDescConstants.TextIndexCQLOptions.OPTION_ANALYZER,
             analyzerDef.isTextual() ? analyzerDef.textValue() : analyzerDef.toString());
       }
       return new ApiTextIndex(indexIdentifier, targetIdentifier, indexOptions, analyzerDef);
@@ -125,7 +121,6 @@ public class ApiTextIndex extends ApiSupportedIndex {
    */
   private static class CqlTypeFactory extends IndexFactoryFromCql {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static final Logger LOGGER = LoggerFactory.getLogger(CqlTypeFactory.class);
 
     @Override
     protected ApiIndexDef create(

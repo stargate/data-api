@@ -599,7 +599,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   }
 
   @Nested
-  @Order(0)
+  @Order(3)
   class CreateTextIndexSuccess {
     // First, a test for the default text index creation (no options specified)
     @Test

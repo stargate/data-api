@@ -50,6 +50,11 @@ public interface TableDescConstants {
     String ANALYZER = "analyzer";
   }
 
+  /** Options for the creating text index via CQL. */
+  interface TextIndexCQLOptions {
+    String OPTION_ANALYZER = "index_analyzer";
+  }
+
   interface VectorIndexDefinitionDescOptions {
     String SOURCE_MODEL = "source_model";
     String SIMILARITY_FUNCTION = "similarity_function";
