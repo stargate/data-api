@@ -907,19 +907,19 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   summary = "`createTextIndex` for text columns, in tables api",
                   value =
                       """
-                                      {
-                                             "createTextIndex": {
-                                                 "name": "lexical_idx",
-                                                 "definition": {
-                                                     "column": "keywords",
-                                                     "analyzer": "english"
-                                                 },
-                                                 "options" : {
-                                                     "ifNotExists" : true
-                                                 }
-                                             }
-                                         }
-                                    """),
+                      {
+                             "createTextIndex": {
+                                 "name": "lexical_idx",
+                                 "definition": {
+                                     "column": "keywords",
+                                     "analyzer": "english"
+                                 },
+                                 "options" : {
+                                     "ifNotExists" : true
+                                 }
+                             }
+                         }
+                    """),
               @ExampleObject(
                   name = "createVectorIndex",
                   summary = "`createVectorIndex` for vector columns, in tables api",
