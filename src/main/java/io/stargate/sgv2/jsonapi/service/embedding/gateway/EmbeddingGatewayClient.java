@@ -145,7 +145,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
     final EmbeddingGateway.ProviderEmbedRequest.ProviderContext.Builder builder =
         EmbeddingGateway.ProviderEmbedRequest.ProviderContext.newBuilder()
             .setProviderName(provider)
-            .setTenantId(tenant.tenantId());
+            .setTenantId(tenant.toString());
     // Add the value of `Token` in the header
     builder.putAuthTokens(DATA_API_TOKEN, authToken);
     // Add the value of `x-embedding-api-key` in the header

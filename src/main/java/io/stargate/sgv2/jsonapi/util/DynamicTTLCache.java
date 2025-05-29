@@ -211,8 +211,15 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
   /** Callback to create a new session when one is needed for the cache */
   private CompletableFuture<ValueHolder<KeyT, ValueT>> onLoadValue(KeyT key, Executor executor) {
 
-    return valueFactory
-        .apply(key)
+    CompletionStage<ValueT> stage = valueFactory.apply(key);
+    // sanity checking the valueFactory returns a CompletionStage
+    if (stage == null) {
+      return CompletableFuture.failedFuture(
+          new IllegalStateException("valueFactory returned null CompletionStage for key: " + key));
+    }
+
+    return stage
+        .exceptionallyCompose(CompletableFuture::failedFuture)
         .thenApply(
             value -> {
               if (value == null) {

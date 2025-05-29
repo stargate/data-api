@@ -124,7 +124,7 @@ public class RequestContext implements LoggingMDCContext {
 
   @Override
   public void addToMDC() {
-    MDC.put("tenantId", tenant.tenantId());
+    MDC.put("tenantId", tenant.toString());
   }
 
   @Override

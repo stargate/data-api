@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.schema;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
@@ -10,12 +13,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
-
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
-
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactory {
 
@@ -99,9 +98,9 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
                                     .map(CqlIdentifierUtil::cqlIdentifierToMessageString)
                                     .toList();
                             return SchemaException.Code.UNKNOWN_COLLECTION_OR_TABLE.get(
-                                errVars(scopedName,
-                                    vars -> vars.put("allTables", errFmtJoin(allTables))
-                                ));
+                                errVars(
+                                    scopedName,
+                                    vars -> vars.put("allTables", errFmtJoin(allTables))));
                           });
               return IS_COLLECTION_PREDICATE.test(tableMetadata)
                   ? CollectionSchemaObject.getCollectionSettings(
@@ -124,10 +123,8 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
         .getKeyspaceMetadata(scopedName.keyspace(), forceRefresh)
         .map(
             optKeyspace ->
-                optKeyspace
-                    .orElseThrow(
-                        () -> SchemaException.Code.UNKNOWN_KEYSPACE.get(
-                            errVars(scopedName))));
+                optKeyspace.orElseThrow(
+                    () -> SchemaException.Code.UNKNOWN_KEYSPACE.get(errVars(scopedName))));
   }
 
   static class SchemaObjectTypeMismatchException extends RuntimeException {

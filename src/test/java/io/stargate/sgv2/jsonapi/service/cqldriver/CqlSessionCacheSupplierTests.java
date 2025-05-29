@@ -8,7 +8,8 @@ import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCache;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -27,14 +28,14 @@ public class CqlSessionCacheSupplierTests {
     var operationsConfig = mock(OperationsConfig.class);
     when(operationsConfig.databaseConfig()).thenReturn(dbConfig);
 
-    var schemaCache = mock(SchemaCache.class);
+    var schemaCacheSupplier = mock(SchemaObjectCacheSupplier.class);
+    var schemaCache = mock(SchemaObjectCache.class);
+    when(schemaCacheSupplier.get()).thenReturn(schemaCache);
     when(schemaCache.getSchemaChangeListener()).thenReturn(mock(SchemaChangeListener.class));
-    when(schemaCache.getDeactivatedTenantConsumer())
-        .thenReturn(mock(CQLSessionCache.DeactivatedTenantListener.class));
 
     var factory =
         new CqlSessionCacheSupplier(
-            "testApp", operationsConfig, new SimpleMeterRegistry(), schemaCache);
+            "testApp", operationsConfig, new SimpleMeterRegistry(), schemaCacheSupplier);
 
     var sessionCache1 = factory.get();
     var sessionCache2 = factory.get();

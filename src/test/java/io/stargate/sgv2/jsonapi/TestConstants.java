@@ -49,7 +49,6 @@ public class TestConstants {
   public final SchemaObjectIdentifier COLLECTION_IDENTIFIER;
   public final SchemaObjectIdentifier TABLE_IDENTIFIER;
 
-
   // Schema objects for testing
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT_LEGACY;

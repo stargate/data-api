@@ -73,13 +73,15 @@ public class TableBasedSchemaCache {
                   // again, why is this here, looks like it returns the same error code ?
 
                   // TODO: XXXX: THIS CLASS WILL BE DELETED BEFORE MERGE !!!!
-//                  if (error instanceof RuntimeException rte
-//                      && rte.getMessage()
-//                          .startsWith(ErrorCodeV1.COLLECTION_NOT_EXIST.getMessage())) {
-//                    return Uni.createFrom()
-//                        .failure(
-//                            ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
-//                  }
+                  //                  if (error instanceof RuntimeException rte
+                  //                      && rte.getMessage()
+                  //
+                  // .startsWith(ErrorCodeV1.COLLECTION_NOT_EXIST.getMessage())) {
+                  //                    return Uni.createFrom()
+                  //                        .failure(
+                  //
+                  // ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
+                  //                  }
 
                   return Uni.createFrom().failure(error);
                 } else {
@@ -105,12 +107,12 @@ public class TableBasedSchemaCache {
               // TODO: error code here needs to be for collections and tables
 
               // TODO: XXXX: THIS CLASS WILL BE DELETED BEFORE MERGE !!!!
-//              var table =
-//                  optionalTable.orElseThrow(
-//                      () -> ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
+              //              var table =
+              //                  optionalTable.orElseThrow(
+              //                      () -> ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s",
+              // collectionName));
 
-              var table =
-                  optionalTable.orElse(null);
+              var table = optionalTable.orElse(null);
 
               // check if its a valid json API Table
               // TODO: re-use the table matcher this is on the request hot path

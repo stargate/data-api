@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
@@ -32,8 +34,6 @@ import java.util.*;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 public record CreateCollectionOperation(
     CommandContext<KeyspaceSchemaObject> commandContext,
@@ -145,8 +145,9 @@ public record CreateCollectionOperation(
 
               if (currKeyspace == null) {
                 return Uni.createFrom()
-                    .failure(SchemaException.Code.UNKNOWN_KEYSPACE.get(
-                        errVars(commandContext.schemaObject())));
+                    .failure(
+                        SchemaException.Code.UNKNOWN_KEYSPACE.get(
+                            errVars(commandContext.schemaObject())));
               }
 
               TableMetadata tableMetadata =

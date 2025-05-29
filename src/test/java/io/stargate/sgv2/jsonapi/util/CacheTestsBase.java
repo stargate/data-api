@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.util;
 
 import com.github.benmanes.caffeine.cache.Ticker;
 import io.stargate.sgv2.jsonapi.TestConstants;
-
 import java.time.Duration;
 
 public class CacheTestsBase {
@@ -10,7 +9,7 @@ public class CacheTestsBase {
   protected final TestConstants TEST_CONSTANTS = new TestConstants();
 
   // Note - using the FakeTicker to control the time for testing, so we dont actally wait 10 seconds
-  protected final String CACHE_NAME = "test-cache" + TEST_CONSTANTS.CORRELATION_ID;
+  protected final String CACHE_NAME = "cache-" + TEST_CONSTANTS.CORRELATION_ID;
   protected final Duration LONG_TTL = Duration.ofSeconds(10);
 
   protected final int CACHE_MAX_SIZE = 10;

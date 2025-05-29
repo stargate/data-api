@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;

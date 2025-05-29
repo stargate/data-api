@@ -32,9 +32,12 @@ public class SchemaObjectIdentifier implements KeyspaceScopedName, Recordable, L
     this.table = table;
 
     this.fullName =
-        table == null
-            ? cqlIdentifierToMessageString(keyspace)
-            : cqlIdentifierToMessageString(keyspace) + "." + cqlIdentifierToMessageString(table);
+        switch (type) {
+          case DATABASE -> "db_id:" + tenant;
+          case KEYSPACE -> cqlIdentifierToMessageString(keyspace);
+          case COLLECTION, TABLE, INDEX ->
+              cqlIdentifierToMessageString(keyspace) + "." + cqlIdentifierToMessageString(table);
+        };
   }
 
   public static SchemaObjectIdentifier forDatabase(Tenant tenant) {
@@ -94,6 +97,10 @@ public class SchemaObjectIdentifier implements KeyspaceScopedName, Recordable, L
     return tenant;
   }
 
+  public SchemaObjectIdentifier keyspaceIdentifier() {
+    return forKeyspace(tenant, keyspace);
+  }
+
   @Override
   @Nullable
   public CqlIdentifier keyspace() {
@@ -135,7 +142,7 @@ public class SchemaObjectIdentifier implements KeyspaceScopedName, Recordable, L
     MDC.put("namespace", keyspace.asInternal());
 
     // NOTE: MUST stay as collection for logging analysis
-    MDC.put("collection", normalizeOptionalString( table == null ? null : table.asInternal()));
+    MDC.put("collection", normalizeOptionalString(table == null ? null : table.asInternal()));
   }
 
   @Override

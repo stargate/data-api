@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
-
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 

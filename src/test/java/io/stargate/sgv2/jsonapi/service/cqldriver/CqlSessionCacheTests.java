@@ -9,20 +9,19 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
-
+import io.stargate.sgv2.jsonapi.util.CacheTestsBase;
+import io.stargate.sgv2.jsonapi.util.DynamicTTLCacheTests;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
-import io.stargate.sgv2.jsonapi.util.CacheTestsBase;
-import io.stargate.sgv2.jsonapi.util.DynamicTTLCacheTests;
 import org.junit.jupiter.api.Test;
 
 /** Tests for {@link CQLSessionCache}. */
-public class CqlSessionCacheTests extends CacheTestsBase  {
+public class CqlSessionCacheTests extends CacheTestsBase {
 
   // None of these TTLs are real, we are using hte Fake Ticker to control the time
   private final String AUTH_TOKEN = "authToken-" + TEST_CONSTANTS.CORRELATION_ID;
+  private final UserAgent SLA_USER_AGENT = new UserAgent("Datastax-SLA-Checker");
 
   @Test
   public void sessionFactoryCalledOnceOnly() {
@@ -91,7 +90,7 @@ public class CqlSessionCacheTests extends CacheTestsBase  {
         .isSameAs(fixture.expectedSession);
 
     // move the fake time forward to expire the session
-    fixture.ticker.advance(CACHE_TTL.plusSeconds(10));
+    fixture.ticker.advance(LONG_TTL.plusSeconds(10));
 
     // let the cache cleanup
     fixture.cache.cleanUp();
@@ -133,7 +132,7 @@ public class CqlSessionCacheTests extends CacheTestsBase  {
 
     var fixture =
         newFixture(
-            List.of(listener1, listener2), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL);
+            List.of(listener1, listener2), LONG_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SHORT_TTL);
 
     var actualSession = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
     assertThat(actualSession)
@@ -179,14 +178,15 @@ public class CqlSessionCacheTests extends CacheTestsBase  {
     var expectedSlaSession = mock(CqlSession.class);
     when(fixture.sessionFactory.apply(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(expectedSlaSession));
-    var actualSlaSession = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, SLA_USER_AGENT);
+    var actualSlaSession =
+        fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, SLA_USER_AGENT);
 
     assertThat(actualSlaSession)
         .as("Session from cache is expectedSlaSession")
         .isSameAs(expectedSlaSession);
 
     // advance the time past the TTL for the SLA user, cache may cleanup in the background
-    fixture.ticker.advance(SLA_USER_TTL.plusNanos(10));
+    fixture.ticker.advance(SHORT_TTL.plusNanos(10));
 
     // Now get the session with non SLA user agent
     var expectedNonSlaSession = mock(CqlSession.class);
@@ -199,7 +199,7 @@ public class CqlSessionCacheTests extends CacheTestsBase  {
         .isSameAs(expectedNonSlaSession);
 
     // advance the time past the TTL for the non SLA user, this will also go past the SLA user TTL
-    fixture.ticker.advance(CACHE_TTL.plusNanos(10));
+    fixture.ticker.advance(LONG_TTL.plusNanos(10));
 
     // the user agent is not part of the key, only tenant and auth, user agent is used to
     // create the TTL for the key
@@ -225,7 +225,9 @@ public class CqlSessionCacheTests extends CacheTestsBase  {
   // =======================================================
 
   private Tenant thisTenant(int i) {
-    return Tenant.create(TEST_CONSTANTS.TENANT.databaseType(), "%s-%s".formatted(TEST_CONSTANTS.TENANT.toString(), i));
+    return Tenant.create(
+        TEST_CONSTANTS.TENANT.databaseType(),
+        "%s-%s".formatted(TEST_CONSTANTS.TENANT.toString(), i));
   }
 
   private String thisAuthToken(int i) {
@@ -247,8 +249,6 @@ public class CqlSessionCacheTests extends CacheTestsBase  {
     return consumer;
   }
 
-
-
   private record Fixture(
       CQLSessionCache cache,
       CQLSessionCache.DeactivatedTenantListener listener,
@@ -267,7 +267,7 @@ public class CqlSessionCacheTests extends CacheTestsBase  {
   }
 
   private Fixture newFixture() {
-    return newFixture(List.of(), CACHE_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SLA_USER_TTL);
+    return newFixture(List.of(), LONG_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SHORT_TTL);
   }
 
   private Fixture newFixture(

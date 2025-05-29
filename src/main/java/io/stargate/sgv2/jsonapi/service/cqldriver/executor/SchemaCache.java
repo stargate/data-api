@@ -308,7 +308,7 @@ public class SchemaCache {
     public void accept(Tenant tenant) {
       // the sessions are keyed on the tenantID and the credentials, and one session can work with
       // multiple keyspaces. So we need to evict all the keyspaces for the tenant
-      schemaCache.evictAllKeyspaces(tenant.tenantId());
+      schemaCache.evictAllKeyspaces(tenant.toString());
     }
   }
 

@@ -119,12 +119,15 @@ public abstract class ErrorFormatters {
     return errVars(name, null);
   }
 
-    public static Map<String, String> errVars(KeyspaceScopedName name, Consumer<Map<String, String>> consumer) {
+  public static Map<String, String> errVars(
+      KeyspaceScopedName name, Consumer<Map<String, String>> consumer) {
 
     Map<String, String> map = new HashMap<>();
 
     map.put(TemplateVars.KEYSPACE, cqlIdentifierToMessageString(name.keyspace()));
-    map.put(TemplateVars.TABLE, name.objectName() == null ? "" : cqlIdentifierToMessageString(name.objectName()));
+    map.put(
+        TemplateVars.TABLE,
+        name.objectName() == null ? "" : cqlIdentifierToMessageString(name.objectName()));
 
     if (consumer != null) {
       consumer.accept(map);

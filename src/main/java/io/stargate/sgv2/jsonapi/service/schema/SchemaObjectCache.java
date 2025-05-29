@@ -65,16 +65,7 @@ public class SchemaObjectCache
     super(
         "schema_object_cache",
         cacheMaxSize,
-        cacheKey ->
-            schemaObjectFactory.apply(
-                cacheKey
-                    .requestContext()
-                    .orElseThrow(
-                        () ->
-                            new IllegalStateException(
-                                "SchemaCacheKey requestContext is null, weak reference was cleared")),
-                cacheKey.schemaIdentifier(),
-                cacheKey.forceRefresh()),
+        createOnLoad(schemaObjectFactory),
         List.of(),
         meterRegistry,
         asyncTaskOnCaller,
@@ -89,6 +80,30 @@ public class SchemaObjectCache
         ttlSupplier);
   }
 
+  private static ValueFactory<SchemaObjectCache.SchemaCacheKey, SchemaObject> createOnLoad(
+      SchemaObjectFactory factory) {
+
+    return (cacheKey) -> {
+      var requestContext =
+          cacheKey
+              .requestContext()
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "SchemaCacheKey.onLoad - requestContext is null, weak reference was cleared"));
+
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace(
+            "SchemaCacheKey.onLoad - loading schema object with identifier: {}, forceRefresh: {}, userAgent: {}",
+            cacheKey.schemaIdentifier(),
+            cacheKey.forceRefresh(),
+            cacheKey.userAgent());
+      }
+
+      return factory.apply(requestContext, cacheKey.schemaIdentifier(), cacheKey.forceRefresh());
+    };
+  }
+
   /**
    * Gets a listener to use with the {@link CqlSessionFactory} to remove the schema cache entries
    * when the DB sends schema change events.
@@ -96,7 +111,6 @@ public class SchemaObjectCache
   public SchemaChangeListener getSchemaChangeListener() {
     return new SchemaObjectCache.SchemaCacheSchemaChangeListener(this);
   }
-
 
   public Uni<DatabaseSchemaObject> getDatabase(
       RequestContext requestContext,
@@ -152,7 +166,8 @@ public class SchemaObjectCache
       var existingCollection = getIfPresent(collectionKey);
       if (existingCollection.isPresent()) {
         if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("getTableBased() - found existing collection schema object collectionKey: {}",
+          LOGGER.trace(
+              "getTableBased() - found existing collection schema object collectionKey: {}",
               collectionKey);
           return Uni.createFrom().item((TableBasedSchemaObject) existingCollection.get());
         }
@@ -162,7 +177,8 @@ public class SchemaObjectCache
       if (existingTable.isPresent()) {
         // we have a cache hit for the table, return it
         if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("getTableBased() - found existing table schema object tableKey: {}", tableKey);
+          LOGGER.trace(
+              "getTableBased() - found existing table schema object tableKey: {}", tableKey);
         }
         return Uni.createFrom().item((TableBasedSchemaObject) existingTable.get());
       }
@@ -175,24 +191,26 @@ public class SchemaObjectCache
         .onFailure(
             io.stargate.sgv2.jsonapi.service.schema.SchemaObjectFactory
                 .SchemaObjectTypeMismatchException.class)
-        .recoverWithUni(() -> {
-          if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace(
-                "getTableBased() - collection key load resulted in SchemaObjectTypeMismatchException, retrying collectionKey.identifier: {}, tableKey.identifier: {}",
-                collectionKey.schemaIdentifier,
-                tableKey.schemaIdentifier);
-          }
-          return get(tableKey);
-        })
-        .invoke(schemaObject -> {
-          if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace(
-                "getTableBased() - loaded schema object with identifier: {}, collectionKey.identifier: {}, tableKey.identifier: {}",
-                schemaObject.identifier(),
-                collectionKey.schemaIdentifier,
-                tableKey.schemaIdentifier);
-          }
-        })
+        .recoverWithUni(
+            () -> {
+              if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace(
+                    "getTableBased() - collection key load resulted in SchemaObjectTypeMismatchException, retrying collectionKey.identifier: {}, tableKey.identifier: {}",
+                    collectionKey.schemaIdentifier,
+                    tableKey.schemaIdentifier);
+              }
+              return get(tableKey);
+            })
+        .invoke(
+            schemaObject -> {
+              if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace(
+                    "getTableBased() - loaded schema object with identifier: {}, collectionKey.identifier: {}, tableKey.identifier: {}",
+                    schemaObject.identifier(),
+                    collectionKey.schemaIdentifier,
+                    tableKey.schemaIdentifier);
+              }
+            })
         .map(obj -> (TableBasedSchemaObject) obj);
   }
 
@@ -253,6 +271,16 @@ public class SchemaObjectCache
       UserAgent userAgent,
       boolean forceRefresh) {
 
+    // sanity check
+    // requestContext may be null when we are doing evictions
+    if (requestContext!= null && (!requestContext.getTenant().equals(schemaIdentifier.tenant()))){
+      throw new IllegalArgumentException(
+          "RequestContext tenant does not match schemaIdentifier requestContext.tenant: "
+              + requestContext.getTenant()
+              + ", schemaIdentifier.tenant: "
+              + schemaIdentifier.tenant());
+    }
+
     return new SchemaCacheKey(
         requestContext,
         schemaIdentifier,
@@ -294,6 +322,10 @@ public class SchemaObjectCache
 
     Optional<RequestContext> requestContext() {
       return Optional.ofNullable(requestContextWeakReference.get());
+    }
+
+    UserAgent userAgent() {
+      return userAgent;
     }
 
     @Override
@@ -430,10 +462,10 @@ public class SchemaObjectCache
       evictKeyspace("onKeyspaceDropped", keyspace, true);
     }
 
-    /** When keyspace created, evict from cache incase stale keyspace or collections */
+    /** When keyspace created, evict KS and all other objects incase we missed the drop */
     @Override
     public void onKeyspaceCreated(@NonNull KeyspaceMetadata keyspace) {
-      evictKeyspace("onKeyspaceCreated", keyspace, false);
+      evictKeyspace("onKeyspaceCreated", keyspace, true);
     }
 
     /** When keyspace updated, evict from cache incase stale keyspace or collections */
