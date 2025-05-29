@@ -91,7 +91,9 @@ public class DataVectorizerService {
             .getEmbeddingCredentialsSupplier()
             .create(
                 commandContext.requestContext(),
-                embeddingProvider == null ? null : embeddingProvider.getProviderConfig()),
+                commandContext.embeddingProvider() == null
+                    ? null
+                    : commandContext.embeddingProvider().getProviderConfig()),
         commandContext.schemaObject());
   }
 

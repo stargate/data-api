@@ -6,6 +6,7 @@ import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
@@ -119,7 +120,10 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
         new EmbeddingRequest(texts.toArray(textArray), model.name(), input_type);
 
     Uni<EmbeddingResponse> response =
-        applyRetry(nvidiaEmbeddingProviderClient.embed("Bearer ", request));
+        applyRetry(
+            nvidiaEmbeddingProviderClient.embed(
+                HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().orElse(""),
+                request));
 
     return response
         .onItem()
