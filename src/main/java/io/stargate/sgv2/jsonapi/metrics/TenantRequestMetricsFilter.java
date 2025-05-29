@@ -87,7 +87,7 @@ public class TenantRequestMetricsFilter {
     }
 
     List<Tag> tags = new ArrayList<>(4);
-    tags.add(Tag.of(config.tenantTag(), apiRequestContext.getTenant().toString()));
+    tags.add(Tag.of(config.tenantTag(), apiRequestContext.tenant().toString()));
     tags.add(responseContext.getStatus() >= 500 ? errorTrueTag : errorFalseTag);
 
     if (config.userAgentTagEnabled()) {

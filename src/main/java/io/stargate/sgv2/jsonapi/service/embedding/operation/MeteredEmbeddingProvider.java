@@ -121,7 +121,7 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
    */
   private Tags getCustomTags() {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
-    Tag tenantTag = Tag.of(TENANT_TAG, requestContext.getTenant().toString());
+    Tag tenantTag = Tag.of(TENANT_TAG, requestContext.tenant().toString());
     Tag embeddingProviderTag =
         Tag.of(
             jsonApiMetricsConfig.embeddingProvider(), embeddingProvider.getClass().getSimpleName());

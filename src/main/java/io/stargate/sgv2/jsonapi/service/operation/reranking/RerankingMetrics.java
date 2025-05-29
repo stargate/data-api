@@ -87,7 +87,7 @@ public class RerankingMetrics {
     // Record the passage count for the specific tenant and table
     Tags tenantTags =
         new RerankingTagsBuilder()
-            .withTenant(requestContext.getTenant())
+            .withTenant(requestContext.tenant())
             .withKeyspace(schemaObject.identifier().keyspace())
             .withTable(schemaObject.identifier().table())
             .build();
@@ -139,7 +139,7 @@ public class RerankingMetrics {
     // Build tags for the tenant timer
     Tags tenantTags =
         new RerankingTagsBuilder()
-            .withTenant(requestContext.getTenant())
+            .withTenant(requestContext.tenant())
             .withKeyspace(schemaObject.identifier().keyspace())
             .withTable(schemaObject.identifier().table())
             .build();

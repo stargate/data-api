@@ -103,7 +103,7 @@ public class GeneralResource {
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid GeneralCommand command) {
 
-    var dbIdentifier = SchemaObjectIdentifier.forDatabase(requestContext.getTenant());
+    var dbIdentifier = SchemaObjectIdentifier.forDatabase(requestContext.tenant());
 
     return schemaObjectCacheSupplier
         .get()

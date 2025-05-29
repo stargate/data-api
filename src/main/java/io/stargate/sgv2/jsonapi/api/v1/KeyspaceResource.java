@@ -150,7 +150,7 @@ public class KeyspaceResource {
 
     var keyspaceIdentifier =
         SchemaObjectIdentifier.forKeyspace(
-            requestContext.getTenant(), cqlIdentifierFromUserInput(keyspace));
+            requestContext.tenant(), cqlIdentifierFromUserInput(keyspace));
 
     // Force refresh on all keyspace commands because they are all DDL commands
     return schemaObjectCacheSupplier

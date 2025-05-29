@@ -118,10 +118,10 @@ public class TableBasedSchemaCache {
               // TODO: re-use the table matcher this is on the request hot path
               if (new CollectionTableMatcher().test(table)) {
                 return CollectionSchemaObject.getCollectionSettings(
-                    requestContext.getTenant(), optionalTable.get(), objectMapper);
+                    requestContext.tenant(), optionalTable.get(), objectMapper);
               }
 
-              return TableSchemaObject.from(requestContext.getTenant(), table, objectMapper);
+              return TableSchemaObject.from(requestContext.tenant(), table, objectMapper);
             });
   }
 

@@ -45,7 +45,7 @@ public class ListIndexesDBTask extends MetadataDBTask<TableSchemaObject> {
     }
     var indexesContainer =
         TableSchemaObject.from(
-                lastResultSupplier().commandContext().requestContext().getTenant(),
+                lastResultSupplier().commandContext().requestContext().tenant(),
                 tableMetadata,
                 OBJECT_MAPPER)
             .apiTableDef()

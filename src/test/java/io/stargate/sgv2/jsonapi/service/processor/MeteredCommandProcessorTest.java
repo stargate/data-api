@@ -66,7 +66,7 @@ public class MeteredCommandProcessorTest {
 
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
-      Mockito.when(dataApiRequestInfo.getTenant()).thenReturn(TEST_CONSTANTS.TENANT);
+      Mockito.when(dataApiRequestInfo.tenant()).thenReturn(TEST_CONSTANTS.TENANT);
       meteredCommandProcessor
           .processCommand(commandContext, countCommand)
           .await()
@@ -123,7 +123,7 @@ public class MeteredCommandProcessorTest {
 
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
-      Mockito.when(dataApiRequestInfo.getTenant()).thenReturn(TEST_CONSTANTS.TENANT);
+      Mockito.when(dataApiRequestInfo.tenant()).thenReturn(TEST_CONSTANTS.TENANT);
       meteredCommandProcessor
           .processCommand(commandContext, countCommand)
           .await()
@@ -182,7 +182,7 @@ public class MeteredCommandProcessorTest {
               .build();
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
-      Mockito.when(dataApiRequestInfo.getTenant()).thenReturn(TEST_CONSTANTS.TENANT);
+      Mockito.when(dataApiRequestInfo.tenant()).thenReturn(TEST_CONSTANTS.TENANT);
       meteredCommandProcessor
           .processCommand(commandContext, countCommand)
           .await()

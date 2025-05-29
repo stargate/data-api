@@ -320,7 +320,7 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
   private FixtureTenant newFixtureTenant(Tenant tenant) {
 
     var requestContext = mock(RequestContext.class);
-    when(requestContext.getTenant()).thenReturn(tenant);
+    when(requestContext.tenant()).thenReturn(tenant);
 
     var cqlSession = mock(CqlSession.class);
     when(cqlSession.getName()).thenReturn(tenant.toString());

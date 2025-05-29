@@ -174,7 +174,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
 
     // Validation happens when creating the credentials and session key
     return getSession(
-        requestContext.getTenant(), requestContext.getAuthToken(), requestContext.getUserAgent());
+        requestContext.tenant(), requestContext.getAuthToken(), requestContext.getUserAgent());
   }
 
   public Uni<CqlSession> getSession(CommandQueryExecutor.DBRequestContext requestContext) {

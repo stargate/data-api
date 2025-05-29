@@ -2,9 +2,11 @@ package io.stargate.sgv2.jsonapi.service.schema;
 
 import java.util.Objects;
 
-// Because a lot of code needs to make decisions based on the type of the SchemaObject use an
-// enum and we also have generics for strong type checking
+/**
+ * The types of schema objects that are used in the API
+ */
 public enum SchemaObjectType {
+
   COLLECTION(Constants.COLLECTION),
   DATABASE(Constants.DATABASE),
   INDEX(Constants.INDEX),

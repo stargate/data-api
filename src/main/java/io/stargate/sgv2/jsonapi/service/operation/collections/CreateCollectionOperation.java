@@ -162,7 +162,7 @@ public record CreateCollectionOperation(
               // if table exists, compare existingCollectionSettings and newCollectionSettings
               CollectionSchemaObject existingCollectionSettings =
                   CollectionSchemaObject.getCollectionSettings(
-                      requestContext.getTenant(), tableMetadata, objectMapper);
+                      requestContext.tenant(), tableMetadata, objectMapper);
 
               // Use the fromNameOrDefault() so if not specified it will default
               var embeddingSourceModel =
@@ -177,7 +177,7 @@ public record CreateCollectionOperation(
 
               CollectionSchemaObject newCollectionSettings =
                   CollectionSchemaObject.getCollectionSettings(
-                      requestContext.getTenant(),
+                      requestContext.tenant(),
                       currKeyspace.getName().asInternal(),
                       name,
                       tableMetadata,

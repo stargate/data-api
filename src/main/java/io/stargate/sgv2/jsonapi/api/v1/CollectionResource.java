@@ -39,7 +39,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
-import io.stargate.sgv2.jsonapi.service.schema.KeyspaceScopedName;
+import io.stargate.sgv2.jsonapi.service.schema.UnscopedSchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
 import jakarta.inject.Inject;
@@ -208,7 +208,7 @@ public class CollectionResource {
       @PathParam("collection") @NotEmpty String collection) {
 
     var name =
-        new KeyspaceScopedName.DefaultKeyspaceScopedName(
+        new UnscopedSchemaObjectIdentifier.DefaultKeyspaceScopedName(
             cqlIdentifierFromUserInput(keyspace), cqlIdentifierFromUserInput(collection));
     var forceRefresh = CommandType.DDL.equals(command.commandName().getCommandType());
 
@@ -262,7 +262,7 @@ public class CollectionResource {
                     (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)
                         ? null
                         : embeddingProviderFactory.getConfiguration(
-                            requestContext.getTenant(),
+                            requestContext.tenant(),
                             requestContext.getAuthToken(),
                             vectorColDef.vectorizeDefinition().provider(),
                             vectorColDef.vectorizeDefinition().modelName(),

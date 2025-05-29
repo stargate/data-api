@@ -7,7 +7,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.TemplateVars;
-import io.stargate.sgv2.jsonapi.service.schema.KeyspaceScopedName;
+import io.stargate.sgv2.jsonapi.service.schema.UnscopedSchemaObjectIdentifier;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
@@ -115,12 +115,12 @@ public abstract class ErrorFormatters {
     return errVars(schemaObject, null, null);
   }
 
-  public static Map<String, String> errVars(KeyspaceScopedName name) {
+  public static Map<String, String> errVars(UnscopedSchemaObjectIdentifier name) {
     return errVars(name, null);
   }
 
   public static Map<String, String> errVars(
-      KeyspaceScopedName name, Consumer<Map<String, String>> consumer) {
+      UnscopedSchemaObjectIdentifier name, Consumer<Map<String, String>> consumer) {
 
     Map<String, String> map = new HashMap<>();
 

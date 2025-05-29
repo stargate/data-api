@@ -121,12 +121,15 @@ public class TenantTests {
         .contains("tenantId", "TENANT-123")
         .contains("databaseType", DatabaseType.ASTRA.name());
 
-    var obj = JsonNodeFactory.instance.objectNode();
-    obj.put("tenantId", "TENANT-123");
-    obj.put("databaseType", DatabaseType.ASTRA.name());
+    var tenantJson = Jsonable.toJson(tenant);
+    var expected = JsonNodeFactory.instance.objectNode();
+    // Top level node with the class name
+    var contents = expected.withObjectProperty("Tenant");
+    contents.put("tenantId", "TENANT-123");
+    contents.put("databaseType", DatabaseType.ASTRA.name());
 
-    assertThat(Jsonable.toJson(tenant))
+    assertThat(tenantJson)
         .as("Recording to JSON")
-        .contains(obj);
+        .isEqualTo(expected);
   }
 }

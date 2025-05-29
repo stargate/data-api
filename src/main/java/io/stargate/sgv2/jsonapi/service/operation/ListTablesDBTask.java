@@ -58,7 +58,7 @@ public class ListTablesDBTask extends MetadataDBTask<KeyspaceSchemaObject> {
         .map(
             tableMetadata ->
                 TableSchemaObject.from(
-                    lastResultSupplier().commandContext().requestContext().getTenant(),
+                    lastResultSupplier().commandContext().requestContext().tenant(),
                     tableMetadata,
                     OBJECT_MAPPER))
         .map(tableSchemaObject -> tableSchemaObject.apiTableDef().toTableDesc())

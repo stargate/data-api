@@ -33,7 +33,7 @@ public class ValidateCredentials {
     EmbeddingGateway.ValidateCredentialRequest.Builder validateCredentialRequest =
         EmbeddingGateway.ValidateCredentialRequest.newBuilder();
     validateCredentialRequest.setCredential(value);
-    validateCredentialRequest.setTenantId(requestContext.getTenant().toString());
+    validateCredentialRequest.setTenantId(requestContext.tenant().toString());
     validateCredentialRequest.setProviderName(provider);
     validateCredentialRequest.setToken(requestContext.getAuthToken());
     EmbeddingServiceGrpc.EmbeddingServiceBlockingStub embeddingService =

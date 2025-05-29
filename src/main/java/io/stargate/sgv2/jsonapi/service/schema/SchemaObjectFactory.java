@@ -78,11 +78,11 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
     return getKeyspaceMetadata(requestContext, identifier, forceRefresh)
         .map(
             keyspaceMetadata ->
-                new KeyspaceSchemaObject(requestContext.getTenant(), keyspaceMetadata));
+                new KeyspaceSchemaObject(requestContext.tenant(), keyspaceMetadata));
   }
 
   private Uni<TableBasedSchemaObject> createTableBasedSchemaObject(
-      RequestContext requestContext, KeyspaceScopedName scopedName, boolean forceRefresh) {
+      RequestContext requestContext, UnscopedSchemaObjectIdentifier scopedName, boolean forceRefresh) {
 
     return getKeyspaceMetadata(requestContext, scopedName, forceRefresh)
         .map(
@@ -104,14 +104,14 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
                           });
               return IS_COLLECTION_PREDICATE.test(tableMetadata)
                   ? CollectionSchemaObject.getCollectionSettings(
-                      requestContext.getTenant(), tableMetadata, OBJECT_MAPPER)
+                      requestContext.tenant(), tableMetadata, OBJECT_MAPPER)
                   : TableSchemaObject.from(
-                      requestContext.getTenant(), tableMetadata, OBJECT_MAPPER);
+                      requestContext.tenant(), tableMetadata, OBJECT_MAPPER);
             });
   }
 
   private Uni<KeyspaceMetadata> getKeyspaceMetadata(
-      RequestContext requestContext, KeyspaceScopedName scopedName, boolean forceRefresh) {
+      RequestContext requestContext, UnscopedSchemaObjectIdentifier scopedName, boolean forceRefresh) {
 
     var queryExecutor =
         new CommandQueryExecutor(

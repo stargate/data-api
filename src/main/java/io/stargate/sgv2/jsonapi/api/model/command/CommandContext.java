@@ -106,8 +106,8 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
     this.requestTracing =
         anyTracing
             ? new DefaultRequestTracing(
-                requestContext.getRequestId(),
-                requestContext.getTenant(),
+                requestContext.requestId(),
+                requestContext.tenant(),
                 apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL))
             : RequestTracing.NO_OP;
   }

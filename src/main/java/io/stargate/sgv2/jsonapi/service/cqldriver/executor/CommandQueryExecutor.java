@@ -205,7 +205,7 @@ public class CommandQueryExecutor {
 
     public DBRequestContext(RequestContext requestContext) {
       this(
-          requestContext.getTenant(),
+          requestContext.tenant(),
           requestContext.getAuthToken(),
           requestContext.getUserAgent(),
           false);
@@ -213,7 +213,7 @@ public class CommandQueryExecutor {
 
     public DBRequestContext(CommandContext<?> commandContext) {
       this(
-          commandContext.requestContext().getTenant(),
+          commandContext.requestContext().tenant(),
           commandContext.requestContext().getAuthToken(),
           commandContext.requestContext().getUserAgent(),
           commandContext.requestTracing().enabled());

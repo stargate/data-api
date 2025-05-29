@@ -31,7 +31,7 @@ public class TenantRequestMetricsTagProvider implements HttpServerMetricsTagsCon
   public Tags contribute(Context context) {
 
     List<Tag> tags = new ArrayList<>(2);
-    tags.add(Tag.of(config.tenantTag(), requestContext.getTenant().toString()));
+    tags.add(Tag.of(config.tenantTag(), requestContext.tenant().toString()));
 
     if (config.userAgentTagEnabled()) {
       tags.add(Tag.of(config.userAgentTag(), requestContext.getUserAgent().product()));

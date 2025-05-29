@@ -20,11 +20,14 @@ import java.util.Objects;
 import org.slf4j.MDC;
 
 /**
- * This class is used to get the request info like tenantId, cassandraToken and embeddingApiKey.
- * This is a replacement to StargateRequestInfo so bridge connection is removed.
- *
- * <p><b>Note:</b> aaron feb 3 2025 - leaving with injection for now for the building, it may make
- * sense but moving it to be part of the CommandContext rather than handed around everywhere.
+ * The context of the request to the API, this is the first set of information we extract from
+ * the request, such as the tenant, auth token, user agent, and request ID.
+ * <p>
+ * It needs to integrate with the Quarkus request lifecycle, so is keeping the
+ * CDI and {@link RequestScoped} scope for now.
+ * <p>
+ * See the method accessors for the invariants of things you can rely on if you have an
+ * instance of this class.
  */
 @RequestScoped
 public class RequestContext implements LoggingMDCContext {
@@ -64,13 +67,14 @@ public class RequestContext implements LoggingMDCContext {
 
     this.httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
 
-    this.authToken = tokenResolver.get().resolve(routingContext, securityContext);
+    this.authToken = normalizeOptionalString(tokenResolver.get().resolve(routingContext, securityContext));
     this.requestId = generateRequestId();
     this.userAgent = new UserAgent(httpHeaders.getHeader(HttpHeaders.USER_AGENT));
     this.tenant = tenantResolver.get().resolve(routingContext, securityContext);
 
     this.embeddingCredentials =
         embeddingCredentialsResolver.get().resolveEmbeddingCredentials(routingContext);
+
     // user specified the reranking key in the request header, use that.
     // fall back to whatever they provided as the auth token for the API
     this.rerankingCredentials =
@@ -83,19 +87,24 @@ public class RequestContext implements LoggingMDCContext {
     return UUID_V7_GENERATOR.generate().toString();
   }
 
-  public String getRequestId() {
+  /**
+   * String correlation ID for the request, generated at the start of the request processing.
+   * <p>
+   * Implemented as a V7 UUID.
+   */
+  public String requestId() {
     return requestId;
   }
 
   /**
-   * @return Non-null {@link Tenant} object
+   * Non-null {@link Tenant} for the request, resolved from the request.
    */
-  public Tenant getTenant() {
+  public Tenant tenant() {
     return tenant;
   }
 
   /**
-   * @return Non-null authToken from the request processed with {@link
+   * Non-null authToken from the request processed with {@link
    *     io.stargate.sgv2.jsonapi.util.StringUtil#normalizeOptionalString(String)}
    */
   public String getAuthToken() {
@@ -103,8 +112,7 @@ public class RequestContext implements LoggingMDCContext {
   }
 
   /**
-   * @return Non-null userAgent from the request processed with {@link
-   *     io.stargate.sgv2.jsonapi.util.StringUtil#normalizeOptionalString(String)}
+   * Non-null {@link UserAgent} for the request, resolved from the request.
    */
   public UserAgent getUserAgent() {
     return userAgent;

@@ -132,7 +132,7 @@ public class SchemaObjectCache
 
   public Uni<? extends TableBasedSchemaObject> getTableBased(
       RequestContext requestContext,
-      KeyspaceScopedName name,
+      UnscopedSchemaObjectIdentifier name,
       UserAgent userAgent,
       boolean forceRefresh) {
 
@@ -140,7 +140,7 @@ public class SchemaObjectCache
         createCacheKey(
             requestContext,
             SchemaObjectIdentifier.forCollection(
-                requestContext.getTenant(), name.keyspace(), name.objectName()),
+                requestContext.tenant(), name.keyspace(), name.objectName()),
             userAgent,
             forceRefresh);
 
@@ -148,7 +148,7 @@ public class SchemaObjectCache
         createCacheKey(
             requestContext,
             SchemaObjectIdentifier.forTable(
-                requestContext.getTenant(), name.keyspace(), name.objectName()),
+                requestContext.tenant(), name.keyspace(), name.objectName()),
             userAgent,
             false);
 
@@ -273,10 +273,10 @@ public class SchemaObjectCache
 
     // sanity check
     // requestContext may be null when we are doing evictions
-    if (requestContext!= null && (!requestContext.getTenant().equals(schemaIdentifier.tenant()))){
+    if (requestContext!= null && (!requestContext.tenant().equals(schemaIdentifier.tenant()))){
       throw new IllegalArgumentException(
           "RequestContext tenant does not match schemaIdentifier requestContext.tenant: "
-              + requestContext.getTenant()
+              + requestContext.tenant()
               + ", schemaIdentifier.tenant: "
               + schemaIdentifier.tenant());
     }

@@ -158,7 +158,7 @@ public class MeteredCommandProcessor {
     CommandLog commandLog =
         new CommandLog(
             command.getClass().getSimpleName(),
-            commandContext.requestContext().getTenant().toString(),
+            commandContext.requestContext().tenant().toString(),
             commandContext.schemaObject().identifier().keyspace().asInternal(),
             commandContext.schemaObject().identifier().table().asInternal(),
             commandContext.schemaObject().type().name(),
@@ -229,7 +229,7 @@ public class MeteredCommandProcessor {
     Set<String> allowedTenants =
         commandLevelLoggingConfig.enabledTenants().orElse(Collections.singleton(ALL_TENANTS));
     if (!allowedTenants.contains(ALL_TENANTS)
-        && !allowedTenants.contains(commandContext.requestContext().getTenant().toString())) {
+        && !allowedTenants.contains(commandContext.requestContext().tenant().toString())) {
       // Logging disabled for this tenant
       return false;
     }
@@ -262,7 +262,7 @@ public class MeteredCommandProcessor {
     // Identify the command being executed and the tenant associated with the request
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
     Tag tenantTag =
-        Tag.of(tenantConfig.tenantTag(), commandContext.requestContext().getTenant().toString());
+        Tag.of(tenantConfig.tenantTag(), commandContext.requestContext().tenant().toString());
 
     // --- Error Tags ---
     // Determine if the command resulted in an error and capture details

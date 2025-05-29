@@ -82,7 +82,7 @@ public class EmbeddingTaskBuilder<SchemaT extends TableBasedSchemaObject>
         commandContext
             .embeddingProviderFactory()
             .getConfiguration(
-                commandContext.requestContext().getTenant(),
+                commandContext.requestContext().tenant(),
                 commandContext.requestContext().getAuthToken(),
                 vectorizeDefinition.provider(),
                 vectorizeDefinition.modelName(),

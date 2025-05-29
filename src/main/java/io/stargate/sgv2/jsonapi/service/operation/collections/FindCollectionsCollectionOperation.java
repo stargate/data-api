@@ -74,7 +74,7 @@ public record FindCollectionsCollectionOperation(
                       .map(
                           table ->
                               CollectionSchemaObject.getCollectionSettings(
-                                  requestContext.getTenant(), table, objectMapper))
+                                  requestContext.tenant(), table, objectMapper))
                       .toList();
               return new Result(explain, collections);
             });
