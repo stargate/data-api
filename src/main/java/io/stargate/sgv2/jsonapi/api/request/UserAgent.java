@@ -6,19 +6,55 @@ import io.stargate.sgv2.jsonapi.metrics.TenantRequestMetricsFilter;
 import io.stargate.sgv2.jsonapi.metrics.TenantRequestMetricsTagProvider;
 import java.util.regex.Pattern;
 
+/**
+ * The User-Agent making the call to the API, we always have a User-Agent even if
+ * the header was missing or empty.
+ *
+ * <p>This class extracts the product name and version from the User-Agent string, which is used for
+ * metrics and logging purposes.
+ * <p>
+ * The raw user agent string is normalized to be an empty string, and can be obtained using
+ * {@link #toString()}. NOTE: you should normally compare UserAgent instances, not the raw string.
+ *
+ * <p>It is used in {@link TenantRequestMetricsFilter} and {@link TenantRequestMetricsTagProvider}
+ * <p>
+ * See examples in the unit tests.
+ */
 public class UserAgent {
 
-  // Match on the product name, and then optional version. See usage
+  // Match on the product name, and then optional version. See {@link #extractProduct(String)}
   private static final Pattern PRODUCT_VERSION_REGEX =
       Pattern.compile("^([^\\s\\/]+)(?:\\/([^\\s]+))?");
 
   private final String rawUserAgent;
   private final ProductVersion productVersion;
 
+  /**
+   * Constructs a UserAgent instance from the raw user agent string.
+   *
+   * @param rawUserAgent nullable or empty string is normalized with
+   * {@link io.stargate.sgv2.jsonapi.util.StringUtil#normalizeOptionalString(String)} to be non-null.
+   */
   public UserAgent(String rawUserAgent) {
     this.rawUserAgent = normalizeOptionalString(rawUserAgent);
     this.productVersion = extractProduct(this.rawUserAgent);
   }
+
+  /**
+   * Gets the left most product name from the user agent.
+   */
+  public String product() {
+    return productVersion.product;
+  }
+
+  /**
+   * Gets the raw user agent string from the request.
+   */
+  @Override
+  public String toString() {
+    return rawUserAgent;
+  }
+
 
   /**
    * Extract the first product from the user agent.
@@ -48,21 +84,10 @@ public class UserAgent {
         normalizeOptionalString(rawUserAgent), normalizeOptionalString((String) null));
   }
 
-  public String product() {
-    return productVersion.product;
-  }
-
   /**
-   * Gets the raw user agent string from the request.
-   *
-   * @return
+   * Compares this UserAgent with another object for equality, using the full raw string
+   * as comparing case-insensitive.
    */
-  @Override
-  public String toString() {
-    return rawUserAgent;
-  }
-
-  // equals and hash are case-insensitive
   @Override
   public boolean equals(Object obj) {
     if (this == obj) {

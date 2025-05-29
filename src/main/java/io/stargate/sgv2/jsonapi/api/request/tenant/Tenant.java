@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Objects;
 
 /**
- * A Tenant in the API, we always have a tenant even if the database is single-tenant.
+ * The Tenant in the API, we always have a tenant even if the database is single-tenant.
  * <p>
  * Tenant is bound to the {@link DatabaseType} because that tells if the DB is a single tenant
  * or multi-tenant database.
