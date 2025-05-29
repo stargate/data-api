@@ -25,6 +25,8 @@ public interface TableDescDefaults {
   interface CreateTextIndexOptionsDefaults {
     boolean IF_NOT_EXISTS = false;
 
+    String DEFAULT_NAMED_ANALYZER = "standard";
+
     // For use in @Schema decorators
     interface Constants {
       String IF_NOT_EXISTS = "false";

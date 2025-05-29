@@ -109,8 +109,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 Map.entry("id", Map.of("type", "text")),
                 Map.entry("text_field_1", Map.of("type", "text")),
                 Map.entry("text_field_2", Map.of("type", "text")),
-                Map.entry("text_field_3", Map.of("type", "text")),
-                Map.entry("text_field_4", Map.of("type", "text"))),
+                Map.entry("text_field_3", Map.of("type", "text"))),
             "id")
         .wasSuccessful();
   }

@@ -9,10 +9,12 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.table.IndexDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.TextIndexDefinitionDesc;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
+import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -85,7 +87,7 @@ public class ApiTextIndex extends ApiSupportedIndex {
       var apiColumnDef = checkIndexColumnExists(tableSchemaObject, targetIdentifier);
 
       // we could check if there is an existing index but that is a race condition, we will need to
-      // catch it if it fails - the resolver needs to setup a custom error mapper
+      // catch it if it fails - the resolver needs to set up a custom error mapper
 
       // Text indexes can only be on text columns
       if (apiColumnDef.type().typeName() != ApiTypeName.TEXT) {
@@ -102,16 +104,21 @@ public class ApiTextIndex extends ApiSupportedIndex {
 
       Map<String, String> indexOptions = new HashMap<>();
 
-      // The analyzer is optional, if not specified default settings will be used.
+      // The analyzer is optional, if not specified default settings will be used
+      // (named analyzer "standard" in CQL).
       // But further, if it is a StringNode, needs to be as a "raw" String, not a JSON String;
       // but if ObjectNode, it must be encoded as JSON object.
 
       JsonNode analyzerDef = indexDesc.options() == null ? null : indexDesc.options().analyzer();
-      if (analyzerDef != null) {
-        indexOptions.put(
-            TableDescConstants.TextIndexCQLOptions.OPTION_ANALYZER,
-            analyzerDef.isTextual() ? analyzerDef.textValue() : analyzerDef.toString());
+      if (analyzerDef == null) {
+        analyzerDef =
+            JsonNodeFactory.instance.textNode(
+                TableDescDefaults.CreateTextIndexOptionsDefaults.DEFAULT_NAMED_ANALYZER);
       }
+      indexOptions.put(
+          TableDescConstants.TextIndexCQLOptions.OPTION_ANALYZER,
+          analyzerDef.isTextual() ? analyzerDef.textValue() : analyzerDef.toString());
+
       return new ApiTextIndex(indexIdentifier, targetIdentifier, indexOptions, analyzerDef);
     }
   }
