@@ -313,8 +313,8 @@ public class CQLSessionCache {
   @VisibleForTesting
   void clearCache() {
     LOGGER.info("Manually clearing CQLSession cache");
-    sessionCache.invalidateAll();
-    sessionCache.cleanUp();
+    //    sessionCache.invalidateAll();
+    //    sessionCache.cleanUp();
   }
 
   /**
@@ -323,7 +323,7 @@ public class CQLSessionCache {
    */
   @VisibleForTesting
   void cleanUp() {
-    sessionCache.cleanUp();
+    //    sessionCache.cleanUp();
   }
 
   /** Key for CQLSession cache. */
