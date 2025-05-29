@@ -113,6 +113,7 @@ public class TestConstants {
     var requestContext = mock(RequestContext.class);
     when(requestContext.getEmbeddingCredentialsSupplier())
         .thenReturn(mock(EmbeddingCredentialsSupplier.class));
+    when(requestContext.getTenantId()).thenReturn(Optional.of("test-tenant"));
 
     return CommandContext.builderSupplier()
         .withJsonProcessingMetricsReporter(
