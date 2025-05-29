@@ -18,7 +18,6 @@ import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -410,6 +409,16 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
               }
             }
             """;
+    private static final String TEXT_INDEX_1_EXPECTED =
+        """
+                {
+                  "name": "text_field_1_idx",
+                  "definition": {
+                    "column": "text_field_1",
+                    "options": "standard"
+                  }
+                }
+                """;
 
     private static final String TEXT_INDEX_2 =
         """
@@ -420,10 +429,7 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                 "options": {
                   "analyzer": "english"
                 }
-              },
-              "options": {
-                "ifNotExists": true
-               }
+              }
             }
             """;
     private static final String TEXT_INDEX_3 =
@@ -482,7 +488,6 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
           .hasIndexes("text_field_1_idx", "text_field_2_idx", "text_field_3_idx");
     }
 
-    @Disabled("Disabled until type decoding works")
     @Test
     @Order(2)
     public void listIndexesWithDefinitions() {
@@ -492,12 +497,14 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
           .listIndexes(true)
           .wasSuccessful()
           // Validate that status.indexes has all indexes for the table
-          .body("status.indexes", hasSize(4))
+          .body("status.indexes", hasSize(3))
           // Validate index without options
           .body(
               "status.indexes",
               containsInAnyOrder( // Validate that the indexes are in any order
-                  jsonEquals(TEXT_INDEX_1), jsonEquals(TEXT_INDEX_2), jsonEquals(TEXT_INDEX_3)));
+                  jsonEquals(TEXT_INDEX_1_EXPECTED),
+                  jsonEquals(TEXT_INDEX_2),
+                  jsonEquals(TEXT_INDEX_3)));
     }
   }
 }

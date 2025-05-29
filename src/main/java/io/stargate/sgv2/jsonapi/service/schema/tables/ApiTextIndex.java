@@ -36,7 +36,7 @@ public class ApiTextIndex extends ApiSupportedIndex {
       CqlIdentifier targetColumn,
       Map<String, String> options,
       JsonNode analyzer) {
-    super(ApiIndexType.VECTOR, indexName, targetColumn, options, null);
+    super(ApiIndexType.TEXT, indexName, targetColumn, options, null);
 
     this.analyzer = analyzer;
   }
@@ -134,7 +134,7 @@ public class ApiTextIndex extends ApiSupportedIndex {
         ApiColumnDef apiColumnDef, CQLSAIIndex.IndexTarget indexTarget, IndexMetadata indexMetadata)
         throws UnsupportedCqlIndexException {
 
-      // this is a sanity check, the base will have worked this, but we should check it here
+      // this is a sanity check, the base will have worked this, but we should verify it here
       var apiIndexType = ApiIndexType.fromCql(apiColumnDef, indexTarget, indexMetadata);
       if (apiIndexType != ApiIndexType.TEXT) {
         throw new IllegalStateException(
@@ -157,7 +157,7 @@ public class ApiTextIndex extends ApiSupportedIndex {
       // Heuristics: 3 choices:
       // 1. Missing/empty - use default analyzer (standard)
       // 2. JSON Object (as a String) -- JSON decode
-      // 3. String (as a String) -- use as is
+      // 3. String (as a String) -- use as-is
 
       JsonNode analyzerDef;
 
