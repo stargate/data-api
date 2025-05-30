@@ -19,6 +19,7 @@ public enum CommandName {
   COUNT_DOCUMENTS(Names.COUNT_DOCUMENTS, CommandType.DML, CommandTarget.COLLECTION),
   CREATE_COLLECTION(Names.CREATE_COLLECTION, CommandType.DDL, CommandTarget.KEYSPACE),
   CREATE_INDEX(Names.CREATE_INDEX, CommandType.DDL, CommandTarget.TABLE),
+  CREATE_TEXT_INDEX(Names.CREATE_TEXT_INDEX, CommandType.DDL, CommandTarget.TABLE),
   CREATE_VECTOR_INDEX(Names.CREATE_VECTOR_INDEX, CommandType.DDL, CommandTarget.TABLE),
   CREATE_KEYSPACE(Names.CREATE_KEYSPACE, CommandType.DDL, CommandTarget.DATABASE),
   CREATE_NAMESPACE(Names.CREATE_NAMESPACE, CommandType.DDL, CommandTarget.DATABASE),
@@ -107,6 +108,7 @@ public enum CommandName {
     String COUNT_DOCUMENTS = "countDocuments";
     String CREATE_COLLECTION = "createCollection";
     String CREATE_INDEX = "createIndex";
+    String CREATE_TEXT_INDEX = "createTextIndex";
     String CREATE_VECTOR_INDEX = "createVectorIndex";
     String CREATE_KEYSPACE = "createKeyspace";
     String CREATE_NAMESPACE = "createNamespace";

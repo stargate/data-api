@@ -21,8 +21,6 @@ import org.slf4j.LoggerFactory;
 
 /** An index of type {@link ApiIndexType#VECTOR} on vector column */
 public class ApiVectorIndex extends ApiSupportedIndex {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ApiVectorIndex.class);
-
   public static final IndexFactoryFromIndexDesc<ApiVectorIndex, VectorIndexDefinitionDesc>
       FROM_DESC_FACTORY = new UserDescFactory();
   public static final IndexFactoryFromCql FROM_CQL_FACTORY = new CqlTypeFactory();

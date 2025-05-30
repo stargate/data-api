@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
+import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import java.util.HashMap;
 import java.util.Map;
@@ -75,27 +76,38 @@ public enum ApiIndexType {
       ApiColumnDef apiColumnDef, CQLSAIIndex.IndexTarget indexTarget, IndexMetadata indexMetadata)
       throws UnsupportedCqlIndexException {
 
-    // TODO: this needs to be updated to detect an analyzed index as a text index
+    final ApiDataType columnType = apiColumnDef.type();
+
+    // Let's start with Text (aka Lexical, or Analyzed) indexes: only for TEXT or ASCII columns
+    // and with a text analyzer defined in the index options.
+    switch (columnType.typeName()) {
+      case ASCII, TEXT -> {
+        String analyzerDef =
+            indexMetadata.getOptions().get(TableDescConstants.TextIndexCQLOptions.OPTION_ANALYZER);
+        if (analyzerDef != null && !analyzerDef.isBlank()) {
+          return TEXT;
+        }
+      }
+    }
 
     // If there is no function on the indexTarget, and the column is a scalar, then it is a regular
     // index on an int, text, etc
-    if (indexTarget.indexFunction() == null && apiColumnDef.type().isPrimitive()) {
+    if (indexTarget.indexFunction() == null && columnType.isPrimitive()) {
       return REGULAR;
     }
 
     // if the target column is a vector, it can only be a vector index, we will let building the
     // index check the options.
     // NOTE: check this before the container check, as a vector type is a container type
-    if (indexTarget.indexFunction() == null
-        && apiColumnDef.type().typeName() == ApiTypeName.VECTOR) {
+    if (indexTarget.indexFunction() == null && columnType.typeName() == ApiTypeName.VECTOR) {
       return VECTOR;
     }
 
     // if the target column is a collection, it can only be a collection index,
     // collection indexes must have a function
     if (indexTarget.indexFunction() != null
-        && apiColumnDef.type().isContainer()
-        && apiColumnDef.type().typeName() != ApiTypeName.VECTOR) {
+        && columnType.isContainer()
+        && columnType.typeName() != ApiTypeName.VECTOR) {
       return REGULAR;
     }
 
