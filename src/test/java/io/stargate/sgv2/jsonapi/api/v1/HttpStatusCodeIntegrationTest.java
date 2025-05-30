@@ -22,7 +22,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
-public class QHttpStatusCodeIntegrationTest extends AbstractCollectionIntegrationTestBase {
+public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
