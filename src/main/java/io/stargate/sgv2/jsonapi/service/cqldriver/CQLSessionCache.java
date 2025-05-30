@@ -251,7 +251,7 @@ public class CQLSessionCache {
       // This will be running on a cache tread, any error will not make it to the user
       // So we log it and swallow
       try {
-        sessionHolder.session.close();
+        //        sessionHolder.session.close();
       } catch (Exception e) {
         LOGGER.error("Error closing CQLSession sessionHolder={}", sessionHolder, e);
       }
