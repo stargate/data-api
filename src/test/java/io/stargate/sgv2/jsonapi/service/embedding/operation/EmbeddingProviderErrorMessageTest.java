@@ -51,6 +51,7 @@ public class EmbeddingProviderErrorMessageTest {
                   config.providers().get("nvidia").url().get(),
                   testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -78,6 +79,7 @@ public class EmbeddingProviderErrorMessageTest {
                   config.providers().get("nvidia").url().get(),
                   testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -105,6 +107,7 @@ public class EmbeddingProviderErrorMessageTest {
                   config.providers().get("nvidia").url().get(),
                   testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -132,6 +135,7 @@ public class EmbeddingProviderErrorMessageTest {
                   config.providers().get("nvidia").url().get(),
                   testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -159,6 +163,7 @@ public class EmbeddingProviderErrorMessageTest {
                   config.providers().get("nvidia").url().get(),
                   testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -183,6 +188,7 @@ public class EmbeddingProviderErrorMessageTest {
                   config.providers().get("nvidia").url().get(),
                   testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -211,6 +217,7 @@ public class EmbeddingProviderErrorMessageTest {
                   config.providers().get("nvidia").url().get(),
                   testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -239,6 +246,7 @@ public class EmbeddingProviderErrorMessageTest {
                   config.providers().get("nvidia").url().get(),
                   testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -267,6 +275,7 @@ public class EmbeddingProviderErrorMessageTest {
                   config.providers().get("nvidia").url().get(),
                   testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,

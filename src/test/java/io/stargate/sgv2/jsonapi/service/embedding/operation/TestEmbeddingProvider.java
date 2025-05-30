@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import static org.mockito.Mockito.mock;
+
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -30,8 +32,9 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
       String baseUrl,
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
-      Map<String, Object> vectorizeServiceParameters) {
-    super(requestProperties, baseUrl, model, dimension, vectorizeServiceParameters);
+      Map<String, Object> vectorizeServiceParameters,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
+    super(requestProperties, baseUrl, model, dimension, vectorizeServiceParameters, providerConfig);
   }
 
   public TestEmbeddingProvider() {}
@@ -48,7 +51,13 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
               Optional.empty());
 
   public static final TestEmbeddingProvider TEST_EMBEDDING_PROVIDER =
-      new TestEmbeddingProvider(null, null, TEST_MODEL_CONFIG, 3, Map.of());
+      new TestEmbeddingProvider(
+          null,
+          null,
+          TEST_MODEL_CONFIG,
+          3,
+          Map.of(),
+          mock(EmbeddingProvidersConfig.EmbeddingProviderConfig.class));
 
   private TestConstants testConstants = new TestConstants();
 

@@ -1,10 +1,12 @@
 package io.stargate.sgv2.jsonapi;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsSupplier;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
@@ -108,6 +110,11 @@ public class TestConstants {
       JsonProcessingMetricsReporter metricsReporter,
       EmbeddingProvider embeddingProvider) {
 
+    var requestContext = mock(RequestContext.class);
+    when(requestContext.getEmbeddingCredentialsSupplier())
+        .thenReturn(mock(EmbeddingCredentialsSupplier.class));
+    when(requestContext.getTenantId()).thenReturn(Optional.of("test-tenant"));
+
     return CommandContext.builderSupplier()
         .withJsonProcessingMetricsReporter(
             metricsReporter == null ? mock(JsonProcessingMetricsReporter.class) : metricsReporter)
@@ -119,7 +126,7 @@ public class TestConstants {
         .getBuilder(schema)
         .withEmbeddingProvider(embeddingProvider)
         .withCommandName(commandName)
-        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+        .withRequestContext(requestContext)
         .build();
   }
 

@@ -30,6 +30,7 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
         || !config.providers().get(serviceName).enabled()) {
       throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(serviceName);
     }
+
     final var properties = config.providers().get(serviceName).properties();
     Map<String, Optional<String>> modelwiseServiceUrlOverrides =
         Objects.requireNonNull(config.providers().get(serviceName).models()).stream()

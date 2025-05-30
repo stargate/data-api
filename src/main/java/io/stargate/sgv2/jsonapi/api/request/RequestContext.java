@@ -4,6 +4,7 @@ import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
 import io.stargate.sgv2.jsonapi.api.request.tenant.DataApiTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
@@ -27,7 +28,7 @@ public class RequestContext {
 
   private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
-  private final EmbeddingCredentials embeddingCredentials;
+  private final EmbeddingCredentialsSupplier embeddingCredentialsSupplier;
   private final RerankingCredentials rerankingCredentials;
   private final HttpHeaderAccess httpHeaders;
   private final String requestId;
@@ -42,9 +43,9 @@ public class RequestContext {
    */
   public RequestContext(Optional<String> tenantId) {
     this.tenantId = tenantId;
-    this.cassandraToken = Optional.empty();
-    this.embeddingCredentials = null;
-    this.rerankingCredentials = null;
+    cassandraToken = Optional.empty();
+    embeddingCredentialsSupplier = null;
+    rerankingCredentials = null;
     httpHeaders = null;
     requestId = generateRequestId();
     userAgent = null;
@@ -56,21 +57,25 @@ public class RequestContext {
       SecurityContext securityContext,
       Instance<DataApiTenantResolver> tenantResolver,
       Instance<DataApiTokenResolver> tokenResolver,
-      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
+      HttpConstants httpConstants) {
 
-    this.embeddingCredentials =
-        embeddingCredentialsResolver.get().resolveEmbeddingCredentials(routingContext);
-    this.tenantId = tenantResolver.get().resolve(routingContext, securityContext);
-    this.cassandraToken = tokenResolver.get().resolve(routingContext, securityContext);
-
+    tenantId = tenantResolver.get().resolve(routingContext, securityContext);
+    cassandraToken = tokenResolver.get().resolve(routingContext, securityContext);
     httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
     requestId = generateRequestId();
     userAgent = httpHeaders.getHeader(HttpHeaders.USER_AGENT);
 
+    embeddingCredentialsSupplier =
+        new EmbeddingCredentialsSupplier(
+            httpConstants.authToken(),
+            httpConstants.embeddingApiKey(),
+            httpConstants.embeddingAccessId(),
+            httpConstants.embeddingSecretId());
+
+    // if x-reranking-api-key is present, then use it, else use cassandraToken
     Optional<String> rerankingApiKeyFromHeader =
         HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext);
-
-    this.rerankingCredentials =
+    rerankingCredentials =
         rerankingApiKeyFromHeader
             .map(apiKey -> new RerankingCredentials(Optional.of(apiKey)))
             .orElse(
@@ -99,8 +104,8 @@ public class RequestContext {
     return Optional.ofNullable(userAgent);
   }
 
-  public EmbeddingCredentials getEmbeddingCredentials() {
-    return embeddingCredentials;
+  public EmbeddingCredentialsSupplier getEmbeddingCredentialsSupplier() {
+    return embeddingCredentialsSupplier;
   }
 
   public RerankingCredentials getRerankingCredentials() {

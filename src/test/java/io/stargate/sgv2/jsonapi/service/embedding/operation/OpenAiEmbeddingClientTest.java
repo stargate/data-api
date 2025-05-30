@@ -50,7 +50,8 @@ public class OpenAiEmbeddingClientTest {
                   config.providers().get("openai").url().get(),
                   testModel,
                   3,
-                  Map.of("organizationId", "org-id", "projectId", "project-id"))
+                  Map.of("organizationId", "org-id", "projectId", "project-id"),
+                  null)
               .vectorize(
                   1,
                   List.of("some data"),
@@ -79,7 +80,8 @@ public class OpenAiEmbeddingClientTest {
                   config.providers().get("openai").url().get(),
                   testModel,
                   3,
-                  Map.of())
+                  Map.of(),
+                  null)
               .vectorize(
                   1,
                   List.of(MediaType.APPLICATION_JSON),
@@ -108,7 +110,8 @@ public class OpenAiEmbeddingClientTest {
                   config.providers().get("openai").url().get(),
                   testModel,
                   3,
-                  Map.of("organizationId", "invalid org", "projectId", "project-id"))
+                  Map.of("organizationId", "invalid org", "projectId", "project-id"),
+                  null)
               .vectorize(
                   1,
                   List.of("some data"),
@@ -135,7 +138,8 @@ public class OpenAiEmbeddingClientTest {
                   config.providers().get("openai").url().get(),
                   testModel,
                   3,
-                  Map.of("organizationId", "org-id", "projectId", "invalid proj"))
+                  Map.of("organizationId", "org-id", "projectId", "invalid proj"),
+                  null)
               .vectorize(
                   1,
                   List.of("some data"),
