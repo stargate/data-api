@@ -45,7 +45,8 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
             Map.of(),
             Optional.empty()),
         dimension,
-        Map.of());
+        Map.of(),
+        null);
     this.dimension = dimension;
   }
 

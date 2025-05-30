@@ -38,8 +38,9 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
       String baseUrl,
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
-      Map<String, Object> serviceParameters) {
-    super(requestProperties, baseUrl, model, dimension, serviceParameters);
+      Map<String, Object> serviceParameters,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
+    super(requestProperties, baseUrl, model, dimension, serviceParameters, providerConfig);
 
     String actualUrl = replaceParameters(baseUrl, serviceParameters);
     vertexAIEmbeddingProviderClient =

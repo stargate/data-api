@@ -144,6 +144,7 @@ public class EmbeddingProvidersConfigProducer {
               grpcProviderConfig.hasUrl()
                   ? Optional.of(grpcProviderConfig.getUrl())
                   : Optional.empty(),
+              grpcProviderConfig.getAuthTokenPassThroughForNoneAuth(),
               supportedAuthenticationsMap,
               providerParameterList,
               providerRequestProperties,
