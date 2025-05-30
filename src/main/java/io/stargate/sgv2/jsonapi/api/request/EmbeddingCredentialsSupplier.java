@@ -46,26 +46,38 @@ public class EmbeddingCredentialsSupplier {
       RequestContext requestContext,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
 
-    var authToken = requestContext.getHttpHeaders().getHeader(this.authTokenHeaderName);
     var embeddingApi = requestContext.getHttpHeaders().getHeader(this.embeddingApiKeyHeaderName);
     var accessId = requestContext.getHttpHeaders().getHeader(this.embeddingAccessIdHeaderName);
     var secretId = requestContext.getHttpHeaders().getHeader(this.embeddingsecretIdHeaderName);
 
-    // If these three conditions are met, we use the auth token as the embeddingApiKey:
-    // 1. user didn't provide x-embedding-api-key
-    // 2. Collection supports NONE auth (in the yaml config and authConfigFromCollection is null)
-    // 3. Provider has authTokenPassThroughForNoneAuth set to true
-    if (embeddingApi == null
-        && providerConfig != null
-        && providerConfig
-            .supportedAuthentications()
-            .containsKey(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE)
-        && providerConfig
-            .supportedAuthentications()
-            .get(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE)
-            .enabled()
-        && authConfigFromCollection == null
-        && providerConfig.authTokenPassThroughForNoneAuth()) {
+    // If these three conditions are met, we use the auth token as the embeddingApiKey to pass
+    // through to Embedding Providers:
+
+    // 1: User did not provide x-embedding-api-key
+    boolean isEmbeddingApiKeyMissing = (embeddingApi == null);
+
+    // 2: Provider has authTokenPassThroughForNoneAuth set to true
+    boolean isAuthTokenPassThroughEnabled =
+        providerConfig != null && providerConfig.authTokenPassThroughForNoneAuth();
+
+    // 3: Provider supports NONE auth it's enabled in the config
+    boolean providerSupportsNoneAuth = false;
+    if (providerConfig != null) {
+      var noneAuthConfig =
+          providerConfig
+              .supportedAuthentications()
+              .get(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE);
+      providerSupportsNoneAuth = noneAuthConfig != null && noneAuthConfig.enabled();
+    }
+
+    // 4: Collection supports NONE auth - no "authentication" in "options.vector.service"
+    boolean collectionSupportsNoneAuth = (authConfigFromCollection == null);
+
+    if (isEmbeddingApiKeyMissing
+        && isAuthTokenPassThroughEnabled
+        && providerSupportsNoneAuth
+        && collectionSupportsNoneAuth) {
+      var authToken = requestContext.getHttpHeaders().getHeader(this.authTokenHeaderName);
       return new EmbeddingCredentials(
           Optional.ofNullable(authToken), Optional.empty(), Optional.empty());
     }
