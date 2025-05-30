@@ -33,8 +33,9 @@ public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
       String baseUrl,
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
-      Map<String, Object> vectorizeServiceParameters) {
-    super(requestProperties, baseUrl, model, dimension, vectorizeServiceParameters);
+      Map<String, Object> vectorizeServiceParameters,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
+    super(requestProperties, baseUrl, model, dimension, vectorizeServiceParameters, providerConfig);
 
     // replace placeholders: endPointName, regionName, cloudName
     String dedicatedApiUrl = replaceParameters(baseUrl, vectorizeServiceParameters);

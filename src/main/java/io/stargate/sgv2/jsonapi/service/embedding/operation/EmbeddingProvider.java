@@ -31,10 +31,11 @@ public abstract class EmbeddingProvider {
   protected final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model;
   protected final int dimension;
   protected final Map<String, Object> vectorizeServiceParameters;
+  protected final EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig;
 
   /** Default constructor */
   protected EmbeddingProvider() {
-    this(null, null, null, 0, null);
+    this(null, null, null, 0, null, null);
   }
 
   /** Constructs an EmbeddingProvider with the specified configuration. */
@@ -43,12 +44,18 @@ public abstract class EmbeddingProvider {
       String baseUrl,
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
-      Map<String, Object> vectorizeServiceParameters) {
+      Map<String, Object> vectorizeServiceParameters,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
     this.requestProperties = requestProperties;
     this.baseUrl = baseUrl;
     this.model = model;
     this.dimension = dimension;
     this.vectorizeServiceParameters = vectorizeServiceParameters;
+    this.providerConfig = providerConfig;
+  }
+
+  public EmbeddingProvidersConfig.EmbeddingProviderConfig getProviderConfig() {
+    return providerConfig;
   }
 
   /**
