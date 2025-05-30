@@ -38,7 +38,7 @@ public class ApiTextIndex extends ApiSupportedIndex {
       JsonNode analyzer) {
     super(ApiIndexType.TEXT, indexName, targetColumn, options, null);
 
-    this.analyzer = analyzer;
+    this.analyzer = Objects.requireNonNull(analyzer, "analyzer must not be null");
   }
 
   @Override
@@ -150,20 +150,24 @@ public class ApiTextIndex extends ApiSupportedIndex {
       }
 
       String analyzerDefFromCql =
-          indexMetadata
-              .getOptions()
-              .get(TableDescConstants.TextIndexDefinitionDescOptions.ANALYZER);
+          indexMetadata.getOptions().get(TableDescConstants.TextIndexCQLOptions.OPTION_ANALYZER);
 
       // Heuristics: 3 choices:
-      // 1. Missing/empty - use default analyzer (standard)
-      // 2. JSON Object (as a String) -- JSON decode
-      // 3. String (as a String) -- use as-is
+      // 1. JSON Object (as a String) -- JSON decode
+      // 2. String (as a String) -- use as-is
+      // 3. null or empty -- failure case (should not happen, but handle explicitly)
 
       JsonNode analyzerDef;
 
       if (analyzerDefFromCql == null || analyzerDefFromCql.isEmpty()) {
-        // default analyzer
-        analyzerDef = null;
+        // should never happen, but just in case
+        throw new IllegalStateException(
+            "ApiTextIndex definition broken (indexMetadata.name: "
+                + indexMetadata.getName()
+                + "), missing '"
+                + TableDescConstants.TextIndexCQLOptions.OPTION_ANALYZER
+                + "' JSON; options = "
+                + indexMetadata.getOptions());
       } else if (analyzerDefFromCql.startsWith("{")) {
         try {
           analyzerDef = OBJECT_MAPPER.readTree(analyzerDefFromCql);

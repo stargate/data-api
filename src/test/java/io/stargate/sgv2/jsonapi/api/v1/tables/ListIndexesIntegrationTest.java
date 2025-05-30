@@ -11,6 +11,8 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -29,6 +31,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase {
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final String TABLE = "person";
   private static final String createIndex =
       """
@@ -274,7 +277,7 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
     }
 
     @Test
-    @Order(2)
+    @Order(3)
     public void listIndexesWithDefinition() {
       // full index on frozen map is unsupported, so the index will have UNKNOWN column in the
       // definition
@@ -396,7 +399,7 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  @Order(3)
+  @Order(2)
   public class ListTextIndexes {
     private static final String lexicalTableName = "text_index_table_for_list_indexes";
 
@@ -409,16 +412,6 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
               }
             }
             """;
-    private static final String TEXT_INDEX_1_EXPECTED =
-        """
-                {
-                  "name": "text_field_1_idx",
-                  "definition": {
-                    "column": "text_field_1",
-                    "options": "standard"
-                  }
-                }
-                """;
 
     private static final String TEXT_INDEX_2 =
         """
@@ -491,7 +484,6 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
     @Test
     @Order(2)
     public void listIndexesWithDefinitions() {
-
       assertTableCommand(keyspaceName, lexicalTableName)
           .templated()
           .listIndexes(true)
@@ -502,9 +494,26 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
           .body(
               "status.indexes",
               containsInAnyOrder( // Validate that the indexes are in any order
-                  jsonEquals(TEXT_INDEX_1_EXPECTED),
-                  jsonEquals(TEXT_INDEX_2),
-                  jsonEquals(TEXT_INDEX_3)));
+                  jsonEquals(
+                      addNamedAnalyzer(readIndexDescAddType(TEXT_INDEX_1), "standard").toString()),
+                  jsonEquals(readIndexDescAddType(TEXT_INDEX_2)),
+                  jsonEquals(readIndexDescAddType(TEXT_INDEX_3))));
+    }
+
+    private static ObjectNode readIndexDescAddType(String json) {
+      ObjectNode ob;
+      try {
+        ob = OBJECT_MAPPER.readValue(json, ObjectNode.class);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      ob.put("indexType", "text");
+      return ob;
+    }
+
+    private ObjectNode addNamedAnalyzer(ObjectNode ob, String analyzerName) {
+      ob.with("definition").with("options").put("analyzer", analyzerName);
+      return ob;
     }
   }
 }

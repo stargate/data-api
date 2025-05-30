@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
+import java.util.Objects;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -33,7 +34,10 @@ public record TextIndexDefinitionDesc(
           @Schema(
               description =
                   "Optional definition of the analyzer to use for the text index. If not specified, the default analyzer (\"standard\") will be used.")
-          @JsonInclude(JsonInclude.Include.NON_NULL)
           @JsonProperty(TableDescConstants.TextIndexDefinitionDescOptions.ANALYZER)
-          JsonNode analyzer) {}
+          JsonNode analyzer) {
+    public TextIndexDescOptions {
+      Objects.requireNonNull(analyzer, "analyzer must not be null");
+    }
+  }
 }
