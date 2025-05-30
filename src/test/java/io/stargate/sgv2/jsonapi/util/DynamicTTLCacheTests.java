@@ -11,10 +11,15 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Tests for {@link DynamicTTLCache}. */
 public class DynamicTTLCacheTests extends CacheTestsBase {
+  private static final Logger LOGGER = LoggerFactory.getLogger(DynamicTTLCacheTests.class);
 
   private final String KEY = "key-" + TEST_CONSTANTS.CORRELATION_ID;
   private final String VALUE = "value-" + TEST_CONSTANTS.CORRELATION_ID;
@@ -109,7 +114,7 @@ public class DynamicTTLCacheTests extends CacheTestsBase {
     fixture.cache.clearCache();
 
     // should have called our listener
-    verify(fixture.listener).onRemoved(eq(CACHE_KEY), actualValue, eq(RemovalCause.EXPLICIT));
+    verify(fixture.listener).onRemoved(eq(CACHE_KEY), eq(actualValue), eq(RemovalCause.EXPLICIT));
 
     assertThat(fixture.cache.peekValue(CACHE_KEY))
         .as("Value is not in cache after forced eviction")
@@ -131,7 +136,7 @@ public class DynamicTTLCacheTests extends CacheTestsBase {
     fixture.cache.cleanUp();
 
     // should have called our listener
-    verify(fixture.listener).onRemoved(eq(CACHE_KEY), actualValue, eq(RemovalCause.EXPIRED));
+    verify(fixture.listener).onRemoved(eq(CACHE_KEY), eq(actualValue), eq(RemovalCause.EXPIRED));
 
     assertThat(fixture.cache.peekValue(CACHE_KEY))
         .as("Session is not in cache after expired eviction")
@@ -264,12 +269,13 @@ public class DynamicTTLCacheTests extends CacheTestsBase {
     var longKey = thisCacheKey(0, LONG_TTL);
     var shortKey = thisCacheKey(0, SHORT_TTL);
 
-    // request a value using the Short TT
+    // request a value using the Short TTL
     var actualValue = fixture.cache.getValue(shortKey);
 
     assertThat(actualValue)
         .as("Value from cache is instance from factory")
         .isSameAs(fixture.expectedValue);
+
     assertThat(fixture.cache.peekValue(shortKey))
         .as("Value is present in cache when peeking - before expiry")
         .isPresent();
@@ -412,6 +418,23 @@ public class DynamicTTLCacheTests extends CacheTestsBase {
       return getIfPresent(key);
     }
 
-    record TestKey(String key, Duration ttl) implements DynamicTTLCache.CacheKey {}
+    record TestKey(String key, Duration ttl) implements DynamicTTLCache.CacheKey {
+
+      // hash and equals on the key only, we dont use the TTL in the equals its only for the expiry
+      @Override
+      public int hashCode() {
+        return key.hashCode();
+      }
+      @Override
+      public boolean equals(Object obj) {
+        if (this == obj) {
+          return true;
+        }
+        if (!(obj instanceof TestKey other)) {
+          return false;
+        }
+        return key.equals(other.key);
+      }
+    }
   }
 }

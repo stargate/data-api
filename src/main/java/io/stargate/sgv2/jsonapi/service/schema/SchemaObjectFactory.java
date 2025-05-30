@@ -20,6 +20,7 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
 
   private static final CollectionTableMatcher IS_COLLECTION_PREDICATE =
       new CollectionTableMatcher();
+
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final CQLSessionCache sessionCache;
@@ -34,6 +35,12 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
 
     Objects.requireNonNull(requestContext, "requestContext must not be null");
     Objects.requireNonNull(identifier, "identifier must not be null");
+
+    // sanity check
+    if (! requestContext.tenant().equals(identifier.tenant())){
+      throw new IllegalArgumentException("requestContext and identifier tenant mismatch, requestContext: %s, identifier: %s"
+          .formatted(requestContext, identifier.tenant()));
+    }
 
     Uni<? extends SchemaObject> uni =
         switch (identifier.type()) {
