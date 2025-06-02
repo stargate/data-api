@@ -302,7 +302,8 @@ stargate:
           # see https://docs.api.nvidia.com/nim/reference/nvidia-embedding-2b-infer
           display-name: Nvidia
           enabled: true
-          url: https://ai.api.nvidia.com/v1/retrieval/nvidia/embeddings
+          url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/embeddings/nv-embed-qa-v4
+          auth-token-pass-through-for-none-auth: true
           supported-authentications:
             NONE:
               enabled: true
