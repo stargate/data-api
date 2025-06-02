@@ -9,17 +9,15 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.core.Base64Variants;
-import io.quarkus.logging.Log;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.TenantAwareCqlSessionBuilder;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.testresource.StargateTestResource;
 import io.stargate.sgv2.jsonapi.util.Base64Util;
@@ -236,34 +234,24 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
 
   public static void checkDriverMetricsTenantId() {
     String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-    List<String> lines = metrics.lines().toList();
+    // Example line
+    // session_cql_requests_seconds{module="sgv2-jsonapi",session="default_tenant",quantile="0.5",}
+    // 0.238944256
+
     Optional<String> sessionLevelDriverMetricTenantId =
-        lines.stream()
+        metrics
+            .lines()
             .filter(
                 line ->
-                    line.startsWith("session_cql_requests_seconds_bucket")
-                        && line.contains("tenant"))
+                    line.startsWith("session_cql_requests_seconds") && line.contains("session="))
             .findFirst();
-    Log.info(
-        "sample success session_cql_requests_seconds_bucket "
-            + lines.stream()
-                .filter(line -> line.startsWith("session_cql_requests_seconds_bucket"))
-                .limit(5)
-                .toList());
     if (!sessionLevelDriverMetricTenantId.isPresent()) {
+      List<String> lines = metrics.lines().toList();
       long buckets =
-          lines.stream()
-              .filter(line -> line.startsWith("session_cql_requests_seconds_bucket"))
-              .count();
-      Log.info(
-          "sample failure session_cql_requests_seconds_bucket "
-              + lines.stream()
-                  .filter(line -> line.startsWith("session_cql_requests_seconds_bucket"))
-                  .limit(5)
-                  .toList());
+          lines.stream().filter(line -> line.startsWith("session_cql_requests_seconds")).count();
       fail(
           String.format(
-              "No tenant id found in 'session_cql_requests_seconds_bucket' (%d buckets; %d log lines)",
+              "No tenant id found in any of 'session_cql_requests_seconds' entries (%d buckets; %d log lines)",
               buckets, lines.size()));
     }
   }
@@ -301,11 +289,6 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
                 })
             .toList();
     assertThat(countMetrics.size()).isGreaterThan(0);
-  }
-
-  /** Utility method for reducing boilerplate code for sending JSON commands */
-  protected RequestSpecification givenHeadersAndJson(String json) {
-    return given().headers(getHeaders()).contentType(ContentType.JSON).body(json);
   }
 
   protected String generateBase64EncodedBinaryVector(float[] vector) {
@@ -350,16 +333,27 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
     } else {
       dc = "datacenter1";
     }
-    var builder = new TenantAwareCqlSessionBuilder("IntegrationTest").withLocalDatacenter(dc);
-    builder
-        .addContactPoint(new InetSocketAddress("localhost", port))
-        .withAuthCredentials(CQLSessionCache.CASSANDRA, CQLSessionCache.CASSANDRA);
+    var builder =
+        new CqlSessionBuilder()
+            .withLocalDatacenter(dc)
+            .addContactPoint(new InetSocketAddress("localhost", port))
+            .withAuthCredentials("cassandra", "cassandra"); // default admin password :)
     return builder.build();
   }
 
   /** Helper method for determining if lexical search is available for the database backend */
   protected boolean isLexicalAvailableForDB() {
     return !"true".equals(System.getProperty("testing.db.lexical-disabled"));
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected RequestSpecification givenHeaders() {
+    return given().headers(getHeaders()).contentType(ContentType.JSON);
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected RequestSpecification givenHeadersAndJson(String json) {
+    return givenHeaders().body(json);
   }
 
   /** Utility method for reducing boilerplate code for sending JSON commands */

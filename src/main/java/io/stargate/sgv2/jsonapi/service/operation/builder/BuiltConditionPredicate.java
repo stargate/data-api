@@ -10,7 +10,8 @@ public enum BuiltConditionPredicate {
   IN("IN"),
   CONTAINS("CONTAINS"),
   NOT_CONTAINS("NOT CONTAINS"),
-  CONTAINS_KEY("CONTAINS KEY");
+  CONTAINS_KEY("CONTAINS KEY"),
+  TEXT_SEARCH(":");
 
   public final String cql;
 

@@ -13,6 +13,7 @@ public record EmbeddingProvidersConfigImpl(
       String displayName,
       boolean enabled,
       Optional<String> url,
+      boolean authTokenPassThroughForNoneAuth,
       Map<AuthenticationType, AuthenticationConfig> supportedAuthentications,
       List<ParameterConfig> parameters,
       RequestProperties properties,

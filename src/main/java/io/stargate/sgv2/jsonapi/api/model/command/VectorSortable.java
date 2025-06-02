@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import java.util.Optional;
 
@@ -20,10 +21,11 @@ public interface VectorSortable extends Sortable {
    *
    * @return the vector sort expression if it exists.
    */
-  default Optional<SortExpression> vectorSortExpression() {
-    if (sortClause() != null && sortClause().sortExpressions() != null) {
+  default Optional<SortExpression> vectorSortExpression(CommandContext<?> ctx) {
+    SortClause sortClause = sortClause(ctx);
+    if (sortClause.sortExpressions() != null) {
       var vectorSorts =
-          sortClause().sortExpressions().stream()
+          sortClause.sortExpressions().stream()
               .filter(expression -> expression.vector() != null)
               .toList();
       if (vectorSorts.size() > 1) {

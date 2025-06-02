@@ -103,7 +103,7 @@ public class CaptureGroups<T extends Command> {
       // represents the logical
       // relation in the API query, so we need to create a logical expression for each CaptureGroups
       DBLogicalExpression subDBLogicalExpression =
-          currentDbLogicalExpression.addSubExpression(
+          currentDbLogicalExpression.addSubExpressionReturnSub(
               new DBLogicalExpression(captureGroups.getLogicalOperator()));
       captureGroups.consumeAll(subDBLogicalExpression, consumer);
     }

@@ -71,8 +71,9 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
    * schema.
    */
   public static <CmdT extends Projectable> TableProjection fromDefinition(
-      ObjectMapper objectMapper, CmdT command, TableSchemaObject table) {
+      CommandContext<TableSchemaObject> ctx, ObjectMapper objectMapper, CmdT command) {
 
+    TableSchemaObject table = ctx.schemaObject();
     Map<String, ColumnMetadata> columnsByName = new HashMap<>();
     // TODO: This can also be cached as part of TableSchemaObject than resolving it for every query.
     table
@@ -120,7 +121,7 @@ public class TableProjection implements SelectCQLClause, OperationProjection {
         table,
         columns,
         readApiColumns.toColumnsDesc(),
-        TableSimilarityFunction.from(command, table));
+        TableSimilarityFunction.from(ctx, command));
   }
 
   @Override

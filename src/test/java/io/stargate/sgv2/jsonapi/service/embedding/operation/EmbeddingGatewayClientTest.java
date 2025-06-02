@@ -53,7 +53,12 @@ public class EmbeddingGatewayClientTest {
               3, 5, 5000, 5, 0.5, Optional.empty(), Optional.empty(), 2048);
       assertThat(
               ctor.create(
-                  requestProperties, "baseUrl", TestEmbeddingProvider.TEST_MODEL_CONFIG, 5, null))
+                  requestProperties,
+                  "baseUrl",
+                  TestEmbeddingProvider.TEST_MODEL_CONFIG,
+                  5,
+                  null,
+                  null))
           .isNotNull();
     }
   }

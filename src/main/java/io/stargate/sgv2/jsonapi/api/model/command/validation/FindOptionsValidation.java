@@ -22,8 +22,9 @@ public class FindOptionsValidation implements ConstraintValidator<CheckFindOptio
     final FindCommand.Options options = value.options();
     if (options == null) return true;
 
+    var sortSpec = value.sortDefinition();
     context.disableDefaultConstraintViolation();
-    if (options.skip() != null && value.sortClause() == null) {
+    if (options.skip() != null && sortSpec == null) {
       context
           .buildConstraintViolationWithTemplate("skip options should be used with sort clause")
           .addPropertyNode("options.skip")
@@ -31,9 +32,7 @@ public class FindOptionsValidation implements ConstraintValidator<CheckFindOptio
       return false;
     }
 
-    if (options.skip() != null
-        && value.sortClause() != null
-        && value.sortClause().hasVsearchClause()) {
+    if (options.skip() != null && sortSpec != null && sortSpec.hasVsearchClause()) {
       context
           .buildConstraintViolationWithTemplate(
               "skip options should not be used with vector search")
@@ -42,8 +41,8 @@ public class FindOptionsValidation implements ConstraintValidator<CheckFindOptio
       return false;
     }
 
-    if (value.sortClause() != null
-        && value.sortClause().hasVsearchClause()
+    if (sortSpec != null
+        && sortSpec.hasVsearchClause()
         && options.limit() != null
         && options.limit() > config.get().maxVectorSearchLimit()) {
       context

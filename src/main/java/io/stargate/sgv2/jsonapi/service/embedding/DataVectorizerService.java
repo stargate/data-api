@@ -86,7 +86,12 @@ public class DataVectorizerService {
     return new DataVectorizer(
         embeddingProvider,
         objectMapper.getNodeFactory(),
-        commandContext.requestContext().getEmbeddingCredentials(),
+        commandContext
+            .requestContext()
+            .getEmbeddingCredentialsSupplier()
+            .create(
+                commandContext.requestContext(),
+                embeddingProvider == null ? null : embeddingProvider.getProviderConfig()),
         commandContext.schemaObject());
   }
 
@@ -94,7 +99,7 @@ public class DataVectorizerService {
       DataVectorizer dataVectorizer, CommandContext<T> commandContext, Command command) {
 
     if (command instanceof Sortable sortable) {
-      return dataVectorizer.vectorize(sortable.sortClause());
+      return dataVectorizer.vectorize(sortable.sortClause(commandContext));
     }
     return Uni.createFrom().item(true);
   }
@@ -246,13 +251,13 @@ public class DataVectorizerService {
   private List<DataVectorizer.VectorizeTask> tasksForSort(
       Sortable command, CommandContext<TableSchemaObject> commandContext) {
 
-    var sortClause = command.sortClause();
+    var sortClause = command.sortClause(commandContext);
     // because this is coming off the command may be null or empty
     if (sortClause == null || sortClause.isEmpty()) {
       return List.of();
     }
 
-    var vectorizeSorts = command.sortClause().tableVectorizeSorts();
+    var vectorizeSorts = sortClause.tableVectorizeSorts();
     if (vectorizeSorts.isEmpty()) {
       return List.of();
     }

@@ -32,7 +32,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
@@ -88,7 +88,7 @@ public class CollectionResource {
       MeteredCommandProcessor meteredCommandProcessor,
       MeterRegistry meterRegistry,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      CQLSessionCache cqlSessionCache,
+      CqlSessionCacheSupplier sessionCacheSupplier,
       EmbeddingProviderFactory embeddingProviderFactory,
       RerankingProviderFactory rerankingProviderFactory) {
     this.embeddingProviderFactory = embeddingProviderFactory;
@@ -97,7 +97,7 @@ public class CollectionResource {
     contextBuilderSupplier =
         CommandContext.builderSupplier()
             .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
-            .withCqlSessionCache(cqlSessionCache)
+            .withCqlSessionCache(sessionCacheSupplier.get())
             .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
             .withEmbeddingProviderFactory(embeddingProviderFactory)
             .withRerankingProviderFactory(rerankingProviderFactory)
@@ -201,7 +201,6 @@ public class CollectionResource {
     return schemaCache
         .getSchemaObject(
             requestContext,
-            requestContext.getTenantId(),
             keyspace,
             collection,
             CommandType.DDL.equals(command.commandName().getCommandType()))
@@ -248,18 +247,25 @@ public class CollectionResource {
                           .getFirstVectorColumnWithVectorizeDefinition()
                           .orElse(null);
                 }
-                EmbeddingProvider embeddingProvider =
-                    (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)
-                        ? null
-                        : embeddingProviderFactory.getConfiguration(
-                            requestContext.getTenantId(),
-                            requestContext.getCassandraToken(),
-                            vectorColDef.vectorizeDefinition().provider(),
-                            vectorColDef.vectorizeDefinition().modelName(),
-                            vectorColDef.vectorSize(),
-                            vectorColDef.vectorizeDefinition().parameters(),
-                            vectorColDef.vectorizeDefinition().authentication(),
-                            command.getClass().getSimpleName());
+
+                EmbeddingProvider embeddingProvider = null;
+
+                if (vectorColDef != null && vectorColDef.vectorizeDefinition() != null) {
+                  embeddingProvider =
+                      embeddingProviderFactory.getConfiguration(
+                          requestContext.getTenantId(),
+                          requestContext.getCassandraToken(),
+                          vectorColDef.vectorizeDefinition().provider(),
+                          vectorColDef.vectorizeDefinition().modelName(),
+                          vectorColDef.vectorSize(),
+                          vectorColDef.vectorizeDefinition().parameters(),
+                          vectorColDef.vectorizeDefinition().authentication(),
+                          command.getClass().getSimpleName());
+                  requestContext
+                      .getEmbeddingCredentialsSupplier()
+                      .withAuthConfigFromCollection(
+                          vectorColDef.vectorizeDefinition().authentication());
+                }
 
                 var commandContext =
                     contextBuilderSupplier

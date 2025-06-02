@@ -40,14 +40,16 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
       String baseUrl,
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
       int dimension,
-      Map<String, Object> vectorizeServiceParameters) {
+      Map<String, Object> vectorizeServiceParameters,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
     // One special case: legacy "ada-002" model does not accept "dimension" parameter
     super(
         requestProperties,
         baseUrl,
         model,
         acceptsOpenAIDimensions(model.name()) ? dimension : 0,
-        vectorizeServiceParameters);
+        vectorizeServiceParameters,
+        providerConfig);
 
     String actualUrl = replaceParameters(baseUrl, vectorizeServiceParameters);
     openAIEmbeddingProviderClient =

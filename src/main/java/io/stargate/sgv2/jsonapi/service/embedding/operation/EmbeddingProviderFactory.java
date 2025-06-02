@@ -29,7 +29,8 @@ public class EmbeddingProviderFactory {
         String baseUrl,
         EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
         int dimension,
-        Map<String, Object> vectorizeServiceParameter);
+        Map<String, Object> vectorizeServiceParameter,
+        EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig);
   }
 
   private static final Map<String, ProviderConstructor> providersMap =
@@ -81,8 +82,10 @@ public class EmbeddingProviderFactory {
       Map<String, Object> vectorizeServiceParameters,
       Map<String, String> authentication,
       String commandName) {
+
     final EmbeddingProviderConfigStore.ServiceConfig configuration =
         embeddingProviderConfigStore.get().getConfiguration(tenant, serviceName);
+
     if (config.enableEmbeddingGateway()) {
       return new EmbeddingGatewayClient(
           configuration.requestConfiguration(),
@@ -98,6 +101,7 @@ public class EmbeddingProviderFactory {
           commandName);
     }
 
+    // CUSTOM is for test only
     if (configuration.serviceProvider().equals(ProviderConstants.CUSTOM)) {
       Optional<Class<?>> clazz = configuration.implementationClass();
       if (!clazz.isPresent()) {
@@ -134,11 +138,13 @@ public class EmbeddingProviderFactory {
                     ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
                         "unknown model '%s' for service provider '%s'",
                         modelName, configuration.serviceProvider()));
+
     return ctor.create(
         configuration.requestConfiguration(),
         configuration.getBaseUrl(modelName),
         model,
         dimension,
-        vectorizeServiceParameters);
+        vectorizeServiceParameters,
+        providerConfig);
   }
 }
