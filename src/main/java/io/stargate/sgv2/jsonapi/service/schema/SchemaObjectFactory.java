@@ -12,10 +12,15 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * Creates
+ */
 public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactory {
 
   private static final CollectionTableMatcher IS_COLLECTION_PREDICATE =

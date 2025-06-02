@@ -22,10 +22,8 @@ import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
-import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
-import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectIdentifier;
-import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectType;
-import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.*;
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
 import java.util.Map;
@@ -94,7 +92,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       CollectionLexicalConfig lexicalConfig,
       CollectionRerankDef rerankDef) {
 
-    super(SchemaObjectType.COLLECTION, identifier, null);
+    super(SchemaObjectType.COLLECTION, identifier);
 
     this.idConfig = idConfig;
     this.vectorConfig = vectorConfig;

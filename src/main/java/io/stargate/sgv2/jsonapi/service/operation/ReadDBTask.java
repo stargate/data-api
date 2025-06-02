@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+
+import io.stargate.sgv2.jsonapi.service.schema.tables.TableBasedSchemaObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
