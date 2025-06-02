@@ -176,7 +176,7 @@
     <dependency>
       <groupId>org.apache.cassandra</groupId>
       <artifactId>java-driver-core</artifactId>
-      <version>4.18.0</version>
+      <version>${driver.version}</version>
       <exclusions>
         <exclusion>
           <groupId>io.dropwizard.metrics</groupId>
@@ -191,7 +191,7 @@
     <dependency>
       <groupId>org.apache.cassandra</groupId>
       <artifactId>java-driver-metrics-micrometer</artifactId>
-      <version>4.18.0</version>
+      <version>${driver.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.cassandra</groupId>

@@ -12,6 +12,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.core.Base64Variants;
+import io.quarkus.logging.Log;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
@@ -234,24 +235,34 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
 
   public static void checkDriverMetricsTenantId() {
     String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-    // Example line
-    // session_cql_requests_seconds{module="sgv2-jsonapi",session="default_tenant",quantile="0.5",}
-    // 0.238944256
-
+    List<String> lines = metrics.lines().toList();
     Optional<String> sessionLevelDriverMetricTenantId =
-        metrics
-            .lines()
+        lines.stream()
             .filter(
                 line ->
-                    line.startsWith("session_cql_requests_seconds") && line.contains("session="))
+                    line.startsWith("session_cql_requests_seconds_bucket")
+                        && line.contains("tenant"))
             .findFirst();
+    Log.info(
+        "sample success session_cql_requests_seconds_bucket "
+            + lines.stream()
+                .filter(line -> line.startsWith("session_cql_requests_seconds_bucket"))
+                .limit(5)
+                .toList());
     if (!sessionLevelDriverMetricTenantId.isPresent()) {
-      List<String> lines = metrics.lines().toList();
       long buckets =
-          lines.stream().filter(line -> line.startsWith("session_cql_requests_seconds")).count();
+          lines.stream()
+              .filter(line -> line.startsWith("session_cql_requests_seconds_bucket"))
+              .count();
+      Log.info(
+          "sample failure session_cql_requests_seconds_bucket "
+              + lines.stream()
+                  .filter(line -> line.startsWith("session_cql_requests_seconds_bucket"))
+                  .limit(5)
+                  .toList());
       fail(
           String.format(
-              "No tenant id found in any of 'session_cql_requests_seconds' entries (%d buckets; %d log lines)",
+              "No tenant id found in 'session_cql_requests_seconds_bucket' (%d buckets; %d log lines)",
               buckets, lines.size()));
     }
   }
