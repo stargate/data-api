@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlIndexException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -114,6 +115,17 @@ public class ApiTextIndex extends ApiSupportedIndex {
         analyzerDef =
             JsonNodeFactory.instance.textNode(
                 TableDescDefaults.CreateTextIndexOptionsDefaults.DEFAULT_NAMED_ANALYZER);
+      } else {
+        // validate that the analyzer is either a String or an Object
+        if (!analyzerDef.isTextual() && !analyzerDef.isObject()) {
+          final String unsupportedType = JsonUtil.nodeTypeAsString(analyzerDef);
+          throw SchemaException.Code.UNSUPPORTED_JSON_TYPE_FOR_TEXT_INDEX.get(
+              errVars(
+                  tableSchemaObject,
+                  map -> {
+                    map.put("unsupportedType", unsupportedType);
+                  }));
+        }
       }
       indexOptions.put(
           TableDescConstants.TextIndexCQLOptions.OPTION_ANALYZER,

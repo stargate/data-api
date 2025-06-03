@@ -18,7 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(
     description =
-        "Creates an index on a text column that can be used for lexical filtering/sorting.")
+        "Creates an index on a text column that can be used for lexical filtering and sorting.")
 @JsonTypeName(CommandName.Names.CREATE_TEXT_INDEX)
 @JsonPropertyOrder({
   TableDescConstants.IndexDesc.NAME,

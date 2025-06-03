@@ -1093,6 +1093,17 @@ request-errors:
       Resend the command using a supported index type.    
 
   - scope: SCHEMA
+    code: UNSUPPORTED_JSON_TYPE_FOR_TEXT_INDEX
+    title: JSON value type is not supported for creating text index
+    body: |-
+      The command attempted to create a text index using an unsupported JSON value type.
+      
+      The supported JSON value types are: String, Object.
+      The command used the unsupported JSON value type: ${unsupportedType}.
+      
+      Resend the command using a supported JSON value type.
+
+  - scope: SCHEMA
     code: UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES
     title: Analysed text index not supported by data types
     body: |-
