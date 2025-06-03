@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTextIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
@@ -135,6 +136,7 @@ public class CollectionResource {
                         // Table Only commands
                         AlterTableCommand.class,
                         CreateIndexCommand.class,
+                        CreateTextIndexCommand.class,
                         CreateVectorIndexCommand.class,
                         ListIndexesCommand.class
                       }),
@@ -159,6 +161,7 @@ public class CollectionResource {
                 @ExampleObject(ref = "alterTableAddVectorize"),
                 @ExampleObject(ref = "alterTableDropVectorize"),
                 @ExampleObject(ref = "createIndex"),
+                @ExampleObject(ref = "createTextIndex"),
                 @ExampleObject(ref = "createVectorIndex"),
                 @ExampleObject(ref = "listIndexes"),
                 @ExampleObject(ref = "insertOneTables"),

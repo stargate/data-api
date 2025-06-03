@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Builds the WHERE clause in a CQL statment when using the Java Driver Query Builder.
+ * Builds the WHERE clause in a CQL statement when using the Java Driver Query Builder.
  *
  * <p>TODO: this accepts the {@link LogicalExpression} to build the statement, we want to stop
  * handing that down to the operations but keeping for now for POC work.

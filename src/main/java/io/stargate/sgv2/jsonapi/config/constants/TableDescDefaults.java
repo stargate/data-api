@@ -20,6 +20,21 @@ public interface TableDescDefaults {
 
   /**
    * Defaults for {@link
+   * io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTextIndexCommand.CommandOptions}.
+   */
+  interface CreateTextIndexOptionsDefaults {
+    boolean IF_NOT_EXISTS = false;
+
+    String DEFAULT_NAMED_ANALYZER = "standard";
+
+    // For use in @Schema decorators
+    interface Constants {
+      String IF_NOT_EXISTS = "false";
+    }
+  }
+
+  /**
+   * Defaults for {@link
    * io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand.CreateVectorIndexCommandOptions}.
    */
   interface CreateVectorIndexOptionsDefaults {

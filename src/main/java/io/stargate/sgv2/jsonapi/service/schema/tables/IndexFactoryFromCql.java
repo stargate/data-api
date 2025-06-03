@@ -19,7 +19,7 @@ public abstract class IndexFactoryFromCql extends FactoryFromCql {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexFactoryFromCql.class);
 
   /**
-   * Analyses the IndexMetadat to call the correct factory to create an {@link ApiIndexDef}
+   * Analyses the IndexMetadata to call the correct factory to create an {@link ApiIndexDef}
    *
    * @param allColumns Container of all columns on the table the index is from.
    * @param indexMetadata The index metadata from the driver
@@ -52,6 +52,7 @@ public abstract class IndexFactoryFromCql extends FactoryFromCql {
       return switch (apiIndexType) {
         case REGULAR ->
             ApiRegularIndex.FROM_CQL_FACTORY.create(apiColumnDef, indexTarget, indexMetadata);
+        case TEXT -> ApiTextIndex.FROM_CQL_FACTORY.create(apiColumnDef, indexTarget, indexMetadata);
         case VECTOR ->
             ApiVectorIndex.FROM_CQL_FACTORY.create(apiColumnDef, indexTarget, indexMetadata);
         default ->
