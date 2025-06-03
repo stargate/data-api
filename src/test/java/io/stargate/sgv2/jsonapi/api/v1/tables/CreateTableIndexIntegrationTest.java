@@ -109,7 +109,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 Map.entry("id", Map.of("type", "text")),
                 Map.entry("text_field_1", Map.of("type", "text")),
                 Map.entry("text_field_2", Map.of("type", "text")),
-                Map.entry("text_field_3", Map.of("type", "text"))),
+                Map.entry("text_field_3", Map.of("type", "text")),
+                Map.entry("text_field_x", Map.of("type", "text"))),
             "id")
         .wasSuccessful();
   }
@@ -1092,6 +1093,33 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               SchemaException.class,
               "The known index types are: regular, text, vector.",
               "The command used the unknown index type: unknown.");
+    }
+  }
+
+  @Nested
+  @Order(6)
+  class CreateTextIndexFailure {
+    // Definition of the text index must be JSON String or Object; fail if not
+    @Test
+    public void failForDefNotStringOrObject() {
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .postCreateTextIndex(
+              """
+                      {
+                        "name": "text_field_x_idx",
+                        "definition": {
+                          "column": "text_field_x",
+                          "options": {
+                            "analyzer": [1, 2, 3]
+                          }
+                        }
+                      }
+                      """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_JSON_TYPE_FOR_TEXT_INDEX,
+              SchemaException.class,
+              "command attempted to create a text index using an unsupported JSON value",
+              "command used the unsupported JSON value type: Array");
     }
   }
 }
