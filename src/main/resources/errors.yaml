@@ -1093,6 +1093,17 @@ request-errors:
       Resend the command using a supported index type.    
 
   - scope: SCHEMA
+    code: UNSUPPORTED_JSON_TYPE_FOR_TEXT_INDEX
+    title: JSON value type is not supported for creating text index
+    body: |-
+      The command attempted to create a text index using an unsupported JSON value type.
+      
+      The supported JSON value types are: String, Object.
+      The command used the unsupported JSON value type: ${unsupportedType}.
+      
+      Resend the command using a supported JSON value type.
+
+  - scope: SCHEMA
     code: UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES
     title: Analysed text index not supported by data types
     body: |-
@@ -1110,10 +1121,24 @@ request-errors:
       Resend the command using columns that support text analysis.
 
   - scope: SCHEMA
+    code: UNSUPPORTED_TEXT_INDEX_FOR_DATA_TYPES
+    title: Text index not supported by data types
+    body: |-
+      The command attempted to create a text index on a column that is not a `text` or `ascii` type.
+      
+      Text indexes can only be created on columns of type `text` or `ascii`.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to text index the unsupported columns: ${unsupportedColumns}.
+      
+      Resend the command using columns of `text` type.
+  
+
+  - scope: SCHEMA
     code: UNSUPPORTED_VECTOR_INDEX_FOR_DATA_TYPES
     title: Vector index not supported by data types
     body: |-
-      The command attempted to create an vector index on a column that is not a `vector` type.
+      The command attempted to create a vector index on a column that is not a `vector` type.
       
       Vector indexes can only be created on columns of type `vector`, regular indexes can only be created on primitive data types such as `text` and `int` using the createIndex command.
       
