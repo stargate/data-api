@@ -1124,9 +1124,9 @@ request-errors:
     code: UNSUPPORTED_TEXT_INDEX_FOR_DATA_TYPES
     title: Text index not supported by data types
     body: |-
-      The command attempted to create a text index on a column that is not a `text` type.
+      The command attempted to create a text index on a column that is not a `text` or `ascii` type.
       
-      Text indexes can only be created on columns of type `text`.
+      Text indexes can only be created on columns of type `text` or `ascii`.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The command attempted to text index the unsupported columns: ${unsupportedColumns}.

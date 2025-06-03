@@ -171,7 +171,7 @@ public class ApiTextIndex extends ApiSupportedIndex {
 
       JsonNode analyzerDef;
 
-      if (analyzerDefFromCql == null || analyzerDefFromCql.isEmpty()) {
+      if (analyzerDefFromCql == null || analyzerDefFromCql.isBlank()) {
         // should never happen, but just in case
         throw new IllegalStateException(
             "ApiTextIndex definition broken (indexMetadata.name: "
@@ -180,7 +180,7 @@ public class ApiTextIndex extends ApiSupportedIndex {
                 + TableDescConstants.TextIndexCQLOptions.OPTION_ANALYZER
                 + "' JSON; options = "
                 + indexMetadata.getOptions());
-      } else if (analyzerDefFromCql.startsWith("{")) {
+      } else if (analyzerDefFromCql.trim().startsWith("{")) {
         try {
           analyzerDef = OBJECT_MAPPER.readTree(analyzerDefFromCql);
         } catch (IOException e) {
