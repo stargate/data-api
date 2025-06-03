@@ -158,11 +158,33 @@ public class FindCollectionWithLexicalIntegrationTest
           .body("data.documents", hasSize(1))
           .body("data.documents[0]._id", is("lexical-4"));
     }
+
+    // [data-api#2109] Non-lexical sort on $lexical column should also work
+    @Test
+    void findManyWithNonLexicalSort() {
+      givenHeadersPostJsonThenOkNoErrors(
+              keyspaceName,
+              COLLECTION_WITH_LEXICAL,
+              """
+                          {
+                            "find": {
+                              "sort" : {"$lexical": 1 }
+                            }
+                          }
+                          """)
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(5))
+          .body("data.documents[0]._id", is("lexical-4"))
+          .body("data.documents[1]._id", is("lexical-3"))
+          .body("data.documents[2]._id", is("lexical-5"))
+          .body("data.documents[3]._id", is("lexical-2"))
+          .body("data.documents[4]._id", is("lexical-1"));
+    }
   }
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
-  @Order(2)
+  @Order(3)
   class HappyCasesFindOne {
     @Test
     void findOneWithLexicalSortBiking() {
@@ -221,7 +243,7 @@ public class FindCollectionWithLexicalIntegrationTest
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
-  @Order(3)
+  @Order(4)
   class FailingCasesFindMany {
     @Test
     void failSortIfLexicalDisabledForCollection() {
@@ -265,7 +287,7 @@ public class FindCollectionWithLexicalIntegrationTest
               """
                           {
                             "find": {
-                              "sort" : {"$lexical": -1 }
+                              "sort" : {"$lexical": false }
                             }
                           }
                           """)
@@ -273,7 +295,7 @@ public class FindCollectionWithLexicalIntegrationTest
           .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"))
           .body(
               "errors[0].message",
-              containsString("if sorting by '$lexical' value must be String, not Number"));
+              containsString("if sorting by '$lexical' value must be String, not Boolean"));
     }
 
     @Test
