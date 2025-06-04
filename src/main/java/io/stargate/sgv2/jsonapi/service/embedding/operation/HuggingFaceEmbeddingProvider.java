@@ -13,8 +13,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstant
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProviderErrorMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import java.net.URI;
@@ -39,9 +37,11 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
     super(requestProperties, baseUrl, model, dimension, vectorizeServiceParameters, providerConfig);
 
+    String actualUrl = replaceParameters(baseUrl, Map.of("modelId", model.name()));
+
     huggingFaceEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(baseUrl))
+            .baseUri(URI.create(actualUrl))
             .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(HuggingFaceEmbeddingProviderClient.class);
   }
@@ -50,12 +50,9 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
   public interface HuggingFaceEmbeddingProviderClient {
     @POST
-    @Path("/{modelId}")
     @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
     Uni<List<float[]>> embed(
-        @HeaderParam("Authorization") String accessToken,
-        @PathParam("modelId") String modelId,
-        EmbeddingRequest request);
+        @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
@@ -107,7 +104,6 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
     return applyRetry(
             huggingFaceEmbeddingProviderClient.embed(
                 HttpConstants.BEARER_PREFIX_FOR_API_KEY + embeddingCredentials.apiKey().get(),
-                model.name(),
                 request))
         .onItem()
         .transform(

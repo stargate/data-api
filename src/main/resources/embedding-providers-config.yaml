@@ -157,7 +157,7 @@ stargate:
           # see https://huggingface.co/blog/getting-started-with-embeddings
           display-name: Hugging Face - Serverless
           enabled: true
-          url: https://api-inference.huggingface.co/pipeline/feature-extraction/
+          url: https://router.huggingface.co/hf-inference/models/{modelId}/pipeline/feature-extraction
           supported-authentications:
             NONE:
               enabled: false
