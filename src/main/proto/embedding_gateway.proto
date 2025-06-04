@@ -208,7 +208,7 @@ service EmbeddingService {
 // The reranking request message that is sent to embedding gateway gRPC API
 message ProviderRerankingRequest {
   ProviderContext 			provider_context = 1;
-  RerankingRequest			Reranking_request = 2;
+  RerankingRequest			reranking_request = 2;
   message ProviderContext {
     string 					          provider_name = 1;
     string  					        tenant_id = 2;
