@@ -65,31 +65,37 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
   protected abstract SortClause buildAndValidate(ObjectNode sortNode);
 
   protected SortClause defaultBuildAndValidate(ObjectNode sortNode) {
-    // safe to iterate, we know it's an Object
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = sortNode.fields();
-    int totalFields = sortNode.size();
-    List<SortExpression> sortExpressions = new ArrayList<>(sortNode.size());
+    final int totalFields = sortNode.size();
 
     // $lexical is only allowed alone: handle first
     JsonNode lexicalValue = sortNode.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
     if (lexicalValue != null) {
-      if (sortNode.size() > 1) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-            "if sorting by '%s' no other sort expressions allowed",
-            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
+      // Typical we need a String, but "old" 1/-1 still allowed: so bail out
+      // if we got a Number
+      if (lexicalValue.isNumber()) {
+        ; // do nothing, yet, fall-through to next block
+      } else {
+        if (!lexicalValue.isTextual()) {
+          throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
+              "if sorting by '%s' value must be String, not %s",
+              DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
+              JsonUtil.nodeTypeAsString(lexicalValue));
+        }
+        if (totalFields > 1) {
+          throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
+              "if sorting by '%s' no other sort expressions allowed",
+              DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
+        }
+        // We cannot yet determine if lexical sort supported by the collection, just
+        // construct clause
+        return new SortClause(
+            Collections.singletonList(SortExpression.bm25Search(lexicalValue.textValue())));
       }
-      if (!lexicalValue.isTextual()) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-            "if sorting by '%s' value must be String, not %s",
-            DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
-            JsonUtil.nodeTypeAsString(lexicalValue));
-      }
-      // We cannot yet determine if lexical sort supported by the collection, just
-      // construct clause
-      return new SortClause(
-          Collections.singletonList(SortExpression.bm25Search(lexicalValue.textValue())));
     }
 
+    // safe to iterate, we know it's an Object
+    Iterator<Map.Entry<String, JsonNode>> fieldIter = sortNode.fields();
+    List<SortExpression> sortExpressions = new ArrayList<>(sortNode.size());
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> inner = fieldIter.next();
       final String path = inner.getKey().trim();
