@@ -402,7 +402,6 @@ public record FindCollectionOperation(
       QueryExecutor queryExecutor,
       String pageState,
       IDCollectionFilter additionalIdFilter) {
-
     // ensure we pass failure down if read type is not DOCUMENT or KEY
     // COUNT is not supported
     switch (readType) {

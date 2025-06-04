@@ -168,6 +168,7 @@ public class FindCollectionWithLexicalIntegrationTest
               """
                           {
                             "find": {
+                              "projection": {"$lexical": 1 },
                               "sort" : {"$lexical": 1 }
                             }
                           }

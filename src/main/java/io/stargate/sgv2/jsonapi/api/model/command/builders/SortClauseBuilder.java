@@ -65,10 +65,7 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
   protected abstract SortClause buildAndValidate(ObjectNode sortNode);
 
   protected SortClause defaultBuildAndValidate(ObjectNode sortNode) {
-    // safe to iterate, we know it's an Object
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = sortNode.fields();
-    int totalFields = sortNode.size();
-    List<SortExpression> sortExpressions = new ArrayList<>(sortNode.size());
+    final int totalFields = sortNode.size();
 
     // $lexical is only allowed alone: handle first
     JsonNode lexicalValue = sortNode.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
@@ -84,7 +81,7 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
               DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
               JsonUtil.nodeTypeAsString(lexicalValue));
         }
-        if (sortNode.size() > 1) {
+        if (totalFields > 1) {
           throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
               "if sorting by '%s' no other sort expressions allowed",
               DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
@@ -96,6 +93,9 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
       }
     }
 
+    // safe to iterate, we know it's an Object
+    Iterator<Map.Entry<String, JsonNode>> fieldIter = sortNode.fields();
+    List<SortExpression> sortExpressions = new ArrayList<>(sortNode.size());
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> inner = fieldIter.next();
       final String path = inner.getKey().trim();
