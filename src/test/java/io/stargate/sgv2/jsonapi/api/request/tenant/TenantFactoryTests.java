@@ -12,11 +12,8 @@ import java.lang.reflect.Field;
 public class TenantFactoryTests {
 
   @AfterEach
-  public void resetSingleton() throws Exception {
-    // Reset the private static singleton field via reflection to isolate tests
-    Field field = TenantFactory.class.getDeclaredField("singleton");
-    field.setAccessible(true);
-    field.set(null, null);
+  public void resetSingleton() {
+    TenantFactory.reset();
   }
 
   @Test

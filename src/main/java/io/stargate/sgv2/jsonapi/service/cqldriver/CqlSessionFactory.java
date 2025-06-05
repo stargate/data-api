@@ -30,7 +30,6 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
 
   private final String applicationName;
 
-  private final DatabaseType databaseType;
   private final String localDatacenter;
   private final Collection<InetSocketAddress> contactPoints;
   private final List<SchemaChangeListener> schemaChangeListeners;
@@ -40,7 +39,6 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
    * Constructor for the CqlSessionFactory, normally this overload is used for non-testing code.
    *
    * @param applicationName the name of the application, set on the CQL session
-   * @param databaseType the type of database, controls contact points and other settings
    * @param localDatacenter the local datacenter for the client connection.
    * @param cassandraEndPoints the Cassandra endpoints, only used when the database type is
    *     CASSANDRA
@@ -50,14 +48,12 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
    */
   CqlSessionFactory(
       String applicationName,
-      DatabaseType databaseType,
       String localDatacenter,
       List<String> cassandraEndPoints,
       Integer cassandraPort,
       List<SchemaChangeListener> schemaChangeListeners) {
     this(
         applicationName,
-        databaseType,
         localDatacenter,
         cassandraEndPoints,
         cassandraPort,
@@ -70,7 +66,6 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
    * be mocked.
    *
    * @param applicationName the name of the application, set on the CQL session
-   * @param databaseType the type of database, controls contact points and other settings
    * @param localDatacenter the local datacenter for the client connection.
    * @param cassandraEndPoints the Cassandra endpoints, only used when the database type is
    *     CASSANDRA
@@ -83,7 +78,6 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
   @VisibleForTesting
   CqlSessionFactory(
       String applicationName,
-      DatabaseType databaseType,
       String localDatacenter,
       List<String> cassandraEndPoints,
       Integer cassandraPort,
@@ -95,7 +89,6 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     if (applicationName.isBlank()) {
       throw new IllegalArgumentException("applicationName must not be blank");
     }
-    this.databaseType = Objects.requireNonNull(databaseType, "databaseType must not be null");
     this.localDatacenter =
         Objects.requireNonNull(localDatacenter, "localDatacenter must not be null");
 
@@ -104,20 +97,12 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     this.sessionBuilderSupplier =
         Objects.requireNonNull(sessionBuilderSupplier, "sessionBuilderSupplier must not be null");
 
-    // these never change, and we do not have them in astra, so we can cache
-    if (databaseType == DatabaseType.CASSANDRA) {
-      Objects.requireNonNull(cassandraEndPoints, "cassandraEndPoints must not be null");
-      if (cassandraEndPoints.isEmpty()) {
-        throw new IllegalArgumentException(
-            "Database type is %s but cassandraEndPoints is empty.".formatted(databaseType));
-      }
-      contactPoints =
-          cassandraEndPoints.stream()
-              .map(host -> new InetSocketAddress(host, cassandraPort))
-              .toList();
-    } else {
-      contactPoints = List.of();
-    }
+    // these never change, so we can cache
+    // we cannot test if we need these to be provided until we create the session, because we do not
+    // know the DB type until we know the tenant.
+    contactPoints = cassandraEndPoints != null
+        ? cassandraEndPoints.stream().map(host -> new InetSocketAddress(host, cassandraPort)).toList()
+        : List.of();
   }
 
   @Override
@@ -153,7 +138,11 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     builder = credentials.addToSessionBuilder(builder);
 
     // for astra it will default to 127.0.0.1 which is routed to the astra proxy
-    if (databaseType == DatabaseType.CASSANDRA) {
+    if (tenant.databaseType() == DatabaseType.CASSANDRA) {
+      if (contactPoints.isEmpty()) {
+        throw new IllegalStateException(
+            "Database type is %s but contactPoints is empty.".formatted(tenant.databaseType()));
+      }
       builder = builder.addContactPoints(contactPoints);
     }
 

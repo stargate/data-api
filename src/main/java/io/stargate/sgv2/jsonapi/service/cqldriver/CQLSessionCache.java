@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p><b>NOTE:</b> There is no method to get the size of the cache because it is not a reliable
  * measure, it's only an estimate. We can assume the size feature works. For testing use {@link
- * #peekSession(String, String, String)}
+ * #peekSession(Tenant, String, UserAgent)}
  */
 public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCacheKey, CqlSession> {
   private static final Logger LOGGER = LoggerFactory.getLogger(CQLSessionCache.class);
@@ -152,7 +152,7 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
                     deactivedTenantListener.accept(key.tenant());
                   } catch (Exception e) {
                     LOGGER.warn(
-                        "Error calling deactivatedTenantListener for tenant={}, listener.class={}",
+                        "Error calling DeactivatedTenantListener for tenant={}, listener.class={}",
                         key.tenant(),
                         classSimpleName(deactivedTenantListener.getClass()),
                         e);
@@ -328,8 +328,8 @@ public class CQLSessionCache extends DynamicTTLCache<CQLSessionCache.SessionCach
       var sessionName = value.getName();
       try {
         value.close();
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Closed CQL Session session.name={}", sessionName);
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("Closed CQL Session session.name={}", sessionName);
         }
       } catch (Exception e) {
         LOGGER.error("Error closing CQLSession session.name={}", sessionName, e);

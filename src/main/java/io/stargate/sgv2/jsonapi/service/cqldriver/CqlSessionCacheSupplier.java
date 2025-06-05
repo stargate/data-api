@@ -47,7 +47,6 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
     var sessionFactory =
         new CqlSessionFactory(
             applicationName,
-            dbConfig.type(),
             dbConfig.localDatacenter(),
             dbConfig.cassandraEndPoints(),
             dbConfig.cassandraPort(),

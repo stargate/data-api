@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.request.tenant;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 
+import java.lang.reflect.Field;
 import java.util.Objects;
 
 /**
@@ -43,5 +45,14 @@ public class TenantFactory {
 
   public Tenant create(String tenantId) {
     return Tenant.create(databaseType, tenantId);
+  }
+
+  /**
+   * FOR TEST ONLY: Resets the singleton instance to allow re-initialization.
+   */
+  @VisibleForTesting
+  public static void reset(){
+    singleton = null;
+
   }
 }

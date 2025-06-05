@@ -352,7 +352,7 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
 
       this.cacheTTL = Objects.requireNonNull(cacheTTL, "cacheTTL must not be null");
       if (cacheTTL.isNegative() || cacheTTL.isZero()) {
-        throw new IllegalArgumentException("cacheTTL must be positive");
+        throw new IllegalArgumentException("cacheTTL must be positive, was: " + cacheTTL);
       }
 
       this.slaUserAgent = slaUserAgent;

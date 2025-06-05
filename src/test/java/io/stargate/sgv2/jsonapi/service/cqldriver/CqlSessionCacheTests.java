@@ -16,25 +16,29 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 
-/** Tests for {@link CQLSessionCache}. */
+/** Tests for {@link CQLSessionCache}.
+ * <p>
+ * The basics of the cache are tested in {@link DynamicTTLCacheTests}
+ * */
 public class CqlSessionCacheTests extends CacheTestsBase {
 
-  // None of these TTLs are real, we are using hte Fake Ticker to control the time
-  private final String AUTH_TOKEN = "authToken-" + TEST_CONSTANTS.CORRELATION_ID;
-  private final UserAgent SLA_USER_AGENT = new UserAgent("Datastax-SLA-Checker");
 
   @Test
   public void sessionFactoryCalledOnceOnly() {
 
     var fixture = newFixture();
 
-    var actualSession = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
+    var actualSession = fixture
+        .cache
+        .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
+        .await()
+        .indefinitely();
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
 
     // auth token was passed to credentials factory
-    verify(fixture.credentialsFactory).apply(AUTH_TOKEN);
+    verify(fixture.credentialsFactory).apply(TEST_CONSTANTS.AUTH_TOKEN);
 
     // tenant and expected credentials passed to the session factory
     verify(fixture.sessionFactory).apply(TEST_CONSTANTS.TENANT, fixture.expectedCredentials);
@@ -45,7 +49,11 @@ public class CqlSessionCacheTests extends CacheTestsBase {
     clearInvocations(fixture.credentialsFactory, fixture.sessionFactory);
 
     // Second call to check cache hit
-    var actualSession2 = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
+    var actualSession2 = fixture
+        .cache
+        .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
+        .await()
+        .indefinitely();
     assertThat(actualSession2)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
@@ -61,7 +69,11 @@ public class CqlSessionCacheTests extends CacheTestsBase {
   public void sessionClosedAndListenerCalledOnForced() {
     var fixture = newFixture();
 
-    var actualSession = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
+    var actualSession = fixture
+        .cache
+        .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
+        .await()
+        .indefinitely();
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
@@ -74,17 +86,21 @@ public class CqlSessionCacheTests extends CacheTestsBase {
     // should have called our listener when evicted
     verify(fixture.listener).accept(eq(TEST_CONSTANTS.TENANT));
 
-    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null))
+    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
         .as("Session is not in cache after eviction")
         .isNotPresent();
   }
 
   @Test
-  public void essionClosedAndListenerCalledOnExpired() {
+  public void sessionClosedAndListenerCalledOnExpired() {
 
     var fixture = newFixture();
 
-    var actualSession = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
+    var actualSession = fixture
+        .cache
+        .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
+        .await()
+        .indefinitely();;
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
@@ -102,7 +118,7 @@ public class CqlSessionCacheTests extends CacheTestsBase {
     verify(fixture.listener).accept(TEST_CONSTANTS.TENANT);
 
     // session should not be in the cache
-    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null))
+    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
         .as("Session is not in cache after expried")
         .isNotPresent();
   }
@@ -112,7 +128,11 @@ public class CqlSessionCacheTests extends CacheTestsBase {
 
     var fixture = newFixture();
 
-    var actualSession = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
+    var actualSession = fixture
+        .cache
+        .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
+        .await()
+        .indefinitely();;
 
     // must not call consumer until evicted
     verifyNoInteractions(fixture.listener);
@@ -132,9 +152,13 @@ public class CqlSessionCacheTests extends CacheTestsBase {
 
     var fixture =
         newFixture(
-            List.of(listener1, listener2), LONG_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SHORT_TTL);
+            List.of(listener1, listener2), LONG_TTL, CACHE_MAX_SIZE, TEST_CONSTANTS.SLA_USER_AGENT, SHORT_TTL);
 
-    var actualSession = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
+    var actualSession = fixture
+        .cache
+        .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
+        .await()
+        .indefinitely();;
     assertThat(actualSession)
         .as("Session from cache is instance from factory")
         .isSameAs(fixture.expectedSession);
@@ -152,12 +176,14 @@ public class CqlSessionCacheTests extends CacheTestsBase {
   public void nullCredentialsCausesError() {
 
     var fixture = newFixture();
-    when(fixture.credentialsFactory.apply(AUTH_TOKEN)).thenReturn(null);
+    when(fixture.credentialsFactory.apply(TEST_CONSTANTS.AUTH_TOKEN)).thenReturn(null);
 
     assertThrows(
         IllegalStateException.class,
         () -> {
-          fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
+          fixture.cache.getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
+          .await()
+              .indefinitely();
         });
   }
 
@@ -178,8 +204,11 @@ public class CqlSessionCacheTests extends CacheTestsBase {
     var expectedSlaSession = mock(CqlSession.class);
     when(fixture.sessionFactory.apply(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(expectedSlaSession));
-    var actualSlaSession =
-        fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, SLA_USER_AGENT);
+    var actualSlaSession = fixture
+        .cache
+        .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.SLA_USER_AGENT)
+        .await()
+        .indefinitely();
 
     assertThat(actualSlaSession)
         .as("Session from cache is expectedSlaSession")
@@ -192,7 +221,11 @@ public class CqlSessionCacheTests extends CacheTestsBase {
     var expectedNonSlaSession = mock(CqlSession.class);
     when(fixture.sessionFactory.apply(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(expectedNonSlaSession));
-    var actualNonSlaSession = fixture.cache.getSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null);
+    var actualNonSlaSession = fixture
+        .cache
+        .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
+        .await()
+        .indefinitely();
 
     assertThat(actualNonSlaSession)
         .as("Session from cache is expectedNonSlaSession, new session obtained")
@@ -204,11 +237,11 @@ public class CqlSessionCacheTests extends CacheTestsBase {
     // the user agent is not part of the key, only tenant and auth, user agent is used to
     // create the TTL for the key
     // for sanity, peeking session is not present with either
-    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, SLA_USER_AGENT))
+    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.SLA_USER_AGENT))
         .as(
             "SLA Session is not present in cache when peeking with SLA agent - after non SLA expiry")
         .isNotPresent();
-    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, AUTH_TOKEN, null))
+    assertThat(fixture.cache.peekSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
         .as("SLA Session is not present in cache when peeking non SLA agent - after non SLA expiry")
         .isNotPresent();
 
@@ -231,7 +264,7 @@ public class CqlSessionCacheTests extends CacheTestsBase {
   }
 
   private String thisAuthToken(int i) {
-    return "%s-%s".formatted(AUTH_TOKEN, i);
+    return "%s-%s".formatted(TEST_CONSTANTS.AUTH_TOKEN, i);
   }
 
   private CQLSessionCache.DeactivatedTenantListener listenerWithLogging() {
@@ -267,7 +300,7 @@ public class CqlSessionCacheTests extends CacheTestsBase {
   }
 
   private Fixture newFixture() {
-    return newFixture(List.of(), LONG_TTL, CACHE_MAX_SIZE, SLA_USER_AGENT, SHORT_TTL);
+    return newFixture(null, LONG_TTL, CACHE_MAX_SIZE, TEST_CONSTANTS.SLA_USER_AGENT, SHORT_TTL);
   }
 
   private Fixture newFixture(
@@ -283,7 +316,7 @@ public class CqlSessionCacheTests extends CacheTestsBase {
 
     var credentialsFactory = mock(CqlCredentialsFactory.class);
     var expectedCredentials = mock(CqlCredentials.class);
-    when(credentialsFactory.apply(AUTH_TOKEN)).thenReturn(expectedCredentials);
+    when(credentialsFactory.apply(TEST_CONSTANTS.AUTH_TOKEN)).thenReturn(expectedCredentials);
 
     var sessionFactory = mock(CQLSessionCache.SessionFactory.class);
     var expectedSession = mock(CqlSession.class);

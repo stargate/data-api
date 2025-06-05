@@ -23,31 +23,58 @@ import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
 
 /**
- * Re-usable values for tests.
+ * Re-usable values for tests. Create an instance for each test class instance.
  *
- * <p>This must be an instance so that quarkus can set up the environment, we need this because of
- * the use of their config library
+ * <p>
+ * NOTE: Do not add dependencies to CDI or Quarkus here, this is used in unit tests that do not
+ * use the Quarkus test framework.
+ * </p>
  */
 public class TestConstants {
 
   public final DatabaseType DATABASE_TYPE = DatabaseType.ASTRA;
+  public final String APP_NAME;
 
+  // ============================================================
   // Names
-  public final String COMMAND_NAME;
+  // ============================================================
+
+  /** A unique identifier for the test run, append to names to ensure uniqueness
+   * and stable ID for the test class instance.
+   * */
   public final String CORRELATION_ID;
+
+  public final String COMMAND_NAME;
   public final String KEYSPACE_NAME;
   public final String COLLECTION_NAME;
   public final String TABLE_NAME;
 
+  /** Raw SLA user agent, Use {@link #SLA_USER_AGENT}*/
+  public final String SLA_USER_AGENT_NAME = "Datastax-SLA-Checker";
+
+  // ============================================================
+  // Request Context
+  // ============================================================
+
   public final Tenant TENANT;
+
+  public final String AUTH_TOKEN;
+
+  /** A non SLA user agent for the test run */
   public final UserAgent USER_AGENT;
+
+  /** the DS SLA USer Agent */
+  public final UserAgent SLA_USER_AGENT;
+
+  // ============================================================
+  // Schema Objects
+  // ============================================================
 
   public final SchemaObjectIdentifier DATABASE_IDENTIFIER;
   public final SchemaObjectIdentifier KEYSPACE_IDENTIFIER;
   public final SchemaObjectIdentifier COLLECTION_IDENTIFIER;
   public final SchemaObjectIdentifier TABLE_IDENTIFIER;
 
-  // Schema objects for testing
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT_LEGACY;
   public final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT;
@@ -56,16 +83,30 @@ public class TestConstants {
 
   public TestConstants() {
 
+    // ============================================================
+    // Names
+    // ============================================================
     CORRELATION_ID = "test-id-" + RandomStringUtils.randomAlphanumeric(16);
 
-    TENANT = Tenant.create(DATABASE_TYPE, "tenant-" + CORRELATION_ID);
-    USER_AGENT = new UserAgent("user-agent/" + CORRELATION_ID);
-
     COMMAND_NAME = "command-" + CORRELATION_ID;
-
     KEYSPACE_NAME = "keyspace-" + CORRELATION_ID;
     COLLECTION_NAME = "collection-" + CORRELATION_ID;
     TABLE_NAME = "table-" + CORRELATION_ID;
+
+    APP_NAME = "Stargate DATA API -" + CORRELATION_ID;
+    // ============================================================
+    // Request Context
+    // ============================================================
+
+    TENANT = Tenant.create(DATABASE_TYPE, "tenant-" + CORRELATION_ID);
+    AUTH_TOKEN = "auth-token-" + CORRELATION_ID;
+    USER_AGENT = new UserAgent("user-agent/" + CORRELATION_ID);
+    SLA_USER_AGENT =
+        new UserAgent(SLA_USER_AGENT_NAME + "/" + CORRELATION_ID);
+
+    // ============================================================
+    // Schema Objects
+    // ============================================================
 
     DATABASE_IDENTIFIER = SchemaObjectIdentifier.forDatabase(TENANT);
     KEYSPACE_IDENTIFIER =

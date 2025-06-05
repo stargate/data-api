@@ -17,11 +17,13 @@ import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.util.CacheTestsBase;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -65,6 +67,12 @@ public class SchemaObjectCacheChangeListenerTests extends CacheTestsBase {
     // the listener needs to create tenants, and it uses this factory
     TenantFactory.initialize(TEST_CONSTANTS.DATABASE_TYPE);
   }
+
+  @AfterEach
+  public void reset() {
+    TenantFactory.reset();
+  }
+
 
   @Test
   public void silentFailWhenOnSessionReadyNotCalled() {

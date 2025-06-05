@@ -6,6 +6,7 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class UserAgentTests {
@@ -33,14 +34,15 @@ public class UserAgentTests {
     assertThat(userAgent.product()).isEqualTo(expectedProduct);
   }
 
-  static Stream<org.junit.jupiter.params.provider.Arguments> userAgentExamples() {
+  static Stream<Arguments> userAgentExamples() {
     return Stream.of(
-        org.junit.jupiter.params.provider.Arguments.of("langchain/0.3.49 langchain_vectorstore/0.6.0 astrapy/2.0.1", "langchain"),
-        org.junit.jupiter.params.provider.Arguments.of("astrapy/2.0.1", "astrapy"),
-        org.junit.jupiter.params.provider.Arguments.of("langflow/1.4.2 langchain/0.3.59 langchain_vectorstore/0.6.0 astrapy/2.0.1", "langflow"),
-        org.junit.jupiter.params.provider.Arguments.of("NoVersionString", "NoVersionString"),
-        org.junit.jupiter.params.provider.Arguments.of("", ""),
-        org.junit.jupiter.params.provider.Arguments.of(null, "")
+        Arguments.of("langchain/0.3.49 langchain_vectorstore/0.6.0 astrapy/2.0.1", "langchain"),
+        Arguments.of("astrapy/2.0.1", "astrapy"),
+        Arguments.of("langflow/1.4.2 langchain/0.3.59 langchain_vectorstore/0.6.0 astrapy/2.0.1", "langflow"),
+        Arguments.of("NoVersionString", "NoVersionString"),
+        Arguments.of("", ""),
+        Arguments.of(null, ""),
+        Arguments.of("Datastax-SLA-Checker", "Datastax-SLA-Checker")
     );
   }
 }
