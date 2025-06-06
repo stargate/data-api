@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -133,7 +132,7 @@ public class CQLSessionCache {
 
     // there is a lot of common setup regardless of the database type
     var builder =
-        new CqlSessionBuilder()
+        new TenantAwareCqlSessionBuilder(cacheKey.tenantId())
             .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
             .withClassLoader(Thread.currentThread().getContextClassLoader())
             .withConfigLoader(configLoader)
