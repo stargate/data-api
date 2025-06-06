@@ -64,6 +64,8 @@ public final class ThrowableToErrorMapper {
 
         // UnauthorizedException from quarkus
         if (throwable instanceof UnauthorizedException) {
+          logger.error("UnauthorizedException from quarkus", throwable);
+
           return ErrorCodeV1.UNAUTHENTICATED_REQUEST
               .toApiException()
               .getCommandResultError(message, Response.Status.UNAUTHORIZED);
@@ -170,6 +172,7 @@ public final class ThrowableToErrorMapper {
   private static CommandResult.Error handleQueryValidationException(
       QueryValidationException throwable, String message) {
     if (throwable instanceof com.datastax.oss.driver.api.core.servererrors.UnauthorizedException) {
+      logger.error("UnauthorizedException from driver: QueryValidationException", throwable);
       return ErrorCodeV1.UNAUTHENTICATED_REQUEST
           .toApiException()
           .getCommandResultError(
@@ -230,6 +233,7 @@ public final class ThrowableToErrorMapper {
                     || error
                         .getMessage()
                         .contains("Provided username token and/or password are incorrect")))) {
+          logger.error("AuthenticationException from driver: AllNodesFailedException", error);
           return ErrorCodeV1.UNAUTHENTICATED_REQUEST
               .toApiException()
               .getCommandResultError(

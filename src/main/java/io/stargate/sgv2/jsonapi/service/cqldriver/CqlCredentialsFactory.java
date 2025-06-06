@@ -49,6 +49,7 @@ public class CqlCredentialsFactory implements CQLSessionCache.CredentialsFactory
       // the provided authToken matches the configured fixedToken.
       // (Previously part of CqlSessionCache.getSession())
       if (!fixedToken.equals(authToken)) {
+        LOGGER.error("UnauthorizedException from CqlCredentialsFactory");
         throw new UnauthorizedException(ErrorCodeV1.UNAUTHENTICATED_REQUEST.getMessage());
       }
       // If a fixedToken is configured, always use the fallback username and password.
