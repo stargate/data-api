@@ -14,6 +14,8 @@ import java.util.Map;
  * CQLSession via TenantAwareDriverContext which is an extension of the {@link DefaultDriverContext}
  * that adds the tenant ID to the startup options. The tenant ID is critical for the cql session and
  * it has to be passed and cannot be removed.
+ *
+ * <p>It's linked to issue <a href="https://github.com/stargate/data-api/issues/2119">#2119</a>
  */
 public class TenantAwareCqlSessionBuilder extends CqlSessionBuilder {
   /**
