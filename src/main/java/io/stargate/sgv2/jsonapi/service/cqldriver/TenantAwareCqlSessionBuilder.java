@@ -27,11 +27,12 @@ public class TenantAwareCqlSessionBuilder extends CqlSessionBuilder {
   /** Tenant ID that will be passed to the CQLSession via TenantAwareDriverContext */
   private String tenantId;
 
-  public void withTenantId(String tenantId) {
+  public TenantAwareCqlSessionBuilder withTenantId(String tenantId) {
     if (tenantId == null || tenantId.isEmpty()) {
       throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException("Tenant ID cannot be null or empty");
     }
     this.tenantId = tenantId;
+    return this;
   }
 
   /**

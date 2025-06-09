@@ -5,7 +5,6 @@ import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.*;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
@@ -104,6 +103,8 @@ public class CqlSessionFactoryTests {
     verify(fixture.sessionBuilder, never()).addContactEndPoints(any());
     verify(fixture.sessionBuilder).addTypeCodecs(SubtypeOnlyFloatVectorToArrayCodec.instance());
 
+    verify(fixture.sessionBuilder).withTenantId(TENANT_ID);
+
     if (!endpoints.isEmpty()) {
       var expectedEndpoints =
           endpoints.stream().map(host -> new InetSocketAddress(host, CASSANDRA_PORT)).toList();
@@ -116,7 +117,7 @@ public class CqlSessionFactoryTests {
   }
 
   record Fixture(
-      CqlSessionBuilder sessionBuilder,
+      TenantAwareCqlSessionBuilder sessionBuilder,
       CqlCredentials credentials,
       CqlSession session,
       CqlSessionFactory factory) {}
@@ -128,7 +129,7 @@ public class CqlSessionFactoryTests {
 
     var session = mock(CqlSession.class);
 
-    var sessionBuilder = mock(CqlSessionBuilder.class);
+    var sessionBuilder = mock(TenantAwareCqlSessionBuilder.class);
     when(sessionBuilder.withLocalDatacenter(any())).thenReturn(sessionBuilder);
     when(sessionBuilder.withClassLoader(any())).thenReturn(sessionBuilder);
     when(sessionBuilder.withConfigLoader(any())).thenReturn(sessionBuilder);
@@ -137,6 +138,7 @@ public class CqlSessionFactoryTests {
     when(sessionBuilder.withAuthCredentials(any(), any())).thenReturn(sessionBuilder);
     when(sessionBuilder.addContactPoints(any())).thenReturn(sessionBuilder);
     when(sessionBuilder.addTypeCodecs(any())).thenReturn(sessionBuilder);
+    when(sessionBuilder.withTenantId(any())).thenReturn(sessionBuilder);
 
     when(sessionBuilder.build()).thenReturn(session);
 

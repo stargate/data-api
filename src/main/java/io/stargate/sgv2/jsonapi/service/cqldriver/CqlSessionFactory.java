@@ -60,7 +60,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
         cassandraEndPoints,
         cassandraPort,
         schemaChangeListeners,
-        CqlSessionBuilder::new);
+        TenantAwareCqlSessionBuilder::new);
   }
 
   /**
