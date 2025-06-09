@@ -144,6 +144,10 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
             .withConfigLoader(configLoader)
             .withApplicationName(applicationName);
 
+    if (builder instanceof TenantAwareCqlSessionBuilder tenantAwareBuilder) {
+      tenantAwareBuilder.withTenantId(tenantId);
+    }
+
     for (var listener : schemaChangeListeners) {
       builder = builder.addSchemaChangeListener(listener);
     }
