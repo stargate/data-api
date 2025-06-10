@@ -82,8 +82,8 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
   protected SortExpression buildAndValidateExpression(
       String path, String validatedPath, JsonNode innerValue, int totalFields) {
     float[] vectorFloats = null;
-    if (innerValue instanceof ObjectNode innnerObject) {
-      var ejsonWrapped = EJSONWrapper.maybeFrom(innnerObject);
+    if (innerValue instanceof ObjectNode innerObject) {
+      var ejsonWrapped = EJSONWrapper.maybeFrom(innerObject);
       if (ejsonWrapped == null) {
         throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
             "Only binary vector object values is supported for sorting. Path: %s, Value: %s.",
