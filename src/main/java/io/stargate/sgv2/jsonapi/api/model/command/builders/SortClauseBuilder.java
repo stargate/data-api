@@ -103,11 +103,9 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
       }
       if (innerValue instanceof ArrayNode innerArray) {
         // TODO: HACK: quick support for tables, if the value is an array we will assume the
-        // column
-        // is a vector then need to check on table pathway that the sort is correct.
+        // column is a vector then need to check on table pathway that the sort is correct.
         // NOTE: does not check if there are more than one sort expression, the
         // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
-        // this is also why we do not break the loop here
         return SortExpression.tableVectorSort(path, arrayNodeToVector(innerArray));
       }
     }

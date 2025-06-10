@@ -91,14 +91,9 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
   }
 
   public void validate(CollectionSchemaObject collection) {
-    // First things first: BM25 search may or may not be available
-    SortExpression bm25Expr = bm25SearchExpression();
-    if (bm25Expr != null) {
-      if (!collection.lexicalConfig().enabled()) {
-        throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
-            "Lexical search is not enabled for collection '%s'", collection.name());
-      }
-      // But it must be the only sort expression so we can stop here
+    // First things first: BM25 search uses its own index; also the only expression
+    // (validated during SortClauseBuilder.buildAndValidate())
+    if (bm25SearchExpression() != null) {
       return;
     }
 

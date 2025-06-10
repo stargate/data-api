@@ -34,8 +34,12 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
             DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
             JsonUtil.nodeTypeAsString(lexicalValue));
       }
-      // We cannot yet determine if lexical sort supported by the collection, just
-      // construct clause
+      // We can also check if lexical sort supported by the collection:
+      if (!schema.lexicalConfig().enabled()) {
+        throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
+            "Lexical search is not enabled for collection '%s'", schema.name());
+      }
+
       return new SortClause(
           Collections.singletonList(SortExpression.bm25Search(lexicalValue.textValue())));
     }
