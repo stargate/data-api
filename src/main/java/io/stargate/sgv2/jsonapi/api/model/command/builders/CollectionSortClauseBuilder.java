@@ -40,6 +40,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
           Collections.singletonList(SortExpression.bm25Search(lexicalValue.textValue())));
     }
 
+    // Otherwise, use shared default processing
     return defaultBuildAndValidate(sortNode);
   }
 
