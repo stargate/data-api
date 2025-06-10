@@ -1382,10 +1382,10 @@ request-errors:
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines the columns: ${vectorColumns}.
-      The command attempted to sort the non vector columns: ${sortColumns}.  
+      The table ${keyspace}.${table} defines vector columns: ${vectorColumns}.
+      The command attempted to sort the non-vector columns: ${sortColumns}.
       
-      Resend the command using only `vector` columns wth vectorize enabled.
+      Resend the command using only `vector` columns with vectorize enabled.
 
   - scope: SORT
     code: CANNOT_VECTORIZE_SORT_WHEN_MISSING_VECTORIZE_DEFINITION
