@@ -77,6 +77,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     var whereCQLClause =
         TableWhereCQLClause.forSelect(
             commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command));
+
     return vectorAndVectorizeSorts.isEmpty()
         ? resolveNonVectorSort(
             commandContext, whereCQLClause.target(), sortClause, sortColumns, command.skip())
