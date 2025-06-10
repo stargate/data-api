@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -165,7 +166,12 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
       // this is also why we do not break the look here
       return SortExpression.tableVectorizeSort(path, innerValue.textValue());
     }
-    if (!innerValue.isInt() || !(innerValue.intValue() == 1 || innerValue.intValue() == -1)) {
+    if (!innerValue.isInt()) {
+      throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
+          "Sort ordering value should be integer `1` or `-1`; or Array of numbers (Vector); or String: was `%s`",
+          JsonUtil.nodeTypeAsString(innerValue));
+    }
+    if (!(innerValue.intValue() == 1 || innerValue.intValue() == -1)) {
       throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
           "Sort ordering value can only be `1` for ascending or `-1` for descending (not `%s`)",
           innerValue);
