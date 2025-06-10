@@ -71,118 +71,110 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> inner = fieldIter.next();
       final String path = inner.getKey().trim();
-      final JsonNode innerValue = inner.getValue();
       // Validation will check against invalid paths, as well as decode "amp-escaping"
-      final String validatedPath = validateSortClausePath(path);
-
-      float[] vectorFloats = null;
-      if (innerValue instanceof ObjectNode innnerObject) {
-        var ejsonWrapped = EJSONWrapper.maybeFrom(innnerObject);
-        if (ejsonWrapped == null) {
-          throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-              "Only binary vector object values is supported for sorting. Path: %s, Value: %s.",
-              path, innerValue.toString());
-        }
-        try {
-          vectorFloats = ejsonWrapped.getVectorValueForBinary();
-        } catch (IllegalArgumentException | IllegalStateException e) {
-          throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(e.getMessage());
-        }
-      }
-      // handle table vector sort
-      if (!(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)
-          || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path))) {
-        if (vectorFloats != null) {
-          sortExpressions.add(SortExpression.tableVectorSort(path, vectorFloats));
-          continue;
-        } else if (innerValue instanceof ArrayNode innerArray) {
-          // TODO: HACK: quick support for tables, if the value is an array we will assume the
-          // column
-          // is a vector then need to check on table pathway that the sort is correct.
-          // NOTE: does not check if there are more than one sort expression, the
-          // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
-          // this is also why we do not break the loop here
-          sortExpressions.add(SortExpression.tableVectorSort(path, arrayNodeToVector(innerArray)));
-          continue;
-        }
-      }
-      if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
-        // Vector search can't be used with other sort clause
-        if (totalFields > 1) {
-          throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
-        }
-        if (vectorFloats == null) {
-          if (!innerValue.isArray()) {
-            throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
-          } else {
-            ArrayNode arrayNode = (ArrayNode) innerValue;
-            vectorFloats = new float[arrayNode.size()];
-            if (arrayNode.isEmpty()) {
-              throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
-            }
-            for (int i = 0; i < arrayNode.size(); i++) {
-              JsonNode element = arrayNode.get(i);
-              if (!element.isNumber()) {
-                throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
-              }
-              vectorFloats[i] = element.floatValue();
-            }
-          }
-        }
-        SortExpression exp = SortExpression.vsearch(vectorFloats);
-        sortExpressions.clear();
-        sortExpressions.add(exp);
-        // TODO: aaron 17-oct-2024 - this break seems unneeded as above it checks if there is only
-        // 1
-        // field, leaving for now
-        break;
-
-      } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
-        // Vector search can't be used with other sort clause
-        if (totalFields > 1) {
-          throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
-        }
-        if (!innerValue.isTextual()) {
-          throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
-        }
-
-        String vectorizeData = innerValue.textValue();
-        if (vectorizeData.isBlank()) {
-          throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
-        }
-        SortExpression exp = SortExpression.vectorizeSearch(vectorizeData);
-        sortExpressions.clear();
-        sortExpressions.add(exp);
-        // TODO: aaron 17-oct-2024 - this break seems unneeded as above it checks if there is only 1
-        // field, leaving for now
-        break;
-      } else if (innerValue instanceof ArrayNode innerArray) {
-        // TODO: HACK: quick support for tables, if the value is an array we will assume the column
-        // is a vector then need to check on table pathway that the sort is correct.
-        // NOTE: does not check if there are more than one sort expression, the
-        // TableCqlSortClauseResolver will take care of that so we can get proper ApiExceptions
-        // this is also why we do not break the look here
-        sortExpressions.add(SortExpression.tableVectorSort(path, arrayNodeToVector(innerArray)));
-      } else if (innerValue.isTextual()) {
-        // TODO: HACK: quick support for tables, if the value is an text  we will assume the column
-        // is a vector and the user wants to do vectorize then need to check on table pathway that
-        // the sort is correct.
-        // NOTE: does not check if there are more than one sort expression, the
-        // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
-        // this is also why we do not break the look here
-        sortExpressions.add(SortExpression.tableVectorizeSort(path, innerValue.textValue()));
-      } else {
-        if (!innerValue.isInt() || !(innerValue.intValue() == 1 || innerValue.intValue() == -1)) {
-          throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-              "Sort ordering value can only be `1` for ascending or `-1` for descending (not `%s`)",
-              innerValue);
-        }
-
-        boolean ascending = innerValue.intValue() == 1;
-        SortExpression exp = SortExpression.sort(validatedPath, ascending);
-        sortExpressions.add(exp);
-      }
+      sortExpressions.add(
+          buildAndValidateExpression(
+              path, validateSortClausePath(path), inner.getValue(), totalFields));
     }
     return new SortClause(sortExpressions);
+  }
+
+  protected SortExpression buildAndValidateExpression(
+      String path, String validatedPath, JsonNode innerValue, int totalFields) {
+    float[] vectorFloats = null;
+    if (innerValue instanceof ObjectNode innnerObject) {
+      var ejsonWrapped = EJSONWrapper.maybeFrom(innnerObject);
+      if (ejsonWrapped == null) {
+        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
+            "Only binary vector object values is supported for sorting. Path: %s, Value: %s.",
+            path, innerValue.toString());
+      }
+      try {
+        vectorFloats = ejsonWrapped.getVectorValueForBinary();
+      } catch (IllegalArgumentException | IllegalStateException e) {
+        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(e.getMessage());
+      }
+    }
+    // handle table vector sort
+    if (!(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)
+        || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path))) {
+      if (vectorFloats != null) {
+        return SortExpression.tableVectorSort(path, vectorFloats);
+      }
+      if (innerValue instanceof ArrayNode innerArray) {
+        // TODO: HACK: quick support for tables, if the value is an array we will assume the
+        // column
+        // is a vector then need to check on table pathway that the sort is correct.
+        // NOTE: does not check if there are more than one sort expression, the
+        // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
+        // this is also why we do not break the loop here
+        return SortExpression.tableVectorSort(path, arrayNodeToVector(innerArray));
+      }
+    }
+    if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
+      // Vector search can't be used with other sort clause
+      if (totalFields > 1) {
+        throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
+      }
+      if (vectorFloats == null) {
+        if (!innerValue.isArray()) {
+          throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
+        } else {
+          ArrayNode arrayNode = (ArrayNode) innerValue;
+          vectorFloats = new float[arrayNode.size()];
+          if (arrayNode.isEmpty()) {
+            throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+          }
+          for (int i = 0; i < arrayNode.size(); i++) {
+            JsonNode element = arrayNode.get(i);
+            if (!element.isNumber()) {
+              throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
+            }
+            vectorFloats[i] = element.floatValue();
+          }
+        }
+      }
+      return SortExpression.vsearch(vectorFloats);
+    }
+    if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
+      // Vector search can't be used with other sort clause
+      if (totalFields > 1) {
+        throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
+      }
+      if (!innerValue.isTextual()) {
+        throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
+      }
+
+      String vectorizeData = innerValue.textValue();
+      if (vectorizeData.isBlank()) {
+        throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
+      }
+      return SortExpression.vectorizeSearch(vectorizeData);
+    }
+    if (innerValue instanceof ArrayNode innerArray) {
+      // TODO: HACK: quick support for tables, if the value is an array we will assume the column
+      // is a vector then need to check on table pathway that the sort is correct.
+      // NOTE: does not check if there are more than one sort expression, the
+      // TableCqlSortClauseResolver will take care of that so we can get proper ApiExceptions
+      // this is also why we do not break the look here
+      return SortExpression.tableVectorSort(path, arrayNodeToVector(innerArray));
+    }
+    if (innerValue.isTextual()) {
+      // TODO: HACK: quick support for tables, if the value is an text  we will assume the column
+      // is a vector and the user wants to do vectorize then need to check on table pathway that
+      // the sort is correct.
+      // NOTE: does not check if there are more than one sort expression, the
+      // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
+      // this is also why we do not break the look here
+      return SortExpression.tableVectorizeSort(path, innerValue.textValue());
+    }
+    if (!innerValue.isInt() || !(innerValue.intValue() == 1 || innerValue.intValue() == -1)) {
+      throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
+          "Sort ordering value can only be `1` for ascending or `-1` for descending (not `%s`)",
+          innerValue);
+    }
+
+    boolean ascending = innerValue.intValue() == 1;
+    return SortExpression.sort(validatedPath, ascending);
   }
 }
