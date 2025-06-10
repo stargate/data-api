@@ -8,4 +8,4 @@ import java.util.Optional;
  * cassandra token as the reranking api key. Note, both cassandra token and reranking-api-key could
  * be absent in Data API request, although it is invalid for authentication.
  */
-public record RerankingCredentials(Optional<String> apiKey) {}
+public record RerankingCredentials(String tenantId, Optional<String> apiKey) {}

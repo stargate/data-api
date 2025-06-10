@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
@@ -51,7 +51,7 @@ public class VectorizeConfigValidator {
    */
   public Integer validateService(VectorizeConfig userConfig, Integer userVectorDimension) {
     // Only for internal tests
-    if (userConfig.provider().equals(ProviderConstants.CUSTOM)) {
+    if (userConfig.provider().equals(ModelProvider.CUSTOM.apiName())) {
       return userVectorDimension;
     }
     // Check if the service provider exists and is enabled
@@ -322,10 +322,10 @@ public class VectorizeConfigValidator {
 
     // Find the model configuration by matching the model name
     // 1. huggingfaceDedicated does not require model, but requires dimension
-    if (userConfig.provider().equals(ProviderConstants.HUGGINGFACE_DEDICATED)) {
+    if (userConfig.provider().equals(ModelProvider.HUGGINGFACE_DEDICATED.apiName())) {
       if (userVectorDimension == null) {
         throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "'dimension' is needed for provider %s", ProviderConstants.HUGGINGFACE_DEDICATED);
+            "'dimension' is needed for provider %s", ModelProvider.HUGGINGFACE_DEDICATED.apiName());
       }
     }
 

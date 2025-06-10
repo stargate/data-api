@@ -175,7 +175,7 @@ public class DataVectorizer {
                 List.of(vectorizeContent),
                 embeddingCredentials,
                 EmbeddingProvider.EmbeddingRequestType.INDEX)
-            .map(EmbeddingProvider.Response::embeddings);
+            .map(EmbeddingProvider.BatchedEmbeddingResponse::embeddings);
     return vectors
         .onItem()
         .transform(
@@ -301,7 +301,7 @@ public class DataVectorizer {
 
     return embeddingProvider
         .vectorize(1, textsToVectorize, embeddingCredentials, requestType)
-        .map(EmbeddingProvider.Response::embeddings)
+        .map(EmbeddingProvider.BatchedEmbeddingResponse::embeddings)
         .onItem()
         .transform(
             vectorData -> {

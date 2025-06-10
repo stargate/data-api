@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.HashMap;
@@ -23,7 +24,7 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
   public EmbeddingProviderConfigStore.ServiceConfig getConfiguration(
       Optional<String> tenant, String serviceName) {
     // already checked if the service exists and enabled in CreateCollectionCommandResolver
-    if (serviceName.equals(ProviderConstants.CUSTOM)) {
+    if (serviceName.equals(ModelProvider.CUSTOM.apiName())) {
       return ServiceConfig.custom(config.custom().clazz());
     }
     if (config.providers().get(serviceName) == null

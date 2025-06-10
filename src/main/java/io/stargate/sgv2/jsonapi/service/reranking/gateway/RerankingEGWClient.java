@@ -8,7 +8,7 @@ import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import java.util.*;
@@ -19,18 +19,13 @@ public class RerankingEGWClient extends RerankingProvider {
 
   private static final String DEFAULT_TENANT_ID = "default";
 
-  /**
-   * This string acts as key of authTokens map, for passing Data API token to EGW in grpc request.
-   */
+  /** Key of authTokens map, for passing Data API token to EGW in grpc request. */
   private static final String DATA_API_TOKEN = "DATA_API_TOKEN";
 
-  /**
-   * This string acts as key of authTokens map, for passing Reranking API key to EGW in grpc
-   * request.
-   */
+  /** Key in the authTokens map, for passing Reranking API key to EGW in grpc request. */
   private static final String RERANKING_API_KEY = "RERANKING_API_KEY";
 
-  private final String provider;
+  private final ModelProvider modelProvider;
   private final Optional<String> tenant;
   private final Optional<String> authToken;
   private final String modelName;
@@ -42,15 +37,16 @@ public class RerankingEGWClient extends RerankingProvider {
       String baseUrl,
       RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties
           requestProperties,
-      String provider,
+      ModelProvider modelProvider,
       Optional<String> tenant,
       Optional<String> authToken,
       String modelName,
       RerankingService rerankingGrpcService,
       Map<String, String> authentication,
       String commandName) {
-    super(baseUrl, modelName, requestProperties);
-    this.provider = provider;
+    super(modelProvider, baseUrl, modelName, requestProperties);
+
+    this.modelProvider = modelProvider;
     this.tenant = tenant;
     this.authToken = authToken;
     this.modelName = modelName;
@@ -60,41 +56,43 @@ public class RerankingEGWClient extends RerankingProvider {
   }
 
   @Override
-  public Uni<RerankingBatchResponse> rerank(
+  protected String errorMessageJsonPtr() {
+    // not used here, we are just passing through.
+    return "";
+  }
+
+  @Override
+  public Uni<BatchedRerankingResponse> rerank(
       int batchId, String query, List<String> passages, RerankingCredentials rerankingCredentials) {
 
-    // Build the reranking provider request in grpc request
-    final EmbeddingGateway.ProviderRerankingRequest.RerankingRequest rerankingRequest =
+    var gatewayReranking =
         EmbeddingGateway.ProviderRerankingRequest.RerankingRequest.newBuilder()
             .setModelName(modelName)
             .setQuery(query)
             .addAllPassages(passages)
+            // TODO: Why is the command name passed here ? Can it be removed ?
             .setCommandName(commandName)
             .build();
 
-    // Build the reranking provider context in grpc request
     var contextBuilder =
         EmbeddingGateway.ProviderRerankingRequest.ProviderContext.newBuilder()
-            .setProviderName(provider)
+            .setProviderName(modelProvider.apiName())
             .setTenantId(tenant.orElse(DEFAULT_TENANT_ID))
             .putAuthTokens(DATA_API_TOKEN, authToken.orElse(""));
+    rerankingCredentials
+        .apiKey()
+        .ifPresent(v -> contextBuilder.putAuthTokens(RERANKING_API_KEY, v));
 
-    if (rerankingCredentials.apiKey().isPresent()) {
-      contextBuilder.putAuthTokens(RERANKING_API_KEY, rerankingCredentials.apiKey().get());
-    }
-    final EmbeddingGateway.ProviderRerankingRequest.ProviderContext providerContext =
-        contextBuilder.build();
-
-    // Built the Grpc request
-    final EmbeddingGateway.ProviderRerankingRequest grpcRerankingRequest =
+    var gatewayRequest =
         EmbeddingGateway.ProviderRerankingRequest.newBuilder()
-            .setRerankingRequest(rerankingRequest)
-            .setProviderContext(providerContext)
+            .setRerankingRequest(gatewayReranking)
+            .setProviderContext(contextBuilder.build())
             .build();
 
-    Uni<EmbeddingGateway.RerankingResponse> grpcRerankingResponse;
+    // TODO: XXX Why is this error handling here not part of the uni pipeline?
+    Uni<EmbeddingGateway.RerankingResponse> gatewayRerankingUni;
     try {
-      grpcRerankingResponse = rerankingGrpcService.rerank(grpcRerankingRequest);
+      gatewayRerankingUni = rerankingGrpcService.rerank(gatewayRequest);
     } catch (StatusRuntimeException e) {
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
         throw ErrorCodeV1.RERANKING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
@@ -102,21 +100,23 @@ public class RerankingEGWClient extends RerankingProvider {
       throw e;
     }
 
-    return grpcRerankingResponse
+    return gatewayRerankingUni
         .onItem()
         .transform(
-            resp -> {
-              if (resp.hasError()) {
+            gatewayResponse -> {
+              if (gatewayResponse.hasError()) {
+                // TODO : move to V2 error
                 throw new JsonApiException(
-                    ErrorCodeV1.valueOf(resp.getError().getErrorCode()),
-                    resp.getError().getErrorMessage());
+                    ErrorCodeV1.valueOf(gatewayResponse.getError().getErrorCode()),
+                    gatewayResponse.getError().getErrorMessage());
               }
-              return RerankingBatchResponse.of(
+
+              return new BatchedRerankingResponse(
                   batchId,
-                  resp.getRanksList().stream()
+                  gatewayResponse.getRanksList().stream()
                       .map(rank -> new Rank(rank.getIndex(), rank.getScore()))
                       .collect(Collectors.toList()),
-                  ModelUsage.fromGrpcResponse(resp.getModelUsage()));
+                  createModelUsage(gatewayResponse.getModelUsage()));
             });
   }
 }

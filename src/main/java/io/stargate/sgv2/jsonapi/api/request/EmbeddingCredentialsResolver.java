@@ -5,5 +5,5 @@ import io.vertx.ext.web.RoutingContext;
 /** Functional interface to resolve the embedding api key from the request context. */
 @FunctionalInterface
 public interface EmbeddingCredentialsResolver {
-  EmbeddingCredentials resolveEmbeddingCredentials(RoutingContext context);
+  EmbeddingCredentials resolveEmbeddingCredentials(String tenantId, RoutingContext context);
 }

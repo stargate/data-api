@@ -4,6 +4,7 @@ import io.quarkus.grpc.GrpcClient;
 import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.gateway.RerankingEGWClient;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -27,8 +28,8 @@ public class RerankingProviderFactory {
             requestProperties);
   }
 
-  private static final Map<String, ProviderConstructor> RERANKING_PROVIDER_CONSTRUCTOR_MAP =
-      Map.ofEntries(Map.entry("nvidia", NvidiaRerankingProvider::new));
+  private static final Map<ModelProvider, ProviderConstructor> RERANKING_PROVIDER_CTORS =
+      Map.ofEntries(Map.entry(ModelProvider.NVIDIA, NvidiaRerankingProvider::new));
 
   public RerankingProvider getConfiguration(
       Optional<String> tenant,
@@ -37,26 +38,34 @@ public class RerankingProviderFactory {
       String modelName,
       Map<String, String> authentication,
       String commandName) {
-    return addService(tenant, authToken, serviceName, modelName, authentication, commandName);
+
+    var modelProvider =
+        ModelProvider.fromApiName(serviceName)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        String.format("Unknown reranking service provider '%s'", serviceName)));
+    return addService(tenant, authToken, modelProvider, modelName, authentication, commandName);
   }
 
   private synchronized RerankingProvider addService(
       Optional<String> tenant,
       Optional<String> authToken,
-      String serviceName,
+      ModelProvider modelProvider,
       String modelName,
       Map<String, String> authentication,
       String commandName) {
-    final RerankingProvidersConfig.RerankingProviderConfig configuration =
-        rerankingConfig.providers().get(serviceName);
-    RerankingProviderFactory.ProviderConstructor ctor =
-        RERANKING_PROVIDER_CONSTRUCTOR_MAP.get(serviceName);
+
+    var rerankingProvderConfig = rerankingConfig.providers().get(modelProvider.apiName());
+
+    RerankingProviderFactory.ProviderConstructor ctor = RERANKING_PROVIDER_CTORS.get(modelProvider);
     if (ctor == null) {
       throw ErrorCodeV1.RERANKING_SERVICE_TYPE_UNAVAILABLE.toApiException(
-          "unknown service provider '%s'", serviceName);
+          "unknown service provider '%s'", modelProvider.apiName());
     }
+
     var modelConfig =
-        configuration.models().stream()
+        rerankingProvderConfig.models().stream()
             .filter(model -> model.name().equals(modelName))
             .findFirst()
             .orElseThrow(
@@ -69,7 +78,7 @@ public class RerankingProviderFactory {
       return new RerankingEGWClient(
           modelConfig.url(),
           modelConfig.properties(),
-          serviceName,
+          modelProvider,
           tenant,
           authToken,
           modelName,

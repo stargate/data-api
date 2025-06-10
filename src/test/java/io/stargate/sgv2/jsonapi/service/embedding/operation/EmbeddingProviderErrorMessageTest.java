@@ -23,7 +23,8 @@ public class EmbeddingProviderErrorMessageTest {
   private static final int DEFAULT_DIMENSIONS = 0;
 
   private final EmbeddingCredentials embeddingCredentials =
-      new EmbeddingCredentials(Optional.of("test"), Optional.empty(), Optional.empty());
+      new EmbeddingCredentials(
+          "test-tenant", Optional.of("test"), Optional.empty(), Optional.empty());
 
   @Inject EmbeddingProvidersConfig config;
 
@@ -139,7 +140,7 @@ public class EmbeddingProviderErrorMessageTest {
 
     @Test
     public void testCorrectHeaderAndBody() {
-      final EmbeddingProvider.Response result =
+      final EmbeddingProvider.BatchedEmbeddingResponse result =
           new NvidiaEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
@@ -247,7 +248,7 @@ public class EmbeddingProviderErrorMessageTest {
 
     @Test
     public void testEmptyJsonResponse() {
-      final EmbeddingProvider.Response result =
+      final EmbeddingProvider.BatchedEmbeddingResponse result =
           new NvidiaEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),

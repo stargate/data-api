@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObjec
 import io.stargate.sgv2.jsonapi.service.operation.tasks.BaseTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
@@ -266,7 +267,7 @@ public class RerankingTask<SchemaT extends TableBasedSchemaObject>
                 RerankingTaskResult.create(
                     requestTracing,
                     rerankingProvider,
-                    new RerankingProvider.RerankingResponse(List.of()),
+                    new RerankingProvider.RerankingResponse(List.of(), ModelUsage.EMPTY),
                     unrankedDocs,
                     limit));
       }

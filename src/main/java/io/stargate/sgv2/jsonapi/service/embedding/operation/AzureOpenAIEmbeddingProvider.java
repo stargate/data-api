@@ -2,22 +2,21 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
-import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.error.EmbeddingProviderErrorMapper;
+import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -31,8 +30,8 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * details of REST API being called.
  */
 public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
-  private static final String providerId = ProviderConstants.AZURE_OPENAI;
-  private final OpenAIEmbeddingProviderClient openAIEmbeddingProviderClient;
+
+  private final AzureOpenAIEmbeddingProviderClient azureClient;
 
   public AzureOpenAIEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
@@ -42,6 +41,7 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
       Map<String, Object> vectorizeServiceParameters) {
     // One special case: legacy "ada-002" model does not accept "dimension" parameter
     super(
+        ModelProvider.AZURE_OPENAI,
         requestProperties,
         baseUrl,
         modelName,
@@ -49,102 +49,121 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
         vectorizeServiceParameters);
 
     String actualUrl = replaceParameters(baseUrl, vectorizeServiceParameters);
-    openAIEmbeddingProviderClient =
+    azureClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(actualUrl))
             .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
-            .build(OpenAIEmbeddingProviderClient.class);
+            .build(AzureOpenAIEmbeddingProviderClient.class);
   }
 
+  /**
+   * The example response body is:
+   *
+   * <pre>
+   * {
+   *   "error": {
+   *     "code": "401",
+   *     "message": "Access denied due to invalid subscription key or wrong API endpoint. Make sure to provide a valid key for an active subscription and use a correct regional API endpoint for your resource."
+   *   }
+   * }
+   * </pre>
+   */
+  @Override
+  protected String errorMessageJsonPtr() {
+    return "/error/message";
+  }
+
+  @Override
+  public Uni<BatchedEmbeddingResponse> vectorize(
+      int batchId,
+      List<String> texts,
+      EmbeddingCredentials embeddingCredentials,
+      EmbeddingRequestType embeddingRequestType) {
+
+    checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
+    var azureRequest =
+        new AzureOpenAIEmbeddingRequest(
+            texts.toArray(new String[texts.size()]), modelName(), dimension);
+
+    // TODO: V2 error
+    // aaron 8 June 2025 - old code had NO comment to explain what happens if the API key is empty.
+    // NOTE: NO "Bearer " prefix with API key for Azure
+    var accessToken = embeddingCredentials.apiKey().get();
+
+    long callStartNano = System.nanoTime();
+    return retryHTTPCall(azureClient.embed(accessToken, azureRequest))
+        .onItem()
+        .transform(
+            jakartaResponse -> {
+              var azureResponse = jakartaResponse.readEntity(AzureOpenAIEmbeddingResponse.class);
+              long callDurationNano = System.nanoTime() - callStartNano;
+
+              // aaron - 10 June 2025 - previous code would silently swallow no data returned
+              // and return an empty result. If we made a request we should get a response.
+              if (azureResponse.data() == null) {
+                throw new IllegalStateException(
+                    "ModelProvider %s returned empty data for model %s"
+                        .formatted(modelProvider(), modelName()));
+              }
+
+              Arrays.sort(azureResponse.data(), (a, b) -> a.index() - b.index());
+              List<float[]> vectors =
+                  Arrays.stream(azureResponse.data())
+                      .map(AzureOpenAIEmbeddingResponse.Data::embedding)
+                      .toList();
+
+              var modelUsage =
+                  createModelUsage(
+                      embeddingCredentials.tenantId(),
+                      ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
+                      azureResponse.usage().prompt_tokens(),
+                      azureResponse.usage().total_tokens(),
+                      jakartaResponse,
+                      callDurationNano);
+              return new BatchedEmbeddingResponse(batchId, vectors, modelUsage);
+            });
+  }
+
+  /**
+   * REST client interface for the Azure Open AI Embedding Service.
+   *
+   * <p>..
+   */
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface OpenAIEmbeddingProviderClient {
-    @POST
+  @RegisterProvider(ProviderHttpInterceptor.class)
+  public interface AzureOpenAIEmbeddingProviderClient {
     // no path specified, as it is already included in the baseUri
+    @POST
     @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)
-    Uni<EmbeddingResponse> embed(
+    Uni<Response> embed(
         // API keys as "api-key", MS Entra as "Authorization: Bearer [token]
-        @HeaderParam("api-key") String accessToken, EmbeddingRequest request);
-
-    @ClientExceptionMapper
-    static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
-      String errorMessage = getErrorMessage(response);
-      return EmbeddingProviderErrorMapper.mapToAPIException(providerId, response, errorMessage);
-    }
-
-    /**
-     * Extract the error message from the response body. The example response body is:
-     *
-     * <pre>
-     * {
-     *   "error": {
-     *     "code": "401",
-     *     "message": "Access denied due to invalid subscription key or wrong API endpoint. Make sure to provide a valid key for an active subscription and use a correct regional API endpoint for your resource."
-     *   }
-     * }
-     * </pre>
-     *
-     * @param response The response body as a String.
-     * @return The error message extracted from the response body.
-     */
-    private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
-      // Get the whole response body
-      JsonNode rootNode = response.readEntity(JsonNode.class);
-      // Log the response body
-      logger.error(
-          "Error response from embedding provider '{}': {}", providerId, rootNode.toString());
-      // Extract the "message" node from the "error" node
-      JsonNode messageNode = rootNode.at("/error/message");
-      // Return the text of the "message" node, or the whole response body if it is missing
-      return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
-    }
+        @HeaderParam("api-key") String accessToken, AzureOpenAIEmbeddingRequest request);
   }
 
-  private record EmbeddingRequest(
+  /**
+   * Request structure of the Azure Open AI REST service.
+   *
+   * <p>..
+   */
+  public record AzureOpenAIEmbeddingRequest(
       String[] input,
       String model,
       @JsonInclude(value = JsonInclude.Include.NON_DEFAULT) int dimensions) {}
 
-  @JsonIgnoreProperties(ignoreUnknown = true) // ignore possible extra fields without error
-  private record EmbeddingResponse(String object, Data[] data, String model, Usage usage) {
+  /**
+   * Response structure of the Azure Open AI REST service.
+   *
+   * <p>..
+   */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  private record AzureOpenAIEmbeddingResponse(
+      String object, Data[] data, String model, Usage usage) {
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record Data(String object, int index, float[] embedding) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record Usage(int prompt_tokens, int total_tokens) {}
-  }
-
-  @Override
-  public Uni<Response> vectorize(
-      int batchId,
-      List<String> texts,
-      EmbeddingCredentials embeddingCredentials,
-      EmbeddingRequestType embeddingRequestType) {
-    checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
-    String[] textArray = new String[texts.size()];
-    EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
-
-    // NOTE: NO "Bearer " prefix with API key for Azure OpenAI
-    Uni<EmbeddingResponse> response =
-        applyRetry(
-            openAIEmbeddingProviderClient.embed(embeddingCredentials.apiKey().get(), request));
-
-    return response
-        .onItem()
-        .transform(
-            resp -> {
-              if (resp.data() == null) {
-                return Response.of(batchId, Collections.emptyList());
-              }
-              Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
-              List<float[]> vectors =
-                  Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
-              return Response.of(batchId, vectors);
-            });
-  }
-
-  @Override
-  public int maxBatchSize() {
-    return requestProperties.maxBatchSize();
   }
 }

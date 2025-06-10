@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
-import java.util.Collections;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +35,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
 
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
 
-  private String provider;
+  private ModelProvider modelProvider;
 
   private int dimension;
 
@@ -61,7 +61,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
    */
   public EmbeddingGatewayClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
-      String provider,
+      ModelProvider modelProvider,
       int dimension,
       Optional<String> tenant,
       Optional<String> authToken,
@@ -71,8 +71,11 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
       Map<String, Object> vectorizeServiceParameter,
       Map<String, String> authentication,
       String commandName) {
+    super(
+        modelProvider, requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameter);
+
     this.requestProperties = requestProperties;
-    this.provider = provider;
+    this.modelProvider = modelProvider;
     this.dimension = dimension;
     this.tenant = tenant;
     this.authToken = authToken;
@@ -84,6 +87,12 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
     this.commandName = commandName;
   }
 
+  @Override
+  protected String errorMessageJsonPtr() {
+    // not used , this is passing through
+    return "";
+  }
+
   /**
    * Vectorize the given list of texts
    *
@@ -93,48 +102,52 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
    * @return
    */
   @Override
-  public Uni<Response> vectorize(
+  public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
-    Map<String, EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue>
-        grpcVectorizeServiceParameter = new HashMap<>();
+
+    var gatewayRequestParams =
+        new HashMap<
+            String, EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue>();
+
     if (vectorizeServiceParameter != null) {
       vectorizeServiceParameter.forEach(
           (key, value) -> {
             if (value instanceof String)
-              grpcVectorizeServiceParameter.put(
+              gatewayRequestParams.put(
                   key,
                   EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
                       .setStrValue((String) value)
                       .build());
             else if (value instanceof Integer)
-              grpcVectorizeServiceParameter.put(
+              gatewayRequestParams.put(
                   key,
                   EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
                       .setIntValue((Integer) value)
                       .build());
             else if (value instanceof Float)
-              grpcVectorizeServiceParameter.put(
+              gatewayRequestParams.put(
                   key,
                   EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
                       .setFloatValue((Float) value)
                       .build());
             else if (value instanceof Boolean)
-              grpcVectorizeServiceParameter.put(
+              gatewayRequestParams.put(
                   key,
                   EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
                       .setBoolValue((Boolean) value)
                       .build());
           });
     }
-    EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest embeddingRequest =
+
+    var gatewayEmbedding =
         EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.newBuilder()
             .setModelName(modelName)
             .setDimensions(dimension)
             .setCommandName(commandName)
-            .putAllParameters(grpcVectorizeServiceParameter)
+            .putAllParameters(gatewayRequestParams)
             .setInputType(
                 embeddingRequestType == EmbeddingRequestType.INDEX
                     ? EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.InputType.INDEX
@@ -142,58 +155,59 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
             .addAllInputs(texts)
             .build();
 
-    final EmbeddingGateway.ProviderEmbedRequest.ProviderContext.Builder builder =
+    var contextBuilder =
         EmbeddingGateway.ProviderEmbedRequest.ProviderContext.newBuilder()
-            .setProviderName(provider)
+            .setProviderName(modelProvider.apiName())
             .setTenantId(tenant.orElse(DEFAULT_TENANT_ID));
-    // Add the value of `Token` in the header
-    builder.putAuthTokens(DATA_API_TOKEN, authToken.orElse(""));
-    // Add the value of `x-embedding-api-key` in the header
-    if (embeddingCredentials.apiKey().isPresent()) {
-      builder.putAuthTokens(EMBEDDING_API_KEY, embeddingCredentials.apiKey().get());
-    }
-    // Add the value of `x-embedding-access-id` in the header
-    if (embeddingCredentials.accessId().isPresent()) {
-      builder.putAuthTokens(EMBEDDING_ACCESS_ID, embeddingCredentials.accessId().get());
-    }
-    // Add the value of `x-embedding-secret-id` in the header
-    if (embeddingCredentials.secretId().isPresent()) {
-      builder.putAuthTokens(EMBEDDING_SECRET_ID, embeddingCredentials.secretId().get());
-    }
+
+    contextBuilder.putAuthTokens(DATA_API_TOKEN, authToken.orElse(""));
+    embeddingCredentials
+        .apiKey()
+        .ifPresent(v -> contextBuilder.putAuthTokens(EMBEDDING_API_KEY, v));
+    embeddingCredentials
+        .accessId()
+        .ifPresent(v -> contextBuilder.putAuthTokens(EMBEDDING_ACCESS_ID, v));
+    embeddingCredentials
+        .secretId()
+        .ifPresent(v -> contextBuilder.putAuthTokens(EMBEDDING_SECRET_ID, v));
+
     // Add the `authentication` (sync service key) in the createCollection command
     if (authentication != null) {
-      builder.putAllAuthTokens(authentication);
+      contextBuilder.putAllAuthTokens(authentication);
     }
 
-    EmbeddingGateway.ProviderEmbedRequest.ProviderContext providerContext = builder.build();
-    EmbeddingGateway.ProviderEmbedRequest providerEmbedRequest =
+    var gatewayRequest =
         EmbeddingGateway.ProviderEmbedRequest.newBuilder()
-            .setEmbeddingRequest(embeddingRequest)
-            .setProviderContext(providerContext)
+            .setEmbeddingRequest(gatewayEmbedding)
+            .setProviderContext(contextBuilder.build())
             .build();
+
+    // TODO: XXX Why is this error handling here not part of the uni pipeline?
     Uni<EmbeddingGateway.EmbeddingResponse> embeddingResponse;
     try {
-      embeddingResponse = embeddingService.embed(providerEmbedRequest);
+      embeddingResponse = embeddingService.embed(gatewayRequest);
     } catch (StatusRuntimeException e) {
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
         throw ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
       }
       throw e;
     }
+
     return embeddingResponse
         .onItem()
         .transform(
-            resp -> {
-              if (resp.hasError()) {
+            gatewayResponse -> {
+              // TODO : move to V2 error
+              if (gatewayResponse.hasError()) {
                 throw new JsonApiException(
-                    ErrorCodeV1.valueOf(resp.getError().getErrorCode()),
-                    resp.getError().getErrorMessage());
+                    ErrorCodeV1.valueOf(gatewayResponse.getError().getErrorCode()),
+                    gatewayResponse.getError().getErrorMessage());
               }
-              if (resp.getEmbeddingsList() == null) {
-                return Response.of(batchId, Collections.emptyList());
-              }
+              // aaron - 10 June 2025 - previous code would silently swallow no data returned
+              // but grpc will make sure resp.getEmbeddingsList() is never null
+
               final List<float[]> vectors =
-                  resp.getEmbeddingsList().stream()
+                  gatewayResponse.getEmbeddingsList().stream()
                       .map(
                           data -> {
                             float[] embedding = new float[data.getEmbeddingCount()];
@@ -203,7 +217,8 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
                             return embedding;
                           })
                       .toList();
-              return Response.of(batchId, vectors);
+              return new BatchedEmbeddingResponse(
+                  batchId, vectors, createModelUsage(gatewayResponse.getModelUsage()));
             });
   }
 

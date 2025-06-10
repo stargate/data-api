@@ -5,28 +5,28 @@ option java_package = "io.stargate.embedding.gateway";
 package stargate;
 // The request message that is sent to embedding gateway gRPC API
 message ProviderEmbedRequest {
-  ProviderContext 			provider_context = 1;
-  EmbeddingRequest			embedding_request = 2;
+  ProviderContext      provider_context = 1;
+  EmbeddingRequest      embedding_request = 2;
 
   // The provider context message for the embedding gateway gRPC API
   message ProviderContext {
-    string 					          provider_name = 1;
-    string  					        tenant_id = 2;
-    map<string, string>  			auth_tokens = 3;
+    string                    provider_name = 1;
+    string                    tenant_id = 2;
+    map<string, string>        auth_tokens = 3;
   }
 
   // The request message for the embedding gateway gRPC API
   message EmbeddingRequest {
     // The model name for the embedding request
-    string 					      model_name = 1;
+    string                model_name = 1;
     // The dimensions of the embedding, some providers supports multiple dimensions
-    optional int32 				dimensions = 2;
+    optional int32        dimensions = 2;
     // The parameter value, used when provided needs user specified parameters
-    map<string, ParameterValue>  	parameters = 3;
+    map<string, ParameterValue>    parameters = 3;
     // The input type for the embedding request
-    InputType 					  input_type = 4;
+    InputType            input_type = 4;
     // The input data that needs to be vectorized
-    repeated string 			inputs = 5;
+    repeated string      inputs = 5;
     // The command contains vectorize
     string command_name = 6;
 
@@ -34,10 +34,10 @@ message ProviderEmbedRequest {
     // The parameter value, used when provided needs user specified parameters
     message ParameterValue {
       oneof ParameterValueOneOf {
-        string 	str_value = 1;
-        int32 	int_value = 2;
-        float 	float_value = 3;
-        bool 		bool_value = 4;
+        string  str_value = 1;
+        int32  int_value = 2;
+        float  float_value = 3;
+        bool    bool_value = 4;
       }
     }
 
@@ -53,16 +53,16 @@ message ProviderEmbedRequest {
 
 // The response message for the embedding gateway gRPC API if successful
 message EmbeddingResponse {
-  ModelUsage 					modelUsage = 1;
-  repeated FloatEmbedding		embeddings = 2;
+  ModelUsage modelUsage = 1;
+  repeated FloatEmbedding embeddings = 2;
   ErrorResponse error = 3;
 
   // The embedding response message
   message FloatEmbedding {
     // The index of the embedding corresponding to the input
-    int32 				index = 1;
+    int32 index = 1;
     // The embedding values
-    repeated float			embedding = 2;
+    repeated float embedding = 2;
   }
 
   // The error response message for the embedding gateway gRPC API
@@ -78,7 +78,7 @@ message GetSupportedProvidersRequest {}
 
 // The response message for the get supported providers gRPC API if successful
 message GetSupportedProvidersResponse {
-  map<string, ProviderConfig>  	supportedProviders = 1;
+  map<string, ProviderConfig>    supportedProviders = 1;
   ErrorResponse error = 2;
 
   // ProviderConfig message represents configuration for an embedding provider.
@@ -193,20 +193,20 @@ service EmbeddingService {
 
 // The reranking request message that is sent to embedding gateway gRPC API
 message ProviderRerankingRequest {
-  ProviderContext 			provider_context = 1;
-  RerankingRequest			Reranking_request = 2;
+  ProviderContext      provider_context = 1;
+  RerankingRequest      Reranking_request = 2;
   message ProviderContext {
-    string 					          provider_name = 1;
-    string  					        tenant_id = 2;
-    map<string, string>  			auth_tokens = 3;
+    string                    provider_name = 1;
+    string                    tenant_id = 2;
+    map<string, string>        auth_tokens = 3;
   }
   message RerankingRequest {
     // The model name for the reranking request
-    string 					      model_name = 1;
+    string                model_name = 1;
     // The query text for the reranking request
-    string 					      query = 2;
+    string                query = 2;
     // The passages texts for the reranking request
-    repeated string 			passages = 3;
+    repeated string      passages = 3;
     // The command contains reranking
     string                command_name = 4;
   }
@@ -215,16 +215,16 @@ message ProviderRerankingRequest {
 
 // The reranking response message for the embedding gateway gRPC API if successful
 message RerankingResponse {
-  ModelUsage 					  modelUsage = 1;
-  repeated Rank		  ranks = 2;
-  ErrorResponse     error = 3;
+  ModelUsage modelUsage = 1;
+  repeated Rank ranks = 2;
+  ErrorResponse error = 3;
 
   // Reranking result for each passage
   message Rank {
     // The rank index of the passage
-    int32 	  index = 1;
+    int32    index = 1;
     // The rank score value of the passage
-    float	    score = 2;
+    float      score = 2;
   }
 
   message ErrorResponse {
@@ -238,7 +238,7 @@ message GetSupportedRerankingProvidersRequest {}
 
 // The response message for the get supported reranking providers gRPC API if successful
 message GetSupportedRerankingProvidersResponse {
-  map<string, ProviderConfig>  	supportedProviders = 1;
+  map<string, ProviderConfig>    supportedProviders = 1;
   ErrorResponse error = 2;
 
   // ProviderConfig message represents configuration for an reranking provider.
@@ -296,20 +296,34 @@ service RerankingService {
   rpc GetSupportedRerankingProviders (GetSupportedRerankingProvidersRequest) returns (GetSupportedRerankingProvidersResponse){}
 }
 
-
-
-// Common messages definition shared by both embedding and reranking
-
-// The usage statistics for the embedding gateway gRPC API on successful response from the provider
+// Common structure for all model usage tracking, is included in response messages
 message ModelUsage {
-  string 				provider_type = 1;
-  string 				provider_name = 2;
-  string 				model_name = 3;
-  string  			tenant_id = 4;
-  int32 				prompt_tokens = 5;
-  int32 				total_tokens = 6;
-  int32 				request_bytes = 7;
-  int32					response_bytes = 8;
-  int32					call_duration_us = 9;
+  string      model_provider = 1;
+  ModelType   model_type = 2;
+  string      model_name = 3;
+  string      tenant_id = 4;
+  InputType   input_type = 5;
+  // tokens sent in the request
+  int32       prompt_tokens = 6;
+  // total tokens the request will be billed for
+  int32       total_tokens = 7;
+  // number of bytes in the outgoing http request sent to the provider
+  int32       request_bytes = 8;
+  // number of bytes in the response received from the provider
+  int32       response_bytes = 9;
+  int64       call_duration_nanos = 10;
+
+  // If the model usage was for indexing data or searching data
+  enum InputType {
+    INPUT_TYPE_UNSPECIFIED = 0;
+    INDEX = 1;
+    SEARCH = 2;
+  }
+
+  enum ModelType {
+    MODEL_TYPE_UNSPECIFIED = 0;
+    EMBEDDING = 1;
+    RERANKING = 2;
+  }
 }
 

@@ -3,10 +3,11 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation.test;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+import java.util.*;
 
 /**
  * This is a test implementation of the EmbeddingProvider interface. It is used for
@@ -32,7 +33,23 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
   private int dimension;
 
   public CustomITEmbeddingProvider(int dimension) {
+    // aaron 9 June 2025 - refactoring , I think none of the super class is used, so passing dummy
+    // values
+    super(
+        ModelProvider.CUSTOM,
+        new EmbeddingProviderConfigStore.RequestProperties(
+            1, 1, 1, 1, 1, Optional.empty(), Optional.empty(), 1),
+        "",
+        "",
+        1,
+        Map.of());
+
     this.dimension = dimension;
+  }
+
+  @Override
+  protected String errorMessageJsonPtr() {
+    return "";
   }
 
   static {
@@ -68,16 +85,30 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
   }
 
   @Override
-  public Uni<Response> vectorize(
+  public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+
     List<float[]> response = new ArrayList<>(texts.size());
-    if (texts.size() == 0) return Uni.createFrom().item(Response.of(batchId, response));
-    if (!embeddingCredentials.apiKey().isPresent()
-        || !embeddingCredentials.apiKey().get().equals(TEST_API_KEY))
+    if (texts.isEmpty()) {
+      var modelUsage =
+          createModelUsage(
+              embeddingCredentials.tenantId(),
+              ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
+              0,
+              0,
+              0,
+              0,
+              0);
+      return Uni.createFrom().item(new BatchedEmbeddingResponse(batchId, response, modelUsage));
+    }
+    if (embeddingCredentials.apiKey().isEmpty()
+        || !embeddingCredentials.apiKey().get().equals(TEST_API_KEY)) {
       return Uni.createFrom().failure(new RuntimeException("Invalid API Key"));
+    }
+
     for (String text : texts) {
       if (dimension == 5) {
         if (TEST_DATA_DIMENSION_5.containsKey(text)) {
@@ -94,7 +125,17 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
         }
       }
     }
-    return Uni.createFrom().item(Response.of(batchId, response));
+
+    var modelUsage =
+        createModelUsage(
+            embeddingCredentials.tenantId(),
+            ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
+            0,
+            0,
+            0,
+            0,
+            0);
+    return Uni.createFrom().item(new BatchedEmbeddingResponse(batchId, response, modelUsage));
   }
 
   @Override

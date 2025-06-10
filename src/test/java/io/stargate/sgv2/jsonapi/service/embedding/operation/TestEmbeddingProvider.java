@@ -8,6 +8,9 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
@@ -16,16 +19,29 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class TestEmbeddingProvider extends EmbeddingProvider {
 
-  private TestConstants testConstants = new TestConstants();
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
+
+  public TestEmbeddingProvider() {
+    super(
+        ModelProvider.CUSTOM,
+        new EmbeddingProviderConfigStore.RequestProperties(
+            3, 5, 5000, 5, 0.5, Optional.empty(), Optional.empty(), 100),
+        "http://mock.com",
+        "mockModel",
+        1024,
+        Map.of());
+  }
 
   public CommandContext<CollectionSchemaObject> commandContextWithVectorize() {
-    return testConstants.collectionContext(
+    return TEST_CONSTANTS.collectionContext(
         "testCommand",
         new CollectionSchemaObject(
-            testConstants.SCHEMA_OBJECT_NAME,
+            TEST_CONSTANTS.SCHEMA_OBJECT_NAME,
             null,
             IdConfig.defaultIdConfig(),
             VectorConfig.fromColumnDefinitions(
@@ -44,7 +60,13 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
   }
 
   @Override
-  public Uni<Response> vectorize(
+  protected String errorMessageJsonPtr() {
+    // not used in tests
+    return "";
+  }
+
+  @Override
+  public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
@@ -55,7 +77,17 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
           if (t.equals("return 1s")) response.add(new float[] {1.0f, 1.0f, 1.0f});
           else response.add(new float[] {0.25f, 0.25f, 0.25f});
         });
-    return Uni.createFrom().item(Response.of(batchId, response));
+
+    var modelUsage =
+        createModelUsage(
+            embeddingCredentials.tenantId(),
+            ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
+            0,
+            0,
+            0,
+            0,
+            0);
+    return Uni.createFrom().item(new BatchedEmbeddingResponse(batchId, response, modelUsage));
   }
 
   @Override

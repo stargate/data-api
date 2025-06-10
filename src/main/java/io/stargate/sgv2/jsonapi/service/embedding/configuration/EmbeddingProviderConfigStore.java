@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import java.util.Map;
 import java.util.Optional;
 
@@ -27,8 +28,8 @@ public interface EmbeddingProviderConfigStore {
 
     public static ServiceConfig custom(Optional<Class<?>> implementationClass) {
       return new ServiceConfig(
-          ProviderConstants.CUSTOM,
-          ProviderConstants.CUSTOM,
+          ModelProvider.CUSTOM.apiName(),
+          ModelProvider.CUSTOM.apiName(),
           null,
           implementationClass,
           null,
@@ -56,6 +57,7 @@ public interface EmbeddingProviderConfigStore {
       // `maxBatchSize` is the maximum number of documents to be sent in a single request to be
       // embedding provider
       int maxBatchSize) {
+
     public static RequestProperties of(
         int atMostRetries,
         int initialBackOffMillis,

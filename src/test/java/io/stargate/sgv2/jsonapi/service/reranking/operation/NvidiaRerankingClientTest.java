@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.reranking;
+package io.stargate.sgv2.jsonapi.service.reranking.operation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -11,9 +11,6 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
-import io.stargate.sgv2.jsonapi.service.provider.ProviderType;
-import io.stargate.sgv2.jsonapi.service.reranking.operation.NvidiaRerankingProvider;
-import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.List;
 import java.util.Optional;
@@ -28,8 +25,8 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class NvidiaRerankingClientTest {
 
-  private static final RerankingCredentials RERANK_CREDENTIALS =
-      new RerankingCredentials(Optional.of("mocked data api token"));
+  private final RerankingCredentials RERANK_CREDENTIALS =
+      new RerankingCredentials("test-tenant", Optional.of("mocked data api token"));
 
   @Test
   void handleValidResponse() {
@@ -42,17 +39,10 @@ public class NvidiaRerankingClientTest {
                       .mapToObj(i -> new RerankingProvider.Rank(i, i == 0 ? 0.1f : 1f))
                       .toList();
               return Uni.createFrom()
-                  .item(
-                      new RerankingProvider.RerankingBatchResponse(
-                          1,
-                          ranks,
-                          new ModelUsage(
-                              ProviderType.RERANKING_PROVIDER,
-                              "nvidia",
-                              "llama-3.2-nv-rerankqa-1b-v2")));
+                  .item(new RerankingProvider.BatchedRerankingResponse(1, ranks, ModelUsage.EMPTY));
             });
 
-    final RerankingProvider.RerankingBatchResponse response =
+    final RerankingProvider.BatchedRerankingResponse response =
         nvidiaRerankingProvider
             .rerank(1, "apple", List.of("orange", "apple"), RERANK_CREDENTIALS)
             .subscribe()

@@ -25,13 +25,14 @@ public class OpenAiEmbeddingClientTest {
   @Inject EmbeddingProvidersConfig config;
 
   private final EmbeddingCredentials embeddingCredentials =
-      new EmbeddingCredentials(Optional.of("test"), Optional.empty(), Optional.empty());
+      new EmbeddingCredentials(
+          "test-tenant", Optional.of("test"), Optional.empty(), Optional.empty());
 
   @Nested
   class OpenAiEmbeddingTest {
     @Test
     public void happyPath() throws Exception {
-      final EmbeddingProvider.Response response =
+      final EmbeddingProvider.BatchedEmbeddingResponse response =
           new OpenAIEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
@@ -49,7 +50,7 @@ public class OpenAiEmbeddingClientTest {
               .awaitItem()
               .getItem();
       assertThat(response)
-          .isInstanceOf(EmbeddingProvider.Response.class)
+          .isInstanceOf(EmbeddingProvider.BatchedEmbeddingResponse.class)
           .satisfies(
               r -> {
                 assertThat(r.embeddings()).isNotNull();
@@ -60,7 +61,7 @@ public class OpenAiEmbeddingClientTest {
 
     @Test
     public void onlyToken() throws Exception {
-      final EmbeddingProvider.Response response =
+      final EmbeddingProvider.BatchedEmbeddingResponse response =
           new OpenAIEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
@@ -78,7 +79,7 @@ public class OpenAiEmbeddingClientTest {
               .awaitItem()
               .getItem();
       assertThat(response)
-          .isInstanceOf(EmbeddingProvider.Response.class)
+          .isInstanceOf(EmbeddingProvider.BatchedEmbeddingResponse.class)
           .satisfies(
               r -> {
                 assertThat(r.embeddings()).isNotNull();

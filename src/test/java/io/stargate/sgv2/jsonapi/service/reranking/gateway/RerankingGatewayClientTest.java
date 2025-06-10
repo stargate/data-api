@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.reranking;
+package io.stargate.sgv2.jsonapi.service.reranking.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -14,9 +14,8 @@ import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
-import io.stargate.sgv2.jsonapi.service.provider.ProviderType;
-import io.stargate.sgv2.jsonapi.service.reranking.gateway.RerankingEGWClient;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+import io.stargate.sgv2.jsonapi.service.provider.ModelType;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.List;
@@ -36,7 +35,7 @@ public class RerankingGatewayClientTest {
   public static final String TESTING_COMMAND_NAME = "test_command";
 
   private static final RerankingCredentials RERANK_CREDENTIALS =
-      new RerankingCredentials(Optional.of("mocked reranking api key"));
+      new RerankingCredentials("test-tenant", Optional.of("mocked reranking api key"));
 
   @Test
   void handleValidResponse() {
@@ -60,8 +59,8 @@ public class RerankingGatewayClientTest {
     // mock model usage
     builder.setModelUsage(
         EmbeddingGateway.ModelUsage.newBuilder()
-            .setProviderType(ProviderType.RERANKING_PROVIDER.name())
-            .setProviderName(ProviderConstants.NVIDIA)
+            .setModelType(EmbeddingGateway.ModelUsage.ModelType.RERANKING)
+            .setModelProvider(ModelProvider.NVIDIA.apiName())
             .setModelName("llama-3.2-nv-rerankqa-1b-v2")
             .setPromptTokens(10)
             .setTotalTokens(20)
@@ -75,7 +74,7 @@ public class RerankingGatewayClientTest {
         new RerankingEGWClient(
             "https://xxx",
             null,
-            "xxx",
+            ModelProvider.NVIDIA,
             Optional.of("default"),
             Optional.of("default"),
             "xxx",
@@ -83,7 +82,7 @@ public class RerankingGatewayClientTest {
             Map.of(),
             TESTING_COMMAND_NAME);
 
-    final RerankingProvider.RerankingBatchResponse response =
+    final RerankingProvider.BatchedRerankingResponse response =
         rerankEGWClient
             .rerank(1, "apple", List.of("orange", "apple"), RERANK_CREDENTIALS)
             .subscribe()
@@ -101,13 +100,13 @@ public class RerankingGatewayClientTest {
     assertThat(response.ranks().get(1).score()).isEqualTo(0.1f);
 
     assertThat(response.modelUsage()).isNotNull();
-    assertThat(response.modelUsage().providerType).isEqualTo(ProviderType.RERANKING_PROVIDER);
-    assertThat(response.modelUsage().provider).isEqualTo(ProviderConstants.NVIDIA);
-    assertThat(response.modelUsage().model).isEqualTo("llama-3.2-nv-rerankqa-1b-v2");
-    assertThat(response.modelUsage().getPromptTokens()).isEqualTo(10);
-    assertThat(response.modelUsage().getTotalTokens()).isEqualTo(20);
-    assertThat(response.modelUsage().getRequestBytes()).isEqualTo(100);
-    assertThat(response.modelUsage().getResponseBytes()).isEqualTo(200);
+    assertThat(response.modelUsage().modelType()).isEqualTo(ModelType.RERANKING);
+    assertThat(response.modelUsage().modelProvider()).isEqualTo(ModelProvider.NVIDIA);
+    assertThat(response.modelUsage().modelName()).isEqualTo("llama-3.2-nv-rerankqa-1b-v2");
+    assertThat(response.modelUsage().promptTokens()).isEqualTo(10);
+    assertThat(response.modelUsage().totalTokens()).isEqualTo(20);
+    assertThat(response.modelUsage().requestBytes()).isEqualTo(100);
+    assertThat(response.modelUsage().responseBytes()).isEqualTo(200);
   }
 
   @Test
@@ -130,7 +129,7 @@ public class RerankingGatewayClientTest {
         new RerankingEGWClient(
             "https://xxx",
             null,
-            "xxx",
+            ModelProvider.NVIDIA,
             Optional.of("default"),
             Optional.of("default"),
             "xxx",

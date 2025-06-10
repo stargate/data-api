@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Arrays;
 import java.util.List;
@@ -30,7 +31,7 @@ public class EmbeddingGatewayClientTest {
   public static final String TESTING_COMMAND_NAME = "test_command";
 
   private final EmbeddingCredentials embeddingCredentials =
-      new EmbeddingCredentials(Optional.empty(), Optional.empty(), Optional.empty());
+      new EmbeddingCredentials("test-tenant", Optional.empty(), Optional.empty(), Optional.empty());
 
   // for [data-api#1088] (NPE for VoyageAI provider)
   @Test
@@ -77,7 +78,7 @@ public class EmbeddingGatewayClientTest {
         new EmbeddingGatewayClient(
             EmbeddingProviderConfigStore.RequestProperties.of(
                 5, 5, 5, 5, 0.5, Optional.empty(), Optional.empty(), 2048),
-            "openai",
+            ModelProvider.OPENAI,
             1536,
             Optional.of("default"),
             Optional.of("default"),
@@ -88,7 +89,7 @@ public class EmbeddingGatewayClientTest {
             Map.of(),
             TESTING_COMMAND_NAME);
 
-    final EmbeddingProvider.Response response =
+    final EmbeddingProvider.BatchedEmbeddingResponse response =
         embeddingGatewayClient
             .vectorize(
                 1,
@@ -127,7 +128,7 @@ public class EmbeddingGatewayClientTest {
         new EmbeddingGatewayClient(
             EmbeddingProviderConfigStore.RequestProperties.of(
                 5, 5, 5, 5, 0.5, Optional.empty(), Optional.empty(), 2048),
-            "openai",
+            ModelProvider.OPENAI,
             1536,
             Optional.of("default"),
             Optional.of("default"),

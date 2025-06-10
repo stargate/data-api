@@ -108,14 +108,14 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
 
     protected final EmbeddingTask<?> embeddingTask;
     protected final CommandContext<?> commandContext;
-    protected final BaseTask.UniSupplier<EmbeddingProvider.Response> supplier;
+    protected final BaseTask.UniSupplier<EmbeddingProvider.BatchedEmbeddingResponse> supplier;
     protected final List<EmbeddingDeferredAction> actions;
     private final List<String> vectorizeTexts;
 
     EmbeddingResultSupplier(
         EmbeddingTask<?> embeddingTask,
         CommandContext<?> commandContext,
-        BaseTask.UniSupplier<EmbeddingProvider.Response> supplier,
+        BaseTask.UniSupplier<EmbeddingProvider.BatchedEmbeddingResponse> supplier,
         List<EmbeddingDeferredAction> actions,
         List<String> vectorizeTexts) {
       this.embeddingTask = embeddingTask;
@@ -178,7 +178,7 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
     static EmbeddingTaskResult create(
         EmbeddingTask<?> embeddingTask,
         CommandContext<?> commandContext,
-        EmbeddingProvider.Response providerResponse,
+        EmbeddingProvider.BatchedEmbeddingResponse providerResponse,
         List<EmbeddingDeferredAction> actions) {
 
       commandContext

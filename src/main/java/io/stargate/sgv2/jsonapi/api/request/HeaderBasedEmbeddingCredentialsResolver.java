@@ -23,12 +23,13 @@ public class HeaderBasedEmbeddingCredentialsResolver implements EmbeddingCredent
         Objects.requireNonNull(secretIdHeaderName, "Secret Id header name cannot be null");
   }
 
-  public EmbeddingCredentials resolveEmbeddingCredentials(RoutingContext context) {
+  public EmbeddingCredentials resolveEmbeddingCredentials(String tenantId, RoutingContext context) {
     HttpServerRequest request = context.request();
     String headerValue = request.getHeader(this.tokenHeaderName);
     String accessId = request.getHeader(this.accessIdHeaderName);
     String secretId = request.getHeader(this.secretIdHeaderName);
     return new EmbeddingCredentials(
+        tenantId,
         Optional.ofNullable(headerValue),
         Optional.ofNullable(accessId),
         Optional.ofNullable(secretId));

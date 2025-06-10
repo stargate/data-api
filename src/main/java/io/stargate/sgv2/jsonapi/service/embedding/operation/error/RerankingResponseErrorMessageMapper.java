@@ -17,6 +17,7 @@ public class RerankingResponseErrorMessageMapper {
    */
   public static RuntimeException mapToAPIException(
       String providerName, Response response, String message) {
+
     // Status code == 408 and 504 for timeout
     if (response.getStatus() == Response.Status.REQUEST_TIMEOUT.getStatusCode()
         || response.getStatus() == Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {

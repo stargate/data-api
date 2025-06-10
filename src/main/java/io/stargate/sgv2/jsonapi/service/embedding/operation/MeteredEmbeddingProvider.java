@@ -7,6 +7,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,11 +33,27 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
       RequestContext dataApiRequestInfo,
       EmbeddingProvider embeddingProvider,
       String commandName) {
+    // aaron 9 June 2025 - we need to remove this "metered" design pattern, for now just pass the
+    // config through
+    super(
+        embeddingProvider.modelProvider(),
+        embeddingProvider.requestProperties,
+        embeddingProvider.baseUrl,
+        embeddingProvider.modelName(),
+        embeddingProvider.dimension,
+        embeddingProvider.vectorizeServiceParameters);
+
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
     this.dataApiRequestInfo = dataApiRequestInfo;
     this.embeddingProvider = embeddingProvider;
     this.commandName = commandName;
+  }
+
+  @Override
+  protected String errorMessageJsonPtr() {
+    // not used we are just passing through
+    return "";
   }
 
   /**
@@ -49,11 +66,12 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
    * @return a {@link Uni} that will provide the list of vectorized texts, as arrays of floats.
    */
   @Override
-  public Uni<Response> vectorize(
+  public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+
     // String bytes metrics for vectorize
     DistributionSummary ds =
         DistributionSummary.builder(jsonApiMetricsConfig.vectorizeInputBytesMetrics())
@@ -91,11 +109,18 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
               Collections.sort(
                   vectorizedBatches, (a, b) -> Integer.compare(a.batchId(), b.batchId()));
               List<float[]> result = new ArrayList<>();
-              for (Response vectorizedBatch : vectorizedBatches) {
+
+              ModelUsage aggregatedModelUsage = null;
+              for (BatchedEmbeddingResponse vectorizedBatch : vectorizedBatches) {
+
+                aggregatedModelUsage =
+                    aggregatedModelUsage == null
+                        ? vectorizedBatch.modelUsage()
+                        : aggregatedModelUsage.merge(vectorizedBatch.modelUsage());
                 // create the final ordered result
                 result.addAll(vectorizedBatch.embeddings());
               }
-              return Response.of(1, result);
+              return new BatchedEmbeddingResponse(1, result, aggregatedModelUsage);
             })
         .invoke(
             () ->
