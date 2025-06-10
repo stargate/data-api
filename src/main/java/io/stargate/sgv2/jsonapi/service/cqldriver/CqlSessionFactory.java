@@ -60,7 +60,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
         cassandraEndPoints,
         cassandraPort,
         schemaChangeListeners,
-        CqlSessionBuilder::new);
+        TenantAwareCqlSessionBuilder::new);
   }
 
   /**
@@ -143,6 +143,10 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
             .withClassLoader(Thread.currentThread().getContextClassLoader()) // TODO: EXPLAIN
             .withConfigLoader(configLoader)
             .withApplicationName(applicationName);
+
+    if (builder instanceof TenantAwareCqlSessionBuilder tenantAwareBuilder) {
+      tenantAwareBuilder.withTenantId(tenantId);
+    }
 
     for (var listener : schemaChangeListeners) {
       builder = builder.addSchemaChangeListener(listener);
