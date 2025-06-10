@@ -117,19 +117,18 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
       if (vectorFloats == null) {
         if (!innerValue.isArray()) {
           throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
-        } else {
-          ArrayNode arrayNode = (ArrayNode) innerValue;
-          vectorFloats = new float[arrayNode.size()];
-          if (arrayNode.isEmpty()) {
-            throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+        }
+        ArrayNode arrayNode = (ArrayNode) innerValue;
+        vectorFloats = new float[arrayNode.size()];
+        if (arrayNode.isEmpty()) {
+          throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+        }
+        for (int i = 0; i < arrayNode.size(); i++) {
+          JsonNode element = arrayNode.get(i);
+          if (!element.isNumber()) {
+            throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
           }
-          for (int i = 0; i < arrayNode.size(); i++) {
-            JsonNode element = arrayNode.get(i);
-            if (!element.isNumber()) {
-              throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
-            }
-            vectorFloats[i] = element.floatValue();
-          }
+          vectorFloats[i] = element.floatValue();
         }
       }
       return SortExpression.vsearch(vectorFloats);

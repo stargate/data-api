@@ -41,7 +41,8 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
       }
 
       return new SortClause(
-          Collections.singletonList(SortExpression.bm25Search(lexicalValue.textValue())));
+          Collections.singletonList(
+              SortExpression.collectionLexicalSort(lexicalValue.textValue())));
     }
 
     // Otherwise, use shared default processing

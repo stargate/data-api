@@ -296,7 +296,8 @@ class FindAndRerankOperationBuilder {
     }
 
     var bm25SortTerm = command.sortClause().lexicalSort();
-    var bm25SortClause = new SortClause(List.of(SortExpression.bm25Search(bm25SortTerm)));
+    var bm25SortClause =
+        new SortClause(List.of(SortExpression.collectionLexicalSort(bm25SortTerm)));
     var bm25ReadCommand =
         new FindCommand(
             command.filterDefinition(),

@@ -34,9 +34,15 @@ public record SortExpression(
     return new SortExpression(VECTOR_EMBEDDING_TEXT_FIELD, false, null, vectorize, null);
   }
 
-  public static SortExpression bm25Search(String bm25Query) {
-    Objects.requireNonNull(bm25Query, "BM25 query cannot be null");
+  public static SortExpression collectionLexicalSort(String bm25Query) {
+    Objects.requireNonNull(bm25Query, "Lexical query cannot be null");
     return new SortExpression(LEXICAL_CONTENT_FIELD, false, null, null, bm25Query);
+  }
+
+  public static SortExpression tableLexicalSort(String path, String bm25Query) {
+    Objects.requireNonNull(path, "Path cannot be null");
+    Objects.requireNonNull(bm25Query, "Lexical query cannot be null");
+    return new SortExpression(path, false, null, null, bm25Query);
   }
 
   /**
