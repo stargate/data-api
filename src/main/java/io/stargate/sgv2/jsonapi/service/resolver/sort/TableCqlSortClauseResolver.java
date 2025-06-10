@@ -77,7 +77,6 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     var whereCQLClause =
         TableWhereCQLClause.forSelect(
             commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command));
-
     return vectorAndVectorizeSorts.isEmpty()
         ? resolveNonVectorSort(
             commandContext, whereCQLClause.target(), sortClause, sortColumns, command.skip())
@@ -86,7 +85,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
   }
 
   /**
-   * We have atleast one sort expression, and none of them are vector sorts.
+   * We have at least one sort expression, and none of them are vector sorts.
    *
    * <p>If the sort uses the clustering keys in the correct way according to CQL, then we can use
    * the CQL Order By to push the sorting to the database. See {@link
