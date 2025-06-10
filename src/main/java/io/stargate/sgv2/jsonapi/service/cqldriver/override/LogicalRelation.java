@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.override;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import net.jcip.annotations.Immutable;
 
 /**
  * This class is to add AND/OR relation support to java driver, and it is a temporary override
@@ -12,7 +11,6 @@ import net.jcip.annotations.Immutable;
  * does not support this as of now. See <a
  * href="https://issues.apache.org/jira/browse/CASSJAVA-47">Ticket CASSJAVA-47</a>.
  */
-@Immutable
 public class LogicalRelation implements Relation {
   public static final LogicalRelation AND = new LogicalRelation("AND");
   public static final LogicalRelation OR = new LogicalRelation("OR");
