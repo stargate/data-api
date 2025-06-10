@@ -2,10 +2,13 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
+import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.hasSize;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -63,20 +66,35 @@ public class LexicalSortTableIntegrationTest extends AbstractTableIntegrationTes
           TABLE_NAME,
           Map.of(
               "id", "2",
-              "value", "First value",
+              "value", "Second value",
               "tags", "tag2"));
       insertOneInTable(
           TABLE_NAME,
           Map.of(
               "id", "3",
-              "value", "First value",
+              "value", "Third value",
               "tags", "tag3"));
       insertOneInTable(
           TABLE_NAME,
           Map.of(
               "id", "4",
-              "value", "First value",
+              "value", "Fourth value",
               "tags", "tag1 tag2 tag3"));
+    }
+  }
+
+  @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
+  @Nested
+  @Order(2)
+  class HappyLexicalSort {
+    @Test
+    void simpleSort() {
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .find(null, List.of("id"), Map.of("tags", "tag2"))
+          .wasSuccessful()
+          .body("data.documents", hasSize(2))
+          .body("data.documents", jsonEquals(List.of(Map.of("id", "2"), Map.of("id", "4"))));
     }
   }
 }
