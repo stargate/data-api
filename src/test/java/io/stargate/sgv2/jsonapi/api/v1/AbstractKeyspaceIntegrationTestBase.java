@@ -44,6 +44,8 @@ import org.junit.jupiter.api.TestInstance;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractKeyspaceIntegrationTestBase {
+  // Property to disable lexical search tests when lexical/BM25 functionality not available
+  public static final String TEST_PROP_LEXICAL_DISABLED = "testing.db.lexical-disabled";
 
   // keyspace automatically created in this test
   protected static final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
