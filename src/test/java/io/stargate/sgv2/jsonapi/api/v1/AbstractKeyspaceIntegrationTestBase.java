@@ -234,10 +234,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
 
   public static void checkDriverMetricsTenantId() {
     String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-    // Example line
-    // session_cql_requests_seconds{module="sgv2-jsonapi",session="default_tenant",quantile="0.5",}
-    // 0.238944256
-
+    List<String> lines = metrics.lines().toList();
     Optional<String> sessionLevelDriverMetricTenantId =
         metrics
             .lines()
@@ -246,13 +243,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
                     line.startsWith("session_cql_requests_seconds") && line.contains("session="))
             .findFirst();
     if (!sessionLevelDriverMetricTenantId.isPresent()) {
-      List<String> lines = metrics.lines().toList();
-      long buckets =
-          lines.stream().filter(line -> line.startsWith("session_cql_requests_seconds")).count();
-      fail(
-          String.format(
-              "No tenant id found in any of 'session_cql_requests_seconds' entries (%d buckets; %d log lines)",
-              buckets, lines.size()));
+      fail("/metrics: " + String.join("\n", lines));
     }
   }
 
