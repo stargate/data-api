@@ -168,7 +168,7 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
     }
     if (!innerValue.isInt()) {
       throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-          "Sort ordering value should be integer `1` or `-1`; or Array of numbers (Vector); or String: was `%s`",
+          "Sort ordering value should be integer `1` or `-1`; or Array of numbers (Vector); or String but was: %s",
           JsonUtil.nodeTypeAsString(innerValue));
     }
     if (!(innerValue.intValue() == 1 || innerValue.intValue() == -1)) {
