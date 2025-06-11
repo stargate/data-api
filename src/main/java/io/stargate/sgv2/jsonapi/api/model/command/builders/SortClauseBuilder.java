@@ -77,7 +77,7 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
   }
 
   protected abstract SortExpression buildSortExpression(
-      String path, JsonNode innerValue, int totalFields);
+      String path, JsonNode innerValue, int sortExpressionCount);
 
   /**
    * Helper method to build a regular sort expression (not lexical, vector or vectorize): called by

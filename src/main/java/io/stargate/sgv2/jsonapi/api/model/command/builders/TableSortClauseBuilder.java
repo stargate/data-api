@@ -41,7 +41,7 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
   }
 
   @Override
-  protected SortExpression buildSortExpression(String path, JsonNode innerValue, int totalFields) {
+  protected SortExpression buildSortExpression(String path, JsonNode innerValue, int sortExpressionCount) {
     float[] vectorFloats = tryDecodeBinaryVector(path, innerValue);
 
     // handle table vector sort

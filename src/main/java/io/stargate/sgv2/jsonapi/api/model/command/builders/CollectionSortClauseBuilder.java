@@ -80,10 +80,10 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
   }
 
   @Override
-  protected SortExpression buildSortExpression(String path, JsonNode innerValue, int totalFields) {
+  protected SortExpression buildSortExpression(String path, JsonNode innerValue, int sortExpressionCount) {
     if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
       // Vector search can't be used with other sort clause
-      if (totalFields > 1) {
+      if (sortExpressionCount > 1) {
         throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
       }
       float[] vectorFloats = tryDecodeBinaryVector(path, innerValue);
@@ -108,7 +108,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     }
     if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
       // Vector search can't be used with other sort clause
-      if (totalFields > 1) {
+      if (sortExpressionCount > 1) {
         throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
       }
       if (!innerValue.isTextual()) {
