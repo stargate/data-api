@@ -86,7 +86,7 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
     if ((sortExpressions == null) || sortExpressions.size() != 1) {
       return null;
     }
-    SortExpression expr = sortExpressions.get(0);
+    SortExpression expr = sortExpressions.getFirst();
     return expr.isLexicalSort() ? expr : null;
   }
 

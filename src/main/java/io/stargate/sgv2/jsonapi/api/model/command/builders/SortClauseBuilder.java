@@ -60,6 +60,7 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
   protected abstract String validateSortClausePath(String path);
 
   protected SortClause defaultBuildAndValidate(ObjectNode sortNode) {
+    Objects.requireNonNull(sortNode, "sortNode cannot be null");
     // safe to iterate, we know it's an Object
     Iterator<Map.Entry<String, JsonNode>> fieldIter = sortNode.fields();
     int totalFields = sortNode.size();
