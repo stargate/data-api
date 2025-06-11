@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
@@ -47,64 +46,14 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
     float[] vectorFloats = tryDecodeBinaryVector(path, innerValue);
 
     // handle table vector sort
-    if (!(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)
-        || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path))) {
-      if (vectorFloats != null) {
-        return SortExpression.tableVectorSort(path, vectorFloats);
-      }
-      if (innerValue instanceof ArrayNode innerArray) {
-        // TODO: HACK: quick support for tables, if the value is an array we will assume the
-        // column is a vector then need to check on table pathway that the sort is correct.
-        // NOTE: does not check if there are more than one sort expression, the
-        // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
-        return SortExpression.tableVectorSort(path, arrayNodeToVector(innerArray));
-      }
-    }
-    if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
-      // Vector search can't be used with other sort clause
-      if (totalFields > 1) {
-        throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
-      }
-      if (vectorFloats == null) {
-        if (!innerValue.isArray()) {
-          throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
-        }
-        ArrayNode arrayNode = (ArrayNode) innerValue;
-        vectorFloats = new float[arrayNode.size()];
-        if (arrayNode.isEmpty()) {
-          throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
-        }
-        for (int i = 0; i < arrayNode.size(); i++) {
-          JsonNode element = arrayNode.get(i);
-          if (!element.isNumber()) {
-            throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
-          }
-          vectorFloats[i] = element.floatValue();
-        }
-      }
-      return SortExpression.vsearch(vectorFloats);
-    }
-    if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
-      // Vector search can't be used with other sort clause
-      if (totalFields > 1) {
-        throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
-      }
-      if (!innerValue.isTextual()) {
-        throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
-      }
-
-      String vectorizeData = innerValue.textValue();
-      if (vectorizeData.isBlank()) {
-        throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
-      }
-      return SortExpression.vectorizeSearch(vectorizeData);
+    if (vectorFloats != null) {
+      return SortExpression.tableVectorSort(path, vectorFloats);
     }
     if (innerValue instanceof ArrayNode innerArray) {
-      // TODO: HACK: quick support for tables, if the value is an array we will assume the column
-      // is a vector then need to check on table pathway that the sort is correct.
+      // TODO: HACK: quick support for tables, if the value is an array we will assume the
+      // column is a vector then need to check on table pathway that the sort is correct.
       // NOTE: does not check if there are more than one sort expression, the
-      // TableCqlSortClauseResolver will take care of that so we can get proper ApiExceptions
-      // this is also why we do not break the look here
+      // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
       return SortExpression.tableVectorSort(path, arrayNodeToVector(innerArray));
     }
     if (innerValue.isTextual()) {
