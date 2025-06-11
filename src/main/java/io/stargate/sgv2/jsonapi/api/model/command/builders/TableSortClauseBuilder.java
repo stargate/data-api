@@ -42,8 +42,8 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
 
   @Override
   protected SortExpression buildAndValidateExpression(
-      String path, String validatedPath, JsonNode innerValue, int totalFields) {
-    float[] vectorFloats = tryDecodeBinaryVector(path, innerValue);
+      String validatedPath, JsonNode innerValue, int totalFields) {
+    float[] vectorFloats = tryDecodeBinaryVector(validatedPath, innerValue);
 
     // handle table vector sort
     if (vectorFloats != null) {
@@ -65,6 +65,6 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
       // this is also why we do not break the look here
       return SortExpression.tableVectorizeSort(validatedPath, innerValue.textValue());
     }
-    return defaultBuildAndValidateExpression(path, validatedPath, innerValue);
+    return defaultBuildAndValidateExpression(validatedPath, innerValue);
   }
 }

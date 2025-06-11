@@ -70,17 +70,16 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
       final String path = inner.getKey().trim();
       // Validation will check against invalid paths, as well as decode "amp-escaping"
       sortExpressions.add(
-          buildAndValidateExpression(
-              path, validateSortClausePath(path), inner.getValue(), totalFields));
+          buildAndValidateExpression(validateSortClausePath(path), inner.getValue(), totalFields));
     }
     return new SortClause(sortExpressions);
   }
 
   protected abstract SortExpression buildAndValidateExpression(
-      String path, String validatedPath, JsonNode innerValue, int totalFields);
+      String validatedPath, JsonNode innerValue, int totalFields);
 
   protected SortExpression defaultBuildAndValidateExpression(
-      String path, String validatedPath, JsonNode innerValue) {
+      String validatedPath, JsonNode innerValue) {
     if (!innerValue.isInt()) {
       throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
           "Sort ordering value should be integer `1` or `-1`; or Array of numbers (Vector); or String but was: %s",

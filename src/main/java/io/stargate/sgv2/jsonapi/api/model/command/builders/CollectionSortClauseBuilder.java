@@ -79,8 +79,9 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     return path;
   }
 
+  @Override
   protected SortExpression buildAndValidateExpression(
-      String path, String validatedPath, JsonNode innerValue, int totalFields) {
+      String validatedPath, JsonNode innerValue, int totalFields) {
     if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(validatedPath)) {
       // Vector search can't be used with other sort clause
       if (totalFields > 1) {
@@ -121,6 +122,6 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
       }
       return SortExpression.vectorizeSearch(vectorizeData);
     }
-    return defaultBuildAndValidateExpression(path, validatedPath, innerValue);
+    return defaultBuildAndValidateExpression(validatedPath, innerValue);
   }
 }
