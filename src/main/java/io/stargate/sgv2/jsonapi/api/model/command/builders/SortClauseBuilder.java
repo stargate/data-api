@@ -81,8 +81,17 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
   protected SortExpression defaultBuildAndValidateExpression(
       String validatedPath, JsonNode innerValue) {
     if (!innerValue.isInt()) {
+      // Special checking for String and ArrayNode to give less confusing error messages
+      if (innerValue.isArray()) {
+        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
+            "Sort ordering value can be Array only for Vector search");
+      }
+      if (innerValue.isTextual()) {
+        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
+            "Sort ordering value can be String only for Lexical or Vectorize search");
+      }
       throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-          "Sort ordering value should be integer `1` or `-1`; or Array of numbers (Vector); or String but was: %s",
+          "Sort ordering value should be integer `1` or `-1`; or Array (Vector); or String (Lexical or Vectorize), was: %s",
           JsonUtil.nodeTypeAsString(innerValue));
     }
     if (!(innerValue.intValue() == 1 || innerValue.intValue() == -1)) {
