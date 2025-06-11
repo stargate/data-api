@@ -41,20 +41,19 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
   }
 
   @Override
-  protected SortExpression buildAndValidateExpression(
-      String validatedPath, JsonNode innerValue, int totalFields) {
-    float[] vectorFloats = tryDecodeBinaryVector(validatedPath, innerValue);
+  protected SortExpression buildSortExpression(String path, JsonNode innerValue, int totalFields) {
+    float[] vectorFloats = tryDecodeBinaryVector(path, innerValue);
 
     // handle table vector sort
     if (vectorFloats != null) {
-      return SortExpression.tableVectorSort(validatedPath, vectorFloats);
+      return SortExpression.tableVectorSort(path, vectorFloats);
     }
     if (innerValue instanceof ArrayNode innerArray) {
       // TODO: HACK: quick support for tables, if the value is an array we will assume the
       // column is a vector then need to check on table pathway that the sort is correct.
       // NOTE: does not check if there are more than one sort expression, the
       // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
-      return SortExpression.tableVectorSort(validatedPath, arrayNodeToVector(innerArray));
+      return SortExpression.tableVectorSort(path, arrayNodeToVector(innerArray));
     }
     if (innerValue.isTextual()) {
       // TODO: HACK: quick support for tables, if the value is an text  we will assume the column
@@ -63,8 +62,8 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
       // NOTE: does not check if there are more than one sort expression, the
       // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
       // this is also why we do not break the look here
-      return SortExpression.tableVectorizeSort(validatedPath, innerValue.textValue());
+      return SortExpression.tableVectorizeSort(path, innerValue.textValue());
     }
-    return defaultBuildAndValidateExpression(validatedPath, innerValue);
+    return buildRegularSortExpression(path, innerValue);
   }
 }

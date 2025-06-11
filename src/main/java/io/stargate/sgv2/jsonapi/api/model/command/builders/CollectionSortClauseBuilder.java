@@ -80,14 +80,13 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
   }
 
   @Override
-  protected SortExpression buildAndValidateExpression(
-      String validatedPath, JsonNode innerValue, int totalFields) {
-    if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(validatedPath)) {
+  protected SortExpression buildSortExpression(String path, JsonNode innerValue, int totalFields) {
+    if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
       // Vector search can't be used with other sort clause
       if (totalFields > 1) {
         throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
       }
-      float[] vectorFloats = tryDecodeBinaryVector(validatedPath, innerValue);
+      float[] vectorFloats = tryDecodeBinaryVector(path, innerValue);
       if (vectorFloats == null) {
         if (!innerValue.isArray()) {
           throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
@@ -107,7 +106,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
       }
       return SortExpression.vsearch(vectorFloats);
     }
-    if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(validatedPath)) {
+    if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
       // Vector search can't be used with other sort clause
       if (totalFields > 1) {
         throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
@@ -122,6 +121,6 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
       }
       return SortExpression.vectorizeSearch(vectorizeData);
     }
-    return defaultBuildAndValidateExpression(validatedPath, innerValue);
+    return buildRegularSortExpression(path, innerValue);
   }
 }

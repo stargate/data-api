@@ -71,16 +71,23 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
       final String path = inner.getKey().trim();
       // Validation will check against invalid paths, as well as decode "amp-escaping"
       sortExpressions.add(
-          buildAndValidateExpression(validateSortClausePath(path), inner.getValue(), totalFields));
+          buildSortExpression(validateSortClausePath(path), inner.getValue(), totalFields));
     }
     return new SortClause(sortExpressions);
   }
 
-  protected abstract SortExpression buildAndValidateExpression(
-      String validatedPath, JsonNode innerValue, int totalFields);
+  protected abstract SortExpression buildSortExpression(
+      String path, JsonNode innerValue, int totalFields);
 
-  protected SortExpression defaultBuildAndValidateExpression(
-      String validatedPath, JsonNode innerValue) {
+  /**
+   * Helper method to build a regular sort expression (not lexical, vector or vectorize): called by
+   * subclasses after handling special cases.
+   *
+   * @param path Path to the field to sort by, already validated
+   * @param innerValue JSON value of the sort expression to use
+   * @return {@link SortExpression} for the regular sort
+   */
+  protected SortExpression buildRegularSortExpression(String path, JsonNode innerValue) {
     if (!innerValue.isInt()) {
       // Special checking for String and ArrayNode to give less confusing error messages
       if (innerValue.isArray()) {
@@ -102,7 +109,7 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
     }
 
     boolean ascending = innerValue.intValue() == 1;
-    return SortExpression.sort(validatedPath, ascending);
+    return SortExpression.sort(path, ascending);
   }
 
   protected float[] tryDecodeBinaryVector(String path, JsonNode innerValue) {
