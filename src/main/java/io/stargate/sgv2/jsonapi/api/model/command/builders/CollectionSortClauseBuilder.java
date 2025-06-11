@@ -24,6 +24,11 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     // $lexical is only special for Collections: handle first
     JsonNode lexicalValue = sortNode.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
     if (lexicalValue != null) {
+      // We can also check if lexical sort supported by the collection:
+      if (!schema.lexicalConfig().enabled()) {
+        throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
+                "Lexical search is not enabled for collection '%s'", schema.name());
+      }
       if (sortNode.size() > 1) {
         throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
             "if sorting by '%s' no other sort expressions allowed",
@@ -34,11 +39,6 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
             "if sorting by '%s' value must be String, not %s",
             DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
             JsonUtil.nodeTypeAsString(lexicalValue));
-      }
-      // We can also check if lexical sort supported by the collection:
-      if (!schema.lexicalConfig().enabled()) {
-        throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
-            "Lexical search is not enabled for collection '%s'", schema.name());
       }
 
       return new SortClause(
