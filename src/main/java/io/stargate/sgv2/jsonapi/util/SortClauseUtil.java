@@ -16,7 +16,7 @@ public class SortClauseUtil {
       return null;
     }
     // BM25 search is not supported via order by
-    if (sortClause.bm25SearchExpression() != null) {
+    if (sortClause.lexicalSortExpression() != null) {
       return null;
     }
     return sortClause.sortExpressions().stream()
@@ -41,6 +41,6 @@ public class SortClauseUtil {
     if (sortClause == null) {
       return null;
     }
-    return sortClause.bm25SearchExpression();
+    return sortClause.lexicalSortExpression();
   }
 }

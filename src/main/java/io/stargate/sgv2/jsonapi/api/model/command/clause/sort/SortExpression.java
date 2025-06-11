@@ -18,7 +18,7 @@ public record SortExpression(
     boolean ascending,
     @Nullable float[] vector,
     @Nullable String vectorize,
-    @Nullable String bm25Query) {
+    @Nullable String lexicalQuery) {
 
   // TODO: either remove the static factories or make this a class, as a record the ctor is public
 
@@ -69,8 +69,8 @@ public record SortExpression(
     return cqlIdentifierFromUserInput(path);
   }
 
-  public boolean isBM25Search() {
-    return bm25Query != null;
+  public boolean isLexicalSort() {
+    return lexicalQuery != null;
   }
 
   public boolean isTableVectorSort() {

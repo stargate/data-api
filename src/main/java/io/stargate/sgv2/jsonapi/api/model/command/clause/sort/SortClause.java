@@ -82,18 +82,18 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
             .equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
   }
 
-  public SortExpression bm25SearchExpression() {
+  public SortExpression lexicalSortExpression() {
     if ((sortExpressions == null) || sortExpressions.size() != 1) {
       return null;
     }
     SortExpression expr = sortExpressions.get(0);
-    return expr.isBM25Search() ? expr : null;
+    return expr.isLexicalSort() ? expr : null;
   }
 
   public void validate(CollectionSchemaObject collection) {
-    // First things first: BM25 search uses its own index; also the only expression
+    // First things first: Lexical/BM25 search uses its own index; also the only expression
     // (validated during SortClauseBuilder.buildAndValidate())
-    if (bm25SearchExpression() != null) {
+    if (lexicalSortExpression() != null) {
       return;
     }
 
