@@ -1,15 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
-import static io.stargate.sgv2.jsonapi.util.JsonUtil.arrayNodeToVector;
-
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -80,92 +76,11 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
     return new SortClause(sortExpressions);
   }
 
-  protected SortExpression buildAndValidateExpression(
-      String path, String validatedPath, JsonNode innerValue, int totalFields) {
-    float[] vectorFloats = null;
-    if (innerValue instanceof ObjectNode innerObject) {
-      var ejsonWrapped = EJSONWrapper.maybeFrom(innerObject);
-      if (ejsonWrapped == null) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-            "Only binary vector object values is supported for sorting. Path: %s, Value: %s.",
-            path, innerValue.toString());
-      }
-      try {
-        vectorFloats = ejsonWrapped.getVectorValueForBinary();
-      } catch (IllegalArgumentException | IllegalStateException e) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(e.getMessage());
-      }
-    }
-    // handle table vector sort
-    if (!(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)
-        || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path))) {
-      if (vectorFloats != null) {
-        return SortExpression.tableVectorSort(path, vectorFloats);
-      }
-      if (innerValue instanceof ArrayNode innerArray) {
-        // TODO: HACK: quick support for tables, if the value is an array we will assume the
-        // column is a vector then need to check on table pathway that the sort is correct.
-        // NOTE: does not check if there are more than one sort expression, the
-        // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
-        return SortExpression.tableVectorSort(path, arrayNodeToVector(innerArray));
-      }
-    }
-    if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
-      // Vector search can't be used with other sort clause
-      if (totalFields > 1) {
-        throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
-      }
-      if (vectorFloats == null) {
-        if (!innerValue.isArray()) {
-          throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
-        }
-        ArrayNode arrayNode = (ArrayNode) innerValue;
-        vectorFloats = new float[arrayNode.size()];
-        if (arrayNode.isEmpty()) {
-          throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
-        }
-        for (int i = 0; i < arrayNode.size(); i++) {
-          JsonNode element = arrayNode.get(i);
-          if (!element.isNumber()) {
-            throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
-          }
-          vectorFloats[i] = element.floatValue();
-        }
-      }
-      return SortExpression.vsearch(vectorFloats);
-    }
-    if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
-      // Vector search can't be used with other sort clause
-      if (totalFields > 1) {
-        throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
-      }
-      if (!innerValue.isTextual()) {
-        throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
-      }
+  protected abstract SortExpression buildAndValidateExpression(
+      String path, String validatedPath, JsonNode innerValue, int totalFields);
 
-      String vectorizeData = innerValue.textValue();
-      if (vectorizeData.isBlank()) {
-        throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
-      }
-      return SortExpression.vectorizeSearch(vectorizeData);
-    }
-    if (innerValue instanceof ArrayNode innerArray) {
-      // TODO: HACK: quick support for tables, if the value is an array we will assume the column
-      // is a vector then need to check on table pathway that the sort is correct.
-      // NOTE: does not check if there are more than one sort expression, the
-      // TableCqlSortClauseResolver will take care of that so we can get proper ApiExceptions
-      // this is also why we do not break the look here
-      return SortExpression.tableVectorSort(path, arrayNodeToVector(innerArray));
-    }
-    if (innerValue.isTextual()) {
-      // TODO: HACK: quick support for tables, if the value is an text  we will assume the column
-      // is a vector and the user wants to do vectorize then need to check on table pathway that
-      // the sort is correct.
-      // NOTE: does not check if there are more than one sort expression, the
-      // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
-      // this is also why we do not break the look here
-      return SortExpression.tableVectorizeSort(path, innerValue.textValue());
-    }
+  protected SortExpression defaultBuildAndValidateExpression(
+      String path, String validatedPath, JsonNode innerValue) {
     if (!innerValue.isInt()) {
       throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
           "Sort ordering value should be integer `1` or `-1`; or Array of numbers (Vector); or String but was: %s",
@@ -179,5 +94,22 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
 
     boolean ascending = innerValue.intValue() == 1;
     return SortExpression.sort(validatedPath, ascending);
+  }
+
+  protected float[] tryDecodeBinaryVector(String path, JsonNode innerValue) {
+    if (innerValue instanceof ObjectNode innerObject) {
+      var ejsonWrapped = EJSONWrapper.maybeFrom(innerObject);
+      if (ejsonWrapped == null || ejsonWrapped.type() != EJSONWrapper.EJSONType.BINARY) {
+        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
+            "Only binary vector object values is supported for sorting. Path: %s, Value: %s.",
+            path, innerValue.toString());
+      }
+      try {
+        return ejsonWrapped.getVectorValueForBinary();
+      } catch (IllegalArgumentException | IllegalStateException e) {
+        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(e.getMessage());
+      }
+    }
+    return null;
   }
 }

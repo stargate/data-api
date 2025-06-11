@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
@@ -76,5 +77,50 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     }
 
     return path;
+  }
+
+  protected SortExpression buildAndValidateExpression(
+      String path, String validatedPath, JsonNode innerValue, int totalFields) {
+    if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
+      // Vector search can't be used with other sort clause
+      if (totalFields > 1) {
+        throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
+      }
+      float[] vectorFloats = tryDecodeBinaryVector(path, innerValue);
+      if (vectorFloats == null) {
+        if (!innerValue.isArray()) {
+          throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
+        }
+        ArrayNode arrayNode = (ArrayNode) innerValue;
+        vectorFloats = new float[arrayNode.size()];
+        if (arrayNode.isEmpty()) {
+          throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+        }
+        for (int i = 0; i < arrayNode.size(); i++) {
+          JsonNode element = arrayNode.get(i);
+          if (!element.isNumber()) {
+            throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
+          }
+          vectorFloats[i] = element.floatValue();
+        }
+      }
+      return SortExpression.vsearch(vectorFloats);
+    }
+    if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
+      // Vector search can't be used with other sort clause
+      if (totalFields > 1) {
+        throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
+      }
+      if (!innerValue.isTextual()) {
+        throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
+      }
+
+      String vectorizeData = innerValue.textValue();
+      if (vectorizeData.isBlank()) {
+        throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
+      }
+      return SortExpression.vectorizeSearch(vectorizeData);
+    }
+    return defaultBuildAndValidateExpression(path, validatedPath, innerValue);
   }
 }
