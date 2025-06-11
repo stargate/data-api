@@ -27,7 +27,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
       // We can also check if lexical sort supported by the collection:
       if (!schema.lexicalConfig().enabled()) {
         throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
-                "Lexical search is not enabled for collection '%s'", schema.name());
+            "Lexical search is not enabled for collection '%s'", schema.name());
       }
       if (sortNode.size() > 1) {
         throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
@@ -81,12 +81,12 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
 
   protected SortExpression buildAndValidateExpression(
       String path, String validatedPath, JsonNode innerValue, int totalFields) {
-    if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
+    if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(validatedPath)) {
       // Vector search can't be used with other sort clause
       if (totalFields > 1) {
         throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
       }
-      float[] vectorFloats = tryDecodeBinaryVector(path, innerValue);
+      float[] vectorFloats = tryDecodeBinaryVector(validatedPath, innerValue);
       if (vectorFloats == null) {
         if (!innerValue.isArray()) {
           throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
@@ -106,7 +106,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
       }
       return SortExpression.vsearch(vectorFloats);
     }
-    if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
+    if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(validatedPath)) {
       // Vector search can't be used with other sort clause
       if (totalFields > 1) {
         throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
