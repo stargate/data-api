@@ -142,7 +142,7 @@ class SortClauseBuilderTest {
       String json =
               """
             {
-             "test" : { "$binary" : "%s"}
+             "$vector" : { "$binary" : "%s"}
             }
             """
               .formatted(vectorString);
@@ -151,7 +151,7 @@ class SortClauseBuilderTest {
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions()).hasSize(1);
-      assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("test");
+      assertThat(sortClause.sortExpressions().get(0).path()).isEqualTo("$vector");
       assertThat(sortClause.sortExpressions().get(0).vector())
           .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
     }
@@ -281,8 +281,7 @@ class SortClauseBuilderTest {
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage())
-          .contains(
-              "Invalid sort clause value: Only binary vector object values is supported for sorting. Path: $vectorize, Value: {}.");
+          .contains("$vectorize search clause needs to be non-blank text value");
     }
 
     @Test
