@@ -68,14 +68,14 @@ public class RequestContext {
         HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext);
     this.rerankingCredentials =
         rerankingApiKeyFromHeader
-            .map(apiKey -> new RerankingCredentials(this.tenantId.get(), Optional.of(apiKey)))
+            .map(apiKey -> new RerankingCredentials(this.tenantId.orElse(""), Optional.of(apiKey)))
             .orElse(
                 this.cassandraToken
                     .map(
                         cassandraToken ->
                             new RerankingCredentials(
-                                this.tenantId.get(), Optional.of(cassandraToken)))
-                    .orElse(new RerankingCredentials(this.tenantId.get(), Optional.empty())));
+                                this.tenantId.orElse(""), Optional.of(cassandraToken)))
+                    .orElse(new RerankingCredentials(this.tenantId.orElse(""), Optional.empty())));
   }
 
   private static String generateRequestId() {

@@ -115,7 +115,7 @@ public class OpenAIEmbeddingProvider extends EmbeddingProvider {
               var modelUsage =
                   createModelUsage(
                       embeddingCredentials.tenantId(),
-                      ModelInputType.INPUT_TYPE_UNSPECIFIED,
+                      ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
                       openAiResponse.usage().prompt_tokens(),
                       openAiResponse.usage().total_tokens(),
                       jakartaResponse,

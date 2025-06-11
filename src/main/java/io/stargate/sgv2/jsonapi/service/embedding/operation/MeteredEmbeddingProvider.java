@@ -11,7 +11,11 @@ import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides a metered version of an {@link EmbeddingProvider}, adding metrics collection to the
@@ -20,17 +24,20 @@ import org.apache.commons.lang3.tuple.Pair;
  * input texts.
  */
 public class MeteredEmbeddingProvider extends EmbeddingProvider {
+  private static final Logger LOGGER = LoggerFactory.getLogger(MeteredEmbeddingProvider.class);
+
+  private static final String UNKNOWN_TENANT_ID = "unknown";
+
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
-  private final RequestContext dataApiRequestInfo;
-  private static final String UNKNOWN_VALUE = "unknown";
+  private final RequestContext requestContext;
   private final EmbeddingProvider embeddingProvider;
   private final String commandName;
 
   public MeteredEmbeddingProvider(
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig,
-      RequestContext dataApiRequestInfo,
+      RequestContext requestContext,
       EmbeddingProvider embeddingProvider,
       String commandName) {
     // aaron 9 June 2025 - we need to remove this "metered" design pattern, for now just pass the
@@ -45,7 +52,7 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
 
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
-    this.dataApiRequestInfo = dataApiRequestInfo;
+    this.requestContext = requestContext;
     this.embeddingProvider = embeddingProvider;
     this.commandName = commandName;
   }
@@ -120,7 +127,12 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
                 // create the final ordered result
                 result.addAll(vectorizedBatch.embeddings());
               }
-              return new BatchedEmbeddingResponse(1, result, aggregatedModelUsage);
+              var embeddingResponse = new BatchedEmbeddingResponse(1, result, aggregatedModelUsage);
+              if (LOGGER.isTraceEnabled()){
+                LOGGER.trace(
+                    "Vectorize call completed, aggregatedModelUsage: {}", PrettyPrintable.print(aggregatedModelUsage));
+              }
+              return embeddingResponse;
             })
         .invoke(
             () ->
@@ -144,7 +156,7 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
    */
   private Tags getCustomTags() {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
-    Tag tenantTag = Tag.of("tenant", dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
+    Tag tenantTag = Tag.of("tenant", requestContext.getTenantId().orElse(UNKNOWN_TENANT_ID));
     Tag embeddingProviderTag =
         Tag.of(
             jsonApiMetricsConfig.embeddingProvider(), embeddingProvider.getClass().getSimpleName());
