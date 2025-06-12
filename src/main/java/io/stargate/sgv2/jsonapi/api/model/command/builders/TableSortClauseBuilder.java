@@ -65,6 +65,6 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
       // this is also why we do not break the look here
       return SortExpression.tableVectorizeSort(path, innerValue.textValue());
     }
-    return buildRegularSortExpression(path, innerValue);
+    return super.buildSortExpression(path, innerValue, sortExpressionCount);
   }
 }

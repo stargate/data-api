@@ -76,18 +76,17 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
     return new SortClause(sortExpressions);
   }
 
-  protected abstract SortExpression buildSortExpression(
-      String path, JsonNode innerValue, int sortExpressionCount);
-
   /**
-   * Helper method to build a regular sort expression (not lexical, vector or vectorize): called by
-   * subclasses after handling special cases.
+   * Helper method to build a sort expression for given definition. Base implementation is for
+   * regular sorts (not vector, vectorize or lexical).
    *
    * @param path Path to the field to sort by, already validated
    * @param innerValue JSON value of the sort expression to use
+   * @param sortExpressionCount Total number of sort expressions in the clause
    * @return {@link SortExpression} for the regular sort
    */
-  protected SortExpression buildRegularSortExpression(String path, JsonNode innerValue) {
+  protected SortExpression buildSortExpression(
+      String path, JsonNode innerValue, int sortExpressionCount) {
     if (!innerValue.isInt()) {
       // Special checking for String and ArrayNode to give less confusing error messages
       if (innerValue.isArray()) {
