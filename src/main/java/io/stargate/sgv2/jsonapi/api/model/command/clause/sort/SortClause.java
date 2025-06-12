@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import jakarta.validation.Valid;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Internal model for the sort clause that can be used in the commands.
@@ -17,7 +16,7 @@ import java.util.Objects;
  */
 public record SortClause(@Valid List<SortExpression> sortExpressions) {
   public SortClause {
-    Objects.requireNonNull(sortExpressions, "sortExpressions cannot be null");
+    sortExpressions = (sortExpressions == null) ? Collections.emptyList() : sortExpressions;
   }
 
   public static SortClause empty() {
