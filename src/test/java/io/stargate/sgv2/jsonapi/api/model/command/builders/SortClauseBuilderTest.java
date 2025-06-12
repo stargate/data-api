@@ -107,8 +107,8 @@ class SortClauseBuilderTest {
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions()).hasSize(1);
-      assertThat(sortClause.sortExpressions().getFirst().getPath()).isEqualTo("$vector");
-      assertThat(sortClause.sortExpressions().getFirst().getVector())
+      assertThat(sortClause.sortExpressions().get(0).getPath()).isEqualTo("$vector");
+      assertThat(sortClause.sortExpressions().get(0).getVector())
           .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
     }
 
@@ -151,8 +151,8 @@ class SortClauseBuilderTest {
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions()).hasSize(1);
-      assertThat(sortClause.sortExpressions().getFirst().getPath()).isEqualTo("$vector");
-      assertThat(sortClause.sortExpressions().getFirst().getVector())
+      assertThat(sortClause.sortExpressions().get(0).getPath()).isEqualTo("$vector");
+      assertThat(sortClause.sortExpressions().get(0).getVector())
           .containsExactly(new Float[] {0.11f, 0.22f, 0.33f});
     }
 
@@ -248,8 +248,8 @@ class SortClauseBuilderTest {
 
       assertThat(sortClause).isNotNull();
       assertThat(sortClause.sortExpressions()).hasSize(1);
-      assertThat(sortClause.sortExpressions().getFirst().getPath()).isEqualTo("$vectorize");
-      assertThat(sortClause.sortExpressions().getFirst().getVectorize()).isEqualTo("test data");
+      assertThat(sortClause.sortExpressions().get(0).getPath()).isEqualTo("$vectorize");
+      assertThat(sortClause.sortExpressions().get(0).getVectorize()).isEqualTo("test data");
     }
 
     @Test

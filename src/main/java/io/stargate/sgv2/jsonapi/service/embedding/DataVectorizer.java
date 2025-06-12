@@ -209,7 +209,7 @@ public class DataVectorizer {
         return Uni.createFrom().item(true);
       if (sortClause.hasVectorizeSearchClause()) {
         final List<SortExpression> sortExpressions = sortClause.sortExpressions();
-        SortExpression expression = sortExpressions.getFirst();
+        SortExpression expression = sortExpressions.get(0);
         String text = expression.getVectorize();
         if (embeddingProvider == null) {
           throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
