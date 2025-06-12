@@ -932,7 +932,7 @@ request-errors:
     title: Lexical search is not enabled for the collection
     body: |-
       Lexical content can only be added and filtering and sort only be used on Collections for which Lexical feature is enabled.
-      The table ${keyspace}.${table} does not have Lexical feature enabled.
+      The Collection ${keyspace}.${table} does not have Lexical feature enabled.
 
   - scope: SCHEMA
     code: UNKNOWN_DATA_TYPE
