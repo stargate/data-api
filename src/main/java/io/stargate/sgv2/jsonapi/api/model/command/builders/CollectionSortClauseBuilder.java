@@ -12,8 +12,6 @@ import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.Collections;
 
-import static io.stargate.sgv2.jsonapi.util.JsonUtil.arrayNodeToVector;
-
 /** {@link SortClauseBuilder} to use with Collections. */
 public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSchemaObject> {
   public CollectionSortClauseBuilder(CollectionSchemaObject collection) {
@@ -57,7 +55,8 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
         }
         vectorFloats = JsonUtil.arrayNodeToVector(arrayNode);
       }
-      return new SortClause(Collections.singletonList(SortExpression.vsearch(vectorFloats)));
+      return new SortClause(
+          Collections.singletonList(SortExpression.collectionVectorSort(vectorFloats)));
     }
 
     JsonNode vectorizeNode = sortNode.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
@@ -75,7 +74,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
         throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
       }
       return new SortClause(
-          Collections.singletonList(SortExpression.vectorizeSearch(vectorizeData)));
+          Collections.singletonList(SortExpression.collecetionVectorizeSort(vectorizeData)));
     }
 
     // Otherwise, use shared default processing

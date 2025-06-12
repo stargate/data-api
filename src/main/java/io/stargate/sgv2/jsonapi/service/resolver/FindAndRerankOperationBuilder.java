@@ -340,7 +340,9 @@ class FindAndRerankOperationBuilder {
               vectorDef.vectorizeDefinition(),
               sortClause);
     } else if (isVectorSort()) {
-      sortClause.sortExpressions().add(SortExpression.vsearch(command.sortClause().vectorSort()));
+      sortClause
+          .sortExpressions()
+          .add(SortExpression.collectionVectorSort(command.sortClause().vectorSort()));
     } else {
       throw new IllegalArgumentException("buildVectorRead() - XXX TODO - no vector or vectorize");
     }

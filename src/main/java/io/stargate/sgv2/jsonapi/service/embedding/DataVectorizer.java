@@ -242,7 +242,7 @@ public class DataVectorizer {
                         vector.length);
                   }
                   sortExpressions.clear();
-                  sortExpressions.add(SortExpression.vsearch(vector));
+                  sortExpressions.add(SortExpression.collectionVectorSort(vector));
                   return true;
                 });
       }

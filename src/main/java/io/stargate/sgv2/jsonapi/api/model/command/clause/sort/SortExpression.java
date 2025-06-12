@@ -15,10 +15,10 @@ public class SortExpression {
   @NotBlank private final String path;
 
   // this can be modeled in different ways, would this be enough for now
-  private boolean ascending;
-  @Nullable private float[] vector;
-  @Nullable private String vectorize;
-  @Nullable private String lexicalQuery;
+  private final boolean ascending;
+  @Nullable private final float[] vector;
+  @Nullable private final String vectorize;
+  @Nullable private final String lexicalQuery;
 
   private SortExpression(
       String path, boolean ascending, float[] vector, String vectorize, String lexicalQuery) {
@@ -61,11 +61,11 @@ public class SortExpression {
     return new SortExpression(path, ascending, null, null, null);
   }
 
-  public static SortExpression vsearch(float[] vector) {
+  public static SortExpression collectionVectorSort(float[] vector) {
     return new SortExpression(VECTOR_EMBEDDING_FIELD, false, vector, null, null);
   }
 
-  public static SortExpression vectorizeSearch(String vectorize) {
+  public static SortExpression collecetionVectorizeSort(String vectorize) {
     return new SortExpression(VECTOR_EMBEDDING_TEXT_FIELD, false, null, vectorize, null);
   }
 
