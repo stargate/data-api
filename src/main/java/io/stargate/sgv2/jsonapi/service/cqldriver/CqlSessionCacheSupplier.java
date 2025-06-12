@@ -51,7 +51,7 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
             dbConfig.localDatacenter(),
             dbConfig.cassandraEndPoints(),
             dbConfig.cassandraPort(),
-            List.of(schemaCache.getSchemaChangeListener()));
+            schemaCache::getSchemaChangeListener);
 
     singleton =
         new CQLSessionCache(
