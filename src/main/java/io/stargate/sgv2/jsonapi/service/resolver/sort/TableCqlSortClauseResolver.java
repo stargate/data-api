@@ -176,7 +176,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
                 sortExpression ->
                     new TableOrderByClusteringCqlClause.OrderByTerm(
                         apiTableDef.allColumns().get(sortExpression.pathAsCqlIdentifier()),
-                        sortExpression.ascending()
+                        sortExpression.isAscending()
                             ? TableOrderByClusteringCqlClause.Order.ASC
                             : TableOrderByClusteringCqlClause.Order.DESC))
             .toList();
@@ -217,7 +217,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
                 map.put(
                     "sortColumn",
                     errFmtJoin(
-                        vectorAndVectorizeSorts.stream().map(SortExpression::path).toList()));
+                        vectorAndVectorizeSorts.stream().map(SortExpression::getPath).toList()));
                 map.put("limit", String.valueOf(limit.get()));
                 map.put(
                     "maxLimit",
@@ -250,7 +250,7 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
                 map.put(
                     "sortColumns",
                     errFmtJoin(
-                        vectorAndVectorizeSorts.stream().map(SortExpression::path).toList()));
+                        vectorAndVectorizeSorts.stream().map(SortExpression::getPath).toList()));
               }));
     }
 
@@ -267,10 +267,10 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
                 map.put(
                     "sortVectorColumns",
                     errFmtJoin(
-                        vectorAndVectorizeSorts.stream().map(SortExpression::path).toList()));
+                        vectorAndVectorizeSorts.stream().map(SortExpression::getPath).toList()));
                 map.put(
                     "sortNonVectorColumns",
-                    errFmtJoin(nonVectorSorts.stream().map(SortExpression::path).toList()));
+                    errFmtJoin(nonVectorSorts.stream().map(SortExpression::getPath).toList()));
               }));
     }
 
@@ -324,15 +324,15 @@ public class TableCqlSortClauseResolver<CmdT extends Command & Filterable & Sort
     // decoder that understands sorting, but the sort clause is terrible and needs to be refactored
 
     var jsonNamedValue =
-        new JsonNamedValue(JsonPath.from(vectorSortExpression.path()), JsonNodeDecoder.DEFAULT);
+        new JsonNamedValue(JsonPath.from(vectorSortExpression.getPath()), JsonNodeDecoder.DEFAULT);
     if (jsonNamedValue.bind(commandContext.schemaObject())) {
       // ok, this is a terrible hack, but it needs a JSON node
       JsonNode jsonNode = null;
-      if (vectorSortExpression.vectorize() != null) {
-        jsonNode = JsonNodeFactory.instance.textNode(vectorSortExpression.vectorize());
-      } else if (vectorSortExpression.vector() != null) {
+      if (vectorSortExpression.hasVectorize()) {
+        jsonNode = JsonNodeFactory.instance.textNode(vectorSortExpression.getVectorize());
+      } else if (vectorSortExpression.hasVector()) {
         var arrayNode = JsonNodeFactory.instance.arrayNode();
-        for (var f : vectorSortExpression.vector()) {
+        for (float f : vectorSortExpression.getVector()) {
           arrayNode.add(f);
         }
         jsonNode = arrayNode;

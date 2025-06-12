@@ -113,7 +113,10 @@ public class ReadDBTaskPage<SchemaT extends TableBasedSchemaObject>
       var includeVector = command.includeSortVector().orElse(false);
       if (includeVector) {
         var requestedVector =
-            command.vectorSortExpression(commandContext).map(SortExpression::vector).orElse(null);
+            command
+                .vectorSortExpression(commandContext)
+                .map(SortExpression::getVector)
+                .orElse(null);
         if (requestedVector != null) {
           this.includeSortVector = true;
           this.sortVector = requestedVector;

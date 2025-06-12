@@ -68,7 +68,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
       return new SortClause(Collections.singletonList(SortExpression.vsearch(vectorFloats)));
     }
 
-    JsonNode vectorizeNode = sortNode.get(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+    JsonNode vectorizeNode = sortNode.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
     if (vectorizeNode != null) {
       // Vectorize sort can't be used with other sort clauses
       if (sortNode.size() > 1) {

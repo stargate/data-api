@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObjec
 import jakarta.validation.Valid;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Internal model for the sort clause that can be used in the commands.
@@ -15,17 +16,21 @@ import java.util.List;
  * @param sortExpressions Ordered list of sort expressions.
  */
 public record SortClause(@Valid List<SortExpression> sortExpressions) {
+  public SortClause {
+    Objects.requireNonNull(sortExpressions, "sortExpressions cannot be null");
+  }
+
   public static SortClause empty() {
     return new SortClause(Collections.emptyList());
   }
 
   public boolean isEmpty() {
-    return sortExpressions == null || sortExpressions.isEmpty();
+    return sortExpressions.isEmpty();
   }
 
   /** Get the sort expressions that are trying to vector sort columns on a table */
   public List<SortExpression> tableVectorSorts() {
-    return sortExpressions == null
+    return sortExpressions.isEmpty()
         ? List.of()
         : sortExpressions.stream()
             .filter(
@@ -36,7 +41,7 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
 
   /** Get the sort expressions that are not trying to vector sort columns on a table */
   public List<SortExpression> nonTableVectorSorts() {
-    return sortExpressions == null
+    return sortExpressions.isEmpty()
         ? List.of()
         : sortExpressions.stream()
             .filter(
@@ -46,13 +51,13 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
   }
 
   public List<CqlIdentifier> sortColumnIdentifiers() {
-    return sortExpressions == null
+    return sortExpressions.isEmpty()
         ? List.of()
         : sortExpressions.stream().map(SortExpression::pathAsCqlIdentifier).toList();
   }
 
   public List<SortExpression> tableVectorizeSorts() {
-    return sortExpressions == null
+    return sortExpressions.isEmpty()
         ? List.of()
         : sortExpressions.stream().filter(SortExpression::isTableVectorizeSort).toList();
   }
@@ -68,22 +73,15 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
   }
 
   public boolean hasVsearchClause() {
-    return sortExpressions != null
-        && !sortExpressions.isEmpty()
-        && sortExpressions.get(0).path().equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+    return !sortExpressions.isEmpty() && sortExpressions.getFirst().hasVector();
   }
 
   public boolean hasVectorizeSearchClause() {
-    return sortExpressions != null
-        && !sortExpressions.isEmpty()
-        && sortExpressions
-            .get(0)
-            .path()
-            .equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+    return !sortExpressions.isEmpty() && sortExpressions.getFirst().hasVectorize();
   }
 
   public SortExpression lexicalSortExpression() {
-    if ((sortExpressions == null) || sortExpressions.size() != 1) {
+    if (sortExpressions.size() != 1) {
       return null;
     }
     SortExpression expr = sortExpressions.getFirst();
@@ -104,20 +102,21 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
     }
     // validate each path in sortExpressions
     for (SortExpression sortExpression : sortExpressions) {
-      if (!indexingProjector.isPathIncluded(sortExpression.path())) {
+      if (!indexingProjector.isPathIncluded(sortExpression.getPath())) {
         throw ErrorCodeV1.UNINDEXED_SORT_PATH.toApiException(
-            "sort path '%s' is not indexed", sortExpression.path());
+            "sort path '%s' is not indexed", sortExpression.getPath());
       }
       // `SortClauseDeserializer` looks for binary value and adds it as SortExpression irrespective
       // of field name to support ANN search for tables. There is no access to SchemaObject in the
       // deserializer, so added a validation to check in case of collection.
 
-      if (!(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(sortExpression.path())
-              || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(sortExpression.path()))
-          && sortExpression.vector() != null) {
+      if (!(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(sortExpression.getPath())
+              || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(
+                  sortExpression.getPath()))
+          && sortExpression.hasVector()) {
         throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
             "Sorting by embedding vector values for the collection requires `%s` field. Provided field name: `%s`.",
-            DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, sortExpression.path());
+            DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, sortExpression.getPath());
       }
     }
   }

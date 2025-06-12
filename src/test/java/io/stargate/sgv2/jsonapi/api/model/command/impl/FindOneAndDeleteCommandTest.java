@@ -73,7 +73,7 @@ public class FindOneAndDeleteCommandTest {
                     .satisfies(
                         sort -> {
                           assertThat(sort.sortExpressions()).hasSize(1);
-                          assertThat(sort.sortExpressions().get(0).path()).isEqualTo("location");
+                          assertThat(sort.sortExpressions().get(0).getPath()).isEqualTo("location");
                         });
               });
     }
@@ -104,7 +104,7 @@ public class FindOneAndDeleteCommandTest {
                     .satisfies(
                         sort -> {
                           assertThat(sort.sortExpressions()).hasSize(1);
-                          assertThat(sort.sortExpressions().get(0).path()).isEqualTo("location");
+                          assertThat(sort.sortExpressions().get(0).getPath()).isEqualTo("location");
                         });
                 final JsonNode projector = findOneAndDeleteCommand.projectionDefinition();
                 assertThat(projector).isNotNull();

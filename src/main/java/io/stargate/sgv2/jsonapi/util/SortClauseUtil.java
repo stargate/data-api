@@ -23,7 +23,7 @@ public class SortClauseUtil {
         .map(
             sortExpression ->
                 new FindCollectionOperation.OrderBy(
-                    sortExpression.path(), sortExpression.ascending()))
+                    sortExpression.getPath(), sortExpression.isAscending()))
         .collect(Collectors.toList());
   }
 
@@ -32,7 +32,7 @@ public class SortClauseUtil {
       return null;
     }
     if (sortClause.hasVsearchClause()) {
-      return sortClause.sortExpressions().stream().findFirst().get().vector();
+      return sortClause.sortExpressions().stream().findFirst().get().getVector();
     }
     return null;
   }

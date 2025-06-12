@@ -209,8 +209,8 @@ public class DataVectorizer {
         return Uni.createFrom().item(true);
       if (sortClause.hasVectorizeSearchClause()) {
         final List<SortExpression> sortExpressions = sortClause.sortExpressions();
-        SortExpression expression = sortExpressions.get(0);
-        String text = expression.vectorize();
+        SortExpression expression = sortExpressions.getFirst();
+        String text = expression.getVectorize();
         if (embeddingProvider == null) {
           throw ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
               schemaObject.name().table());
@@ -406,7 +406,7 @@ public class DataVectorizer {
 
     @Override
     public String getVectorizeText() {
-      return sortExpression.vectorize();
+      return sortExpression.getVectorize();
     }
 
     @Override
@@ -417,7 +417,7 @@ public class DataVectorizer {
       var i = sortClause.sortExpressions().indexOf(sortExpression);
       sortClause
           .sortExpressions()
-          .set(i, SortExpression.tableVectorSort(sortExpression.path(), vector));
+          .set(i, SortExpression.tableVectorSort(sortExpression.getPath(), vector));
     }
   }
 

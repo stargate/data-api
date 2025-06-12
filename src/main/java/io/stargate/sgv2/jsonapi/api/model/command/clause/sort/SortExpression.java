@@ -8,19 +8,54 @@ import jakarta.validation.constraints.NotBlank;
 import java.util.Objects;
 import javax.annotation.Nullable;
 
-public record SortExpression(
+public class SortExpression {
 
-    // TODO correct typing for the path, we could use some kind of a common class
-    //  we also need a validation of a correct path here
-    @NotBlank String path,
+  // TODO correct typing for the path, we could use some kind of a common class
+  //  we also need a validation of a correct path here
+  @NotBlank private final String path;
 
-    // this can be modeled in different ways, would this be enough for now
-    boolean ascending,
-    @Nullable float[] vector,
-    @Nullable String vectorize,
-    @Nullable String lexicalQuery) {
+  // this can be modeled in different ways, would this be enough for now
+  private boolean ascending;
+  @Nullable private float[] vector;
+  @Nullable private String vectorize;
+  @Nullable private String lexicalQuery;
 
-  // TODO: either remove the static factories or make this a class, as a record the ctor is public
+  private SortExpression(
+      String path, boolean ascending, float[] vector, String vectorize, String lexicalQuery) {
+    this.path = Objects.requireNonNull(path, "Path cannot be null");
+    this.ascending = ascending;
+    this.vector = vector;
+    this.vectorize = vectorize;
+    this.lexicalQuery = lexicalQuery;
+  }
+
+  public boolean isAscending() {
+    return ascending;
+  }
+
+  public String getLexicalQuery() {
+    return lexicalQuery;
+  }
+
+  public String getPath() {
+    return path;
+  }
+
+  public boolean hasVector() {
+    return vector != null;
+  }
+
+  public float[] getVector() {
+    return vector;
+  }
+
+  public boolean hasVectorize() {
+    return vectorize != null;
+  }
+
+  public String getVectorize() {
+    return vectorize;
+  }
 
   public static SortExpression sort(String path, boolean ascending) {
     return new SortExpression(path, ascending, null, null, null);
@@ -84,5 +119,21 @@ public record SortExpression(
   private boolean pathIs$VectorNames() {
     return (Objects.equals(path, VECTOR_EMBEDDING_FIELD)
         || Objects.equals(path, VECTOR_EMBEDDING_TEXT_FIELD));
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(path, ascending, vector, vectorize, lexicalQuery);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof SortExpression that)) return false;
+    return ascending == that.ascending
+        && Objects.equals(path, that.path)
+        && Objects.deepEquals(vector, that.vector)
+        && Objects.equals(vectorize, that.vectorize)
+        && Objects.equals(lexicalQuery, that.lexicalQuery);
   }
 }
