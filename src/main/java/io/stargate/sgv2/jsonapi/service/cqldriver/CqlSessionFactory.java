@@ -43,8 +43,8 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
    * @param cassandraEndPoints the Cassandra endpoints, only used when the database type is
    *     CASSANDRA
    * @param cassandraPort the Cassandra port, only used when the database type is CASSANDRA
-   * @param schemaChangeListenerSupplier the schema change listeners, these are added to the session
-   *     to listen for schema changes from it.
+   * @param schemaChangeListenerSupplier an optional supplier called to get a schema change listener
+   *     for each new session created
    */
   CqlSessionFactory(
       String applicationName,
@@ -73,8 +73,8 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
    * @param cassandraEndPoints the Cassandra endpoints, only used when the database type is
    *     CASSANDRA
    * @param cassandraPort the Cassandra port, only used when the database type is CASSANDRA
-   * @param schemaChangeListenerSupplier the schema change listeners, these are added to the session
-   *     to listen for schema changes from it.
+   * @param schemaChangeListenerSupplier an optional supplier called to get a schema change listener
+   *     for each new session created
    * @param sessionBuilderSupplier a supplier for creating CqlSessionBuilder instances, so that
    *     testing can mock the builder for session creation. In prod code use the ctor without this.
    */
@@ -97,9 +97,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     this.localDatacenter =
         Objects.requireNonNull(localDatacenter, "localDatacenter must not be null");
 
-    this.schemaChangeListenerSupplier =
-        Objects.requireNonNull(
-            schemaChangeListenerSupplier, "schemaChangeListenerSupplier must not be null");
+    this.schemaChangeListenerSupplier = schemaChangeListenerSupplier;
     this.sessionBuilderSupplier =
         Objects.requireNonNull(sessionBuilderSupplier, "sessionBuilderSupplier must not be null");
 
@@ -149,7 +147,14 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
       tenantAwareBuilder.withTenantId(tenantId);
     }
 
-    builder = builder.addSchemaChangeListener(schemaChangeListenerSupplier.get());
+    if (null != schemaChangeListenerSupplier) {
+      SchemaChangeListener listener = schemaChangeListenerSupplier.get();
+      if (null == listener) {
+        throw new IllegalStateException(
+            "The schema change listener supplier returned a null listener.");
+      }
+      builder = builder.addSchemaChangeListener(listener);
+    }
 
     builder = credentials.addToSessionBuilder(builder);
 
