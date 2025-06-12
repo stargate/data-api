@@ -6,8 +6,10 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import jakarta.validation.Valid;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Internal model for the sort clause that can be used in the commands.
@@ -16,7 +18,31 @@ import java.util.List;
  */
 public record SortClause(@Valid List<SortExpression> sortExpressions) {
   public SortClause {
-    sortExpressions = (sortExpressions == null) ? Collections.emptyList() : sortExpressions;
+    sortExpressions = Objects.requireNonNull(sortExpressions, "sortExpressions cannot be null");
+  }
+
+  /**
+   * Factory method to create a single-expression immutable {@link SortClause}: to be used for most
+   * cases of "specialized" sort clauses, such as lexical or vector sorts.
+   *
+   * @param sortExpression Sort expression to use in the clause, must not be null.
+   */
+  public static SortClause immutable(SortExpression sortExpression) {
+    Objects.requireNonNull(sortExpression, "sortExpression cannot be null");
+    return new SortClause(Collections.singletonList(sortExpression));
+  }
+
+  /**
+   * Specialized factory method to create a single-expression {@link SortClause} that is
+   * <b>mutable</b>: this is unfortunately needed to support the legacy Vectorize handling.
+   *
+   * @param sortExpression Sort expression to use in the clause, must not be null.
+   */
+  public static SortClause mutable(SortExpression sortExpression) {
+    Objects.requireNonNull(sortExpression, "sortExpression cannot be null");
+    List<SortExpression> sortExpressions = new ArrayList<>(1);
+    sortExpressions.add(sortExpression);
+    return new SortClause(sortExpressions);
   }
 
   public static SortClause empty() {

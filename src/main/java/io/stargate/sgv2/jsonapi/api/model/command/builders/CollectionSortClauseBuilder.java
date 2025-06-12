@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
-import java.util.Collections;
 
 /** {@link SortClauseBuilder} to use with Collections. */
 public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSchemaObject> {
@@ -38,8 +37,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
             "if sorting by '%s' value must be String, not %s",
             DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, JsonUtil.nodeTypeAsString(lexicalNode));
       }
-      return new SortClause(
-          Collections.singletonList(SortExpression.collectionLexicalSort(lexicalNode.textValue())));
+      return SortClause.immutable(SortExpression.collectionLexicalSort(lexicalNode.textValue()));
     }
     JsonNode vectorNode = sortNode.get(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
     if (vectorNode != null) {
@@ -55,8 +53,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
         }
         vectorFloats = JsonUtil.arrayNodeToVector(arrayNode);
       }
-      return new SortClause(
-          Collections.singletonList(SortExpression.collectionVectorSort(vectorFloats)));
+      return SortClause.immutable(SortExpression.collectionVectorSort(vectorFloats));
     }
 
     JsonNode vectorizeNode = sortNode.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
@@ -73,8 +70,9 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
       if (vectorizeData.isBlank()) {
         throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
       }
-      return new SortClause(
-          Collections.singletonList(SortExpression.collecetionVectorizeSort(vectorizeData)));
+      // 12-Jun-2025, tatu: Important! Due to original bad design, we need to allow
+      //   modification of the enclosed SortExpression in this case, so:
+      return SortClause.mutable(SortExpression.collecetionVectorizeSort(vectorizeData));
     }
 
     // Otherwise, use shared default processing
