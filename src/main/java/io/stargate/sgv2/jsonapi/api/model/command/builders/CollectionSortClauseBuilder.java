@@ -12,6 +12,8 @@ import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.Collections;
 
+import static io.stargate.sgv2.jsonapi.util.JsonUtil.arrayNodeToVector;
+
 /** {@link SortClauseBuilder} to use with Collections. */
 public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSchemaObject> {
   public CollectionSortClauseBuilder(CollectionSchemaObject collection) {
@@ -53,17 +55,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
         if (!(vectorNode instanceof ArrayNode arrayNode)) {
           throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
         }
-        vectorFloats = new float[arrayNode.size()];
-        if (arrayNode.isEmpty()) {
-          throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
-        }
-        for (int i = 0; i < arrayNode.size(); i++) {
-          JsonNode element = arrayNode.get(i);
-          if (!element.isNumber()) {
-            throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
-          }
-          vectorFloats[i] = element.floatValue();
-        }
+        vectorFloats = JsonUtil.arrayNodeToVector(arrayNode);
       }
       return new SortClause(Collections.singletonList(SortExpression.vsearch(vectorFloats)));
     }
