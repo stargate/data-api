@@ -80,7 +80,8 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
   }
 
   @Override
-  protected SortExpression buildSortExpression(String path, JsonNode innerValue, int sortExpressionCount) {
+  protected SortExpression buildSortExpression(
+      String path, JsonNode innerValue, int sortExpressionCount) {
     if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
       // Vector search can't be used with other sort clause
       if (sortExpressionCount > 1) {
