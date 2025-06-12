@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
@@ -157,11 +156,8 @@ class FindAndRerankOperationBuilder {
 
     if (isLexicalSort()) {
       if (!commandContext.schemaObject().lexicalConfig().enabled()) {
-        // NOTE: using V1 error to be compatible with how we handle lexical for non findAndRerank
-        // See SortClause.validate()
-        throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
-            "Lexical search is not enabled for collection '%s'",
-            commandContext.schemaObject().name().table());
+        throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(
+            errVars(commandContext.schemaObject()));
       }
     }
 

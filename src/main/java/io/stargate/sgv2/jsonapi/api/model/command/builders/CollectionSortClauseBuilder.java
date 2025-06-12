@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -7,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -24,8 +27,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     if (lexicalNode != null) {
       // We can also check if lexical sort supported by the collection:
       if (!schema.lexicalConfig().enabled()) {
-        throw ErrorCodeV1.LEXICAL_NOT_ENABLED_FOR_COLLECTION.toApiException(
-            "Lexical search is not enabled for collection '%s'", schema.name());
+        throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(errVars(schema));
       }
       if (sortNode.size() > 1) {
         throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
