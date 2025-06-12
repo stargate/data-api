@@ -28,6 +28,6 @@ public class FieldNamingRule extends NamingRule {
    */
   public boolean apply(String name) {
     // Dollar not allowed to start any field name (not just root); empty names are also invalid
-    return !name.isEmpty() && !name.startsWith("$");
+    return !name.isBlank() && !name.startsWith("$");
   }
 }

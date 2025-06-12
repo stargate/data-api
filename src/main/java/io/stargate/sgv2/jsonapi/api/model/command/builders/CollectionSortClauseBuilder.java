@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.Collections;
@@ -88,17 +87,15 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     }
 
     // Otherwise, use shared default processing
-    return defaultBuildAndValidate(sortNode);
+    return super.buildAndValidate(sortNode);
   }
 
   @Override
-  protected String validateSortClausePath(String path) {
+  protected void validateSortClausePath(String path) {
+    super.validateSortClausePath(path);
     if (!NamingRules.FIELD.apply(path)) {
-      if (path.isEmpty()) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-            "path must be represented as a non-empty string");
-      }
-      // But allow "well-known" fields
+      // Fail on empty (blank) and "$"-starting names (conflict with operators),
+      // except allow "well-known" fields
       switch (path) {
         case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
             DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
@@ -109,14 +106,5 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
                 path);
       }
     }
-
-    try {
-      path = DocumentPath.verifyEncodedPath(path);
-    } catch (IllegalArgumentException e) {
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-          "sort clause path ('%s') is not a valid path. " + e.getMessage(), path);
-    }
-
-    return path;
   }
 }
