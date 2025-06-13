@@ -279,7 +279,7 @@ public class DataVectorizerService {
               map -> {
                 map.put(
                     "sortVectorizeColumns",
-                    errFmtJoin(vectorizeSorts.stream().map(SortExpression::path).toList()));
+                    errFmtJoin(vectorizeSorts.stream().map(SortExpression::getPath).toList()));
               }));
     }
 
