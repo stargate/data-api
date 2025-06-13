@@ -108,9 +108,9 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
   private void validateSortExpressionPath(String path) {
     if (!NamingRules.FIELD.apply(path)) {
       // This is only called after handling "special" sort expressions so simple validation
-      if (path.isBlank()) {
+      if (path.isEmpty()) {
         throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-            "path must be represented as a non-blank string");
+            "path must be represented as a non-empty string");
       }
       throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
           "path ('%s') cannot start with '$' (except for pseudo-fields '$lexical', '$vector' and '$vectorize')",
