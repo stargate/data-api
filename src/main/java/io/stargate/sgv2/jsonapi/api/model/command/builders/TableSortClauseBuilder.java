@@ -34,7 +34,7 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
     final List<SortExpressionDefinition> sortExprDefs = resolveColumns(sortNode);
     final List<SortExpression> sortExpressions = new ArrayList<>();
     for (SortExpressionDefinition sortExprDef : sortExprDefs) {
-      sortExpressions.add(buildSortExpression(sortExprDef.path, sortExprDef.sortValue));
+      sortExpressions.add(buildSortExpression(sortExprDef));
     }
     return new SortClause(sortExpressions);
   }
@@ -70,8 +70,10 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
     return sortExprDefs;
   }
 
-  @Override
-  protected SortExpression buildSortExpression(String path, JsonNode innerValue) {
+  protected SortExpression buildSortExpression(SortExpressionDefinition exprDef) {
+    final String path = exprDef.path();
+    final JsonNode innerValue = exprDef.sortValue();
+
     float[] vectorFloats = tryDecodeBinaryVector(path, innerValue);
 
     // handle table vector sort
