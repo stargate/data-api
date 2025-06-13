@@ -16,14 +16,14 @@ public class SortClauseUtil {
       return null;
     }
     // BM25 search is not supported via order by
-    if (sortClause.bm25SearchExpression() != null) {
+    if (sortClause.lexicalSortExpression() != null) {
       return null;
     }
     return sortClause.sortExpressions().stream()
         .map(
             sortExpression ->
                 new FindCollectionOperation.OrderBy(
-                    sortExpression.path(), sortExpression.ascending()))
+                    sortExpression.getPath(), sortExpression.isAscending()))
         .collect(Collectors.toList());
   }
 
@@ -32,7 +32,7 @@ public class SortClauseUtil {
       return null;
     }
     if (sortClause.hasVsearchClause()) {
-      return sortClause.sortExpressions().stream().findFirst().get().vector();
+      return sortClause.sortExpressions().stream().findFirst().get().getVector();
     }
     return null;
   }
@@ -41,6 +41,6 @@ public class SortClauseUtil {
     if (sortClause == null) {
       return null;
     }
-    return sortClause.bm25SearchExpression();
+    return sortClause.lexicalSortExpression();
   }
 }
