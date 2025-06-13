@@ -370,7 +370,7 @@ request-errors:
     body: |-
       The command requires a filter on the primary key that specifies all of the partitioning keys, and the partition sort keys in order.
       
-      If a partititon sort key is excluded, then all following partition sort keys must be excluded. 
+      If a partition sort key is excluded, then all following partition sort keys must be excluded. 
       
       The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
       
@@ -926,6 +926,13 @@ request-errors:
       The command attempted to drop vectorize config from the non-vector columns: ${nonVectorColumns}.  
       
       Resend the command using only columns that use the `vector` type.
+
+  - scope: SCHEMA
+    code: LEXICAL_NOT_ENABLED_FOR_COLLECTION
+    title: Lexical search is not enabled for the collection
+    body: |-
+      Lexical content can only be added and filtering and sort only be used on Collections for which Lexical feature is enabled.
+      The Collection ${keyspace}.${table} does not have Lexical feature enabled.
 
   - scope: SCHEMA
     code: UNKNOWN_DATA_TYPE

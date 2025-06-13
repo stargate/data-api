@@ -95,7 +95,7 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         }
         """,
         "LEXICAL_NOT_ENABLED_FOR_COLLECTION",
-        "Lexical search is not enabled for collection");
+        "only be used on Collections for which Lexical feature is enabled");
   }
 
   // https://github.com/stargate/data-api/issues/2057
