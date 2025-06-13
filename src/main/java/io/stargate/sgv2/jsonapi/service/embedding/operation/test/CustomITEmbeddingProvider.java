@@ -3,10 +3,16 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation.test;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+<<<<<<< HEAD
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+=======
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+>>>>>>> main
 import java.util.*;
 
 /**
@@ -30,9 +36,10 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
   public static HashMap<String, float[]> TEST_DATA_DIMENSION_5 = new HashMap<>();
   public static HashMap<String, float[]> TEST_DATA_DIMENSION_6 = new HashMap<>();
 
-  private int dimension;
+  private final int dimension;
 
   public CustomITEmbeddingProvider(int dimension) {
+<<<<<<< HEAD
     // aaron 9 June 2025 - refactoring , I think none of the super class is used, so passing dummy
     // values
     super(
@@ -44,6 +51,23 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
         1,
         Map.of());
 
+=======
+    // construct the test modelConfig
+    super(
+        null,
+        null,
+        new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
+            "testModel",
+            new ApiModelSupport.ApiModelSupportImpl(
+                ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
+            Optional.of(dimension),
+            List.of(),
+            Map.of(),
+            Optional.empty()),
+        dimension,
+        Map.of(),
+        null);
+>>>>>>> main
     this.dimension = dimension;
   }
 
@@ -91,6 +115,12 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
 
+<<<<<<< HEAD
+=======
+    // Check if using an EOF model
+    checkEOLModelUsage();
+
+>>>>>>> main
     List<float[]> response = new ArrayList<>(texts.size());
     if (texts.isEmpty()) {
       var modelUsage =

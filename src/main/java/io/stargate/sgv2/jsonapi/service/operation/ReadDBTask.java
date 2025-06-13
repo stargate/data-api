@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
+import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedSelect;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.DBTask;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskRetryPolicy;
@@ -171,7 +172,10 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
 
     List<Object> positionalValues = new ArrayList<>();
 
-    var selectFrom = selectFrom(schemaObject.keyspaceName(), schemaObject.tableName());
+    // Note, use ExtendedSelect to support AND/OR in where clause, see details in
+    // ExtendedSelect.java.
+    var selectFrom =
+        ExtendedSelect.selectFrom(schemaObject.keyspaceName(), schemaObject.tableName());
     var select = applySelect(selectFrom, positionalValues);
     // these are options that go on the query builder, such as limit or allow filtering
     var bindableQuery = applyOptions(select);

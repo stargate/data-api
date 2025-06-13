@@ -40,7 +40,8 @@ import org.junit.jupiter.api.Test;
 public class DataVectorizerTest {
 
   @Inject ObjectMapper objectMapper;
-  private TestEmbeddingProvider testEmbeddingProvider = new TestEmbeddingProvider();
+  private final TestEmbeddingProvider testEmbeddingProvider =
+      TestEmbeddingProvider.TEST_EMBEDDING_PROVIDER;
   private final EmbeddingProvider testService = testEmbeddingProvider;
   private final EmbeddingCredentials embeddingCredentials =
       new EmbeddingCredentials("test-tenant", Optional.empty(), Optional.empty(), Optional.empty());

@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
@@ -33,23 +34,23 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
   private final JinaAIEmbeddingProviderClient jinaClient;
 
   public JinaAIEmbeddingProvider(
-      EmbeddingProviderConfigStore.RequestProperties requestProperties,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     super(
         ModelProvider.JINA_AI,
-        requestProperties,
+        providerConfig,
         baseUrl,
-        modelName,
-        acceptsJinaAIDimensions(modelName) ? dimension : 0,
+        modelConfig,
+        acceptsJinaAIDimensions(modelConfig.name()) ? dimension : 0,
         vectorizeServiceParameters);
 
     jinaClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(providerConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(JinaAIEmbeddingProviderClient.class);
   }
 
@@ -78,6 +79,7 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
 
+    checkEOLModelUsage();
     checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
 
     var jinaRequest =

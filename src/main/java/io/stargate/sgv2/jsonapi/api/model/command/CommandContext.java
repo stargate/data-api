@@ -1,14 +1,16 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.DefaultRequestTracing;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
+import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -41,6 +43,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
   private final CommandConfig commandConfig;
   private final EmbeddingProviderFactory embeddingProviderFactory;
   private final RerankingProviderFactory rerankingProviderFactory;
+  private final MeterRegistry meterRegistry;
 
   // Request specific
   private final SchemaT schemaObject;
@@ -52,6 +55,9 @@ public class CommandContext<SchemaT extends SchemaObject> {
 
   // see accessors
   private FindAndRerankCommand.HybridLimits hybridLimits;
+
+  // used to track the features used in the command
+  private final CommandFeatures commandFeatures;
 
   // created on demand or set via builder, otherwise we need to read from config too early when
   // running tests, See the {@link Builder#withApiFeatures}
@@ -68,7 +74,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
       CommandConfig commandConfig,
       ApiFeatures apiFeatures,
       EmbeddingProviderFactory embeddingProviderFactory,
-      RerankingProviderFactory rerankingProviderFactory) {
+      RerankingProviderFactory rerankingProviderFactory,
+      MeterRegistry meterRegistry) {
 
     this.schemaObject = schemaObject;
     this.embeddingProvider = embeddingProvider;
@@ -82,6 +89,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
     this.rerankingProviderFactory = rerankingProviderFactory;
 
     this.apiFeatures = apiFeatures;
+    this.meterRegistry = meterRegistry;
 
     var anyTracing =
         apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING)
@@ -94,6 +102,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
                 requestContext.getTenantId().orElse(""),
                 apiFeatures().isFeatureEnabled(ApiFeature.REQUEST_TRACING_FULL))
             : RequestTracing.NO_OP;
+
+    this.commandFeatures = CommandFeatures.create();
   }
 
   /** See doc comments for {@link CommandContext} */
@@ -156,6 +166,10 @@ public class CommandContext<SchemaT extends SchemaObject> {
     return apiFeatures;
   }
 
+  public CommandFeatures commandFeatures() {
+    return commandFeatures;
+  }
+
   public JsonProcessingMetricsReporter jsonProcessingMetricsReporter() {
     return jsonProcessingMetricsReporter;
   }
@@ -170,6 +184,10 @@ public class CommandContext<SchemaT extends SchemaObject> {
 
   public EmbeddingProviderFactory embeddingProviderFactory() {
     return embeddingProviderFactory;
+  }
+
+  public MeterRegistry meterRegistry() {
+    return meterRegistry;
   }
 
   public boolean isCollectionContext() {
@@ -221,6 +239,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
     private CommandConfig commandConfig;
     private EmbeddingProviderFactory embeddingProviderFactory;
     private RerankingProviderFactory rerankingProviderFactory;
+    private MeterRegistry meterRegistry;
 
     BuilderSupplier() {}
 
@@ -252,6 +271,11 @@ public class CommandContext<SchemaT extends SchemaObject> {
       return this;
     }
 
+    public BuilderSupplier withMeterRegistry(MeterRegistry meterRegistry) {
+      this.meterRegistry = meterRegistry;
+      return this;
+    }
+
     public <SchemaT extends SchemaObject> Builder<SchemaT> getBuilder(SchemaT schemaObject) {
 
       Objects.requireNonNull(
@@ -260,6 +284,7 @@ public class CommandContext<SchemaT extends SchemaObject> {
       Objects.requireNonNull(commandConfig, "commandConfig must not be null");
       Objects.requireNonNull(embeddingProviderFactory, "embeddingProviderFactory must not be null");
       Objects.requireNonNull(rerankingProviderFactory, "rerankingProviderFactory must not be null");
+      Objects.requireNonNull(meterRegistry, "meterRegistry must not be null");
 
       // SchemaObject is passed here so the generics gets locked here, makes call chaining easier
       Objects.requireNonNull(schemaObject, "schemaObject must not be null");
@@ -326,7 +351,8 @@ public class CommandContext<SchemaT extends SchemaObject> {
             commandConfig,
             apiFeatures,
             embeddingProviderFactory,
-            rerankingProviderFactory);
+            rerankingProviderFactory,
+            meterRegistry);
       }
     }
   }

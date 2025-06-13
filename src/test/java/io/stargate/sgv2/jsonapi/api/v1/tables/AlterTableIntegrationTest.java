@@ -269,7 +269,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .hasSingleApiError(
               SchemaException.Code.CANNOT_VECTORIZE_UNKNOWN_COLUMNS,
               SchemaException.class,
-              "The command attempted to drop the unknown columns: invalid_column.");
+              "The command attempted to vectorize the unknown columns: invalid_column.");
     }
 
     @Test
@@ -284,6 +284,33 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
               SchemaException.Code.CANNOT_VECTORIZE_NON_VECTOR_COLUMNS,
               SchemaException.class,
               "The command attempted to vectorize the non-vector columns: age.");
+    }
+
+    private static Stream<Arguments> deprecatedEmbeddingModelSource() {
+      return Stream.of(
+          Arguments.of(
+              "DEPRECATED",
+              "a-deprecated-nvidia-embedding-model",
+              SchemaException.Code.DEPRECATED_AI_MODEL),
+          Arguments.of(
+              "END_OF_LIFE",
+              "a-EOL-nvidia-embedding-model",
+              SchemaException.Code.END_OF_LIFE_AI_MODEL));
+    }
+
+    @ParameterizedTest
+    @MethodSource("deprecatedEmbeddingModelSource")
+    public void deprecatedEmbeddingModel(
+        String status, String modelName, SchemaException.Code errorCode) {
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable(
+              "addVectorize",
+              Map.of("vector_type_1", Map.of("provider", "nvidia", "modelName", modelName)))
+          .hasSingleApiError(
+              errorCode,
+              SchemaException.class,
+              "The model is: %s. It is at %s status".formatted(modelName, status));
     }
   }
 

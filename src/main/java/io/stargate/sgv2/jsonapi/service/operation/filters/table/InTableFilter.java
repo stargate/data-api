@@ -6,7 +6,6 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.relation.ColumnRelationBuilder;
-import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.term.Term;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
@@ -52,10 +51,7 @@ public class InTableFilter extends TableFilter {
   }
 
   @Override
-  public <StmtT extends OngoingWhereClause<StmtT>> StmtT apply(
-      TableSchemaObject tableSchemaObject,
-      StmtT ongoingWhereClause,
-      List<Object> positionalValues) {
+  public Relation apply(TableSchemaObject tableSchemaObject, List<Object> positionalValues) {
 
     List<Term> bindMarkers = new ArrayList<>();
 
@@ -112,8 +108,7 @@ public class InTableFilter extends TableFilter {
       }
     }
 
-    return ongoingWhereClause.where(
-        applyInOperator(Relation.column(getPathAsCqlIdentifier()), bindMarkers));
+    return applyInOperator(Relation.column(getPathAsCqlIdentifier()), bindMarkers);
   }
 
   /**

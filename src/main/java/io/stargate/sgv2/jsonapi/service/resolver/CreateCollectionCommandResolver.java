@@ -12,7 +12,6 @@ import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
@@ -29,7 +28,6 @@ import jakarta.inject.Inject;
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
 
   private final ObjectMapper objectMapper;
-  private final CQLSessionCache cqlSessionCache;
   private final DocumentLimitsConfig documentLimitsConfig;
   private final DatabaseLimitsConfig dbLimitsConfig;
   private final OperationsConfig operationsConfig;
@@ -39,23 +37,17 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   @Inject
   public CreateCollectionCommandResolver(
       ObjectMapper objectMapper,
-      CQLSessionCache cqlSessionCache,
       DocumentLimitsConfig documentLimitsConfig,
       DatabaseLimitsConfig dbLimitsConfig,
       OperationsConfig operationsConfig,
       VectorizeConfigValidator validateVectorize,
       RerankingProvidersConfig rerankingProvidersConfig) {
     this.objectMapper = objectMapper;
-    this.cqlSessionCache = cqlSessionCache;
     this.documentLimitsConfig = documentLimitsConfig;
     this.dbLimitsConfig = dbLimitsConfig;
     this.operationsConfig = operationsConfig;
     this.validateVectorize = validateVectorize;
     this.rerankingProvidersConfig = rerankingProvidersConfig;
-  }
-
-  public CreateCollectionCommandResolver() {
-    this(null, null, null, null, null, null, null);
   }
 
   @Override
@@ -76,7 +68,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     if (options == null) {
       final CollectionLexicalConfig lexicalConfig =
           lexicalAvailableForDB
-              ? CollectionLexicalConfig.configForEnabledStandard()
+              ? CollectionLexicalConfig.configForDefault()
               : CollectionLexicalConfig.configForDisabled();
       final CollectionRerankDef rerankDef =
           CollectionRerankDef.configForNewCollections(
@@ -85,14 +77,15 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           ctx,
           dbLimitsConfig,
           objectMapper,
-          cqlSessionCache,
+          ctx.cqlSessionCache(),
           name,
           generateComment(
               objectMapper, false, false, name, null, null, null, lexicalConfig, rerankDef),
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
           false,
-          lexicalConfig);
+          lexicalConfig,
+          rerankDef);
     }
 
     boolean hasIndexing = options.indexing() != null;
@@ -137,7 +130,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           ctx,
           dbLimitsConfig,
           objectMapper,
-          cqlSessionCache,
+          ctx.cqlSessionCache(),
           name,
           vector.dimension(),
           vector.metric(),
@@ -146,19 +139,21 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
           indexingDenyAll,
-          lexicalConfig);
+          lexicalConfig,
+          rerankDef);
     } else {
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
           dbLimitsConfig,
           objectMapper,
-          cqlSessionCache,
+          ctx.cqlSessionCache(),
           name,
           comment,
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
           indexingDenyAll,
-          lexicalConfig);
+          lexicalConfig,
+          rerankDef);
     }
   }
 

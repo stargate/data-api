@@ -30,7 +30,15 @@ public class DataApiResponseValidator {
 
     this.responseIsError =
         switch (commandName) {
-          case DROP_TABLE, DROP_INDEX, CREATE_INDEX, CREATE_TABLE, ALTER_TABLE, FIND_ONE, FIND ->
+          case DROP_TABLE,
+                  DROP_INDEX,
+                  CREATE_INDEX,
+                  CREATE_TEXT_INDEX,
+                  CREATE_VECTOR_INDEX,
+                  CREATE_TABLE,
+                  ALTER_TABLE,
+                  FIND_ONE,
+                  FIND ->
               responseIsErrorWithOptionalStatus();
           default -> responseIsError();
         };
@@ -43,8 +51,9 @@ public class DataApiResponseValidator {
                   CREATE_TABLE,
                   DROP_TABLE,
                   CREATE_INDEX,
-                  DROP_INDEX,
+                  CREATE_TEXT_INDEX,
                   CREATE_VECTOR_INDEX,
+                  DROP_INDEX,
                   LIST_TABLES,
                   LIST_INDEXES ->
               responseIsDDLSuccess();
@@ -105,7 +114,13 @@ public class DataApiResponseValidator {
       case DELETE_ONE, DELETE_MANY -> {
         return hasNoErrors();
       }
-      case ALTER_TABLE, CREATE_TABLE, DROP_TABLE, CREATE_INDEX, DROP_INDEX, CREATE_VECTOR_INDEX -> {
+      case ALTER_TABLE,
+          CREATE_TABLE,
+          DROP_TABLE,
+          CREATE_INDEX,
+          CREATE_TEXT_INDEX,
+          CREATE_VECTOR_INDEX,
+          DROP_INDEX -> {
         return hasNoErrors().hasStatusOK();
       }
       case LIST_TABLES, LIST_INDEXES -> {
@@ -351,6 +366,10 @@ public class DataApiResponseValidator {
 
   public DataApiResponseValidator hasDocumentInPosition(int position, String documentJSON) {
     return body("data.documents[%s]".formatted(position), jsonEquals(documentJSON));
+  }
+
+  public DataApiResponseValidator hasDocumentUnknowingPosition(String documentJSON) {
+    return body("data.documents", hasItem(jsonEquals(documentJSON)));
   }
 
   public DataApiResponseValidator mayFoundSingleDocumentIdByFindOne(

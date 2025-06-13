@@ -4,11 +4,14 @@ import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.NoArgGenerator;
 import io.stargate.sgv2.jsonapi.api.request.tenant.DataApiTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.SecurityContext;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -25,10 +28,12 @@ public class RequestContext {
 
   private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
-  private final EmbeddingCredentials embeddingCredentials;
+  private final EmbeddingCredentialsSupplier embeddingCredentialsSupplier;
   private final RerankingCredentials rerankingCredentials;
   private final HttpHeaderAccess httpHeaders;
   private final String requestId;
+
+  private final String userAgent;
 
   /**
    * Constructor that will be useful in the offline library mode, where only the tenant will be set
@@ -38,11 +43,12 @@ public class RequestContext {
    */
   public RequestContext(Optional<String> tenantId) {
     this.tenantId = tenantId;
-    this.cassandraToken = Optional.empty();
-    this.embeddingCredentials = null;
-    this.rerankingCredentials = null;
+    cassandraToken = Optional.empty();
+    embeddingCredentialsSupplier = null;
+    rerankingCredentials = null;
     httpHeaders = null;
     requestId = generateRequestId();
+    userAgent = null;
   }
 
   @Inject
@@ -51,6 +57,7 @@ public class RequestContext {
       SecurityContext securityContext,
       Instance<DataApiTenantResolver> tenantResolver,
       Instance<DataApiTokenResolver> tokenResolver,
+<<<<<<< HEAD
       Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
 
     this.tenantId = (tenantResolver.get()).resolve(routingContext, securityContext);
@@ -61,12 +68,27 @@ public class RequestContext {
             .resolveEmbeddingCredentials(tenantId.orElse(""), routingContext);
 
     this.cassandraToken = (tokenResolver.get()).resolve(routingContext, securityContext);
+=======
+      HttpConstants httpConstants) {
+
+    tenantId = tenantResolver.get().resolve(routingContext, securityContext);
+    cassandraToken = tokenResolver.get().resolve(routingContext, securityContext);
+>>>>>>> main
     httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
     requestId = generateRequestId();
+    userAgent = httpHeaders.getHeader(HttpHeaders.USER_AGENT);
 
+    embeddingCredentialsSupplier =
+        new EmbeddingCredentialsSupplier(
+            httpConstants.authToken(),
+            httpConstants.embeddingApiKey(),
+            httpConstants.embeddingAccessId(),
+            httpConstants.embeddingSecretId());
+
+    // if x-reranking-api-key is present, then use it, else use cassandraToken
     Optional<String> rerankingApiKeyFromHeader =
         HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext);
-    this.rerankingCredentials =
+    rerankingCredentials =
         rerankingApiKeyFromHeader
             .map(apiKey -> new RerankingCredentials(this.tenantId.orElse(""), Optional.of(apiKey)))
             .orElse(
@@ -87,19 +109,23 @@ public class RequestContext {
   }
 
   public Optional<String> getTenantId() {
-    return this.tenantId;
+    return tenantId;
   }
 
   public Optional<String> getCassandraToken() {
-    return this.cassandraToken;
+    return cassandraToken;
   }
 
-  public EmbeddingCredentials getEmbeddingCredentials() {
-    return this.embeddingCredentials;
+  public Optional<String> getUserAgent() {
+    return Optional.ofNullable(userAgent);
+  }
+
+  public EmbeddingCredentialsSupplier getEmbeddingCredentialsSupplier() {
+    return embeddingCredentialsSupplier;
   }
 
   public RerankingCredentials getRerankingCredentials() {
-    return this.rerankingCredentials;
+    return rerankingCredentials;
   }
 
   public HttpHeaderAccess getHttpHeaders() {
@@ -115,6 +141,14 @@ public class RequestContext {
 
     public HttpHeaderAccess(io.vertx.core.MultiMap headers) {
       this.headers = headers;
+    }
+
+    public String getHeader(String headerName) {
+      return headers.get(headerName);
+    }
+
+    public List<String> getHeaders(String headerName) {
+      return headers.getAll(headerName);
     }
 
     /**

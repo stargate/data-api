@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -14,12 +15,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListTablesCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
@@ -55,17 +56,18 @@ import org.jboss.resteasy.reactive.RestResponse;
 public class KeyspaceResource {
 
   public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}";
-  private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject private RequestContext requestContext;
 
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
+  private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject
   public KeyspaceResource(
       MeteredCommandProcessor meteredCommandProcessor,
+      MeterRegistry meterRegistry,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      CQLSessionCache cqlSessionCache,
+      CqlSessionCacheSupplier sessionCacheSupplier,
       EmbeddingProviderFactory embeddingProviderFactory,
       RerankingProviderFactory rerankingProviderFactory) {
     this.meteredCommandProcessor = meteredCommandProcessor;
@@ -74,10 +76,11 @@ public class KeyspaceResource {
         CommandContext.builderSupplier()
             // old code did not pass a jsonProcessingMetricsReporter not sure why - Aaron Feb 10
             .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
-            .withCqlSessionCache(cqlSessionCache)
+            .withCqlSessionCache(sessionCacheSupplier.get())
             .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
             .withEmbeddingProviderFactory(embeddingProviderFactory)
-            .withRerankingProviderFactory(rerankingProviderFactory);
+            .withRerankingProviderFactory(rerankingProviderFactory)
+            .withMeterRegistry(meterRegistry);
   }
 
   @Operation(

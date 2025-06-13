@@ -76,7 +76,7 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
       CommandContext<TableSchemaObject> commandContext, UpdateOneCommand command) {
 
     // Sort clause is not supported for table updateOne command.
-    if (command.sortClause() != null && !command.sortClause().isEmpty()) {
+    if (!command.sortClause(commandContext).isEmpty()) {
       throw SortException.Code.UNSUPPORTED_SORT_FOR_TABLE_UPDATE_COMMAND.get(
           errVars(commandContext.schemaObject(), map -> {}));
     }
@@ -140,7 +140,7 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
 
     var dbLogicalExpression = collectionFilterResolver.resolve(commandContext, command).target();
 
-    final SortClause sortClause = command.sortClause();
+    final SortClause sortClause = command.sortClause(commandContext);
     if (sortClause != null) {
       sortClause.validate(commandContext.schemaObject());
     }

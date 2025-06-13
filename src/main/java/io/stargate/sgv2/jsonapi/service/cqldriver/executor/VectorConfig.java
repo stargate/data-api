@@ -168,6 +168,16 @@ public class VectorConfig implements Recordable {
   }
 
   @Override
+  public String toString() {
+    return "VectorConfig["
+        + "vectorEnabled="
+        + vectorEnabled
+        + ", columnVectorDefinitions="
+        + columnVectorDefinitions
+        + ']';
+  }
+
+  @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {
     return dataRecorder
         .append("vectorEnabled", vectorEnabled)

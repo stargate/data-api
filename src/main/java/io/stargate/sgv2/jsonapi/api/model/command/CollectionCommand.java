@@ -24,6 +24,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
   // We have only collection resource that is used for API Tables
   @JsonSubTypes.Type(value = AlterTableCommand.class),
   @JsonSubTypes.Type(value = CreateIndexCommand.class),
+  @JsonSubTypes.Type(value = CreateTextIndexCommand.class),
   @JsonSubTypes.Type(value = CreateVectorIndexCommand.class),
   @JsonSubTypes.Type(value = ListIndexesCommand.class),
 })

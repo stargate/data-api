@@ -1,13 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
@@ -170,22 +168,16 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
     @Test
     public void filterFieldInDenyOne() {
       // explicitly deny "address.city", implicitly allow "_id", "name", "address.street"
-      String filterData =
-          """
+      givenHeadersPostJsonThenOk(
+              keyspaceName,
+              denyOneIndexingCollection,
+              """
               {
                 "find": {
                   "filter": {"address.city": "monkey town"}
                 }
               }
-                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
-          .then()
-          .statusCode(200)
+                """)
           .body("$", responseIsError())
           .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
@@ -195,22 +187,16 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
     @Test
     public void filterVectorFieldInDenyAll() {
       // explicitly deny "address.city", implicitly allow "_id", "name", "address.street"
-      String filterData =
-          """
-                  {
-                    "find": {
-                      "filter": {"$vector": {"$exists": true}}
-                    }
-                  }
-                    """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, denyAllIndexingCollection)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(
+              keyspaceName,
+              denyAllIndexingCollection,
+              """
+            {
+              "find": {
+                "filter": {"$vector": {"$exists": true}}
+              }
+            }
+            """)
           .body("$", responseIsError())
           .body("errors[0].message", endsWith("filter path '$vector' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
@@ -220,18 +206,14 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
     @Test
     public void filterFieldNotInDenyOne() {
       // explicitly deny "address.city", implicitly allow "_id", "name", "address.street"
-      String filterData1 =
-          """
+      givenHeadersAndJson(
+              """
               {
                 "find": {
                   "filter": {"name": "aaron"}
                 }
               }
-                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData1)
+              """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
           .then()
@@ -239,8 +221,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1));
       // deny "address.city", only this as a string, not "address" as an object
-      String filterData2 =
-          """
+      givenHeadersAndJson(
+              """
                   {
                     "find": {
                       "filter": {
@@ -252,19 +234,15 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                       }
                     }
                   }
-                    """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData2)
+                    """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
           .then()
           .statusCode(200)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1));
-      String filterData3 =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "find": {
                           "filter": {
@@ -277,11 +255,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                           }
                         }
                       }
-                        """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData3)
+                        """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
           .then()
@@ -296,18 +270,14 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
     public void filterFieldInDenyMany() {
       // explicitly deny "name", "address", implicitly allow "_id"
       // deny "address", "address.city" should also be included
-      String filterData =
-          """
+      givenHeadersAndJson(
+              """
                   {
                     "find": {
                       "filter": {"address.city": "monkey town"}
                     }
                   }
-                    """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData)
+                    """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, denyManyIndexingCollection)
           .then()
@@ -320,19 +290,14 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
 
     @Test
     public void filterFieldInDenyAll() {
-      // deny all use "*"
-      String filterData =
-          """
+      givenHeadersAndJson(
+              """
                   {
                     "find": {
                       "filter": {"address.city": "monkey town"}
                     }
                   }
-                    """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData)
+                    """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, denyAllIndexingCollection)
           .then()
@@ -345,19 +310,14 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
 
     @Test
     public void filterIdInDenyAllWithEqAndIn() {
-      // deny all use "*"
-      String filterId1 =
-          """
+      givenHeadersAndJson(
+              """
                   {
                     "find": {
                       "filter": {"_id": "1"}
                     }
                   }
-                    """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterId1)
+                    """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, denyAllIndexingCollection)
           .then()
@@ -365,8 +325,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1));
 
-      String filterId2 =
-          """
+      givenHeadersAndJson(
+              """
                   {
                       "find": {
                           "filter": {
@@ -379,11 +339,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                           }
                       }
                   }
-                      """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterId2)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, denyAllIndexingCollection)
           .then()
@@ -394,9 +350,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
 
     @Test
     public void filterIdInDenyAllWithoutEqAndIn() {
-      // deny all use "*"
-      String filterId3 =
-          """
+      givenHeadersAndJson(
+              """
                 {
                     "find": {
                         "filter": {
@@ -409,11 +364,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                         }
                     }
                 }
-                    """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterId3)
+                """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, denyAllIndexingCollection)
           .then()
@@ -429,18 +380,14 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
     @Test
     public void filterFieldInAllowOne() {
       // explicitly allow "name", implicitly deny "_id" "address"
-      String filterData =
-          """
+      givenHeadersAndJson(
+              """
                   {
                     "find": {
                       "filter": {"name": "aaron"}
                     }
                   }
-                    """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData)
+                  """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, allowOneIndexingCollection)
           .then()
@@ -452,8 +399,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
     @Test
     public void filterFieldNotInAllowOne() {
       // explicitly allow "name", implicitly deny "_id" "address.city" "address.street" "address"
-      String filterData1 =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "find": {
                           "filter": {
@@ -466,11 +413,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                           }
                         }
                       }
-                        """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData1)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, allowOneIndexingCollection)
           .then()
@@ -479,8 +422,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("errors[0].message", endsWith("filter path 'address' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
-      String filterData2 =
-          """
+      givenHeadersAndJson(
+              """
                     {
                         "find": {
                             "filter": {
@@ -493,11 +436,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                             }
                         }
                     }
-                        """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData2)
+                    """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, allowOneIndexingCollection)
           .then()
@@ -508,18 +447,14 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body(
               "errors[0].message",
               is("_id is not indexed: you can only use $eq or $in as the operator"));
-      String filterData3 =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "find": {
                           "filter": {"_id": "1"}
                         }
                       }
-                        """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData3)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, allowOneIndexingCollection)
           .then()
@@ -531,8 +466,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
     @Test
     public void filterFieldInAllowMany() {
       // explicitly allow "name" "address.city", implicitly deny "_id" "address.street"
-      String filterData =
-          """
+      givenHeadersAndJson(
+              """
                       {
                           "find": {
                               "filter": {
@@ -561,11 +496,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                               }
                           }
                       }
-                            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, allowManyIndexingCollection)
           .then()
@@ -578,8 +509,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
     public void filterFieldNotInAllowMany() {
       // explicitly allow "name" "address.city", implicitly deny "_id" "address.street" "address"
       // _id is allowed using in
-      String filterData1 =
-          """
+      givenHeadersAndJson(
+              """
                 {
                   "find": {
                     "filter": {
@@ -606,11 +537,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                     }
                   }
                 }
-                            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData1)
+                """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, allowManyIndexingCollection)
           .then()
@@ -620,8 +547,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
       // allow "address.city", only this as a string, not "address" as an object
-      String filterData2 =
-          """
+      givenHeadersAndJson(
+              """
               {
                 "find": {
                   "filter": {
@@ -634,12 +561,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                   }
                 }
               }
-                    """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData2)
+              """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, allowManyIndexingCollection)
           .then()
@@ -655,8 +577,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
       // explicitly deny "address.city", implicitly allow "_id", "name", "address.street" "address"
       // String and array in array - no incremental path, the path is "address" - should be allowed
       // but no data return
-      String filterData1 =
-          """
+      givenHeadersAndJson(
+              """
                   {
                     "find": {
                       "filter": {
@@ -666,11 +588,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                       }
                     }
                   }
-                  """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData1)
+                  """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
           .then()
@@ -680,8 +598,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
       // explicitly deny "address.city", implicitly allow "_id", "name", "address.street" "address"
-      String filterData2 =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "find": {
                           "filter": {
@@ -691,11 +609,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                           }
                         }
                       }
-                      """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData2)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
           .then()
@@ -704,8 +618,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("data.documents", hasSize(1));
       // explicitly deny "address.city", implicitly allow "_id", "name", "address.street" "address"
       // Object (Hashmap) in array - incremental path is "address.city"
-      String filterData3 =
-          """
+      givenHeadersAndJson(
+              """
                   {
                     "find": {
                       "filter": {
@@ -719,11 +633,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                       }
                     }
                   }
-                      """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData3)
+                  """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
           .then()
@@ -733,8 +643,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
       // explicitly deny "name", "address" "contact.email"
-      String filterData4 =
-          """
+      givenHeadersAndJson(
+              """
                   {
                     "find": {
                       "filter": {
@@ -751,11 +661,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                       }
                     }
                   }
-                          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData4)
+                  """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, denyManyIndexingCollection)
           .then()
@@ -768,10 +674,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
 
     @Test
     public void incrementalPathInMap() {
-      // explicitly deny "address.city", implicitly allow "_id", "name", "address.street" "address"
-      // map in map
-      String filterData1 =
-          """
+      givenHeadersAndJson(
+              """
                   {
                     "find": {
                       "filter": {
@@ -785,11 +689,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                       }
                     }
                   }
-                      """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(filterData1)
+                  """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
           .then()
@@ -802,9 +702,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
 
     @Test
     public void sortFieldInAllowMany() {
-      // explicitly deny "name", "address", implicitly allow "_id", "$vector"
-      String sortData =
-          """
+      givenHeadersAndJson(
+              """
                   {
                     "find": {
                       "sort": {
@@ -812,11 +711,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                       }
                     }
                   }
-                          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(sortData)
+                  """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, denyManyIndexingCollection)
           .then()
@@ -829,8 +724,8 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
     public void sortFieldNotInAllowMany() {
       // explicitly allow "name" "address.city", implicitly deny "_id" "address.street";
       // (and implicitly allow "$vector" as well)
-      String sortData =
-          """
+      givenHeadersAndJson(
+              """
                       {
                         "find": {
                           "sort": {
@@ -838,11 +733,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                           }
                         }
                       }
-                              """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(sortData)
+                      """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, allowManyIndexingCollection)
           .then()
@@ -856,10 +747,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
     @Test
     public void fieldNameWithDot() {
       // allow "pricing.price&.usd", so one document is returned
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
               """
                       {
                         "find": {
@@ -876,34 +764,28 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("data.documents", hasSize(1));
 
       // allow "pricing.price&&jpy", but the path is not escaped, so no document is returned
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
               """
-                        {
-                            "find": {
-                            "filter": {
-                                "pricing.price&jpy": 1
-                            }
-                            }
-                        }
-                        """)
+              {
+                  "find": {
+                  "filter": {
+                      "pricing.price&jpy": 1
+                  }
+                  }
+              }
+              """)
           .post(CollectionResource.BASE_PATH, keyspaceName, allowManyIndexingCollection)
           .then()
           .statusCode(200)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
-              containsString("filter clause path ('pricing.price&jpy') is not a valid path."))
+              containsString("filter clause path ('pricing.price&jpy') is not a valid path: "))
           .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
       // allow "metadata.app&.kubernetes&.io/name", so one document is returned
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
               """
                         {
                             "find": {
@@ -921,10 +803,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
 
       // did not allow "pricing.price&.aud", even though the path is escaped, no document is
       // returned
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersAndJson(
               """
                       {
                         "find": {

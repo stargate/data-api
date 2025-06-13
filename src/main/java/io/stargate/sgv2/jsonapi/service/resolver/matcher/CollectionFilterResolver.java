@@ -43,6 +43,8 @@ public class CollectionFilterResolver<T extends Command & Filterable>
   private static final Object SIZE_GROUP = new Object();
   private static final Object ARRAY_EQUALS = new Object();
   private static final Object SUB_DOC_EQUALS = new Object();
+  // For $match on $lexical
+  private static final Object MATCH_GROUP = new Object();
 
   public CollectionFilterResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
@@ -156,7 +158,11 @@ public class CollectionFilterResolver<T extends Command & Filterable>
         .compareValues(
             "*",
             EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE),
-            JsonType.SUB_DOC);
+            JsonType.SUB_DOC)
+        .capture(MATCH_GROUP)
+        .compareValues(
+            // Should be "$lexical" but validated elsewhere
+            "*", EnumSet.of(ValueComparisonOperator.MATCH), JsonType.STRING);
 
     return matchRules;
   }
@@ -272,6 +278,23 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     idRangeGroup.consumeAllCaptures(
                         expression -> {
                           final DocumentId value = (DocumentId) expression.value();
+                          // E.G. {"_id":{"$gt":true}}
+                          if (value.value() instanceof Boolean) {
+                            dbLogicalExpression.addFilter(
+                                new BoolCollectionFilter(
+                                    DocumentConstants.Fields.DOC_ID,
+                                    getMapFilterBaseOperator(expression.operator()),
+                                    (Boolean) value.value()));
+                          }
+                          // E.G. {"_id":{"$gt":"apple"}}
+                          if (value.value() instanceof String) {
+                            dbLogicalExpression.addFilter(
+                                new TextCollectionFilter(
+                                    DocumentConstants.Fields.DOC_ID,
+                                    getMapFilterBaseOperator(expression.operator()),
+                                    (String) value.value()));
+                          }
+                          // E.G. {"_id":{"$gt":123}}
                           if (value.value() instanceof BigDecimal bdv) {
                             dbLogicalExpression.addFilter(
                                 new NumberCollectionFilter(
@@ -279,6 +302,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                                     getMapFilterBaseOperator(expression.operator()),
                                     bdv));
                           }
+                          // E.G. {"_id":{"$gt":{"$date":1672531200000}}}
                           if (value.value() instanceof Map) {
                             dbLogicalExpression.addFilter(
                                 new DateCollectionFilter(
@@ -479,6 +503,19 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                                   expression.operator().equals(ValueComparisonOperator.EQ)
                                       ? MapCollectionFilter.Operator.MAP_EQUALS
                                       : MapCollectionFilter.Operator.MAP_NOT_EQUALS));
+                        });
+                  });
+
+          captureGroups
+              .getGroupIfPresent(MATCH_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> matchGroup = (CaptureGroup<Object>) captureGroup;
+                    matchGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addFilter(
+                              new MatchCollectionFilter(
+                                  expression.path(), (String) expression.value()));
                         });
                   });
         };

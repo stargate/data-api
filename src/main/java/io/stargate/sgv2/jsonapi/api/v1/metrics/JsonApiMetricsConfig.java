@@ -71,10 +71,6 @@ public interface JsonApiMetricsConfig {
   String metricsName();
 
   @NotBlank
-  @WithDefault("vectorize.call.duration")
-  String vectorizeCallDurationMetrics();
-
-  @NotBlank
   @WithDefault("vectorize.input.bytes")
   String vectorizeInputBytesMetrics();
 

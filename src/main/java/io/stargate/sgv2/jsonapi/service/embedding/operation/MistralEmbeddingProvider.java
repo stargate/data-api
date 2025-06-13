@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
@@ -32,23 +33,23 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
   private final MistralEmbeddingProviderClient mistralClient;
 
   public MistralEmbeddingProvider(
-      EmbeddingProviderConfigStore.RequestProperties requestProperties,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     super(
         ModelProvider.MISTRAL,
-        requestProperties,
+        providerConfig,
         baseUrl,
-        modelName,
+        modelConfig,
         dimension,
         vectorizeServiceParameters);
 
     mistralClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(providerConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(MistralEmbeddingProviderClient.class);
   }
 
@@ -82,6 +83,7 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
 
+    checkEOLModelUsage();
     checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
 
     var mistralRequest = new MistralEmbeddingRequest(texts, modelName(), "float");

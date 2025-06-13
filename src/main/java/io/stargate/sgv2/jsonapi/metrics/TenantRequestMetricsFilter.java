@@ -15,16 +15,18 @@
  *
  */
 
-package io.stargate.sgv2.jsonapi.api.v1.metrics;
+package io.stargate.sgv2.jsonapi.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.core.HttpHeaders;
 import java.util.regex.Pattern;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 
@@ -113,7 +115,7 @@ public class TenantRequestMetricsFilter {
   }
 
   private String getUserAgentValue(ContainerRequestContext requestContext) {
-    String headerString = requestContext.getHeaderString("user-agent");
+    String headerString = requestContext.getHeaderString(HttpHeaders.USER_AGENT);
     if (null != headerString && !headerString.isBlank()) {
       String[] split = USER_AGENT_SPLIT.split(headerString);
       if (split.length > 0) {

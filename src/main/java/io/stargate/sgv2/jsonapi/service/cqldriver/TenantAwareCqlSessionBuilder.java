@@ -12,7 +12,10 @@ import java.util.Map;
 /**
  * This is an extension of the {@link CqlSessionBuilder} that allows to pass a tenant ID to the
  * CQLSession via TenantAwareDriverContext which is an extension of the {@link DefaultDriverContext}
- * that adds the tenant ID to the startup options.
+ * that adds the tenant ID to the startup options. The tenant ID is critical for the cql session and
+ * it has to be passed and cannot be removed.
+ *
+ * <p>It's linked to issue <a href="https://github.com/stargate/data-api/issues/2119">#2119</a>
  */
 public class TenantAwareCqlSessionBuilder extends CqlSessionBuilder {
   /**
@@ -22,18 +25,14 @@ public class TenantAwareCqlSessionBuilder extends CqlSessionBuilder {
   public static final String TENANT_ID_PROPERTY_KEY = "TENANT_ID";
 
   /** Tenant ID that will be passed to the CQLSession via TenantAwareDriverContext */
-  private final String tenantId;
+  private String tenantId;
 
-  /**
-   * Constructor that takes the tenant ID as a parameter
-   *
-   * @param tenantId tenant id or database id
-   */
-  public TenantAwareCqlSessionBuilder(String tenantId) {
+  public TenantAwareCqlSessionBuilder withTenantId(String tenantId) {
     if (tenantId == null || tenantId.isEmpty()) {
       throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException("Tenant ID cannot be null or empty");
     }
     this.tenantId = tenantId;
+    return this;
   }
 
   /**

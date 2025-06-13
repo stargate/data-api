@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
@@ -33,22 +34,22 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
   private final Boolean autoTruncate;
 
   public VoyageAIEmbeddingProvider(
-      EmbeddingProviderConfigStore.RequestProperties requestProperties,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
       int dimension,
-      Map<String, Object> serviceParameters) {
+      Map<String, Object> vectorizeServiceParameters) {
     super(
-        ModelProvider.VOYAGE_AI,
-        requestProperties,
+        ModelProvider.VERTEXAI,
+        providerConfig,
         baseUrl,
-        modelName,
+        modelConfig,
         dimension,
-        serviceParameters);
+        vectorizeServiceParameters);
 
     // use configured input_type if available
-    requestTypeQuery = requestProperties.requestTypeQuery().orElse(null);
-    requestTypeIndex = requestProperties.requestTypeIndex().orElse(null);
+    requestTypeQuery = providerConfig.properties().requestTypeQuery().orElse(null);
+    requestTypeIndex = providerConfig.properties().requestTypeIndex().orElse(null);
 
     Object v = (serviceParameters == null) ? null : serviceParameters.get("autoTruncate");
     autoTruncate = (v instanceof Boolean) ? (Boolean) v : null;

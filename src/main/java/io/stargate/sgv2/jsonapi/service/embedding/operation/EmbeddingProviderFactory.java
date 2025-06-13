@@ -5,6 +5,11 @@ import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+<<<<<<< HEAD
+=======
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
+>>>>>>> main
 import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -17,8 +22,13 @@ import java.util.Optional;
 public class EmbeddingProviderFactory {
 
   @Inject Instance<EmbeddingProviderConfigStore> embeddingProviderConfigStore;
+<<<<<<< HEAD
 
   @Inject OperationsConfig operationsConfig;
+=======
+  @Inject EmbeddingProvidersConfig embeddingProvidersConfig;
+  @Inject OperationsConfig config;
+>>>>>>> main
 
   @GrpcClient("embedding")
   EmbeddingService embeddingService;
@@ -28,9 +38,10 @@ public class EmbeddingProviderFactory {
     EmbeddingProvider create(
         EmbeddingProviderConfigStore.RequestProperties requestProperties,
         String baseUrl,
-        String modelName,
+        EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
         int dimension,
-        Map<String, Object> vectorizeServiceParameter);
+        Map<String, Object> vectorizeServiceParameter,
+        EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig);
   }
 
   private static final Map<ModelProvider, ProviderConstructor> EMBEDDING_PROVIDER_CTORS =
@@ -90,10 +101,17 @@ public class EmbeddingProviderFactory {
       Map<String, String> authentication,
       String commandName) {
 
+<<<<<<< HEAD
     final EmbeddingProviderConfigStore.ServiceConfig serviceConfig =
         embeddingProviderConfigStore.get().getConfiguration(tenant, modelProvider.apiName());
 
     if (operationsConfig.enableEmbeddingGateway()) {
+=======
+    final EmbeddingProviderConfigStore.ServiceConfig configuration =
+        embeddingProviderConfigStore.get().getConfiguration(tenant, serviceName);
+
+    if (config.enableEmbeddingGateway()) {
+>>>>>>> main
       return new EmbeddingGatewayClient(
           serviceConfig.requestConfiguration(),
           modelProvider,
@@ -108,9 +126,16 @@ public class EmbeddingProviderFactory {
           commandName);
     }
 
+<<<<<<< HEAD
     if (serviceConfig.serviceProvider().equals(ModelProvider.CUSTOM.apiName())) {
       Optional<Class<?>> clazz = serviceConfig.implementationClass();
       if (clazz.isEmpty()) {
+=======
+    // CUSTOM is for test only
+    if (configuration.serviceProvider().equals(ProviderConstants.CUSTOM)) {
+      Optional<Class<?>> clazz = configuration.implementationClass();
+      if (!clazz.isPresent()) {
+>>>>>>> main
         throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
             "custom class undefined");
       }
@@ -140,11 +165,35 @@ public class EmbeddingProviderFactory {
           "ModelProvider does not have a constructor: " + serviceConfigModelProvider.apiName());
     }
 
+<<<<<<< HEAD
     return ctor.create(
         serviceConfig.requestConfiguration(),
         serviceConfig.getBaseUrl(modelName),
         modelName,
+=======
+    // Get the provider, then get the model.
+    var providerConfig = embeddingProvidersConfig.providers().get(configuration.serviceProvider());
+    if (providerConfig == null) {
+      throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
+          "unknown service provider '%s'", configuration.serviceProvider());
+    }
+    EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model =
+        embeddingProvidersConfig.providers().get(configuration.serviceProvider()).models().stream()
+            .filter(m -> m.name().equals(modelName))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
+                        "unknown model '%s' for service provider '%s'",
+                        modelName, configuration.serviceProvider()));
+
+    return ctor.create(
+        configuration.requestConfiguration(),
+        configuration.getBaseUrl(modelName),
+        model,
+>>>>>>> main
         dimension,
-        vectorizeServiceParameters);
+        vectorizeServiceParameters,
+        providerConfig);
   }
 }

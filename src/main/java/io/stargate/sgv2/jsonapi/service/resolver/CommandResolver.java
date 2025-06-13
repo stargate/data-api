@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.MetricTags.TENANT_TAG;
+import static io.stargate.sgv2.jsonapi.metrics.MetricsConstants.UNKNOWN_VALUE;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
@@ -185,9 +187,6 @@ public interface CommandResolver<C extends Command> {
         "%s Command does not support operating on Databases, target was %s",
         command.getClass().getSimpleName(), ctx.schemaObject().name());
   }
-
-  static final String UNKNOWN_VALUE = "unknown";
-  static final String TENANT_TAG = "tenant";
 
   /**
    * Call to track metrics for the index usage, this method is called after the command is resolved

@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
@@ -33,24 +34,24 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
   private final VertexAIEmbeddingProviderClient vertexClient;
 
   public VertexAIEmbeddingProvider(
-      EmbeddingProviderConfigStore.RequestProperties requestProperties,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
       int dimension,
-      Map<String, Object> serviceParameters) {
+      Map<String, Object> vectorizeServiceParameters) {
     super(
         ModelProvider.VERTEXAI,
-        requestProperties,
+        providerConfig,
         baseUrl,
-        modelName,
+        modelConfig,
         dimension,
-        serviceParameters);
+        vectorizeServiceParameters);
 
-    String actualUrl = replaceParameters(baseUrl, serviceParameters);
+    String actualUrl = replaceParameters(baseUrl, vectorizeServiceParameters);
     vertexClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(actualUrl))
-            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(providerConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(VertexAIEmbeddingProviderClient.class);
   }
 
@@ -76,6 +77,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
 
+    checkEOLModelUsage();
     checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
 
     var vertexRequest =

@@ -22,6 +22,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   String testTableName = "tableForCreateIndexTest";
+  String lexicalTableName = "tableForCreateTextIndexTest";
+  String vectorTableName = "tableForCreateVectorIndexTest";
 
   private void verifyCreatedIndex(String indexName) {
     assertTableCommand(keyspaceName, testTableName)
@@ -31,8 +33,25 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
         .hasIndex(indexName);
   }
 
+  private void verifyCreatedTextIndex(String indexName) {
+    assertTableCommand(keyspaceName, lexicalTableName)
+        .templated()
+        .listIndexes(false)
+        .wasSuccessful()
+        .hasIndex(indexName);
+  }
+
+  private void verifyCreatedVectorIndex(String indexName) {
+    assertTableCommand(keyspaceName, vectorTableName)
+        .templated()
+        .listIndexes(false)
+        .wasSuccessful()
+        .hasIndex(indexName);
+  }
+
   @BeforeAll
-  public final void createSimpleTable() {
+  public final void createTestTables() {
+    // Create test tables for indexing: first one for "regular" indexes
     assertNamespaceCommand(keyspaceName)
         .templated()
         .createTable(
@@ -60,7 +79,17 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                     Map.of("type", "map", "keyType", "int", "valueType", "text")),
                 Map.entry(
                     "map_type_float_value",
-                    Map.of("type", "map", "keyType", "text", "valueType", "float")),
+                    Map.of("type", "map", "keyType", "text", "valueType", "float"))),
+            "id")
+        .wasSuccessful();
+
+    // and then the second table for vector indexes
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            vectorTableName,
+            Map.ofEntries(
+                Map.entry("id", Map.of("type", "text")),
                 Map.entry("vector_type_1", Map.of("type", "vector", "dimension", 1024)),
                 Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1536)),
                 Map.entry("vector_type_3", Map.of("type", "vector", "dimension", 1024)),
@@ -70,11 +99,25 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 Map.entry("vector_type_7", Map.of("type", "vector", "dimension", 1024))),
             "id")
         .wasSuccessful();
+
+    // and then the third table for text (aka "lexical") indexes
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            lexicalTableName,
+            Map.ofEntries(
+                Map.entry("id", Map.of("type", "text")),
+                Map.entry("text_field_1", Map.of("type", "text")),
+                Map.entry("text_field_2", Map.of("type", "text")),
+                Map.entry("text_field_3", Map.of("type", "text")),
+                Map.entry("text_field_x", Map.of("type", "text"))),
+            "id")
+        .wasSuccessful();
   }
 
   @Nested
   @Order(1)
-  class CreateIndexSuccess {
+  class CreateRegularIndexSuccess {
 
     @Test
     public void createIndexBasic() {
@@ -460,7 +503,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   class CreateVectorIndexSuccess {
     @Test
     public void createVectorIndex() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                                           {
@@ -472,12 +515,12 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                           """)
           .wasSuccessful();
 
-      verifyCreatedIndex("vector_type_1_idx");
+      verifyCreatedVectorIndex("vector_type_1_idx");
     }
 
     @Test
     public void createVectorIndexWithSourceModel() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                                           {
@@ -492,12 +535,12 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                           """)
           .wasSuccessful();
 
-      verifyCreatedIndex("vector_type_2_idx");
+      verifyCreatedVectorIndex("vector_type_2_idx");
     }
 
     @Test
     public void createVectorIndexWithMetric() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                       {
@@ -512,12 +555,12 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                       """)
           .wasSuccessful();
 
-      verifyCreatedIndex("vector_type_3_idx");
+      verifyCreatedVectorIndex("vector_type_3_idx");
     }
 
     @Test
     public void createVectorIndexWithMetricAndSourceModel() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                               {
@@ -533,12 +576,12 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                               """)
           .wasSuccessful();
 
-      verifyCreatedIndex("vector_type_4_idx");
+      verifyCreatedVectorIndex("vector_type_4_idx");
     }
 
     @Test
     public void createVectorIndexWithCorrectIndexType() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                                 {
@@ -551,13 +594,88 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                 """)
           .wasSuccessful();
 
-      verifyCreatedIndex("vector_type_6_idx");
+      verifyCreatedVectorIndex("vector_type_6_idx");
     }
   }
 
   @Nested
   @Order(3)
-  class CreateIndexFailure {
+  class CreateTextIndexSuccess {
+    // First, a test for the default text index creation (no options specified)
+    @Test
+    public void createTextIndexWithDefaults() {
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .postCreateTextIndex(
+              """
+                              {
+                                "name": "text_field_1_idx",
+                                "definition": {
+                                  "column": "text_field_1"
+                                }
+                              }
+                              """)
+          .wasSuccessful();
+
+      verifyCreatedTextIndex("text_field_1_idx");
+    }
+
+    // Then a test with "named" analyzer like "standard" or "english"
+    @Test
+    public void createTextIndexWithNamed() {
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .postCreateTextIndex(
+              """
+              {
+                "name": "text_field_2_idx",
+                "definition": {
+                  "column": "text_field_2",
+                  "options": {
+                    "analyzer": "english"
+                  }
+                },
+                "options": {
+                  "ifNotExists": true
+                 }
+              }
+              """)
+          .wasSuccessful();
+
+      verifyCreatedTextIndex("text_field_2_idx");
+    }
+
+    // Then a test with explicit settings
+    @Test
+    public void createTextIndexWithFullDefinition() {
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .postCreateTextIndex(
+              """
+              {
+                "name": "text_field_3_idx",
+                "definition": {
+                  "column": "text_field_3",
+                  "options": {
+                   "analyzer": {
+                    "tokenizer" : {"name" : "standard"},
+                    "filters": [
+                      { "name": "lowercase" },
+                      { "name": "stop" },
+                      { "name": "porterstem" },
+                      { "name": "asciifolding" }
+                     ]
+                    }
+                   }
+                }
+              }
+              """)
+          .wasSuccessful();
+
+      verifyCreatedTextIndex("text_field_3_idx");
+    }
+  }
+
+  @Nested
+  @Order(4)
+  class CreateRegularIndexFailure {
     @Test
     public void createIndexWithEmptyName() {
 
@@ -813,11 +931,11 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   }
 
   @Nested
-  @Order(4)
+  @Order(5)
   class CreateVectorIndexFailure {
     @Test
     public void createIndexWithEmptyName() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateIndex(
               """
                               {
@@ -838,7 +956,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     @Test
     public void createIndexWithBlankName() {
 
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                               {
@@ -859,7 +977,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void createIndexWithNameTooLong() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateIndex(
               """
                               {
@@ -879,7 +997,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void createIndexWithSpecialCharacterInName() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateIndex(
               """
                               {
@@ -899,7 +1017,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void tryCreateIndexMissingColumn() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                               {
@@ -918,7 +1036,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     @Test
     public void invalidSourceModel() {
 
-      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
+      DataApiCommandSenders.assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                 {
@@ -939,7 +1057,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void createVectorIndexWithUnsupportedIndexType() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                               {
@@ -959,7 +1077,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void createVectorIndexWithUnknownIndexType() {
-      assertTableCommand(keyspaceName, testTableName)
+      assertTableCommand(keyspaceName, vectorTableName)
           .postCreateVectorIndex(
               """
                                 {
@@ -975,6 +1093,33 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               SchemaException.class,
               "The known index types are: regular, text, vector.",
               "The command used the unknown index type: unknown.");
+    }
+  }
+
+  @Nested
+  @Order(6)
+  class CreateTextIndexFailure {
+    // Definition of the text index must be JSON String or Object; fail if not
+    @Test
+    public void failForDefNotStringOrObject() {
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .postCreateTextIndex(
+              """
+                      {
+                        "name": "text_field_x_idx",
+                        "definition": {
+                          "column": "text_field_x",
+                          "options": {
+                            "analyzer": [1, 2, 3]
+                          }
+                        }
+                      }
+                      """)
+          .hasSingleApiError(
+              SchemaException.Code.UNSUPPORTED_JSON_TYPE_FOR_TEXT_INDEX,
+              SchemaException.class,
+              "command attempted to create a text index using an unsupported JSON value",
+              "command used the unsupported JSON value type: Array");
     }
   }
 }

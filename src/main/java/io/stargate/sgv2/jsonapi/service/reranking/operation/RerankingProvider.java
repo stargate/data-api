@@ -6,6 +6,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.provider.*;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import jakarta.ws.rs.core.Response;
@@ -31,9 +32,7 @@ public abstract class RerankingProvider extends ProviderBase {
   protected RerankingProvider(
       ModelProvider modelProvider,
       String baseUrl,
-      String modelName,
-      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties
-          requestProperties) {
+      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig model) {
     super(modelProvider, ModelType.RERANKING, modelName);
 
     this.baseUrl = baseUrl;

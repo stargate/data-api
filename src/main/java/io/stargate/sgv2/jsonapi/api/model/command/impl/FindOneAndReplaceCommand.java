@@ -5,8 +5,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterSpec;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -18,8 +18,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         "Command that finds a single JSON document from a collection and replaces it with the replacement document.")
 @JsonTypeName(CommandName.Names.FIND_ONE_AND_REPLACE)
 public record FindOneAndReplaceCommand(
-    @Valid @JsonProperty("filter") FilterSpec filterSpec,
-    @Valid @JsonProperty("sort") SortClause sortClause,
+    @Valid @JsonProperty("filter") FilterDefinition filterDefinition,
+    @Valid @JsonProperty("sort") SortDefinition sortDefinition,
     @JsonProperty("projection") JsonNode projectionDefinition,
     @NotNull @Valid @JsonProperty("replacement") ObjectNode replacementDocument,
     @Valid @Nullable Options options)

@@ -11,8 +11,6 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
-import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -20,7 +18,7 @@ import java.math.BigDecimal;
 import java.util.*;
 
 /**
- * Object for converting {@link JsonNode} (from {@link FilterSpec}) into {@link FilterClause}.
+ * Object for converting {@link JsonNode} (from {@link FilterDefinition}) into {@link FilterClause}.
  * Process will validate structure of the JSON, and also validate values of the filter operations.
  *
  * <p>TIDY: this class has a lot of string constants for filter operations that we have defined as
@@ -112,7 +110,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
       }
     } else {
       throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-          "Cannot filter on '%s' field using operator '$eq': only '$exists' is supported",
+          "Cannot filter on '%s' field using operator $eq: only $exists is supported",
           DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
     }
   }
@@ -136,7 +134,7 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
             case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
                     DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD ->
                 throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-                    "Cannot filter on '%s' field using operator '$eq': only '$exists' is supported",
+                    "Cannot filter on '%s' field using operator $eq: only $exists is supported",
                     entry.getKey());
             default ->
                 throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
@@ -147,7 +145,18 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         populateExpression(innerLogicalExpression, next);
       }
       logicalExpression.addLogicalExpression(innerLogicalExpression);
-    } else {
+    } else { // neither Array nor Object, simple implicit "$eq" comparison
+      switch (entry.getKey()) {
+        case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
+                DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD ->
+            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+                "Cannot filter on '%s' field using operator $eq: only $exists is supported",
+                entry.getKey());
+        case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD ->
+            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+                "Cannot filter on '%s' field using operator $eq: only $match is supported",
+                entry.getKey());
+      }
       // the key should match pattern
       String key = validateFilterClausePath(entry.getKey());
       logicalExpression.addComparisonExpressions(
@@ -199,39 +208,59 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
         return comparisonExpressionList;
       }
 
-      // Before validating Filter path, check for special cases:
-      // ($vector/$vectorize and $exist operator)
-      String entryKey = entry.getKey();
-      if ((entryKey.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
-              && updateField.getKey().equals("$exists"))
-          || (entryKey.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)
-              && updateField.getKey().equals("$exists"))) {
-        ; // fine, special cases
-      } else {
-        entryKey = validateFilterClausePath(entryKey);
+      String entryKey = validateFilterClausePath(entry.getKey());
+
+      // First things first: $lexical field can only be used with $match operator
+      if (entryKey.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)
+          && (operator != ValueComparisonOperator.MATCH)) {
+        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+            "Cannot filter on '%s' field using operator %s: only $match is supported",
+            entry.getKey(), operator.getOperator());
       }
+
       JsonNode value = updateField.getValue();
       Object valueObject = jsonNodeValue(entryKey, value);
       if (operator == ValueComparisonOperator.GT
           || operator == ValueComparisonOperator.GTE
           || operator == ValueComparisonOperator.LT
           || operator == ValueComparisonOperator.LTE) {
-        // Note, added 'valueObject instanceof String || valueObject instanceof Boolean', this is to
-        // unblock some table filter against non-numeric column
-        // e.g. {"event_date": {"$gt": "2024-09-24"}}, {"is_active": {"$gt": true}},
-        // {"name":{"$gt":"Tim"}}
-        // Also, for collection path, this will allow comparison filter against collection maps
-        // query_bool_values and query_text_values
+        // Comparator GT/GTE/LT/LTE can apply to following value types:
+        // For Tables, Data/String/Boolean/BigDecimal
+        // For Collections, Data/String/Boolean/BigDecimal and
+        // DocumentID(Date/String/Boolean/BigDecimal)
+        // E.G.
+        // {"birthday": {"$gt": {"$date": 1672531200000}}}, {"name": {"$gt": "Tim"}}
+        // {"is_active": {"$gt": true}}, {"age": {"$gt": 123}}
+        // {"_id": {"$gt": {"$date": 1672531200000}}}, {"_id": {"$gt": "Tim"}}
+        // {"_id": {"$gt": true}}, {"_id": {"$gt": 123}}
         if (!(valueObject instanceof Date
             || valueObject instanceof String
             || valueObject instanceof Boolean
             || valueObject instanceof BigDecimal
-            || (valueObject instanceof DocumentId && (value.isObject() || value.isNumber())))) {
+            || (valueObject instanceof DocumentId
+                && (value.isObject()
+                    || value.isTextual()
+                    || value.isBoolean()
+                    || value.isNumber())))) {
           throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
               "%s operator must have `DATE` or `NUMBER` or `TEXT` or `BOOLEAN` value",
               operator.getOperator());
         }
+      } else if (operator == ValueComparisonOperator.MATCH) {
+        // $match operator can only be used with String value and for Collections
+        // only on $lexical field
+        if (!entryKey.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)) {
+          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+              "%s operator can only be used with the '%s' field, not '%s'",
+              operator.getOperator(), DocumentConstants.Fields.LEXICAL_CONTENT_FIELD, entryKey);
+        }
+        if (!(valueObject instanceof String)) {
+          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
+              "%s operator must have `String` value, was `%s`",
+              operator.getOperator(), JsonUtil.nodeTypeAsString(value));
+        }
       }
+
       ComparisonExpression expression = new ComparisonExpression(entryKey, new ArrayList<>(), null);
       expression.add(operator, valueObject);
       comparisonExpressionList.add(expression);
@@ -538,27 +567,12 @@ public abstract class FilterClauseBuilder<T extends SchemaObject> {
     }
   }
 
-  private String validateFilterClausePath(String path) {
-    if (!NamingRules.FIELD.apply(path)) {
-      if (path.isEmpty()) {
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-            "filter clause path cannot be empty String");
-      }
-      if (path.equals(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD)) {
-        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-            "Cannot filter on lexical content field '%s': only 'sort' clause supported", path);
-      }
-      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-          "filter clause path ('%s') cannot start with `$`", path);
-    }
-
-    try {
-      path = DocumentPath.verifyEncodedPath(path);
-    } catch (IllegalArgumentException e) {
-      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-          "filter clause path ('%s') is not a valid path. " + e.getMessage(), path);
-    }
-
-    return path;
-  }
+  /**
+   * Method called to enforce the filter clause path to be valid. This method is called for each
+   * path.
+   *
+   * @param path Path to be validated
+   * @return Path after validation - currently not changed
+   */
+  protected abstract String validateFilterClausePath(String path);
 }

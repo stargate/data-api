@@ -8,11 +8,8 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
-import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
-import io.stargate.sgv2.jsonapi.service.provider.ModelType;
-import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
-import io.stargate.sgv2.jsonapi.service.provider.ProviderBase;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.provider.*;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.ws.rs.core.Response;
 import java.time.Duration;
@@ -27,31 +24,44 @@ public abstract class EmbeddingProvider extends ProviderBase {
 
   protected static final Logger LOGGER = LoggerFactory.getLogger(EmbeddingProvider.class);
 
-  protected final EmbeddingProviderConfigStore.RequestProperties requestProperties;
+  protected final EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig;
   protected final String baseUrl;
+  protected final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig;
   protected final int dimension;
   protected final Map<String, Object> vectorizeServiceParameters;
+
 
   protected final Duration initialBackOffDuration;
   protected final Duration maxBackOffDuration;
 
   protected EmbeddingProvider(
       ModelProvider modelProvider,
-      EmbeddingProviderConfigStore.RequestProperties requestProperties,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    super(modelProvider, ModelType.EMBEDDING, modelName);
+    super(modelProvider, ModelType.EMBEDDING);
 
-    this.requestProperties = requestProperties;
+    this.providerConfig = providerConfig;
     this.baseUrl = baseUrl;
-
+    this.modelConfig = modelConfig;
     this.dimension = dimension;
     this.vectorizeServiceParameters = vectorizeServiceParameters;
 
-    this.initialBackOffDuration = Duration.ofMillis(requestProperties.initialBackOffMillis());
-    this.maxBackOffDuration = Duration.ofMillis(requestProperties.maxBackOffMillis());
+
+    this.initialBackOffDuration = Duration.ofMillis(providerConfig.properties().initialBackOffMillis());
+    this.maxBackOffDuration = Duration.ofMillis(providerConfig.properties().maxBackOffMillis());
+  }
+
+  @Override
+  public String modelName() {
+    return modelConfig.name();
+  }
+
+  @Override
+  public ApiModelSupport modelSupport() {
+    return modelConfig.apiModelSupport();
   }
 
   /**
@@ -74,7 +84,7 @@ public abstract class EmbeddingProvider extends ProviderBase {
    * @return
    */
   public int maxBatchSize() {
-    return requestProperties.maxBatchSize();
+    return providerConfig.properties().maxBatchSize();
   }
 
   /**
@@ -156,6 +166,7 @@ public abstract class EmbeddingProvider extends ProviderBase {
     }
   }
 
+
   @Override
   protected Duration initialBackOffDuration() {
     return initialBackOffDuration;
@@ -168,12 +179,12 @@ public abstract class EmbeddingProvider extends ProviderBase {
 
   @Override
   protected double jitter() {
-    return requestProperties.jitter();
+    return  providerConfig.properties().jitter();
   }
 
   @Override
   protected int atMostRetries() {
-    return requestProperties.atMostRetries();
+    return providerConfig.properties().atMostRetries();
   }
 
   @Override

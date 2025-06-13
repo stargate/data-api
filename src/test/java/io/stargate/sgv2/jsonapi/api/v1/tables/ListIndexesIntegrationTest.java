@@ -11,10 +11,13 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -28,22 +31,23 @@ import org.junit.jupiter.api.TestMethodOrder;
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase {
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final String TABLE = "person";
   private static final String createIndex =
       """
-              {
-                "name": "name_idx",
-                "definition": {
-                  "column": "name",
-                  "options": {
-                    "ascii": true,
-                    "caseSensitive": false,
-                    "normalize": true
+                  {
+                    "name": "name_idx",
+                    "definition": {
+                      "column": "name",
+                      "options": {
+                        "ascii": true,
+                        "caseSensitive": false,
+                        "normalize": true
+                      }
+                    },
+                    "indexType": "regular"
                   }
-                },
-                "indexType": "regular"
-              }
-              """;
+                  """;
 
   String createWithoutOptionsOnText =
       """
@@ -83,53 +87,53 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
 
   String createWithoutOptionsOnIntExpected =
       """
-                      {
-                        "name": "age_idx",
-                        "definition": {
-                          "column": "age",
-                          "options": {
-                          }
-                        },
-                        "indexType": "regular"
+                  {
+                    "name": "age_idx",
+                    "definition": {
+                      "column": "age",
+                      "options": {
                       }
-                      """;
+                    },
+                    "indexType": "regular"
+                  }
+                  """;
 
   String createVectorIndex =
       """
-                {
-                 "name": "content_idx",
-                 "definition": {
-                   "column": "content",
-                   "options": {
-                     "metric": "cosine",
-                     "sourceModel": "openai-v3-small"
+                    {
+                     "name": "content_idx",
+                     "definition": {
+                       "column": "content",
+                       "options": {
+                         "metric": "cosine",
+                         "sourceModel": "openai-v3-small"
+                       }
+                     },
+                     "indexType": "vector"
                    }
-                 },
-                 "indexType": "vector"
-               }
-              """;
+                  """;
 
   @BeforeAll
   public final void createDefaultTablesAndIndexes() {
     String tableData =
         """
-            {
-               "name": "%s",
-               "definition": {
-                   "columns": {
-                       "id": "text",
-                       "age": "int",
-                       "name": "text",
-                       "city": "text",
-                       "content": {
-                           "type": "vector",
-                           "dimension": 1024
+                        {
+                           "name": "%s",
+                           "definition": {
+                               "columns": {
+                                   "id": "text",
+                                   "age": "int",
+                                   "name": "text",
+                                   "city": "text",
+                                   "content": {
+                                       "type": "vector",
+                                       "dimension": 1024
+                                   }
+                               },
+                               "primaryKey": "id"
+                           }
                        }
-                   },
-                   "primaryKey": "id"
-               }
-           }
-        """;
+                    """;
     assertNamespaceCommand(keyspaceName)
         .postCreateTable(tableData.formatted(TABLE))
         .wasSuccessful();
@@ -273,108 +277,108 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
     }
 
     @Test
-    @Order(2)
+    @Order(3)
     public void listIndexesWithDefinition() {
       // full index on frozen map is unsupported, so the index will have UNKNOWN column in the
       // definition
       var expected_idx_set =
           """
-                {
-                      "name": "idx_set",
-                       "definition": {
-                           "column": {
-                               "setColumn": "$values"
-                           },
-                           "options": {
-                           }
-                       },
-                      "indexType": "regular"
-               }
-              """;
+                        {
+                              "name": "idx_set",
+                               "definition": {
+                                   "column": {
+                                       "setColumn": "$values"
+                                   },
+                                   "options": {
+                                   }
+                               },
+                              "indexType": "regular"
+                       }
+                      """;
       var expected_idx_map_values =
           """
-                {
-                        "name": "idx_map_values",
-                        "definition": {
-                            "column": {
-                                "mapColumn": "$values"
-                            },
-                            "options": {
-                            }
-                        },
-                        "indexType": "regular"
-               }
-              """;
+                        {
+                                "name": "idx_map_values",
+                                "definition": {
+                                    "column": {
+                                        "mapColumn": "$values"
+                                    },
+                                    "options": {
+                                    }
+                                },
+                                "indexType": "regular"
+                       }
+                      """;
       var expected_idx_map_keys =
               """
-                {
-                        "name": "idx_map_keys",
-                        "definition": {
-                            "column": {
-                                "mapColumn": "$keys"
-                            },
-                            "options": {
-                            }
-                        },
-                        "indexType": "regular"
-               }
-              """
+                        {
+                                "name": "idx_map_keys",
+                                "definition": {
+                                    "column": {
+                                        "mapColumn": "$keys"
+                                    },
+                                    "options": {
+                                    }
+                                },
+                                "indexType": "regular"
+                       }
+                      """
               .formatted(keyspaceName, PRE_EXISTED_CQL_TABLE);
       var expected_idx_map_entries =
           """
-                      {
-                            "name": "idx_map_entries",
-                            "definition": {
-                                "column": "mapColumn",
-                                "options": {
+                              {
+                                    "name": "idx_map_entries",
+                                    "definition": {
+                                        "column": "mapColumn",
+                                        "options": {
+                                        }
+                                    },
+                                    "indexType": "regular"
                                 }
-                            },
-                            "indexType": "regular"
-                        }
-              """;
+                      """;
       var expected_full_index_frozen_map =
               """
-                  {
-                        "name": "idx_full_frozen_map",
-                        "definition": {
-                            "column": "UNKNOWN",
-                            "apiSupport": {
-                                "createIndex": false,
-                                "filter": false,
-                                "cqlDefinition": "CREATE CUSTOM INDEX idx_full_frozen_map ON \\"%s\\".\\"%s\\" (full(\\"frozenMapColumn\\"))\\nUSING 'StorageAttachedIndex'"
+                          {
+                                "name": "idx_full_frozen_map",
+                                "definition": {
+                                    "column": "UNKNOWN",
+                                    "apiSupport": {
+                                        "createIndex": false,
+                                        "filter": false,
+                                        "cqlDefinition": "CREATE CUSTOM INDEX idx_full_frozen_map ON \\"%s\\".\\"%s\\" (full(\\"frozenMapColumn\\"))\\nUSING 'StorageAttachedIndex'"
+                                    }
+                                },
+                                "indexType": "UNKNOWN"
                             }
-                        },
-                        "indexType": "UNKNOWN"
-                    }
-              """
+                      """
               .formatted(keyspaceName, PRE_EXISTED_CQL_TABLE);
       var expected_idx_list =
               """
-                 {
-                             "name": "idx_list",
-                             "definition": {
-                                 "column": {
-                                     "listColumn": "$values"
-                                 },
-                                 "options": {
+                         {
+                                     "name": "idx_list",
+                                     "definition": {
+                                         "column": {
+                                             "listColumn": "$values"
+                                         },
+                                         "options": {
+                                         }
+                                     },
+                                     "indexType": "regular"
                                  }
-                             },
-                             "indexType": "regular"
-                         }
-              """
+                      """
               .formatted(keyspaceName, PRE_EXISTED_CQL_TABLE);
       var expected_idx_quoted =
           """
-                     {
-                         "name": "idx_textQuoted",
-                         "definition": {
-                             "column": "TextQuoted",
-                             "options": {
-                             }
-                         },
-                         "indexType": "regular"
-                     }
-                     """;
+                      {
+                          "name": "idx_textQuoted",
+                          "definition": {
+                              "column": "TextQuoted",
+                              "options": {
+                              }
+                          },
+                          "indexType": "regular"
+                      }
+                      """;
       assertTableCommand(keyspaceName, PRE_EXISTED_CQL_TABLE)
           .templated()
           .listIndexes(true)
@@ -390,6 +394,126 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
                   jsonEquals(expected_full_index_frozen_map),
                   jsonEquals(expected_idx_list),
                   jsonEquals(expected_idx_quoted)));
+    }
+  }
+
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  @Order(2)
+  public class ListTextIndexes {
+    private static final String lexicalTableName = "text_index_table_for_list_indexes";
+
+    private static final String TEXT_INDEX_1 =
+        """
+            {
+              "name": "text_field_1_idx",
+              "definition": {
+                "column": "text_field_1"
+              }
+            }
+            """;
+
+    private static final String TEXT_INDEX_2 =
+        """
+            {
+              "name": "text_field_2_idx",
+              "definition": {
+                "column": "text_field_2",
+                "options": {
+                  "analyzer": "english"
+                }
+              }
+            }
+            """;
+    private static final String TEXT_INDEX_3 =
+        """
+            {
+              "name": "text_field_3_idx",
+              "definition": {
+                "column": "text_field_3",
+                "options": {
+                 "analyzer": {
+                  "tokenizer" : {"name" : "standard"},
+                  "filters": [
+                    { "name": "lowercase" }
+                   ]
+                  }
+                 }
+              }
+            }
+            """;
+
+    @BeforeAll
+    public static void createTestTableAndIndexes() {
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .createTable(
+              lexicalTableName,
+              Map.ofEntries(
+                  Map.entry("id", Map.of("type", "text")),
+                  Map.entry("text_field_1", Map.of("type", "text")),
+                  Map.entry("text_field_2", Map.of("type", "text")),
+                  Map.entry("text_field_3", Map.of("type", "text"))),
+              "id")
+          .wasSuccessful();
+
+      // 3 tables: one with default text index; one with named analyzer; and last with custom
+      // settings
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .postCreateTextIndex(TEXT_INDEX_1)
+          .wasSuccessful();
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .postCreateTextIndex(TEXT_INDEX_2)
+          .wasSuccessful();
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .postCreateTextIndex(TEXT_INDEX_3)
+          .wasSuccessful();
+    }
+
+    @Test
+    @Order(1)
+    public void listIndexNamesOnly() {
+
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .templated()
+          .listIndexes(false)
+          .wasSuccessful()
+          .hasIndexes("text_field_1_idx", "text_field_2_idx", "text_field_3_idx");
+    }
+
+    @Test
+    @Order(2)
+    public void listIndexesWithDefinitions() {
+      assertTableCommand(keyspaceName, lexicalTableName)
+          .templated()
+          .listIndexes(true)
+          .wasSuccessful()
+          // Validate that status.indexes has all indexes for the table
+          .body("status.indexes", hasSize(3))
+          // Validate index without options
+          .body(
+              "status.indexes",
+              containsInAnyOrder( // Validate that the indexes are in any order
+                  jsonEquals(
+                      addNamedAnalyzer(readIndexDescAddType(TEXT_INDEX_1), "standard").toString()),
+                  jsonEquals(readIndexDescAddType(TEXT_INDEX_2)),
+                  jsonEquals(readIndexDescAddType(TEXT_INDEX_3))));
+    }
+
+    private static ObjectNode readIndexDescAddType(String json) {
+      ObjectNode ob;
+      try {
+        ob = OBJECT_MAPPER.readValue(json, ObjectNode.class);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      ob.put("indexType", "text");
+      return ob;
+    }
+
+    private ObjectNode addNamedAnalyzer(ObjectNode ob, String analyzerName) {
+      ob.with("definition").with("options").put("analyzer", analyzerName);
+      return ob;
     }
   }
 }

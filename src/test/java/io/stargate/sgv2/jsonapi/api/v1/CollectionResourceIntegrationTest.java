@@ -21,7 +21,7 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
 
     @Test
     public void tokenMissing() {
-      given()
+      given() // NOTE: not passing headers, on purpose
           .contentType(ContentType.JSON)
           .body("{}")
           .when()
@@ -37,10 +37,7 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
 
     @Test
     public void malformedBody() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body("wrong")
+      givenHeadersAndJson("wrong")
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -60,18 +57,13 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
 
     @Test
     public void unknownCommand() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
           {
             "unknownCommand": {
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+          """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -88,19 +80,14 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
 
     @Test
     public void unknownCommandField() {
-      String json =
-          """
+      givenHeadersAndJson(
+              """
               {
                 "findOne": {
                     "unknown": "value"
                 }
               }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
+              """)
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
@@ -118,9 +105,8 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
 
     @Test
     public void emptyBody() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
+      // Note: no body specified
+      givenHeaders()
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()

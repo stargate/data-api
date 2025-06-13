@@ -5,8 +5,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
@@ -15,14 +15,15 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
-import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 /**
  * Implementation of client that talks to Azure-deployed OpenAI embedding provider. See <a
@@ -34,25 +35,25 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
   private final AzureOpenAIEmbeddingProviderClient azureClient;
 
   public AzureOpenAIEmbeddingProvider(
-      EmbeddingProviderConfigStore.RequestProperties requestProperties,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     // One special case: legacy "ada-002" model does not accept "dimension" parameter
     super(
         ModelProvider.AZURE_OPENAI,
-        requestProperties,
+        providerConfig,
         baseUrl,
-        modelName,
-        acceptsOpenAIDimensions(modelName) ? dimension : 0,
+        modelConfig,
+        acceptsOpenAIDimensions(modelConfig.name()) ? dimension : 0,
         vectorizeServiceParameters);
 
     String actualUrl = replaceParameters(baseUrl, vectorizeServiceParameters);
     azureClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(actualUrl))
-            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(providerConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(AzureOpenAIEmbeddingProviderClient.class);
   }
 
@@ -80,6 +81,7 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
 
+    checkEOLModelUsage();
     checkEmbeddingApiKeyHeader(embeddingCredentials.apiKey());
     var azureRequest =
         new AzureOpenAIEmbeddingRequest(
@@ -132,7 +134,8 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
   @RegisterProvider(ProviderHttpInterceptor.class)
-  public interface AzureOpenAIEmbeddingProviderClient {
+  public interface
+  AzureOpenAIEmbeddingProviderClient {
     // no path specified, as it is already included in the baseUri
     @POST
     @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)

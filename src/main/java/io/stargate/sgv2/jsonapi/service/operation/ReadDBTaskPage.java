@@ -108,11 +108,12 @@ public class ReadDBTaskPage<SchemaT extends TableBasedSchemaObject>
       return this;
     }
 
-    public <CmdT extends VectorSortable> Accumulator<SchemaT> mayReturnVector(CmdT command) {
+    public <CmdT extends VectorSortable> Accumulator<SchemaT> mayReturnVector(
+        CommandContext<?> commandContext, CmdT command) {
       var includeVector = command.includeSortVector().orElse(false);
       if (includeVector) {
         var requestedVector =
-            command.vectorSortExpression().map(SortExpression::vector).orElse(null);
+            command.vectorSortExpression(commandContext).map(SortExpression::vector).orElse(null);
         if (requestedVector != null) {
           this.includeSortVector = true;
           this.sortVector = requestedVector;

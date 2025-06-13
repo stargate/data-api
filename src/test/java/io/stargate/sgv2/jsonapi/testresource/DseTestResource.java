@@ -2,7 +2,11 @@ package io.stargate.sgv2.jsonapi.testresource;
 
 import com.google.common.collect.ImmutableMap;
 import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Map;
+import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,13 +28,8 @@ public class DseTestResource extends StargateTestResource {
 
     LOG.info("NOT Running under Maven, will overwrite integration test properties");
 
-    // 14-Mar-2025, tatu: Change from custom "dse-next" to the official DSE image
-    //  even for IDE tests
-    // 17-Mar-2025, tatu: and then to HCD to get BM25 implementation
-    final String cassandraImage =
-        // "stargateio/dse-next:4.0.11-591d171ac9c9"
-        // "datastax/dse-server:6.9.8"
-        "559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/staging/hcd:1.2.1-early-preview";
+    final String cassandraImage = loadCassandraImageFromDockerComposeEnv();
+    LOG.info("Cassandra image to use for Integration Tests: " + cassandraImage);
 
     System.setProperty("testing.containers.cassandra-image", cassandraImage);
 
@@ -39,6 +38,41 @@ public class DseTestResource extends StargateTestResource {
     System.setProperty("testing.containers.cluster-hcd", "true");
 
     // 14-Mar-2025, tatu: We no longer run Stargate Coordinator for ITs set up removed
+  }
+
+  private String loadCassandraImageFromDockerComposeEnv() {
+    // 21-Apr-2025, tatu: formerly referenced hard-coded images; left here for reference:
+    //   to be removed in near future
+    // "stargateio/dse-next:4.0.11-591d171ac9c9"
+    // "datastax/dse-server:6.9.9"
+    // "559669398656.dkr.ecr.us-west-2.amazonaws.com/engops-shared/hcd/staging/hcd:1.2.1-early-preview";
+
+    // 21-Apr-2025, tatu: [data-api#1952] Load definition from "./docker-compose/.env"
+    final File inputFile = new File("docker-compose/.env").getAbsoluteFile();
+    LOG.info("Loading Cassandra image definition from: " + inputFile);
+    Properties props = new Properties();
+    try (FileInputStream fis = new FileInputStream(inputFile)) {
+      props.load(fis);
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to load Properties from file: " + inputFile, e);
+    }
+
+    String image = nonEmptyProp(inputFile, props, "HCDIMAGE");
+    String tag = nonEmptyProp(inputFile, props, "HCDTAG");
+
+    return image + ":" + tag;
+  }
+
+  private String nonEmptyProp(File inputFile, Properties props, String key) {
+    String value = props.getProperty(key);
+    if (value == null || value.isEmpty()) {
+      throw new IllegalStateException(
+          "Properties from file: '" + inputFile + "' are missing required property: " + key);
+    }
+    if (value.startsWith("\"") && value.endsWith("\"")) {
+      value = value.substring(1, value.length() - 1);
+    }
+    return value;
   }
 
   // Many tests create more than 5 collections so default to 10
@@ -93,9 +127,9 @@ public class DseTestResource extends StargateTestResource {
     // 02-April-2025, yuqi: [data-api#1972] Set the system property variable to override the
     // provider config file resource.
     // Note, this only helps local integration runs, not GitHub integration test actions.
-    // For GitHub actions, the system property is passing through script.
-    propsBuilder.put(
-        "DEFAULT_RERANKING_CONFIG_RESOURCE_OVERRIDE", "test-reranking-providers-config.yaml");
+    // For GitHub actions, the system property is passing through script in CI workflow file.
+    propsBuilder.put("RERANKING_CONFIG_RESOURCE", "test-reranking-providers-config.yaml");
+    propsBuilder.put("EMBEDDING_CONFIG_RESOURCE", "test-embedding-providers-config.yaml");
 
     propsBuilder.put("stargate.jsonapi.custom.embedding.enabled", "true");
 

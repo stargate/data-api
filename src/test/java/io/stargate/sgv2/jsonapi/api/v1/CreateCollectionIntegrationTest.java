@@ -1,15 +1,18 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -73,24 +76,15 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void happyPath() {
       final String collectionName = "col" + RandomStringUtils.randomNumeric(16);
-      String json =
-              """
+      givenHeadersPostJsonThenOk(
+                  """
                       {
                         "createCollection": {
                           "name": "%s"
                         }
                       }
                       """
-              .formatted(collectionName);
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+                  .formatted(collectionName))
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
       deleteCollection(collectionName);
@@ -98,45 +92,27 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void caseSensitive() {
-      String json =
-              """
+      givenHeadersPostJsonThenOk(
+                  """
                       {
                         "createCollection": {
                           "name": "%s"
                         }
                       }
                       """
-              .formatted("testcollection");
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+                  .formatted("testcollection"))
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
-      json =
-              """
+      givenHeadersPostJsonThenOk(
+                  """
                       {
                         "createCollection": {
                           "name": "%s"
                         }
                       }
                       """
-              .formatted("testCollection");
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+                  .formatted("testCollection"))
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
       deleteCollection("testcollection");
@@ -146,37 +122,17 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void duplicateNonVectorCollectionName() {
       // create a non vector collection
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createNonVectorCollectionJson)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createNonVectorCollectionJson)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // recreate the same non vector collection
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createNonVectorCollectionJson)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createNonVectorCollectionJson)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // create a vector collection with the same name
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createVectorCollection)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
+      givenHeadersPostJsonThenOk(createVectorCollection)
           .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
@@ -191,35 +147,15 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void duplicateVectorCollectionName() {
       // create a vector collection
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createVectorCollection)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createVectorCollection)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
       // recreate the same vector collection
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createVectorCollection)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createVectorCollection)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
       // create a non vector collection with the same name
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createNonVectorCollectionJson)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
+      givenHeadersPostJsonThenOk(createNonVectorCollectionJson)
           .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
@@ -234,25 +170,11 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void duplicateVectorCollectionNameWithDiffSetting() {
       // create a vector collection
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createVectorCollection)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createVectorCollection)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
       // create another vector collection with the same name but different size setting
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createVectorCollectionWithOtherSizeSettings)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createVectorCollectionWithOtherSizeSettings)
           .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
@@ -262,14 +184,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                   "trying to create Collection ('simple_collection') with different settings"));
 
       // create another vector collection with the same name but different function setting
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createVectorCollectionWithOtherFunctionSettings)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createVectorCollectionWithOtherFunctionSettings)
           .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
@@ -302,26 +217,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                       """;
 
       // create vector collection with indexing allow option
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionRequest)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createCollectionRequest)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // Also: should be idempotent so try creating again
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionRequest)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createCollectionRequest)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
@@ -349,26 +250,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                       }
                       """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionRequest)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createCollectionRequest)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // Also: should be idempotent so try creating again
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionRequest)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createCollectionRequest)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
@@ -378,10 +265,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     // Test to ensure single "*" accepted for "allow" or "deny" but not both
     @Test
     public void createCollectionWithIndexingStar() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                               {
                                 "createCollection": {
@@ -394,19 +278,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 }
                               }
                               """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
       deleteCollection("simple_collection_indexing_allow_star");
 
       // create vector collection with indexing deny option
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                               {
                                 "createCollection": {
@@ -419,19 +296,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 }
                               }
                               """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
       deleteCollection("simple_collection_indexing_deny_star");
 
       // And then check that we can't use both
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                               {
                                 "createCollection": {
@@ -445,10 +315,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 }
                               }
                               """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -464,10 +330,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void failCreateCollectionWithIndexHavingDuplicates() {
       // create vector collection with error indexing option
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                       {
                         "createCollection": {
@@ -480,10 +343,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                         }
                       }
                       """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -495,10 +354,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void failCreateCollectionWithIndexHavingAllowAndDeny() {
       // create vector collection with error indexing option
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                 {
                   "createCollection": {
@@ -512,10 +368,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                   }
                 }
                 """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -529,10 +381,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void failWithInvalidNameInIndexingDeny() {
       // create a vector collection
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               // Dollars not allowed in regular field names (can only start operators)
               """
                     {
@@ -546,10 +395,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                       }
                     }
                     """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -608,10 +453,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void failWithInvalidMainLevelOption() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                               "createCollection": {
@@ -622,10 +464,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               }
                             }
                             """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
@@ -638,10 +476,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void failWithInvalidIdConfigOption() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                                     {
                                       "createCollection": {
@@ -654,10 +489,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                       }
                                     }
                                     """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
@@ -670,10 +501,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void failWithInvalidIndexingConfigOption() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                                     {
                                       "createCollection": {
@@ -686,10 +514,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                       }
                                     }
                                     """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
@@ -702,10 +526,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void failWithInvalidVectorConfigOption() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                                     {
                                       "createCollection": {
@@ -718,10 +539,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                       }
                                     }
                                     """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
@@ -762,26 +579,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           """;
 
       // create vector collection with vector service
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionRequest)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createCollectionRequest)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // Also: should be idempotent so try creating again
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionRequest)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createCollectionRequest)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
@@ -791,10 +594,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void failProviderNotSupport() {
       // create a collection with embedding service provider not support
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                           {
                               "createCollection": {
@@ -818,10 +618,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               }
                           }
                           """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -834,10 +630,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void failUnsupportedModel() {
       // create a collection with unsupported model name
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                                 "createCollection": {
@@ -858,11 +651,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     }
                                 }
                             }
-                                    """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+                            """)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -871,6 +660,48 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
+  }
+
+  private static Stream<Arguments> deprecatedEmbeddingModelSource() {
+    return Stream.of(
+        Arguments.of(
+            "DEPRECATED",
+            "a-deprecated-nvidia-embedding-model",
+            SchemaException.Code.DEPRECATED_AI_MODEL),
+        Arguments.of(
+            "END_OF_LIFE",
+            "a-EOL-nvidia-embedding-model",
+            SchemaException.Code.END_OF_LIFE_AI_MODEL));
+  }
+
+  @ParameterizedTest
+  @MethodSource("deprecatedEmbeddingModelSource")
+  public void failDeprecatedEOLEmbedModel(
+      String status, String modelName, SchemaException.Code errorCode) {
+    givenHeadersPostJsonThenOk(
+                """
+
+                        {
+                            "createCollection": {
+                                "name": "bad_nvidia_model",
+                                "options": {
+                                    "vector": {
+                                        "dimension": 1024,
+                                        "service": {
+                                            "provider": "nvidia",
+                                            "modelName": "%s"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        """
+                .formatted(modelName))
+        .body("$", responseIsError())
+        .body(
+            "errors[0].message",
+            containsString("The model is: %s. It is at %s status".formatted(modelName, status)))
+        .body("errors[0].errorCode", is(errorCode.name()));
   }
 
   @Nested
@@ -912,54 +743,26 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                   }
                               }
                           }
-                              """;
+                          """;
       // create vector collection with vector service and no dimension
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionWithoutDimension)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createCollectionWithoutDimension)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // Also: should be idempotent when try creating with correct dimension
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionWithDimension)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createCollectionWithDimension)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       deleteCollection("collection_with_vector_service");
 
       // create vector collection with vector service and correct dimension
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionWithDimension)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createCollectionWithDimension)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // Also: should be idempotent when try creating with no dimension
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionWithoutDimension)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createCollectionWithoutDimension)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
@@ -969,10 +772,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void failNoServiceProviderAndNoDimension() {
       // create a collection with no dimension and service
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                                 "createCollection": {
@@ -985,10 +785,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 }
                             }
                             """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -1001,10 +797,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void failFixDimensionUnmatchedVectorDimension() {
       // create a collection with unmatched vector dimension
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                                 "createCollection": {
@@ -1022,10 +815,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 }
                             }
                                     """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -1073,52 +862,24 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                   }
                       """;
       // create vector collection with vector service and no dimension
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionWithoutDimension)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createCollectionWithoutDimension)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // Also: should be idempotent when try creating with correct dimension
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionWithDefaultDimension)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createCollectionWithDefaultDimension)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       deleteCollection("collection_with_vector_service");
 
       // create vector collection with vector service and correct dimension
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionWithDefaultDimension)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createCollectionWithDefaultDimension)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // Also: should be idempotent when try creating with no dimension
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionWithoutDimension)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOk(createCollectionWithoutDimension)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
@@ -1127,10 +888,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void happyRangeDimensionInRange() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                                 "createCollection": {
@@ -1147,11 +905,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     }
                                 }
                             }
-                                    """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+                            """)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
@@ -1161,10 +915,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void failRangeDimensionNotInRange() {
       // create a collection with a dimension lower than the min
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                                 "createCollection": {
@@ -1181,11 +932,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     }
                                 }
                             }
-                                    """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+                            """)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -1195,10 +942,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
       // create a collection with a dimension higher than the min
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                                 "createCollection": {
@@ -1216,10 +960,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 }
                             }
                                     """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -1236,10 +976,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void happyWithNoneAuth() {
       // create a collection without providing authentication
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                                 "createCollection": {
@@ -1257,10 +994,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 }
                             }
                                 """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
@@ -1269,10 +1002,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void failNotExistAuthKey() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                                 "createCollection": {
@@ -1293,10 +1023,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 }
                             }
                             """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -1308,10 +1034,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void failNoneAndHeaderDisabled() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                                     {
                                         "createCollection": {
@@ -1329,10 +1052,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                         }
                                     }
                                     """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -1344,10 +1063,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void failInvalidAuthKey() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                                     {
                                         "createCollection": {
@@ -1368,10 +1084,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                         }
                                     }
                                     """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body(
               "errors[0].message",
@@ -1383,10 +1095,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void happyValidAuthKey() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                     {
                         "createCollection": {
@@ -1404,10 +1113,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                         }
                     }
                     """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
@@ -1416,10 +1121,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void happyProviderKeyFormat() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                         {
                             "createCollection": {
@@ -1440,19 +1142,12 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                         }
                         """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       deleteCollection("collection_with_vector_service");
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                                 {
                                     "createCollection": {
@@ -1473,10 +1168,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     }
                                 }
                                 """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
@@ -1490,10 +1181,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void failWithMissingRequiredProviderParameters() {
       // create a collection without providing required parameters
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                                 "createCollection": {
@@ -1511,10 +1199,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 }
                             }
                             """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
@@ -1527,10 +1211,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void failWithUnrecognizedProviderParameters() {
       // create a collection with unrecognized parameters
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                                 "createCollection": {
@@ -1551,10 +1232,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 }
                             }
                                     """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
@@ -1566,10 +1243,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void failWithUnexpectedProviderParameters() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                                 "createCollection": {
@@ -1590,10 +1264,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 }
                             }
                                     """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
@@ -1606,10 +1276,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void failWithWrongProviderParameterType() {
       // create a collection with wrong parameter type
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                                 "createCollection": {
@@ -1630,11 +1297,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     }
                                 }
                             }
-                                    """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
+                            """)
           .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
@@ -1646,10 +1309,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void failWithMissingModelParameters() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                                 "createCollection": {
@@ -1670,10 +1330,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 }
                             }
                             """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
@@ -1686,10 +1342,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void failWithUnexpectedModelParameters() {
       // create a collection with unrecognized parameters
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                                 "createCollection": {
@@ -1712,10 +1365,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 }
                             }
                             """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
@@ -1728,10 +1377,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void failWithWrongModelParameterType() {
       // create a collection with wrong parameter type
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                             {
                                 "createCollection": {
@@ -1753,10 +1399,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 }
                             }
                             """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
@@ -1773,10 +1415,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void happyWithSourceModelAndMetrics() {
       // create a collection with source model and metric
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                   {
                       "createCollection": {
@@ -1795,18 +1434,11 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                       }
                   }
                   """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // verify the collection using FindCollection
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                       {
                         "findCollections": {
@@ -1816,10 +1448,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                          }
                       }
                       """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(1))
           .body("status.collections[0].options.vector.metric", is("cosine"))
@@ -1831,10 +1459,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void happyWithSourceModelOnly() {
       // create a collection with source model - metric will be auto-populated to 'dot_product'
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                           {
                               "createCollection": {
@@ -1852,18 +1477,11 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               }
                           }
                           """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // verify the collection using FindCollection
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                       {
                         "findCollections": {
@@ -1873,10 +1491,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                          }
                       }
                       """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(1))
           .body("status.collections[0].options.vector.metric", is("dot_product"))
@@ -1888,10 +1502,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     @Test
     public void happyWithMetricOnly() {
       // create a collection with metric - source model will be auto-populated to 'other'
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                     {
                         "createCollection": {
@@ -1909,18 +1520,11 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                         }
                     }
                     """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // verify the collection using FindCollection
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                           {
                             "findCollections": {
@@ -1930,10 +1534,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                              }
                           }
                           """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(1))
           .body("status.collections[0].options.vector.metric", is("cosine"))
@@ -1946,10 +1546,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
     public void happyNoSourceModelAndMetric() {
       // create a collection without sourceModel and metric - source model will be auto-populated to
       // 'other' and metric to 'cosine'
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                       {
                           "createCollection": {
@@ -1966,18 +1563,11 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                           }
                       }
                       """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // verify the collection using FindCollection
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                   {
                     "findCollections": {
@@ -1987,10 +1577,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                      }
                   }
                   """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsDDLSuccess())
           .body("status.collections", hasSize(1))
           .body("status.collections[0].options.vector.metric", is("cosine"))
@@ -2001,10 +1587,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void failWithInvalidSourceModel() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                       {
                           "createCollection": {
@@ -2022,10 +1605,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                           }
                       }
                       """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
@@ -2037,10 +1616,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
 
     @Test
     public void failWithInvalidSourceModelObject() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenHeadersPostJsonThenOk(
               """
                               {
                                   "createCollection": {
@@ -2058,10 +1634,6 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                   }
                               }
                               """)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200)
           .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))

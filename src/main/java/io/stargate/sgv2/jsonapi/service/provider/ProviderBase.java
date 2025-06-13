@@ -3,9 +3,11 @@ package io.stargate.sgv2.jsonapi.service.provider;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,17 +18,17 @@ public abstract class ProviderBase {
 
   private final ModelProvider modelProvider;
   private final ModelType modelType;
-  private final String modelName;
 
-  protected ProviderBase(ModelProvider modelProvider, ModelType modelType, String modelName) {
+  // TODO: the Embedding and Rerank code *does not* share model configs, but they can & should do,
+  // so we we cannot pass the model into the base until we refactor the code.
+  protected ProviderBase(ModelProvider modelProvider, ModelType modelType) {
     this.modelProvider = modelProvider;
     this.modelType = modelType;
-    this.modelName = modelName;
   }
 
-  public String modelName() {
-    return modelName;
-  }
+  public abstract String modelName();
+
+  public abstract ApiModelSupport modelSupport();
 
   public ModelProvider modelProvider() {
     return modelProvider;
@@ -131,6 +133,32 @@ public abstract class ProviderBase {
 
     var messageNode = rootNode.at(errorMessageJsonPtr());
     return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
+  }
+
+  /**
+   * Checks if the vectorization will use an END_OF_LIFE model and throws an exception if it is.
+   *
+   * <p>As part of embedding model deprecation ability, any read and write with vectorization in an
+   * END_OF_LIFE model will throw an exception.
+   *
+   * <p>Note, SUPPORTED and DEPRECATED models are still allowed to be used in read and write.
+   *
+   * <p>This method should be called before any vectorization operation.
+   */
+  protected void checkEOLModelUsage() {
+
+    if (modelSupport().status() == ApiModelSupport.SupportStatus.END_OF_LIFE) {
+      throw SchemaException.Code.END_OF_LIFE_AI_MODEL.get(
+          Map.of(
+              "model",
+              modelName(),
+              "modelStatus",
+              modelSupport().status().name(),
+              "message",
+              modelSupport()
+                  .message()
+                  .orElse("The model is no longer supported (reached its end-of-life).")));
+    }
   }
 
   protected ModelUsage createModelUsage(

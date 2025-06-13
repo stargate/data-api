@@ -7,6 +7,7 @@ import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
@@ -23,7 +24,7 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingDeferredAc
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
-import io.stargate.sgv2.jsonapi.service.provider.ModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
@@ -173,15 +174,19 @@ class FindAndRerankOperationBuilder {
     var modelConfig =
         rerankingProvidersConfig.filterByRerankServiceDef(
             commandContext.schemaObject().rerankingConfig().rerankServiceDef());
-    if (modelConfig.modelSupport().status() == ModelSupport.SupportStatus.END_OF_LIFE) {
-      throw SchemaException.Code.UNSUPPORTED_PROVIDER_MODEL.get(
+    // Validate if the model is END_OF_LIFE
+    if (modelConfig.apiModelSupport().status() == ApiModelSupport.SupportStatus.END_OF_LIFE) {
+      throw SchemaException.Code.END_OF_LIFE_AI_MODEL.get(
           Map.of(
               "model",
               modelConfig.name(),
               "modelStatus",
-              modelConfig.modelSupport().status().name(),
+              modelConfig.apiModelSupport().status().name(),
               "message",
-              modelConfig.modelSupport().message().orElse("The model is not supported.")));
+              modelConfig
+                  .apiModelSupport()
+                  .message()
+                  .orElse("The model is no longer supported (reached its end-of-life).")));
     }
   }
 
@@ -294,7 +299,10 @@ class FindAndRerankOperationBuilder {
     var bm25SortClause = new SortClause(List.of(SortExpression.bm25Search(bm25SortTerm)));
     var bm25ReadCommand =
         new FindCommand(
-            command.filterSpec(), INCLUDE_ALL_PROJECTION, bm25SortClause, buildFindOptions(false));
+            command.filterDefinition(),
+            INCLUDE_ALL_PROJECTION,
+            SortDefinition.wrap(bm25SortClause),
+            buildFindOptions(false));
 
     return new IntermediateCollectionReadTask(
         0,
@@ -339,7 +347,10 @@ class FindAndRerankOperationBuilder {
     // The intermediate task will set the sort when we give it the deferred vectorize
     var vectorReadCommand =
         new FindCommand(
-            command.filterSpec(), INCLUDE_ALL_PROJECTION, sortClause, buildFindOptions(true));
+            command.filterDefinition(),
+            INCLUDE_ALL_PROJECTION,
+            SortDefinition.wrap(sortClause),
+            buildFindOptions(true));
     var readTask =
         new IntermediateCollectionReadTask(
             1,

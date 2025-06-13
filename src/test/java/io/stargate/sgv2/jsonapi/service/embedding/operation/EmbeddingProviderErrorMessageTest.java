@@ -10,9 +10,12 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -26,6 +29,16 @@ public class EmbeddingProviderErrorMessageTest {
       new EmbeddingCredentials(
           "test-tenant", Optional.of("test"), Optional.empty(), Optional.empty());
 
+  private final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig testModel =
+      new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
+          "test-model",
+          new ApiModelSupport.ApiModelSupportImpl(
+              ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
+          Optional.of(123),
+          List.of(),
+          Map.of(),
+          Optional.empty());
+
   @Inject EmbeddingProvidersConfig config;
 
   @Nested
@@ -37,8 +50,9 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url().get(),
-                  "test",
+                  testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -64,8 +78,9 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url().get(),
-                  "test",
+                  testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -91,8 +106,9 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url().get(),
-                  "test",
+                  testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -118,8 +134,9 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url().get(),
-                  "test",
+                  testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -145,8 +162,9 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url().get(),
-                  "test",
+                  testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -169,8 +187,9 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url().get(),
-                  "test",
+                  testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -197,8 +216,9 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url().get(),
-                  "test",
+                  testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -225,8 +245,9 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url().get(),
-                  "test",
+                  testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,
@@ -253,8 +274,9 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url().get(),
-                  "test",
+                  testModel,
                   DEFAULT_DIMENSIONS,
+                  null,
                   null)
               .vectorize(
                   1,

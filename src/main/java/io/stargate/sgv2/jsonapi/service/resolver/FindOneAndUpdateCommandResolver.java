@@ -95,10 +95,8 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
 
     var dbLogicalExpression = collectionFilterResolver.resolve(commandContext, command).target();
 
-    final SortClause sortClause = command.sortClause();
-    if (sortClause != null) {
-      sortClause.validate(commandContext.schemaObject());
-    }
+    final SortClause sortClause = command.sortClause(commandContext);
+    sortClause.validate(commandContext.schemaObject());
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
     var indexUsage = commandContext.schemaObject().newCollectionIndexUsage();

@@ -14,6 +14,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.ws.rs.core.Response;
@@ -35,17 +36,17 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
   private static final ObjectReader OBJECT_READER = new ObjectMapper().reader();
 
   public AwsBedrockEmbeddingProvider(
-      EmbeddingProviderConfigStore.RequestProperties requestProperties,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
       String baseUrl,
-      String modelName,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     super(
         ModelProvider.BEDROCK,
-        requestProperties,
+        providerConfig,
         baseUrl,
-        modelName,
-        acceptsTitanAIDimensions(modelName) ? dimension : 0,
+        modelConfig,
+        acceptsTitanAIDimensions(modelConfig.name()) ? dimension : 0,
         vectorizeServiceParameters);
   }
 
@@ -62,7 +63,9 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
 
-    // the config shoudl mean we only do a batch on 1, sanity checking
+    checkEOLModelUsage();
+
+    // the config should mean we only do a batch on 1, sanity checking
     if (texts.size() != 1) {
       throw new IllegalArgumentException(
           "AWS Bedrock embedding provider only supports a single text input per request, but received: "

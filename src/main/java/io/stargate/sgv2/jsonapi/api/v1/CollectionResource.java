@@ -2,12 +2,14 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTextIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
@@ -23,7 +25,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.ListIndexesCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
@@ -31,7 +32,8 @@ import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
@@ -71,26 +73,23 @@ public class CollectionResource {
 
   public static final String BASE_PATH = GeneralResource.BASE_PATH + "/{keyspace}/{collection}";
 
-  private final MeteredCommandProcessor meteredCommandProcessor;
-
-  @Inject private SchemaCache schemaCache;
-
-  private EmbeddingProviderFactory embeddingProviderFactory;
-
-  @Inject private RequestContext requestContext;
-
-  //  need to keep for a little because we have to check the schema type before making the command
+  // need to keep for a little because we have to check the schema type before making the command
   // context
   // TODO remove apiFeatureConfig as a property after cleanup for how we get schema from cache
   @Inject private FeaturesConfig apiFeatureConfig;
+  @Inject private RequestContext requestContext;
+  @Inject private SchemaCache schemaCache;
 
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
+  private final EmbeddingProviderFactory embeddingProviderFactory;
+  private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject
   public CollectionResource(
       MeteredCommandProcessor meteredCommandProcessor,
+      MeterRegistry meterRegistry,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      CQLSessionCache cqlSessionCache,
+      CqlSessionCacheSupplier sessionCacheSupplier,
       EmbeddingProviderFactory embeddingProviderFactory,
       RerankingProviderFactory rerankingProviderFactory) {
     this.embeddingProviderFactory = embeddingProviderFactory;
@@ -99,10 +98,11 @@ public class CollectionResource {
     contextBuilderSupplier =
         CommandContext.builderSupplier()
             .withJsonProcessingMetricsReporter(jsonProcessingMetricsReporter)
-            .withCqlSessionCache(cqlSessionCache)
+            .withCqlSessionCache(sessionCacheSupplier.get())
             .withCommandConfig(ConfigPreLoader.getPreLoadOrEmpty())
             .withEmbeddingProviderFactory(embeddingProviderFactory)
-            .withRerankingProviderFactory(rerankingProviderFactory);
+            .withRerankingProviderFactory(rerankingProviderFactory)
+            .withMeterRegistry(meterRegistry);
   }
 
   @Operation(
@@ -136,6 +136,7 @@ public class CollectionResource {
                         // Table Only commands
                         AlterTableCommand.class,
                         CreateIndexCommand.class,
+                        CreateTextIndexCommand.class,
                         CreateVectorIndexCommand.class,
                         ListIndexesCommand.class
                       }),
@@ -160,6 +161,7 @@ public class CollectionResource {
                 @ExampleObject(ref = "alterTableAddVectorize"),
                 @ExampleObject(ref = "alterTableDropVectorize"),
                 @ExampleObject(ref = "createIndex"),
+                @ExampleObject(ref = "createTextIndex"),
                 @ExampleObject(ref = "createVectorIndex"),
                 @ExampleObject(ref = "listIndexes"),
                 @ExampleObject(ref = "insertOneTables"),
@@ -202,7 +204,6 @@ public class CollectionResource {
     return schemaCache
         .getSchemaObject(
             requestContext,
-            requestContext.getTenantId(),
             keyspace,
             collection,
             CommandType.DDL.equals(command.commandName().getCommandType()))
@@ -249,18 +250,25 @@ public class CollectionResource {
                           .getFirstVectorColumnWithVectorizeDefinition()
                           .orElse(null);
                 }
-                EmbeddingProvider embeddingProvider =
-                    (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)
-                        ? null
-                        : embeddingProviderFactory.getConfiguration(
-                            requestContext.getTenantId(),
-                            requestContext.getCassandraToken(),
-                            vectorColDef.vectorizeDefinition().provider(),
-                            vectorColDef.vectorizeDefinition().modelName(),
-                            vectorColDef.vectorSize(),
-                            vectorColDef.vectorizeDefinition().parameters(),
-                            vectorColDef.vectorizeDefinition().authentication(),
-                            command.getClass().getSimpleName());
+
+                EmbeddingProvider embeddingProvider = null;
+
+                if (vectorColDef != null && vectorColDef.vectorizeDefinition() != null) {
+                  embeddingProvider =
+                      embeddingProviderFactory.getConfiguration(
+                          requestContext.getTenantId(),
+                          requestContext.getCassandraToken(),
+                          vectorColDef.vectorizeDefinition().provider(),
+                          vectorColDef.vectorizeDefinition().modelName(),
+                          vectorColDef.vectorSize(),
+                          vectorColDef.vectorizeDefinition().parameters(),
+                          vectorColDef.vectorizeDefinition().authentication(),
+                          command.getClass().getSimpleName());
+                  requestContext
+                      .getEmbeddingCredentialsSupplier()
+                      .withAuthConfigFromCollection(
+                          vectorColDef.vectorizeDefinition().authentication());
+                }
 
                 var commandContext =
                     contextBuilderSupplier

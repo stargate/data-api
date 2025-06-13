@@ -859,14 +859,24 @@ request-errors:
       Resend the command without dropping the indexed columns.
 
   - scope: SCHEMA
-    code: UNSUPPORTED_PROVIDER_MODEL
-    title: The model is not supported by Data API
+    code: DEPRECATED_AI_MODEL
+    title: Cannot use deprecated model.
     body: |-
-      The model ${model} is at ${modelStatus} status.
+      The command attempted to create or alter a Collection or Table to use a AI Model that has been marked as deprecated. Deprecated models are only supported by the API for existing use and will later be removed.
+
+      The model is: ${model}. It is at ${modelStatus} status.
       ${message}
       
-      DEPRECATED model cannot be used for creation of new Collections or Tables, but can be used for existing Collections or Tables until model status is changed to END_OF_LIFE.
-      END_OF_LIFE model cannot be used for creation of new Collections or Tables, and can not be used for existing Collections or Tables.
+      Resend the command using supported model.
+
+  - scope: SCHEMA
+    code: END_OF_LIFE_AI_MODEL
+    title: Cannot use end of life model.
+    body: |-
+      The command attempted to use an AI Model that has been marked as end of life. End of life models cannot be used in any way. Collections or Tables that use the model must be recreated as data such as embeddings is not transferrable.
+      
+      The model is: ${model}. It is at ${modelStatus} status.
+      ${message}
       
       Resend the command using supported model.
 
@@ -877,7 +887,7 @@ request-errors:
       The command attempted to vectorize columns that are not in the table schema.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      The command attempted to drop the unknown columns: ${unknownColumns}.  
+      The command attempted to vectorize the unknown columns: ${unknownColumns}.  
       
       Resend the command using only columns defined in the table schema.
 
@@ -1083,6 +1093,17 @@ request-errors:
       Resend the command using a supported index type.    
 
   - scope: SCHEMA
+    code: UNSUPPORTED_JSON_TYPE_FOR_TEXT_INDEX
+    title: JSON value type is not supported for creating text index
+    body: |-
+      The command attempted to create a text index using an unsupported JSON value type.
+      
+      The supported JSON value types are: String, Object.
+      The command used the unsupported JSON value type: ${unsupportedType}.
+      
+      Resend the command using a supported JSON value type.
+
+  - scope: SCHEMA
     code: UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES
     title: Analysed text index not supported by data types
     body: |-
@@ -1100,10 +1121,24 @@ request-errors:
       Resend the command using columns that support text analysis.
 
   - scope: SCHEMA
+    code: UNSUPPORTED_TEXT_INDEX_FOR_DATA_TYPES
+    title: Text index not supported by data types
+    body: |-
+      The command attempted to create a text index on a column that is not a `text` or `ascii` type.
+      
+      Text indexes can only be created on columns of type `text` or `ascii`.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The command attempted to text index the unsupported columns: ${unsupportedColumns}.
+      
+      Resend the command using columns of `text` type.
+  
+
+  - scope: SCHEMA
     code: UNSUPPORTED_VECTOR_INDEX_FOR_DATA_TYPES
     title: Vector index not supported by data types
     body: |-
-      The command attempted to create an vector index on a column that is not a `vector` type.
+      The command attempted to create a vector index on a column that is not a `vector` type.
       
       Vector indexes can only be created on columns of type `vector`, regular indexes can only be created on primitive data types such as `text` and `int` using the createIndex command.
       

@@ -18,8 +18,6 @@ import io.stargate.sgv2.jsonapi.service.resolver.sort.TableCqlSortClauseResolver
 import io.stargate.sgv2.jsonapi.service.resolver.sort.TableMemorySortClauseResolver;
 import java.util.List;
 import java.util.Objects;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Encapsulates resolving a read command into a {@link Operation}, which includes building the tasks
@@ -30,9 +28,6 @@ import org.slf4j.LoggerFactory;
  */
 class TableReadDBOperationBuilder<
     CmdT extends ReadCommand & Filterable & Projectable & Sortable & Windowable & VectorSortable> {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(TableReadDBOperationBuilder.class);
-
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final CommandContext<TableSchemaObject> commandContext;
@@ -112,8 +107,7 @@ class TableReadDBOperationBuilder<
 
     // the columns the user wants
     // NOTE: the TableProjection is doing double duty as the select and the operation projection
-    var projection =
-        TableProjection.fromDefinition(OBJECT_MAPPER, command, commandContext.schemaObject());
+    var projection = TableProjection.fromDefinition(commandContext, OBJECT_MAPPER, command);
 
     taskBuilder.withSelect(WithWarnings.of(projection));
     taskBuilder.withProjection(projection);
@@ -132,7 +126,7 @@ class TableReadDBOperationBuilder<
             taskGroup,
             ReadDBTaskPage.accumulator(commandContext)
                 .singleResponse(singleResponse)
-                .mayReturnVector(command),
+                .mayReturnVector(commandContext, command),
             List.of(orderByWithWarnings.target()));
 
     return EmbeddingOperationFactory.createOperation(commandContext, tasksAndDeferrables);

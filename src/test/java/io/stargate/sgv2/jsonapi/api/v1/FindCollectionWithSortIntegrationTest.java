@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
@@ -15,7 +14,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.uuid.Generators;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.util.JsonNodeComparator;
 import java.util.ArrayList;
@@ -49,30 +47,23 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
     @Test
     public void sortByTextAndNullValue() throws Exception {
       sortByUserName(testDatas, true);
-      String json =
-          """
-                      {
-                        "find": {
-                          "sort" : {"username" : 1}
-                        }
-                      }
-                      """;
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++)
+      for (int i = 0; i < 20; i++) {
         arrayNode.add(
             objectMapper.readTree(
                 objectMapper
                     .writerWithDefaultPrettyPrinter()
                     .writeValueAsString(testDatas.get(i))));
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      }
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "sort" : {"username" : 1}
+                        }
+                      }
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
@@ -81,16 +72,6 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
     @Test
     public void sortWithSkipLimit() throws Exception {
       sortByUserName(testDatas, true);
-      String json =
-          """
-                      {
-                        "find": {
-                          "sort" : {"username" : 1},
-                          "options" : {"skip": 10, "limit" : 10}
-                        }
-                      }
-                      """;
-
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(10);
       for (int i = 0; i < 20; i++) {
@@ -103,14 +84,15 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
         }
       }
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "sort" : {"username" : 1},
+                          "options" : {"skip": 10, "limit" : 10}
+                        }
+                      }
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(10))
           .body("data.documents", jsonEquals(arrayNode.toString()));
@@ -119,32 +101,24 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
     @Test
     public void sortDescendingTextValue() throws Exception {
       sortByUserName(testDatas, false);
-      String json =
-          """
-                      {
-                        "find": {
-                          "sort" : {"username" : -1}
-                        }
-                      }
-                      """;
-
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++)
+      for (int i = 0; i < 20; i++) {
         arrayNode.add(
             objectMapper.readTree(
                 objectMapper
                     .writerWithDefaultPrettyPrinter()
                     .writeValueAsString(testDatas.get(i))));
+      }
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "sort" : {"username" : -1}
+                        }
+                      }
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
@@ -153,32 +127,23 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
     @Test
     public void sortBooleanValueAndMissing() throws Exception {
       sortByActiveUser(testDatas, true);
-      String json =
-          """
-                      {
-                        "find": {
-                          "sort" : {"activeUser" : 1}
-                        }
-                      }
-                      """;
-
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++)
+      for (int i = 0; i < 20; i++) {
         arrayNode.add(
             objectMapper.readTree(
                 objectMapper
                     .writerWithDefaultPrettyPrinter()
                     .writeValueAsString(testDatas.get(i))));
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      }
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "sort" : {"activeUser" : 1}
+                        }
+                      }
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
@@ -187,32 +152,23 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
     @Test
     public void sortBooleanValueAndMissingDescending() throws Exception {
       sortByActiveUser(testDatas, false);
-      String json =
-          """
-                      {
-                        "find": {
-                          "sort" : {"activeUser" : -1}
-                        }
-                      }
-                      """;
-
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++)
+      for (int i = 0; i < 20; i++) {
         arrayNode.add(
             objectMapper.readTree(
                 objectMapper
                     .writerWithDefaultPrettyPrinter()
                     .writeValueAsString(testDatas.get(i))));
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      }
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "sort" : {"activeUser" : -1}
+                        }
+                      }
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
@@ -221,32 +177,23 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
     @Test
     public void sortNumericField() throws Exception {
       sortByUserId(testDatas, true);
-      String json =
-          """
-                      {
-                        "find": {
-                          "sort" : {"userId" : 1}
-                        }
-                      }
-                      """;
-
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++)
+      for (int i = 0; i < 20; i++) {
         arrayNode.add(
             objectMapper.readTree(
                 objectMapper
                     .writerWithDefaultPrettyPrinter()
                     .writeValueAsString(testDatas.get(i))));
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      }
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "sort" : {"userId" : 1}
+                        }
+                      }
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
@@ -255,32 +202,23 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
     @Test
     public void sortNumericFieldDescending() throws Exception {
       sortByUserId(testDatas, false);
-      String json =
-          """
-                      {
-                        "find": {
-                          "sort" : {"userId" : -1}
-                        }
-                      }
-                      """;
-
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++)
+      for (int i = 0; i < 20; i++) {
         arrayNode.add(
             objectMapper.readTree(
                 objectMapper
                     .writerWithDefaultPrettyPrinter()
                     .writeValueAsString(testDatas.get(i))));
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      }
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "sort" : {"userId" : -1}
+                        }
+                      }
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
@@ -293,31 +231,23 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
               .filter(obj -> (obj instanceof TestData o) && o.activeUser())
               .collect(Collectors.toList());
       sortByUserId(datas, true);
-      String json =
-          """
+      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
+      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
+      for (int i = 0; i < datas.size(); i++) {
+        arrayNode.add(
+            objectMapper.readTree(
+                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
+      }
+
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                       {
                         "find": {
                           "filter" : {"activeUser" : true},
                           "sort" : {"userId" : 1}
                         }
                       }
-                      """;
-
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
-      for (int i = 0; i < datas.size(); i++)
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(Math.min(20, datas.size())))
           .body("data.documents", jsonEquals(arrayNode.toString()));
@@ -326,32 +256,23 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
     @Test
     public void sortMultiColumns() throws Exception {
       sortByUserNameUserId(testDatas, true, true);
-      String json =
-          """
-                      {
-                        "find": {
-                          "sort" : {"username" : 1, "userId" : 1}
-                        }
-                      }
-                      """;
-
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
-      for (int i = 0; i < 20; i++)
+      for (int i = 0; i < 20; i++) {
         arrayNode.add(
             objectMapper.readTree(
                 objectMapper
                     .writerWithDefaultPrettyPrinter()
                     .writeValueAsString(testDatas.get(i))));
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+      }
+      givenHeadersPostJsonThenOkNoErrors(
+              """
+                      {
+                        "find": {
+                          "sort" : {"username" : 1, "userId" : 1}
+                        }
+                      }
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
@@ -364,30 +285,22 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
               .filter(obj -> (obj instanceof TestData o) && o.activeUser())
               .collect(Collectors.toList());
       sortByUserNameUserId(datas, true, false);
-      String json =
-          """
+      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
+      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
+      for (int i = 0; i < datas.size(); i++) {
+        arrayNode.add(
+            objectMapper.readTree(
+                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
+      }
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                       {
                         "find": {
                           "filter" : {"activeUser" : true},
                           "sort" : {"username" : 1, "userId" : -1}
                         }
                       }
-                      """;
-
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
-      for (int i = 0; i < datas.size(); i++)
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(Math.min(20, datas.size())))
           .body("data.documents", jsonEquals(arrayNode.toString()));
@@ -400,30 +313,22 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
               .filter(obj -> (obj instanceof TestData o) && o.activeUser())
               .collect(Collectors.toList());
       sortByDate(datas, true);
-      String json =
-          """
+      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
+      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
+      for (int i = 0; i < datas.size(); i++) {
+        arrayNode.add(
+            objectMapper.readTree(
+                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
+      }
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                       {
                         "find": {
                           "filter" : {"activeUser" : true},
                           "sort" : {"dateValue" : 1}
                         }
                       }
-                      """;
-
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
-      for (int i = 0; i < datas.size(); i++)
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(Math.min(20, datas.size())))
           .body("data.documents", jsonEquals(arrayNode.toString()));
@@ -436,30 +341,22 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
               .filter(obj -> (obj instanceof TestData o) && o.activeUser())
               .collect(Collectors.toList());
       sortByDate(datas, false);
-      String json =
-          """
+      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
+      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
+      for (int i = 0; i < datas.size(); i++) {
+        arrayNode.add(
+            objectMapper.readTree(
+                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
+      }
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                       {
                         "find": {
                           "filter" : {"activeUser" : true},
                           "sort" : {"dateValue" : -1}
                         }
                       }
-                      """;
-
-      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
-      for (int i = 0; i < datas.size(); i++)
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(datas.get(i))));
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(Math.min(20, datas.size())))
           .body("data.documents", jsonEquals(arrayNode.toString()));
@@ -475,9 +372,17 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
       sortByUUID(datas, true);
       // Create a sublist of the first 20 elements
       List<Object> first20Datas = new ArrayList<>(datas.subList(0, Math.min(20, datas.size())));
-
-      String json =
-          """
+      JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
+      final ArrayNode arrayNode = nodeFactory.arrayNode(first20Datas.size());
+      for (int i = 0; i < first20Datas.size(); i++) {
+        arrayNode.add(
+            objectMapper.readTree(
+                objectMapper
+                    .writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(first20Datas.get(i))));
+      }
+      givenHeadersPostJsonThenOkNoErrors(
+              """
                       {
                         "find": {
                           "filter":{
@@ -486,24 +391,7 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
                            "sort" : {"uuid" : 1}
                         }
                       }
-                      """;
-
-      JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
-      final ArrayNode arrayNode = nodeFactory.arrayNode(first20Datas.size());
-      for (int i = 0; i < first20Datas.size(); i++)
-        arrayNode.add(
-            objectMapper.readTree(
-                objectMapper
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(first20Datas.get(i))));
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
-          .then()
-          .statusCode(200)
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(Math.min(20, first20Datas.size())))
           .body("data.documents", jsonEquals(arrayNode.toString()));
@@ -641,22 +529,16 @@ public class FindCollectionWithSortIntegrationTest extends AbstractCollectionInt
 
     @Test
     public void sortFailDueToTooMany() {
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              keyspaceName,
+              biggerCollectionName,
+              """
                       {
                         "find": {
                           "sort" : {"username" : 1}
                         }
                       }
-                      """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, biggerCollectionName)
-          .then()
-          .statusCode(200)
+                      """)
           .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))

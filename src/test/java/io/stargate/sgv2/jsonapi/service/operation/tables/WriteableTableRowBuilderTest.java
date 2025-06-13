@@ -6,10 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.Mockito.mock;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.fixtures.*;
@@ -22,6 +22,7 @@ import io.stargate.sgv2.jsonapi.fixtures.tables.AllOverflowTypes;
 import io.stargate.sgv2.jsonapi.fixtures.tables.AllUnderflowTypes;
 import io.stargate.sgv2.jsonapi.fixtures.tables.AllUnsupportedTypes;
 import io.stargate.sgv2.jsonapi.fixtures.types.CqlTypesForTesting;
+import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
@@ -63,6 +64,7 @@ public class WriteableTableRowBuilderTest {
             .withCommandConfig(new CommandConfig())
             .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
             .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
+            .withMeterRegistry(mock(MeterRegistry.class))
             .getBuilder(fixture.cqlFixture().tableSchemaObject())
             .withEmbeddingProvider(mock(EmbeddingProvider.class))
             .withCommandName("testCommand")

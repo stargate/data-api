@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import static org.mockito.Mockito.mock;
+
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -9,8 +11,14 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinitio
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+<<<<<<< HEAD
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+=======
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+>>>>>>> main
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
@@ -24,6 +32,7 @@ import java.util.Optional;
 
 public class TestEmbeddingProvider extends EmbeddingProvider {
 
+<<<<<<< HEAD
   private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   public TestEmbeddingProvider() {
@@ -36,6 +45,41 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
         1024,
         Map.of());
   }
+=======
+  public TestEmbeddingProvider(
+      EmbeddingProviderConfigStore.RequestProperties requestProperties,
+      String baseUrl,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
+      int dimension,
+      Map<String, Object> vectorizeServiceParameters,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
+    super(requestProperties, baseUrl, model, dimension, vectorizeServiceParameters, providerConfig);
+  }
+
+  public TestEmbeddingProvider() {}
+
+  public static final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig
+      TEST_MODEL_CONFIG =
+          new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
+              "testModel",
+              new ApiModelSupport.ApiModelSupportImpl(
+                  ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
+              Optional.empty(),
+              List.of(),
+              Map.of(),
+              Optional.empty());
+
+  public static final TestEmbeddingProvider TEST_EMBEDDING_PROVIDER =
+      new TestEmbeddingProvider(
+          null,
+          null,
+          TEST_MODEL_CONFIG,
+          3,
+          Map.of(),
+          mock(EmbeddingProvidersConfig.EmbeddingProviderConfig.class));
+
+  private TestConstants testConstants = new TestConstants();
+>>>>>>> main
 
   public CommandContext<CollectionSchemaObject> commandContextWithVectorize() {
     return TEST_CONSTANTS.collectionContext(
@@ -56,7 +100,7 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
             CollectionLexicalConfig.configForDisabled(),
             CollectionRerankDef.configForPreRerankingCollection()),
         null,
-        new TestEmbeddingProvider());
+        TEST_EMBEDDING_PROVIDER);
   }
 
   @Override

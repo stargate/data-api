@@ -1,12 +1,15 @@
 package io.stargate.sgv2.jsonapi;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsSupplier;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -57,7 +60,7 @@ public class TestConstants {
             IdConfig.defaultIdConfig(),
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
-            CollectionLexicalConfig.configForEnabledStandard(),
+            CollectionLexicalConfig.configForDefault(),
             // Use default reranking config - hardcode the value to avoid reading config
             new CollectionRerankDef(
                 true,
@@ -107,6 +110,11 @@ public class TestConstants {
       JsonProcessingMetricsReporter metricsReporter,
       EmbeddingProvider embeddingProvider) {
 
+    var requestContext = mock(RequestContext.class);
+    when(requestContext.getEmbeddingCredentialsSupplier())
+        .thenReturn(mock(EmbeddingCredentialsSupplier.class));
+    when(requestContext.getTenantId()).thenReturn(Optional.of("test-tenant"));
+
     return CommandContext.builderSupplier()
         .withJsonProcessingMetricsReporter(
             metricsReporter == null ? mock(JsonProcessingMetricsReporter.class) : metricsReporter)
@@ -114,10 +122,11 @@ public class TestConstants {
         .withCommandConfig(new CommandConfig())
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
+        .withMeterRegistry(mock(MeterRegistry.class))
         .getBuilder(schema)
         .withEmbeddingProvider(embeddingProvider)
         .withCommandName(commandName)
-        .withRequestContext(new RequestContext(Optional.of("test-tenant")))
+        .withRequestContext(requestContext)
         .build();
   }
 
@@ -138,6 +147,7 @@ public class TestConstants {
         .withCommandConfig(new CommandConfig())
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
+        .withMeterRegistry(mock(MeterRegistry.class))
         .getBuilder(schema)
         .withCommandName(commandName)
         .withRequestContext(new RequestContext(Optional.of("test-tenant")))
@@ -151,6 +161,7 @@ public class TestConstants {
         .withCommandConfig(new CommandConfig())
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
+        .withMeterRegistry(mock(MeterRegistry.class))
         .getBuilder(DATABASE_SCHEMA_OBJECT)
         .withCommandName(TEST_COMMAND_NAME)
         .withRequestContext(new RequestContext(Optional.of("test-tenant")))
