@@ -10,12 +10,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -52,33 +47,7 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
       throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
           "Sort clause must be submitted as JSON Object");
     }
-
-    // First validate the paths for the sort expressions
-    validateSortExpressionPaths(sortNode);
-
-    // And then vui
     return buildClauseFromDefinition(sortNode);
-  }
-
-  protected void validateSortExpressionPaths(ObjectNode sortNode) {
-    Iterator<String> it = sortNode.fieldNames();
-    while (it.hasNext()) {
-      validateSortExpressionPath(it.next());
-    }
-  }
-
-  protected void validateSortExpressionPath(String path) {
-    // Common checks: blank, bad escaping
-    if (path.isBlank()) {
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-          "path must be represented as a non-blank string");
-    }
-    try {
-      DocumentPath.verifyEncodedPath(path);
-    } catch (IllegalArgumentException e) {
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-          "sort clause path ('%s') is not a valid path. " + e.getMessage(), path);
-    }
   }
 
   /**
@@ -86,20 +55,9 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
    * paths are validated.
    *
    * @param sortNode Full JSON definition of the sort clause
-   * @return SOrtClause built from the definition
+   * @return SortClause built from the definition
    */
-  protected SortClause buildClauseFromDefinition(ObjectNode sortNode) {
-    // safe to iterate, we know it's an Object
-    Iterator<Map.Entry<String, JsonNode>> fieldIter = sortNode.fields();
-    int totalFields = sortNode.size();
-    List<SortExpression> sortExpressions = new ArrayList<>(sortNode.size());
-
-    while (fieldIter.hasNext()) {
-      Map.Entry<String, JsonNode> inner = fieldIter.next();
-      sortExpressions.add(buildSortExpression(inner.getKey(), inner.getValue(), totalFields));
-    }
-    return new SortClause(sortExpressions);
-  }
+  protected abstract SortClause buildClauseFromDefinition(ObjectNode sortNode);
 
   /**
    * Helper method to build a sort expression for given definition. Base implementation is for
@@ -107,11 +65,9 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
    *
    * @param path Path to the field to sort by, already validated
    * @param innerValue JSON value of the sort expression to use
-   * @param sortExpressionCount Total number of sort expressions in the clause
    * @return {@link SortExpression} for the regular sort
    */
-  protected SortExpression buildSortExpression(
-      String path, JsonNode innerValue, int sortExpressionCount) {
+  protected SortExpression buildSortExpression(String path, JsonNode innerValue) {
     if (!innerValue.isInt()) {
       // Special checking for String and ArrayNode to give less confusing error messages
       if (innerValue.isArray()) {

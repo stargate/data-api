@@ -11,8 +11,13 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.DocumentPath;
 import io.stargate.sgv2.jsonapi.service.schema.naming.NamingRules;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /** {@link SortClauseBuilder} to use with Collections. */
 public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSchemaObject> {
@@ -22,7 +27,9 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
 
   @Override
   public SortClause buildClauseFromDefinition(ObjectNode sortNode) {
-    // $lexical is only special for Collections: handle first
+    // First check "special" sort expressions, like lexical and vector sorts;
+    // they must be the only expression in the sort clause.
+
     JsonNode lexicalNode = sortNode.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
     if (lexicalNode != null) {
       // We can also check if lexical sort supported by the collection:
@@ -77,17 +84,35 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
       return SortClause.mutable(SortExpression.collecetionVectorizeSort(vectorizeData));
     }
 
-    // Otherwise, use shared default processing
-    return super.buildClauseFromDefinition(sortNode);
+    // Otherwise, only "regular" sort expressions are left
+    // So let's validate the paths for the sort expressions
+    validateSortExpressionPaths(sortNode);
+
+    Iterator<Map.Entry<String, JsonNode>> fieldIter = sortNode.fields();
+    List<SortExpression> sortExpressions = new ArrayList<>(sortNode.size());
+
+    while (fieldIter.hasNext()) {
+      Map.Entry<String, JsonNode> inner = fieldIter.next();
+      sortExpressions.add(buildSortExpression(inner.getKey(), inner.getValue()));
+    }
+    return new SortClause(sortExpressions);
   }
 
-  @Override
-  protected void validateSortExpressionPath(String path) {
-    super.validateSortExpressionPath(path);
+  private void validateSortExpressionPaths(ObjectNode sortNode) {
+    Iterator<String> it = sortNode.fieldNames();
+    while (it.hasNext()) {
+      validateSortExpressionPath(it.next());
+    }
+  }
+
+  private void validateSortExpressionPath(String path) {
     if (!NamingRules.FIELD.apply(path)) {
       // Fail on empty (blank) and "$"-starting names (conflict with operators),
       // except allow "well-known" fields
       switch (path) {
+        case String str when str.isBlank() ->
+            throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
+                "path must be represented as a non-blank string");
         case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
             DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
             DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD -> {}
@@ -95,6 +120,13 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
             throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
                 "path ('%s') cannot start with '$' (except for pseudo-fields '$lexical', '$vector' and '$vectorize')",
                 path);
+      }
+
+      try {
+        DocumentPath.verifyEncodedPath(path);
+      } catch (IllegalArgumentException e) {
+        throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
+            "sort clause path ('%s') is not a valid path. " + e.getMessage(), path);
       }
     }
   }
