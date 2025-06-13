@@ -87,7 +87,7 @@ public class SortDefinition extends JsonDefinition<SortClause> {
   public List<String> getSortExpressionPaths() {
     // We will either be wrapping the clause or have a json value:
     if (sortClause != null) {
-      return sortClause.sortExpressions().stream().map(expr -> expr.path()).toList();
+      return sortClause.sortExpressions().stream().map(expr -> expr.getPath()).toList();
     }
     return json().properties().stream().map(entry -> entry.getKey()).toList();
   }

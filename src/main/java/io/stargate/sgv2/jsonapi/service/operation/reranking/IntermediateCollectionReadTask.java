@@ -66,7 +66,9 @@ public class IntermediateCollectionReadTask
       var sortClause = findCommand.sortClause(commandContext);
       sortClause.sortExpressions().clear();
       // will throw if the deferred value is not complete
-      sortClause.sortExpressions().add(SortExpression.vsearch(deferredVectorize.getVector()));
+      sortClause
+          .sortExpressions()
+          .add(SortExpression.collectionVectorSort(deferredVectorize.getVector()));
     }
 
     Operation<CollectionSchemaObject> findOperation =
