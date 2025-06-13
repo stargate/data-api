@@ -24,7 +24,7 @@ public abstract class OperationAttemptPageBuilder<
   protected boolean debugMode = false;
 
   /**
-   * Called ot turn the accumulated attempts into a {@link CommandResult}.
+   * Called to turn the accumulated attempts into a {@link CommandResult}.
    *
    * @return A supplier that will provide the {@link CommandResult} when called, normally a sublcass
    *     of {@link OperationAttemptPage}
