@@ -107,27 +107,21 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
 
   private void validateSortExpressionPath(String path) {
     if (!NamingRules.FIELD.apply(path)) {
-      // Fail on empty (blank) and "$"-starting names (conflict with operators),
-      // except allow "well-known" fields
-      switch (path) {
-        case String str when str.isBlank() ->
-            throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-                "path must be represented as a non-blank string");
-        case DocumentConstants.Fields.LEXICAL_CONTENT_FIELD,
-            DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
-            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD -> {}
-        default ->
-            throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-                "path ('%s') cannot start with '$' (except for pseudo-fields '$lexical', '$vector' and '$vectorize')",
-                path);
-      }
-
-      try {
-        DocumentPath.verifyEncodedPath(path);
-      } catch (IllegalArgumentException e) {
+      // This is only called after handling "special" sort expressions so simple validation
+      if (path.isBlank()) {
         throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-            "sort clause path ('%s') is not a valid path. " + e.getMessage(), path);
+            "path must be represented as a non-blank string");
       }
+      throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
+          "path ('%s') cannot start with '$' (except for pseudo-fields '$lexical', '$vector' and '$vectorize')",
+          path);
+    }
+
+    try {
+      DocumentPath.verifyEncodedPath(path);
+    } catch (IllegalArgumentException e) {
+      throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
+          "sort clause path ('%s') is not a valid path. " + e.getMessage(), path);
     }
   }
 }

@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.hasSize;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.List;
 import java.util.Map;
@@ -85,7 +86,7 @@ public class LexicalSortTableIntegrationTest extends AbstractTableIntegrationTes
 
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   @Nested
-  @Order(2)
+  @Order(5)
   class HappyLexicalSort {
     @Test
     void simpleSort() {
@@ -95,6 +96,23 @@ public class LexicalSortTableIntegrationTest extends AbstractTableIntegrationTes
           .wasSuccessful()
           .body("data.documents", hasSize(2))
           .body("data.documents", jsonEquals(List.of(Map.of("id", "2"), Map.of("id", "4"))));
+    }
+  }
+
+  @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
+  @Nested
+  @Order(10)
+  class SadLexicalSort {
+    @Test
+    void unknownColumn() {
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .find(null, List.of("id"), Map.of("notTags", "tag2"))
+          .hasSingleApiError(
+              SortException.Code.CANNOT_SORT_UNKNOWN_COLUMNS,
+              SortException.class,
+              "command attempted to sort using columns that are not in the table schema",
+              "\"lexicalSortTableTest\" defines the columns");
     }
   }
 }
