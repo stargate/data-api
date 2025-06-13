@@ -21,7 +21,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
   }
 
   @Override
-  public SortClause buildAndValidate(ObjectNode sortNode) {
+  public SortClause buildClauseFromDefinition(ObjectNode sortNode) {
     // $lexical is only special for Collections: handle first
     JsonNode lexicalNode = sortNode.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
     if (lexicalNode != null) {
@@ -78,12 +78,12 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     }
 
     // Otherwise, use shared default processing
-    return super.buildAndValidate(sortNode);
+    return super.buildClauseFromDefinition(sortNode);
   }
 
   @Override
-  protected void validateSortClausePath(String path) {
-    super.validateSortClausePath(path);
+  protected void validateSortExpressionPath(String path) {
+    super.validateSortExpressionPath(path);
     if (!NamingRules.FIELD.apply(path)) {
       // Fail on empty (blank) and "$"-starting names (conflict with operators),
       // except allow "well-known" fields

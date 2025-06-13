@@ -50,28 +50,28 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
     // otherwise, if it's not object throw exception
     if (!(node instanceof ObjectNode sortNode)) {
       throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
-          "Sort clause must be submitted as json object");
+          "Sort clause must be submitted as JSON Object");
     }
 
     // First validate the paths for the sort expressions
-    validateSortClausePaths(sortNode);
+    validateSortExpressionPaths(sortNode);
 
     // And then vui
-    return buildAndValidate(sortNode);
+    return buildClauseFromDefinition(sortNode);
   }
 
-  protected void validateSortClausePaths(ObjectNode sortNode) {
+  protected void validateSortExpressionPaths(ObjectNode sortNode) {
     Iterator<String> it = sortNode.fieldNames();
     while (it.hasNext()) {
-      validateSortClausePath(it.next());
+      validateSortExpressionPath(it.next());
     }
   }
 
-  protected void validateSortClausePath(String path) {
+  protected void validateSortExpressionPath(String path) {
     // Common checks: blank, bad escaping
     if (path.isBlank()) {
       throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
-          "path must be represented as a non-empty string");
+          "path must be represented as a non-blank string");
     }
     try {
       DocumentPath.verifyEncodedPath(path);
@@ -81,7 +81,14 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
     }
   }
 
-  protected SortClause buildAndValidate(ObjectNode sortNode) {
+  /**
+   * Main method to build a {@link SortClause} from the given JSON definition; called after the
+   * paths are validated.
+   *
+   * @param sortNode Full JSON definition of the sort clause
+   * @return SOrtClause built from the definition
+   */
+  protected SortClause buildClauseFromDefinition(ObjectNode sortNode) {
     // safe to iterate, we know it's an Object
     Iterator<Map.Entry<String, JsonNode>> fieldIter = sortNode.fields();
     int totalFields = sortNode.size();
