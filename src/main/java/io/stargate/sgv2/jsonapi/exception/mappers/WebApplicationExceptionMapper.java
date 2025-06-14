@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.exception.mappers;
 import com.fasterxml.jackson.core.exc.StreamConstraintsException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
@@ -19,8 +18,6 @@ import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
 /** Tries to omit the `WebApplicationException` and just report the cause. */
 public class WebApplicationExceptionMapper {
-
-  @Inject private DebugModeConfig debugModeConfig;
   @Inject private OperationsConfig operationsConfig;
 
   @ServerExceptionMapper
@@ -41,11 +38,9 @@ public class WebApplicationExceptionMapper {
     // V2 Error are returned as APIException, this is required to translate the exception to
     // CommandResult if the exception thrown as part of command deserialization
     if (toReport instanceof APIException ae) {
-      var errorBuilder =
-          new APIExceptionCommandErrorBuilder(
-              debugModeConfig.enabled(), operationsConfig.extendError());
+      var errorBuilder = new APIExceptionCommandErrorBuilder(operationsConfig.extendError());
       return RestResponse.ok(
-          CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
               .addCommandResultError(errorBuilder.buildLegacyCommandResultError(ae))
               .build());
     }

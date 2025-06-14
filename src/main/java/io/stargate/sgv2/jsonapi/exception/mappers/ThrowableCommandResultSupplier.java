@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
-import io.stargate.sgv2.jsonapi.config.DebugConfigAccess;
 import java.util.function.Supplier;
 
 /**
@@ -16,9 +15,7 @@ public record ThrowableCommandResultSupplier(Throwable t) implements Supplier<Co
   @Override
   public CommandResult get() {
 
-    var builder =
-        CommandResult.statusOnlyBuilder(
-            false, DebugConfigAccess.isDebugEnabled(), RequestTracing.NO_OP);
+    var builder = CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP);
 
     // resolve message
     builder.addCommandResultError(ThrowableToErrorMapper.getMapperFunction().apply(t));

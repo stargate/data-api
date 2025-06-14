@@ -59,37 +59,31 @@ public record CommandResult(
    * Get a builder for the {@link CommandResult} for a single document response, see {@link
    * CommandResultBuilder}
    *
-   * <p><b>NOTE:</b> aaron 9-oct-2024 I kept the errorObjectV2 and debugMode params to make it clear
-   * how inconsistency we are configuring these settings. Ultimately useErrorObjectV2 will go away,
-   * but we will still have the debugMode setting. I will create ticket so that we create the
-   * builder in resolver or similar and then pass it around rather than creating in many places.
-   * Also the {@link io.stargate.sgv2.jsonapi.service.operation.OperationAttemptPageBuilder} is how
-   * things will turn out.
+   * <p><b>NOTE:</b> aaron 9-oct-2024 I kept the errorObjectV2 param to make it clear how
+   * inconsistency we are configuring these settings. Ultimately useErrorObjectV2 will go away. I
+   * will create ticket so that we create the builder in resolver or similar and then pass it around
+   * rather than creating in many places. Also the {@link
+   * io.stargate.sgv2.jsonapi.service.operation.OperationAttemptPageBuilder} is how things will turn
+   * out.
    */
   public static CommandResultBuilder singleDocumentBuilder(
-      boolean useErrorObjectV2, boolean debugMode, RequestTracing requestTracing) {
+      boolean useErrorObjectV2, RequestTracing requestTracing) {
     return new CommandResultBuilder(
-        CommandResultBuilder.ResponseType.SINGLE_DOCUMENT,
-        useErrorObjectV2,
-        debugMode,
-        requestTracing);
+        CommandResultBuilder.ResponseType.SINGLE_DOCUMENT, useErrorObjectV2, requestTracing);
   }
 
-  /** See {@link #singleDocumentBuilder(boolean, boolean, RequestTracing)} */
+  /** See {@link #singleDocumentBuilder(boolean, RequestTracing)} */
   public static CommandResultBuilder multiDocumentBuilder(
-      boolean useErrorObjectV2, boolean debugMode, RequestTracing requestTracing) {
+      boolean useErrorObjectV2, RequestTracing requestTracing) {
     return new CommandResultBuilder(
-        CommandResultBuilder.ResponseType.MULTI_DOCUMENT,
-        useErrorObjectV2,
-        debugMode,
-        requestTracing);
+        CommandResultBuilder.ResponseType.MULTI_DOCUMENT, useErrorObjectV2, requestTracing);
   }
 
-  /** See {@link #singleDocumentBuilder(boolean, boolean, RequestTracing)} */
+  /** See {@link #singleDocumentBuilder(boolean, RequestTracing)} */
   public static CommandResultBuilder statusOnlyBuilder(
-      boolean useErrorObjectV2, boolean debugMode, RequestTracing requestTracing) {
+      boolean useErrorObjectV2, RequestTracing requestTracing) {
     return new CommandResultBuilder(
-        CommandResultBuilder.ResponseType.STATUS_ONLY, useErrorObjectV2, debugMode, requestTracing);
+        CommandResultBuilder.ResponseType.STATUS_ONLY, useErrorObjectV2, requestTracing);
   }
 
   /**

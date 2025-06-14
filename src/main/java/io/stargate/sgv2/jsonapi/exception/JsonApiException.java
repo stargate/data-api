@@ -136,7 +136,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
       message = errorCode.getMessage();
     }
 
-    var builder = CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP);
+    var builder = CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP);
 
     // construct and return
     builder.addCommandResultError(getCommandResultError(message, httpStatus));

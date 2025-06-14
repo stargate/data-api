@@ -15,7 +15,6 @@ import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
-import io.stargate.sgv2.jsonapi.config.DebugConfigAccess;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -45,8 +44,7 @@ public final class ThrowableToErrorMapper {
 
         // V2 error, normally handled in the Task processing but can be in other places
         if (throwable instanceof APIException apiException) {
-          return CommandResult.statusOnlyBuilder(
-                  true, DebugConfigAccess.isDebugEnabled(), RequestTracing.NO_OP)
+          return CommandResult.statusOnlyBuilder(true, RequestTracing.NO_OP)
               .throwableToCommandError(apiException);
         }
 
