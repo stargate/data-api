@@ -44,7 +44,7 @@ public final class ThrowableToErrorMapper {
 
         // V2 error, normally handled in the Task processing but can be in other places
         if (throwable instanceof APIException apiException) {
-          return CommandResult.statusOnlyBuilder(true, false, RequestTracing.NO_OP)
+          return CommandResult.statusOnlyBuilder(true, RequestTracing.NO_OP)
               .throwableToCommandError(apiException);
         }
 

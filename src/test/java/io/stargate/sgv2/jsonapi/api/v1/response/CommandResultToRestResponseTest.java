@@ -22,7 +22,7 @@ public class CommandResultToRestResponseTest {
     @Test
     public void happyPath() {
       CommandResult result =
-          CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
               .addStatus(CommandStatus.OK, 1)
               .build();
       final RestResponse mappedResult = result.toRestResponse();
@@ -32,7 +32,7 @@ public class CommandResultToRestResponseTest {
     @Test
     public void errorWithOkStatus() {
       CommandResult result =
-          CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
               .addCommandResultError(
                   new CommandResult.Error(
                       "My message.",
@@ -48,7 +48,7 @@ public class CommandResultToRestResponseTest {
     @Test
     public void unauthorized() {
       CommandResult result =
-          CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
               .addCommandResultError(
                   new CommandResult.Error(
                       "My message.",
@@ -65,7 +65,7 @@ public class CommandResultToRestResponseTest {
     @Test
     public void badGateway() {
       CommandResult result =
-          CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
               .addCommandResultError(
                   new CommandResult.Error(
                       "My message.",
@@ -82,7 +82,7 @@ public class CommandResultToRestResponseTest {
     @Test
     public void internalError() {
       CommandResult result =
-          CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
               .addCommandResultError(
                   new CommandResult.Error(
                       "My message.",
@@ -99,7 +99,7 @@ public class CommandResultToRestResponseTest {
     @Test
     public void gatewayError() {
       CommandResult result =
-          CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
               .addCommandResultError(
                   new CommandResult.Error(
                       "My message.",

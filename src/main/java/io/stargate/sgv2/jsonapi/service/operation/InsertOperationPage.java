@@ -42,9 +42,6 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   private final List<InsertAttempt<SchemaT>> successfulInsertions;
   private final List<InsertAttempt<SchemaT>> failedInsertions;
 
-  // If the debug mode is enabled, errors include the errorclass
-  private final boolean debugMode;
-
   // Flagged true to include the new error object v2
   private final boolean useErrorObjectV2;
 
@@ -57,7 +54,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   public InsertOperationPage(
       List<? extends InsertAttempt<SchemaT>> allAttemptedInsertions,
       boolean returnDocumentResponses) {
-    this(allAttemptedInsertions, returnDocumentResponses, false, false, RequestTracing.NO_OP);
+    this(allAttemptedInsertions, returnDocumentResponses, false, RequestTracing.NO_OP);
   }
 
   /**
@@ -67,13 +64,11 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
    *     wildcard to allow for implementations of the {@link InsertAttempt} interface to be passed
    *     easily.
    * @param returnDocumentResponses If the response should include detailed info for each document.
-   * @param debugMode If the debug mode is enabled, errors include the errorclass.
    * @param useErrorObjectV2 Flagged true to include the new error object v2.
    */
   public InsertOperationPage(
       List<? extends InsertAttempt<SchemaT>> allAttemptedInsertions,
       boolean returnDocumentResponses,
-      boolean debugMode,
       boolean useErrorObjectV2,
       RequestTracing requestTracing) {
 
@@ -84,10 +79,9 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
 
     this.successfulInsertions = new ArrayList<>(allAttemptedInsertions.size());
     this.failedInsertions = new ArrayList<>(allAttemptedInsertions.size());
-    this.debugMode = debugMode;
     this.useErrorObjectV2 = useErrorObjectV2;
     this.requestTracing = requestTracing;
-    this.apiExceptionToError = new APIExceptionCommandErrorBuilder(debugMode, useErrorObjectV2);
+    this.apiExceptionToError = new APIExceptionCommandErrorBuilder(useErrorObjectV2);
   }
 
   enum InsertionStatus {
@@ -110,7 +104,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
     // TODO AARON used to only sort the success list when not returning detailed responses, check OK
     Collections.sort(successfulInsertions);
 
-    var builder = CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode, requestTracing);
+    var builder = CommandResult.statusOnlyBuilder(useErrorObjectV2, requestTracing);
     return returnDocumentResponses ? perDocumentResult(builder) : nonPerDocumentResult(builder);
   }
 
@@ -208,9 +202,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
         .ifPresent(o -> builder.addStatus(CommandStatus.PRIMARY_KEY_SCHEMA, o));
   }
 
-  /**
-   * Gets the appropriately formatted error given {@link #useErrorObjectV2} and {@link #debugMode}.
-   */
+  /** Gets the appropriately formatted error given {@link #useErrorObjectV2}. */
   private CommandResult.Error getErrorObject(InsertAttempt<SchemaT> insertAttempt) {
 
     var throwable = insertAttempt.failure().orElse(null);

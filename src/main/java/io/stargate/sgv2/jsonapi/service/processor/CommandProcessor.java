@@ -6,7 +6,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.TraceMessage;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
@@ -138,16 +137,14 @@ public class CommandProcessor {
    */
   private <SchemaT extends SchemaObject> Supplier<CommandResult> handleProcessingFailure(
       CommandContext<SchemaT> commandContext, Command originalCommand, Throwable throwable) {
-    var debugMode = commandContext.config().get(DebugModeConfig.class).enabled();
     var errorObjectV2 = commandContext.config().get(OperationsConfig.class).extendError();
 
     return switch (throwable) {
       case APIException apiException -> {
         // new error object V2
-        var errorBuilder = new APIExceptionCommandErrorBuilder(debugMode, errorObjectV2);
+        var errorBuilder = new APIExceptionCommandErrorBuilder(errorObjectV2);
         yield () ->
-            CommandResult.statusOnlyBuilder(
-                    errorObjectV2, debugMode, commandContext.requestTracing())
+            CommandResult.statusOnlyBuilder(errorObjectV2, commandContext.requestTracing())
                 .addCommandResultError(errorBuilder.buildLegacyCommandResultError(apiException))
                 .build();
       }
@@ -180,9 +177,9 @@ public class CommandProcessor {
   private CommandResult postProcessCommandResult(
       Command originalCommand, CommandResult commandResult) {
     if (originalCommand instanceof DeprecatedCommand deprecatedCommand) {
-      // (aaron) for the warnings we always want V2 errors and do not want / need debug ?
+      // (aaron) for the warnings we always want V2 errors ?
       var errorV2 =
-          new APIExceptionCommandErrorBuilder(false, true)
+          new APIExceptionCommandErrorBuilder(true)
               .buildCommandErrorV2(deprecatedCommand.getDeprecationWarning());
       commandResult.addWarning(errorV2);
     }

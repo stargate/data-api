@@ -63,7 +63,7 @@ public class MeteredCommandProcessorTest {
           objectMapper.readValue(json, CountDocumentsCommand.class);
 
       CommandResult commandResult =
-          CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP).build();
+          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP).build();
 
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
@@ -118,7 +118,7 @@ public class MeteredCommandProcessorTest {
       CommandResult.Error error =
           new CommandResult.Error("message", fields, fields, Response.Status.OK);
       CommandResult commandResult =
-          CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
               .addCommandResultError(error)
               .build();
 
@@ -178,7 +178,7 @@ public class MeteredCommandProcessorTest {
       CommandResult.Error error =
           new CommandResult.Error("message", fields, fields, Response.Status.OK);
       CommandResult commandResult =
-          CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+          CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
               .addCommandResultError(error)
               .build();
       Mockito.when(commandProcessor.processCommand(commandContext, countCommand))

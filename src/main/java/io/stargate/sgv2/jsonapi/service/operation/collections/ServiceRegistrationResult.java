@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 public record ServiceRegistrationResult() implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {
-    return CommandResult.singleDocumentBuilder(false, false, RequestTracing.NO_OP)
+    return CommandResult.singleDocumentBuilder(false, RequestTracing.NO_OP)
         .addStatus(CommandStatus.OK, 1)
         .build();
   }

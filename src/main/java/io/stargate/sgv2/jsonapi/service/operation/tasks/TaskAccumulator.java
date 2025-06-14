@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tasks;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.util.Objects;
@@ -18,10 +17,8 @@ import java.util.function.Supplier;
  * via a subclass. the subclasses are used often called a PageBuilder see {@link TaskPage}
  */
 public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT extends SchemaObject> {
-
   // TODO: remove all of error obj v2 flags, we use it all now
   protected boolean useErrorObjectV2 = false;
-  protected boolean debugMode = false;
   protected RequestTracing requestTracing = null;
 
   protected final TaskGroup<TaskT, SchemaT> tasks = new TaskGroup<>();
@@ -37,7 +34,6 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
     Objects.requireNonNull(commandContext, "commandContext cannot be null");
 
     accumulator
-        .debugMode(commandContext.config().get(DebugModeConfig.class).enabled())
         .useErrorObjectV2(commandContext.config().get(OperationsConfig.class).extendError())
         .requestTracing(commandContext.requestTracing());
     return accumulator;
@@ -67,16 +63,6 @@ public abstract class TaskAccumulator<TaskT extends Task<SchemaT>, SchemaT exten
   public <SubT extends TaskAccumulator<TaskT, SchemaT>> SubT useErrorObjectV2(
       boolean useErrorObjectV2) {
     this.useErrorObjectV2 = useErrorObjectV2;
-    return (SubT) this;
-  }
-
-  /**
-   * Set if API is running in debug mode, this adds additional info to the response. See {@link
-   * io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder}.
-   */
-  @SuppressWarnings("unchecked")
-  public <SubT extends TaskAccumulator<TaskT, SchemaT>> SubT debugMode(boolean debugMode) {
-    this.debugMode = debugMode;
     return (SubT) this;
   }
 

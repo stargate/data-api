@@ -69,7 +69,7 @@ public class FindKeyspacesOperation implements Operation {
       var statusKey =
           useKeyspaceNaming ? CommandStatus.EXISTING_KEYSPACES : CommandStatus.EXISTING_NAMESPACES;
 
-      return CommandResult.statusOnlyBuilder(false, false, RequestTracing.NO_OP)
+      return CommandResult.statusOnlyBuilder(false, RequestTracing.NO_OP)
           .addStatus(statusKey, keyspaces)
           .build();
     }

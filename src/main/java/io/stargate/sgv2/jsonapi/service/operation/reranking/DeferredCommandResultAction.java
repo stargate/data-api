@@ -17,8 +17,7 @@ public class DeferredCommandResultAction implements DeferredAction {
   }
 
   public void setEmptyMultiDocumentResponse() {
-    successConsumer.accept(
-        CommandResult.multiDocumentBuilder(true, false, RequestTracing.NO_OP).build());
+    successConsumer.accept(CommandResult.multiDocumentBuilder(true, RequestTracing.NO_OP).build());
   }
 
   public void onSuccess(CommandResult commandResult) {

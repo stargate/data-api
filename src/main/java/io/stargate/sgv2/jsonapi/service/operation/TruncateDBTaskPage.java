@@ -63,7 +63,7 @@ public class TruncateDBTaskPage<
     public Supplier<CommandResult> getResults() {
 
       return new TruncateDBTaskPage<>(
-          tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode, requestTracing));
+          tasks, CommandResult.statusOnlyBuilder(useErrorObjectV2, requestTracing));
     }
   }
 }
