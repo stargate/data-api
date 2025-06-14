@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.config.DebugConfigAccess;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -20,51 +21,86 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
 
   @Test
   public void productionModeCommandResult() {
-    var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-    var result = new APIExceptionCommandErrorBuilder(true).buildLegacyCommandResultError(exception);
-    assertCommandError(exception, result, 5, true);
+    withDebugMode(
+        false,
+        () -> {
+          var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
+          var result =
+              new APIExceptionCommandErrorBuilder(true).buildLegacyCommandResultError(exception);
+          assertCommandError(exception, result, 5, true);
+        });
   }
 
   @Test
   public void productionModeCommandErrorV2() {
-    var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-    var result = new APIExceptionCommandErrorBuilder(true).buildCommandErrorV2(exception);
-    assertCommandErrorV2(exception, result);
+    withDebugMode(
+        false,
+        () -> {
+          var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
+          var result = new APIExceptionCommandErrorBuilder(true).buildCommandErrorV2(exception);
+          assertCommandErrorV2(exception, result);
+        });
   }
 
   @Test
   public void preErrorV2ModeCommandResult() {
-    var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-    var result = new APIExceptionCommandErrorBuilder(true).buildLegacyCommandResultError(exception);
-    assertCommandError(exception, result, 1, false);
+    withDebugMode(
+        false,
+        () -> {
+          var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
+          var result =
+              new APIExceptionCommandErrorBuilder(true).buildLegacyCommandResultError(exception);
+          assertCommandError(exception, result, 1, false);
+        });
   }
 
   @Test
   public void debugModeCommandResult() {
-    var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-    var result = new APIExceptionCommandErrorBuilder(true).buildLegacyCommandResultError(exception);
-    assertCommandError(exception, result, 6, true);
+    withDebugMode(
+        true,
+        () -> {
+          var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
+          var result =
+              new APIExceptionCommandErrorBuilder(true).buildLegacyCommandResultError(exception);
+          assertCommandError(exception, result, 6, true);
 
-    assertThat(result)
-        .isNotNull()
-        .satisfies(
-            e ->
-                assertThat(e.fields())
-                    .containsEntry(
-                        ErrorObjectV2Constants.Fields.EXCEPTION_CLASS,
-                        exception.getClass().getSimpleName()));
+          assertThat(result)
+              .isNotNull()
+              .satisfies(
+                  e ->
+                      assertThat(e.fields())
+                          .containsEntry(
+                              ErrorObjectV2Constants.Fields.EXCEPTION_CLASS,
+                              exception.getClass().getSimpleName()));
+        });
   }
 
   @Test
   public void debugModeCommandErrorV2() {
-    var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-    var result = new APIExceptionCommandErrorBuilder(true).buildCommandErrorV2(exception);
-    assertCommandErrorV2(exception, result);
+    withDebugMode(
+        true,
+        () -> {
+          var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
+          var result = new APIExceptionCommandErrorBuilder(true).buildCommandErrorV2(exception);
+          assertCommandErrorV2(exception, result);
 
-    assertThat(result)
-        .isNotNull()
-        .satisfies(
-            e -> assertThat(e.exceptionClass()).isEqualTo(exception.getClass().getSimpleName()));
+          assertThat(result)
+              .isNotNull()
+              .satisfies(
+                  e ->
+                      assertThat(e.exceptionClass())
+                          .isEqualTo(exception.getClass().getSimpleName()));
+        });
+  }
+
+  private void withDebugMode(boolean debugMode, Runnable runnable) {
+    final boolean previousDebugMode = DebugConfigAccess.isDebugEnabled();
+    DebugConfigAccess.setDebugEnabled(debugMode);
+    try {
+      runnable.run();
+    } finally {
+      DebugConfigAccess.setDebugEnabled(previousDebugMode);
+    }
   }
 
   private void assertCommandError(
