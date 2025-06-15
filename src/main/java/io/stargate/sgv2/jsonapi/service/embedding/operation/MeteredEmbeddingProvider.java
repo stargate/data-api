@@ -48,8 +48,8 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
     super(
         embeddingProvider.modelProvider(),
         embeddingProvider.providerConfig,
-        embeddingProvider.baseUrl,
         embeddingProvider.modelConfig,
+        embeddingProvider.serviceConfig,
         embeddingProvider.dimension,
         embeddingProvider.vectorizeServiceParameters);
 

@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.*;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.ws.rs.core.Response;
@@ -24,9 +25,14 @@ public abstract class EmbeddingProvider extends ProviderBase {
 
   protected static final Logger LOGGER = LoggerFactory.getLogger(EmbeddingProvider.class);
 
+  // IMPORTANT: all of these config objects have some form of a request properties config,
+  // use the one from the serviceConfing, as it should be the most specific for this
+  // schema object. - aaron 16 jue 2025
+  // use {@link #requestProperties()} to access the request properties
   protected final EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig;
-  protected final String baseUrl;
   protected final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig;
+  protected final ServiceConfigStore.ServiceConfig serviceConfig;
+
   protected final int dimension;
   protected final Map<String, Object> vectorizeServiceParameters;
 
@@ -36,21 +42,20 @@ public abstract class EmbeddingProvider extends ProviderBase {
   protected EmbeddingProvider(
       ModelProvider modelProvider,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
-      String baseUrl,
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
+      ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     super(modelProvider, ModelType.EMBEDDING);
 
     this.providerConfig = providerConfig;
-    this.baseUrl = baseUrl;
     this.modelConfig = modelConfig;
+    this.serviceConfig = serviceConfig;
     this.dimension = dimension;
     this.vectorizeServiceParameters = vectorizeServiceParameters;
 
-    this.initialBackOffDuration =
-        Duration.ofMillis(providerConfig.properties().initialBackOffMillis());
-    this.maxBackOffDuration = Duration.ofMillis(providerConfig.properties().maxBackOffMillis());
+    this.initialBackOffDuration = Duration.ofMillis(requestProperties().initialBackOffMillis());
+    this.maxBackOffDuration = Duration.ofMillis(requestProperties().maxBackOffMillis());
   }
 
   @Override
@@ -87,7 +92,15 @@ public abstract class EmbeddingProvider extends ProviderBase {
    * @return
    */
   public int maxBatchSize() {
-    return providerConfig.properties().maxBatchSize();
+    return requestProperties().maxBatchSize();
+  }
+
+  /**
+   * Use this to get the properties for the request, including the URL , see comment at the top of
+   * class
+   */
+  protected ServiceConfigStore.ServiceRequestProperties requestProperties() {
+    return serviceConfig.requestProperties();
   }
 
   /**
@@ -181,12 +194,12 @@ public abstract class EmbeddingProvider extends ProviderBase {
 
   @Override
   protected double jitter() {
-    return providerConfig.properties().jitter();
+    return requestProperties().jitter();
   }
 
   @Override
   protected int atMostRetries() {
-    return providerConfig.properties().atMostRetries();
+    return requestProperties().atMostRetries();
   }
 
   @Override

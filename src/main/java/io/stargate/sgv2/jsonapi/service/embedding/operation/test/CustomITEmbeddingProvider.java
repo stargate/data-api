@@ -4,6 +4,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
@@ -61,10 +62,26 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
               Map.of(),
               Optional.empty());
 
+  private static final ServiceConfigStore.ServiceConfig SERVICE_CONFIG =
+      new ServiceConfigStore.ServiceConfig(
+          ModelProvider.CUSTOM,
+          "http://testing.com",
+          Optional.empty(),
+          new ServiceConfigStore.ServiceRequestProperties(
+              REQUEST_PROPERTIES.atMostRetries(),
+              REQUEST_PROPERTIES.initialBackOffMillis(),
+              REQUEST_PROPERTIES.readTimeoutMillis(),
+              REQUEST_PROPERTIES.maxBackOffMillis(),
+              REQUEST_PROPERTIES.jitter(),
+              REQUEST_PROPERTIES.taskTypeRead(),
+              REQUEST_PROPERTIES.taskTypeStore(),
+              REQUEST_PROPERTIES.maxBatchSize()),
+          Map.of());
+
   public CustomITEmbeddingProvider(int dimension) {
     // aaron 9 June 2025 - refactoring , I think none of the super class is used, so passing dummy
     // values
-    super(ModelProvider.CUSTOM, PROVIDER_CONFIG, "http://testing.com", MODEL_CONFIG, 5, Map.of());
+    super(ModelProvider.CUSTOM, PROVIDER_CONFIG, MODEL_CONFIG, SERVICE_CONFIG, 5, Map.of());
 
     this.dimension = dimension;
   }

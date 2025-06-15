@@ -7,6 +7,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
@@ -35,24 +36,25 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
 
   public AzureOpenAIEmbeddingProvider(
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
-      String baseUrl,
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
+      ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     // One special case: legacy "ada-002" model does not accept "dimension" parameter
     super(
         ModelProvider.AZURE_OPENAI,
         providerConfig,
-        baseUrl,
         modelConfig,
+        serviceConfig,
         acceptsOpenAIDimensions(modelConfig.name()) ? dimension : 0,
         vectorizeServiceParameters);
 
-    String actualUrl = replaceParameters(baseUrl, vectorizeServiceParameters);
+    String actualUrl =
+        replaceParameters(serviceConfig.getBaseUrl(modelName()), vectorizeServiceParameters);
     azureClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(actualUrl))
-            .readTimeout(providerConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(requestProperties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(AzureOpenAIEmbeddingProviderClient.class);
   }
 

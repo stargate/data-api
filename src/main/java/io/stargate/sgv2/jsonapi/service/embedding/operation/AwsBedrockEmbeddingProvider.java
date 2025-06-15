@@ -14,6 +14,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.ws.rs.core.Response;
@@ -36,15 +37,15 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
 
   public AwsBedrockEmbeddingProvider(
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
-      String baseUrl,
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
+      ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     super(
         ModelProvider.BEDROCK,
         providerConfig,
-        baseUrl,
         modelConfig,
+        serviceConfig,
         acceptsTitanAIDimensions(modelConfig.name()) ? dimension : 0,
         vectorizeServiceParameters);
   }

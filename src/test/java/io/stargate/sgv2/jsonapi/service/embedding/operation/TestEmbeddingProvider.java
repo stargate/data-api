@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -11,6 +10,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
@@ -57,16 +57,26 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
           REQUEST_PROPERTIES,
           List.of());
 
+  private static final ServiceConfigStore.ServiceConfig SERVICE_CONFIG =
+      new ServiceConfigStore.ServiceConfig(
+          ModelProvider.CUSTOM,
+          "http://testing.com",
+          Optional.empty(),
+          new ServiceConfigStore.ServiceRequestProperties(
+              REQUEST_PROPERTIES.atMostRetries(),
+              REQUEST_PROPERTIES.initialBackOffMillis(),
+              REQUEST_PROPERTIES.readTimeoutMillis(),
+              REQUEST_PROPERTIES.maxBackOffMillis(),
+              REQUEST_PROPERTIES.jitter(),
+              REQUEST_PROPERTIES.taskTypeRead(),
+              REQUEST_PROPERTIES.taskTypeStore(),
+              REQUEST_PROPERTIES.maxBatchSize()),
+          Map.of());
+
   public static final TestEmbeddingProvider TEST_EMBEDDING_PROVIDER = new TestEmbeddingProvider();
 
   public TestEmbeddingProvider() {
-    super(
-        ModelProvider.CUSTOM,
-        PROVIDER_CONFIG,
-        "http://testing.com",
-        TEST_MODEL_CONFIG,
-        3,
-        Map.of());
+    super(ModelProvider.CUSTOM, PROVIDER_CONFIG, TEST_MODEL_CONFIG, SERVICE_CONFIG, 3, Map.of());
   }
 
   public CommandContext<CollectionSchemaObject> commandContextWithVectorize() {

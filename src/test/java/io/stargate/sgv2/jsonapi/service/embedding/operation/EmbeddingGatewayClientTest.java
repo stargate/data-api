@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
@@ -62,6 +63,22 @@ public class EmbeddingGatewayClientTest {
           REQUEST_PROPERTIES,
           List.of());
 
+  private final ServiceConfigStore.ServiceConfig SERVICE_CONFIG =
+      new ServiceConfigStore.ServiceConfig(
+          ModelProvider.CUSTOM,
+          "http://testing.com",
+          Optional.empty(),
+          new ServiceConfigStore.ServiceRequestProperties(
+              REQUEST_PROPERTIES.atMostRetries(),
+              REQUEST_PROPERTIES.initialBackOffMillis(),
+              REQUEST_PROPERTIES.readTimeoutMillis(),
+              REQUEST_PROPERTIES.maxBackOffMillis(),
+              REQUEST_PROPERTIES.jitter(),
+              REQUEST_PROPERTIES.taskTypeRead(),
+              REQUEST_PROPERTIES.taskTypeStore(),
+              REQUEST_PROPERTIES.maxBatchSize()),
+          Map.of());
+
   // for [data-api#1088] (NPE for VoyageAI provider)
   @Test
   void verifyDirectConstructionWithNullServiceParameters() {
@@ -81,8 +98,7 @@ public class EmbeddingGatewayClientTest {
 
     for (EmbeddingProviderFactory.ProviderConstructor ctor : providerCtors) {
 
-      assertThat(ctor.create(PROVIDER_CONFIG, "http://test.com", MODEL_CONFIG, 5, Map.of()))
-          .isNotNull();
+      assertThat(ctor.create(PROVIDER_CONFIG, MODEL_CONFIG, SERVICE_CONFIG, 5, null)).isNotNull();
     }
   }
 
@@ -111,8 +127,8 @@ public class EmbeddingGatewayClientTest {
         new EmbeddingGatewayClient(
             ModelProvider.OPENAI,
             PROVIDER_CONFIG,
-            "https://api.openai.com/v1/",
             MODEL_CONFIG,
+            SERVICE_CONFIG,
             1536,
             Map.of(),
             Optional.of("default"),
@@ -162,8 +178,8 @@ public class EmbeddingGatewayClientTest {
         new EmbeddingGatewayClient(
             ModelProvider.OPENAI,
             PROVIDER_CONFIG,
-            "https://api.openai.com/v1/",
             MODEL_CONFIG,
+            SERVICE_CONFIG,
             1536,
             Map.of(),
             Optional.of("default"),

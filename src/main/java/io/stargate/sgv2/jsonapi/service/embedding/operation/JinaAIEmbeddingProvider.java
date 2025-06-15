@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
@@ -34,22 +35,22 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
 
   public JinaAIEmbeddingProvider(
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
-      String baseUrl,
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
+      ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     super(
         ModelProvider.JINA_AI,
         providerConfig,
-        baseUrl,
         modelConfig,
+        serviceConfig,
         acceptsJinaAIDimensions(modelConfig.name()) ? dimension : 0,
         vectorizeServiceParameters);
 
     jinaClient =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(baseUrl))
-            .readTimeout(providerConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .baseUri(URI.create(serviceConfig.getBaseUrl(modelName())))
+            .readTimeout(requestProperties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(JinaAIEmbeddingProviderClient.class);
   }
 

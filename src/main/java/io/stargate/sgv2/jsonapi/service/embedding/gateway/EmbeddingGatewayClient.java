@@ -8,8 +8,8 @@ import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import java.util.HashMap;
@@ -35,7 +35,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
   private static final String DATA_API_TOKEN = "DATA_API_TOKEN";
 
   // TODO: XXX YUQI /AARON - WHAT ARE THE DIFFERENT REQUEST PROPERTIES?
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
+  private ServiceConfigStore.ServiceRequestProperties requestProperties;
 
   private Optional<String> tenant;
   private Optional<String> authToken;
@@ -47,8 +47,8 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
   public EmbeddingGatewayClient(
       ModelProvider modelProvider,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
-      String baseUrl,
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
+      ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameter,
       Optional<String> tenant,
@@ -57,7 +57,12 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
       Map<String, String> authentication,
       String commandName) {
     super(
-        modelProvider, providerConfig, baseUrl, modelConfig, dimension, vectorizeServiceParameter);
+        modelProvider,
+        providerConfig,
+        modelConfig,
+        serviceConfig,
+        dimension,
+        vectorizeServiceParameter);
 
     this.tenant = tenant;
     this.authToken = authToken;

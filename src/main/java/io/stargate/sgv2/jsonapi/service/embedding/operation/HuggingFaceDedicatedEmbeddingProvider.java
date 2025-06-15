@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ProviderHttpInterceptor;
@@ -31,24 +32,25 @@ public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
 
   public HuggingFaceDedicatedEmbeddingProvider(
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
-      String baseUrl,
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
+      ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     super(
         ModelProvider.HUGGINGFACE_DEDICATED,
         providerConfig,
-        baseUrl,
         modelConfig,
+        serviceConfig,
         dimension,
         vectorizeServiceParameters);
 
     // replace placeholders: endPointName, regionName, cloudName
-    String dedicatedApiUrl = replaceParameters(baseUrl, vectorizeServiceParameters);
+    String dedicatedApiUrl =
+        replaceParameters(serviceConfig.getBaseUrl(modelName()), vectorizeServiceParameters);
     huggingFaceClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(dedicatedApiUrl))
-            .readTimeout(providerConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(requestProperties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(HuggingFaceDedicatedEmbeddingProviderClient.class);
   }
 

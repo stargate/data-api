@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.inject.Inject;
@@ -52,7 +53,7 @@ public class EmbeddingProviderErrorMessageTest {
 
   private final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG =
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
-          ModelProvider.CUSTOM.apiName(),
+          ModelProvider.NVIDIA.apiName(),
           true,
           Optional.of("http://testing.com"),
           false,
@@ -61,13 +62,25 @@ public class EmbeddingProviderErrorMessageTest {
           REQUEST_PROPERTIES,
           List.of());
 
+  private final ServiceConfigStore.ServiceConfig SERVICE_CONFIG =
+      new ServiceConfigStore.ServiceConfig(
+          ModelProvider.NVIDIA,
+          "http://testing.com",
+          Optional.empty(),
+          new ServiceConfigStore.ServiceRequestProperties(
+              REQUEST_PROPERTIES.atMostRetries(),
+              REQUEST_PROPERTIES.initialBackOffMillis(),
+              REQUEST_PROPERTIES.readTimeoutMillis(),
+              REQUEST_PROPERTIES.maxBackOffMillis(),
+              REQUEST_PROPERTIES.jitter(),
+              REQUEST_PROPERTIES.taskTypeRead(),
+              REQUEST_PROPERTIES.taskTypeStore(),
+              REQUEST_PROPERTIES.maxBatchSize()),
+          Map.of());
+
   private NvidiaEmbeddingProvider createProvider() {
     return new NvidiaEmbeddingProvider(
-        PROVIDER_CONFIG,
-        embeddingProvidersConfig.providers().get("nvidia").url().get(),
-        MODEL_CONFIG,
-        DEFAULT_DIMENSIONS,
-        null);
+        PROVIDER_CONFIG, MODEL_CONFIG, SERVICE_CONFIG, DEFAULT_DIMENSIONS, null);
   }
 
   private Throwable vectorizeWithError(String text) {

@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.inject.Inject;
@@ -56,11 +57,27 @@ public class OpenAiEmbeddingClientTest {
           REQUEST_PROPERTIES,
           List.of());
 
+  private final ServiceConfigStore.ServiceConfig SERVICE_CONFIG =
+      new ServiceConfigStore.ServiceConfig(
+          ModelProvider.OPENAI,
+          "http://testing.com",
+          Optional.empty(),
+          new ServiceConfigStore.ServiceRequestProperties(
+              REQUEST_PROPERTIES.atMostRetries(),
+              REQUEST_PROPERTIES.initialBackOffMillis(),
+              REQUEST_PROPERTIES.readTimeoutMillis(),
+              REQUEST_PROPERTIES.maxBackOffMillis(),
+              REQUEST_PROPERTIES.jitter(),
+              REQUEST_PROPERTIES.taskTypeRead(),
+              REQUEST_PROPERTIES.taskTypeStore(),
+              REQUEST_PROPERTIES.maxBatchSize()),
+          Map.of());
+
   private OpenAIEmbeddingProvider createProvider(Map<String, Object> vectorizeServiceParameters) {
     return new OpenAIEmbeddingProvider(
         PROVIDER_CONFIG,
-        embeddingProvidersConfig.providers().get("openai").url().get(),
         MODEL_CONFIG,
+        SERVICE_CONFIG,
         3,
         Map.of("organizationId", "org-id", "projectId", "project-id"));
   }
