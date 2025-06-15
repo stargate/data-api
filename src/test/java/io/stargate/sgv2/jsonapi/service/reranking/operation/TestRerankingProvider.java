@@ -15,13 +15,14 @@ import java.util.Optional;
 /** Mock a test reranking provider that returns ranks based on query and passages */
 public class TestRerankingProvider extends RerankingProvider {
 
-
   private static final RerankingCredentials RERANK_CREDENTIALS =
       new RerankingCredentials("test-tenant", Optional.of("mocked reranking api key"));
 
-  private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl.RequestPropertiesImpl REQUEST_PROPERTIES =  new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl.RequestPropertiesImpl(
-      3,10,100,100,0.5, 10);
-
+  private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
+          .RequestPropertiesImpl
+      REQUEST_PROPERTIES =
+          new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
+              .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10);
 
   private static final RerankingProvidersConfig.RerankingProviderConfig.ModelConfig MODEL_CONFIG =
       new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
@@ -29,13 +30,12 @@ public class TestRerankingProvider extends RerankingProvider {
           new ApiModelSupport.ApiModelSupportImpl(
               ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
           false,
-          "http://testing.com", REQUEST_PROPERTIES);
+          "http://testing.com",
+          REQUEST_PROPERTIES);
 
-
-  private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl PROVIDER_CONFIG = new RerankingProvidersConfigImpl.RerankingProviderConfigImpl(false,
-      "test", true, Map.of(), List.of());
-
-
+  private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl PROVIDER_CONFIG =
+      new RerankingProvidersConfigImpl.RerankingProviderConfigImpl(
+          false, "test", true, Map.of(), List.of());
 
   protected TestRerankingProvider(int maxBatchSize) {
     super(
@@ -47,7 +47,7 @@ public class TestRerankingProvider extends RerankingProvider {
             false,
             "http://testing.com",
             new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-              .RequestPropertiesImpl(3, 100, 5000, 500, 0.5, maxBatchSize)));
+                .RequestPropertiesImpl(3, 100, 5000, 500, 0.5, maxBatchSize)));
   }
 
   @Override

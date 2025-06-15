@@ -6,16 +6,12 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
-import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
-import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
@@ -25,8 +21,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * NOTE: this test relies on the {@link EmbeddingClientTestResource} to mock the
- * server responses
+ * NOTE: this test relies on the {@link EmbeddingClientTestResource} to mock the server responses
  */
 @QuarkusTest
 @WithTestResource(EmbeddingClientTestResource.class)
@@ -40,8 +35,7 @@ public class EmbeddingProviderErrorMessageTest {
       new EmbeddingCredentials(
           "test-tenant", Optional.of("test"), Optional.empty(), Optional.empty());
 
-  private final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig
-      MODEL_CONFIG =
+  private final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig MODEL_CONFIG =
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
           "testModel",
           new ApiModelSupport.ApiModelSupportImpl(
@@ -51,19 +45,25 @@ public class EmbeddingProviderErrorMessageTest {
           Map.of(),
           Optional.empty());
 
-  private final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl REQUEST_PROPERTIES =  new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
-      3,10,100,100,0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
+  private final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl
+      REQUEST_PROPERTIES =
+          new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
+              3, 10, 100, 100, 0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
 
-  private final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG = new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
-      ModelProvider.CUSTOM.apiName(),
-      true,
-      Optional.of("http://testing.com"),
-      false,
-      Map.of(), List.of(), REQUEST_PROPERTIES, List.of());
+  private final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG =
+      new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
+          ModelProvider.CUSTOM.apiName(),
+          true,
+          Optional.of("http://testing.com"),
+          false,
+          Map.of(),
+          List.of(),
+          REQUEST_PROPERTIES,
+          List.of());
 
-
-  private NvidiaEmbeddingProvider createProvider(){
-    return new NvidiaEmbeddingProvider(PROVIDER_CONFIG,
+  private NvidiaEmbeddingProvider createProvider() {
+    return new NvidiaEmbeddingProvider(
+        PROVIDER_CONFIG,
         embeddingProvidersConfig.providers().get("nvidia").url().get(),
         MODEL_CONFIG,
         DEFAULT_DIMENSIONS,
@@ -74,10 +74,7 @@ public class EmbeddingProviderErrorMessageTest {
 
     return createProvider()
         .vectorize(
-            1,
-            List.of(text),
-            embeddingCredentials,
-            EmbeddingProvider.EmbeddingRequestType.INDEX)
+            1, List.of(text), embeddingCredentials, EmbeddingProvider.EmbeddingRequestType.INDEX)
         .subscribe()
         .withSubscriber(UniAssertSubscriber.create())
         .awaitFailure()

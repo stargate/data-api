@@ -15,15 +15,14 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
-import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 /**
  * Implementation of client that talks to Azure-deployed OpenAI embedding provider. See <a
@@ -134,8 +133,7 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
   @RegisterProvider(ProviderHttpInterceptor.class)
-  public interface
-  AzureOpenAIEmbeddingProviderClient {
+  public interface AzureOpenAIEmbeddingProviderClient {
     // no path specified, as it is already included in the baseUri
     @POST
     @ClientHeaderParam(name = HttpHeaders.CONTENT_TYPE, value = MediaType.APPLICATION_JSON)

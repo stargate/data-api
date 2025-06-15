@@ -80,7 +80,9 @@ public class EmbeddingCredentialsSupplier {
       var authToken = requestContext.getHttpHeaders().getHeader(this.authTokenHeaderName);
       return new EmbeddingCredentials(
           requestContext.getTenantId().orElse(""),
-          Optional.ofNullable(authToken), Optional.empty(), Optional.empty());
+          Optional.ofNullable(authToken),
+          Optional.empty(),
+          Optional.empty());
     }
 
     return new EmbeddingCredentials(

@@ -6,7 +6,6 @@ import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
@@ -51,7 +50,10 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
     requestTypeQuery = providerConfig.properties().taskTypeRead().orElse(null);
     requestTypeIndex = providerConfig.properties().taskTypeStore().orElse(null);
 
-    Object v = (vectorizeServiceParameters == null) ? null : vectorizeServiceParameters.get("autoTruncate");
+    Object v =
+        (vectorizeServiceParameters == null)
+            ? null
+            : vectorizeServiceParameters.get("autoTruncate");
     autoTruncate = (v instanceof Boolean) ? (Boolean) v : null;
 
     voyageClient =

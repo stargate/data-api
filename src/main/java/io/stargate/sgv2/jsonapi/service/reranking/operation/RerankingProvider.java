@@ -6,7 +6,6 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.provider.*;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import jakarta.ws.rs.core.Response;
@@ -34,7 +33,8 @@ public abstract class RerankingProvider extends ProviderBase {
 
     this.modelConfig = modelConfig;
 
-    this.initialBackOffDuration = Duration.ofMillis(modelConfig.properties().initialBackOffMillis());
+    this.initialBackOffDuration =
+        Duration.ofMillis(modelConfig.properties().initialBackOffMillis());
     this.maxBackOffDuration = Duration.ofMillis(modelConfig.properties().maxBackOffMillis());
   }
 
@@ -165,7 +165,8 @@ public abstract class RerankingProvider extends ProviderBase {
     List<List<String>> batches = new ArrayList<>();
     for (int i = 0; i < passages.size(); i += modelConfig.properties().maxBatchSize()) {
       batches.add(
-          passages.subList(i, Math.min(i + modelConfig.properties().maxBatchSize(), passages.size())));
+          passages.subList(
+              i, Math.min(i + modelConfig.properties().maxBatchSize(), passages.size())));
     }
     return batches;
   }

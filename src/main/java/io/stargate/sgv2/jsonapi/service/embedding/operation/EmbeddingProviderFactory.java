@@ -92,20 +92,21 @@ public class EmbeddingProviderFactory {
       Map<String, String> authentication,
       String commandName) {
 
-
     if (vectorizeServiceParameters == null) {
       vectorizeServiceParameters = Map.of();
     }
 
     // WARNING: aaron 15 june 2025, I really cannot understand the difference between
-    //EmbeddingProviderConfigStore and EmbeddingProvidersConfig this may be wrong
+    // EmbeddingProviderConfigStore and EmbeddingProvidersConfig this may be wrong
     // EmbeddingProvidersConfig looks like it is made by EmbeddingProvidersConfigProducer and then
     // considers if the embedding gateway is in use
 
-    EmbeddingProviderConfigStore.ServiceConfig serviceConfig = embeddingProviderConfigStore.get().getConfiguration(tenant, modelProvider.apiName());
+    EmbeddingProviderConfigStore.ServiceConfig serviceConfig =
+        embeddingProviderConfigStore.get().getConfiguration(tenant, modelProvider.apiName());
 
     // leaving full types here because the names are very, very confusing
-    EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig = embeddingProvidersConfig.providers().get(serviceConfig.serviceProvider());
+    EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig =
+        embeddingProvidersConfig.providers().get(serviceConfig.serviceProvider());
     if (providerConfig == null) {
       throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
           "unknown service provider '%s'", serviceConfig.serviceProvider());
@@ -120,7 +121,6 @@ public class EmbeddingProviderFactory {
                     ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
                         "unknown model '%s' for service provider '%s'",
                         modelName, serviceConfig.serviceProvider()));
-
 
     if (operationsConfig.enableEmbeddingGateway()) {
       return new EmbeddingGatewayClient(

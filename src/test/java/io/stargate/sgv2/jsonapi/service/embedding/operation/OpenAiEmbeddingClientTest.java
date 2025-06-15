@@ -8,7 +8,6 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
@@ -41,20 +40,23 @@ public class OpenAiEmbeddingClientTest {
           Map.of(),
           Optional.empty());
 
-  private final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl REQUEST_PROPERTIES =  new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
-      3,10,100,100,0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
+  private final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl
+      REQUEST_PROPERTIES =
+          new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
+              3, 10, 100, 100, 0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
 
-  private final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG = new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
-      ModelProvider.OPENAI.apiName(),
-      true,
-      Optional.of("http://testing.com"),
-      false,
-      Map.of(),
-      List.of(),
-      REQUEST_PROPERTIES,
-      List.of());
+  private final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG =
+      new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
+          ModelProvider.OPENAI.apiName(),
+          true,
+          Optional.of("http://testing.com"),
+          false,
+          Map.of(),
+          List.of(),
+          REQUEST_PROPERTIES,
+          List.of());
 
-  private OpenAIEmbeddingProvider createProvider(Map<String, Object> vectorizeServiceParameters){
+  private OpenAIEmbeddingProvider createProvider(Map<String, Object> vectorizeServiceParameters) {
     return new OpenAIEmbeddingProvider(
         PROVIDER_CONFIG,
         embeddingProvidersConfig.providers().get("openai").url().get(),
@@ -63,13 +65,11 @@ public class OpenAiEmbeddingClientTest {
         Map.of("organizationId", "org-id", "projectId", "project-id"));
   }
 
-  private EmbeddingProvider.BatchedEmbeddingResponse runVectorize(EmbeddingProvider embeddingProvider, List<String> texts){
+  private EmbeddingProvider.BatchedEmbeddingResponse runVectorize(
+      EmbeddingProvider embeddingProvider, List<String> texts) {
 
-    return embeddingProvider.vectorize(
-        1,
-        texts,
-        embeddingCredentials,
-        EmbeddingProvider.EmbeddingRequestType.INDEX)
+    return embeddingProvider
+        .vectorize(1, texts, embeddingCredentials, EmbeddingProvider.EmbeddingRequestType.INDEX)
         .subscribe()
         .withSubscriber(UniAssertSubscriber.create())
         .awaitItem()
@@ -80,10 +80,7 @@ public class OpenAiEmbeddingClientTest {
 
     return embeddingProvider
         .vectorize(
-            1,
-            List.of(text),
-            embeddingCredentials,
-            EmbeddingProvider.EmbeddingRequestType.INDEX)
+            1, List.of(text), embeddingCredentials, EmbeddingProvider.EmbeddingRequestType.INDEX)
         .subscribe()
         .withSubscriber(UniAssertSubscriber.create())
         .awaitFailure()
@@ -96,10 +93,10 @@ public class OpenAiEmbeddingClientTest {
     @Test
     public void happyPath() throws Exception {
 
-      var response = runVectorize(
-          createProvider(Map.of("organizationId", "org-id", "projectId", "project-id")),
-          List.of("some data")
-      );
+      var response =
+          runVectorize(
+              createProvider(Map.of("organizationId", "org-id", "projectId", "project-id")),
+              List.of("some data"));
 
       assertThat(response)
           .isInstanceOf(EmbeddingProvider.BatchedEmbeddingResponse.class)
@@ -114,10 +111,7 @@ public class OpenAiEmbeddingClientTest {
     @Test
     public void onlyToken() throws Exception {
 
-      var response = runVectorize(
-          createProvider(Map.of()),
-          List.of(MediaType.APPLICATION_JSON)
-      );
+      var response = runVectorize(createProvider(Map.of()), List.of(MediaType.APPLICATION_JSON));
 
       assertThat(response)
           .isInstanceOf(EmbeddingProvider.BatchedEmbeddingResponse.class)
@@ -132,11 +126,10 @@ public class OpenAiEmbeddingClientTest {
     @Test
     public void invalidOrg() throws Exception {
 
-
-      var exception = vectorizeWithError(
-          createProvider(Map.of("organizationId", "invalid org", "projectId", "project-id")),
-          "some data"
-      );
+      var exception =
+          vectorizeWithError(
+              createProvider(Map.of("organizationId", "invalid org", "projectId", "project-id")),
+              "some data");
 
       assertThat(exception)
           .isInstanceOf(JsonApiException.class)
@@ -149,10 +142,10 @@ public class OpenAiEmbeddingClientTest {
     @Test
     public void invalidProject() throws Exception {
 
-      var exception = vectorizeWithError(
-          createProvider(Map.of("organizationId", "org-id", "projectId", "invalid proj")),
-          "some data"
-      );
+      var exception =
+          vectorizeWithError(
+              createProvider(Map.of("organizationId", "org-id", "projectId", "invalid proj")),
+              "some data");
 
       assertThat(exception)
           .isInstanceOf(JsonApiException.class)

@@ -14,7 +14,6 @@ import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
@@ -36,8 +35,7 @@ public class EmbeddingGatewayClientTest {
   private final EmbeddingCredentials embeddingCredentials =
       new EmbeddingCredentials("test-tenant", Optional.empty(), Optional.empty(), Optional.empty());
 
-  private static final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig
-      MODEL_CONFIG =
+  private static final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig MODEL_CONFIG =
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
           "testModel",
           new ApiModelSupport.ApiModelSupportImpl(
@@ -47,16 +45,22 @@ public class EmbeddingGatewayClientTest {
           Map.of(),
           Optional.empty());
 
-  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl REQUEST_PROPERTIES =  new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
-      3,10,100,100,0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
+  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl
+          .RequestPropertiesImpl
+      REQUEST_PROPERTIES =
+          new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
+              3, 10, 100, 100, 0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
 
-  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG = new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
-      ModelProvider.CUSTOM.apiName(),
-      true,
-      Optional.of("http://testing.com"),
-      false,
-      Map.of(), List.of(), REQUEST_PROPERTIES, List.of());
-
+  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG =
+      new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
+          ModelProvider.CUSTOM.apiName(),
+          true,
+          Optional.of("http://testing.com"),
+          false,
+          Map.of(),
+          List.of(),
+          REQUEST_PROPERTIES,
+          List.of());
 
   // for [data-api#1088] (NPE for VoyageAI provider)
   @Test
@@ -77,8 +81,7 @@ public class EmbeddingGatewayClientTest {
 
     for (EmbeddingProviderFactory.ProviderConstructor ctor : providerCtors) {
 
-      assertThat(
-              ctor.create(PROVIDER_CONFIG, "http://test.com", MODEL_CONFIG, 5, Map.of()))
+      assertThat(ctor.create(PROVIDER_CONFIG, "http://test.com", MODEL_CONFIG, 5, Map.of()))
           .isNotNull();
     }
   }

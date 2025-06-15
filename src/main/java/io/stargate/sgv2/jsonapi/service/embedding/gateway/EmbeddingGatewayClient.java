@@ -43,8 +43,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
   Map<String, String> authentication;
   private String commandName;
 
-  /**
-   */
+  /** */
   public EmbeddingGatewayClient(
       ModelProvider modelProvider,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
@@ -56,9 +55,9 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
       Optional<String> authToken,
       EmbeddingService grpcGatewayClient,
       Map<String, String> authentication,
-      String commandName){
+      String commandName) {
     super(
-        modelProvider,providerConfig, baseUrl, modelConfig, dimension, vectorizeServiceParameter);
+        modelProvider, providerConfig, baseUrl, modelConfig, dimension, vectorizeServiceParameter);
 
     this.tenant = tenant;
     this.authToken = authToken;

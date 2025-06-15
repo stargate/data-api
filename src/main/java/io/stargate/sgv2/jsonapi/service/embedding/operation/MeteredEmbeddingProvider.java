@@ -12,11 +12,10 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.metrics.MetricsConstants;
 import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,9 +131,10 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
                 result.addAll(vectorizedBatch.embeddings());
               }
               var embeddingResponse = new BatchedEmbeddingResponse(1, result, aggregatedModelUsage);
-              if (LOGGER.isTraceEnabled()){
+              if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace(
-                    "Vectorize call completed, aggregatedModelUsage: {}", PrettyPrintable.print(aggregatedModelUsage));
+                    "Vectorize call completed, aggregatedModelUsage: {}",
+                    PrettyPrintable.print(aggregatedModelUsage));
               }
               return embeddingResponse;
             })

@@ -30,7 +30,6 @@ public abstract class EmbeddingProvider extends ProviderBase {
   protected final int dimension;
   protected final Map<String, Object> vectorizeServiceParameters;
 
-
   protected final Duration initialBackOffDuration;
   protected final Duration maxBackOffDuration;
 
@@ -49,8 +48,8 @@ public abstract class EmbeddingProvider extends ProviderBase {
     this.dimension = dimension;
     this.vectorizeServiceParameters = vectorizeServiceParameters;
 
-
-    this.initialBackOffDuration = Duration.ofMillis(providerConfig.properties().initialBackOffMillis());
+    this.initialBackOffDuration =
+        Duration.ofMillis(providerConfig.properties().initialBackOffMillis());
     this.maxBackOffDuration = Duration.ofMillis(providerConfig.properties().maxBackOffMillis());
   }
 
@@ -170,7 +169,6 @@ public abstract class EmbeddingProvider extends ProviderBase {
     }
   }
 
-
   @Override
   protected Duration initialBackOffDuration() {
     return initialBackOffDuration;
@@ -183,7 +181,7 @@ public abstract class EmbeddingProvider extends ProviderBase {
 
   @Override
   protected double jitter() {
-    return  providerConfig.properties().jitter();
+    return providerConfig.properties().jitter();
   }
 
   @Override

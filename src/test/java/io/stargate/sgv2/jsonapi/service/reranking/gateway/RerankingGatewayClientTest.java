@@ -14,8 +14,6 @@ import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ModelType;
@@ -42,9 +40,11 @@ public class RerankingGatewayClientTest {
   private static final RerankingCredentials RERANK_CREDENTIALS =
       new RerankingCredentials("test-tenant", Optional.of("mocked reranking api key"));
 
-  private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl.RequestPropertiesImpl REQUEST_PROPERTIES =  new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl.RequestPropertiesImpl(
-      3,10,100,100,0.5, 10);
-
+  private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
+          .RequestPropertiesImpl
+      REQUEST_PROPERTIES =
+          new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
+              .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10);
 
   private static final RerankingProvidersConfig.RerankingProviderConfig.ModelConfig MODEL_CONFIG =
       new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
@@ -52,13 +52,12 @@ public class RerankingGatewayClientTest {
           new ApiModelSupport.ApiModelSupportImpl(
               ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
           false,
-  "http://testing.com", REQUEST_PROPERTIES);
+          "http://testing.com",
+          REQUEST_PROPERTIES);
 
-
-  private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl PROVIDER_CONFIG = new RerankingProvidersConfigImpl.RerankingProviderConfigImpl(false,
-      "test", true, Map.of(), List.of());
-
-
+  private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl PROVIDER_CONFIG =
+      new RerankingProvidersConfigImpl.RerankingProviderConfigImpl(
+          false, "test", true, Map.of(), List.of());
 
   @Test
   void handleValidResponse() {
@@ -93,7 +92,8 @@ public class RerankingGatewayClientTest {
     when(rerankService.rerank(any())).thenReturn(Uni.createFrom().item(builder.build()));
 
     // Create a RerankEGWClient instance
-    RerankingEGWClient rerankEGWClient = new RerankingEGWClient(
+    RerankingEGWClient rerankEGWClient =
+        new RerankingEGWClient(
             ModelProvider.NVIDIA,
             MODEL_CONFIG,
             Optional.of("default"),
@@ -146,14 +146,15 @@ public class RerankingGatewayClientTest {
     when(rerankService.rerank(any())).thenReturn(Uni.createFrom().item(builder.build()));
 
     // Create a RerankEGWClient instance
-    RerankingEGWClient rerankEGWClient = new RerankingEGWClient(
-        ModelProvider.NVIDIA,
-        MODEL_CONFIG,
-        Optional.of("default"),
-        Optional.of("default"),
-        rerankService,
-        Map.of(),
-        TESTING_COMMAND_NAME);
+    RerankingEGWClient rerankEGWClient =
+        new RerankingEGWClient(
+            ModelProvider.NVIDIA,
+            MODEL_CONFIG,
+            Optional.of("default"),
+            Optional.of("default"),
+            rerankService,
+            Map.of(),
+            TESTING_COMMAND_NAME);
 
     Throwable result =
         rerankEGWClient
@@ -172,5 +173,4 @@ public class RerankingGatewayClientTest {
               assertThat(exception.getErrorCode()).isEqualTo(apiException.getErrorCode());
             });
   }
-
 }

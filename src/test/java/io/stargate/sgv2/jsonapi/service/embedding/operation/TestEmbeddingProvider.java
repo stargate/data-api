@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-import static org.mockito.Mockito.mock;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.TestConstants;
@@ -10,12 +9,11 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
-import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
-import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
@@ -33,30 +31,35 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
 
   private static final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig
       TEST_MODEL_CONFIG =
-      new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
-          "testModel",
-          new ApiModelSupport.ApiModelSupportImpl(
-              ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
-          Optional.empty(),
-          List.of(),
+          new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
+              "testModel",
+              new ApiModelSupport.ApiModelSupportImpl(
+                  ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
+              Optional.empty(),
+              List.of(),
+              Map.of(),
+              Optional.empty());
+
+  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl
+          .RequestPropertiesImpl
+      REQUEST_PROPERTIES =
+          new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
+              3, 10, 100, 100, 0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
+
+  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG =
+      new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
+          ModelProvider.CUSTOM.apiName(),
+          true,
+          Optional.of("http://testing.com"),
+          false,
           Map.of(),
-          Optional.empty());
+          List.of(),
+          REQUEST_PROPERTIES,
+          List.of());
 
-  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl REQUEST_PROPERTIES =  new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
-      3,10,100,100,0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
+  public static final TestEmbeddingProvider TEST_EMBEDDING_PROVIDER = new TestEmbeddingProvider();
 
-  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG = new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
-      ModelProvider.CUSTOM.apiName(),
-      true,
-      Optional.of("http://testing.com"),
-      false,
-      Map.of(), List.of(), REQUEST_PROPERTIES, List.of());
-
-
-  public static final TestEmbeddingProvider TEST_EMBEDDING_PROVIDER =
-      new TestEmbeddingProvider();
-
-  public TestEmbeddingProvider(){
+  public TestEmbeddingProvider() {
     super(
         ModelProvider.CUSTOM,
         PROVIDER_CONFIG,
