@@ -6,12 +6,8 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
-<<<<<<< HEAD
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
-=======
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
->>>>>>> main
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.ArrayList;

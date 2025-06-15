@@ -64,6 +64,10 @@ public abstract class EmbeddingProvider extends ProviderBase {
     return modelConfig.apiModelSupport();
   }
 
+  public EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig() {
+    return providerConfig;
+  }
+
   /**
    * Vectorizes the given list of texts and returns the embeddings.
    *

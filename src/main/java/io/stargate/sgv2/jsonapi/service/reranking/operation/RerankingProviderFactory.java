@@ -18,14 +18,12 @@ public class RerankingProviderFactory {
   @Inject OperationsConfig operationsConfig;
 
   @GrpcClient("embedding")
-  RerankingService rerankingGrpcService;
+  RerankingService grpcGatewayService;
 
+  @FunctionalInterface
   interface ProviderConstructor {
     RerankingProvider create(
-        String baseUrl,
-        String modelName,
-        RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties
-            requestProperties);
+        RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig);
   }
 
   private static final Map<ModelProvider, ProviderConstructor> RERANKING_PROVIDER_CTORS =
@@ -56,16 +54,14 @@ public class RerankingProviderFactory {
       Map<String, String> authentication,
       String commandName) {
 
-    var rerankingProvderConfig = rerankingConfig.providers().get(modelProvider.apiName());
-
-    RerankingProviderFactory.ProviderConstructor ctor = RERANKING_PROVIDER_CTORS.get(modelProvider);
-    if (ctor == null) {
+    var providerConfig = rerankingConfig.providers().get(modelProvider.apiName());
+    if (providerConfig == null) {
       throw ErrorCodeV1.RERANKING_SERVICE_TYPE_UNAVAILABLE.toApiException(
-          "unknown service provider '%s'", modelProvider.apiName());
+          "unknown reranking service provider '%s'", modelProvider.apiName());
     }
 
     var modelConfig =
-        rerankingProvderConfig.models().stream()
+        providerConfig.models().stream()
             .filter(model -> model.name().equals(modelName))
             .findFirst()
             .orElseThrow(
@@ -76,18 +72,21 @@ public class RerankingProviderFactory {
     if (operationsConfig.enableEmbeddingGateway()) {
       // return the reranking Grpc client to embedding gateway service
       return new RerankingEGWClient(
-          modelConfig.url(),
-          modelConfig.properties(),
           modelProvider,
+          modelConfig,
           tenant,
           authToken,
-          modelName,
-          rerankingGrpcService,
+          grpcGatewayService,
           authentication,
           commandName);
     }
 
-    return ctor.create(modelConfig.url(), modelConfig.name(), modelConfig.properties());
+    RerankingProviderFactory.ProviderConstructor ctor = RERANKING_PROVIDER_CTORS.get(modelProvider);
+    if (ctor == null) {
+      throw ErrorCodeV1.RERANKING_SERVICE_TYPE_UNAVAILABLE.toApiException(
+          "unknown service provider '%s'", modelProvider.apiName());
+    }
+    return ctor.create(modelConfig);
   }
 
   public RerankingProvidersConfig getRerankingConfig() {

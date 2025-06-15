@@ -21,9 +21,7 @@ public abstract class RerankingProvider extends ProviderBase {
 
   protected static final Logger LOGGER = LoggerFactory.getLogger(RerankingProvider.class);
 
-  protected final String baseUrl;
-  protected final RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties
-      requestProperties;
+  protected final RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig;
 
   protected final Duration initialBackOffDuration;
 
@@ -31,15 +29,23 @@ public abstract class RerankingProvider extends ProviderBase {
 
   protected RerankingProvider(
       ModelProvider modelProvider,
-      String baseUrl,
-      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig model) {
-    super(modelProvider, ModelType.RERANKING, modelName);
+      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig) {
+    super(modelProvider, ModelType.RERANKING);
 
-    this.baseUrl = baseUrl;
-    this.requestProperties = requestProperties;
+    this.modelConfig = modelConfig;
 
-    this.initialBackOffDuration = Duration.ofMillis(requestProperties.initialBackOffMillis());
-    this.maxBackOffDuration = Duration.ofMillis(requestProperties.maxBackOffMillis());
+    this.initialBackOffDuration = Duration.ofMillis(modelConfig.properties().initialBackOffMillis());
+    this.maxBackOffDuration = Duration.ofMillis(modelConfig.properties().maxBackOffMillis());
+  }
+
+  @Override
+  public String modelName() {
+    return modelConfig.name();
+  }
+
+  @Override
+  public ApiModelSupport modelSupport() {
+    return modelConfig.apiModelSupport();
   }
 
   /**
@@ -95,12 +101,12 @@ public abstract class RerankingProvider extends ProviderBase {
 
   @Override
   protected double jitter() {
-    return requestProperties.jitter();
+    return modelConfig.properties().jitter();
   }
 
   @Override
   protected int atMostRetries() {
-    return requestProperties.atMostRetries();
+    return modelConfig.properties().atMostRetries();
   }
 
   @Override
@@ -157,9 +163,9 @@ public abstract class RerankingProvider extends ProviderBase {
   private List<List<String>> createPassageBatches(List<String> passages) {
 
     List<List<String>> batches = new ArrayList<>();
-    for (int i = 0; i < passages.size(); i += requestProperties.maxBatchSize()) {
+    for (int i = 0; i < passages.size(); i += modelConfig.properties().maxBatchSize()) {
       batches.add(
-          passages.subList(i, Math.min(i + requestProperties.maxBatchSize(), passages.size())));
+          passages.subList(i, Math.min(i + modelConfig.properties().maxBatchSize(), passages.size())));
     }
     return batches;
   }
@@ -171,7 +177,7 @@ public abstract class RerankingProvider extends ProviderBase {
     ModelUsage aggregatedModelUsage = null;
 
     for (BatchedRerankingResponse batchResponse : batchResponses) {
-      int batchStartIndex = batchResponse.batchId() * requestProperties.maxBatchSize();
+      int batchStartIndex = batchResponse.batchId() * modelConfig.properties().maxBatchSize();
 
       aggregatedModelUsage =
           aggregatedModelUsage == null

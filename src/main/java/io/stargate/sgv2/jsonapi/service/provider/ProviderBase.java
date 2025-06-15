@@ -91,7 +91,7 @@ public abstract class ProviderBase {
     LOGGER.error(
         "Error response from model provider, modelProvider: {}, modelName:{}, http.status: {}, error: {}",
         modelProvider,
-        modelName,
+        modelName(),
         jakartaResponse.getStatus(),
         errorMessage);
 
@@ -122,7 +122,7 @@ public abstract class ProviderBase {
       LOGGER.error(
           "Error parsing error JSON from reranking provider, modelProvider: {},  modelName: {}",
           modelProvider,
-          modelName,
+          modelName(),
           e);
     }
 
@@ -173,7 +173,7 @@ public abstract class ProviderBase {
     return new ModelUsage(
         modelProvider,
         modelType,
-        modelName,
+        modelName(),
         tenantId,
         modelInputType,
         promptTokens,

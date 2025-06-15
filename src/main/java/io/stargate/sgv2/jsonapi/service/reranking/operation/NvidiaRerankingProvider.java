@@ -73,16 +73,13 @@ public class NvidiaRerankingProvider extends RerankingProvider {
   private static final String TRUNCATE_PASSAGE = "NONE";
 
   public NvidiaRerankingProvider(
-      String baseUrl,
-      String modelName,
-      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties
-          requestProperties) {
-    super(ModelProvider.NVIDIA, baseUrl, modelName, requestProperties);
+      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig) {
+    super(ModelProvider.NVIDIA, modelConfig);
 
     nvidiaClient =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(baseUrl))
-            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .baseUri(URI.create(modelConfig.url()))
+            .readTimeout(modelConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(NvidiaRerankingClient.class);
   }
 

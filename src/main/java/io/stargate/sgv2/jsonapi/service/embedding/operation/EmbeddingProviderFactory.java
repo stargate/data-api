@@ -5,11 +5,7 @@ import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
-<<<<<<< HEAD
-=======
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
->>>>>>> main
 import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -22,30 +18,24 @@ import java.util.Optional;
 public class EmbeddingProviderFactory {
 
   @Inject Instance<EmbeddingProviderConfigStore> embeddingProviderConfigStore;
-<<<<<<< HEAD
-
-  @Inject OperationsConfig operationsConfig;
-=======
   @Inject EmbeddingProvidersConfig embeddingProvidersConfig;
-  @Inject OperationsConfig config;
->>>>>>> main
+  @Inject OperationsConfig operationsConfig;
 
   @GrpcClient("embedding")
-  EmbeddingService embeddingService;
+  EmbeddingService grpcGatewayClient;
 
   @FunctionalInterface
   interface ProviderConstructor {
     EmbeddingProvider create(
-        EmbeddingProviderConfigStore.RequestProperties requestProperties,
+        EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
         String baseUrl,
-        EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
+        EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
         int dimension,
-        Map<String, Object> vectorizeServiceParameter,
-        EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig);
+        Map<String, Object> vectorizeServiceParameter);
   }
 
+  // Immutable map, not concurrency concerns.
   private static final Map<ModelProvider, ProviderConstructor> EMBEDDING_PROVIDER_CTORS =
-      // alphabetic order
       Map.ofEntries(
           Map.entry(ModelProvider.AZURE_OPENAI, AzureOpenAIEmbeddingProvider::new),
           Map.entry(ModelProvider.BEDROCK, AwsBedrockEmbeddingProvider::new),
@@ -61,7 +51,7 @@ public class EmbeddingProviderFactory {
           Map.entry(ModelProvider.VERTEXAI, VertexAIEmbeddingProvider::new),
           Map.entry(ModelProvider.VOYAGE_AI, VoyageAIEmbeddingProvider::new));
 
-  public EmbeddingProvider getConfiguration(
+  public EmbeddingProvider create(
       Optional<String> tenant,
       Optional<String> authToken,
       String serviceName,
@@ -71,16 +61,17 @@ public class EmbeddingProviderFactory {
       Map<String, String> authentication,
       String commandName) {
 
-    if (vectorizeServiceParameters == null) {
-      vectorizeServiceParameters = Map.of();
-    }
-
+    // aaron 7 June 2025, the code previously threw this error when the name from the config was not
+    // found in the code, but this is a serious error that should not happen, it should be more like
+    // a IllegalState.
     var modelProvider =
         ModelProvider.fromApiName(serviceName)
             .orElseThrow(
-                () -> new IllegalArgumentException("Unknown service provider: " + serviceName));
+                () ->
+                    ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
+                        "unknown service provider '%s'", serviceName));
 
-    return addService(
+    return create(
         tenant,
         authToken,
         modelProvider,
@@ -91,7 +82,7 @@ public class EmbeddingProviderFactory {
         commandName);
   }
 
-  private synchronized EmbeddingProvider addService(
+  public EmbeddingProvider create(
       Optional<String> tenant,
       Optional<String> authToken,
       ModelProvider modelProvider,
@@ -101,41 +92,55 @@ public class EmbeddingProviderFactory {
       Map<String, String> authentication,
       String commandName) {
 
-<<<<<<< HEAD
-    final EmbeddingProviderConfigStore.ServiceConfig serviceConfig =
-        embeddingProviderConfigStore.get().getConfiguration(tenant, modelProvider.apiName());
+
+    if (vectorizeServiceParameters == null) {
+      vectorizeServiceParameters = Map.of();
+    }
+
+    // WARNING: aaron 15 june 2025, I really cannot understand the difference between
+    //EmbeddingProviderConfigStore and EmbeddingProvidersConfig this may be wrong
+    // EmbeddingProvidersConfig looks like it is made by EmbeddingProvidersConfigProducer and then
+    // considers if the embedding gateway is in use
+
+    EmbeddingProviderConfigStore.ServiceConfig serviceConfig = embeddingProviderConfigStore.get().getConfiguration(tenant, modelProvider.apiName());
+
+    // leaving full types here because the names are very, very confusing
+    EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig = embeddingProvidersConfig.providers().get(serviceConfig.serviceProvider());
+    if (providerConfig == null) {
+      throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
+          "unknown service provider '%s'", serviceConfig.serviceProvider());
+    }
+
+    EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig =
+        embeddingProvidersConfig.providers().get(serviceConfig.serviceProvider()).models().stream()
+            .filter(m -> m.name().equals(modelName))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
+                        "unknown model '%s' for service provider '%s'",
+                        modelName, serviceConfig.serviceProvider()));
+
 
     if (operationsConfig.enableEmbeddingGateway()) {
-=======
-    final EmbeddingProviderConfigStore.ServiceConfig configuration =
-        embeddingProviderConfigStore.get().getConfiguration(tenant, serviceName);
-
-    if (config.enableEmbeddingGateway()) {
->>>>>>> main
       return new EmbeddingGatewayClient(
-          serviceConfig.requestConfiguration(),
           modelProvider,
+          providerConfig,
+          serviceConfig.baseUrl(),
+          modelConfig,
           dimension,
+          vectorizeServiceParameters,
           tenant,
           authToken,
-          serviceConfig.getBaseUrl(modelName),
-          modelName,
-          embeddingService,
-          vectorizeServiceParameters,
+          grpcGatewayClient,
           authentication,
           commandName);
     }
 
-<<<<<<< HEAD
     if (serviceConfig.serviceProvider().equals(ModelProvider.CUSTOM.apiName())) {
+      // CUSTOM is for test only, but we cannot really check that here
       Optional<Class<?>> clazz = serviceConfig.implementationClass();
       if (clazz.isEmpty()) {
-=======
-    // CUSTOM is for test only
-    if (configuration.serviceProvider().equals(ProviderConstants.CUSTOM)) {
-      Optional<Class<?>> clazz = configuration.implementationClass();
-      if (!clazz.isPresent()) {
->>>>>>> main
         throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
             "custom class undefined");
       }
@@ -149,51 +154,17 @@ public class EmbeddingProviderFactory {
       }
     }
 
-    // aaron 7 June 2025, the code previously threw this error when the name from the config was not
-    // found in the code, but this is a serious error that should not happen, it should be more like
-    // a IllegalState.
-    var serviceConfigModelProvider =
-        ModelProvider.fromApiName(serviceConfig.serviceProvider())
-            .orElseThrow(
-                () ->
-                    ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
-                        "unknown service provider '%s'", serviceConfig.serviceProvider()));
-
-    ProviderConstructor ctor = EMBEDDING_PROVIDER_CTORS.get(serviceConfigModelProvider);
+    var ctor = EMBEDDING_PROVIDER_CTORS.get(modelProvider);
     if (ctor == null) {
       throw new IllegalStateException(
-          "ModelProvider does not have a constructor: " + serviceConfigModelProvider.apiName());
+          "ModelProvider does not have a constructor: " + modelProvider);
     }
 
-<<<<<<< HEAD
     return ctor.create(
-        serviceConfig.requestConfiguration(),
-        serviceConfig.getBaseUrl(modelName),
-        modelName,
-=======
-    // Get the provider, then get the model.
-    var providerConfig = embeddingProvidersConfig.providers().get(configuration.serviceProvider());
-    if (providerConfig == null) {
-      throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
-          "unknown service provider '%s'", configuration.serviceProvider());
-    }
-    EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model =
-        embeddingProvidersConfig.providers().get(configuration.serviceProvider()).models().stream()
-            .filter(m -> m.name().equals(modelName))
-            .findFirst()
-            .orElseThrow(
-                () ->
-                    ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
-                        "unknown model '%s' for service provider '%s'",
-                        modelName, configuration.serviceProvider()));
-
-    return ctor.create(
-        configuration.requestConfiguration(),
-        configuration.getBaseUrl(modelName),
-        model,
->>>>>>> main
+        providerConfig,
+        serviceConfig.baseUrl(),
+        modelConfig,
         dimension,
-        vectorizeServiceParameters,
-        providerConfig);
+        vectorizeServiceParameters);
   }
 }

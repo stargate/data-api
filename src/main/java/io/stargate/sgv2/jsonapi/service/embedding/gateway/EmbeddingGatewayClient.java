@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import java.util.HashMap;
@@ -33,56 +34,35 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
   /** Map to the value of `Token` in the header */
   private static final String DATA_API_TOKEN = "DATA_API_TOKEN";
 
+  // TODO: XXX YUQI /AARON - WHAT ARE THE DIFFERENT REQUEST PROPERTIES?
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-
-  private ModelProvider modelProvider;
-
-  private int dimension;
 
   private Optional<String> tenant;
   private Optional<String> authToken;
-  private String modelName;
-  private String baseUrl;
-  private EmbeddingService embeddingService;
-  private Map<String, Object> vectorizeServiceParameter;
+  private EmbeddingService grpcGatewayClient;
   Map<String, String> authentication;
   private String commandName;
 
   /**
-   * @param requestProperties
-   * @param provider - Embedding provider `openai`, `cohere`, etc
-   * @param dimension - Dimension of the embedding to be returned
-   * @param tenant - Tenant id {aka database id}
-   * @param authToken - Auth token for the tenant
-   * @param baseUrl - base url of the embedding client
-   * @param modelName - Model name for the embedding provider
-   * @param embeddingService - Embedding service client
-   * @param vectorizeServiceParameter - Additional parameters for the vectorize service
    */
   public EmbeddingGatewayClient(
-      EmbeddingProviderConfigStore.RequestProperties requestProperties,
       ModelProvider modelProvider,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
+      String baseUrl,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
       int dimension,
+      Map<String, Object> vectorizeServiceParameter,
       Optional<String> tenant,
       Optional<String> authToken,
-      String baseUrl,
-      String modelName,
-      EmbeddingService embeddingService,
-      Map<String, Object> vectorizeServiceParameter,
+      EmbeddingService grpcGatewayClient,
       Map<String, String> authentication,
-      String commandName) {
+      String commandName){
     super(
-        modelProvider, requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameter);
+        modelProvider,providerConfig, baseUrl, modelConfig, dimension, vectorizeServiceParameter);
 
-    this.requestProperties = requestProperties;
-    this.modelProvider = modelProvider;
-    this.dimension = dimension;
     this.tenant = tenant;
     this.authToken = authToken;
-    this.modelName = modelName;
-    this.baseUrl = baseUrl;
-    this.embeddingService = embeddingService;
-    this.vectorizeServiceParameter = vectorizeServiceParameter;
+    this.grpcGatewayClient = grpcGatewayClient;
     this.authentication = authentication;
     this.commandName = commandName;
   }
@@ -112,8 +92,8 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
         new HashMap<
             String, EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue>();
 
-    if (vectorizeServiceParameter != null) {
-      vectorizeServiceParameter.forEach(
+    if (vectorizeServiceParameters != null) {
+      vectorizeServiceParameters.forEach(
           (key, value) -> {
             if (value instanceof String)
               gatewayRequestParams.put(
@@ -144,7 +124,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
 
     var gatewayEmbedding =
         EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.newBuilder()
-            .setModelName(modelName)
+            .setModelName(modelName())
             .setDimensions(dimension)
             .setCommandName(commandName)
             .putAllParameters(gatewayRequestParams)
@@ -157,7 +137,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
 
     var contextBuilder =
         EmbeddingGateway.ProviderEmbedRequest.ProviderContext.newBuilder()
-            .setProviderName(modelProvider.apiName())
+            .setProviderName(modelProvider().apiName())
             .setTenantId(tenant.orElse(DEFAULT_TENANT_ID));
 
     contextBuilder.putAuthTokens(DATA_API_TOKEN, authToken.orElse(""));
@@ -185,7 +165,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
     // TODO: XXX Why is this error handling here not part of the uni pipeline?
     Uni<EmbeddingGateway.EmbeddingResponse> embeddingResponse;
     try {
-      embeddingResponse = embeddingService.embed(gatewayRequest);
+      embeddingResponse = grpcGatewayClient.embed(gatewayRequest);
     } catch (StatusRuntimeException e) {
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
         throw ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());

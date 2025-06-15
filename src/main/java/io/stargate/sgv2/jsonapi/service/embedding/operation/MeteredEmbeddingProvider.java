@@ -10,11 +10,8 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-<<<<<<< HEAD
-import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
-=======
 import io.stargate.sgv2.jsonapi.metrics.MetricsConstants;
->>>>>>> main
+import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -51,9 +48,9 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
     // config through
     super(
         embeddingProvider.modelProvider(),
-        embeddingProvider.requestProperties,
+        embeddingProvider.providerConfig,
         embeddingProvider.baseUrl,
-        embeddingProvider.modelName(),
+        embeddingProvider.modelConfig,
         embeddingProvider.dimension,
         embeddingProvider.vectorizeServiceParameters);
 
@@ -163,11 +160,7 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
    */
   private Tags getCustomTags() {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
-<<<<<<< HEAD
-    Tag tenantTag = Tag.of("tenant", requestContext.getTenantId().orElse(UNKNOWN_TENANT_ID));
-=======
     Tag tenantTag = Tag.of(TENANT_TAG, requestContext.getTenantId().orElse(UNKNOWN_VALUE));
->>>>>>> main
     Tag embeddingProviderTag =
         Tag.of(
             jsonApiMetricsConfig.embeddingProvider(), embeddingProvider.getClass().getSimpleName());

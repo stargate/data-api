@@ -25,32 +25,25 @@ public class RerankingEGWClient extends RerankingProvider {
   /** Key in the authTokens map, for passing Reranking API key to EGW in grpc request. */
   private static final String RERANKING_API_KEY = "RERANKING_API_KEY";
 
-  private final ModelProvider modelProvider;
   private final Optional<String> tenant;
   private final Optional<String> authToken;
-  private final String modelName;
-  private final RerankingService rerankingGrpcService;
+  private final RerankingService grpcGatewayService;
   Map<String, String> authentication;
   private final String commandName;
 
   public RerankingEGWClient(
-      String baseUrl,
-      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties
-          requestProperties,
       ModelProvider modelProvider,
+      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig,
       Optional<String> tenant,
       Optional<String> authToken,
-      String modelName,
-      RerankingService rerankingGrpcService,
+      RerankingService grpcGatewayService,
       Map<String, String> authentication,
       String commandName) {
-    super(modelProvider, baseUrl, modelName, requestProperties);
+    super(modelProvider, modelConfig);
 
-    this.modelProvider = modelProvider;
     this.tenant = tenant;
     this.authToken = authToken;
-    this.modelName = modelName;
-    this.rerankingGrpcService = rerankingGrpcService;
+    this.grpcGatewayService = grpcGatewayService;
     this.authentication = authentication;
     this.commandName = commandName;
   }
@@ -67,7 +60,7 @@ public class RerankingEGWClient extends RerankingProvider {
 
     var gatewayReranking =
         EmbeddingGateway.ProviderRerankingRequest.RerankingRequest.newBuilder()
-            .setModelName(modelName)
+            .setModelName(modelName())
             .setQuery(query)
             .addAllPassages(passages)
             // TODO: Why is the command name passed here ? Can it be removed ?
@@ -76,7 +69,7 @@ public class RerankingEGWClient extends RerankingProvider {
 
     var contextBuilder =
         EmbeddingGateway.ProviderRerankingRequest.ProviderContext.newBuilder()
-            .setProviderName(modelProvider.apiName())
+            .setProviderName(modelProvider().apiName())
             .setTenantId(tenant.orElse(DEFAULT_TENANT_ID))
             .putAuthTokens(DATA_API_TOKEN, authToken.orElse(""));
     rerankingCredentials
@@ -92,7 +85,7 @@ public class RerankingEGWClient extends RerankingProvider {
     // TODO: XXX Why is this error handling here not part of the uni pipeline?
     Uni<EmbeddingGateway.RerankingResponse> gatewayRerankingUni;
     try {
-      gatewayRerankingUni = rerankingGrpcService.rerank(gatewayRequest);
+      gatewayRerankingUni = grpcGatewayService.rerank(gatewayRequest);
     } catch (StatusRuntimeException e) {
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
         throw ErrorCodeV1.RERANKING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());

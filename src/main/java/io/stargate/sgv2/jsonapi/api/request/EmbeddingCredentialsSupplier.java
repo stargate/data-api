@@ -79,10 +79,12 @@ public class EmbeddingCredentialsSupplier {
         && collectionSupportsNoneAuth) {
       var authToken = requestContext.getHttpHeaders().getHeader(this.authTokenHeaderName);
       return new EmbeddingCredentials(
+          requestContext.getTenantId().orElse(""),
           Optional.ofNullable(authToken), Optional.empty(), Optional.empty());
     }
 
     return new EmbeddingCredentials(
+        requestContext.getTenantId().orElse(""),
         Optional.ofNullable(embeddingApi),
         Optional.ofNullable(accessId),
         Optional.ofNullable(secretId));

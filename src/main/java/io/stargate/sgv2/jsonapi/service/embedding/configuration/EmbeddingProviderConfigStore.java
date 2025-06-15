@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import java.util.Map;
 import java.util.Optional;
 
+// TODO: SOME DOCUMENTATION FOR WHAT THIS IS MEANT TO DO!!!
 public interface EmbeddingProviderConfigStore {
 
   record ServiceConfig(
@@ -22,6 +23,7 @@ public interface EmbeddingProviderConfigStore {
         String baseUrl,
         RequestProperties requestConfiguration,
         Map<String, Optional<String>> modelUrlOverrides) {
+
       return new ServiceConfig(
           serviceName, serviceProvider, baseUrl, null, requestConfiguration, modelUrlOverrides);
     }

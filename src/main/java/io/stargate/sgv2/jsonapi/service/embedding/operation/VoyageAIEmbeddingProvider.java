@@ -48,16 +48,16 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
         vectorizeServiceParameters);
 
     // use configured input_type if available
-    requestTypeQuery = providerConfig.properties().requestTypeQuery().orElse(null);
-    requestTypeIndex = providerConfig.properties().requestTypeIndex().orElse(null);
+    requestTypeQuery = providerConfig.properties().taskTypeRead().orElse(null);
+    requestTypeIndex = providerConfig.properties().taskTypeStore().orElse(null);
 
-    Object v = (serviceParameters == null) ? null : serviceParameters.get("autoTruncate");
+    Object v = (vectorizeServiceParameters == null) ? null : vectorizeServiceParameters.get("autoTruncate");
     autoTruncate = (v instanceof Boolean) ? (Boolean) v : null;
 
     voyageClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(providerConfig.properties().readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(VoyageAIEmbeddingProviderClient.class);
   }
 

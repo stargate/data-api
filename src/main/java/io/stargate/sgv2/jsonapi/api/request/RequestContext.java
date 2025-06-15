@@ -57,23 +57,10 @@ public class RequestContext {
       SecurityContext securityContext,
       Instance<DataApiTenantResolver> tenantResolver,
       Instance<DataApiTokenResolver> tokenResolver,
-<<<<<<< HEAD
-      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
-
-    this.tenantId = (tenantResolver.get()).resolve(routingContext, securityContext);
-
-    this.embeddingCredentials =
-        embeddingCredentialsResolver
-            .get()
-            .resolveEmbeddingCredentials(tenantId.orElse(""), routingContext);
-
-    this.cassandraToken = (tokenResolver.get()).resolve(routingContext, securityContext);
-=======
       HttpConstants httpConstants) {
 
     tenantId = tenantResolver.get().resolve(routingContext, securityContext);
     cassandraToken = tokenResolver.get().resolve(routingContext, securityContext);
->>>>>>> main
     httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
     requestId = generateRequestId();
     userAgent = httpHeaders.getHeader(HttpHeaders.USER_AGENT);

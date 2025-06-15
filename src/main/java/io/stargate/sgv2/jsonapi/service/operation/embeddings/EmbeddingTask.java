@@ -77,7 +77,7 @@ public class EmbeddingTask<SchemaT extends TableBasedSchemaObject>
                 commandContext
                     .requestContext()
                     .getEmbeddingCredentialsSupplier()
-                    .create(commandContext.requestContext(), embeddingProvider.getProviderConfig()),
+                    .create(commandContext.requestContext(), embeddingProvider.providerConfig()),
                 requestType),
         embeddingActions,
         vectorizeTexts);

@@ -11,14 +11,11 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinitio
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
-<<<<<<< HEAD
 import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
-=======
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
->>>>>>> main
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
@@ -32,54 +29,42 @@ import java.util.Optional;
 
 public class TestEmbeddingProvider extends EmbeddingProvider {
 
-<<<<<<< HEAD
   private final TestConstants TEST_CONSTANTS = new TestConstants();
 
-  public TestEmbeddingProvider() {
-    super(
-        ModelProvider.CUSTOM,
-        new EmbeddingProviderConfigStore.RequestProperties(
-            3, 5, 5000, 5, 0.5, Optional.empty(), Optional.empty(), 100),
-        "http://mock.com",
-        "mockModel",
-        1024,
-        Map.of());
-  }
-=======
-  public TestEmbeddingProvider(
-      EmbeddingProviderConfigStore.RequestProperties requestProperties,
-      String baseUrl,
-      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
-      int dimension,
-      Map<String, Object> vectorizeServiceParameters,
-      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
-    super(requestProperties, baseUrl, model, dimension, vectorizeServiceParameters, providerConfig);
-  }
-
-  public TestEmbeddingProvider() {}
-
-  public static final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig
+  private static final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig
       TEST_MODEL_CONFIG =
-          new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
-              "testModel",
-              new ApiModelSupport.ApiModelSupportImpl(
-                  ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
-              Optional.empty(),
-              List.of(),
-              Map.of(),
-              Optional.empty());
+      new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
+          "testModel",
+          new ApiModelSupport.ApiModelSupportImpl(
+              ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
+          Optional.empty(),
+          List.of(),
+          Map.of(),
+          Optional.empty());
+
+  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl REQUEST_PROPERTIES =  new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
+      3,10,100,100,0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
+
+  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG = new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
+      ModelProvider.CUSTOM.apiName(),
+      true,
+      Optional.of("http://testing.com"),
+      false,
+      Map.of(), List.of(), REQUEST_PROPERTIES, List.of());
+
 
   public static final TestEmbeddingProvider TEST_EMBEDDING_PROVIDER =
-      new TestEmbeddingProvider(
-          null,
-          null,
-          TEST_MODEL_CONFIG,
-          3,
-          Map.of(),
-          mock(EmbeddingProvidersConfig.EmbeddingProviderConfig.class));
+      new TestEmbeddingProvider();
 
-  private TestConstants testConstants = new TestConstants();
->>>>>>> main
+  public TestEmbeddingProvider(){
+    super(
+        ModelProvider.CUSTOM,
+        PROVIDER_CONFIG,
+        "http://testing.com",
+        TEST_MODEL_CONFIG,
+        3,
+        Map.of());
+  }
 
   public CommandContext<CollectionSchemaObject> commandContextWithVectorize() {
     return TEST_CONSTANTS.collectionContext(

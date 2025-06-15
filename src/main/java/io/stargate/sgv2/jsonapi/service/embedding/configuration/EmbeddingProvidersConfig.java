@@ -13,7 +13,10 @@ import java.util.Map;
 import java.util.Optional;
 import org.eclipse.microprofile.config.spi.Converter;
 
+// TODO: SOME DOCUMENTATION FOR WHAT THIS IS MEANT TO DO!!!
 public interface EmbeddingProvidersConfig {
+
+  // TODO: WHAT IS THE KEY FOR THIS MAP ?????
   Map<String, EmbeddingProviderConfig> providers();
 
   @Nullable

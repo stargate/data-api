@@ -3,16 +3,12 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation.test;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-<<<<<<< HEAD
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
-import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
-import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
-=======
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
->>>>>>> main
+import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import java.util.*;
 
 /**
@@ -38,36 +34,36 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
 
   private final int dimension;
 
+  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl REQUEST_PROPERTIES =  new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
+      3,10,100,100,0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
+
+  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG = new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
+      ModelProvider.CUSTOM.apiName(),
+      true,
+       Optional.of("http://testing.com"),
+      false,
+      Map.of(), List.of(), REQUEST_PROPERTIES, List.of());
+
+  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl MODEL_CONFIG =
+      new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
+          "test-model",
+          new ApiModelSupport.ApiModelSupportImpl(ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
+          Optional.of(5),
+          List.of(),
+          Map.of(),
+          Optional.empty());
+
   public CustomITEmbeddingProvider(int dimension) {
-<<<<<<< HEAD
     // aaron 9 June 2025 - refactoring , I think none of the super class is used, so passing dummy
     // values
     super(
         ModelProvider.CUSTOM,
-        new EmbeddingProviderConfigStore.RequestProperties(
-            1, 1, 1, 1, 1, Optional.empty(), Optional.empty(), 1),
-        "",
-        "",
-        1,
-        Map.of());
+        PROVIDER_CONFIG,
+        "http://testing.com",
+        MODEL_CONFIG,
+    5,
+    Map.of());
 
-=======
-    // construct the test modelConfig
-    super(
-        null,
-        null,
-        new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
-            "testModel",
-            new ApiModelSupport.ApiModelSupportImpl(
-                ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
-            Optional.of(dimension),
-            List.of(),
-            Map.of(),
-            Optional.empty()),
-        dimension,
-        Map.of(),
-        null);
->>>>>>> main
     this.dimension = dimension;
   }
 
@@ -115,12 +111,9 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
 
-<<<<<<< HEAD
-=======
     // Check if using an EOF model
     checkEOLModelUsage();
 
->>>>>>> main
     List<float[]> response = new ArrayList<>(texts.size());
     if (texts.isEmpty()) {
       var modelUsage =

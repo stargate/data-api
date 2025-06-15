@@ -15,7 +15,10 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Arrays;
@@ -33,9 +36,32 @@ public class EmbeddingGatewayClientTest {
   private final EmbeddingCredentials embeddingCredentials =
       new EmbeddingCredentials("test-tenant", Optional.empty(), Optional.empty(), Optional.empty());
 
+  private static final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig
+      MODEL_CONFIG =
+      new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
+          "testModel",
+          new ApiModelSupport.ApiModelSupportImpl(
+              ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
+          Optional.empty(),
+          List.of(),
+          Map.of(),
+          Optional.empty());
+
+  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl REQUEST_PROPERTIES =  new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
+      3,10,100,100,0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
+
+  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG = new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
+      ModelProvider.CUSTOM.apiName(),
+      true,
+      Optional.of("http://testing.com"),
+      false,
+      Map.of(), List.of(), REQUEST_PROPERTIES, List.of());
+
+
   // for [data-api#1088] (NPE for VoyageAI provider)
   @Test
   void verifyDirectConstructionWithNullServiceParameters() {
+
     List<EmbeddingProviderFactory.ProviderConstructor> providerCtors =
         Arrays.asList(
             AzureOpenAIEmbeddingProvider::new,
@@ -48,29 +74,24 @@ public class EmbeddingGatewayClientTest {
             UpstageAIEmbeddingProvider::new,
             VertexAIEmbeddingProvider::new,
             VoyageAIEmbeddingProvider::new);
+
     for (EmbeddingProviderFactory.ProviderConstructor ctor : providerCtors) {
-      EmbeddingProviderConfigStore.RequestProperties requestProperties =
-          EmbeddingProviderConfigStore.RequestProperties.of(
-              3, 5, 5000, 5, 0.5, Optional.empty(), Optional.empty(), 2048);
+
       assertThat(
-              ctor.create(
-                  requestProperties,
-                  "baseUrl",
-                  TestEmbeddingProvider.TEST_MODEL_CONFIG,
-                  5,
-                  null,
-                  null))
+              ctor.create(PROVIDER_CONFIG, "http://test.com", MODEL_CONFIG, 5, Map.of()))
           .isNotNull();
     }
   }
 
   @Test
   void handleValidResponse() {
+
     EmbeddingService embeddingService = mock(EmbeddingService.class);
-    final EmbeddingGateway.EmbeddingResponse.Builder builder =
+    EmbeddingGateway.EmbeddingResponse.Builder builder =
         EmbeddingGateway.EmbeddingResponse.newBuilder();
     EmbeddingGateway.EmbeddingResponse.FloatEmbedding.Builder floatEmbeddingBuilder =
         EmbeddingGateway.EmbeddingResponse.FloatEmbedding.newBuilder();
+
     floatEmbeddingBuilder
         .addEmbedding(0.5f)
         .addEmbedding(0.5f)
@@ -82,18 +103,18 @@ public class EmbeddingGatewayClientTest {
         .addEmbeddings(floatEmbeddingBuilder.build());
 
     when(embeddingService.embed(any())).thenReturn(Uni.createFrom().item(builder.build()));
+
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
-            EmbeddingProviderConfigStore.RequestProperties.of(
-                5, 5, 5, 5, 0.5, Optional.empty(), Optional.empty(), 2048),
             ModelProvider.OPENAI,
-            1536,
-            Optional.of("default"),
-            Optional.of("default"),
+            PROVIDER_CONFIG,
             "https://api.openai.com/v1/",
-            "text-embedding-3-small",
-            embeddingService,
+            MODEL_CONFIG,
+            1536,
             Map.of(),
+            Optional.of("default"),
+            Optional.of("default"),
+            embeddingService,
             Map.of(),
             TESTING_COMMAND_NAME);
 
@@ -120,30 +141,31 @@ public class EmbeddingGatewayClientTest {
   @Test
   void handleError() {
     EmbeddingService embeddingService = mock(EmbeddingService.class);
-    final EmbeddingGateway.EmbeddingResponse.Builder builder =
+    EmbeddingGateway.EmbeddingResponse.Builder builder =
         EmbeddingGateway.EmbeddingResponse.newBuilder();
     EmbeddingGateway.EmbeddingResponse.ErrorResponse.Builder errorResponseBuilder =
         EmbeddingGateway.EmbeddingResponse.ErrorResponse.newBuilder();
-    final JsonApiException apiException =
+    JsonApiException apiException =
         ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED.toApiException(
             "Error Code : %s response description : %s", 429, "Too Many Requests");
+
     errorResponseBuilder
         .setErrorCode(apiException.getErrorCode().name())
         .setErrorMessage(apiException.getMessage());
     builder.setError(errorResponseBuilder.build());
     when(embeddingService.embed(any())).thenReturn(Uni.createFrom().item(builder.build()));
+
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
-            EmbeddingProviderConfigStore.RequestProperties.of(
-                5, 5, 5, 5, 0.5, Optional.empty(), Optional.empty(), 2048),
             ModelProvider.OPENAI,
-            1536,
-            Optional.of("default"),
-            Optional.of("default"),
+            PROVIDER_CONFIG,
             "https://api.openai.com/v1/",
-            "text-embedding-3-small",
-            embeddingService,
+            MODEL_CONFIG,
+            1536,
             Map.of(),
+            Optional.of("default"),
+            Optional.of("default"),
+            embeddingService,
             Map.of(),
             TESTING_COMMAND_NAME);
 
