@@ -114,7 +114,6 @@ public class NvidiaRerankingProvider extends RerankingProvider {
         .onItem()
         .transform(
             jakartaResponse -> {
-
               var nvidiaResponse = decodeResponse(jakartaResponse, NvidiaRerankingResponse.class);
               long callDurationNano = System.nanoTime() - callStartNano;
 

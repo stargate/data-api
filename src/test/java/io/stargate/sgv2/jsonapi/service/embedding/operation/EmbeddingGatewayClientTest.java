@@ -107,32 +107,36 @@ public class EmbeddingGatewayClientTest {
   @Test
   void handleValidResponse() {
 
-    var floatEmbeddingBuilder = EmbeddingGateway.EmbeddingResponse.FloatEmbedding.newBuilder()
-        .addEmbedding(0.5f)
-        .addEmbedding(0.5f)
-        .addEmbedding(0.5f)
-        .addEmbedding(0.5f)
-        .addEmbedding(0.5f);
+    var floatEmbeddingBuilder =
+        EmbeddingGateway.EmbeddingResponse.FloatEmbedding.newBuilder()
+            .addEmbedding(0.5f)
+            .addEmbedding(0.5f)
+            .addEmbedding(0.5f)
+            .addEmbedding(0.5f)
+            .addEmbedding(0.5f);
 
-    var modelUsageBuilder = EmbeddingGateway.ModelUsage.newBuilder()
-        .setModelProvider(ModelProvider.OPENAI.apiName())
-        .setModelType(EmbeddingGateway.ModelUsage.ModelType.EMBEDDING)
-        .setModelName("test-model")
-        .setTenantId("test-tenant")
-        .setInputType(EmbeddingGateway.ModelUsage.InputType.INDEX)
-        .setPromptTokens(5)
-        .setTotalTokens(5)
-        .setRequestBytes(100)
-        .setResponseBytes(100)
-        .setCallDurationNanos(20000);
+    var modelUsageBuilder =
+        EmbeddingGateway.ModelUsage.newBuilder()
+            .setModelProvider(ModelProvider.OPENAI.apiName())
+            .setModelType(EmbeddingGateway.ModelUsage.ModelType.EMBEDDING)
+            .setModelName("test-model")
+            .setTenantId("test-tenant")
+            .setInputType(EmbeddingGateway.ModelUsage.InputType.INDEX)
+            .setPromptTokens(5)
+            .setTotalTokens(5)
+            .setRequestBytes(100)
+            .setResponseBytes(100)
+            .setCallDurationNanos(20000);
 
-    var  embeddingResonseBuilder = EmbeddingGateway.EmbeddingResponse.newBuilder()
-        .addEmbeddings(floatEmbeddingBuilder.build())
-        .addEmbeddings(floatEmbeddingBuilder.build())
-        .setModelUsage(modelUsageBuilder.build());
+    var embeddingResonseBuilder =
+        EmbeddingGateway.EmbeddingResponse.newBuilder()
+            .addEmbeddings(floatEmbeddingBuilder.build())
+            .addEmbeddings(floatEmbeddingBuilder.build())
+            .setModelUsage(modelUsageBuilder.build());
 
     EmbeddingService embeddingService = mock(EmbeddingService.class);
-    when(embeddingService.embed(any())).thenReturn(Uni.createFrom().item(embeddingResonseBuilder.build()));
+    when(embeddingService.embed(any()))
+        .thenReturn(Uni.createFrom().item(embeddingResonseBuilder.build()));
 
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
@@ -168,10 +172,8 @@ public class EmbeddingGatewayClientTest {
     assertThat(response.embeddings().get(1).length).isEqualTo(5);
 
     assertThat(response.modelUsage()).isNotNull();
-    assertThat(response.modelUsage().modelProvider())
-        .isEqualTo(ModelProvider.OPENAI);
-    assertThat(response.modelUsage().modelType())
-        .isEqualTo(ModelType.EMBEDDING);
+    assertThat(response.modelUsage().modelProvider()).isEqualTo(ModelProvider.OPENAI);
+    assertThat(response.modelUsage().modelType()).isEqualTo(ModelType.EMBEDDING);
     assertThat(response.modelUsage().modelName()).isEqualTo("test-model");
     assertThat(response.modelUsage().tenantId()).isEqualTo("test-tenant");
     assertThat(response.modelUsage().inputType()).isEqualTo(ModelInputType.INDEX);

@@ -15,7 +15,6 @@ import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +56,9 @@ public class EmbeddingProviderErrorMessageTest {
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
           ModelProvider.NVIDIA.apiName(),
           true,
-          Optional.of(EmbeddingClientTestResource.NVIDIA_URL), // path important see EmbeddingProviderErrorMessageTest
+          Optional.of(
+              EmbeddingClientTestResource
+                  .NVIDIA_URL), // path important see EmbeddingProviderErrorMessageTest
           false,
           Map.of(),
           List.of(),
@@ -67,7 +68,8 @@ public class EmbeddingProviderErrorMessageTest {
   private final ServiceConfigStore.ServiceConfig SERVICE_CONFIG =
       new ServiceConfigStore.ServiceConfig(
           ModelProvider.NVIDIA,
-          EmbeddingClientTestResource.NVIDIA_URL, // path important see EmbeddingProviderErrorMessageTest
+          EmbeddingClientTestResource
+              .NVIDIA_URL, // path important see EmbeddingProviderErrorMessageTest
           Optional.empty(),
           new ServiceConfigStore.ServiceRequestProperties(
               REQUEST_PROPERTIES.atMostRetries(),

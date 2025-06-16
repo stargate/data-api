@@ -98,7 +98,8 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
         .onItem()
         .transform(
             jakartaResponse -> {
-              var azureResponse = decodeResponse(jakartaResponse, AzureOpenAIEmbeddingResponse.class);
+              var azureResponse =
+                  decodeResponse(jakartaResponse, AzureOpenAIEmbeddingResponse.class);
               long callDurationNano = System.nanoTime() - callStartNano;
 
               // aaron - 10 June 2025 - previous code would silently swallow no data returned

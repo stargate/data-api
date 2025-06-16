@@ -85,12 +85,14 @@ public final class ModelUsage implements Recordable {
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
-                        "ModelUsage() - Unknown grpcModelUsage.getModelProvider(): '%s'".formatted(grpcModelUsage.getModelProvider()))),
+                        "ModelUsage() - Unknown grpcModelUsage.getModelProvider(): '%s'"
+                            .formatted(grpcModelUsage.getModelProvider()))),
         ModelType.fromEmbeddingGateway(grpcModelUsage.getModelType())
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
-                        "ModelUsage() - Unknown grpcModelUsage.getModelType(): '%s'".formatted(grpcModelUsage.getModelType()))),
+                        "ModelUsage() - Unknown grpcModelUsage.getModelType(): '%s'"
+                            .formatted(grpcModelUsage.getModelType()))),
         grpcModelUsage.getModelName(),
         grpcModelUsage.getTenantId(),
         ModelInputType.fromEmbeddingGateway(grpcModelUsage.getInputType())

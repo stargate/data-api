@@ -63,7 +63,8 @@ public class OpenAiEmbeddingClientTest {
   private final ServiceConfigStore.ServiceConfig SERVICE_CONFIG =
       new ServiceConfigStore.ServiceConfig(
           ModelProvider.OPENAI,
-          EmbeddingClientTestResource.OPENAI_URL, // path important see EmbeddingProviderErrorMessageTest
+          EmbeddingClientTestResource
+              .OPENAI_URL, // path important see EmbeddingProviderErrorMessageTest
           Optional.empty(),
           new ServiceConfigStore.ServiceRequestProperties(
               REQUEST_PROPERTIES.atMostRetries(),
@@ -78,11 +79,7 @@ public class OpenAiEmbeddingClientTest {
 
   private OpenAIEmbeddingProvider createProvider(Map<String, Object> vectorizeServiceParameters) {
     return new OpenAIEmbeddingProvider(
-        PROVIDER_CONFIG,
-        MODEL_CONFIG,
-        SERVICE_CONFIG,
-        3,
-        vectorizeServiceParameters);
+        PROVIDER_CONFIG, MODEL_CONFIG, SERVICE_CONFIG, 3, vectorizeServiceParameters);
   }
 
   private EmbeddingProvider.BatchedEmbeddingResponse runVectorize(

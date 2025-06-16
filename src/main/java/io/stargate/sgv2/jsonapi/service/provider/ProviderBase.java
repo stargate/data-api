@@ -4,15 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.NvidiaEmbeddingProvider;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
-
-import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +74,7 @@ public abstract class ProviderBase {
 
   protected Response handleHTTPResponse(Response jakartaResponse) {
 
-    if (LOGGER.isTraceEnabled()){
+    if (LOGGER.isTraceEnabled()) {
       LOGGER.trace(
           "handleHTTPResponse() - got response, modelProvider: {}, modelName: {}, response.status: {}, response.headers: {}",
           modelProvider(),
@@ -89,7 +86,7 @@ public abstract class ProviderBase {
     if (jakartaResponse.getStatus() >= 400) {
       var runtimeException = mapHTTPError(jakartaResponse);
       if (runtimeException != null) {
-        if (LOGGER.isTraceEnabled()){
+        if (LOGGER.isTraceEnabled()) {
           LOGGER.trace(
               "handleHTTPResponse() - http response mapped to error, runtimeException: {}",
               runtimeException.toString());
@@ -120,18 +117,16 @@ public abstract class ProviderBase {
 
     var mappedException = mapHTTPError(jakartaResponse, errorMessage);
     if (mappedException != null) {
-      return  mappedException;
+      return mappedException;
     }
-    return  new IllegalStateException(
+    return new IllegalStateException(
         String.format(
             "Unhandled error from model provider, modelProvider: %s, modelName: %s, status: %d, responseBody: %s",
             modelProvider(),
             modelName(),
             jakartaResponse.getStatus(),
             jakartaResponse.readEntity(String.class)));
-
   }
-
 
   protected abstract RuntimeException mapHTTPError(Response response, String errorMessage);
 
@@ -170,11 +165,10 @@ public abstract class ProviderBase {
     return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
   }
 
-  protected <T> T decodeResponse(Response jakartaResponse, Class<T> responseClass){
-    try{
+  protected <T> T decodeResponse(Response jakartaResponse, Class<T> responseClass) {
+    try {
       return jakartaResponse.readEntity(responseClass);
-    }
-    catch (Throwable e){
+    } catch (Throwable e) {
       LOGGER.error(
           "decodeResponse() - error decoding response modelProvider: {}, modelName: {}, responseClass: {}",
           modelProvider(),
@@ -185,6 +179,7 @@ public abstract class ProviderBase {
       throw e;
     }
   }
+
   /**
    * Checks if the vectorization will use an END_OF_LIFE model and throws an exception if it is.
    *

@@ -95,7 +95,8 @@ public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
         .onItem()
         .transform(
             jakartaResponse -> {
-              var huggingFaceResponse = decodeResponse(jakartaResponse, HuggingFaceDedicatedEmbeddingResponse.class);
+              var huggingFaceResponse =
+                  decodeResponse(jakartaResponse, HuggingFaceDedicatedEmbeddingResponse.class);
               long callDurationNano = System.nanoTime() - callStartNano;
 
               // aaron - 10 June 2025 - previous code would silently swallow no data returned

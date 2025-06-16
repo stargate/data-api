@@ -6,7 +6,6 @@ import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.Response;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -30,14 +29,12 @@ public class ProviderHttpInterceptor implements ClientResponseFilter {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProviderHttpInterceptor.class);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  /** Header name to track the sent_bytes to the provider
-   * (extra detailed to avoid collisions)
-   * */
+  /** Header name to track the sent_bytes to the provider (extra detailed to avoid collisions) */
   private static final String SENT_BYTES_HEADER = "data-api-model-usage-sent-bytes";
 
-  /** Header name to track the received_bytes from the provider
-   * (extra detailed to avoid collisions)
-   * */
+  /**
+   * Header name to track the received_bytes from the provider (extra detailed to avoid collisions)
+   */
   private static final String RECEIVED_BYTES_HEADER = "data-api-model-usage-received-bytes";
 
   @Override
@@ -47,7 +44,7 @@ public class ProviderHttpInterceptor implements ClientResponseFilter {
     long receivedBytes = 0;
     long sentBytes = 0;
 
-    if (LOGGER.isTraceEnabled()){
+    if (LOGGER.isTraceEnabled()) {
       LOGGER.trace(
           "ProviderHttpInterceptor.filter() - requestContext.getUri(): {}, requestContext.getHeaders(): {}",
           requestContext.getUri(),
