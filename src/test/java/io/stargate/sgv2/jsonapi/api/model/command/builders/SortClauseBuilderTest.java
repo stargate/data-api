@@ -341,6 +341,15 @@ class SortClauseBuilderTest {
     }
 
     @Test
+    public void mustHandleBlankNotEmptyString() throws Exception {
+      String json = "{\"   \": 1}";
+      SortClause sortClause = deserializeSortClause(json);
+      assertThat(sortClause.sortExpressions())
+          .hasSize(1)
+          .contains(SortExpression.sort("   ", true));
+    }
+
+    @Test
     public void mustNotContainEmptyString() {
       String json =
           """
