@@ -285,7 +285,7 @@ public class DataVectorizerTest {
   public class SortClauseValues {
     @Test
     public void sortClauseValues() {
-      SortExpression sortExpression = SortExpression.vectorizeSearch("test data");
+      SortExpression sortExpression = SortExpression.collecetionVectorizeSort("test data");
       List<SortExpression> sortExpressions = new ArrayList<>();
       sortExpressions.add(sortExpression);
       SortClause sortClause = new SortClause(sortExpressions);
@@ -299,8 +299,8 @@ public class DataVectorizerTest {
       }
       assertThat(sortClause.hasVsearchClause()).isTrue();
       assertThat(sortClause.hasVectorizeSearchClause()).isFalse();
-      assertThat(sortClause.sortExpressions().get(0).vector()).isNotNull();
-      assertThat(sortClause.sortExpressions().get(0).vector().length).isEqualTo(3);
+      assertThat(sortClause.sortExpressions().getFirst().getVector()).isNotNull();
+      assertThat(sortClause.sortExpressions().getFirst().getVector().length).isEqualTo(3);
     }
   }
 

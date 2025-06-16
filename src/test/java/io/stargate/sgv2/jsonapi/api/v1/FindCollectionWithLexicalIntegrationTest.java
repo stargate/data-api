@@ -260,7 +260,9 @@ public class FindCollectionWithLexicalIntegrationTest
                           """)
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
-          .body("errors[0].message", containsString("Lexical search is not enabled"));
+          .body(
+              "errors[0].message",
+              containsString("only be used on Collections for which Lexical feature is enabled"));
     }
 
     @Test
@@ -277,7 +279,9 @@ public class FindCollectionWithLexicalIntegrationTest
                           """)
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
-          .body("errors[0].message", containsString("Lexical search is not enabled"));
+          .body(
+              "errors[0].message",
+              containsString("only be used on Collections for which Lexical feature is enabled"));
     }
 
     @Test

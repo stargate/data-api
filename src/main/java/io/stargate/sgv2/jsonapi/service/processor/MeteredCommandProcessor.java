@@ -338,7 +338,7 @@ public class MeteredCommandProcessor {
 
       // Check if the only sort expression is for vector similarity ($vector or $vectorize)
       if (sortExpressions.size() == 1) {
-        String sortPath = sortExpressions.getFirst().path();
+        String sortPath = sortExpressions.getFirst().getPath();
         if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(sortPath) // $vector
             || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(sortPath)) // $vectorize
         {
