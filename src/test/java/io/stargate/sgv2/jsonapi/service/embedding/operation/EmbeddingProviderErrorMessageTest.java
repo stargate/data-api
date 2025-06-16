@@ -55,7 +55,7 @@ public class EmbeddingProviderErrorMessageTest {
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
           ModelProvider.NVIDIA.apiName(),
           true,
-          Optional.of("http://testing.com"),
+          Optional.of("http://testing.com/v1/embeddings"), // path important see EmbeddingProviderErrorMessageTest
           false,
           Map.of(),
           List.of(),

@@ -36,8 +36,9 @@ public interface ServiceConfigStore {
     public static ServiceConfig forCustomProvider(Class<?> implementationClass) {
       Objects.requireNonNull(implementationClass, "implementationClass must not be null");
 
+      // null for modelUrlOverrides important to say there is none available, see getBaseUrl()
       return new ServiceConfig(
-          ModelProvider.CUSTOM, null, Optional.of(implementationClass), null, Map.of());
+          ModelProvider.CUSTOM, null, Optional.of(implementationClass), null, null);
     }
 
     public String getBaseUrl(String modelName) {

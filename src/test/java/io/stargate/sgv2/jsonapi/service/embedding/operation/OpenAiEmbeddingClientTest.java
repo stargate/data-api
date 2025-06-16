@@ -21,6 +21,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+/**
+ * NOTE: this test relies on the {@link EmbeddingClientTestResource} to mock the server responses
+ */
 @QuarkusTest
 @WithTestResource(EmbeddingClientTestResource.class)
 public class OpenAiEmbeddingClientTest {
@@ -60,7 +63,7 @@ public class OpenAiEmbeddingClientTest {
   private final ServiceConfigStore.ServiceConfig SERVICE_CONFIG =
       new ServiceConfigStore.ServiceConfig(
           ModelProvider.OPENAI,
-          "http://testing.com",
+          "http://testing.com/v1/embeddings", // path important see EmbeddingProviderErrorMessageTest
           Optional.empty(),
           new ServiceConfigStore.ServiceRequestProperties(
               REQUEST_PROPERTIES.atMostRetries(),

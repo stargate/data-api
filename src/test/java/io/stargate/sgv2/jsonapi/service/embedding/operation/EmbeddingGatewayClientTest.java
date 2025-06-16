@@ -19,7 +19,9 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvide
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
+import io.stargate.sgv2.jsonapi.service.provider.ModelType;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Arrays;
 import java.util.List;
@@ -77,7 +79,7 @@ public class EmbeddingGatewayClientTest {
               REQUEST_PROPERTIES.taskTypeRead(),
               REQUEST_PROPERTIES.taskTypeStore(),
               REQUEST_PROPERTIES.maxBatchSize()),
-          Map.of());
+          null); // aaron -passing null here to bypass url overrides
 
   // for [data-api#1088] (NPE for VoyageAI provider)
   @Test
@@ -105,23 +107,32 @@ public class EmbeddingGatewayClientTest {
   @Test
   void handleValidResponse() {
 
-    EmbeddingService embeddingService = mock(EmbeddingService.class);
-    EmbeddingGateway.EmbeddingResponse.Builder builder =
-        EmbeddingGateway.EmbeddingResponse.newBuilder();
-    EmbeddingGateway.EmbeddingResponse.FloatEmbedding.Builder floatEmbeddingBuilder =
-        EmbeddingGateway.EmbeddingResponse.FloatEmbedding.newBuilder();
-
-    floatEmbeddingBuilder
+    var floatEmbeddingBuilder = EmbeddingGateway.EmbeddingResponse.FloatEmbedding.newBuilder()
         .addEmbedding(0.5f)
         .addEmbedding(0.5f)
         .addEmbedding(0.5f)
         .addEmbedding(0.5f)
         .addEmbedding(0.5f);
-    builder
-        .addEmbeddings(floatEmbeddingBuilder.build())
-        .addEmbeddings(floatEmbeddingBuilder.build());
 
-    when(embeddingService.embed(any())).thenReturn(Uni.createFrom().item(builder.build()));
+    var modelUsageBuilder = EmbeddingGateway.ModelUsage.newBuilder()
+        .setModelProvider(ModelProvider.OPENAI.apiName())
+        .setModelType(EmbeddingGateway.ModelUsage.ModelType.EMBEDDING)
+        .setModelName("test-model")
+        .setTenantId("test-tenant")
+        .setInputType(EmbeddingGateway.ModelUsage.InputType.INDEX)
+        .setPromptTokens(5)
+        .setTotalTokens(5)
+        .setRequestBytes(100)
+        .setResponseBytes(100)
+        .setCallDurationNanos(20000);
+
+    var  embeddingResonseBuilder = EmbeddingGateway.EmbeddingResponse.newBuilder()
+        .addEmbeddings(floatEmbeddingBuilder.build())
+        .addEmbeddings(floatEmbeddingBuilder.build())
+        .setModelUsage(modelUsageBuilder.build());
+
+    EmbeddingService embeddingService = mock(EmbeddingService.class);
+    when(embeddingService.embed(any())).thenReturn(Uni.createFrom().item(embeddingResonseBuilder.build()));
 
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
@@ -155,6 +166,22 @@ public class EmbeddingGatewayClientTest {
     assertThat(response.embeddings().size()).isEqualTo(2);
     assertThat(response.embeddings().get(0).length).isEqualTo(5);
     assertThat(response.embeddings().get(1).length).isEqualTo(5);
+
+    assertThat(response.modelUsage()).isNotNull();
+    assertThat(response.modelUsage().modelProvider())
+        .isEqualTo(ModelProvider.OPENAI);
+    assertThat(response.modelUsage().modelType())
+        .isEqualTo(ModelType.EMBEDDING);
+    assertThat(response.modelUsage().modelName()).isEqualTo("test-model");
+    assertThat(response.modelUsage().tenantId()).isEqualTo("test-tenant");
+    assertThat(response.modelUsage().inputType()).isEqualTo(ModelInputType.INDEX);
+
+    assertThat(response.modelUsage().promptTokens()).isEqualTo(5);
+    assertThat(response.modelUsage().totalTokens()).isEqualTo(5);
+    assertThat(response.modelUsage().requestBytes()).isEqualTo(100);
+    assertThat(response.modelUsage().responseBytes()).isEqualTo(100);
+    assertThat(response.modelUsage().durationNanos()).isEqualTo(20000);
+    assertThat(response.modelUsage().batchCount()).isEqualTo(1);
   }
 
   @Test

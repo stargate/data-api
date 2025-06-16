@@ -79,18 +79,18 @@ public final class ModelUsage implements Recordable {
   }
 
   public static ModelUsage fromEmbeddingGateway(EmbeddingGateway.ModelUsage grpcModelUsage) {
+
     return new ModelUsage(
         ModelProvider.fromApiName(grpcModelUsage.getModelProvider())
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
-                        "Unknown Embedding Gateway modelProvider: "
-                            + grpcModelUsage.getModelProvider())),
+                        "ModelUsage() - Unknown grpcModelUsage.getModelProvider(): '%s'".formatted(grpcModelUsage.getModelProvider()))),
         ModelType.fromEmbeddingGateway(grpcModelUsage.getModelType())
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
-                        "Unknown Embedding Gateway modelType: " + grpcModelUsage.getModelType())),
+                        "ModelUsage() - Unknown grpcModelUsage.getModelType(): '%s'".formatted(grpcModelUsage.getModelType()))),
         grpcModelUsage.getModelName(),
         grpcModelUsage.getTenantId(),
         ModelInputType.fromEmbeddingGateway(grpcModelUsage.getInputType())
