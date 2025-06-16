@@ -10,14 +10,16 @@ import com.google.common.annotations.VisibleForTesting;
 public class DebugConfigAccess {
   private static boolean debugEnabled;
 
-  public static void initialize(DebugModeConfig config) {
-    debugEnabled = config.enabled();
-  }
-
   public static boolean isDebugEnabled() {
     return debugEnabled;
   }
 
+  /**
+   * Set the debug mode state. This is called by {@code JsonApiStartUp} during application
+   * initialization, but is also used in tests to control the debug mode state.
+   *
+   * @param state the new debug mode state
+   */
   @VisibleForTesting
   public static void setDebugEnabled(boolean state) {
     debugEnabled = state;

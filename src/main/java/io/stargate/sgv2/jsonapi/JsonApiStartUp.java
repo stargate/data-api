@@ -9,7 +9,7 @@ import jakarta.inject.Inject;
 public class JsonApiStartUp {
   @Inject
   public JsonApiStartUp(DebugModeConfig config) {
-    DebugConfigAccess.initialize(config);
+    DebugConfigAccess.setDebugEnabled(config.enabled());
   }
 
   void onStart(@Observes StartupEvent ev) {}
