@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Objects;
 
 public final class ModelUsage implements Recordable {
-  
+
   private final ModelProvider modelProvider;
   private final ModelType modelType;
   private final String modelName;

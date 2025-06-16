@@ -68,13 +68,16 @@ public abstract class EmbeddingProvider extends ProviderBase {
     return modelConfig.apiModelSupport();
   }
 
-  public ModelUsage createEmptyModelUsage(EmbeddingCredentials embeddingCredentials,
-                                          EmbeddingRequestType embeddingRequestType) {
+  public ModelUsage createEmptyModelUsage(
+      EmbeddingCredentials embeddingCredentials, EmbeddingRequestType embeddingRequestType) {
     return createModelUsage(
         embeddingCredentials.tenantId(),
         ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
-        0,0,0,0,0);
-
+        0,
+        0,
+        0,
+        0,
+        0);
   }
 
   public EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig() {
@@ -277,9 +280,9 @@ public abstract class EmbeddingProvider extends ProviderBase {
       int batchId, List<float[]> embeddings, ModelUsage modelUsage) implements Recordable {
 
     // TODO: XXX REMOVE
-//    public static BatchedEmbeddingResponse empty(int batchId) {
-//      return new BatchedEmbeddingResponse(batchId, List.of(), ModelUsage.EMPTY);
-//    }
+    //    public static BatchedEmbeddingResponse empty(int batchId) {
+    //      return new BatchedEmbeddingResponse(batchId, List.of(), ModelUsage.EMPTY);
+    //    }
 
     @Override
     public DataRecorder recordTo(DataRecorder dataRecorder) {

@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,6 +82,10 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
+
+    Objects.requireNonNull(texts, "texts must not be null");
+    Objects.requireNonNull(embeddingCredentials, "embeddingCredentials must not be null");
+    Objects.requireNonNull(embeddingRequestType, "embeddingRequestType type must not be null");
 
     // String bytes metrics for vectorize
     DistributionSummary ds =

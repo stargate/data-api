@@ -52,7 +52,8 @@ public class DataVectorizer {
       SchemaObject schemaObject) {
     this.embeddingProvider = embeddingProvider;
     this.nodeFactory = nodeFactory;
-    this.embeddingCredentials = embeddingCredentials;
+    this.embeddingCredentials =
+        Objects.requireNonNull(embeddingCredentials, "embeddingCredentials must not be null");
     this.schemaObject = schemaObject;
   }
 

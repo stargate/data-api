@@ -4,7 +4,6 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
-import io.stargate.sgv2.jsonapi.service.provider.ModelUsage;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import java.util.ArrayList;
@@ -68,6 +67,8 @@ public class TestRerankingProvider extends RerankingProvider {
     }
 
     ranks.sort((o1, o2) -> Float.compare(o2.score(), o1.score())); // Descending order
-    return Uni.createFrom().item(new BatchedRerankingResponse(batchId, ranks, createEmptyModelUsage(rerankCredentials)));
+    return Uni.createFrom()
+        .item(
+            new BatchedRerankingResponse(batchId, ranks, createEmptyModelUsage(rerankCredentials)));
   }
 }
