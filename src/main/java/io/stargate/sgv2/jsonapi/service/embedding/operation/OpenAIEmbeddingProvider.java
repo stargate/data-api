@@ -98,15 +98,13 @@ public class OpenAIEmbeddingProvider extends EmbeddingProvider {
         .onItem()
         .transform(
             jakartaResponse -> {
-              var openAiResponse = jakartaResponse.readEntity(OpenAiEmbeddingResponse.class);
+              var openAiResponse = decodeResponse(jakartaResponse, OpenAiEmbeddingResponse.class);
               long callDurationNano = System.nanoTime() - callStartNano;
 
               // aaron - 10 June 2025 - previous code would silently swallow no data returned
               // and return an empty result. If we made a request we should get a response.
               if (openAiResponse.data() == null) {
-                throw new IllegalStateException(
-                    "ModelProvider %s returned empty data for model %s"
-                        .formatted(modelProvider(), modelName()));
+                throwEmptyData(jakartaResponse);
               }
               Arrays.sort(openAiResponse.data(), (a, b) -> a.index() - b.index());
               List<float[]> vectors =

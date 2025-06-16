@@ -114,7 +114,8 @@ public class NvidiaRerankingProvider extends RerankingProvider {
         .onItem()
         .transform(
             jakartaResponse -> {
-              var nvidiaResponse = jakartaResponse.readEntity(NvidiaRerankingResponse.class);
+
+              var nvidiaResponse = decodeResponse(jakartaResponse, NvidiaRerankingResponse.class);
               long callDurationNano = System.nanoTime() - callStartNano;
 
               // converting from the specific Nvidia response to the generic RerankingBatchResponse

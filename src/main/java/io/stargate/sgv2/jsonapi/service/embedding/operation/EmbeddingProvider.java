@@ -247,7 +247,14 @@ public abstract class EmbeddingProvider extends ProviderBase {
     // All other errors, Should never happen as all errors are covered above
     return ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
         "Provider: %s; HTTP Status: %s; Error Message: %s",
-        jakartaResponse, jakartaResponse.getStatus(), errorMessage);
+        modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
+  }
+
+  protected void throwEmptyData(Response jakartaResponse){
+    throw ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
+        "Provider: %s; HTTP Status: %s; Error Message: %s",
+        modelProvider().apiName(), jakartaResponse.getStatus(), "ModelProvider returned empty data for model %s"
+            .formatted(modelName()));
   }
 
   /**

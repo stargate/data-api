@@ -4,11 +4,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.NvidiaEmbeddingProvider;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+
+import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +58,11 @@ public abstract class ProviderBase {
    */
   protected Uni<Response> retryHTTPCall(Uni<Response> uni) {
 
-    return uni.onItem()
+    return uni
+        // Catch *any* failure early, convert it to a Response if possible
+        .onFailure(WebApplicationException.class)
+        .recoverWithItem(ex -> ((WebApplicationException) ex).getResponse())
+        .onItem()
         .transform(this::handleHTTPResponse)
         .onFailure(this::decideRetry)
         .retry()
@@ -69,11 +77,26 @@ public abstract class ProviderBase {
 
   protected Response handleHTTPResponse(Response jakartaResponse) {
 
+    if (LOGGER.isTraceEnabled()){
+      LOGGER.trace(
+          "handleHTTPResponse() - got response, modelProvider: {}, modelName: {}, response.status: {}, response.headers: {}",
+          modelProvider(),
+          modelName(),
+          jakartaResponse.getStatus(),
+          jakartaResponse.getHeaders());
+    }
+
     if (jakartaResponse.getStatus() >= 400) {
-      var runtimeException = handleHTTPError(jakartaResponse);
+      var runtimeException = mapHTTPError(jakartaResponse);
       if (runtimeException != null) {
+        if (LOGGER.isTraceEnabled()){
+          LOGGER.trace(
+              "handleHTTPResponse() - http response mapped to error, runtimeException: {}",
+              runtimeException.toString());
+        }
         throw runtimeException;
       }
+
       throw new IllegalStateException(
           String.format(
               "Unhandled error from model provider, modelProvider: %s, modelName: %s, status: %d, responseBody: %s",
@@ -85,7 +108,7 @@ public abstract class ProviderBase {
     return jakartaResponse;
   }
 
-  protected RuntimeException handleHTTPError(Response jakartaResponse) {
+  protected RuntimeException mapHTTPError(Response jakartaResponse) {
 
     var errorMessage = responseErrorMessage(jakartaResponse);
     LOGGER.error(
@@ -95,8 +118,20 @@ public abstract class ProviderBase {
         jakartaResponse.getStatus(),
         errorMessage);
 
-    return mapHTTPError(jakartaResponse, errorMessage);
+    var mappedException = mapHTTPError(jakartaResponse, errorMessage);
+    if (mappedException != null) {
+      return  mappedException;
+    }
+    return  new IllegalStateException(
+        String.format(
+            "Unhandled error from model provider, modelProvider: %s, modelName: %s, status: %d, responseBody: %s",
+            modelProvider(),
+            modelName(),
+            jakartaResponse.getStatus(),
+            jakartaResponse.readEntity(String.class)));
+
   }
+
 
   protected abstract RuntimeException mapHTTPError(Response response, String errorMessage);
 
@@ -135,6 +170,21 @@ public abstract class ProviderBase {
     return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
   }
 
+  protected <T> T decodeResponse(Response jakartaResponse, Class<T> responseClass){
+    try{
+      return jakartaResponse.readEntity(responseClass);
+    }
+    catch (Throwable e){
+      LOGGER.error(
+          "decodeResponse() - error decoding response modelProvider: {}, modelName: {}, responseClass: {}",
+          modelProvider(),
+          modelName(),
+          responseClass.getName(),
+          e);
+      // rethrow so it can be handled elsewhere, we just want to log the error
+      throw e;
+    }
+  }
   /**
    * Checks if the vectorization will use an END_OF_LIFE model and throws an exception if it is.
    *

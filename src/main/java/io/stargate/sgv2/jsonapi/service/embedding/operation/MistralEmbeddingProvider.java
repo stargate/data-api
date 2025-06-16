@@ -97,15 +97,13 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
         .onItem()
         .transform(
             jakartaResponse -> {
-              var mistralResponse = jakartaResponse.readEntity(MistralEmbeddingResponse.class);
+              var mistralResponse = decodeResponse(jakartaResponse, MistralEmbeddingResponse.class);
               long callDurationNano = System.nanoTime() - callStartNano;
 
               // aaron - 10 June 2025 - previous code would silently swallow no data returned
               // and return an empty result. If we made a request we should get a response.
               if (mistralResponse.data() == null) {
-                throw new IllegalStateException(
-                    "ModelProvider %s returned empty data for model %s"
-                        .formatted(modelProvider(), modelName()));
+                throwEmptyData(jakartaResponse);
               }
 
               Arrays.sort(mistralResponse.data(), (a, b) -> a.index() - b.index());

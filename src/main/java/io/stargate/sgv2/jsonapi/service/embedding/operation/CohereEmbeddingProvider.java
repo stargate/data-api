@@ -119,15 +119,13 @@ public class CohereEmbeddingProvider extends EmbeddingProvider {
         .onItem()
         .transform(
             jakartaResponse -> {
-              var cohereResponse = jakartaResponse.readEntity(CohereEmbeddingResponse.class);
+              var cohereResponse = decodeResponse(jakartaResponse, CohereEmbeddingResponse.class);
               long callDurationNano = System.nanoTime() - callStartNano;
 
               // aaron - 10 June 2025 - previous code would silently swallow no data returned
               // and return an empty result. If we made a request we should get a response.
               if (cohereResponse.embeddings() == null) {
-                throw new IllegalStateException(
-                    "ModelProvider %s returned empty data for model %s"
-                        .formatted(modelProvider(), modelName()));
+                throwEmptyData(jakartaResponse);
               }
 
               var modelUsage =

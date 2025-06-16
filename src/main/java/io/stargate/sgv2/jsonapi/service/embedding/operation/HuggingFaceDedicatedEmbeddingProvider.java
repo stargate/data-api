@@ -95,16 +95,13 @@ public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
         .onItem()
         .transform(
             jakartaResponse -> {
-              var huggingFaceResponse =
-                  jakartaResponse.readEntity(HuggingFaceDedicatedEmbeddingResponse.class);
+              var huggingFaceResponse = decodeResponse(jakartaResponse, HuggingFaceDedicatedEmbeddingResponse.class);
               long callDurationNano = System.nanoTime() - callStartNano;
 
               // aaron - 10 June 2025 - previous code would silently swallow no data returned
               // and return an empty result. If we made a request we should get a response.
               if (huggingFaceResponse.data() == null) {
-                throw new IllegalStateException(
-                    "ModelProvider %s returned empty data for model %s"
-                        .formatted(modelProvider(), modelName()));
+                throwEmptyData(jakartaResponse);
               }
 
               Arrays.sort(huggingFaceResponse.data(), (a, b) -> a.index() - b.index());

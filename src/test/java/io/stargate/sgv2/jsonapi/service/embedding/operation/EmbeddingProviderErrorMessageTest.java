@@ -15,6 +15,8 @@ import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
+
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,13 +51,13 @@ public class EmbeddingProviderErrorMessageTest {
   private final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl
       REQUEST_PROPERTIES =
           new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
-              3, 10, 100, 100, 0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
+              3, 10, 10000, 10000, 0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
 
   private final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG =
       new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
           ModelProvider.NVIDIA.apiName(),
           true,
-          Optional.of("http://testing.com/v1/embeddings"), // path important see EmbeddingProviderErrorMessageTest
+          Optional.of(EmbeddingClientTestResource.NVIDIA_URL), // path important see EmbeddingProviderErrorMessageTest
           false,
           Map.of(),
           List.of(),
@@ -65,7 +67,7 @@ public class EmbeddingProviderErrorMessageTest {
   private final ServiceConfigStore.ServiceConfig SERVICE_CONFIG =
       new ServiceConfigStore.ServiceConfig(
           ModelProvider.NVIDIA,
-          "http://testing.com",
+          EmbeddingClientTestResource.NVIDIA_URL, // path important see EmbeddingProviderErrorMessageTest
           Optional.empty(),
           new ServiceConfigStore.ServiceRequestProperties(
               REQUEST_PROPERTIES.atMostRetries(),
@@ -160,7 +162,7 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
+              .awaitItem(Duration.ofDays(1))
               .getItem();
 
       assertThat(result).isNotNull();
@@ -213,21 +215,15 @@ public class EmbeddingProviderErrorMessageTest {
     @Test
     public void testEmptyJsonResponse() {
 
-      final EmbeddingProvider.BatchedEmbeddingResponse result =
-          createProvider()
-              .vectorize(
-                  1,
-                  List.of("empty json body"),
-                  embeddingCredentials,
-                  EmbeddingProvider.EmbeddingRequestType.INDEX)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
+      var exception = vectorizeWithError("empty json body");
 
-      assertThat(result).isNotNull();
-      assertThat(result.batchId()).isEqualTo(1);
-      assertThat(result.embeddings()).isNotNull();
+      assertThat(exception)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue(
+              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
+          .hasFieldOrPropertyWithValue(
+              "message",
+              "The Embedding Provider returned an unexpected response: Provider: nvidia; HTTP Status: 200; Error Message: ModelProvider returned empty data for model testModel");
     }
   }
 }

@@ -139,15 +139,13 @@ public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
         .onItem()
         .transform(
             jakartaResponse -> {
-              var upstageResponse = jakartaResponse.readEntity(UpstageEmbeddingResponse.class);
+              var upstageResponse = decodeResponse(jakartaResponse, UpstageEmbeddingResponse.class);
               long callDurationNano = System.nanoTime() - callStartNano;
 
               // aaron - 10 June 2025 - previous code would silently swallow no data returned
               // and return an empty result. If we made a request we should get a response.
               if (upstageResponse.data() == null) {
-                throw new IllegalStateException(
-                    "ModelProvider %s returned empty data for model %s"
-                        .formatted(modelProvider(), modelName()));
+                throwEmptyData(jakartaResponse);
               }
 
               // aaron - 11 june 2025 - prev code would sort upstageResponse.data() BUT per above we

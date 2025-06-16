@@ -107,15 +107,13 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
         .onItem()
         .transform(
             jakartaResponse -> {
-              var voyageResponse = jakartaResponse.readEntity(VoyageEmbeddingResponse.class);
+              var voyageResponse = decodeResponse(jakartaResponse, VoyageEmbeddingResponse.class);
               long callDurationNano = System.nanoTime() - callStartNano;
 
               // aaron - 10 June 2025 - previous code would silently swallow no data returned
               // and return an empty result. If we made a request we should get a response.
               if (voyageResponse.data() == null) {
-                throw new IllegalStateException(
-                    "ModelProvider %s returned empty data for model %s"
-                        .formatted(modelProvider(), modelName()));
+                throwEmptyData(jakartaResponse);
               }
 
               // TODO: WHY SORT ?

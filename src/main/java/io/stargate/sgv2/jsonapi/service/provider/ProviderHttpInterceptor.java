@@ -6,6 +6,8 @@ import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.Response;
+
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import org.slf4j.Logger;
@@ -28,11 +30,15 @@ public class ProviderHttpInterceptor implements ClientResponseFilter {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProviderHttpInterceptor.class);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  /** Header name to track the sent_bytes to the provider */
-  private static final String SENT_BYTES_HEADER = "sent-bytes";
+  /** Header name to track the sent_bytes to the provider
+   * (extra detailed to avoid collisions)
+   * */
+  private static final String SENT_BYTES_HEADER = "data-api-model-usage-sent-bytes";
 
-  /** Header name to track the received_bytes from the provider */
-  private static final String RECEIVED_BYTES_HEADER = "received-bytes";
+  /** Header name to track the received_bytes from the provider
+   * (extra detailed to avoid collisions)
+   * */
+  private static final String RECEIVED_BYTES_HEADER = "data-api-model-usage-received-bytes";
 
   @Override
   public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext)
@@ -61,8 +67,11 @@ public class ProviderHttpInterceptor implements ClientResponseFilter {
 
       // if provider does not return content-length in the response header.
       if (receivedBytes <= 0) {
-        receivedBytes =
-            responseContext.getEntityStream().transferTo(OutputStream.nullOutputStream());
+        // IMPORTANT - need to reset the entity stream so it can be read again, we have not
+        // decoded this into objects yet.
+        byte[] body = responseContext.getEntityStream().readAllBytes();
+        receivedBytes = body.length;
+        responseContext.setEntityStream(new ByteArrayInputStream(body));
       }
     }
 

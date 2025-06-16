@@ -94,15 +94,13 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
         .onItem()
         .transform(
             jakartaResponse -> {
-              var vertexResponse = jakartaResponse.readEntity(VertexEmbeddingResponse.class);
+              var vertexResponse = decodeResponse(jakartaResponse, VertexEmbeddingResponse.class);
               long callDurationNano = System.nanoTime() - callStartNano;
 
               // aaron - 10 June 2025 - previous code would silently swallow no data returned
               // and return an empty result. If we made a request we should get a response.
               if (vertexResponse.predictions() == null) {
-                throw new IllegalStateException(
-                    "ModelProvider %s returned empty data for model %s"
-                        .formatted(modelProvider(), modelName()));
+                throwEmptyData(jakartaResponse);
               }
 
               // token usage is for each of the embeddings , need to sum it up
