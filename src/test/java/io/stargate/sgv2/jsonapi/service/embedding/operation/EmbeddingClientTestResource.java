@@ -25,7 +25,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
 
   public static final String HOST = "http://localhost:8080";
   public static final String NVIDIA_PATH = "/v1/embeddings";
-  public static final String OPENAI_PATH = "/v1/";
+  public static final String OPENAI_PATH = "/v1";
 
   public static final String NVIDIA_URL = HOST + NVIDIA_PATH;
   public static final String OPENAI_URL = HOST + OPENAI_PATH;

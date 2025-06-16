@@ -47,6 +47,18 @@ public class ProviderHttpInterceptor implements ClientResponseFilter {
     long receivedBytes = 0;
     long sentBytes = 0;
 
+    if (LOGGER.isTraceEnabled()){
+      LOGGER.trace(
+          "ProviderHttpInterceptor.filter() - requestContext.getUri(): {}, requestContext.getHeaders(): {}",
+          requestContext.getUri(),
+          requestContext.getStringHeaders());
+
+      LOGGER.trace(
+          "ProviderHttpInterceptor.filter() - responseContext.getStatus(): {}, responseContext.getHeaders(): {}",
+          responseContext.getStatus(),
+          responseContext.getHeaders());
+    }
+
     // Parse the request entity stream to measure its size.
     if (requestContext.hasEntity()) {
       try (var cus = new CountingOutputStream(OutputStream.nullOutputStream())) {
