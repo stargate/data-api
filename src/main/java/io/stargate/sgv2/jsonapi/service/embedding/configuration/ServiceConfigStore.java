@@ -13,7 +13,7 @@ public interface ServiceConfigStore {
 
   record ServiceConfig(
       ModelProvider modelProvider,
-      // aaron 16 june 2025 - danger here, there is a method that changes the baseUrl use
+      // aaron 16 june 2025 - DANGER here, there is a method that changes the baseUrl use
       // getBaseUrl()
       // will refactor later
       String baseUrl,

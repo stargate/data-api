@@ -111,9 +111,7 @@ public class EmbeddingProviderFactory {
     }
 
     EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig =
-        embeddingProvidersConfig
-            .providers()
-            .get(serviceConfig.modelProvider().apiName())
+        providerConfig
             .models()
             .stream()
             .filter(m -> m.name().equals(modelName))

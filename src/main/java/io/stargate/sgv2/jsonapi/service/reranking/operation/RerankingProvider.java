@@ -48,6 +48,12 @@ public abstract class RerankingProvider extends ProviderBase {
     return modelConfig.apiModelSupport();
   }
 
+  public ModelUsage createEmptyModelUsage(RerankingCredentials rerankingCredentials){
+    return createModelUsage(
+        rerankingCredentials.tenantId(),
+        ModelInputType.INPUT_TYPE_UNSPECIFIED,
+        0,0,0,0,0);
+  }
   /**
    * Reranks the texts, batching as needed, and returns a final RerankingResponse as the original
    * order of the passages with the reranking score.

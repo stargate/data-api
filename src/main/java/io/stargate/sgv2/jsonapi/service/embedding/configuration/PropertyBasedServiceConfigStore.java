@@ -12,7 +12,7 @@ import java.util.Optional;
 @ApplicationScoped
 public class PropertyBasedServiceConfigStore implements ServiceConfigStore {
 
-  @Inject private EmbeddingProvidersConfig config;
+  @Inject private EmbeddingProvidersConfig providersConfig;
 
   //  @Override
   //  public void saveConfiguration(Optional<String> tenant, ServiceConfig serviceConfig) {
@@ -26,12 +26,12 @@ public class PropertyBasedServiceConfigStore implements ServiceConfigStore {
     // already checked if the service exists and enabled in CreateCollectionCommandResolver
     if (modelProvider == ModelProvider.CUSTOM) {
       Objects.requireNonNull(
-          config.custom(), "ModelProvider is CUSTOM configuration has null custom config");
+          providersConfig.custom(), "ModelProvider is CUSTOM configuration has null custom config");
       Objects.requireNonNull(
-          config.custom().clazz(), "ModelProvider is CUSTOM configuration has null class");
+          providersConfig.custom().clazz(), "ModelProvider is CUSTOM configuration has null class");
 
       return ServiceConfig.forCustomProvider(
-          config
+          providersConfig
               .custom()
               .clazz()
               .orElseThrow(
@@ -40,7 +40,7 @@ public class PropertyBasedServiceConfigStore implements ServiceConfigStore {
                           "ModelProvider is CUSTOM but no class is provided in configuration")));
     }
 
-    var providerConfig = config.providers().get(modelProvider.apiName());
+    var providerConfig = providersConfig.providers().get(modelProvider.apiName());
     if (providerConfig == null || !providerConfig.enabled()) {
       throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(modelProvider.apiName());
     }

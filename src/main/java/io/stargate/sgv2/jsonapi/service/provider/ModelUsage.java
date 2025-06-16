@@ -5,9 +5,7 @@ import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Objects;
 
 public final class ModelUsage implements Recordable {
-
-  public static final ModelUsage EMPTY = new ModelUsage(true);
-
+  
   private final ModelProvider modelProvider;
   private final ModelType modelType;
   private final String modelName;
@@ -19,7 +17,6 @@ public final class ModelUsage implements Recordable {
   private final int responseBytes;
   private final long durationNanos;
   private final int batchCount;
-  private final boolean isEmpty;
 
   public ModelUsage(
       ModelProvider modelProvider,
@@ -43,12 +40,7 @@ public final class ModelUsage implements Recordable {
         requestBytes,
         responseBytes,
         durationNanos,
-        1,
-        false);
-  }
-
-  private ModelUsage(boolean isEmpty) {
-    this(null, null, null, null, null, 0, 0, 0, 0, 0L, 0, false);
+        1);
   }
 
   private ModelUsage(
@@ -62,20 +54,18 @@ public final class ModelUsage implements Recordable {
       int requestBytes,
       int responseBytes,
       long durationNanos,
-      int batchCount,
-      boolean isEmpty) {
-    this.modelProvider = modelProvider;
-    this.modelType = modelType;
-    this.modelName = modelName;
-    this.tenantId = tenantId;
-    this.inputType = inputType;
+      int batchCount) {
+    this.modelProvider = Objects.requireNonNull(modelProvider, "modelProvider must not be null");
+    this.modelType = Objects.requireNonNull(modelType, "modelType must not be null");
+    this.modelName = Objects.requireNonNull(modelName, "modelName must not be null");
+    this.tenantId = Objects.requireNonNull(tenantId, "tenantId must not be null");
+    this.inputType = Objects.requireNonNull(inputType, "inputType must not be null");
     this.promptTokens = promptTokens;
     this.totalTokens = totalTokens;
     this.requestBytes = requestBytes;
     this.responseBytes = responseBytes;
     this.durationNanos = durationNanos;
     this.batchCount = batchCount;
-    this.isEmpty = isEmpty;
   }
 
   public static ModelUsage fromEmbeddingGateway(EmbeddingGateway.ModelUsage grpcModelUsage) {
@@ -111,13 +101,6 @@ public final class ModelUsage implements Recordable {
   public ModelUsage merge(ModelUsage other) {
 
     Objects.requireNonNull(other, "other must not be null");
-    if (isEmpty && !other.isEmpty) {
-      return other;
-    }
-    if (other.isEmpty && !isEmpty) {
-      return this;
-    }
-
     if (!this.modelProvider.equals(other.modelProvider)
         || !this.modelType.equals(other.modelType)
         || !this.modelName.equals(other.modelName)
@@ -137,12 +120,7 @@ public final class ModelUsage implements Recordable {
         this.requestBytes + other.requestBytes,
         this.responseBytes + other.responseBytes,
         this.durationNanos + other.durationNanos,
-        this.batchCount + other.batchCount,
-        false);
-  }
-
-  public boolean isEmpty() {
-    return this.isEmpty;
+        this.batchCount + other.batchCount);
   }
 
   public ModelProvider modelProvider() {
@@ -202,7 +180,6 @@ public final class ModelUsage implements Recordable {
         .append("requestBytes", requestBytes)
         .append("responseBytes", responseBytes)
         .append("durationNanos", durationNanos)
-        .append("batchCount", batchCount)
-        .append("isEmpty", isEmpty);
+        .append("batchCount", batchCount);
   }
 }

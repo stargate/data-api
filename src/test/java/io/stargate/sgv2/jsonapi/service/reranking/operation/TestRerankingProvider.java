@@ -68,6 +68,6 @@ public class TestRerankingProvider extends RerankingProvider {
     }
 
     ranks.sort((o1, o2) -> Float.compare(o2.score(), o1.score())); // Descending order
-    return Uni.createFrom().item(new BatchedRerankingResponse(batchId, ranks, ModelUsage.EMPTY));
+    return Uni.createFrom().item(new BatchedRerankingResponse(batchId, ranks, createEmptyModelUsage(rerankCredentials)));
   }
 }
