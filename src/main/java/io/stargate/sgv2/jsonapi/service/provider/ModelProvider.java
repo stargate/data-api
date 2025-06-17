@@ -4,6 +4,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Identifier for a Model Provider.
+ * <p>
+ * The list here needs to sync with the list used in the yaml config files, this is the
+ * canonnical list of Model Proviers that we know about.
+ * </p>
+ * aaron 17 june 2025 - This is used to be a series of string consts in a class called ProviderConstants
+ */
 public enum ModelProvider {
   AZURE_OPENAI("azureOpenAI"),
   BEDROCK("bedrock"),

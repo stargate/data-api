@@ -9,16 +9,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * aaron - 17 june 2025 - as far as I can tell there is a single implementation of this
+ * interface, not sure why this is an interface, why this class exists, and why it is
+ * ApplicationScoped.
+ */
 @ApplicationScoped
 public class PropertyBasedServiceConfigStore implements ServiceConfigStore {
 
   @Inject private EmbeddingProvidersConfig providersConfig;
-
-  //  @Override
-  //  public void saveConfiguration(Optional<String> tenant, ServiceConfig serviceConfig) {
-  //    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-  //        "PropertyBasedEmbeddingProviderConfigStore.saveConfiguration() not implemented");
-  //  }
 
   @Override
   public ServiceConfigStore.ServiceConfig getConfiguration(ModelProvider modelProvider) {
@@ -30,6 +29,10 @@ public class PropertyBasedServiceConfigStore implements ServiceConfigStore {
       Objects.requireNonNull(
           providersConfig.custom().clazz(), "ModelProvider is CUSTOM configuration has null class");
 
+      /**
+       * See {@link DseTestResource} for where the implementationClass is set, and
+       * {@link PropertyBasedServiceConfigStore} for where it is read
+       */
       return ServiceConfig.forCustomProvider(
           providersConfig
               .custom()

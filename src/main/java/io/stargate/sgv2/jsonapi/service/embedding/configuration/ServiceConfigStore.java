@@ -6,8 +6,12 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * aaron - 16 june 2025 - I think this is the configuration taking into account the definition of
- * the service in the schema.
+ * aaron - 16 june 2025 - This used to be called the EmbeddingProviderConfigStore.
+ * <p>
+ * I think this is config that merges together the provider, and model config. The main thing it does
+ * is the 1) know where to get the name of the class for the custom config provider and
+ * 2) provide getBaseUrl() which coalesces the baseUrl with any model-specific overrides.
+ * Both of these things can be improved and this thing removed.
  */
 public interface ServiceConfigStore {
 
@@ -32,6 +36,10 @@ public interface ServiceConfigStore {
           modelProvider, baseUrl, Optional.empty(), requestConfiguration, modelUrlOverrides);
     }
 
+    /**
+     * See {@link DseTestResource} for where the implementationClass is set, and
+     * {@link PropertyBasedServiceConfigStore} for where it is read
+     */
     public static ServiceConfig forCustomProvider(Class<?> implementationClass) {
       Objects.requireNonNull(implementationClass, "implementationClass must not be null");
 
@@ -80,8 +88,6 @@ public interface ServiceConfigStore {
       // `maxBatchSize` is the maximum number of documents to be sent in a single request to be
       // embedding provider
       int maxBatchSize) {}
-
-  //  void saveConfiguration(Optional<String> tenant, ServiceConfig serviceConfig);
 
   ServiceConfig getConfiguration(ModelProvider modelProvider);
 }

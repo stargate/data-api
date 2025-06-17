@@ -4,11 +4,14 @@ import io.stargate.embedding.gateway.EmbeddingGateway;
 import java.util.Optional;
 
 /**
- * If the model usage was for indexing data or searching data
+ * The type of model that was used, such as embedding or reranking.
  *
  * <p>Keeps in parity with the grpc proto definition in embedding_gateway.proto
  */
 public enum ModelType {
+  /**
+   * The input type is not specified, for parity with grpc
+   */
   MODEL_TYPE_UNSPECIFIED,
   EMBEDDING,
   RERANKING;

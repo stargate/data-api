@@ -13,28 +13,61 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Base for model providers such as embedding and reranking. */
+/** Base for model providers of any model type, such as embedding and reranking.
+ * <p>
+ *   Notes for implementors:
+ *   <ul>
+ *     <li>Define the rest easy client to return a {@link Response} and call {@link #retryHTTPCall(Uni)} to
+ *     manage retries and backoff.</li>
+ *     <li>
+ *     Once you have the response called {@link #decodeResponse(Response, Class)} to decode the response
+ *     to a specific class.
+ *     </li>
+ *   </ul>
+ * </p>
+ * <p>.
+ * The Embedding and Rerank code *does not* share model configs, but they can & should do,
+ * so we cannot pass the model into the base until we refactor the code. That is why there
+ * are properties that could be removed or refactored if we had more common config.
+ * </p>
+ * */
 public abstract class ProviderBase {
   protected static final Logger LOGGER = LoggerFactory.getLogger(ProviderBase.class);
 
   private final ModelProvider modelProvider;
   private final ModelType modelType;
 
-  // TODO: the Embedding and Rerank code *does not* share model configs, but they can & should do,
-  // so we we cannot pass the model into the base until we refactor the code.
   protected ProviderBase(ModelProvider modelProvider, ModelType modelType) {
     this.modelProvider = modelProvider;
     this.modelType = modelType;
+  }
+
+  public ModelProvider modelProvider() {
+    return modelProvider;
   }
 
   public abstract String modelName();
 
   public abstract ApiModelSupport modelSupport();
 
-  public ModelProvider modelProvider() {
-    return modelProvider;
-  }
+  /**
+   * Called to map the HTTP response to an API exception, subclasses should override this
+   * method to provide a specific mapping for the model provider.
+   * <p>
+   * This method is called after the error message is extracted from the response.
+   *
+   * @param response The raw HTTP response from the model provider
+   * @param errorMessage The error message extracted from the response
+   * @return The mapped exception to later throw, should not return null.
+   */
+  protected abstract RuntimeException mapHTTPError(Response response, String errorMessage);
 
+
+  /**
+   * Last in the chain to extract the error message from the response JSON, see {@link #responseErrorMessage(Response)}
+   * <p>
+   * @return JSON Pointer path that will be used with {@link JsonNode#at(String)} to extract the error message node.
+   * */
   protected abstract String errorMessageJsonPtr();
 
   protected abstract Duration initialBackOffDuration();
@@ -46,21 +79,20 @@ public abstract class ProviderBase {
   protected abstract int atMostRetries();
 
   /**
-   * Applies a retry mechanism with backoff and jitter to the Uni returned by the rerank() method,
-   * which makes an HTTP request to a third-party service.
-   *
-   * @param <T> The type of the item emitted by the Uni.
-   * @param uni The Uni to which the retry mechanism should be applied.
-   * @return A Uni that will retry on the specified failures with the configured backoff and jitter.
+   * Retries the HTTP call with backoff and jitter, and translates the
+   * response to a API exception.
    */
   protected Uni<Response> retryHTTPCall(Uni<Response> uni) {
 
     return uni
-        // Catch *any* failure early, convert it to a Response if possible
+        // Catch *any* web exception from jakarta rest client
         .onFailure(WebApplicationException.class)
+        // and recover with the jakarta response, so we can translate to API exception
         .recoverWithItem(ex -> ((WebApplicationException) ex).getResponse())
         .onItem()
+        // handle the response, throws if there is an error
         .transform(this::handleHTTPResponse)
+        // decide if we want to retry
         .onFailure(this::decideRetry)
         .retry()
         .withBackOff(initialBackOffDuration(), maxBackOffDuration())
@@ -68,10 +100,26 @@ public abstract class ProviderBase {
         .atMost(atMostRetries());
   }
 
+  /**
+   * Called to determine if the operation should be retried based on the throwable.
+   * <p>
+   * Subclasses should normally override, and then call the base if they do not want to retry.
+   * @param throwable Exception, either the API Exception mapped from the jakarta response. Or
+   *                  any other error if the rest client throws non WebApplicationException
+   * @return <code>true</code> if the operation should be retried, <code>false</code> otherwise.
+   */
   protected boolean decideRetry(Throwable throwable) {
     return throwable instanceof TimeoutException;
   }
 
+  /**
+   * Called to process the HTTP response from the model provider, called for both
+   * successful and error responses. This function determines if the response is an error.
+   * <p>
+   * Implementatioms shoudl <code>throw</code> any exceptions created from the response
+   * @param jakartaResponse Raw HTTP response from the model provider, which may be an error response.
+   * @return The original response if it is successful, or throws an exception if it is an error.
+   */
   protected Response handleHTTPResponse(Response jakartaResponse) {
 
     if (LOGGER.isTraceEnabled()) {
@@ -105,9 +153,20 @@ public abstract class ProviderBase {
     return jakartaResponse;
   }
 
+  /**
+   * Called to map the HTTP response to an API exception, sublcasses should override
+   * {@link #mapHTTPError(Response, String)} which is called after the error message
+   * is extracted from the response.
+   * <p>
+   * Should only be called when there response status is >= 400, i.e. an error response.
+   *
+   * @param jakartaResponse The raw HTTP response from the model provider
+   * @return The mapped exception to later throw, should not return null.
+   */
   protected RuntimeException mapHTTPError(Response jakartaResponse) {
 
     var errorMessage = responseErrorMessage(jakartaResponse);
+    // this is the main "error" log when the response is an error
     LOGGER.error(
         "Error response from model provider, modelProvider: {}, modelName:{}, http.status: {}, error: {}",
         modelProvider,
@@ -119,6 +178,7 @@ public abstract class ProviderBase {
     if (mappedException != null) {
       return mappedException;
     }
+
     return new IllegalStateException(
         String.format(
             "Unhandled error from model provider, modelProvider: %s, modelName: %s, status: %d, responseBody: %s",
@@ -128,8 +188,14 @@ public abstract class ProviderBase {
             jakartaResponse.readEntity(String.class)));
   }
 
-  protected abstract RuntimeException mapHTTPError(Response response, String errorMessage);
-
+  /**
+   * First in the chain to extract the error message from the response, the easiest thing for
+   * subclasses is to override {@link #errorMessageJsonPtr()} to provide the JSON Pointer to get a single
+   * error message from the response JSON.
+   * <p>
+   * This method decodes the JSON response and calles {@link #responseErrorMessage(JsonNode)}
+   * </p>
+   */
   protected String responseErrorMessage(Response jakartaResponse) {
 
     MediaType contentType = jakartaResponse.getMediaType();
@@ -159,12 +225,22 @@ public abstract class ProviderBase {
     return (rootNode == null) ? raw : responseErrorMessage(rootNode);
   }
 
+  /**
+   * Secong in the chain to extract the error message from the response JSON, this is called with
+   * the decoded JSON node. The easiest thing for subclasses is to override {@link #errorMessageJsonPtr()}
+   */
   protected String responseErrorMessage(JsonNode rootNode) {
 
     var messageNode = rootNode.at(errorMessageJsonPtr());
     return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
   }
 
+  /**
+   * Utility method to decode the response (JSON entity) to a specific class, and log if there is an error.
+   * <p>
+   * Because decoding happens after all the retry, it will not be mapped into an API exception through
+   * same proccess as making the HTTP calls.
+   */
   protected <T> T decodeResponse(Response jakartaResponse, Class<T> responseClass) {
     try {
       return jakartaResponse.readEntity(responseClass);

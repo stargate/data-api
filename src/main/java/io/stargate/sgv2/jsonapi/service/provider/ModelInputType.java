@@ -7,9 +7,14 @@ import java.util.Optional;
 /**
  * If the model usage was for indexing data or searching data
  *
- * <p>Keeps in parity with the grp proto definition in embedding_gateway.proto
+ * <p>Keeps in parity with the grp proto definition in embedding_gateway.proto.
  */
 public enum ModelInputType {
+
+  /**
+   * The input type is not specified, for parity with grpc, or where it does not make sense to
+   * such as for a reranking model.
+   */
   INPUT_TYPE_UNSPECIFIED,
   INDEX,
   SEARCH;

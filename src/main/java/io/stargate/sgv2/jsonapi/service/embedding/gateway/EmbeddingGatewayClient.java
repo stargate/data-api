@@ -34,7 +34,6 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
   /** Map to the value of `Token` in the header */
   private static final String DATA_API_TOKEN = "DATA_API_TOKEN";
 
-  // TODO: XXX YUQI /AARON - WHAT ARE THE DIFFERENT REQUEST PROPERTIES?
   private ServiceConfigStore.ServiceRequestProperties requestProperties;
 
   private Optional<String> tenant;
@@ -142,9 +141,9 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
     var contextBuilder =
         EmbeddingGateway.ProviderEmbedRequest.ProviderContext.newBuilder()
             .setProviderName(modelProvider().apiName())
-            .setTenantId(tenant.orElse(DEFAULT_TENANT_ID));
+            .setTenantId(tenant.orElse(DEFAULT_TENANT_ID))
+            .putAuthTokens(DATA_API_TOKEN, authToken.orElse(""));
 
-    contextBuilder.putAuthTokens(DATA_API_TOKEN, authToken.orElse(""));
     embeddingCredentials
         .apiKey()
         .ifPresent(v -> contextBuilder.putAuthTokens(EMBEDDING_API_KEY, v));
@@ -166,7 +165,8 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
             .setProviderContext(contextBuilder.build())
             .build();
 
-    // TODO: XXX Why is this error handling here not part of the uni pipeline?
+    // aaron 17 June 2025 - unsure why this error handled was not in the uni pipleine below
+    // kept it as is when refactoring
     Uni<EmbeddingGateway.EmbeddingResponse> embeddingResponse;
     try {
       embeddingResponse = grpcGatewayClient.embed(gatewayRequest);
