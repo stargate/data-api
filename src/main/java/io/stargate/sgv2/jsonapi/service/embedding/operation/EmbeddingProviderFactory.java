@@ -11,11 +11,10 @@ import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 public class EmbeddingProviderFactory {
@@ -66,10 +65,15 @@ public class EmbeddingProviderFactory {
       Map<String, String> authentication,
       String commandName) {
 
-    if (LOGGER.isTraceEnabled()){
+    if (LOGGER.isTraceEnabled()) {
       LOGGER.trace(
           "create() - tenant: {}, serviceName: {}, modelName: {}, dimension: {}, vectorizeServiceParameters: {}, commandName: {}",
-          tenant, serviceName, modelName, dimension, vectorizeServiceParameters, commandName);
+          tenant,
+          serviceName,
+          modelName,
+          dimension,
+          vectorizeServiceParameters,
+          commandName);
     }
 
     // aaron 7 June 2025, the code previously threw this error when the name from the config was not
@@ -107,10 +111,15 @@ public class EmbeddingProviderFactory {
       vectorizeServiceParameters = Map.of();
     }
 
-    if (LOGGER.isTraceEnabled()){
+    if (LOGGER.isTraceEnabled()) {
       LOGGER.trace(
           "create() - tenant: {}, modelProvider: {}, modelName: {}, dimension: {}, vectorizeServiceParameters: {}, commandName: {}",
-          tenant, modelProvider, modelName, dimension, vectorizeServiceParameters, commandName);
+          tenant,
+          modelProvider,
+          modelName,
+          dimension,
+          vectorizeServiceParameters,
+          commandName);
     }
 
     // WARNING: aaron 15 june 2025, Refactored this, it was very messy
