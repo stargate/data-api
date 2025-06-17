@@ -11,11 +11,15 @@ import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 import java.util.Optional;
 
 @ApplicationScoped
 public class EmbeddingProviderFactory {
+  private static final Logger LOGGER = LoggerFactory.getLogger(EmbeddingProviderFactory.class);
 
   // aaron 16 june 2025 - unclear which is in Instance<> left as is for now
   @Inject Instance<ServiceConfigStore> embeddingProviderConfigStore;
@@ -62,6 +66,12 @@ public class EmbeddingProviderFactory {
       Map<String, String> authentication,
       String commandName) {
 
+    if (LOGGER.isTraceEnabled()){
+      LOGGER.trace(
+          "create() - tenant: {}, serviceName: {}, modelName: {}, dimension: {}, vectorizeServiceParameters: {}, commandName: {}",
+          tenant, serviceName, modelName, dimension, vectorizeServiceParameters, commandName);
+    }
+
     // aaron 7 June 2025, the code previously threw this error when the name from the config was not
     // found in the code, but this is a serious error that should not happen, it should be more like
     // a IllegalState.
@@ -97,11 +107,35 @@ public class EmbeddingProviderFactory {
       vectorizeServiceParameters = Map.of();
     }
 
+    if (LOGGER.isTraceEnabled()){
+      LOGGER.trace(
+          "create() - tenant: {}, modelProvider: {}, modelName: {}, dimension: {}, vectorizeServiceParameters: {}, commandName: {}",
+          tenant, modelProvider, modelName, dimension, vectorizeServiceParameters, commandName);
+    }
+
     // WARNING: aaron 15 june 2025, Refactored this, it was very messy
     // leaving full types here because the names are very, very confusing
 
     ServiceConfigStore.ServiceConfig serviceConfig =
         embeddingProviderConfigStore.get().getConfiguration(modelProvider);
+
+    if (serviceConfig.modelProvider().equals(ModelProvider.CUSTOM)) {
+      // CUSTOM is for test only, but we cannot really check that here
+      // checking this and existing because the rest of the function is validating models etc exist.
+      Optional<Class<?>> clazz = serviceConfig.implementationClass();
+      if (clazz.isEmpty()) {
+        throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
+            "custom class undefined");
+      }
+
+      try {
+        return (EmbeddingProvider) clazz.get().getConstructor(int.class).newInstance(dimension);
+      } catch (Exception e) {
+        throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
+            "custom class provided ('%s') does not resolve to EmbeddingProvider",
+            clazz.get().getCanonicalName());
+      }
+    }
 
     EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig =
         embeddingProvidersConfig.providers().get(serviceConfig.modelProvider().apiName());
@@ -133,23 +167,6 @@ public class EmbeddingProviderFactory {
           grpcGatewayClient,
           authentication,
           commandName);
-    }
-
-    if (serviceConfig.modelProvider().equals(ModelProvider.CUSTOM)) {
-      // CUSTOM is for test only, but we cannot really check that here
-      Optional<Class<?>> clazz = serviceConfig.implementationClass();
-      if (clazz.isEmpty()) {
-        throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
-            "custom class undefined");
-      }
-
-      try {
-        return (EmbeddingProvider) clazz.get().getConstructor(int.class).newInstance(dimension);
-      } catch (Exception e) {
-        throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
-            "custom class provided ('%s') does not resolve to EmbeddingProvider",
-            clazz.get().getCanonicalName());
-      }
     }
 
     var ctor = EMBEDDING_PROVIDER_CTORS.get(modelProvider);
