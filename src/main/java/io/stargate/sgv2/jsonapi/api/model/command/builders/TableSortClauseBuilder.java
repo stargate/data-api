@@ -73,6 +73,7 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
   protected SortExpression buildSortExpression(SortExpressionDefinition exprDef) {
     final String path = exprDef.path();
     final JsonNode innerValue = exprDef.sortValue();
+    final ApiColumnDef column = exprDef.column();
 
     float[] vectorFloats = tryDecodeBinaryVector(path, innerValue);
 
