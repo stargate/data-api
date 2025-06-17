@@ -11,9 +11,13 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Map;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 public class RerankingProviderFactory {
+  private static final Logger LOGGER = LoggerFactory.getLogger(RerankingProviderFactory.class);
+
   @Inject RerankingProvidersConfig rerankingConfig;
   @Inject OperationsConfig operationsConfig;
 
@@ -29,7 +33,7 @@ public class RerankingProviderFactory {
   private static final Map<ModelProvider, ProviderConstructor> RERANKING_PROVIDER_CTORS =
       Map.ofEntries(Map.entry(ModelProvider.NVIDIA, NvidiaRerankingProvider::new));
 
-  public RerankingProvider getConfiguration(
+  public RerankingProvider create(
       Optional<String> tenant,
       Optional<String> authToken,
       String serviceName,
@@ -37,22 +41,40 @@ public class RerankingProviderFactory {
       Map<String, String> authentication,
       String commandName) {
 
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace(
+          "create() - tenant: {}, serviceName: {}, modelName: {}, commandName: {}",
+          tenant,
+          serviceName,
+          modelName,
+          commandName);
+    }
+
     var modelProvider =
         ModelProvider.fromApiName(serviceName)
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
                         String.format("Unknown reranking service provider '%s'", serviceName)));
-    return addService(tenant, authToken, modelProvider, modelName, authentication, commandName);
+    return create(tenant, authToken, modelProvider, modelName, authentication, commandName);
   }
 
-  private synchronized RerankingProvider addService(
+  private synchronized RerankingProvider create(
       Optional<String> tenant,
       Optional<String> authToken,
       ModelProvider modelProvider,
       String modelName,
       Map<String, String> authentication,
       String commandName) {
+
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace(
+          "create() - tenant: {}, modelProvider: {}, modelName: {}, commandName: {}",
+          tenant,
+          modelProvider,
+          modelName,
+          commandName);
+    }
 
     var providerConfig = rerankingConfig.providers().get(modelProvider.apiName());
     if (providerConfig == null) {

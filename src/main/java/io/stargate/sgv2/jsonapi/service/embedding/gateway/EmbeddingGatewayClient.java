@@ -49,7 +49,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig,
       ServiceConfigStore.ServiceConfig serviceConfig,
       int dimension,
-      Map<String, Object> vectorizeServiceParameter,
+      Map<String, Object> vectorizeServiceParameters,
       Optional<String> tenant,
       Optional<String> authToken,
       EmbeddingService grpcGatewayClient,
@@ -61,7 +61,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
         modelConfig,
         serviceConfig,
         dimension,
-        vectorizeServiceParameter);
+        vectorizeServiceParameters);
 
     this.tenant = tenant;
     this.authToken = authToken;

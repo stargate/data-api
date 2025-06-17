@@ -20,14 +20,14 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** TODO */
+/** A provider for Embedding models , using {@link ModelType#EMBEDDING} */
 public abstract class EmbeddingProvider extends ProviderBase {
 
   protected static final Logger LOGGER = LoggerFactory.getLogger(EmbeddingProvider.class);
 
   // IMPORTANT: all of these config objects have some form of a request properties config,
   // use the one from the serviceConfing, as it should be the most specific for this
-  // schema object. - aaron 16 jue 2025
+  // schema object. We should be able to remove ServiceConfig later - aaron 16 jue 2025
   // use {@link #requestProperties()} to access the request properties
   protected final EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig;
   protected final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig modelConfig;
@@ -66,18 +66,6 @@ public abstract class EmbeddingProvider extends ProviderBase {
   @Override
   public ApiModelSupport modelSupport() {
     return modelConfig.apiModelSupport();
-  }
-
-  public ModelUsage createEmptyModelUsage(
-      EmbeddingCredentials embeddingCredentials, EmbeddingRequestType embeddingRequestType) {
-    return createModelUsage(
-        embeddingCredentials.tenantId(),
-        ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
-        0,
-        0,
-        0,
-        0,
-        0);
   }
 
   public EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig() {
@@ -262,6 +250,7 @@ public abstract class EmbeddingProvider extends ProviderBase {
         modelProvider().apiName(), jakartaResponse.getStatus(), errorMessage);
   }
 
+  /** Call this from the subclass when the response from the provider is empty */
   protected void throwEmptyData(Response jakartaResponse) {
     throw ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
         "Provider: %s; HTTP Status: %s; Error Message: %s",
@@ -279,11 +268,6 @@ public abstract class EmbeddingProvider extends ProviderBase {
   public record BatchedEmbeddingResponse(
       int batchId, List<float[]> embeddings, ModelUsage modelUsage) implements Recordable {
 
-    // TODO: XXX REMOVE
-    //    public static BatchedEmbeddingResponse empty(int batchId) {
-    //      return new BatchedEmbeddingResponse(batchId, List.of(), ModelUsage.EMPTY);
-    //    }
-
     @Override
     public DataRecorder recordTo(DataRecorder dataRecorder) {
       return dataRecorder
@@ -293,7 +277,6 @@ public abstract class EmbeddingProvider extends ProviderBase {
     }
   }
 
-  // TODO: remove and use the general ModelInputType enum
   public enum EmbeddingRequestType {
     /** This is used when vectorizing data in write operation for indexing */
     INDEX,

@@ -97,6 +97,7 @@ public class ProviderHttpInterceptor implements ClientResponseFilter {
   }
 
   private static int getHeaderInt(Response jakartaResponse, String headerName) {
+
     var headerString = jakartaResponse.getHeaderString(headerName);
     if (headerString != null && !headerString.isBlank()) {
       try {

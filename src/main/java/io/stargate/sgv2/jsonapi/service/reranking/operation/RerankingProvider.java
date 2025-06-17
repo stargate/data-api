@@ -16,6 +16,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** A provider for Embedding models , using {@link ModelType#RERANKING} */
 public abstract class RerankingProvider extends ProviderBase {
 
   protected static final Logger LOGGER = LoggerFactory.getLogger(RerankingProvider.class);
