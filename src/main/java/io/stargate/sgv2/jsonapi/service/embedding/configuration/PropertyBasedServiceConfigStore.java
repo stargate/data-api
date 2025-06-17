@@ -10,9 +10,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * aaron - 17 june 2025 - as far as I can tell there is a single implementation of this
- * interface, not sure why this is an interface, why this class exists, and why it is
- * ApplicationScoped.
+ * aaron - 17 june 2025 - as far as I can tell there is a single implementation of this interface,
+ * not sure why this is an interface, why this class exists, and why it is ApplicationScoped.
  */
 @ApplicationScoped
 public class PropertyBasedServiceConfigStore implements ServiceConfigStore {
@@ -30,8 +29,8 @@ public class PropertyBasedServiceConfigStore implements ServiceConfigStore {
           providersConfig.custom().clazz(), "ModelProvider is CUSTOM configuration has null class");
 
       /**
-       * See {@link DseTestResource} for where the implementationClass is set, and
-       * {@link PropertyBasedServiceConfigStore} for where it is read
+       * See {@link DseTestResource} for where the implementationClass is set, and {@link
+       * PropertyBasedServiceConfigStore} for where it is read
        */
       return ServiceConfig.forCustomProvider(
           providersConfig

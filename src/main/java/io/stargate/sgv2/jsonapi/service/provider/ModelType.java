@@ -9,9 +9,7 @@ import java.util.Optional;
  * <p>Keeps in parity with the grpc proto definition in embedding_gateway.proto
  */
 public enum ModelType {
-  /**
-   * The input type is not specified, for parity with grpc
-   */
+  /** The input type is not specified, for parity with grpc */
   MODEL_TYPE_UNSPECIFIED,
   EMBEDDING,
   RERANKING;

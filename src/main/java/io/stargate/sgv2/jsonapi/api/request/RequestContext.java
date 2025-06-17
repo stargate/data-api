@@ -36,9 +36,7 @@ public class RequestContext {
 
   private final String userAgent;
 
-  /**
-   * FOR TESTING ONLY - so we can bypass pulling things the headers, still messy, getting better
-   */
+  /** FOR TESTING ONLY - so we can bypass pulling things the headers, still messy, getting better */
   @VisibleForTesting
   public RequestContext(
       Optional<String> tenantId,

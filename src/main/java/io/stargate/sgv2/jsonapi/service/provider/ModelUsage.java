@@ -7,8 +7,8 @@ import java.util.Objects;
 
 /**
  * Usage of a model, any model, recorded for billing or metrics purposes.
- * <p>
- * When doing batching, create one instance and then use {@link #merge(ModelUsage)} to combine.
+ *
+ * <p>When doing batching, create one instance and then use {@link #merge(ModelUsage)} to combine.
  * Note that the durations are added , use the batchCount to get average duration.
  */
 public final class ModelUsage implements Recordable {
@@ -93,9 +93,7 @@ public final class ModelUsage implements Recordable {
     this.batchCount = batchCount;
   }
 
-  /**
-   * Create a ModelUsage from an EmbeddingGateway.ModelUsage. grpc object
-   */
+  /** Create a ModelUsage from an EmbeddingGateway.ModelUsage. grpc object */
   public static ModelUsage fromEmbeddingGateway(EmbeddingGateway.ModelUsage grpcModelUsage) {
 
     return new ModelUsage(
@@ -128,6 +126,7 @@ public final class ModelUsage implements Recordable {
 
   /**
    * Creates a new model usage that merges this and the other usage, to combine after batching.
+   *
    * @return A new ModelUsage instance that combines the properties of this and the other usage.
    */
   public ModelUsage merge(ModelUsage other) {
@@ -138,7 +137,9 @@ public final class ModelUsage implements Recordable {
         || !this.modelName.equals(other.modelName)
         || !this.tenantId.equals(other.tenantId)
         || !this.inputType.equals(other.inputType)) {
-      throw new IllegalArgumentException("Cannot merge ModelUsage with different properties, this: %s, other: %s".formatted(PrettyPrintable.print(this), PrettyPrintable.print(other)));
+      throw new IllegalArgumentException(
+          "Cannot merge ModelUsage with different properties, this: %s, other: %s"
+              .formatted(PrettyPrintable.print(this), PrettyPrintable.print(other)));
     }
 
     return new ModelUsage(
