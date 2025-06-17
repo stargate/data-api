@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.builders;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtApiColumnDef;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtCqlIdentifier;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 import static io.stargate.sgv2.jsonapi.util.JsonUtil.arrayNodeToVector;
 
@@ -16,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,10 +33,53 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
   @Override
   protected SortClause buildClauseFromDefinition(ObjectNode sortNode) {
     // First, resolve the paths to column definitions
-    List<SortExpressionDefinition> sortExprDefs = resolveColumns(sortNode);
-    final List<SortExpression> sortExpressions = new ArrayList<>();
+    var sortExprDefs = resolveColumns(sortNode);
+
+    // Then split into "special" (vector/vectorize, lexical) and regular expressions
+    var lexicalExprs = new ArrayList<SortExpressionDefinition>();
+    var vectorExprs = new ArrayList<SortExpressionDefinition>();
+    var regularExprs = new ArrayList<SortExpressionDefinition>();
+
     for (SortExpressionDefinition sortExprDef : sortExprDefs) {
-      sortExpressions.add(buildSortExpression(sortExprDef));
+      var column = sortExprDef.column;
+      switch (column.type().typeName()) {
+        case VECTOR -> vectorExprs.add(sortExprDef);
+        case ASCII, TEXT -> {
+          if (sortExprDef.sortValue.isTextual()) {
+            lexicalExprs.add(sortExprDef);
+          } else {
+            regularExprs.add(sortExprDef);
+          }
+        }
+        default -> regularExprs.add(sortExprDef);
+      }
+    }
+
+    // Lexical(s)? Must have but one expression, cannot be combined with other sorts
+    // Ditto for vector/vectorize
+    if (!lexicalExprs.isEmpty() || !vectorExprs.isEmpty()) {
+      if (sortExprDefs.size() > 1) {
+        throw SortException.Code.CANNOT_SORT_ON_SPECIAL_WITH_OTHERS.get(
+            errVars(
+                schema,
+                map -> {
+                  map.put("lexicalSorts", columnsDesc(lexicalExprs));
+                  map.put("regularSorts", columnsDesc(regularExprs));
+                  map.put("vectorSorts", columnsDesc(vectorExprs));
+                }));
+      }
+
+      if (!lexicalExprs.isEmpty()) {
+        return new SortClause(List.of(buildLexicalSortExpression(lexicalExprs.getFirst())));
+      }
+
+      return new SortClause(List.of(buildVectorOrVectorizeSortExpression(lexicalExprs.getFirst())));
+    }
+
+    // Otherwise, we can build regular sort expression(s)
+    final List<SortExpression> sortExpressions = new ArrayList<>();
+    for (SortExpressionDefinition exprDef : regularExprs) {
+      sortExpressions.add(buildRegularSortExpression(exprDef.path(), exprDef.sortValue()));
     }
     return new SortClause(sortExpressions);
   }
@@ -70,33 +115,44 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
     return sortExprDefs;
   }
 
-  protected SortExpression buildSortExpression(SortExpressionDefinition exprDef) {
-    final String path = exprDef.path();
-    final JsonNode innerValue = exprDef.sortValue();
-    final ApiColumnDef column = exprDef.column();
+  protected SortExpression buildLexicalSortExpression(SortExpressionDefinition lexicalExpr) {
+    // caller validated JsonNode is textual; for now nothing more to validate
+    return SortExpression.tableLexicalSort(lexicalExpr.path(), lexicalExpr.sortValue.textValue());
+  }
 
-    float[] vectorFloats = tryDecodeBinaryVector(path, innerValue);
+  protected SortExpression buildVectorOrVectorizeSortExpression(
+      SortExpressionDefinition vectorExpr) {
+    final String path = vectorExpr.path();
+    final JsonNode exprValue = vectorExpr.sortValue();
 
-    // handle table vector sort
+    // So we know we have a Vector column; now can check if value is a binary vector or an array
+    // of floats, or a string to vectorize.
+    // For Vectorize, further checks are done in the TableSortClauseResolver.
+
+    // First: vector data either as EJSON binary or as JSON Array (of floats)
+    float[] vectorFloats = tryDecodeBinaryVector(path, exprValue);
     if (vectorFloats != null) {
       return SortExpression.tableVectorSort(path, vectorFloats);
     }
-    if (innerValue instanceof ArrayNode innerArray) {
-      // TODO: HACK: quick support for tables, if the value is an array we will assume the
-      // column is a vector then need to check on table pathway that the sort is correct.
-      // NOTE: does not check if there are more than one sort expression, the
-      // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
+    if (exprValue instanceof ArrayNode innerArray) {
       return SortExpression.tableVectorSort(path, arrayNodeToVector(innerArray));
     }
-    if (innerValue.isTextual()) {
-      // TODO: HACK: quick support for tables, if the value is an text  we will assume the column
-      // is a vector and the user wants to do vectorize then need to check on table pathway that
-      // the sort is correct.
-      // NOTE: does not check if there are more than one sort expression, the
-      // TableSortClauseResolver will take care of that so we can get proper ApiExceptions
-      // this is also why we do not break the look here
-      return SortExpression.tableVectorizeSort(path, innerValue.textValue());
+
+    // Otherwise, check if it is a String to vectorize
+    if (exprValue.isTextual()) {
+      return SortExpression.tableVectorizeSort(path, exprValue.textValue());
     }
-    return super.buildRegularSortExpression(path, innerValue);
+
+    // Otherwise, invalid (cannot be a regular sort as it is a Vector column)
+    throw SortException.Code.INVALID_VECTOR_SORT_EXPRESSION.get(
+        errVars(
+            schema,
+            map -> {
+              map.put("jsonType", JsonUtil.nodeTypeAsString(exprValue));
+            }));
+  }
+
+  private String columnsDesc(List<SortExpressionDefinition> sortExprDefs) {
+    return errFmtJoin(sortExprDefs.stream().map(SortExpressionDefinition::path).toList());
   }
 }

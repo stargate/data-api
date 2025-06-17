@@ -1348,6 +1348,19 @@ request-errors:
       Resend the command with only one vectorize sort.
 
   - scope: SORT
+    code: CANNOT_SORT_ON_SPECIAL_WITH_OTHERS
+    title: Special sort combined with other sort expressions
+    body: |-
+      The command used a sort clause with a special (lexical/vector/vectorize) sort combined with one or more other sort expressions:
+      Special sorts can only be used on their own, and cannot be combined with other sort expressions.
+      
+      The command attempted to use lexical sort on columns: ${lexicalSorts}.
+      The command attempted to use vector/vectorize sort on columns: ${vectorSorts}.
+      The command attempted to use regular sort on columns: ${regularSorts}.
+      
+      Resend the command with only one special sort expression.
+
+  - scope: SORT
     code: CANNOT_SORT_UNKNOWN_COLUMNS
     title: Sorted columns are not defined in the table schema
     body: |-
@@ -1459,6 +1472,16 @@ request-errors:
       The command attempted to sort the non-vector columns: ${sortNonVectorColumns}.
       
       Resend the command using either vector or non-vector sorting.
+
+  - scope: SORT
+    code: INVALID_VECTOR_SORT_EXPRESSION
+    title: Sort expression is not valid for vector/vectorize sort
+    body: |-
+      The command attempted to use unsupported JSON type (${jsonType}) for vector or vectorize sort.
+      
+      ${SNIPPET.VECTOR_SORT_EXPLANATION}
+      
+      Resend the command with valid vector/vectorize sort expression.
 
   - scope: SORT
     code: UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND

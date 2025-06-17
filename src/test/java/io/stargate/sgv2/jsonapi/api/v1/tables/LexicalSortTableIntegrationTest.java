@@ -9,6 +9,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.ClassOrderer;
@@ -38,7 +39,8 @@ public class LexicalSortTableIntegrationTest extends AbstractTableIntegrationTes
               Map.ofEntries(
                   Map.entry("id", Map.of("type", "text")),
                   Map.entry("value", Map.of("type", "text")),
-                  Map.entry("tags", Map.of("type", "text"))),
+                  Map.entry("tags", Map.of("type", "text")),
+                  Map.entry("tags2", Map.of("type", "text"))),
               "id")
           .wasSuccessful();
 
@@ -56,31 +58,46 @@ public class LexicalSortTableIntegrationTest extends AbstractTableIntegrationTes
                             }
                             """)
           .wasSuccessful();
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .postCreateTextIndex(
+              """
+                                    {
+                                      "name": "tags2_lexical_idx",
+                                      "definition": {
+                                        "column": "tags2",
+                                        "options": {
+                                          "analyzer": "standard"
+                                        }
+                                      }
+                                    }
+                                    """)
+          .wasSuccessful();
+
       // And then insert some data
       insertOneInTable(
           TABLE_NAME,
           Map.of(
               "id", "1",
               "value", "First value",
-              "tags", "tag1"));
+              "tags", "tag1",
+              "tags2", "abc"));
       insertOneInTable(
           TABLE_NAME,
-          Map.of(
-              "id", "2",
-              "value", "Second value",
-              "tags", "tag2"));
+          Map.of("id", "2", "value", "Second value", "tags", "tag2", "tags2", "abc def"));
       insertOneInTable(
           TABLE_NAME,
           Map.of(
               "id", "3",
               "value", "Third value",
-              "tags", "tag3"));
+              "tags", "tag3",
+              "tags2", "def xyz"));
       insertOneInTable(
           TABLE_NAME,
           Map.of(
               "id", "4",
               "value", "Fourth value",
-              "tags", "tag1 tag2 tag3"));
+              "tags", "tag1 tag2 tag3",
+              "tags2", "xyz"));
     }
   }
 
@@ -114,5 +131,38 @@ public class LexicalSortTableIntegrationTest extends AbstractTableIntegrationTes
               "command attempted to sort using columns that are not in the table schema",
               "\"lexicalSortTableTest\" defines the columns");
     }
+
+    @Test
+    void lexicalNotAlone() {
+      // 2 lexical columns -> cannot do
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .find(null, List.of("id"), sortedMapOf("tags", "tag1", "tags2", "abc def"))
+          .hasSingleApiError(
+              SortException.Code.CANNOT_SORT_ON_SPECIAL_WITH_OTHERS,
+              SortException.class,
+              "command used a sort clause with a special (lexical/vector/vectorize) sort combined with one or more other sort expressions",
+              "The command attempted to use lexical sort on columns: tags, tags2",
+              "The command attempted to use vector/vectorize sort on columns: [None]",
+              "The command attempted to use regular sort on columns: [None]");
+      // 1 lexical column + 1 regular column -> cannot do
+      assertTableCommand(keyspaceName, TABLE_NAME)
+          .templated()
+          .find(null, List.of("id"), sortedMapOf("tags", "tag1", "value", 1))
+          .hasSingleApiError(
+              SortException.Code.CANNOT_SORT_ON_SPECIAL_WITH_OTHERS,
+              SortException.class,
+              "The command attempted to use lexical sort on columns: tags",
+              "The command attempted to use vector/vectorize sort on columns: [None]",
+              "The command attempted to use regular sort on columns: value");
+    }
+  }
+
+  private static Map<String, Object> sortedMapOf(Object... keysAndValues) {
+    Map<String, Object> map = new LinkedHashMap<>();
+    for (int i = 0; i < keysAndValues.length; i += 2) {
+      map.put((String) keysAndValues[i], keysAndValues[i + 1]);
+    }
+    return map;
   }
 }
