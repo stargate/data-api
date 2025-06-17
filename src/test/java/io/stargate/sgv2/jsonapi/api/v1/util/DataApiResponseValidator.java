@@ -211,7 +211,7 @@ public class DataApiResponseValidator {
 
   public <T extends APIException> DataApiResponseValidator hasSingleApiException(T expected) {
 
-    // TODO: aaron 19-oct-2024 this is a bit of a hack, will build ticket to refector the matchers
+    // TODO: aaron 19-oct-2024 this is a bit of a hack, will build ticket to refactor the matchers
     // for errors
     return body("$", responseIsError)
         .body("errors", hasSize(1))

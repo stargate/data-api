@@ -165,7 +165,6 @@ public enum ErrorCodeV1 {
   VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
 
   LEXICAL_NOT_AVAILABLE_FOR_DATABASE("Lexical search is not available on this database"),
-  LEXICAL_NOT_ENABLED_FOR_COLLECTION("Lexical search is not enabled for the collection"),
   LEXICAL_CONTENT_TOO_BIG(
       "Lexical content is too big, please use a smaller value for the $lexical field"),
 

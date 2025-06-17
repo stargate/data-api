@@ -370,7 +370,7 @@ request-errors:
     body: |-
       The command requires a filter on the primary key that specifies all of the partitioning keys, and the partition sort keys in order.
       
-      If a partititon sort key is excluded, then all following partition sort keys must be excluded. 
+      If a partition sort key is excluded, then all following partition sort keys must be excluded. 
       
       The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
       
@@ -928,6 +928,13 @@ request-errors:
       Resend the command using only columns that use the `vector` type.
 
   - scope: SCHEMA
+    code: LEXICAL_NOT_ENABLED_FOR_COLLECTION
+    title: Lexical search is not enabled for the collection
+    body: |-
+      Lexical content can only be added and filtering and sort only be used on Collections for which Lexical feature is enabled.
+      The Collection ${keyspace}.${table} does not have Lexical feature enabled.
+
+  - scope: SCHEMA
     code: UNKNOWN_DATA_TYPE
     title: Data type is unknown
     body: |-
@@ -1382,10 +1389,10 @@ request-errors:
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines the columns: ${vectorColumns}.
-      The command attempted to sort the non vector columns: ${sortColumns}.  
+      The table ${keyspace}.${table} defines vector columns: ${vectorColumns}.
+      The command attempted to sort the non-vector columns: ${sortColumns}.
       
-      Resend the command using only `vector` columns wth vectorize enabled.
+      Resend the command using only `vector` columns with vectorize enabled.
 
   - scope: SORT
     code: CANNOT_VECTORIZE_SORT_WHEN_MISSING_VECTORIZE_DEFINITION

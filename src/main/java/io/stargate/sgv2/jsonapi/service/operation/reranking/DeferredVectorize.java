@@ -51,7 +51,7 @@ public class DeferredVectorize implements Deferrable, Deferred {
     this.vector = vector;
 
     sortClause.sortExpressions().clear();
-    sortClause.sortExpressions().add(SortExpression.vsearch(vector));
+    sortClause.sortExpressions().add(SortExpression.collectionVectorSort(vector));
   }
 
   private void consumeEmbeddingFailure(RuntimeException exception) {
