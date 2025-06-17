@@ -13,7 +13,8 @@ public abstract class SchemaObject implements Recordable {
     DATABASE(Constants.DATABASE),
     INDEX(Constants.INDEX),
     KEYSPACE(Constants.KEYSPACE),
-    TABLE(Constants.TABLE);
+    TABLE(Constants.TABLE),
+    UDT(Constants.UDT);
 
     /** Constants so the public HTTP API objects can use the same values. */
     public interface Constants {
@@ -22,6 +23,7 @@ public abstract class SchemaObject implements Recordable {
       String INDEX = "Index";
       String KEYSPACE = "Keyspace";
       String TABLE = "Table";
+      String UDT = "Udt";
     }
 
     private final String apiName;

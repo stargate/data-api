@@ -802,6 +802,14 @@ request-errors:
         Resend the command using a dimension for the vector columns.
 
   - scope: SCHEMA
+    code: MISSING_FIELDS_FOR_TYPE_CREATION
+    title: At least one field is required for type creation
+    body: |-
+      The type definition must have at least one field.
+      
+      Resend the command providing at least one field. 
+
+  - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_COLUMNS
     title: Columns with the same name are defined in the table schema
     body: |-
@@ -811,6 +819,14 @@ request-errors:
       The request included the following duplicate columns: ${duplicateColumns}.
       
       Resend the command using only new columns.
+
+  - scope: SCHEMA
+    code: CANNOT_ADD_EXISTING_FIELD
+    title: Field with the same name are defined in the type schema
+    body: |-
+      Field name must be unique in the type ${typeName}.
+      ${driverMessage}
+      Resend the command using unique field.
 
   - scope: SCHEMA
     code: CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS
@@ -914,6 +930,14 @@ request-errors:
       The command attempted to drop vectorize configuration from the unknown columns: ${unknownColumns}.  
       
       Resend the command using only columns defined in the table schema.
+
+  - scope: SCHEMA
+    code: CANNOT_RENAME_UNKNOWN_TYPE_FIELD
+    title: Field cannot be renamed if it is not defined in the type
+    body: |-
+      The command attempted to rename a field that is not defined in the type ${typeName}.
+      ${driverMessage}
+      Resend the command using only fields defined in the type.
 
   - scope: SCHEMA
     code: CANNOT_DROP_VECTORIZE_FROM_NON_VECTOR_COLUMNS
@@ -1022,6 +1046,16 @@ request-errors:
       The command used the value type: ${unsupportedValueType}.
       
       Resend the command using a supported value type.
+
+  - scope: SCHEMA
+    code: UNSUPPORTED_TYPE_FIELD
+    title: Type definition contains unsupported  field.
+    body: |-
+      The command contains a type definition that used unsupported field.
+      
+      Type as field, map/set/list as field are not supported.
+      
+      Resend the command using a supported type field.
 
   - scope: SCHEMA
     code: UNSUPPORTED_VECTOR_DIMENSION
@@ -1203,6 +1237,16 @@ request-errors:
       Resend the command using a table that exists in the keyspace.
 
   - scope: SCHEMA
+    code: CANNOT_DROP_UNKNOWN_TYPE
+    title: Dropped type is not defined in the keyspace schema
+    body: |-
+      The command attempted to drop a type that is not in the keyspace schema.
+      
+      The command attempted to drop the unknown type: ${unknownType}.
+      
+      Resend the command using a type that exists in the keyspace.
+
+  - scope: SCHEMA
     code: CANNOT_ADD_EXISTING_TABLE
     title: Table with the same name exists in the keyspace schema
     body: |-
@@ -1211,6 +1255,17 @@ request-errors:
       The command attempted to add the existing table: ${existingTable}.
       
       Resend the command using a table name that does not exist in the keyspace.
+
+  - scope: SCHEMA
+    code: CANNOT_ADD_EXISTING_TYPE
+    title: Type with the same name exists in the keyspace schema
+    body: |-
+      The command attempted to add a type that already exists in the keyspace schema.
+      
+      The command attempted to add the existing type: ${existingType}.
+      
+      Resend the command using a type name that does not exist in the keyspace.
+
 
   - scope: SCHEMA
     code: CANNOT_ADD_UNSUPPORTED_DATA_TYPE_COLUMNS

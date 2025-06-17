@@ -5,10 +5,7 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtJoin;
 
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.*;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
@@ -21,7 +18,7 @@ import java.util.Map;
  * Custom deserializer to decode the column type from the JSON payload This is required because
  * composite and custom column types may need additional properties to be deserialized
  */
-public class ColumnDescDeserializer extends StdDeserializer<ColumnDesc> {
+public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
 
   private static final String ERR_PREFIX = "The Long Form type definition";
   private static final String ERR_OBJECT_WITH_TYPE =
@@ -29,8 +26,15 @@ public class ColumnDescDeserializer extends StdDeserializer<ColumnDesc> {
           + " must be a JSON Object with at least a `%s` field that is a String"
               .formatted(TableDescConstants.ColumnDesc.TYPE);
 
+  private final boolean deserializeUDTFields;
+  ;
+
   public ColumnDescDeserializer() {
-    super(ColumnDesc.class);
+    this.deserializeUDTFields = false;
+  }
+
+  public ColumnDescDeserializer(boolean deserializeUDTFields) {
+    this.deserializeUDTFields = deserializeUDTFields;
   }
 
   @Override
@@ -49,6 +53,11 @@ public class ColumnDescDeserializer extends StdDeserializer<ColumnDesc> {
                       Map.of(
                           "supportedTypes", errFmtColumnDesc(PrimitiveColumnDesc.allColumnDescs()),
                           "unsupportedType", descNode.asText())));
+    }
+
+    // Check if we are deserializing UDT fields and if so, check for unsupported UDT fields.
+    if (deserializeUDTFields) {
+      unsupportedUDTFieldCheck(descNode);
     }
 
     // Check we are using long form
@@ -118,5 +127,18 @@ public class ColumnDescDeserializer extends StdDeserializer<ColumnDesc> {
   @Override
   public ColumnDesc getNullValue(DeserializationContext ctxt) throws JsonMappingException {
     throw new JsonMappingException(ctxt.getParser(), ERR_OBJECT_WITH_TYPE + " (value is null)");
+  }
+
+  /**
+   * Rules for current supported UDT field definition from API user request. As of June 16th 2025,
+   * UDT as field, map/set/list as field are not supported.
+   */
+  private void unsupportedUDTFieldCheck(JsonNode descNode) {
+
+    // UDT as field or map/set/list as field both requires long form of definition.
+    // And they are not supported.
+    if (!descNode.isTextual()) {
+      throw SchemaException.Code.UNSUPPORTED_TYPE_FIELD.get();
+    }
   }
 }
