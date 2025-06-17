@@ -67,7 +67,7 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
    * @param innerValue JSON value of the sort expression to use
    * @return {@link SortExpression} for the regular sort
    */
-  protected SortExpression buildSortExpression(String path, JsonNode innerValue) {
+  protected SortExpression buildRegularSortExpression(String path, JsonNode innerValue) {
     if (!innerValue.isInt()) {
       // Special checking for String and ArrayNode to give less confusing error messages
       if (innerValue.isArray()) {

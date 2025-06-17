@@ -27,7 +27,11 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
 
   @Override
   public SortClause buildClauseFromDefinition(ObjectNode sortNode) {
-    // First check "special" sort expressions, like lexical and vector sorts;
+    // Optimize for empty sort clause, which is common
+    if (sortNode.isEmpty()) {
+      return SortClause.empty();
+    }
+    // Start by checking "special" sort expressions, like lexical and vector sorts;
     // they must be the only expression in the sort clause.
 
     JsonNode lexicalNode = sortNode.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
@@ -93,7 +97,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
 
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> inner = fieldIter.next();
-      sortExpressions.add(buildSortExpression(inner.getKey(), inner.getValue()));
+      sortExpressions.add(buildRegularSortExpression(inner.getKey(), inner.getValue()));
     }
     return new SortClause(sortExpressions);
   }

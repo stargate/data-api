@@ -31,7 +31,7 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
   @Override
   protected SortClause buildClauseFromDefinition(ObjectNode sortNode) {
     // First, resolve the paths to column definitions
-    final List<SortExpressionDefinition> sortExprDefs = resolveColumns(sortNode);
+    List<SortExpressionDefinition> sortExprDefs = resolveColumns(sortNode);
     final List<SortExpression> sortExpressions = new ArrayList<>();
     for (SortExpressionDefinition sortExprDef : sortExprDefs) {
       sortExpressions.add(buildSortExpression(sortExprDef));
@@ -40,7 +40,7 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
   }
 
   private List<SortExpressionDefinition> resolveColumns(ObjectNode sortNode) {
-    List<SortExpressionDefinition> sortExprDefs = new ArrayList<>();
+    final List<SortExpressionDefinition> sortExprDefs = new ArrayList<>();
     final List<CqlIdentifier> unknownColumnNames = new ArrayList<>();
     final ApiColumnDefContainer columns = schema.apiTableDef().allColumns();
 
@@ -96,6 +96,6 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
       // this is also why we do not break the look here
       return SortExpression.tableVectorizeSort(path, innerValue.textValue());
     }
-    return super.buildSortExpression(path, innerValue);
+    return super.buildRegularSortExpression(path, innerValue);
   }
 }
