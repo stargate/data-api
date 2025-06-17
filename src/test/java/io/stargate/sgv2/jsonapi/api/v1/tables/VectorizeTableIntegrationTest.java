@@ -156,7 +156,7 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
                 VectorizeTableScenario.fieldName(
                     VectorizeTableScenario.INDEXED_VECTOR_COL_WITHOUT_VECTORIZE_DEF_1),
                 SAMPLE_VECTORIZE_CONTENT),
-            SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORIZE),
+            SortException.Code.CANNOT_SORT_ON_SPECIAL_WITH_OTHERS),
         Arguments.of(
             ImmutableMap.of(
                 VectorizeTableScenario.fieldName(VectorizeTableScenario.CONTENT_COL),

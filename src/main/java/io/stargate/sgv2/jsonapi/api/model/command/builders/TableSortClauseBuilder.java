@@ -73,7 +73,7 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
         return new SortClause(List.of(buildLexicalSortExpression(lexicalExprs.getFirst())));
       }
 
-      return new SortClause(List.of(buildVectorOrVectorizeSortExpression(lexicalExprs.getFirst())));
+      return new SortClause(List.of(buildVectorOrVectorizeSortExpression(vectorExprs.getFirst())));
     }
 
     // Otherwise, we can build regular sort expression(s)
