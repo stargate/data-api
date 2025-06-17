@@ -41,15 +41,6 @@ public class AlterTypeCommandResolver implements CommandResolver<AlterTypeComman
   public Operation<KeyspaceSchemaObject> resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> commandContext, AlterTypeCommand command) {
 
-    //    if ((command.rename() == null
-    //            || command.rename().fields() == null
-    //            || command.rename().fields().isEmpty())
-    //        && (command.add() == null
-    //            || command.add().fields() == null
-    //            || command.add().fields().isEmpty())) {
-    //      throw new IllegalArgumentException(" options must be provided for AlterTypeCommand");
-    //    }
-
     var typeIdentifier = cqlIdentifierFromUserInput(command.name());
 
     // Note, renaming-field and adding-field are separate AlterTypeDBTask.

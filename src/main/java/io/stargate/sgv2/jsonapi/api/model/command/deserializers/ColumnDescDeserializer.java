@@ -26,8 +26,10 @@ public class ColumnDescDeserializer extends JsonDeserializer<ColumnDesc> {
           + " must be a JSON Object with at least a `%s` field that is a String"
               .formatted(TableDescConstants.ColumnDesc.TYPE);
 
+  // This is the flag to indicate whether we are deserializing UDT fields or not.
+  // By default, it is set to false, meaning we are serializing column definitions for commands like
+  // CreateTable, AlterTable.
   private final boolean deserializeUDTFields;
-  ;
 
   public ColumnDescDeserializer() {
     this.deserializeUDTFields = false;
