@@ -26,7 +26,7 @@ public abstract class EmbeddingProvider extends ProviderBase {
   protected static final Logger LOGGER = LoggerFactory.getLogger(EmbeddingProvider.class);
 
   // IMPORTANT: all of these config objects have some form of a request properties config,
-  // use the one from the serviceConfing, as it should be the most specific for this
+  // use the one from the serviceConfig, as it should be the most specific for this
   // schema object. We should be able to remove ServiceConfig later - aaron 16 jue 2025
   // use {@link #requestProperties()} to access the request properties
   protected final EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig;

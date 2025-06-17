@@ -272,6 +272,7 @@ stargate:
                   required: false
                   default-value: true
                   help: "If set to false, text that exceeds the token limit causes the request to fail. The default value is true."
+        # COHERE was OUT OF SCOPE FOR INITIAL PREVIEW, TODO: decide if we want to enable, drop if not.
         cohere:
           # see https://docs.cohere.com/reference/embed
           display-name: Cohere

@@ -101,6 +101,8 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
 
       long callStartNano = System.nanoTime();
 
+      // NOTE: need to use the AWS client for the request, not a Rest Easy, so we cannot use
+      // all the features from the superclasses such as error mapping and building the model usage
       var bytesUsageTracker = new ByteUsageTracker();
       var bedrockFuture =
           bedrockClient

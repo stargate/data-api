@@ -72,7 +72,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
 
   @Override
   protected String errorMessageJsonPtr() {
-    // not used , this is passing through
+    // not used , this is passing through the grpc error
     return "";
   }
 
