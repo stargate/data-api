@@ -81,9 +81,10 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
         .templated()
         .find(commandName, null, null, sort)
         .hasSingleApiError(
-            SortException.Code.CANNOT_SORT_ON_MULTIPLE_VECTORS,
+            SortException.Code.CANNOT_SORT_ON_SPECIAL_WITH_OTHERS,
             SortException.class,
-            "The command attempted to vector sort on the columns: %s, %s."
+            "The command used a sort clause with a special (lexical/vector/vectorize) sort",
+            "The command attempted to use vector/vectorize sort on columns: %s, %s"
                 .formatted(
                     SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL),
                     SCENARIO.fieldName(VectorDimension5TableScenario.UNINDEXED_VECTOR_COL)));
@@ -144,12 +145,13 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
         .templated()
         .find(commandName, null, null, sort)
         .hasSingleApiError(
-            SortException.Code.CANNOT_SORT_VECTOR_AND_NON_VECTOR_COLUMNS,
+            SortException.Code.CANNOT_SORT_ON_SPECIAL_WITH_OTHERS,
             SortException.class,
-            "The command attempted to sort the vector columns: %s.\nThe command attempted to sort the non-vector columns: %s."
-                .formatted(
-                    SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL),
-                    SCENARIO.fieldName(VectorDimension5TableScenario.CONTENT_COL)));
+            "The command used a sort clause with a special (lexical/vector/vectorize) sort",
+            "The command attempted to use vector/vectorize sort on columns: "
+                + SCENARIO.fieldName(VectorDimension5TableScenario.INDEXED_VECTOR_COL),
+            "The command attempted to use regular sort on columns: "
+                + SCENARIO.fieldName(VectorDimension5TableScenario.CONTENT_COL));
   }
 
   @ParameterizedTest
