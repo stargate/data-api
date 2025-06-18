@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinitio
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
+import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
@@ -43,7 +44,7 @@ public class DataVectorizerTest {
       TestEmbeddingProvider.TEST_EMBEDDING_PROVIDER;
   private final EmbeddingProvider testService = testEmbeddingProvider;
   private final EmbeddingCredentials embeddingCredentials =
-      new EmbeddingCredentials(Optional.empty(), Optional.empty(), Optional.empty());
+      new EmbeddingCredentials("test-tenant", Optional.empty(), Optional.empty(), Optional.empty());
 
   private CollectionSchemaObject collectionSettings = null;
 
@@ -197,7 +198,7 @@ public class DataVectorizerTest {
       TestEmbeddingProvider testProvider =
           new TestEmbeddingProvider() {
             @Override
-            public Uni<Response> vectorize(
+            public Uni<BatchedEmbeddingResponse> vectorize(
                 int batchId,
                 List<String> texts,
                 EmbeddingCredentials embeddingCredentials,
@@ -206,7 +207,18 @@ public class DataVectorizerTest {
               texts.forEach(t -> customResponse.add(new float[] {0.5f, 0.5f, 0.5f}));
               // add additional vector
               customResponse.add(new float[] {0.5f, 0.5f, 0.5f});
-              return Uni.createFrom().item(Response.of(batchId, customResponse));
+
+              var modelUsage =
+                  createModelUsage(
+                      embeddingCredentials.tenantId(),
+                      ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
+                      0,
+                      0,
+                      0,
+                      0,
+                      0);
+              return Uni.createFrom()
+                  .item(new BatchedEmbeddingResponse(batchId, customResponse, modelUsage));
             }
           };
       List<JsonNode> documents = new ArrayList<>();

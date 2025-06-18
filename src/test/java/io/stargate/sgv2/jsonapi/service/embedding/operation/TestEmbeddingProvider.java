@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-import static org.mockito.Mockito.mock;
-
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -10,10 +8,12 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfigImpl;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ServiceConfigStore;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalConfig;
@@ -27,19 +27,9 @@ import java.util.Optional;
 
 public class TestEmbeddingProvider extends EmbeddingProvider {
 
-  public TestEmbeddingProvider(
-      EmbeddingProviderConfigStore.RequestProperties requestProperties,
-      String baseUrl,
-      EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model,
-      int dimension,
-      Map<String, Object> vectorizeServiceParameters,
-      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
-    super(requestProperties, baseUrl, model, dimension, vectorizeServiceParameters, providerConfig);
-  }
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
-  public TestEmbeddingProvider() {}
-
-  public static final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig
+  private static final EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig
       TEST_MODEL_CONFIG =
           new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ModelConfigImpl(
               "testModel",
@@ -50,22 +40,50 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
               Map.of(),
               Optional.empty());
 
-  public static final TestEmbeddingProvider TEST_EMBEDDING_PROVIDER =
-      new TestEmbeddingProvider(
-          null,
-          null,
-          TEST_MODEL_CONFIG,
-          3,
-          Map.of(),
-          mock(EmbeddingProvidersConfig.EmbeddingProviderConfig.class));
+  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl
+          .RequestPropertiesImpl
+      REQUEST_PROPERTIES =
+          new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.RequestPropertiesImpl(
+              3, 10, 100, 100, 0.5, Optional.empty(), Optional.empty(), Optional.empty(), 10);
 
-  private TestConstants testConstants = new TestConstants();
+  private static final EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl PROVIDER_CONFIG =
+      new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
+          ModelProvider.CUSTOM.apiName(),
+          true,
+          Optional.of("http://testing.com"),
+          false,
+          Map.of(),
+          List.of(),
+          REQUEST_PROPERTIES,
+          List.of());
+
+  private static final ServiceConfigStore.ServiceConfig SERVICE_CONFIG =
+      new ServiceConfigStore.ServiceConfig(
+          ModelProvider.CUSTOM,
+          "http://testing.com",
+          Optional.empty(),
+          new ServiceConfigStore.ServiceRequestProperties(
+              REQUEST_PROPERTIES.atMostRetries(),
+              REQUEST_PROPERTIES.initialBackOffMillis(),
+              REQUEST_PROPERTIES.readTimeoutMillis(),
+              REQUEST_PROPERTIES.maxBackOffMillis(),
+              REQUEST_PROPERTIES.jitter(),
+              REQUEST_PROPERTIES.taskTypeRead(),
+              REQUEST_PROPERTIES.taskTypeStore(),
+              REQUEST_PROPERTIES.maxBatchSize()),
+          Map.of());
+
+  public static final TestEmbeddingProvider TEST_EMBEDDING_PROVIDER = new TestEmbeddingProvider();
+
+  public TestEmbeddingProvider() {
+    super(ModelProvider.CUSTOM, PROVIDER_CONFIG, TEST_MODEL_CONFIG, SERVICE_CONFIG, 3, Map.of());
+  }
 
   public CommandContext<CollectionSchemaObject> commandContextWithVectorize() {
-    return testConstants.collectionContext(
+    return TEST_CONSTANTS.collectionContext(
         "testCommand",
         new CollectionSchemaObject(
-            testConstants.SCHEMA_OBJECT_NAME,
+            TEST_CONSTANTS.SCHEMA_OBJECT_NAME,
             null,
             IdConfig.defaultIdConfig(),
             VectorConfig.fromColumnDefinitions(
@@ -84,7 +102,13 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
   }
 
   @Override
-  public Uni<Response> vectorize(
+  protected String errorMessageJsonPtr() {
+    // not used in tests
+    return "";
+  }
+
+  @Override
+  public Uni<BatchedEmbeddingResponse> vectorize(
       int batchId,
       List<String> texts,
       EmbeddingCredentials embeddingCredentials,
@@ -95,7 +119,17 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
           if (t.equals("return 1s")) response.add(new float[] {1.0f, 1.0f, 1.0f});
           else response.add(new float[] {0.25f, 0.25f, 0.25f});
         });
-    return Uni.createFrom().item(Response.of(batchId, response));
+
+    var modelUsage =
+        createModelUsage(
+            embeddingCredentials.tenantId(),
+            ModelInputType.fromEmbeddingRequestType(embeddingRequestType),
+            0,
+            0,
+            0,
+            0,
+            0);
+    return Uni.createFrom().item(new BatchedEmbeddingResponse(batchId, response, modelUsage));
   }
 
   @Override

@@ -56,16 +56,16 @@ public class FindCollectionWithLexicalIntegrationTest
       // Create a Collection with default Lexical settings
       createComplexCollection(
               """
-                    {
-                      "name": "%s",
-                      "options" : {
-                        "lexical": {
-                          "enabled": true,
-                          "analyzer": "standard"
-                        }
-                      }
+                {
+                  "name": "%s",
+                  "options" : {
+                    "lexical": {
+                      "enabled": true,
+                      "analyzer": "standard"
                     }
-                    """
+                  }
+                }
+                """
               .formatted(COLLECTION_WITH_LEXICAL));
       // And then insert 5 documents
       insertDoc(COLLECTION_WITH_LEXICAL, DOC1_JSON);
@@ -80,15 +80,15 @@ public class FindCollectionWithLexicalIntegrationTest
       // Create a Collection with lexical feature disabled
       createComplexCollection(
               """
-                      {
-                        "name": "%s",
-                        "options" : {
-                          "lexical": {
-                            "enabled": false
-                          }
-                        }
+                  {
+                    "name": "%s",
+                    "options" : {
+                      "lexical": {
+                        "enabled": false
                       }
-                      """
+                    }
+                  }
+                  """
               .formatted(COLLECTION_WITHOUT_LEXICAL));
     }
   }
@@ -103,12 +103,12 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-                          {
-                            "find": {
-                              "sort" : {"$lexical": "banana" }
-                            }
-                          }
-                          """)
+                      {
+                        "find": {
+                          "sort" : {"$lexical": "banana" }
+                        }
+                      }
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(2))
           .body("data.documents[0]._id", is("lexical-1"))
@@ -121,16 +121,16 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-                          {
-                            "find": {
-                              "filter" : {
-                                 "$lexical": {
-                                    "$match": "biking"
-                                  }
-                               }
-                            }
-                          }
-                          """)
+                      {
+                        "find": {
+                          "filter" : {
+                             "$lexical": {
+                                "$match": "biking"
+                              }
+                           }
+                        }
+                      }
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body("data.documents[0]._id", is("lexical-3"));
@@ -143,17 +143,17 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-                          {
-                            "find": {
-                              "filter" : {
-                                 "$and": [
-                                   { "$lexical": { "$match": "banana" } },
-                                   { "tag": "bottom" }
-                                  ]
-                               }
-                            }
-                          }
-                          """)
+                      {
+                        "find": {
+                          "filter" : {
+                             "$and": [
+                               { "$lexical": { "$match": "banana" } },
+                               { "tag": "bottom" }
+                              ]
+                           }
+                        }
+                      }
+                      """)
           .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body("data.documents[0]._id", is("lexical-4"));
@@ -170,13 +170,13 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-                      {
-                        "findOne": {
-                          "projection": {"$lexical": 1 },
-                          "sort" : {"$lexical": "biking" }
-                        }
-                      }
-                      """)
+                  {
+                    "findOne": {
+                      "projection": {"$lexical": 1 },
+                      "sort" : {"$lexical": "biking" }
+                    }
+                  }
+                  """)
           .body("$", responseIsFindSuccess())
           // Needs to get "lexical-3" with "biking fun"
           .body("data.document", jsonEquals(DOC3_JSON));
@@ -188,13 +188,13 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-                          {
-                            "findOne": {
-                              "projection": {"$lexical": 1 },
-                              "sort" : {"$lexical": "monkey banana" }
-                            }
-                          }
-                          """)
+                      {
+                        "findOne": {
+                          "projection": {"$lexical": 1 },
+                          "sort" : {"$lexical": "monkey banana" }
+                        }
+                      }
+                      """)
           .body("$", responseIsFindSuccess())
           // Needs to get "lexical-1" with "monkey banana"
           .body("data.document", jsonEquals(DOC1_JSON));
@@ -206,13 +206,13 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-                      {
-                        "findOne": {
-                          "projection": {"$lexical": 1 },
-                          "filter" : {"$lexical": {"$match": "bread butter" } }
-                        }
-                      }
-                      """)
+                  {
+                    "findOne": {
+                      "projection": {"$lexical": 1 },
+                      "filter" : {"$lexical": {"$match": "bread butter" } }
+                    }
+                  }
+                  """)
           .body("$", responseIsFindSuccess())
           // Needs to get "lexical-4"
           .body("data.document", jsonEquals(DOC4_JSON));
@@ -229,12 +229,12 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITHOUT_LEXICAL,
               """
-                          {
-                            "find": {
-                              "sort" : {"$lexical": "banana" }
-                            }
-                          }
-                          """)
+                      {
+                        "find": {
+                          "sort" : {"$lexical": "banana" }
+                        }
+                      }
+                      """)
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
           .body(
@@ -248,12 +248,12 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITHOUT_LEXICAL,
               """
-                          {
-                            "find": {
-                              "filter" : {"$lexical": {"$match": "banana" } }
-                            }
-                          }
-                          """)
+                      {
+                        "find": {
+                          "filter" : {"$lexical": {"$match": "banana" } }
+                        }
+                      }
+                      """)
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("LEXICAL_NOT_ENABLED_FOR_COLLECTION"))
           .body(
@@ -267,12 +267,12 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-                          {
-                            "find": {
-                              "sort" : {"$lexical": -1 }
-                            }
-                          }
-                          """)
+                      {
+                        "find": {
+                          "sort" : {"$lexical": -1 }
+                        }
+                      }
+                      """)
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"))
           .body(
@@ -286,12 +286,12 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-                          {
-                            "find": {
-                              "filter" : {"$lexical": {"$match": [ 1, 2, 3 ] } }
-                            }
-                          }
-                          """)
+                      {
+                        "find": {
+                          "filter" : {"$lexical": {"$match": [ 1, 2, 3 ] } }
+                        }
+                      }
+                      """)
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
           .body(
@@ -306,15 +306,15 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-                          {
-                            "find": {
-                              "sort" : {
-                                 "a": 1,
-                                 "$lexical": "bananas"
-                               }
-                            }
-                          }
-                          """)
+                      {
+                        "find": {
+                          "sort" : {
+                             "a": 1,
+                             "$lexical": "bananas"
+                           }
+                        }
+                      }
+                      """)
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_SORT_CLAUSE"))
           .body(
@@ -329,12 +329,12 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-                          {
-                            "find": {
-                              "filter" : {"$not": {"$lexical": {"$match": "banana" } }}}
-                            }
-                          }
-                          """)
+                      {
+                        "find": {
+                          "filter" : {"$not": {"$lexical": {"$match": "banana" } }}}
+                        }
+                      }
+                      """)
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
           .body(
@@ -376,15 +376,15 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-           {
-             "findOneAndUpdate": {
-               "sort": { "$lexical": "banana" },
-               "update" : {"$set" : {"value": "value1-updated"}},
-               "projection": {"$lexical": 1 },
-               "options": {"returnDocument": "after"}
-             }
-           }
-           """)
+       {
+         "findOneAndUpdate": {
+           "sort": { "$lexical": "banana" },
+           "update" : {"$set" : {"value": "value1-updated"}},
+           "projection": {"$lexical": 1 },
+           "options": {"returnDocument": "after"}
+         }
+       }
+       """)
           .body("data.document", jsonEquals(expectedAfterChange))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
@@ -393,13 +393,13 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-          {
-            "findOne": {
-              "filter" : {"_id" : "lexical-1"},
-              "projection": {"*": 1 }
-            }
-          }
-          """)
+      {
+        "findOne": {
+          "filter" : {"_id" : "lexical-1"},
+          "projection": {"*": 1 }
+        }
+      }
+      """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(expectedAfterChange));
     }
@@ -416,13 +416,13 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-           {
-             "updateOne": {
-               "sort": { "$lexical": "banana" },
-               "update" : {"$set" : {"value": "value1-updated-2"}}
-             }
-           }
-           """)
+       {
+         "updateOne": {
+           "sort": { "$lexical": "banana" },
+           "update" : {"$set" : {"value": "value1-updated-2"}}
+         }
+       }
+       """)
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
       // Plus query to check that the document was updated
@@ -430,13 +430,13 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-          {
-            "findOne": {
-              "filter" : {"_id" : "lexical-1"},
-              "projection": {"*": 1 }
-            }
-          }
-          """)
+      {
+        "findOne": {
+          "filter" : {"_id" : "lexical-1"},
+          "projection": {"*": 1 }
+        }
+      }
+      """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(expectedAfterChange));
     }
@@ -453,15 +453,15 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
                   """
-           {
-             "findOneAndReplace": {
-               "sort": { "$lexical": "banana" },
-               "replacement" : %s,
-               "projection": {"$lexical": 1 },
-               "options": {"returnDocument": "after"}
-             }
-           }
-           """
+   {
+     "findOneAndReplace": {
+       "sort": { "$lexical": "banana" },
+       "replacement" : %s,
+       "projection": {"$lexical": 1 },
+       "options": {"returnDocument": "after"}
+     }
+   }
+   """
                   .formatted(expectedAfterChange))
           .body("data.document", jsonEquals(expectedAfterChange))
           .body("status.matchedCount", is(1))
@@ -471,13 +471,13 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-          {
-            "findOne": {
-              "filter" : {"_id" : "lexical-1"},
-              "projection": {"*": 1 }
-            }
-          }
-          """)
+      {
+        "findOne": {
+          "filter" : {"_id" : "lexical-1"},
+          "projection": {"*": 1 }
+        }
+      }
+      """)
           .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(expectedAfterChange));
     }
@@ -493,13 +493,13 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-                      {
-                        "findOneAndDelete": {
-                          "sort": { "$lexical": "monkey" },
-                          "projection": {"$lexical": 1 }
-                        }
-                      }
-                      """)
+                  {
+                    "findOneAndDelete": {
+                      "sort": { "$lexical": "monkey" },
+                      "projection": {"$lexical": 1 }
+                    }
+                  }
+                  """)
           .body("status.deletedCount", is(1))
           .body("data.document", jsonEquals(DOC2_JSON));
 
@@ -508,12 +508,12 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-          {
-            "find": {
-              "projection": {"_id": 1, "value": 0, "tag": 0 }
-            }
-          }
-          """)
+      {
+        "find": {
+          "projection": {"_id": 1, "value": 0, "tag": 0 }
+        }
+      }
+      """)
           .body("$", responseIsFindSuccess())
           .body(
               "data.documents",
@@ -536,13 +536,13 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-                      {
-                        "deleteOne": {
-                          "filter": { },
-                          "sort": { "$lexical": "biking" }
-                        }
-                      }
-                      """)
+                  {
+                    "deleteOne": {
+                      "filter": { },
+                      "sort": { "$lexical": "biking" }
+                    }
+                  }
+                  """)
           .body("$", responseIsStatusOnly())
           .body("status.deletedCount", is(1));
 
@@ -551,12 +551,12 @@ public class FindCollectionWithLexicalIntegrationTest
               keyspaceName,
               COLLECTION_WITH_LEXICAL,
               """
-          {
-            "find": {
-              "projection": {"_id": 1, "value": 0 }
-            }
-          }
-          """)
+      {
+        "find": {
+          "projection": {"_id": 1, "value": 0 }
+        }
+      }
+      """)
           .body("$", responseIsFindSuccess())
           .body(
               "data.documents",
