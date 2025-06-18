@@ -9,10 +9,26 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import java.util.Map;
 
+// TODO: WRITE SOME DAM DOCUMENTATION !
 @QuarkusTest
 public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycleManager {
 
   private WireMockServer wireMockServer;
+
+  // NOTE: These are the host and path to use with this lifecycle manager.
+  // previously the start() methods returned below to override quarkus config properties,
+  //      return Map.of(
+  //          "stargate.jsonapi.embedding.providers.nvidia.url",
+  //          wireMockServer.baseUrl() + "/v1/embeddings",
+  //          "stargate.jsonapi.embedding.providers.openai.url",
+  //          wireMockServer.baseUrl() + "/v1/");
+
+  public static final String HOST = "http://localhost:8080";
+  public static final String NVIDIA_PATH = "/v1/embeddings";
+  public static final String OPENAI_PATH = "/v1";
+
+  public static final String NVIDIA_URL = HOST + NVIDIA_PATH;
+  public static final String OPENAI_URL = HOST + OPENAI_PATH;
 
   @Override
   public Map<String, String> start() {
@@ -179,11 +195,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
                     .withStatus(401)
                     .withStatusMessage("Unauthorized")));
 
-    return Map.of(
-        "stargate.jsonapi.embedding.providers.nvidia.url",
-        wireMockServer.baseUrl() + "/v1/embeddings",
-        "stargate.jsonapi.embedding.providers.openai.url",
-        wireMockServer.baseUrl() + "/v1/");
+    return Map.of();
   }
 
   @Override

@@ -72,6 +72,7 @@ public class DataVectorizerService {
 
   public <T extends SchemaObject> DataVectorizer constructDataVectorizer(
       CommandContext<T> commandContext) {
+
     EmbeddingProvider embeddingProvider =
         Optional.ofNullable(commandContext.embeddingProvider())
             .map(
@@ -83,6 +84,7 @@ public class DataVectorizerService {
                         provider,
                         commandContext.commandName()))
             .orElse(null);
+
     return new DataVectorizer(
         embeddingProvider,
         objectMapper.getNodeFactory(),
@@ -91,7 +93,7 @@ public class DataVectorizerService {
             .getEmbeddingCredentialsSupplier()
             .create(
                 commandContext.requestContext(),
-                embeddingProvider == null ? null : embeddingProvider.getProviderConfig()),
+                embeddingProvider == null ? null : embeddingProvider.providerConfig()),
         commandContext.schemaObject());
   }
 

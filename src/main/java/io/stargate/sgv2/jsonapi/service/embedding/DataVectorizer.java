@@ -52,7 +52,8 @@ public class DataVectorizer {
       SchemaObject schemaObject) {
     this.embeddingProvider = embeddingProvider;
     this.nodeFactory = nodeFactory;
-    this.embeddingCredentials = embeddingCredentials;
+    this.embeddingCredentials =
+        Objects.requireNonNull(embeddingCredentials, "embeddingCredentials must not be null");
     this.schemaObject = schemaObject;
   }
 
@@ -175,7 +176,7 @@ public class DataVectorizer {
                 List.of(vectorizeContent),
                 embeddingCredentials,
                 EmbeddingProvider.EmbeddingRequestType.INDEX)
-            .map(EmbeddingProvider.Response::embeddings);
+            .map(EmbeddingProvider.BatchedEmbeddingResponse::embeddings);
     return vectors
         .onItem()
         .transform(
@@ -303,7 +304,7 @@ public class DataVectorizer {
 
     return embeddingProvider
         .vectorize(1, textsToVectorize, embeddingCredentials, requestType)
-        .map(EmbeddingProvider.Response::embeddings)
+        .map(EmbeddingProvider.BatchedEmbeddingResponse::embeddings)
         .onItem()
         .transform(
             vectorData -> {
