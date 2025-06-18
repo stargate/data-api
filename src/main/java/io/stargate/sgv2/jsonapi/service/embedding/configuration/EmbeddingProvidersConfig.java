@@ -279,15 +279,14 @@ public interface EmbeddingProvidersConfig {
       NUMBER("number"),
       BOOLEAN("boolean");
 
-      private final String type;
+      private final String apiName;
 
-      ParameterType(final String type) {
-        this.type = type;
+      ParameterType(final String apiName) {
+        this.apiName = apiName;
       }
 
-      @Override
-      public String toString() {
-        return type;
+      public String getApiName() {
+        return apiName;
       }
     }
   }
