@@ -76,6 +76,12 @@ snippets:
     body: |-
       Resend the command using only defined columns.
 
+  - name: REGULAR_SORT_EXPLANATION
+    body: |-
+      A regular sort expression in the sort clause identifies the column by name and then provides either:  
+      - `1` for ascending
+      - `-1` for descending
+
   - name: VECTOR_SORT_EXPLANATION
     body: |-
       A vector sort in the sort clause identifies the vector column by name and then provides either:  
@@ -1472,6 +1478,16 @@ request-errors:
       The command attempted to sort the non-vector columns: ${sortNonVectorColumns}.
       
       Resend the command using either vector or non-vector sorting.
+
+  - scope: SORT
+    code: INVALID_REGULAR_SORT_EXPRESSION
+    title: Sort expression is not valid for regular sort
+    body: |-
+      The command attempted to use unsupported JSON expression `${jsonExpr}` (type ${jsonType}) for sort clause.
+      
+      ${SNIPPET.REGULAR_SORT_EXPLANATION}
+      
+      Resend the command with only valid sort expressions.
 
   - scope: SORT
     code: INVALID_VECTOR_SORT_EXPRESSION

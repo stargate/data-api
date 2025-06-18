@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
@@ -158,37 +157,53 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
    * expression value and builds the {@link SortExpression} object.
    */
   private SortExpression buildRegularSortExpression(SortExpressionDefinition exprDef) {
-    JsonNode innerValue = exprDef.sortValue();
-    if (!innerValue.isInt()) {
-      // Special checking for String and ArrayNode to give less confusing error messages
-      if (innerValue.isTextual()) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-            "Sort ordering value can be String only for Lexical or Vectorize search");
+    JsonNode sortValue = exprDef.sortValue();
+
+    // First: valid cases
+    if (sortValue.isInt()) {
+      // Yes, we have an integer value. But is it valid?
+      if (sortValue.intValue() == 1) {
+        return SortExpression.sort(exprDef.path(), true);
       }
-      if (innerValue.isArray()) {
-        throw SortException.Code.CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS.get(
-            errVars(
-                schema,
-                map -> {
-                  map.put(
-                      "vectorColumns",
-                      errFmtApiColumnDef(
-                          schema.apiTableDef().allColumns().filterVectorColumnsToList()));
-                  map.put("sortColumns", exprDef.path());
-                }));
+      if (sortValue.intValue() == -1) {
+        return SortExpression.sort(exprDef.path(), false);
       }
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-          "Sort ordering value should be integer `1` or `-1`; or Array (Vector); or String (Lexical or Vectorize), was: %s",
-          JsonUtil.nodeTypeAsString(innerValue));
-    }
-    if (!(innerValue.intValue() == 1 || innerValue.intValue() == -1)) {
-      throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-          "Sort ordering value can only be `1` for ascending or `-1` for descending (not `%s`)",
-          innerValue);
+    } else if (sortValue.isArray()) {
+      // Special checking for ArrayNode and String to give less confusing error messages
+
+      throw SortException.Code.CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS.get(
+          errVars(
+              schema,
+              map -> {
+                map.put(
+                    "vectorColumns",
+                    errFmtApiColumnDef(
+                        schema.apiTableDef().allColumns().filterVectorColumnsToList()));
+                map.put("sortColumns", exprDef.path());
+              }));
+    } else if (sortValue.isTextual()) {
+      // We only end up here for non-TEXT/ASCII/VECTOR columns (other cases are handled
+      // by caller and further validated later on)
+      throw SortException.Code.CANNOT_VECTORIZE_SORT_NON_VECTOR_COLUMN.get(
+          errVars(
+              schema,
+              map -> {
+                map.put(
+                    "vectorColumns",
+                    errFmtApiColumnDef(
+                        schema.apiTableDef().allColumns().filterVectorColumnsToList()));
+                map.put("sortColumns", exprDef.path());
+              }));
     }
 
-    boolean ascending = innerValue.intValue() == 1;
-    return SortExpression.sort(exprDef.path(), ascending);
+    // Otherwise general failure message wrt use of 1 or -1 for Regular sort expression
+    throw SortException.Code.INVALID_REGULAR_SORT_EXPRESSION.get(
+        errVars(
+            schema,
+            map -> {
+              map.put("jsonExpr", sortValue.toString());
+              map.put("jsonType", JsonUtil.nodeTypeAsString(sortValue));
+            }));
   }
 
   private String columnsDesc(List<SortExpressionDefinition> sortExprDefs) {
