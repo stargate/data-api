@@ -166,8 +166,16 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
             "Sort ordering value can be String only for Lexical or Vectorize search");
       }
       if (innerValue.isArray()) {
-        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
-            "Sort ordering value can be Array only for Vector search");
+        throw SortException.Code.CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS.get(
+            errVars(
+                schema,
+                map -> {
+                  map.put(
+                      "vectorColumns",
+                      errFmtApiColumnDef(
+                          schema.apiTableDef().allColumns().filterVectorColumnsToList()));
+                  map.put("sortColumns", exprDef.path());
+                }));
       }
       throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
           "Sort ordering value should be integer `1` or `-1`; or Array (Vector); or String (Lexical or Vectorize), was: %s",

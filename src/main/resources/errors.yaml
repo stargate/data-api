@@ -80,7 +80,7 @@ snippets:
     body: |-
       A vector sort in the sort clause identifies the vector column by name and then provides either:  
       - The vector as an array of decimal numbers.
-      - The vector as a base64 encoded `{"$binary": "base64-encoded-vector"}` object.
+      - The vector as a base64-encoded `{"$binary": "base64-encoded-vector"}` object.
       - A string to be vectorized if enabled for the column.
 
   - name: CURRENTLY_UNSUPPORTED
