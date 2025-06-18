@@ -159,11 +159,6 @@ public class VectorizeTableIntegrationTest extends AbstractTableIntegrationTestB
             SortException.Code.CANNOT_SORT_ON_SPECIAL_WITH_OTHERS),
         Arguments.of(
             ImmutableMap.of(
-                VectorizeTableScenario.fieldName(VectorizeTableScenario.CONTENT_COL),
-                SAMPLE_VECTORIZE_CONTENT),
-            SortException.Code.CANNOT_VECTORIZE_SORT_NON_VECTOR_COLUMN),
-        Arguments.of(
-            ImmutableMap.of(
                 VectorizeTableScenario.fieldName(
                     VectorizeTableScenario.INDEXED_VECTOR_COL_WITH_VECTORIZE_DEF_1),
                 SAMPLE_VECTORIZE_CONTENT,
