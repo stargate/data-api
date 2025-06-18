@@ -1385,12 +1385,12 @@ request-errors:
     code: CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS
     title: Vector sort columns are not `vector` type
     body: |-
-      The command attempted to vectorize sort on a column that is not of `vector` type.
+      The command attempted to vector sort on a column that is not of `vector` type.
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines the columns: ${vectorColumns}.
-      The command attempted to sort the non vector columns: ${sortColumns}.  
+      The table ${keyspace}.${table} defines vector columns: ${vectorColumns}.
+      The command attempted to sort the non-vector columns: ${sortColumns}.
       
       Resend the command using only `vector` columns.
 

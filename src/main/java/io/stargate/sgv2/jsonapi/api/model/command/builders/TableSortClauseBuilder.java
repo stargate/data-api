@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
@@ -79,7 +80,7 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
     // Otherwise, we can build regular sort expression(s)
     final List<SortExpression> sortExpressions = new ArrayList<>();
     for (SortExpressionDefinition exprDef : regularExprs) {
-      sortExpressions.add(buildRegularSortExpression(exprDef.path(), exprDef.sortValue()));
+      sortExpressions.add(buildRegularSortExpression(exprDef));
     }
     return new SortClause(sortExpressions);
   }
@@ -150,6 +151,36 @@ public class TableSortClauseBuilder extends SortClauseBuilder<TableSchemaObject>
             map -> {
               map.put("jsonType", JsonUtil.nodeTypeAsString(exprValue));
             }));
+  }
+
+  /**
+   * Helper method to build a "non-special" sort expression for given definition; validates
+   * expression value and builds the {@link SortExpression} object.
+   */
+  private SortExpression buildRegularSortExpression(SortExpressionDefinition exprDef) {
+    JsonNode innerValue = exprDef.sortValue();
+    if (!innerValue.isInt()) {
+      // Special checking for String and ArrayNode to give less confusing error messages
+      if (innerValue.isTextual()) {
+        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
+            "Sort ordering value can be String only for Lexical or Vectorize search");
+      }
+      if (innerValue.isArray()) {
+        throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
+            "Sort ordering value can be Array only for Vector search");
+      }
+      throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
+          "Sort ordering value should be integer `1` or `-1`; or Array (Vector); or String (Lexical or Vectorize), was: %s",
+          JsonUtil.nodeTypeAsString(innerValue));
+    }
+    if (!(innerValue.intValue() == 1 || innerValue.intValue() == -1)) {
+      throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
+          "Sort ordering value can only be `1` for ascending or `-1` for descending (not `%s`)",
+          innerValue);
+    }
+
+    boolean ascending = innerValue.intValue() == 1;
+    return SortExpression.sort(exprDef.path(), ascending);
   }
 
   private String columnsDesc(List<SortExpressionDefinition> sortExprDefs) {
