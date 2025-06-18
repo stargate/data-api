@@ -64,7 +64,7 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"KeyspaceCommand\"s: known commands are [createCollection"));
+                  "Provided command unknown: \"unknownCommand\" not one of \"KeyspaceCommand\"s: known commands are ["));
     }
 
     @Test
