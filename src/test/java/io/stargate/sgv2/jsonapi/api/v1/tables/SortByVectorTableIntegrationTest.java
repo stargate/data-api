@@ -126,7 +126,7 @@ public class SortByVectorTableIntegrationTest extends AbstractTableIntegrationTe
         .hasSingleApiError(
             SortException.Code.CANNOT_VECTOR_SORT_NON_VECTOR_COLUMNS,
             SortException.class,
-            "The command attempted to sort the non vector columns: %s."
+            "The command attempted to sort the non-vector columns: %s."
                 .formatted(SCENARIO.fieldName(VectorDimension5TableScenario.CONTENT_COL)));
   }
 
